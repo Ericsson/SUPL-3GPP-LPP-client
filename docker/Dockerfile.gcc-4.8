@@ -1,0 +1,9 @@
+FROM ubuntu:16.04
+
+RUN apt-get update
+RUN apt-get upgrade
+RUN apt-get install -y gcc-4.8 g++-4.8
+RUN apt-get install -y cmake ninja-build
+RUN apt-get install -y libssl-dev
+RUN find / -name "gcc-*"
+RUN find / -name "g++-*"
