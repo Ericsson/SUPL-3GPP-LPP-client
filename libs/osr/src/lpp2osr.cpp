@@ -6,6 +6,11 @@
 
 #define LEAPSECONDS_FROM_UTC (37 - 19)
 
+#define P2_M4 0.0625
+#define P2_M10 9.765625E-4
+#define P2_M29 1.862645149230957E-9
+#define P2_M31 4.6566128730773926E-10
+
 constexpr static int      mlt_size                  = 22;
 constexpr static uint64_t mlt_coefficient[mlt_size] = {
     1,    2,    4,    8,     16,    32,    64,     128,    256,    512,     1024,
@@ -198,7 +203,7 @@ static bool gather_satellite(OSR* osr, GNSS_RTK_SatelliteDataElement_r15_t* src,
         dst->integer_ms = *(src->integer_ms_r15);
     }
 
-    dst->rough_range = src->rough_range_r15 * 0x1p-10 /* 2^-10 */;
+    dst->rough_range = src->rough_range_r15 * P2_M10 /* 2^-10 */;
 
     if (src->rough_phase_range_rate_r15) {
         dst->rough_phase_range_rate = *(src->rough_phase_range_rate_r15);
@@ -227,13 +232,13 @@ static bool gather_satellite(OSR* osr, GNSS_RTK_SatelliteDataElement_r15_t* src,
         dst_sig->halfCycleAmbiguityIndicator = {};
         dst_sig->fine_PhaseRangeRate         = {};
 
-        dst_sig->fine_PseudoRange  = src_sig->fine_PseudoRange_r15 * 0x1p-29 /* 2^-29 */;
-        dst_sig->fine_PhaseRange   = src_sig->fine_PhaseRange_r15 * 0x1p-31 /* 2^-31 */;
+        dst_sig->fine_PseudoRange  = src_sig->fine_PseudoRange_r15 * P2_M29 /* 2^-29 */;
+        dst_sig->fine_PhaseRange   = src_sig->fine_PhaseRange_r15 * P2_M31 /* 2^-31 */;
         dst_sig->lockTimeIndicator = from_msm_lock_ex(src_sig->lockTimeIndicator_r15);
 
         if (src_sig->carrier_to_noise_ratio_r15) {
             dst_sig->carrier_to_noise_ratio =
-                *(src_sig->carrier_to_noise_ratio_r15) * 0x1p-4 /* 2^-4 */;
+                *(src_sig->carrier_to_noise_ratio_r15) * P2_M4 /* 2^-4 */;
         }
 
         auto halfcycle = BitString::from(&src_sig->halfCycleAmbiguityIndicator_r15);
