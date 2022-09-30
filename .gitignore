@@ -1,0 +1,7 @@
+asn/src
+asn1c
+bin
+build
+output.txt
+generated_files
+.vscode
