@@ -1,0 +1,6 @@
+FROM build:gcc-4.8
+
+WORKDIR /app
+COPY docker .
+RUN mkdir -p docker_build
+RUN cd docker_build && cmake .. -GNinja -DFORCE_COLORED_OUTPUT=OFF -DCMAKE_CXX_COMPILER=g++-4.8 -DCMAKE_C_COMPILER=gcc-4.8 && ninja
