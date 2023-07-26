@@ -20,6 +20,83 @@ void ASN_Deleter<OCTET_STRING>::operator()(OCTET_STRING* ptr) {
 //
 //
 
+static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
+    // msisdn, mnd and imsi are a BCD (Binary Coded Decimal) string
+    // represent digits from 0 through 9,
+    // two digits per octet, each digit encoded 0000 to 1001 (0 to 9)
+    // bits 8765 of octet n encoding digit 2n
+    // bits 4321 of octet n encoding digit 2(n-1) +1
+    // not used digits in the string shall be filled with 1111
+    unsigned char digits[16];
+    int           i = 0;
+    while (value > 0) {
+        if(i >= 16) {
+            break;
+        }
+        digits[i] = value % 10;
+        value /= 10;
+        i++;
+    }
+
+    for (int j = 0; j < 8; j++) {
+        buf[j] = 0;
+    }
+
+    int j = 0;
+    while(i > 0) {
+        if(j % 2 == 0) {
+            buf[j / 2] |= digits[i - 1] << 4;
+        } else {
+            buf[j / 2] |= digits[i - 1];
+        }
+        i--;
+        j++;
+    }
+
+    while(j < 16) {
+        if(j % 2 == 0) {
+            buf[j / 2] |= 0xf0;
+        } else {
+            buf[j / 2] |= 0xf;
+        }
+        j++;
+    }
+}
+
+std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long msisdn) {
+    auto set           = ALLOC_ZERO(SetSessionID);
+    set->sessionId     = id;
+    set->setId.present = SETId_PR_msisdn;
+
+    unsigned char buf[8];
+    binary_coded_decimal(msisdn, buf);
+    OCTET_STRING_fromBuf(&set->setId.choice.msisdn, reinterpret_cast<char*>(buf), sizeof(buf));
+
+    return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));
+}
+
+std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long imsi) {
+    auto set           = ALLOC_ZERO(SetSessionID);
+    set->sessionId     = id;
+    set->setId.present = SETId_PR_imsi;
+
+    unsigned char buf[8];
+    binary_coded_decimal(imsi, buf);
+    OCTET_STRING_fromBuf(&set->setId.choice.imsi, reinterpret_cast<char*>(buf), sizeof(buf));
+
+    return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));
+}
+
+std::unique_ptr<SUPL_Session> SUPL_Session::ip_address(long id, const std::string& addr_str) {
+    int  b[4];
+    auto result = sscanf(addr_str.c_str(), "%d.%d.%d.%d", b, b + 1, b + 2, b + 3);
+    assert(result == 4);
+
+    uint32_t addr = (static_cast<uint32_t>(b[0]) << 24) | (static_cast<uint32_t>(b[1]) << 16) |
+                    (static_cast<uint32_t>(b[2]) << 8) | static_cast<uint32_t>(b[3]);
+    return ip_address(id, addr);
+}
+
 std::unique_ptr<SUPL_Session> SUPL_Session::ip_address(long id, uint32_t addr) {
     auto set           = ALLOC_ZERO(SetSessionID);
     set->sessionId     = id;
@@ -87,13 +164,20 @@ SUPL_Session::~SUPL_Session() {
 //
 //
 
-SUPL_Client::SUPL_Client(std::unique_ptr<SUPL_Session> session)
-    : mTCP(std::make_unique<TCP_Client>()), mSession(std::move(session)) {}
+SUPL_Client::SUPL_Client() : mTCP(std::make_unique<TCP_Client>()), mSession(nullptr) {}
 
 SUPL_Client::~SUPL_Client() {}
 
+void SUPL_Client::set_session(std::unique_ptr<SUPL_Session> session) {
+    mSession = std::move(session);
+}
+
 bool SUPL_Client::connect(const std::string& host, int port, bool use_ssl) {
-    return mTCP->connect(host, port, use_ssl);
+    if (!mSession) {
+        return false;
+    } else {
+        return mTCP->connect(host, port, use_ssl);
+    }
 }
 
 bool SUPL_Client::disconnect() {

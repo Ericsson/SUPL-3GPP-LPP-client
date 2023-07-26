@@ -1,8 +1,7 @@
 #include "osr/lpp2osr.h"
-#include "utility/satellite_id.h"
-
-#include <asn_helper.h>
+#include <lpp/asn_helper.h>
 #include <rtklib.h>
+#include "utility/satellite_id.h"
 
 #define LEAPSECONDS_FROM_UTC (37 - 19)
 
@@ -58,12 +57,12 @@ double from_msm_lock(long value) {
 
 static const double glt0[] = {1995, 12, 31, 21, 0, 0};
 static gtime_t      glt2time(int week, double sec) {
-         gtime_t t = epoch2time(glt0);
+    gtime_t t = epoch2time(glt0);
 
-         if (sec < -1E9 || 1E9 < sec) sec = 0.0;
+    if (sec < -1E9 || 1E9 < sec) sec = 0.0;
     t.time += (time_t)86400 * 7 * week + (int)sec;
-         t.sec = sec - (int)sec;
-         return t;
+    t.sec = sec - (int)sec;
+    return t;
 }
 
 static GPS_Time gps_time_from(GNSS_SystemTime_t* sys_time, long leap_seconds) {

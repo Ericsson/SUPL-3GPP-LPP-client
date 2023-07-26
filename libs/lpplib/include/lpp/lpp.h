@@ -1,38 +1,12 @@
 #pragma once
-#include "asnlib.h"
-#include <cell_id.h>
+#include <lpp/cell_id.h>
 #include <chrono>
 #include <vector>
 #include "asn_helper.h"
+#include "asnlib.h"
+#include "location_information.h"
+
 #define AD_REQUEST_INVALID ((LPP_Client::AD_Request)(0))
-
-struct LocationInformation {
-    double lat;
-    double lon;
-    double altitude;
-
-    double hacc;
-    double vacc;
-
-    double velocity;
-    double tracking;
-
-    time_t time;
-};
-
-struct ECIDInformation {
-    struct Neighbor {
-        long id;
-        long earfcn;
-        long rsrp;
-        long rsrq;
-    };
-
-    CellID cell;
-
-    int      neighbor_count;
-    Neighbor neighbors[16];
-};
 
 struct LPP_Transaction {
     long id;
@@ -44,10 +18,9 @@ class SUPL_Client;
 class LPP_Client {
 public:
     typedef int32_t AD_Request;
-    typedef void (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*,
-                                void*);
-    typedef bool (*PLI_Callback)(LocationInformation*, void*);
-    typedef bool (*PECID_Callback)(ECIDInformation*, void*);
+    typedef void    (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+    typedef bool    (*PLI_Callback)(LocationInformation&, HaGnssMetrics&, void*);
+    typedef bool    (*PECID_Callback)(ECIDInformation&, void*);
 
     struct ProvideLI {
         LocationInformationType_t             type;
@@ -57,6 +30,10 @@ public:
 
     LPP_Client(bool segmentation);
     ~LPP_Client();
+
+    void set_identity_msisdn(unsigned long msisdn);
+    void set_identity_imsi(unsigned long imsi);
+    void set_identity_ipv4(const std::string& ipv4);
 
     // Open connection to location server.
     // The 'cell' arguments is required for backwards compatibility and SHOULD
@@ -69,10 +46,10 @@ public:
 
     // Request assistance data for a specific cell-id. The callback will be
     // called for each assistance data message the client receives.
-    AD_Request request_assistance_data(CellID cell, void* userdata,
-                                       AD_Callback callback);
-    AD_Request request_assistance_data_ssr(CellID cell, void* userdata,
-                                           AD_Callback callback);
+    AD_Request request_assistance_data(CellID cell, void* userdata, AD_Callback callback);
+    AD_Request request_assistance_data_ssr(CellID cell, void* userdata, AD_Callback callback);
+
+    bool request_agnss(CellID cell, void* userdata, AD_Callback callback);
 
     // Update assistance data request with new cell-id.
     bool update_assistance_data(AD_Request id, CellID cell);
@@ -84,15 +61,13 @@ public:
     // device. The information is provided to the LPP client through callbacks:
     // provide_location_information_callback and provide_ecid_callback. Return
     // false in the callback to indicate that no location information exists.
-    void provide_location_information_callback(void*        userdata,
-                                               PLI_Callback callback);
+    void provide_location_information_callback(void* userdata, PLI_Callback callback);
     void provide_ecid_callback(void* userdata, PECID_Callback callback);
 
 private:
     bool wait_for_assistance_data_response(LPP_Transaction* transaction);
     bool process_message(LPP_Message*, LPP_Transaction* transaction);
-    bool handle_request_location_information(LPP_Message*     message,
-                                             LPP_Transaction* transaction);
+    bool handle_request_location_information(LPP_Message* message, LPP_Transaction* transaction);
     bool handle_provide_location_information(ProvideLI*);
 
     bool supl_start(CellID cell);
@@ -103,7 +78,7 @@ private:
     bool supl_send(const std::vector<LPP_Message*>& messages);
 
     OCTET_STRING* encode(LPP_Message* message);
-    LPP_Message* decode(OCTET_STRING* data);
+    LPP_Message*  decode(OCTET_STRING* data);
 
     LPP_Transaction new_transaction();
 
@@ -124,6 +99,10 @@ private:
 
     PECID_Callback pecid_callback;
     void*          pecid_userdata;
+
+    AD_Callback     agnss_request_callback;
+    void*           agnss_request_userdata;
+    LPP_Transaction agnss_request_transaction;
 
     ProvideLI provide_li;
 

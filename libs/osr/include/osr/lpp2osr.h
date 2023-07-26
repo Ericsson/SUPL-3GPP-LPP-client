@@ -1,6 +1,6 @@
 #pragma once
+#include <lpp/asnlib.h>
 #include <utility/types.h>
-#include <asnlib.h>
 #include "osr/osr.h"
 
 bool gather_reference_station(LPP_Message* lpp, OSR* osr);

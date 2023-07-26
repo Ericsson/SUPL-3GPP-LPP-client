@@ -1,9 +1,9 @@
 #pragma once
 
-#include "cell_id.h"
 #include "asn_helper.h"
-#include "lpp.h"
 #include "asnlib.h"
+#include "cell_id.h"
+#include "lpp.h"
 
 #define LPP_MSG_MAX_COUNT 10
 
@@ -17,9 +17,10 @@ void         lpp_destroy(LPP_Message* lpp);
 
 LPP_Message* lpp_provide_capabilities(LPP_Transaction* transaction, bool segmentation);
 LPP_Message* lpp_request_assistance_data(LPP_Transaction* transaction, CellID cell,
-                                          long periodic_id, long interval);
+                                         long periodic_id, long interval);
+LPP_Message* lpp_request_agnss(LPP_Transaction* transaction, CellID cell, long gnss_id);
 LPP_Message* lpp_request_assistance_data_ssr(LPP_Transaction* transaction, CellID cell,
-                                          long periodic_id, long interval);
+                                             long periodic_id, long interval);
 LPP_Message* lpp_abort(LPP_Transaction* transaction);
 
 int lpp_is_provide_assistance_data(LPP_Message* lpp);
@@ -51,6 +52,6 @@ inline LocationInformationType_t lpp_get_request_location_information_type(LPP_M
 }
 
 LPP_Message* lpp_PLI_location_estimate(LPP_Transaction* transaction, LocationInformation* li,
-                                        bool has_information);
+                                       bool has_information);
 LPP_Message* lpp_PLI_location_measurements(LPP_Transaction* transaction, ECIDInformation* li,
-                                            bool has_information);
+                                           bool has_information);

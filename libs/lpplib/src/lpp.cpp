@@ -11,10 +11,25 @@ LPP_Client::LPP_Client(bool segmentation) {
     transaction_counter = 1;
     client_id           = 0xC0DEC0DE;
     mEnableSegmentation = segmentation;
-    mSUPL               = std::make_unique<SUPL_Client>(SUPL_Session::ip_address(0, client_id));
+    mSUPL               = std::make_unique<SUPL_Client>();
 }
 
 LPP_Client::~LPP_Client() {}
+
+void LPP_Client::set_identity_msisdn(unsigned long msisdn) {
+    if (connected) return;
+    mSUPL->set_session(SUPL_Session::msisdn(0, msisdn));
+}
+
+void LPP_Client::set_identity_imsi(unsigned long imsi) {
+    if (connected) return;
+    mSUPL->set_session(SUPL_Session::imsi(0, imsi));
+}
+
+void LPP_Client::set_identity_ipv4(const std::string& ipv4) {
+    if (connected) return;
+    mSUPL->set_session(SUPL_Session::ip_address(0, ipv4));
+}
 
 bool LPP_Client::supl_start(CellID cell) {
     auto message = mSUPL->create_message(UlpMessage_PR_msSUPLSTART);
@@ -139,6 +154,8 @@ bool LPP_Client::supl_receive(std::vector<LPP_Message*>& messages, int milliseco
                 auto lpp  = decode(data);
                 if (lpp) {
                     messages.push_back(lpp);
+                } else {
+                    printf("ERROR: Failed to decode LPP message\n");
                 }
             }
         }
@@ -243,6 +260,9 @@ bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transact
             if (main_request_callback) {
                 main_request_callback(this, transaction, message, main_request_userdata);
             }
+        }
+        if (agnss_request_callback && transaction->id == agnss_request_transaction.id) {
+            agnss_request_callback(this, transaction, message, agnss_request_userdata);
         }
         return true;
     } else if (lpp_is_request_capabilities(message)) {
@@ -397,6 +417,37 @@ LPP_Client::AD_Request LPP_Client::request_assistance_data_ssr(CellID cell, void
     return (AD_Request)periodic_id;
 }
 
+bool LPP_Client::request_agnss(CellID cell, void* userdata, AD_Callback callback) {
+    auto request_agnss_for = [this, cell, userdata, callback](long gnss_id) {
+        auto transaction = new_transaction();
+        auto message     = lpp_request_agnss(&transaction, cell, gnss_id);
+        if (!supl_send(message)) {
+            lpp_destroy(message);
+            disconnect();
+            return false;
+        }
+
+        lpp_destroy(message);
+
+        agnss_request_callback    = callback;
+        agnss_request_userdata    = userdata;
+        agnss_request_transaction = transaction;
+        if (!wait_for_assistance_data_response(&transaction)) {
+            return false;
+        }
+
+        return true;
+    };
+
+    request_agnss_for(GNSS_ID__gnss_id_gps);
+    request_agnss_for(GNSS_ID__gnss_id_glonass);
+    request_agnss_for(GNSS_ID__gnss_id_galileo);
+    request_agnss_for(GNSS_ID__gnss_id_bds);
+    agnss_request_callback = nullptr;
+
+    return true;
+}
+
 bool LPP_Client::update_assistance_data(AD_Request id, CellID cell) {
     if (id != main_request) return false;
     if (id == AD_REQUEST_INVALID) return false;
@@ -464,8 +515,9 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
     LPP_Message* message = NULL;
     if (pli->type == LocationInformationType_locationEstimateRequired) {
         LocationInformation li{};
+        HaGnssMetrics       metrics{};
         bool                has_information = false;
-        if (pli_callback && pli_callback(&li, pli_userdata)) {
+        if (pli_callback && pli_callback(li, metrics, pli_userdata)) {
             has_information = true;
         }
 
@@ -473,7 +525,7 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
     } else if (pli->type == LocationInformationType_locationMeasurementsRequired) {
         ECIDInformation ecid{};
         bool            has_information = false;
-        if (!pecid_callback || !pecid_callback(&ecid, pecid_userdata)) {
+        if (!pecid_callback || !pecid_callback(ecid, pecid_userdata)) {
             has_information = true;
         }
 

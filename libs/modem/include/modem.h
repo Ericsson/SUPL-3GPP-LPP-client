@@ -1,6 +1,7 @@
 #pragma once
 #include <atomic>
 #include <fcntl.h>
+#include <lpp/cell_id.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <string>
@@ -8,10 +9,8 @@
 #include <sys/types.h>
 #include <termios.h>
 #include <unistd.h>
-#include <vector>
-
-#include <cell_id.h>
 #include <utility/optional.h>
+#include <vector>
 
 struct ATResult {
     char buffer[512];
@@ -34,7 +33,7 @@ enum ATCommand {
 class Modem_AT {
 public:
     explicit Modem_AT(const std::string& path, unsigned int baud_rate, CellID cell_id);
-    ~Modem_AT();
+    virtual ~Modem_AT();
 
     bool                      initialize();
     Optional<CellID>          cell();

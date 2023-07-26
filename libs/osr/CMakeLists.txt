@@ -12,6 +12,6 @@ target_include_directories(osr PUBLIC "include/")
 target_link_libraries(osr PRIVATE lpplib asnlib rtklib utility Threads::Threads)
 
 if (USE_ASAN)
-target_compile_options(osr PRIVATE -fsanitize=address)
-target_link_libraries(osr PRIVATE -fsanitize=address)
+target_compile_options(osr PRIVATE -fsanitize=address,undefined,leak)
+target_link_libraries(osr PRIVATE -fsanitize=address,undefined,leak)
 endif (USE_ASAN)
