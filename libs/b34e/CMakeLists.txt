@@ -20,6 +20,6 @@ target_compile_options(rtklib PRIVATE "-std=c99" "-Wno-unused-but-set-variable" 
 target_include_directories(rtklib PUBLIC "src")
 
 if (USE_ASAN)
-target_compile_options(rtklib PRIVATE -fsanitize=address)
-target_link_libraries(rtklib PRIVATE -fsanitize=address)
+target_compile_options(rtklib PRIVATE -fsanitize=address,undefined,leak)
+target_link_libraries(rtklib PRIVATE -fsanitize=address,undefined,leak)
 endif (USE_ASAN)

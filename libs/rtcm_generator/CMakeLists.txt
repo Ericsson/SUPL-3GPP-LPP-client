@@ -10,6 +10,6 @@ target_include_directories(rtcm_generator PUBLIC "include/")
 target_link_libraries(rtcm_generator PRIVATE osr lpplib asnlib rtklib utility Threads::Threads)
 
 if (USE_ASAN)
-target_compile_options(rtcm_generator PRIVATE -fsanitize=address)
-target_link_libraries(rtcm_generator PRIVATE -fsanitize=address)
+target_compile_options(rtcm_generator PRIVATE -fsanitize=address,undefined,leak)
+target_link_libraries(rtcm_generator PRIVATE -fsanitize=address,undefined,leak)
 endif (USE_ASAN)

@@ -37,28 +37,64 @@ To verify compatibility with gcc-4.8 and older compilers, use the build script (
 
 ## Usage
 
-The example client requires that you provide connection parameters of a location server and the ECGI (including TAC) that should be used. There are additional options to configure RTCM MSM type generation and where the final RTCM messages you be transported. Support for outputting RTCM messages to device is supported but command-line options are not displayed in the help prompt.
+The example client requires that you provide connection parameters of a location server and the ECGI (including TAC) that should be used. There are additional options to configure RTCM MSM type generation and where the final RTCM messages you be transported.
+
+> Version +3.1.0 has a new argument parser. New options may be required and short-hand notation for many of them has changed. Now the example client is divided into 3 parts (osr, ssr, and agnss), use a command to specifiy which part you want to run. For more information see run `./example`
 
 ```
-./example -?
+  ./src/example COMMAND {OPTIONS}
 
-options:
--?, --help              show help prompt
--h, --host              location server host [host]
--p, --port              location server post [integer]     default=5431
--s, --ssl               location server ssl  [flag]        default=off
--c, --mcc               mobile country code  [integer]
--n, --mnc               mobile network code  [integer]
--i, --cellid            cell id              [integer]
--t, --tac               tracking area code   [integer]
--y, --msm_type          msm type             [integer]     default=-1 (best suitable)
--k, --server_ip         server host          [host]        default="" (no output server)
--o, --server_port       server port          [integer]     default=3000
--x, --file_output       file path output     [path]        default="" (no output file)
-    --modem_device      modem path           [path]        default="" (no modem connected)
-    --modem_baud_rate   modem baud rate      [integer]     default=9600
+    SUPL-3GPP-LPP-client v3.2.0 (public)
+
+  OPTIONS:
+
+      -?, --help                        Display this help menu
+      -v, --version                     Display version information
+      Commands:
+        osr                               Request Observation Space
+                                          Representation (OSR) data from the
+                                          location server.
+        ssr                               Request State-space Representation
+                                          (SSR) data from the location server.
+        agnss                             Request Assisted GNSS data from the
+                                          location server.
+      Location Server:
+        -h[host], --host=[host]           Host
+        -p[port], --port=[port]           Port
+                                          Default: 5431
+        -s, --ssl                         TLS
+                                          Default: false
+      Identity:
+        --msisdn=[msisdn]                 MSISDN
+        --imsi=[imsi]                     IMSI
+        --ipv4=[ipv4]                     IPv4
+      Cell Information:
+        -c[mcc], --mcc=[mcc]              Mobile Country Code
+        -n[mnc], --mnc=[mnc]              Mobile Network Code
+        -t[tac], --lac=[tac], --tac=[tac] Tracking Area Code
+        -i[ci], --ci=[ci]                 Cell Identity
+      Modem:
+        --modem=[device]                  Device
+        --modem-baud=[baud_rate]          Baud Rate
+      Output:
+        File:
+          --file=[file_path]                Path
+        Serial:
+          --serial=[device]                 Device
+          --serial-baud=[baud_rate]         Baud Rate
+                                            Default: 115200
+        I2C:
+          --i2c=[device]                    Device
+          --i2c-address=[address]           Address
+        TCP:
+          --tcp=[ip_address]                IP Address
+          --tcp-port=[port]                 Port
+        UDP:
+          --udp=[ip_address]                IP Address
+          --udp-port=[port]                 Port
+        Stdout:
+          --stdout                          Stdout
 ```
 
 ## License
 See [LICENSE](/LICENSE.txt) file.
-

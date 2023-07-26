@@ -53,6 +53,10 @@ struct Generated {
     bool mt1230;
 };
 
+struct Message {
+    
+};
+
 struct LPP_Message;
 class RTCMGenerator {
 public:

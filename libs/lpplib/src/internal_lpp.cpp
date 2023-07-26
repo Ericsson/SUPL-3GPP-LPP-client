@@ -1,4 +1,5 @@
 #include "asn_helper.h"
+#include "location_information.h"
 #include "lpp.h"
 
 #include <math.h>
@@ -15,10 +16,14 @@ bool lpp_harvest_transaction(LPP_Transaction* transaction, LPP_Message* lpp) {
 }
 
 LPP_Message* lpp_decode(OCTET_STRING* data) {
+    asn_codec_ctx_t stack_ctx{};
+    stack_ctx.max_stack_size = 1024 * 1024 * 4;
+
     LPP_Message*   lpp = ALLOC_ZERO(LPP_Message);
     asn_dec_rval_t rval =
-        uper_decode_complete(0, &asn_DEF_LPP_Message, (void**)&lpp, data->buf, data->size);
+        uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, (void**)&lpp, data->buf, data->size);
     if (rval.code != RC_OK) {
+        free(lpp);
         return NULL;
     }
 
@@ -179,8 +184,11 @@ static long encodeLon(double lon) {
     return (long)value;
 }
 
-static long uncertainityCoding(double r) {
-    auto value = (long)(log(r * 10 / 3 + 1) / 0.01980262729);  // log(1.02)
+static long high_accuracy_uncertainity(double r) {
+    auto C     = 0.3;
+    auto x     = 0.02;
+    auto k     = log((r / C) + 1) / log(1 + x);
+    auto value = (long)k;
     if (value <= 0) value = 0;
     if (value >= 255) value = 255;
     return value;
@@ -195,24 +203,25 @@ static long HAAltitude(double a) {
 
 static void
 lpp_HAEPWAAUE_r15(HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_r15_t* HAEPWAAUE,
-                  LocationInformation*                                                 pi) {
-    HAEPWAAUE->degreesLatitude_r15      = encodeLat(pi->lat);
-    HAEPWAAUE->degreesLongitude_r15     = encodeLon(pi->lon);
-    HAEPWAAUE->altitude_r15             = HAAltitude(pi->altitude);
-    HAEPWAAUE->uncertaintySemiMajor_r15 = uncertainityCoding(pi->hacc);
-    HAEPWAAUE->uncertaintySemiMinor_r15 = uncertainityCoding(pi->vacc);
-    HAEPWAAUE->orientationMajorAxis_r15 = 0;                         // (0..179)
-    HAEPWAAUE->horizontalConfidence_r15 = 68;                        // (0..100) standard deviation
-    HAEPWAAUE->uncertaintyAltitude_r15  = uncertainityCoding(0.68);  // (0..255)
-    HAEPWAAUE->verticalConfidence_r15   = 68;                        // (0..100) standard deviation
+                  const LocationInformation&                                           location) {
+    HAEPWAAUE->degreesLatitude_r15      = encodeLat(location.latitude);
+    HAEPWAAUE->degreesLongitude_r15     = encodeLon(location.longitude);
+    HAEPWAAUE->altitude_r15             = HAAltitude(location.altitude);
+    HAEPWAAUE->uncertaintySemiMajor_r15 = high_accuracy_uncertainity(location.horizontal_accuracy);
+    HAEPWAAUE->uncertaintySemiMinor_r15 = high_accuracy_uncertainity(location.horizontal_accuracy);
+    HAEPWAAUE->orientationMajorAxis_r15 = 0;   // (0..179)
+    HAEPWAAUE->horizontalConfidence_r15 = 68;  // (0..100) standard deviation
+    HAEPWAAUE->uncertaintyAltitude_r15 =
+        high_accuracy_uncertainity(location.vertical_accuracy);  // (0..255)
+    HAEPWAAUE->verticalConfidence_r15 = 68;                      // (0..100) standard deviation
 }
 
-static LocationCoordinates_t* lpp_LocationCoordinates(LocationInformation* li) {
+static LocationCoordinates_t* lpp_LocationCoordinates(const LocationInformation& location) {
     auto LC = ALLOC_ZERO(LocationCoordinates_t);
     LC->present =
         LocationCoordinates_PR_highAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_v1510;
     lpp_HAEPWAAUE_r15(
-        &LC->choice.highAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_v1510, li);
+        &LC->choice.highAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_v1510, location);
     return LC;
 }
 
@@ -230,30 +239,36 @@ static long encodeVelocity(double vel, long max) {
 }
 
 static void lpp_HWVVAU(HorizontalWithVerticalVelocityAndUncertainty_t* HWVVAU,
-                       LocationInformation*                            pi) {
-    auto dir = pi->tracking;
+                       const LocationInformation&                      location) {
+    auto dir = location.bearing;
     while (dir < 0.0)
         dir += 360.0;
     while (dir > 360.0)
         dir -= 360.0;
-    HWVVAU->bearing         = (long)dir;
-    HWVVAU->horizontalSpeed = encodeVelocity(pi->velocity, 2047);
-    HWVVAU->verticalDirection =
-        HorizontalWithVerticalVelocityAndUncertainty__verticalDirection_upward;
-    HWVVAU->verticalSpeed              = encodeVelocity(pi->velocity, 255);
-    HWVVAU->horizontalUncertaintySpeed = 0;
-    HWVVAU->verticalUncertaintySpeed   = 0;
+    HWVVAU->bearing                    = (long)dir;
+    HWVVAU->horizontalSpeed            = encodeVelocity(location.horizontal_speed, 2047);
+    HWVVAU->horizontalUncertaintySpeed = encodeVelocity(location.horizontal_speed_accuracy, 255);
+
+    if (location.vertical_velocity_direction == VerticalDirection::UP) {
+        HWVVAU->verticalDirection =
+            HorizontalWithVerticalVelocityAndUncertainty__verticalDirection_upward;
+    } else {
+        HWVVAU->verticalDirection =
+            HorizontalWithVerticalVelocityAndUncertainty__verticalDirection_downward;
+    }
+    HWVVAU->verticalSpeed            = encodeVelocity(location.vertical_speed, 255);
+    HWVVAU->verticalUncertaintySpeed = encodeVelocity(location.vertical_speed_accuracy, 255);
 }
 
-static Velocity_t* lpp_Velocity(LocationInformation* li) {
+static Velocity_t* lpp_Velocity(const LocationInformation& location) {
     auto V     = ALLOC_ZERO(Velocity_t);
     V->present = Velocity_PR_horizontalWithVerticalVelocityAndUncertainty;
-    lpp_HWVVAU(&V->choice.horizontalWithVerticalVelocityAndUncertainty, li);
+    lpp_HWVVAU(&V->choice.horizontalWithVerticalVelocityAndUncertainty, location);
     return V;
 }
 
 static CommonIEsProvideLocationInformation_t::CommonIEsProvideLocationInformation__ext2*
-lpp_PLI_CIE_ext2(LocationInformation* li) {
+lpp_PLI_CIE_ext2(const LocationInformation& location) {
     auto ext2 = ALLOC_ZERO(
         CommonIEsProvideLocationInformation_t::CommonIEsProvideLocationInformation__ext2);
     auto locationSource      = BitString::allocate(6);
@@ -261,7 +276,7 @@ lpp_PLI_CIE_ext2(LocationInformation* li) {
     locationSource->set_bit(LocationSource_r13_ha_gnss_v1510);
 
     struct tm tm {};
-    auto      current_time = li->time;
+    auto      current_time = location.time;
     auto      ptm          = gmtime_r(&current_time, &tm);
 
     ext2->locationTimestamp_r13 = asn_time2UT(NULL, ptm, 1);
@@ -270,13 +285,14 @@ lpp_PLI_CIE_ext2(LocationInformation* li) {
 }
 
 static CommonIEsProvideLocationInformation_t*
-lpp_PLI_CommonIEsProvideLocationInformation(LocationInformation* li, bool has_information) {
+lpp_PLI_CommonIEsProvideLocationInformation(const LocationInformation& location,
+                                            bool                       has_information) {
     auto CIE_PLI = ALLOC_ZERO(CommonIEsProvideLocationInformation_t);
 
     if (has_information) {
-        CIE_PLI->locationEstimate = lpp_LocationCoordinates(li);
-        CIE_PLI->velocityEstimate = lpp_Velocity(li);
-        CIE_PLI->ext2             = lpp_PLI_CIE_ext2(li);
+        CIE_PLI->locationEstimate = lpp_LocationCoordinates(location);
+        CIE_PLI->velocityEstimate = lpp_Velocity(location);
+        CIE_PLI->ext2             = lpp_PLI_CIE_ext2(location);
     } else {
         auto LE                  = ALLOC_ZERO(LocationError_t);
         LE->locationfailurecause = LocationFailureCause_periodicLocationMeasurementsNotAvailable;
@@ -301,7 +317,7 @@ LPP_Message* lpp_PLI_location_estimate(LPP_Transaction* transaction, LocationInf
         &body->choice.c1.choice.provideLocationInformation.criticalExtensions.choice.c1.choice
              .provideLocationInformation_r9;
 
-    auto CIE_PLI = lpp_PLI_CommonIEsProvideLocationInformation(li, has_information);
+    auto CIE_PLI = lpp_PLI_CommonIEsProvideLocationInformation(*li, has_information);
     PLI->commonIEsProvideLocationInformation = CIE_PLI;
 
     return lpp;
