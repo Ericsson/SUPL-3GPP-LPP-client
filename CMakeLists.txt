@@ -32,4 +32,8 @@ find_package(Threads REQUIRED)
 add_compile_options("-Wall" "-Wno-unused-function" "-Wno-unused-variable" "-Wno-sign-compare")
 
 add_subdirectory("libs")
-add_subdirectory("src")
+add_subdirectory("interface")
+add_subdirectory("receiver/ublox")
+add_subdirectory("examples/ublox")
+add_subdirectory("examples/lpp")
+

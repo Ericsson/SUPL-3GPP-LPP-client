@@ -1,0 +1,14 @@
+add_executable(example_ublox 
+    "main.cpp"
+)
+add_executable(examples::ublox ALIAS example_ublox)
+
+target_include_directories(example_ublox PRIVATE "./")
+target_link_libraries(example_ublox PRIVATE args)
+target_link_libraries(example_ublox PRIVATE receiver::ublox)
+target_link_libraries(example_ublox PRIVATE dependency::interface)
+
+if (USE_ASAN)
+target_compile_options(example_ublox PRIVATE -fsanitize=address,undefined,leak)
+target_link_libraries(example_ublox PRIVATE -fsanitize=address,undefined,leak)
+endif (USE_ASAN)

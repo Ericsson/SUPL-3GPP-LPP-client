@@ -39,7 +39,7 @@ To verify compatibility with gcc-4.8 and older compilers, use the build script (
 
 The example client requires that you provide connection parameters of a location server and the ECGI (including TAC) that should be used. There are additional options to configure RTCM MSM type generation and where the final RTCM messages you be transported.
 
-> Version +3.1.0 has a new argument parser. New options may be required and short-hand notation for many of them has changed. Now the example client is divided into 3 parts (osr, ssr, and agnss), use a command to specifiy which part you want to run. For more information see run `./example`
+> Version +3.1.0 has a new argument parser. New options may be required and short-hand notation for many of them has changed. Now the example client is divided into 2 parts (osr and agnss), use a command to specifiy which part you want to run. For more information see run `./example`
 
 ```
   ./src/example COMMAND {OPTIONS}
@@ -54,8 +54,6 @@ The example client requires that you provide connection parameters of a location
         osr                               Request Observation Space
                                           Representation (OSR) data from the
                                           location server.
-        ssr                               Request State-space Representation
-                                          (SSR) data from the location server.
         agnss                             Request Assisted GNSS data from the
                                           location server.
       Location Server:
