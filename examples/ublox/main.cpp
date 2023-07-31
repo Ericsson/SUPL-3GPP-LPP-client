@@ -1,8 +1,8 @@
 #include <args.hpp>
 #include <interface/interface.hpp>
 #include <receiver/ublox/decoder.hpp>
-#include <receiver/ublox/parser.hpp>
 #include <receiver/ublox/message.hpp>
+#include <receiver/ublox/parser.hpp>
 
 args::Group arguments{"Arguments:"};
 
@@ -76,6 +76,7 @@ static void example() {
 
         auto interface = interface::Interface::serial(
             serial_device.Get(), baud_rate, interface::StopBits::One, interface::ParityBits::None);
+        interface->open();
         ublox_loop(*interface);
         delete interface;
     } else if (i2c_device) {
@@ -89,6 +90,7 @@ static void example() {
         printf("  address: %d (0x%02X)\n", address, address);
 
         auto interface = interface::Interface::i2c(i2c_device.Get(), address);
+        interface->open();
         ublox_loop(*interface);
         delete interface;
     } else {
