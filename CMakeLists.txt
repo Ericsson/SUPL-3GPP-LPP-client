@@ -9,6 +9,7 @@ project(example LANGUAGES C CXX)
 option(USE_OPENSSL "USE_OPENSSL" ON)
 option(USE_ASAN "USE_ASAN" OFF)
 option(ASN_DEBUG "ASN_DEBUG" OFF)
+option(INTERFACE_SERIAL_DEBUG "Output serial interface debug info" OFF)
 
 option (FORCE_COLORED_OUTPUT "Always produce ANSI-colored output (GNU/Clang only)." TRUE)
 if (FORCE_COLORED_OUTPUT)

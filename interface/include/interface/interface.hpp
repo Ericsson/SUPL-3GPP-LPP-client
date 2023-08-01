@@ -1,5 +1,6 @@
 #pragma once
 #include <interface/types.hpp>
+#include <string>
 
 namespace interface {
 
@@ -29,6 +30,9 @@ public:
 
     virtual size_t read(void* data, size_t length)        = 0;
     virtual size_t write(const void* data, size_t length) = 0;
+
+    IF_NODISCARD virtual bool can_read() const IF_NOEXCEPT = 0;
+    IF_NODISCARD virtual bool can_write() const IF_NOEXCEPT = 0;
 
     static Interface* file(std::string file_path, bool truncate);
     static Interface* serial(std::string device_path, uint32_t baud_rate, StopBits stop_bits,

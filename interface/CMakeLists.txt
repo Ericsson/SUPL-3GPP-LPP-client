@@ -13,3 +13,7 @@ if (USE_ASAN)
 target_compile_options(dependency_interface PRIVATE -fsanitize=address,undefined,leak)
 target_link_libraries(dependency_interface PRIVATE -fsanitize=address,undefined,leak)
 endif (USE_ASAN)
+
+if(${INTERFACE_SERIAL_DEBUG})
+    target_compile_definitions(dependency_interface PRIVATE INTERFACE_SERIAL_DEBUG=1)
+endif(${INTERFACE_SERIAL_DEBUG})

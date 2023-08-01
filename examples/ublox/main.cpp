@@ -3,8 +3,33 @@
 #include <receiver/ublox/decoder.hpp>
 #include <receiver/ublox/message.hpp>
 #include <receiver/ublox/parser.hpp>
+#include <receiver/ublox/receiver.hpp>
 
 args::Group arguments{"Arguments:"};
+
+//
+// Configuration
+//
+
+args::Group configuration_group{
+    "Configuration:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Flag disable_config{configuration_group,
+                          "disable",
+                          "Disable configuration",
+                          {"disable-config"},
+                          args::Options::Single};
+
+args::ValueFlagList<std::string> enable_message(configuration_group, "message", "Enable message",
+                                                {"enable-message"}, {}, args::Options::None);
+
+args::ValueFlagList<std::string> disable_message(configuration_group, "message", "Disable message",
+                                                 {"disable-message"}, {}, args::Options::None);
+
+//
 
 //
 // Receiver
@@ -16,8 +41,23 @@ args::Group receiver_group{
     args::Options::Global,
 };
 
+args::Flag port_uart1{receiver_group, "uart1", "UART1", {"port-uart1"}, args::Options::Single};
+args::Flag port_uart2{receiver_group, "uart2", "UART2", {"port-uart2"}, args::Options::Single};
+args::Flag port_i2c{receiver_group, "i2c", "I2C", {"port-i2c"}, args::Options::Single};
+args::Flag port_usb{receiver_group, "usb", "USB", {"port-usb"}, args::Options::Single};
+
+//
+// Interface
+//
+
+args::Group interface_group{
+    "Interface:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
 args::Group serial_group{
-    receiver_group,
+    interface_group,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
@@ -28,7 +68,7 @@ args::ValueFlag<int> serial_baud_rate{
     serial_group, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
 
 args::Group i2c_group{
-    receiver_group,
+    interface_group,
     "I2C:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
@@ -42,25 +82,14 @@ args::ValueFlag<uint8_t> i2c_address{
 //
 //
 
-static void ublox_loop(interface::Interface& interface) {
-    auto parser = receiver::ublox::Parser();
-
-    while (true) {
-        uint8_t buffer[1024];
-        auto    length = interface.read(buffer, sizeof(buffer));
-        if (length <= 0) {
-            throw std::runtime_error("Failed to read from interface");
-        }
-
-        if (!parser.append(buffer, length)) {
-            throw std::runtime_error("Failed to append to parser");
-        }
-
-        auto message = parser.try_parse();
+static void ublox_loop(receiver::ublox::UbloxReceiver& receiver) {
+    for(;;) { 
+        auto message = receiver.wait_for_message();
         if (message) {
             message->print();
         }
     }
+
 }
 
 static void example() {
@@ -70,31 +99,76 @@ static void example() {
             baud_rate = serial_baud_rate.Get();
         }
 
+        receiver::ublox::Port port;
+        if (port_uart1) {
+            port = receiver::ublox::Port::UART1;
+        } else if (port_uart2) {
+            port = receiver::ublox::Port::UART2;
+        } else if (port_i2c) {
+            port = receiver::ublox::Port::I2C;
+        } else if (port_usb) {
+            port = receiver::ublox::Port::USB;
+        } else {
+            throw args::RequiredError(
+                "--serial requires a port to be specified. E.g. --port-uart1");
+        }
+
         printf("[serial]\n");
         printf("  device:    %s\n", serial_device.Get().c_str());
         printf("  baud rate: %d\n", baud_rate);
+        switch (port) {
+        case receiver::ublox::Port::UART1: printf("  port:      UART1\n"); break;
+        case receiver::ublox::Port::UART2: printf("  port:      UART2\n"); break;
+        case receiver::ublox::Port::I2C: printf("  port:      I2C\n"); break;
+        case receiver::ublox::Port::USB: printf("  port:      USB\n"); break;
+        default: printf("  port:      Unknown\n"); break;
+        }
 
         auto interface = interface::Interface::serial(
             serial_device.Get(), baud_rate, interface::StopBits::One, interface::ParityBits::None);
         interface->open();
-        ublox_loop(*interface);
-        delete interface;
+
+        receiver::ublox::UbloxReceiver receiver(receiver::ublox::Port::UART1, *interface);
+        receiver.enable_message(receiver::ublox::MessageId::UbxNavPvt);
+        receiver.configure();
+
+        ublox_loop(receiver);
     } else if (i2c_device) {
         auto address = 66;
         if (i2c_address) {
             address = i2c_address.Get();
         }
 
+        auto port = receiver::ublox::Port::I2C;
+        if (port_uart1) {
+            port = receiver::ublox::Port::UART1;
+        } else if (port_uart2) {
+            port = receiver::ublox::Port::UART2;
+        } else if (port_usb) {
+            port = receiver::ublox::Port::USB;
+        }
+
         printf("[i2c]\n");
         printf("  device:  %s\n", i2c_device.Get().c_str());
         printf("  address: %d (0x%02X)\n", address, address);
+        switch (port) {
+        case receiver::ublox::Port::UART1: printf("  port:      UART1\n"); break;
+        case receiver::ublox::Port::UART2: printf("  port:      UART2\n"); break;
+        case receiver::ublox::Port::I2C: printf("  port:      I2C\n"); break;
+        case receiver::ublox::Port::USB: printf("  port:      USB\n"); break;
+        default: printf("  port:      Unknown\n"); break;
+        }
 
         auto interface = interface::Interface::i2c(i2c_device.Get(), address);
         interface->open();
-        ublox_loop(*interface);
-        delete interface;
+
+        receiver::ublox::UbloxReceiver receiver(receiver::ublox::Port::UART1, *interface);
+        receiver.enable_message(receiver::ublox::MessageId::UbxNavPvt);
+        receiver.configure();
+
+        ublox_loop(receiver);
     } else {
-        throw args::RequiredError("No receiver specified: --serial or --i2c");
+        throw args::RequiredError("No interface specified: --serial or --i2c");
     }
 }
 
@@ -107,7 +181,23 @@ int main(int argc, char** argv) {
     i2c_address.HelpDefault("66");
     serial_baud_rate.HelpDefault("115200");
 
+    enable_message.HelpChoices({
+        "ubx-nav-pvt",
+        "ubx-rxm-rawx",
+        "ubx-rxm-sfrbx",
+        "ubx-rxm-rtcm",
+    });
+
+    disable_message.HelpChoices({
+        "ubx-nav-pvt",
+        "ubx-rxm-rawx",
+        "ubx-rxm-sfrbx",
+        "ubx-rxm-rtcm",
+    });
+
+    args::GlobalOptions configruation_globals{parser, configuration_group};
     args::GlobalOptions receiver_globals{parser, receiver_group};
+    args::GlobalOptions interface_globals{parser, interface_group};
 
     try {
         parser.ParseCLI(argc, argv);

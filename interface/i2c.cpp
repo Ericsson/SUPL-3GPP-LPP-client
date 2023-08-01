@@ -65,6 +65,14 @@ size_t I2CInterface::write(const void* data, const size_t size) {
     return bytes_written;
 }
 
+bool I2CInterface::can_read() const IF_NOEXCEPT {
+    return false;
+}
+
+bool I2CInterface::can_write() const IF_NOEXCEPT {
+    return false;
+}
+
 //
 //
 //

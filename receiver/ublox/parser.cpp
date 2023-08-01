@@ -1,5 +1,7 @@
 #include "parser.hpp"
+#include <cstdio>
 #include "decoder.hpp"
+#include "ubx_mon_ver.hpp"
 #include "ubx_nav_pvt.hpp"
 
 namespace receiver {
@@ -27,15 +29,30 @@ bool Parser::append(uint8_t* data, uint16_t length) UBLOX_NOEXCEPT {
         return false;
     }
 
+    // copy data to buffer
+    for (uint16_t i = 0; i < length; i++) {
+        mBuffer[mBufferWrite] = data[i];
+        mBufferWrite          = (mBufferWrite + 1) % mBufferCapacity;
+        if (mBufferWrite == mBufferRead) {
+            // buffer overflow
+            mBufferRead = (mBufferRead + 1) % mBufferCapacity;
+        }
+    }
+
     return true;
 }
 
 Message* Parser::try_parse() UBLOX_NOEXCEPT {
     // search for frame boundary
-    while (!is_frame_boundary()) {
-        if (buffer_length() < 2) {
+    for (;;) {
+        if (buffer_length() < 8) {
             // not enough data to search for frame boundary
             return nullptr;
+        }
+
+        if (is_frame_boundary()) {
+            // found frame boundary
+            break;
         }
 
         // skip one byte and try again
@@ -49,11 +66,16 @@ Message* Parser::try_parse() UBLOX_NOEXCEPT {
     }
 
     // read header
-    auto message_class = peek(2);
-    auto message_id    = peek(3);
-    auto type          = message_class << 8 | message_id;
-    auto length        = peek(4) << 8 | peek(5);
+    uint8_t buffer[8192];
+    copy_to_buffer(buffer, 6);
 
+    Decoder header_decoder(buffer, 6);
+    header_decoder.skip(2);  // skip frame boundary
+    auto message_class = header_decoder.U1();
+    auto message_id    = header_decoder.U1();
+    auto length        = static_cast<uint32_t>(header_decoder.U2());
+
+    auto type = (static_cast<uint16_t>(message_class) << 8) | static_cast<uint16_t>(message_id);
     if (length > 8192) {
         // invalid length
         skip(2);
@@ -63,12 +85,13 @@ Message* Parser::try_parse() UBLOX_NOEXCEPT {
         return nullptr;
     }
 
-    uint8_t buffer[8192];
     copy_to_buffer(buffer, length + 8);
+    skip(length + 8);
 
     // check checksum
-    auto calculated_checksum = checksum(buffer, length + 8);
-    auto expected_checksum   = buffer[length + 6] << 8 | buffer[length + 7];
+    auto calculated_checksum = checksum_message(buffer, length + 8);
+    auto expected_checksum   = (static_cast<uint16_t>(buffer[length + 7]) << 8) |
+                             static_cast<uint16_t>(buffer[length + 6]);
     if (calculated_checksum != expected_checksum) {
         // checksum failed
         skip(length + 8);
@@ -76,10 +99,11 @@ Message* Parser::try_parse() UBLOX_NOEXCEPT {
     }
 
     // parse payload
-    Decoder decoder(buffer + 4, length - 4);
+    Decoder decoder(buffer + 6, length);
 
     switch (type) {
     case 0x0107: return UbxNavPvt::parse(decoder);
+    case 0x0A04: return UbxMonVer::parse(decoder);
     default: return new UnsupportedMessage(message_class, message_id);
     }
 }
@@ -131,18 +155,20 @@ void Parser::copy_to_buffer(uint8_t* data, uint32_t length) UBLOX_NOEXCEPT {
     for (uint32_t i = 0; i < length; i++) {
         data[i] = mBuffer[(mBufferRead + i) % mBufferCapacity];
     }
-
-    mBufferRead = (mBufferRead + length) % mBufferCapacity;
 }
 
-uint16_t Parser::checksum(uint8_t* payload, uint16_t length) const UBLOX_NOEXCEPT {
+uint16_t Parser::checksum_message(uint8_t* message_data, uint16_t message_length) {
+    return checksum(message_data + 2, message_length - 4);
+}
+
+uint16_t Parser::checksum(uint8_t* payload, uint16_t length) {
     uint8_t CK_A = 0, CK_B = 0;
-    for (uint16_t I = 0; I < length - 4; I++) {
-        CK_A = CK_A + payload[2 + I];
+    for (uint16_t I = 0; I < length; I++) {
+        CK_A = CK_A + payload[I];
         CK_B = CK_B + CK_A;
     }
 
-    return (CK_A << 8) | CK_B;
+    return (static_cast<uint16_t>(CK_B) << 8U) | static_cast<uint16_t>(CK_A);
 }
 
 }  // namespace ublox

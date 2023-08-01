@@ -63,6 +63,14 @@ size_t FileInterface::write(const void* data, const size_t size) {
     return bytes_written;
 }
 
+bool FileInterface::can_read() const IF_NOEXCEPT {
+    return false;
+}
+
+bool FileInterface::can_write() const IF_NOEXCEPT {
+    return false;
+}
+
 //
 //
 //

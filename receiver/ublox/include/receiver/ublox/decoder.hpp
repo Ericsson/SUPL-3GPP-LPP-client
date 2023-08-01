@@ -1,12 +1,13 @@
 #pragma once
 #include <receiver/ublox/types.hpp>
+#include <string>
 
 namespace receiver {
 namespace ublox {
 
 class Decoder {
 public:
-    UBLOX_EXPLICIT Decoder(uint8_t* payload, uint16_t payload_length);
+    UBLOX_EXPLICIT Decoder(uint8_t* payload, uint32_t payload_length) UBLOX_NOEXCEPT;
 
     uint8_t  X1() UBLOX_NOEXCEPT;
     uint16_t X2() UBLOX_NOEXCEPT;
@@ -30,16 +31,17 @@ public:
     float  R4() UBLOX_NOEXCEPT;
     double R8() UBLOX_NOEXCEPT;
 
-    bool L() UBLOX_NOEXCEPT;
+    bool        L() UBLOX_NOEXCEPT;
+    std::string CH(uint32_t length) UBLOX_NOEXCEPT;
 
-    void                 skip(uint16_t length) UBLOX_NOEXCEPT;
-    UBLOX_NODISCARD uint16_t  remaining() const UBLOX_NOEXCEPT;
-    UBLOX_NODISCARD bool error() const UBLOX_NOEXCEPT;
+    void                     skip(uint32_t length) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD uint32_t remaining() const UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD bool     error() const UBLOX_NOEXCEPT;
 
 private:
-    uint8_t*  mPayload;
-    uint16_t  mPayloadLength;
-    bool mError;
+    uint8_t* mPayload;
+    uint32_t mPayloadLength;
+    bool     mError;
 };
 
 }  // namespace ublox

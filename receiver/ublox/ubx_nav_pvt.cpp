@@ -1,11 +1,12 @@
 #include "ubx_nav_pvt.hpp"
-#include "decoder.hpp"
 #include <stdio.h>
+#include "decoder.hpp"
 
 namespace receiver {
 namespace ublox {
 
-UbxNavPvt::UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT : Message(0x01, 0x07), mPayload(payload) {}
+UbxNavPvt::UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT : Message(0x01, 0x07),
+                                                           mPayload(std::move(payload)) {}
 
 double UbxNavPvt::latitude() const UBLOX_NOEXCEPT {
     return static_cast<double>(mPayload.lat) * 1e-7;
@@ -20,25 +21,53 @@ double UbxNavPvt::altitude() const UBLOX_NOEXCEPT {
 }
 
 void UbxNavPvt::print() const UBLOX_NOEXCEPT {
-    printf("UBX-NAV-PVT: i_tow=%u, year=%u, month=%u, day=%u, hour=%u, min=%u, sec=%u, "
-           "valid_date=%u, valid_time=%u, fully_resolved=%u, valid_mag=%u, t_acc=%u, nano=%d, "
-           "fix_type=%u, gnss_fix_ok=%u, diff_soln=%u, psm_state=%u, head_veh_valid=%u, "
-           "carr_soln=%u, confirmed_avai=%u, confirmed_date=%u, confirmed_time=%u, num_sv=%u, "
-           "lon=%d, lat=%d, height=%d, h_msl=%d, h_acc=%u, v_acc=%u, vel_n=%d, vel_e=%d, vel_d=%d, "
-           "g_speed=%d, head_mot=%d, s_acc=%u, head_acc=%u, p_dop=%u, invalid_llh=%u, "
-           "last_correction_arg=%u, head_veh=%d, mag_dec=%d, mag_acc=%u\n",
-           mPayload.i_tow, mPayload.year, mPayload.month, mPayload.day, mPayload.hour, mPayload.min,
-           mPayload.sec, mPayload.valid.valid_date, mPayload.valid.valid_time,
-           mPayload.valid.fully_resolved, mPayload.valid.valid_mag, mPayload.t_acc, mPayload.nano,
-           mPayload.fix_type, mPayload.flags.gnss_fix_ok, mPayload.flags.diff_soln,
-           mPayload.flags.psm_state, mPayload.flags.head_veh_valid, mPayload.flags.carr_soln,
-           mPayload.flags2.confirmed_avai, mPayload.flags2.confirmed_date,
-           mPayload.flags2.confirmed_time, mPayload.num_sv, mPayload.lon, mPayload.lat,
-           mPayload.height, mPayload.h_msl, mPayload.h_acc, mPayload.v_acc, mPayload.vel_n,
-           mPayload.vel_e, mPayload.vel_d, mPayload.g_speed, mPayload.head_mot, mPayload.s_acc,
-           mPayload.head_acc, mPayload.p_dop, mPayload.flags3.invalid_llh,
-           mPayload.flags3.last_correction_arg, mPayload.head_veh, mPayload.mag_dec,
-           mPayload.mag_acc);
+    printf("[%02X %02X] UBX-NAV-PVT:\n", message_class(), message_id());
+    printf("[.....]    i_tow: %u\n", mPayload.i_tow);
+    printf("[.....]    year: %u\n", mPayload.year);
+    printf("[.....]    month: %u\n", mPayload.month);
+    printf("[.....]    day: %u\n", mPayload.day);
+    printf("[.....]    hour: %u\n", mPayload.hour);
+    printf("[.....]    min: %u\n", mPayload.min);
+    printf("[.....]    sec: %u\n", mPayload.sec);
+    printf("[.....]    valid:\n");
+    printf("[.....]        valid_date: %u\n", mPayload.valid.valid_date);
+    printf("[.....]        valid_time: %u\n", mPayload.valid.valid_time);
+    printf("[.....]        fully_resolved: %u\n", mPayload.valid.fully_resolved);
+    printf("[.....]        valid_mag: %u\n", mPayload.valid.valid_mag);
+    printf("[.....]    t_acc: %u\n", mPayload.t_acc);
+    printf("[.....]    nano: %d\n", mPayload.nano);
+    printf("[.....]    fix_type: %u\n", mPayload.fix_type);
+    printf("[.....]    flags:\n");
+    printf("[.....]        gnss_fix_ok: %u\n", mPayload.flags.gnss_fix_ok);
+    printf("[.....]        diff_soln: %u\n", mPayload.flags.diff_soln);
+    printf("[.....]        psm_state: %u\n", mPayload.flags.psm_state);
+    printf("[.....]        head_veh_valid: %u\n", mPayload.flags.head_veh_valid);
+    printf("[.....]        carr_soln: %u\n", mPayload.flags.carr_soln);
+    printf("[.....]    flags2:\n");
+    printf("[.....]        confirmed_avai: %u\n", mPayload.flags2.confirmed_avai);
+    printf("[.....]        confirmed_date: %u\n", mPayload.flags2.confirmed_date);
+    printf("[.....]        confirmed_time: %u\n", mPayload.flags2.confirmed_time);
+    printf("[.....]    num_sv: %u\n", mPayload.num_sv);
+    printf("[.....]    lon: %f deg\n", longitude());
+    printf("[.....]    lat: %f deg\n", latitude());
+    printf("[.....]    height: %f m\n", altitude());
+    printf("[.....]    h_msl: %d\n", mPayload.h_msl);
+    printf("[.....]    h_acc: %u\n", mPayload.h_acc);
+    printf("[.....]    v_acc: %u\n", mPayload.v_acc);
+    printf("[.....]    vel_n: %d\n", mPayload.vel_n);
+    printf("[.....]    vel_e: %d\n", mPayload.vel_e);
+    printf("[.....]    vel_d: %d\n", mPayload.vel_d);
+    printf("[.....]    g_speed: %d\n", mPayload.g_speed);
+    printf("[.....]    head_mot: %d\n", mPayload.head_mot);
+    printf("[.....]    s_acc: %u\n", mPayload.s_acc);
+    printf("[.....]    head_acc: %u\n", mPayload.head_acc);
+    printf("[.....]    p_dop: %u\n", mPayload.p_dop);
+    printf("[.....]    flags3:\n");
+    printf("[.....]        invalid_llh: %u\n", mPayload.flags3.invalid_llh);
+    printf("[.....]        last_correction_arg: %u\n", mPayload.flags3.last_correction_arg);
+    printf("[.....]    head_veh: %d\n", mPayload.head_veh);
+    printf("[.....]    mag_dec: %d\n", mPayload.mag_dec);
+    printf("[.....]    mag_acc: %u\n", mPayload.mag_acc);
 }
 
 UbxNavPvt* UbxNavPvt::parse(Decoder& decoder) UBLOX_NOEXCEPT {
@@ -99,13 +128,13 @@ UbxNavPvt* UbxNavPvt::parse(Decoder& decoder) UBLOX_NOEXCEPT {
 
     decoder.skip(4);
     payload.head_veh = decoder.I4();
-    payload.mag_dec  = decoder.I2();
-    payload.mag_acc  = decoder.U2();
+    payload.mag_dec = decoder.I2();
+    payload.mag_acc = decoder.U2();
 
     if (decoder.error()) {
         return nullptr;
     } else {
-        return new UbxNavPvt(payload);
+        return new UbxNavPvt(std::move(payload));
     }
 }
 

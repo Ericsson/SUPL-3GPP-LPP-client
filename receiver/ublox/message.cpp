@@ -15,7 +15,7 @@ UnsupportedMessage::UnsupportedMessage(uint8_t message_class, uint8_t message_id
     : Message(message_class, message_id) {}
 
 void UnsupportedMessage::print() const UBLOX_NOEXCEPT {
-    printf("Unsupported message: 0x%02X 0x%02X\n", message_class(), message_id());
+    printf("[%02X %02X] UBX-%s-%s\n", message_class(), message_id(), "???", "???");
 }
 
 }  // namespace ublox
