@@ -7,6 +7,10 @@ add_library(receiver_ublox STATIC
     "receiver.cpp"
     "ubx_nav_pvt.cpp"
     "ubx_mon_ver.cpp"
+    "ubx_cfg.cpp"
+    "ubx_cfg_valget.cpp"
+    "ubx_ack_ack.cpp"
+    "ubx_ack_nak.cpp"
 )
 add_library(receiver::ublox ALIAS receiver_ublox)
 

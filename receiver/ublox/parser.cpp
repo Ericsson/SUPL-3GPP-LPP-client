@@ -1,6 +1,9 @@
 #include "parser.hpp"
 #include <cstdio>
 #include "decoder.hpp"
+#include "ubx_ack_ack.hpp"
+#include "ubx_ack_nak.hpp"
+#include "ubx_cfg_valget.hpp"
 #include "ubx_mon_ver.hpp"
 #include "ubx_nav_pvt.hpp"
 
@@ -42,7 +45,12 @@ bool Parser::append(uint8_t* data, uint16_t length) UBLOX_NOEXCEPT {
     return true;
 }
 
-Message* Parser::try_parse() UBLOX_NOEXCEPT {
+void Parser::clear() UBLOX_NOEXCEPT {
+    mBufferRead  = 0;
+    mBufferWrite = 0;
+}
+
+std::unique_ptr<Message> Parser::try_parse() UBLOX_NOEXCEPT {
     // search for frame boundary
     for (;;) {
         if (buffer_length() < 8) {
@@ -104,7 +112,10 @@ Message* Parser::try_parse() UBLOX_NOEXCEPT {
     switch (type) {
     case 0x0107: return UbxNavPvt::parse(decoder);
     case 0x0A04: return UbxMonVer::parse(decoder);
-    default: return new UnsupportedMessage(message_class, message_id);
+    case 0x068B: return UbxCfgValget::parse(decoder);
+    case 0x0501: return UbxAckAck::parse(decoder);
+    case 0x0500: return UbxAckNak::parse(decoder);
+    default: return std::unique_ptr<Message>{new UnsupportedMessage(message_class, message_id)};
     }
 }
 

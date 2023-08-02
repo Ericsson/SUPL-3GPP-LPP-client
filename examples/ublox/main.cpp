@@ -4,6 +4,10 @@
 #include <receiver/ublox/message.hpp>
 #include <receiver/ublox/parser.hpp>
 #include <receiver/ublox/receiver.hpp>
+#include <receiver/ublox/ubx_mon_ver.hpp>
+#include <receiver/ublox/ubx_nav_pvt.hpp>
+#include <receiver/ublox/ubx_cfg_valget.hpp>
+#include <unistd.h>
 
 args::Group arguments{"Arguments:"};
 
@@ -83,13 +87,20 @@ args::ValueFlag<uint8_t> i2c_address{
 //
 
 static void ublox_loop(receiver::ublox::UbloxReceiver& receiver) {
-    for(;;) { 
-        auto message = receiver.wait_for_message();
-        if (message) {
-            message->print();
-        }
+    printf("[ublox]\n");
+    printf("  software version: %s\n", receiver.software_version().c_str());
+    printf("  hardware version: %s\n", receiver.hardware_version().c_str());
+    printf("  extensions:\n");
+    for(auto& extension : receiver.extensions()) {
+        printf("    %s\n", extension.c_str());
     }
+    printf("  spartn support: %s\n", receiver.spartn_support() ? "yes" : "no");
 
+    for (;;) {
+        auto message = receiver.wait_for_message();
+
+        usleep(10 * 1000);
+    }
 }
 
 static void example() {

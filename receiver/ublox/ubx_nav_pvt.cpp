@@ -5,7 +5,7 @@
 namespace receiver {
 namespace ublox {
 
-UbxNavPvt::UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT : Message(0x01, 0x07),
+UbxNavPvt::UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT : Message(CLASS_ID, MESSAGE_ID),
                                                            mPayload(std::move(payload)) {}
 
 double UbxNavPvt::latitude() const UBLOX_NOEXCEPT {
@@ -70,7 +70,7 @@ void UbxNavPvt::print() const UBLOX_NOEXCEPT {
     printf("[.....]    mag_acc: %u\n", mPayload.mag_acc);
 }
 
-UbxNavPvt* UbxNavPvt::parse(Decoder& decoder) UBLOX_NOEXCEPT {
+std::unique_ptr<Message> UbxNavPvt::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     if (decoder.remaining() < 92) {
         return nullptr;
     }
@@ -128,13 +128,13 @@ UbxNavPvt* UbxNavPvt::parse(Decoder& decoder) UBLOX_NOEXCEPT {
 
     decoder.skip(4);
     payload.head_veh = decoder.I4();
-    payload.mag_dec = decoder.I2();
-    payload.mag_acc = decoder.U2();
+    payload.mag_dec  = decoder.I2();
+    payload.mag_acc  = decoder.U2();
 
     if (decoder.error()) {
         return nullptr;
     } else {
-        return new UbxNavPvt(std::move(payload));
+        return std::unique_ptr<Message>{new UbxNavPvt(std::move(payload))};
     }
 }
 

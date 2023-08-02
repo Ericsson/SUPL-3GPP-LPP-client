@@ -2,6 +2,7 @@
 #include <receiver/ublox/message.hpp>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace receiver {
 namespace ublox {
@@ -18,6 +19,9 @@ class Decoder;
 class Encoder;
 class UbxMonVer : public Message {
 public:
+    UBLOX_CONSTEXPR static uint8_t CLASS_ID   = 0x0A;
+    UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x04;
+
     UBLOX_EXPLICIT UbxMonVer(raw::MonVer payload) UBLOX_NOEXCEPT;
     ~UbxMonVer() override = default;
 
@@ -35,8 +39,8 @@ public:
 
     void print() const UBLOX_NOEXCEPT override;
 
-    UBLOX_NODISCARD static UbxMonVer* parse(Decoder& decoder) UBLOX_NOEXCEPT;
-    UBLOX_NODISCARD static uint32_t poll(Encoder& encoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static uint32_t   poll(Encoder& encoder) UBLOX_NOEXCEPT;
 
 private:
     raw::MonVer mPayload;

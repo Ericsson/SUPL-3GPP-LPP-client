@@ -7,9 +7,6 @@
 namespace receiver {
 namespace ublox {
 
-UBLOX_CONSTEXPR static uint8_t CLASS_ID   = 0x0A;
-UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x04;
-
 UbxMonVer::UbxMonVer(raw::MonVer payload) UBLOX_NOEXCEPT : Message(CLASS_ID, MESSAGE_ID),
                                                            mPayload(std::move(payload)) {}
 
@@ -23,7 +20,7 @@ void UbxMonVer::print() const UBLOX_NOEXCEPT {
     }
 }
 
-UbxMonVer* UbxMonVer::parse(Decoder& decoder) UBLOX_NOEXCEPT {
+std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     if (decoder.remaining() < 40) {
         return nullptr;
     }
@@ -41,7 +38,7 @@ UbxMonVer* UbxMonVer::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     if (decoder.error()) {
         return nullptr;
     } else {
-        return new UbxMonVer(std::move(payload));
+        return std::unique_ptr<Message>{new UbxMonVer(std::move(payload))};
     }
 }
 

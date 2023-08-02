@@ -1,5 +1,10 @@
 #pragma once
+#include <memory>
 #include <receiver/ublox/types.hpp>
+#include <receiver/ublox/ubx_cfg.hpp>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace interface {
 class Interface;
@@ -13,7 +18,6 @@ enum class Port : uint8_t {
     UART2,
     I2C,
     USB,
-    Reserved,
 };
 
 enum class MessageId : uint16_t {
@@ -24,8 +28,10 @@ class Message;
 class Parser;
 class UbloxReceiver {
 public:
-    explicit UbloxReceiver(Port port, interface::Interface& interface);
-    ~UbloxReceiver();
+    /// @brief Construct a receiver. This will block until the receiver configuration has been
+    /// acquired.
+    UBLOX_EXPLICIT UbloxReceiver(Port port, interface::Interface& interface) UBLOX_NOEXCEPT;
+    ~UbloxReceiver() UBLOX_NOEXCEPT;
 
     /// @brief Enable message to be sent by the receiver periodically. This will only take effect
     /// after the next call to configure().
@@ -46,16 +52,54 @@ public:
 
     /// @brief  Block until a message is available.
     /// @return A pointer to the message, or nullptr if the interface is closed.
-    UBLOX_NODISCARD Message* wait_for_message();
+    UBLOX_NODISCARD std::unique_ptr<Message> wait_for_message();
 
     /// @brief  Try to parse a message in the parse buffer. This will not block.
     /// @return A pointer to the message, or nullptr if no message is available.
-    UBLOX_NODISCARD Message* try_parse();
+    UBLOX_NODISCARD std::unique_ptr<Message> try_parse();
+
+    /// @brief Get the software version of the receiver.
+    /// @return The software version.
+    UBLOX_NODISCARD const std::string& software_version() const UBLOX_NOEXCEPT {
+        return mSoftwareVersion;
+    }
+
+    /// @brief Get the hardware version of the receiver.
+    /// @return The hardware version.
+    UBLOX_NODISCARD const std::string& hardware_version() const UBLOX_NOEXCEPT {
+        return mHardwareVersion;
+    }
+
+    /// @brief Get the extensions of the receiver.
+    /// @return The extensions.
+    UBLOX_NODISCARD const std::vector<std::string>& extensions() const UBLOX_NOEXCEPT {
+        return mExtensions;
+    }
+
+    /// @brief The receiver supports the SPARTN protocol.
+    /// @return True if the receiver supports the SPARTN protocol.
+    UBLOX_NODISCARD bool spartn_support() const UBLOX_NOEXCEPT { return mSpartnSupport; }
+
+protected:
+    void poll_mon_ver();
+    bool poll_cfg_valget(CfgKey key, CfgValue& value);
+
+    void load_receiver_configuration();
+    void store_receiver_configuration();
+
+    template <typename T>
+    std::unique_ptr<T> wait_for_specific_message(bool expect_ack, bool expect_nak);
 
 private:
-    Port                  mPort;
-    interface::Interface& mInterface;
-    Parser*               mParser;
+    Port                                 mPort;
+    interface::Interface&                mInterface;
+    Parser*                              mParser;
+    bool                                 mSpartnSupport;
+    std::unordered_map<CfgKey, CfgValue> mConfig;
+
+    std::string              mSoftwareVersion;
+    std::string              mHardwareVersion;
+    std::vector<std::string> mExtensions;
 };
 
 }  // namespace ublox

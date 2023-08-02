@@ -1,4 +1,7 @@
 #pragma once
+#include <cstdint>
+#include <cstddef>
+#include <cassert>
 
 #ifndef UBLOX_EXPLICIT
 #define UBLOX_EXPLICIT explicit
@@ -34,5 +37,18 @@
 #endif
 #endif
 
-#include <cstdint>
-#include <cstddef>
+#ifndef UBLOX_UNREACHABLE
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_unreachable)
+#define UBLOX_UNREACHABLE() __builtin_unreachable()
+#endif
+#endif
+#ifndef UBLOX_UNREACHABLE
+#define UBLOX_UNREACHABLE() ublox_unreachable()
+
+__attribute__((noreturn)) inline void ublox_unreachable() {
+    assert(false);
+}
+#endif
+#endif
+

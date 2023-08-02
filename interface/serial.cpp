@@ -15,9 +15,7 @@ SerialInterface::SerialInterface(std::string device_path, uint32_t baud_rate, St
       mParityBits(parity_bits),
       mFileDescriptor(-1) {}
 
-SerialInterface::~SerialInterface() IF_NOEXCEPT {
-    close();
-}
+SerialInterface::~SerialInterface() IF_NOEXCEPT = default;
 
 static speed_t buad_rate_constant_from(uint32_t buad_rate) {
     switch (buad_rate) {
@@ -56,21 +54,21 @@ static speed_t buad_rate_constant_from(uint32_t buad_rate) {
 }
 
 void SerialInterface::open() {
-    if (mFileDescriptor >= 0) {
+    if (mFileDescriptor.is_open()) {
         return;
     }
 
-    mFileDescriptor = ::open(mDevicePath.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
-    if (mFileDescriptor < 0) {
+    auto fd = ::open(mDevicePath.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+    if (fd < 0) {
         throw std::runtime_error("Could not open serial device");
     }
 
     // set file status flags
-    fcntl(mFileDescriptor, F_SETFL, 0);
+    fcntl(fd, F_SETFL, 0);
 
     struct termios tty;
     memset(&tty, 0, sizeof tty);
-    if (tcgetattr(mFileDescriptor, &tty) != 0) {
+    if (tcgetattr(fd, &tty) != 0) {
         throw std::runtime_error("Could not get serial device attributes");
     }
 
@@ -106,83 +104,39 @@ void SerialInterface::open() {
         throw std::runtime_error("Failed to set serial input baud rate");
     }
 
-    if (tcsetattr(mFileDescriptor, TCSANOW, &tty) != 0) {
+    if (tcsetattr(fd, TCSANOW, &tty) != 0) {
         throw std::runtime_error("Could not set serial device attributes");
     }
+
+    mFileDescriptor = FileDescriptor(fd);
 }
 
 void SerialInterface::close() {
-    if (mFileDescriptor >= 0) {
-        ::close(mFileDescriptor);
-        mFileDescriptor = -1;
-    }
+    mFileDescriptor.close();
 }
 
 size_t SerialInterface::read(void* data, size_t size) {
-    if (mFileDescriptor < 0) {
-        throw std::runtime_error("Serial device not open");
-    }
-
-    auto bytes_read = ::read(mFileDescriptor, data, size);
-    if (bytes_read < 0) {
-        throw std::runtime_error("Failed to read from serial device");
-    }
-
-    return bytes_read;
+    return mFileDescriptor.read(data, size);
 }
 
 size_t SerialInterface::write(const void* data, size_t size) {
-    if (mFileDescriptor < 0) {
-        throw std::runtime_error("Serial device not open");
-    }
-
-#ifdef INTERFACE_SERIAL_DEBUG
-    printf("[serial] write: %zu bytes\n", size);
-    size_t i = 0;
-    while (i < size) {
-        printf("%02x ", ((uint8_t*)data)[i]);
-        i++;
-        if (i % 16 == 0) {
-            printf("\n");
-        }
-    }
-    if (i % 16 != 0) {
-        printf("\n");
-    }
-#endif
-
-    auto bytes_written = ::write(mFileDescriptor, data, size);
-    if (bytes_written < 0) {
-        throw std::runtime_error("Failed to write to serial device");
-    }
-
-    return bytes_written;
+    return mFileDescriptor.write(data, size);
 }
 
-bool SerialInterface::can_read() const IF_NOEXCEPT {
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(mFileDescriptor, &fds);
-
-    struct timeval tv;
-    tv.tv_sec  = 0;
-    tv.tv_usec = 0;
-
-    auto result = select(mFileDescriptor + 1, &fds, nullptr, nullptr, &tv);
-    return result > 0;
+bool SerialInterface::can_read() IF_NOEXCEPT {
+    return mFileDescriptor.can_read();
 }
 
-bool SerialInterface::can_write() const IF_NOEXCEPT {
-    fd_set fds;
-    FD_ZERO(&fds);
-    FD_SET(mFileDescriptor, &fds);
+bool SerialInterface::can_write() IF_NOEXCEPT {
+    return mFileDescriptor.can_write();
+}
 
-    struct timeval tv;
-    tv.tv_sec  = 0;
-    tv.tv_usec = 0;
+void SerialInterface::wait_for_read() IF_NOEXCEPT {
+    mFileDescriptor.wait_for_read();
+}
 
-    auto result = select(mFileDescriptor + 1, nullptr, &fds, nullptr, &tv);
-    return result > 0;
+void SerialInterface::wait_for_write() IF_NOEXCEPT {
+    mFileDescriptor.wait_for_write();
 }
 
 //

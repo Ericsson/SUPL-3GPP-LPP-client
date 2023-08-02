@@ -15,8 +15,11 @@ public:
     size_t read(void* data, size_t length) override;
     size_t write(const void* data, size_t length) override;
 
-    IF_NODISCARD bool can_read() const IF_NOEXCEPT override;
-    IF_NODISCARD bool can_write() const IF_NOEXCEPT override;
+    IF_NODISCARD bool can_read() IF_NOEXCEPT override;
+    IF_NODISCARD bool can_write() IF_NOEXCEPT override;
+    
+    void wait_for_read() IF_NOEXCEPT override;
+    void wait_for_write() IF_NOEXCEPT override;
 
 private:
     std::string mFilePath;
