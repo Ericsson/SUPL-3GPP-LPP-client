@@ -69,6 +69,10 @@ bool FileDescriptor::wait_for_write() IF_NOEXCEPT {
 }
 
 bool FileDescriptor::select(bool read, bool write, bool except, timeval* tv) IF_NOEXCEPT {
+    if(mFileDescriptor < 0) {
+        return false;
+    }
+    
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(mFileDescriptor, &fds);

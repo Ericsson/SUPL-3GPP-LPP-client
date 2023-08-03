@@ -75,6 +75,10 @@ void FileInterface::wait_for_read() IF_NOEXCEPT {}
 
 void FileInterface::wait_for_write() IF_NOEXCEPT {}
 
+bool FileInterface::is_open() IF_NOEXCEPT {
+    return false;
+}
+
 //
 //
 //

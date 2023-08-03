@@ -8,11 +8,11 @@
 namespace interface {
 
 SerialInterface::SerialInterface(std::string device_path, uint32_t baud_rate, StopBits stop_bits,
-                                 ParityBits parity_bits) IF_NOEXCEPT
+                                 ParityBit parity_bit) IF_NOEXCEPT
     : mDevicePath(std::move(device_path)),
       mBaudRate(baud_rate),
       mStopBits(stop_bits),
-      mParityBits(parity_bits),
+      mParityBit(parity_bit),
       mFileDescriptor(-1) {}
 
 SerialInterface::~SerialInterface() IF_NOEXCEPT = default;
@@ -79,16 +79,16 @@ void SerialInterface::open() {
                                       // enable receiver
     tty.c_cflag &= ~CRTSCTS;          // enable RTS/CTS (hardware) flow control.
 
-    if (mStopBits == StopBits::Two) {
+    if (mStopBits == StopBits::TWO) {
         tty.c_cflag |= CSTOPB;
     } else {
         tty.c_cflag &= ~CSTOPB;
     }
 
-    if (mParityBits == ParityBits::Odd) {
+    if (mParityBit == ParityBit::ODD) {
         tty.c_cflag |= PARENB;
         tty.c_cflag |= PARODD;
-    } else if (mParityBits == ParityBits::Even) {
+    } else if (mParityBit == ParityBit::EVEN) {
         tty.c_cflag |= PARENB;
         tty.c_cflag &= ~PARODD;
     } else {
@@ -139,13 +139,17 @@ void SerialInterface::wait_for_write() IF_NOEXCEPT {
     mFileDescriptor.wait_for_write();
 }
 
+bool SerialInterface::is_open() IF_NOEXCEPT {
+    return mFileDescriptor.is_open();
+}
+
 //
 //
 //
 
 Interface* Interface::serial(std::string device_path, uint32_t baud_rate, StopBits stop_bits,
-                             ParityBits parity_bits) {
-    return new SerialInterface(std::move(device_path), baud_rate, stop_bits, parity_bits);
+                             ParityBit parity_bit) {
+    return new SerialInterface(std::move(device_path), baud_rate, stop_bits, parity_bit);
 }
 
 }  // namespace interface

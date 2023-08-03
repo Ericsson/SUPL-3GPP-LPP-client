@@ -11,7 +11,7 @@ public:
     UBLOX_EXPLICIT Parser() UBLOX_NOEXCEPT;
     ~Parser() UBLOX_NOEXCEPT;
 
-    UBLOX_NODISCARD bool append(uint8_t* data, uint16_t length) UBLOX_NOEXCEPT;
+    bool append(uint8_t* data, uint16_t length) UBLOX_NOEXCEPT;
     void clear() UBLOX_NOEXCEPT;
 
     UBLOX_NODISCARD std::unique_ptr<Message> try_parse() UBLOX_NOEXCEPT;

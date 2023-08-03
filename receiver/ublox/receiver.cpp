@@ -14,28 +14,6 @@
 namespace receiver {
 namespace ublox {
 
-UbloxReceiver::UbloxReceiver(Port port, interface::Interface& interface) UBLOX_NOEXCEPT
-    : mPort(port),
-      mInterface(interface),
-      mSpartnSupport(false) {
-    mParser          = new Parser();
-    mSoftwareVersion = "unknown";
-    mHardwareVersion = "unknown";
-
-    // Clear residual data from the interface
-    process();
-    mParser->clear();
-
-    // Load receiver configuration
-    load_receiver_configuration();
-}
-
-UbloxReceiver::~UbloxReceiver() UBLOX_NOEXCEPT {
-    if (mParser != nullptr) {
-        delete mParser;
-    }
-}
-
 static CfgKey cfg_key_from_message_id(Port port, MessageId message_id) {
     switch (message_id) {
     case MessageId::UbxNavPvt: {
@@ -51,15 +29,200 @@ static CfgKey cfg_key_from_message_id(Port port, MessageId message_id) {
 
     UBLOX_UNREACHABLE();
 }
+static const char* configuration_name_from_key(CfgKey key) {
+    switch (key) {
+    case CFG_KEY_UART1_ENABLED: return "UART1-ENABLED";
+    case CFG_KEY_UART1_BAUDRATE: return "UART1-BAUDRATE";
+    case CFG_KEY_UART1_STOPBITS: return "UART1-STOPBITS";
+    case CFG_KEY_UART1_DATABITS: return "UART1-DATABITS";
+    case CFG_KEY_UART1_PARITY: return "UART1-PARITY";
+    case CFG_KEY_UART1INPROT_UBX: return "UART1INPROT-UBX";
+    case CFG_KEY_UART1INPROT_NMEA: return "UART1INPROT-NMEA";
+    case CFG_KEY_UART1INPROT_RTCM3X: return "UART1INPROT-RTCM3X";
+    case CFG_KEY_UART1INPROT_SPARTN: return "UART1INPROT-SPARTN";
+    case CFG_KEY_UART1OUTPROT_UBX: return "UART1OUTPROT-UBX";
+    case CFG_KEY_UART1OUTPROT_NMEA: return "UART1OUTPROT-NMEA";
+    case CFG_KEY_UART1OUTPROT_RTCM3X: return "UART1OUTPROT-RTCM3X";
+    case CFG_KEY_UART2_ENABLED: return "UART2-ENABLED";
+    case CFG_KEY_UART2_BAUDRATE: return "UART2-BAUDRATE";
+    case CFG_KEY_UART2_STOPBITS: return "UART2-STOPBITS";
+    case CFG_KEY_UART2_DATABITS: return "UART2-DATABITS";
+    case CFG_KEY_UART2_PARITY: return "UART2-PARITY";
+    case CFG_KEY_UART2INPROT_UBX: return "UART2INPROT-UBX";
+    case CFG_KEY_UART2INPROT_NMEA: return "UART2INPROT-NMEA";
+    case CFG_KEY_UART2INPROT_RTCM3X: return "UART2INPROT-RTCM3X";
+    case CFG_KEY_UART2INPROT_SPARTN: return "UART2INPROT-SPARTN";
+    case CFG_KEY_UART2OUTPROT_UBX: return "UART2OUTPROT-UBX";
+    case CFG_KEY_UART2OUTPROT_NMEA: return "UART2OUTPROT-NMEA";
+    case CFG_KEY_UART2OUTPROT_RTCM3X: return "UART2OUTPROT-RTCM3X";
+    case CFG_KEY_I2C_ENABLED: return "I2C-ENABLED";
+    case CFG_KEY_I2C_ADDRESS: return "I2C-ADDRESS";
+    case CFG_KEY_I2CINPROT_UBX: return "I2CINPROT-UBX";
+    case CFG_KEY_I2CINPROT_NMEA: return "I2CINPROT-NMEA";
+    case CFG_KEY_I2CINPROT_RTCM3X: return "I2CINPROT-RTCM3X";
+    case CFG_KEY_I2CINPROT_SPARTN: return "I2CINPROT-SPARTN";
+    case CFG_KEY_I2COUTPROT_UBX: return "I2COUTPROT-UBX";
+    case CFG_KEY_I2COUTPROT_NMEA: return "I2COUTPROT-NMEA";
+    case CFG_KEY_I2COUTPROT_RTCM3X: return "I2COUTPROT-RTCM3X";
+    case CFG_KEY_USB_ENABLED: return "USB-ENABLED";
+    case CFG_KEY_USBINPROT_UBX: return "USBINPROT-UBX";
+    case CFG_KEY_USBINPROT_NMEA: return "USBINPROT-NMEA";
+    case CFG_KEY_USBINPROT_RTCM3X: return "USBINPROT-RTCM3X";
+    case CFG_KEY_USBINPROT_SPARTN: return "USBINPROT-SPARTN";
+    case CFG_KEY_USBOUTPROT_UBX: return "USBOUTPROT-UBX";
+    case CFG_KEY_USBOUTPROT_NMEA: return "USBOUTPROT-NMEA";
+    case CFG_KEY_USBOUTPROT_RTCM3X: return "USBOUTPROT-RTCM3X";
+    case CFG_KEY_RATE_MEAS: return "RATE-MEAS";
+    case CFG_KEY_NAVHPG_DGNSSMODE: return "NAVHPG-DGNSSMODE";
+    case CFG_KEY_MSGOUT_UBX_NAV_PVT_UART1: return "MSGOUT-UBX-NAV-PVT-UART1";
+    case CFG_KEY_MSGOUT_UBX_NAV_PVT_UART2: return "MSGOUT-UBX-NAV-PVT-UART2";
+    case CFG_KEY_MSGOUT_UBX_NAV_PVT_I2C: return "MSGOUT-UBX-NAV-PVT-I2C";
+    case CFG_KEY_MSGOUT_UBX_NAV_PVT_USB: return "MSGOUT-UBX-NAV-PVT-USB";
+    case CFG_KEY_INFMSG_UBX_UART1: return "INFMSG-UBX-UART1";
+    case CFG_KEY_INFMSG_UBX_UART2: return "INFMSG-UBX-UART2";
+    case CFG_KEY_INFMSG_UBX_I2C: return "INFMSG-UBX-I2C";
+    case CFG_KEY_INFMSG_UBX_USB: return "INFMSG-UBX-USB";
+    default: return "<unknown>";
+    }
+}
+
+static void print_configuration(const std::unordered_map<CfgKey, CfgValue>& configuration,
+                                Port                                        port) {
+#if 1
+#define PRINT_CFG_VALUE(KEY)                                                                       \
+    do {                                                                                           \
+        printf("    %08X %-26s: ", (KEY), configuration_name_from_key(KEY));                       \
+        auto it = configuration.find(KEY);                                                         \
+        if (it != configuration.end()) {                                                           \
+            auto value = it->second;                                                               \
+            switch (value.type()) {                                                                \
+            case CfgValue::U1:                                                                     \
+                printf("%02X unsigned=%u signed=%i\n", value.u1(),                                 \
+                       static_cast<uint32_t>(value.u1()), static_cast<int32_t>(value.u1()));       \
+                break;                                                                             \
+            case CfgValue::U2:                                                                     \
+                printf("%04X unsigned=%u signed=%i\n", value.u2(),                                 \
+                       static_cast<uint32_t>(value.u2()), static_cast<int32_t>(value.u2()));       \
+                break;                                                                             \
+            case CfgValue::U4:                                                                     \
+                printf("%08X unsigned=%u signed=%i\n", value.u4(),                                 \
+                       static_cast<uint32_t>(value.u4()), static_cast<int32_t>(value.u4()));       \
+                break;                                                                             \
+            case CfgValue::U8:                                                                     \
+                printf("%016" PRIx64 " unsigned=%" PRIu64 " signed=%" PRId64 "\n", value.u8(),     \
+                       static_cast<uint64_t>(value.u8()), static_cast<int64_t>(value.u8()));       \
+                break;                                                                             \
+            case CfgValue::L: printf("%s\n", value.l() ? "true" : "false"); break;                 \
+            default: printf("<unknown>\n"); break;                                                 \
+            }                                                                                      \
+        } else {                                                                                   \
+            printf("<not available>\n");                                                           \
+        }                                                                                          \
+    } while (false)
+
+    printf("Configuration:\n");
+    switch (port) {
+    case Port::UART1:
+        PRINT_CFG_VALUE(CFG_KEY_UART1_ENABLED);
+        PRINT_CFG_VALUE(CFG_KEY_UART1_BAUDRATE);
+        PRINT_CFG_VALUE(CFG_KEY_UART1_STOPBITS);
+        PRINT_CFG_VALUE(CFG_KEY_UART1_DATABITS);
+        PRINT_CFG_VALUE(CFG_KEY_UART1_PARITY);
+        PRINT_CFG_VALUE(CFG_KEY_UART1INPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_UART1INPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_UART1INPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_UART1INPROT_SPARTN);
+        PRINT_CFG_VALUE(CFG_KEY_UART1OUTPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_UART1OUTPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_UART1OUTPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_INFMSG_UBX_UART1);
+        break;
+    case Port::UART2:
+        PRINT_CFG_VALUE(CFG_KEY_UART2_ENABLED);
+        PRINT_CFG_VALUE(CFG_KEY_UART2_BAUDRATE);
+        PRINT_CFG_VALUE(CFG_KEY_UART2_STOPBITS);
+        PRINT_CFG_VALUE(CFG_KEY_UART2_DATABITS);
+        PRINT_CFG_VALUE(CFG_KEY_UART2_PARITY);
+        PRINT_CFG_VALUE(CFG_KEY_UART2INPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_UART2INPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_UART2INPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_UART2INPROT_SPARTN);
+        PRINT_CFG_VALUE(CFG_KEY_UART2OUTPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_UART2OUTPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_UART2OUTPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_INFMSG_UBX_UART2);
+        break;
+    case Port::I2C:
+        PRINT_CFG_VALUE(CFG_KEY_I2C_ENABLED);
+        PRINT_CFG_VALUE(CFG_KEY_I2C_ADDRESS);
+        PRINT_CFG_VALUE(CFG_KEY_I2CINPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_I2CINPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_I2CINPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_I2CINPROT_SPARTN);
+        PRINT_CFG_VALUE(CFG_KEY_I2COUTPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_I2COUTPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_I2COUTPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_INFMSG_UBX_I2C);
+        break;
+    case Port::USB:
+        PRINT_CFG_VALUE(CFG_KEY_USB_ENABLED);
+        PRINT_CFG_VALUE(CFG_KEY_USBINPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_USBINPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_USBINPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_USBINPROT_SPARTN);
+        PRINT_CFG_VALUE(CFG_KEY_USBOUTPROT_UBX);
+        PRINT_CFG_VALUE(CFG_KEY_USBOUTPROT_NMEA);
+        PRINT_CFG_VALUE(CFG_KEY_USBOUTPROT_RTCM3X);
+        PRINT_CFG_VALUE(CFG_KEY_INFMSG_UBX_USB);
+        break;
+    }
+
+    PRINT_CFG_VALUE(CFG_KEY_RATE_MEAS);
+    PRINT_CFG_VALUE(CFG_KEY_NAVHPG_DGNSSMODE);
+    PRINT_CFG_VALUE(cfg_key_from_message_id(port, MessageId::UbxNavPvt));
+
+#undef PRINT_CFG_VALUE
+#endif
+}
+
+//
+//
+//
+
+UbloxReceiver::UbloxReceiver(Port                                  port,
+                             std::unique_ptr<interface::Interface> interface) UBLOX_NOEXCEPT
+    : mPort(port),
+      mInterface(std::move(interface)),
+      mSpartnSupport(false) {
+    mParser          = new Parser();
+    mSoftwareVersion = "unknown";
+    mHardwareVersion = "unknown";
+
+    // Clear residual data from the interface
+    process();
+    mParser->clear();
+
+    // Load receiver configuration
+    load_receiver_configuration();
+
+    // By default, enable UBX-NAV-PVT
+    enable_message(MessageId::UbxNavPvt);
+}
+
+UbloxReceiver::~UbloxReceiver() UBLOX_NOEXCEPT {
+    if (mParser != nullptr) {
+        delete mParser;
+    }
+}
 
 void UbloxReceiver::enable_message(MessageId message_id) {
     auto key     = cfg_key_from_message_id(mPort, message_id);
-    mConfig[key] = CfgValue::from_l(true);
+    mConfig[key] = CfgValue::from_u1(1);
 }
 
 void UbloxReceiver::disable_message(MessageId message_id) {
     auto key     = cfg_key_from_message_id(mPort, message_id);
-    mConfig[key] = CfgValue::from_l(false);
+    mConfig[key] = CfgValue::from_u1(0);
 }
 
 void UbloxReceiver::poll_mon_ver() {
@@ -69,7 +232,7 @@ void UbloxReceiver::poll_mon_ver() {
     uint8_t buffer[64];
     auto    encoder             = Encoder{buffer, sizeof(buffer)};
     auto    poll_message_length = UbxMonVer::poll(encoder);
-    mInterface.write(buffer, poll_message_length);
+    mInterface->write(buffer, poll_message_length);
 
     auto message = wait_for_specific_message<UbxMonVer>(false, false);
     if (message) {
@@ -88,7 +251,7 @@ bool UbloxReceiver::poll_cfg_valget(CfgKey key, CfgValue& value) {
     uint8_t buffer[1024];
     auto    encoder             = Encoder{buffer, sizeof(buffer)};
     auto    poll_message_length = UbxCfgValget::poll(encoder, CFG_LAYER_RAM, 0, keys);
-    mInterface.write(buffer, poll_message_length);
+    mInterface->write(buffer, poll_message_length);
 
     auto message = wait_for_specific_message<UbxCfgValget>(true, true);
     if (message) {
@@ -116,6 +279,7 @@ void UbloxReceiver::load_receiver_configuration() {
         keys.push_back(CFG_KEY_UART1OUTPROT_UBX);
         keys.push_back(CFG_KEY_UART1OUTPROT_NMEA);
         keys.push_back(CFG_KEY_UART1OUTPROT_RTCM3X);
+        keys.push_back(CFG_KEY_INFMSG_UBX_UART1);
         break;
     case Port::UART2:
         keys.push_back(CFG_KEY_UART2_ENABLED);
@@ -130,6 +294,7 @@ void UbloxReceiver::load_receiver_configuration() {
         keys.push_back(CFG_KEY_UART2OUTPROT_UBX);
         keys.push_back(CFG_KEY_UART2OUTPROT_NMEA);
         keys.push_back(CFG_KEY_UART2OUTPROT_RTCM3X);
+        keys.push_back(CFG_KEY_INFMSG_UBX_UART2);
         break;
     case Port::I2C:
         keys.push_back(CFG_KEY_I2C_ENABLED);
@@ -141,6 +306,7 @@ void UbloxReceiver::load_receiver_configuration() {
         keys.push_back(CFG_KEY_I2COUTPROT_UBX);
         keys.push_back(CFG_KEY_I2COUTPROT_NMEA);
         keys.push_back(CFG_KEY_I2COUTPROT_RTCM3X);
+        keys.push_back(CFG_KEY_INFMSG_UBX_I2C);
         break;
     case Port::USB:
         keys.push_back(CFG_KEY_USB_ENABLED);
@@ -151,10 +317,12 @@ void UbloxReceiver::load_receiver_configuration() {
         keys.push_back(CFG_KEY_USBOUTPROT_UBX);
         keys.push_back(CFG_KEY_USBOUTPROT_NMEA);
         keys.push_back(CFG_KEY_USBOUTPROT_RTCM3X);
+        keys.push_back(CFG_KEY_INFMSG_UBX_USB);
         break;
     }
 
     keys.push_back(CFG_KEY_RATE_MEAS);
+    keys.push_back(CFG_KEY_NAVHPG_DGNSSMODE);
     keys.push_back(cfg_key_from_message_id(mPort, MessageId::UbxNavPvt));
 
     // NOTE: Although, requesting every configuration key one-by-one seems stupid, it is necessary
@@ -173,92 +341,7 @@ void UbloxReceiver::load_receiver_configuration() {
         }
     }
 
-#if 1
-#define PRINT_CFG_VALUE(NAME, KEY)                                                                 \
-    do {                                                                                           \
-        if (mConfig.count(KEY) > 0) {                                                              \
-            printf("    %08X %s: ", (KEY), (NAME));                                                \
-            auto value = mConfig[KEY];                                                             \
-            switch (value.type()) {                                                                \
-            case CfgValue::U1:                                                                     \
-                printf("%02X unsigned=%u signed=%i\n", value.u1(),                                 \
-                       static_cast<uint32_t>(value.u1()), static_cast<int32_t>(value.u1()));       \
-                break;                                                                             \
-            case CfgValue::U2:                                                                     \
-                printf("%04X unsigned=%u signed=%i\n", value.u2(),                                 \
-                       static_cast<uint32_t>(value.u2()), static_cast<int32_t>(value.u2()));       \
-                break;                                                                             \
-            case CfgValue::U4:                                                                     \
-                printf("%08X unsigned=%u signed=%i\n", value.u4(),                                 \
-                       static_cast<uint32_t>(value.u4()), static_cast<int32_t>(value.u4()));       \
-                break;                                                                             \
-            case CfgValue::U8:                                                                     \
-                printf("%016" PRIx64 " unsigned=%" PRIu64 " signed=%" PRId64 "\n", value.u8(),     \
-                       static_cast<uint64_t>(value.u8()), static_cast<int64_t>(value.u8()));       \
-                break;                                                                             \
-            case CfgValue::L: printf("%s\n", value.l() ? "true" : "false"); break;                 \
-            default: printf("<unknown>\n"); break;                                                 \
-            }                                                                                      \
-        } else {                                                                                   \
-            printf("    %08X %s: <not available>\n", (KEY), (NAME));                               \
-        }                                                                                          \
-    } while (false)
-
-    printf("Configuration:\n");
-    switch (mPort) {
-    case Port::UART1:
-        PRINT_CFG_VALUE("UART1-ENABLED", CFG_KEY_UART1_ENABLED);
-        PRINT_CFG_VALUE("UART1-BAUDRATE", CFG_KEY_UART1_BAUDRATE);
-        PRINT_CFG_VALUE("UART1-STOPBITS", CFG_KEY_UART1_STOPBITS);
-        PRINT_CFG_VALUE("UART1-DATABITS", CFG_KEY_UART1_DATABITS);
-        PRINT_CFG_VALUE("UART1-PARITY", CFG_KEY_UART1_PARITY);
-        PRINT_CFG_VALUE("UART1INPROT-UBX", CFG_KEY_UART1INPROT_UBX);
-        PRINT_CFG_VALUE("UART1INPROT-NMEA", CFG_KEY_UART1INPROT_NMEA);
-        PRINT_CFG_VALUE("UART1INPROT-RTCM3X", CFG_KEY_UART1INPROT_RTCM3X);
-        PRINT_CFG_VALUE("UART1INPROT-SPARTN", CFG_KEY_UART1INPROT_SPARTN);
-        PRINT_CFG_VALUE("UART1OUTPROT-UBX", CFG_KEY_UART1OUTPROT_UBX);
-        PRINT_CFG_VALUE("UART1OUTPROT-NMEA", CFG_KEY_UART1OUTPROT_NMEA);
-        PRINT_CFG_VALUE("UART1OUTPROT-RTCM3X", CFG_KEY_UART1OUTPROT_RTCM3X);
-        break;
-    case Port::UART2:
-        PRINT_CFG_VALUE("UART2-ENABLED", CFG_KEY_UART2_ENABLED);
-        PRINT_CFG_VALUE("UART2-BAUDRATE", CFG_KEY_UART2_BAUDRATE);
-        PRINT_CFG_VALUE("UART2-STOPBITS", CFG_KEY_UART2_STOPBITS);
-        PRINT_CFG_VALUE("UART2-DATABITS", CFG_KEY_UART2_DATABITS);
-        PRINT_CFG_VALUE("UART2-PARITY", CFG_KEY_UART2_PARITY);
-        PRINT_CFG_VALUE("UART2INPROT-UBX", CFG_KEY_UART2INPROT_UBX);
-        PRINT_CFG_VALUE("UART2INPROT-NMEA", CFG_KEY_UART2INPROT_NMEA);
-        PRINT_CFG_VALUE("UART2INPROT-RTCM3X", CFG_KEY_UART2INPROT_RTCM3X);
-        PRINT_CFG_VALUE("UART2INPROT-SPARTN", CFG_KEY_UART2INPROT_SPARTN);
-        PRINT_CFG_VALUE("UART2OUTPROT-UBX", CFG_KEY_UART2OUTPROT_UBX);
-        PRINT_CFG_VALUE("UART2OUTPROT-NMEA", CFG_KEY_UART2OUTPROT_NMEA);
-        PRINT_CFG_VALUE("UART2OUTPROT-RTCM3X", CFG_KEY_UART2OUTPROT_RTCM3X);
-        break;
-    case Port::I2C:
-        PRINT_CFG_VALUE("I2C-ENABLED", CFG_KEY_I2C_ENABLED);
-        PRINT_CFG_VALUE("I2C-ADDRESS", CFG_KEY_I2C_ADDRESS);
-        PRINT_CFG_VALUE("I2CINPROT-UBX", CFG_KEY_I2CINPROT_UBX);
-        PRINT_CFG_VALUE("I2CINPROT-NMEA", CFG_KEY_I2CINPROT_NMEA);
-        PRINT_CFG_VALUE("I2CINPROT-RTCM3X", CFG_KEY_I2CINPROT_RTCM3X);
-        PRINT_CFG_VALUE("I2CINPROT-SPARTN", CFG_KEY_I2CINPROT_SPARTN);
-        PRINT_CFG_VALUE("I2COUTPROT-UBX", CFG_KEY_I2COUTPROT_UBX);
-        PRINT_CFG_VALUE("I2COUTPROT-NMEA", CFG_KEY_I2COUTPROT_NMEA);
-        PRINT_CFG_VALUE("I2COUTPROT-RTCM3X", CFG_KEY_I2COUTPROT_RTCM3X);
-        break;
-    case Port::USB:
-        PRINT_CFG_VALUE("USB-ENABLED", CFG_KEY_USB_ENABLED);
-        PRINT_CFG_VALUE("USBINPROT-UBX", CFG_KEY_USBINPROT_UBX);
-        PRINT_CFG_VALUE("USBINPROT-NMEA", CFG_KEY_USBINPROT_NMEA);
-        PRINT_CFG_VALUE("USBINPROT-RTCM3X", CFG_KEY_USBINPROT_RTCM3X);
-        PRINT_CFG_VALUE("USBINPROT-SPARTN", CFG_KEY_USBINPROT_SPARTN);
-        PRINT_CFG_VALUE("USBOUTPROT-UBX", CFG_KEY_USBOUTPROT_UBX);
-        PRINT_CFG_VALUE("USBOUTPROT-NMEA", CFG_KEY_USBOUTPROT_NMEA);
-        PRINT_CFG_VALUE("USBOUTPROT-RTCM3X", CFG_KEY_USBOUTPROT_RTCM3X);
-        break;
-    }
-
-#undef PRINT_CFG_VALUE
-#endif
+    print_configuration(mConfig, mPort);
 }
 
 void UbloxReceiver::store_receiver_configuration() {
@@ -269,55 +352,17 @@ void UbloxReceiver::store_receiver_configuration() {
         uint8_t buffer[1024];
         auto    encoder = Encoder{buffer, sizeof(buffer)};
         auto    length  = UbxCfgValset::set(encoder, CFG_LAYER_RAM, key, value);
-        mInterface.write(buffer, length);
-
-        auto message = wait_for_specific_message<UbxAckAck>(true, true);
-        if (!message) {
-            printf("*** failed to write %08X configuration ***\n", key);
-        }
-    }
-}
-
-template <typename T>
-std::unique_ptr<T> UbloxReceiver::wait_for_specific_message(bool expect_ack, bool expect_nak) {
-    for (;;) {
-        process();
-
-        auto message = try_parse();
-        if (message != nullptr) {
-            auto response = dynamic_cast<T*>(message.get());
-            if (response != nullptr) {
-                auto casted_message = std::unique_ptr<T>(response);
-                message.release();
-                return casted_message;
-            }
-
-            if (expect_ack) {
-                auto ack = dynamic_cast<UbxAckAck*>(message.get());
-                if (ack != nullptr && ack->cls_id() == T::CLASS_ID &&
-                    ack->msg_id() == T::MESSAGE_ID) {
-                    return nullptr;
-                }
-            }
-
-            if (expect_nak) {
-                auto nak = dynamic_cast<UbxAckNak*>(message.get());
-                if (nak != nullptr && nak->cls_id() == T::CLASS_ID &&
-                    nak->msg_id() == T::MESSAGE_ID) {
-                    return nullptr;
-                }
-            }
+        if (length == 0) {
+            continue;
         }
 
-        mInterface.wait_for_read();
+        mInterface->write(buffer, length);
+        wait_for_specific_message<UbxAckAck>(true, true);
     }
 }
 
 void UbloxReceiver::configure() {
     poll_mon_ver();
-
-    // TODO:
-    mConfig.clear();
 
     // Enable fixed DGNSS mode
     mConfig[CFG_KEY_NAVHPG_DGNSSMODE] = CfgValue::from_u1(3 /* RTK_FIXED */);
@@ -327,35 +372,50 @@ void UbloxReceiver::configure() {
     case Port::UART1:
         mConfig[CFG_KEY_INFMSG_UBX_UART1] =
             CfgValue::from_u1(INF_ERROR | INF_WARNING | INF_NOTICE | INF_TEST | INF_DEBUG);
+        mConfig[CFG_KEY_UART1OUTPROT_UBX]  = CfgValue::from_l(true);
+        mConfig[CFG_KEY_UART1OUTPROT_NMEA] = CfgValue::from_l(false);
         break;
     case Port::UART2:
         mConfig[CFG_KEY_INFMSG_UBX_UART2] =
             CfgValue::from_u1(INF_ERROR | INF_WARNING | INF_NOTICE | INF_TEST | INF_DEBUG);
+        mConfig[CFG_KEY_UART2OUTPROT_UBX]  = CfgValue::from_l(true);
+        mConfig[CFG_KEY_UART2OUTPROT_NMEA] = CfgValue::from_l(false);
         break;
     case Port::I2C:
         mConfig[CFG_KEY_INFMSG_UBX_I2C] =
             CfgValue::from_u1(INF_ERROR | INF_WARNING | INF_NOTICE | INF_TEST | INF_DEBUG);
+        mConfig[CFG_KEY_I2COUTPROT_UBX]  = CfgValue::from_l(true);
+        mConfig[CFG_KEY_I2COUTPROT_NMEA] = CfgValue::from_l(false);
         break;
     case Port::USB:
         mConfig[CFG_KEY_INFMSG_UBX_USB] =
             CfgValue::from_u1(INF_ERROR | INF_WARNING | INF_NOTICE | INF_TEST | INF_DEBUG);
+        mConfig[CFG_KEY_USBOUTPROT_UBX]  = CfgValue::from_l(true);
+        mConfig[CFG_KEY_USBOUTPROT_NMEA] = CfgValue::from_l(false);
         break;
     }
 
     store_receiver_configuration();
+    print_configuration(mConfig, mPort);
 }
 
 void UbloxReceiver::process() {
-    if (mInterface.can_read()) {
-        uint8_t buffer[256];
-        auto    length = mInterface.read(buffer, sizeof(buffer));
+    if(!mInterface->is_open()) {
+        mInterface->open();
+    }
+
+    if (mInterface->can_read()) {
+        uint8_t buffer[1024];
+        auto    length = mInterface->read(buffer, sizeof(buffer));
         if (length <= 0) {
-            throw std::runtime_error("Failed to read from interface");
+            // This will only happen if the interface is closed or disconnected. In this case, we
+            // will try to re-open the interface in the next iteration of the main loop.
+            mInterface->close();
+            return;
         }
 
-        if (!mParser->append(buffer, length)) {
-            throw std::runtime_error("Failed to append to parser");
-        }
+        // Ignore the return value, this should never fail if the parser buffer is >= 1024 bytes
+        mParser->append(buffer, length);
     }
 }
 
@@ -368,12 +428,41 @@ std::unique_ptr<Message> UbloxReceiver::wait_for_message() {
             return message;
         }
 
-        mInterface.wait_for_read();
+        mInterface->wait_for_read();
     }
 }
 
 std::unique_ptr<Message> UbloxReceiver::try_parse() {
     return mParser->try_parse();
+}
+
+template <typename T>
+std::unique_ptr<T> UbloxReceiver::wait_for_specific_message(bool expect_ack, bool expect_nak) {
+    for (;;) {
+        auto message = wait_for_message();
+        message->print();
+
+        auto response = dynamic_cast<T*>(message.get());
+        if (response != nullptr) {
+            auto casted_message = std::unique_ptr<T>(response);
+            message.release();
+            return casted_message;
+        }
+
+        if (expect_ack) {
+            auto ack = dynamic_cast<UbxAckAck*>(message.get());
+            if (ack != nullptr && ack->cls_id() == T::CLASS_ID && ack->msg_id() == T::MESSAGE_ID) {
+                return nullptr;
+            }
+        }
+
+        if (expect_nak) {
+            auto nak = dynamic_cast<UbxAckNak*>(message.get());
+            if (nak != nullptr && nak->cls_id() == T::CLASS_ID && nak->msg_id() == T::MESSAGE_ID) {
+                return nullptr;
+            }
+        }
+    }
 }
 
 }  // namespace ublox

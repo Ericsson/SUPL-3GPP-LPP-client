@@ -1,5 +1,6 @@
 add_executable(example_ublox 
     "main.cpp"
+    "options.cpp"
 )
 add_executable(examples::ublox ALIAS example_ublox)
 

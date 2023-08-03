@@ -1,4 +1,7 @@
 #pragma once
+#include <cstdint>
+#include <cstddef>
+#include <cassert>
 
 #ifndef IF_EXPLICIT
 #define IF_EXPLICIT explicit
@@ -34,6 +37,4 @@
 #endif
 #endif
 
-#include <cstdint>
-#include <cstddef>
 

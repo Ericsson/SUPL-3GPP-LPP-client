@@ -30,7 +30,8 @@ class UbloxReceiver {
 public:
     /// @brief Construct a receiver. This will block until the receiver configuration has been
     /// acquired.
-    UBLOX_EXPLICIT UbloxReceiver(Port port, interface::Interface& interface) UBLOX_NOEXCEPT;
+    UBLOX_EXPLICIT UbloxReceiver(Port                                  port,
+                                 std::unique_ptr<interface::Interface> interface) UBLOX_NOEXCEPT;
     ~UbloxReceiver() UBLOX_NOEXCEPT;
 
     /// @brief Enable message to be sent by the receiver periodically. This will only take effect
@@ -91,11 +92,11 @@ protected:
     std::unique_ptr<T> wait_for_specific_message(bool expect_ack, bool expect_nak);
 
 private:
-    Port                                 mPort;
-    interface::Interface&                mInterface;
-    Parser*                              mParser;
-    bool                                 mSpartnSupport;
-    std::unordered_map<CfgKey, CfgValue> mConfig;
+    Port                                  mPort;
+    std::unique_ptr<interface::Interface> mInterface;
+    Parser*                               mParser;
+    bool                                  mSpartnSupport;
+    std::unordered_map<CfgKey, CfgValue>  mConfig;
 
     std::string              mSoftwareVersion;
     std::string              mHardwareVersion;

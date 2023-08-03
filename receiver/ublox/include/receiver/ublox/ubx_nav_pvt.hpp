@@ -70,10 +70,14 @@ public:
     UBLOX_EXPLICIT UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT;
     ~UbxNavPvt() override = default;
 
+    /// @brief Returns the unprocessed raw payload.
     UBLOX_NODISCARD const raw::NavPvt& payload() const UBLOX_NOEXCEPT { return mPayload; }
 
+    /// @brief Latitude in degrees.
     UBLOX_NODISCARD double latitude() const UBLOX_NOEXCEPT;
+    /// @brief Longitude in degrees.
     UBLOX_NODISCARD double longitude() const UBLOX_NOEXCEPT;
+    /// @brief Altitude in meters above ellipsoid
     UBLOX_NODISCARD double altitude() const UBLOX_NOEXCEPT;
 
     void print() const UBLOX_NOEXCEPT override;

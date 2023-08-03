@@ -77,6 +77,10 @@ void I2CInterface::wait_for_read() IF_NOEXCEPT {}
 
 void I2CInterface::wait_for_write() IF_NOEXCEPT {}
 
+bool I2CInterface::is_open() IF_NOEXCEPT {
+    return false;
+}
+
 //
 //
 //

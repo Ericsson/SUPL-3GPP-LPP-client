@@ -9,6 +9,7 @@ add_library(receiver_ublox STATIC
     "ubx_mon_ver.cpp"
     "ubx_cfg.cpp"
     "ubx_cfg_valget.cpp"
+    "ubx_cfg_valset.cpp"
     "ubx_ack_ack.cpp"
     "ubx_ack_nak.cpp"
 )
