@@ -35,6 +35,15 @@ target_compile_options(receiver_ublox PRIVATE
     "-Wsign-conversion"
     "-Wno-conversion"
     "-Wmisleading-indentation"
-    "-Wduplicated-cond"
-    "-Wduplicated-branches"
 )
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    target_compile_options(receiver_ublox PRIVATE
+        "-Wduplicated-cond"
+        "-Wduplicated-branches"
+    )
+endif()

@@ -1,8 +1,9 @@
 #include "file.h"
 
+#include <cstdio>
 #include <fcntl.h>
-#include <unistd.h>
 #include <stdexcept>
+#include <unistd.h>
 
 FileTarget::FileTarget(std::string file_path, bool truncate) : mFilePath(std::move(file_path)) {
     if (truncate) {
@@ -12,6 +13,21 @@ FileTarget::FileTarget(std::string file_path, bool truncate) : mFilePath(std::mo
     }
 
     if (mFileDescriptor < 0) {
+        switch (errno) {
+        case EACCES: fprintf(stderr, "EACCES\n"); break;
+        case EEXIST: fprintf(stderr, "EEXIST\n"); break;
+        case EFAULT: fprintf(stderr, "EFAULT\n"); break;
+        case EFBIG: fprintf(stderr, "EFBIG\n"); break;
+        case EINTR: fprintf(stderr, "EINTR\n"); break;
+        case EINVAL: fprintf(stderr, "EINVAL\n"); break;
+        case EISDIR: fprintf(stderr, "EISDIR\n"); break;
+        case ELOOP: fprintf(stderr, "ELOOP\n"); break;
+        case EMFILE: fprintf(stderr, "EMFILE\n"); break;
+        case ENAMETOOLONG: fprintf(stderr, "ENAMETOOLONG\n"); break;
+        case ENFILE: fprintf(stderr, "ENFILE\n"); break;
+        case ENODEV: fprintf(stderr, "ENODEV\n"); break;
+        default: fprintf(stderr, "Unknown error: %d\n", errno); break;
+        }
         throw std::runtime_error("Failed to open file");
     }
 }

@@ -34,6 +34,8 @@ add_compile_options("-Wall" "-Wno-unused-function" "-Wno-unused-variable" "-Wno-
 
 add_subdirectory("libs")
 add_subdirectory("interface")
+add_subdirectory("asn.1")
+add_subdirectory("generator/rtcm")
 add_subdirectory("receiver/ublox")
 add_subdirectory("examples/ublox")
 add_subdirectory("examples/lpp")

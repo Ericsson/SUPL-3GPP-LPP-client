@@ -1,4 +1,5 @@
 #include "osr_example.h"
+#include <generator/rtcm/generator.hpp>
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
 #include <modem.h>
@@ -10,11 +11,12 @@
 
 namespace osr_example {
 
-static CellID                         gCell;
-static std::unique_ptr<Modem_AT>      gModem;
-static Transmitter                    gTransmitter;
-static std::unique_ptr<RTCMGenerator> gGenerator;
-static Format                         gFormat;
+static CellID                                      gCell;
+static std::unique_ptr<Modem_AT>                   gModem;
+static Transmitter                                 gTransmitter;
+static std::unique_ptr<RTCMGenerator>              gGenerator;
+static Format                                      gFormat;
+static std::unique_ptr<generator::rtcm::Generator> gGenerator2;
 
 static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
@@ -86,7 +88,6 @@ void execute(const LocationServerOptions& location_server_options,
         throw std::runtime_error("Unable to connect to location server");
     }
 
-
     // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
     auto gnss = GNSSSystems{
         .gps     = true,
@@ -125,7 +126,8 @@ void execute(const LocationServerOptions& location_server_options,
     printf("\n");
 
     // Create RTCM generator for converting LPP messages to RTCM messages.
-    gGenerator = std::unique_ptr<RTCMGenerator>(new RTCMGenerator{gnss, filter});
+    gGenerator  = std::unique_ptr<RTCMGenerator>(new RTCMGenerator{gnss, filter});
+    gGenerator2 = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
 
     // Request OSR assistance data from location server for the 'cell' and register a callback
     // that will be called when we receive assistance data.
@@ -157,8 +159,11 @@ static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Mess
             return;
         }
 
-        // Convert LPP messages to buffer of RTCM messages.
-        Generated     generated_messages{};
+        auto filter = generator::rtcm::MessageFilter{};
+        gGenerator2->generate(message, filter);
+
+            // Convert LPP messages to buffer of RTCM messages.
+            Generated generated_messages{};
         unsigned char buffer[4 * 4096];
         auto          size   = sizeof(buffer);
         auto          length = gGenerator->convert(buffer, &size, &generated_messages);

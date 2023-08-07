@@ -29,13 +29,51 @@ SerialTarget::SerialTarget(std::string device, const int baud_rate)
     // set raw mode
     cfmakeraw(&tty);
 
+    /*
+
+    if ((mode&STR_MODE_R)&&(mode&STR_MODE_W)) rw=O_RDWR;
+    else if (mode&STR_MODE_R) rw=O_RDONLY;
+    else if (mode&STR_MODE_W) rw=O_WRONLY;
+
+    if ((serial->dev=open(dev,rw|O_NOCTTY|O_NONBLOCK))<0) {
+        sprintf(msg,"%s open error (%d)",dev,errno);
+        tracet(1,"openserial: %s dev=%s\n",msg,dev);
+        free(serial);
+        return NULL;
+    }
+    tcgetattr(serial->dev,&ios);
+    ios.c_iflag=0;
+    ios.c_oflag=0;
+    ios.c_lflag=0;     // non-canonical
+    ios.c_cc[VMIN ]=0; // non-block-mode
+    ios.c_cc[VTIME]=0;
+    cfsetospeed(&ios,bs[i]);
+    cfsetispeed(&ios,bs[i]);
+    ios.c_cflag|=bsize==7?CS7:CS8;
+    ios.c_cflag|=parity=='O'?(PARENB|PARODD):(parity=='E'?PARENB:0);
+    ios.c_cflag|=stopb==2?CSTOPB:0;
+    ios.c_cflag|=!strcmp(fctr,"rts")?CRTSCTS:0;
+    tcsetattr(serial->dev,TCSANOW,&ios);
+    tcflush(serial->dev,TCIOFLUSH);
+    sprintf(msg,"%s",dev);
+    */
+
     tty.c_cflag |= (CLOCAL | CREAD);  // ignore modem controls,
                                       // enable receiver
-    tty.c_cflag &= ~CRTSCTS;          // enable RTS/CTS (hardware) flow control.
+
+    if (false) {
+#if defined(CNEW_RTSCTS)
+        tty.c_cflag |= CNEW_RTSCTS;  // enable RTS/CTS (hardware) flow control.
+#elif defined(CRTSCTS)
+        tty.c_cflag |= CRTSCTS;  // enable RTS/CTS (hardware) flow control.
+#endif
+    }
 
     if (tcsetattr(mFileDescriptor, TCSANOW, &tty) != 0) {
         throw std::runtime_error("Could not set serial device attributes");
     }
+
+    tcflush(mFileDescriptor, TCIOFLUSH);
 }
 
 SerialTarget::~SerialTarget() {

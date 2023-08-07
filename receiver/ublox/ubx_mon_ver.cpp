@@ -31,7 +31,7 @@ std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     payload.sw_version = decoder.CH(30);
     payload.hw_version = decoder.CH(10);
     payload.extensions.reserve(extension_count);
-    for (auto i = 0; i < extension_count; ++i) {
+    for (uint32_t i = 0; i < extension_count; ++i) {
         payload.extensions.push_back(decoder.CH(30));
     }
 

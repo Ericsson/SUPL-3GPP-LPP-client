@@ -29,7 +29,9 @@
 #ifndef UBLOX_NODISCARD
 #if defined(__has_cpp_attribute)
 #if __has_cpp_attribute(nodiscard)
+#if defined(__cplusplus) && __cplusplus >= 201703L
 #define UBLOX_NODISCARD [[nodiscard]]
+#endif
 #endif
 #endif
 #ifndef UBLOX_NODISCARD

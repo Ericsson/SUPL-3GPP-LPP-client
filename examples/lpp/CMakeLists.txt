@@ -13,6 +13,7 @@ target_include_directories(example_lpp PRIVATE "./")
 target_link_libraries(example_lpp PRIVATE utility modem rtklib asnlib lpplib osr rtcm_generator Threads::Threads)
 target_link_libraries(example_lpp PRIVATE args)
 target_link_libraries(example_lpp PRIVATE transmitter)
+target_link_libraries(example_lpp PRIVATE generator::rtcm)
 
 if (USE_OPENSSL)
 target_link_libraries(example_lpp PRIVATE OpenSSL::SSL)
