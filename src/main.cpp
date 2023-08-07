@@ -6,7 +6,7 @@
 #include "osr_example.h"
 #include "ssr_example.h"
 
-#define VERSION "v3.2.0 (public)"
+#define VERSION "v3.2.1 (public)"
 
 args::Group arguments{"Arguments:"};
 

@@ -44,7 +44,7 @@ The example client requires that you provide connection parameters of a location
 ```
   ./src/example COMMAND {OPTIONS}
 
-    SUPL-3GPP-LPP-client v3.2.0 (public)
+    SUPL-3GPP-LPP-client v3.2.1 (public)
 
   OPTIONS:
 
