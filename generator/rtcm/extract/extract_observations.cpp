@@ -1,12 +1,14 @@
 #include "extract.hpp"
 
-#include <GNSS-ID.h>
 #include <GNSS-RTK-Observations-r15.h>
 #include <GNSS-RTK-SatelliteDataElement-r15.h>
 #include <GNSS-RTK-SatelliteSignalDataElement-r15.h>
 #include <asn.1/bit_string.hpp>
 
+using namespace generator::rtcm;
+
 namespace decode {
+
 static Maybe<double> fine_phase_range(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
     return static_cast<double>(src_signal.fine_PhaseRange_r15) * RTCM_N2_31;
 }
@@ -27,7 +29,7 @@ fine_phase_range_rate(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal)
 static Maybe<double>
 carrier_to_noise_ratio(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
     if (src_signal.carrier_to_noise_ratio_r15) {
-        return static_cast<double>(*src_signal.carrier_to_noise_ratio_r15) * 0.25;
+        return static_cast<double>(*src_signal.carrier_to_noise_ratio_r15) * RTCM_N2_4;
     } else {
         return Maybe<double>();
     }
@@ -106,13 +108,32 @@ static SatelliteId satellite_id(GenericGnssId                            gnss_id
     auto id = src_satellite.svID_r15.satellite_id;
     return SatelliteId::from_lpp(gnss, id);
 }
+
+static SignalId signal_id(GenericGnssId                                  gnss_id,
+                          const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+    auto gnss = SignalId::Gnss::UNKNOWN;
+    switch (gnss_id) {
+    case GenericGnssId::GPS: gnss = SignalId::Gnss::GPS; break;
+    case GenericGnssId::GLONASS: gnss = SignalId::Gnss::GLONASS; break;
+    case GenericGnssId::GALILEO: gnss = SignalId::Gnss::GALILEO; break;
+    case GenericGnssId::BEIDOU: gnss = SignalId::Gnss::BEIDOU; break;
+    }
+
+    auto id = src_signal.gnss_SignalID_r15.gnss_SignalID;
+    if (src_signal.gnss_SignalID_r15.ext1 &&
+        src_signal.gnss_SignalID_r15.ext1->gnss_SignalID_Ext_r15) {
+        id = *src_signal.gnss_SignalID_r15.ext1->gnss_SignalID_Ext_r15;
+    }
+
+    return SignalId::from_lpp(gnss, id);
+}
 }  // namespace decode
 
 static void extract_signal(Observations& observations, GenericGnssId gnss_id,
                            SatelliteId                                    satellite_id,
                            const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
     Signal dst_signal{};
-    dst_signal.id                     = src_signal.gnss_SignalID_r15.gnss_SignalID;
+    dst_signal.id                     = decode::signal_id(gnss_id, src_signal);
     dst_signal.satellite              = satellite_id;
     dst_signal.fine_phase_range       = decode::fine_phase_range(src_signal);
     dst_signal.fine_pseudo_range      = decode::fine_pseudo_range(src_signal);
@@ -145,6 +166,7 @@ extern void extract_observations(RtkData& data, GenericGnssId gnss_id,
                                  const GNSS_RTK_Observations_r15& src_observation) {
     auto  dst_observation = std::unique_ptr<Observations>(new Observations());
     auto& observation     = *dst_observation.get();
+    observation.time      = decode::epoch_time(src_observation.epochTime_r15);
 
     auto& list = src_observation.gnss_ObservationList_r15.list;
     for (auto i = 0; i < list.count; i++) {

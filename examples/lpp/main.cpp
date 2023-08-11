@@ -378,6 +378,8 @@ void osr_callback(args::Subparser& parser) {
     if (format_arg) {
         if (format_arg.Get() == "rtcm") {
             format = osr_example::Format::RTCM;
+        } else if (format_arg.Get() == "rg2") {
+            format = osr_example::Format::RG2;
         } else if (format_arg.Get() == "xer") {
             format = osr_example::Format::XER;
         } else {

@@ -14,8 +14,8 @@ public:
     RTCM_EXPLICIT GST_Time(const UTC_Time& time);
 
     RTCM_NODISCARD TsInt     days() const;
-    RTCM_NODISCARD Timestamp time_of_day() const;
     RTCM_NODISCARD TsInt     week() const;
+    RTCM_NODISCARD Timestamp time_of_day() const;
     RTCM_NODISCARD Timestamp time_of_week() const;
     RTCM_NODISCARD Timestamp timestamp() const { return tm; }
 

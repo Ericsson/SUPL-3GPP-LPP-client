@@ -58,6 +58,10 @@ Timestamp BDT_Time::time_of_day() const {
     return tm - Timestamp{days() * DAY_IN_SECONDS};
 }
 
+Timestamp BDT_Time::time_of_week() const {
+    return tm - Timestamp{week() * WEEK_IN_SECONDS};
+}
+
 BDT_Time BDT_Time::now() {
     return BDT_Time{UTC_Time::now()};
 }

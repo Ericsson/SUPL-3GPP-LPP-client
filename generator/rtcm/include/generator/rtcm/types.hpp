@@ -39,6 +39,20 @@
 #endif
 #endif
 
+#ifndef RTCM_UNREACHABLE
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_unreachable)
+#define RTCM_UNREACHABLE() __builtin_unreachable()
+#endif
+#endif
+#ifndef RTCM_UNREACHABLE
+#define RTCM_UNREACHABLE() rtcm_unreachable()
+__attribute__((noreturn)) inline void rtcm_unreachable() {
+    assert(false);
+}
+#endif
+#endif
+
 #if defined(__cplusplus) && __cplusplus >= 201703L
 #define RTCM_N2_1 0x1p-1
 #define RTCM_N2_2 0x1p-2
@@ -104,7 +118,7 @@
 #define RTCM_P2_30 0x1p30
 #define RTCM_P2_31 0x1p31
 #else
-#define RTCM_CALC_P2_N(N) (static_cast<double>((1 << (N))))
+#define RTCM_CALC_P2_N(N) (static_cast<double>((static_cast<uint64_t>(1) << (N))))
 #define RTCM_CALC_N2_N(N) (1.0 / RTCM_CALC_P2_N(N))
 #define RTCM_N2_1 RTCM_CALC_N2_N(1)
 #define RTCM_N2_2 RTCM_CALC_N2_N(2)

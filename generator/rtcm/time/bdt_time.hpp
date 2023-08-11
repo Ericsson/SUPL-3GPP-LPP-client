@@ -17,6 +17,7 @@ public:
     RTCM_NODISCARD TsInt     days() const;
     RTCM_NODISCARD TsInt     week() const;
     RTCM_NODISCARD Timestamp time_of_day() const;
+    RTCM_NODISCARD Timestamp time_of_week() const;
     RTCM_NODISCARD Timestamp timestamp() const { return tm; }
 
     RTCM_NODISCARD static BDT_Time now();

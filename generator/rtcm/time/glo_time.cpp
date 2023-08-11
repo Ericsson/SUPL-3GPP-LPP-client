@@ -33,8 +33,16 @@ TsInt GLO_Time::days() const {
     return tm.seconds() / DAY_IN_SECONDS;
 }
 
+TsInt GLO_Time::week() const {
+    return tm.seconds() / WEEK_IN_SECONDS;
+}
+
 Timestamp GLO_Time::time_of_day() const {
     return tm - Timestamp{days() * DAY_IN_SECONDS};
+}
+
+Timestamp GLO_Time::time_of_week() const {
+    return tm - Timestamp{week() * WEEK_IN_SECONDS};
 }
 
 GLO_Time GLO_Time::now() {

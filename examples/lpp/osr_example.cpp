@@ -159,11 +159,8 @@ static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Mess
             return;
         }
 
-        auto filter = generator::rtcm::MessageFilter{};
-        gGenerator2->generate(message, filter);
-
-            // Convert LPP messages to buffer of RTCM messages.
-            Generated generated_messages{};
+        // Convert LPP messages to buffer of RTCM messages.
+        Generated     generated_messages{};
         unsigned char buffer[4 * 4096];
         auto          size   = sizeof(buffer);
         auto          length = gGenerator->convert(buffer, &size, &generated_messages);
@@ -193,6 +190,17 @@ static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Mess
         printf("\n");
         if (length > 0) {
             gTransmitter.send(buffer, length);
+        }
+    } else if (gFormat == Format::RG2) {
+        auto filter   = generator::rtcm::MessageFilter{};
+        filter.systems.beidou = true;
+        filter.systems.galileo = true;
+        filter.systems.glonass = true;
+        auto messages = gGenerator2->generate(message, filter);
+
+        for (auto& message : messages) {
+            printf("[OSR] length: %4zu | id: %04u\n", message.data().size(), message.id());
+            gTransmitter.send(message.data().data(), message.data().size());
         }
     } else if (gFormat == Format::XER) {
         std::stringstream buffer;

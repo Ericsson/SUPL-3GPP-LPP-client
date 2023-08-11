@@ -17,7 +17,7 @@ TAI_Time::TAI_Time(const GST_Time& time) : TAI_Time(UTC_Time(time)) {}
 TAI_Time::TAI_Time(const BDT_Time& time) : TAI_Time(UTC_Time(time)) {}
 TAI_Time::TAI_Time(const UTC_Time& time) : tm(utc_2_tai(time.timestamp())) {}
 
-std::string TAI_Time::rtklib_time_string() {
+std::string TAI_Time::rtklib_time_string() const {
     return UTC_Time{*this}.rtklib_time_string();
 }
 

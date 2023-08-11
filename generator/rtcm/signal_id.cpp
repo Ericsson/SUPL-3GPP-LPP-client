@@ -1,5 +1,4 @@
-#include "utility/signal_id.h"
-
+#include "signal_id.hpp"
 #include <cassert>
 
 //
@@ -13,12 +12,12 @@ static std::string GPS_NAMES[24] = {
     "Reserved", "Reserved", "Reserved",      "Reserved",  "Reserved",  "Reserved",
 };
 
-constexpr static s32 GPS_RTCM_MSM_TO_LPP[33] = {
+RTCM_CONSTEXPR static int32_t GPS_RTCM_MSM_TO_LPP[33] = {
     -1, -1, 0,  4,  5,  -1, -1, -1, 6,  7,  8,  -1, -1, -1, -1, 9,  10,
     11, -1, -1, -1, -1, 12, 13, 14, -1, -1, -1, -1, -1, 15, 16, 17,
 };
 
-constexpr static s32 GPS_RTCM_DF380_TO_LPP[32] = {
+RTCM_CONSTEXPR static int32_t GPS_RTCM_DF380_TO_LPP[32] = {
     0,  4,  5,  -1, -1, 6,  -1 /* TODO(ewasjon): */,
     9,  10, 11, 7,  8,  -1, -1,
     12, 13, -1, -1, -1, -1, -1,
@@ -26,7 +25,7 @@ constexpr static s32 GPS_RTCM_DF380_TO_LPP[32] = {
     -1, -1, -1, -1,
 };
 
-constexpr static s32 GPS_LPP_TO_RTCM[24] = {
+RTCM_CONSTEXPR static int32_t GPS_LPP_TO_RTCM[24] = {
     2, -1, -1, -1, 3, 4, 8, 9, 10, 15, 16, 17, 22, 23, 24, 30, 31, 32, -1, -1, -1, -1, -1, -1,
 };
 
@@ -39,12 +38,12 @@ static std::string GLONASS_NAMES[24] = {
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
-constexpr static s32 GLONASS_RTCM_MSM_TO_LPP[33] = {
+RTCM_CONSTEXPR static int32_t GLONASS_RTCM_MSM_TO_LPP[33] = {
     -1, -1, 0,  3,  -1, -1, -1, -1, 1,  4,  -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-constexpr static s32 GLONASS_LPP_TO_RTCM[24] = {
+RTCM_CONSTEXPR static int32_t GLONASS_LPP_TO_RTCM[24] = {
     2, 8, -1, 3, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
@@ -60,17 +59,17 @@ static std::string GALILEO_NAMES[24] = {
     "E5(A+B) I+Q", "E5A I",        "E5A Q",     "E5A I+Q",
 };
 
-constexpr static s32 GALILEO_RTCM_MSM_TO_LPP[33] = {
+RTCM_CONSTEXPR static int32_t GALILEO_RTCM_MSM_TO_LPP[33] = {
     -1, -1, 5,  6,  7,  8,  9,  -1, 10, 11, 12, 13, 14, -1, 15, 16, 17,
     -1, 18, 19, 20, -1, 21, 22, 23, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-constexpr static s32 GALILEO_RTCM_DF382_TO_LPP[32] = {
+RTCM_CONSTEXPR static int32_t GALILEO_RTCM_DF382_TO_LPP[32] = {
     6,  7,  5,  -1, -1, 21, 22, -1, 15, 16, -1, -1 /*E5I*/, -1 /*E5Q*/, -1, 11, 12,
     10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         -1,         -1, -1, -1,
 };
 
-constexpr static s32 GALILEO_LPP_TO_RTCM[24] = {
+RTCM_CONSTEXPR static int32_t GALILEO_LPP_TO_RTCM[24] = {
     -1, -1, -1, -1, -1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 18, 19, 20, 22, 23, 24,
 };
 
@@ -84,111 +83,49 @@ static std::string BDS_NAMES[24] = {
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
-constexpr static s32 BDS_RTCM_MSM_TO_LPP[33] = {
+RTCM_CONSTEXPR static int32_t BDS_RTCM_MSM_TO_LPP[33] = {
     -1, -1, 0,  1,  2,  -1, -1, -1, 3,  4,  5,  -1, -1, -1, 6,  7,  8,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-constexpr static s32 BDS_RTCM_DF467_TO_LPP[32] = {
+RTCM_CONSTEXPR static int32_t BDS_RTCM_DF467_TO_LPP[32] = {
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
     -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-constexpr static s32 BDS_LPP_TO_RTCM[24] = {
+RTCM_CONSTEXPR static int32_t BDS_LPP_TO_RTCM[24] = {
     2, 3, 4, 8, 9, 10, 14, 15, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-Optional<SignalID> SignalID::from_rtcm_msm(GNSS_System system, u32 id) {
-    if (id == 0 || id >= 33) {
-        return {};
-    }
-
-    auto result = -1;
-    if (system == GNSS_System::GPS) {
-        result = GPS_RTCM_MSM_TO_LPP[id];
-    } else if (system == GNSS_System::GLONASS) {
-        result = GLONASS_RTCM_MSM_TO_LPP[id];
-    } else if (system == GNSS_System::GALILEO) {
-        result = GALILEO_RTCM_MSM_TO_LPP[id];
-    } else if (system == GNSS_System::BDS) {
-        result = BDS_RTCM_MSM_TO_LPP[id];
-    } else {
-        assert(false);
-        return {};
-    }
-
-    if (result < 0) {
-        return {};
-    }
-
-    return SignalID{system, result};
-}
-
-Optional<SignalID> SignalID::from_rtcm_df380(GNSS_System system, u32 id) {
-    assert(id <= 32);
-    assert(system == GNSS_System::GPS);
-
-    auto result = GPS_RTCM_DF380_TO_LPP[id];
-    if (result < 0) {
-        return {};
-    }
-
-    return SignalID{system, result};
-}
-
-Optional<SignalID> SignalID::from_rtcm_df382(GNSS_System system, u32 id) {
-    assert(id <= 32);
-    assert(system == GNSS_System::GALILEO);
-
-    auto result = GALILEO_RTCM_DF382_TO_LPP[id];
-    if (result < 0) {
-        return {};
-    }
-
-    return SignalID{system, result};
-}
-
-Optional<SignalID> SignalID::from_rtcm_df467(GNSS_System system, u32 id) {
-    assert(id <= 32);
-    assert(system == GNSS_System::BDS);
-
-    auto result = BDS_RTCM_DF467_TO_LPP[id];
-    if (result < 0) {
-        return {};
-    }
-
-    return SignalID{system, result};
-}
-
-Optional<SignalID> SignalID::from_lpp(GNSS_System system, u32 id) {
+SignalId SignalId::from_lpp(Gnss gnss, long id) {
     if (id >= 24) {
         return {};
     }
 
-    if (system == GNSS_System::GPS) {
-        return SignalID{system, static_cast<s32>(id)};
-    } else if (system == GNSS_System::GLONASS) {
-        return SignalID{system, static_cast<s32>(id)};
-    } else if (system == GNSS_System::GALILEO) {
-        return SignalID{system, static_cast<s32>(id)};
-    } else if (system == GNSS_System::BDS) {
-        return SignalID{system, static_cast<s32>(id)};
+    if (gnss == Gnss::GPS) {
+        return SignalId(gnss, static_cast<int32_t>(id));
+    } else if (gnss == Gnss::GLONASS) {
+        return SignalId(gnss, static_cast<int32_t>(id));
+    } else if (gnss == Gnss::GALILEO) {
+        return SignalId(gnss, static_cast<int32_t>(id));
+    } else if (gnss == Gnss::BEIDOU) {
+        return SignalId(gnss, static_cast<int32_t>(id));
     } else {
         assert(false);
         return {};
     }
 }
 
-const std::string SignalID::name() const {
+std::string SignalId::to_string() const {
     auto id = lpp_id();
 
-    if (system == GNSS_System::GPS) {
+    if (mGnss == Gnss::GPS) {
         return GPS_NAMES[id];
-    } else if (system == GNSS_System::GLONASS) {
+    } else if (mGnss == Gnss::GLONASS) {
         return GLONASS_NAMES[id];
-    } else if (system == GNSS_System::GALILEO) {
+    } else if (mGnss == Gnss::GALILEO) {
         return GALILEO_NAMES[id];
-    } else if (system == GNSS_System::BDS) {
+    } else if (mGnss == Gnss::BEIDOU) {
         return BDS_NAMES[id];
     } else {
         assert(false);
@@ -196,33 +133,33 @@ const std::string SignalID::name() const {
     }
 }
 
-Optional<long> SignalID::rtcm_msm_id() const {
-    if (id < 0 || id >= 24) {
-        return {};
+Maybe<long> SignalId::as_msm() const {
+    if (mLppId < 0 || mLppId >= 24) {
+        return Maybe<long>();
     }
 
     auto result = -1;
-    if (system == GNSS_System::GPS) {
-        result = GPS_LPP_TO_RTCM[id];
-    } else if (system == GNSS_System::GLONASS) {
-        result = GLONASS_LPP_TO_RTCM[id];
-    } else if (system == GNSS_System::GALILEO) {
-        result = GALILEO_LPP_TO_RTCM[id];
-    } else if (system == GNSS_System::BDS) {
-        result = BDS_LPP_TO_RTCM[id];
+    if (mGnss == Gnss::GPS) {
+        result = GPS_LPP_TO_RTCM[mLppId];
+    } else if (mGnss == Gnss::GLONASS) {
+        result = GLONASS_LPP_TO_RTCM[mLppId];
+    } else if (mGnss == Gnss::GALILEO) {
+        result = GALILEO_LPP_TO_RTCM[mLppId];
+    } else if (mGnss == Gnss::BEIDOU) {
+        result = BDS_LPP_TO_RTCM[mLppId];
     } else {
         assert(false);
-        return {};
+        return Maybe<long>();
     }
 
     if (result < 0) {
-        return {};
+        return Maybe<long>();
     }
 
     return result;
 }
 
-long SignalID::lpp_id() const {
-    assert(id >= 0 && id < 24);
-    return id;
+long SignalId::lpp_id() const {
+    assert(mLppId >= 0 && mLppId < 24);
+    return mLppId;
 }

@@ -20,7 +20,7 @@ public:
     RTCM_EXPLICIT TAI_Time(const BDT_Time& time);
 
     RTCM_NODISCARD Timestamp timestamp() const { return tm; }
-    RTCM_NODISCARD std::string rtklib_time_string();
+    RTCM_NODISCARD std::string rtklib_time_string() const;
 
     RTCM_NODISCARD static TAI_Time now();
 

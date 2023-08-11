@@ -4,8 +4,19 @@
 #include <vector>
 #include "maybe.hpp"
 #include "satellite_id.hpp"
+#include "signal_id.hpp"
 #include "time/tai_time.hpp"
 #include "types.hpp"
+
+enum GenericGnssId {
+    GPS,
+    GLONASS,
+    GALILEO,
+    BEIDOU,
+};
+
+namespace generator {
+namespace rtcm {
 
 struct CommonObservationInfo {
     uint32_t reference_station_id;
@@ -15,7 +26,7 @@ struct CommonObservationInfo {
     long     smooth_interval;
 };
 
-struct ReferenceStationInfo {
+struct ReferenceStation {
     uint32_t      reference_station_id;
     double        x;
     double        y;
@@ -24,7 +35,7 @@ struct ReferenceStationInfo {
     bool          is_physical_reference_station;
 };
 
-struct PhysicalReferenceStationInfo {
+struct PhysicalReferenceStation {
     uint32_t reference_station_id;
     double   x;
     double   y;
@@ -32,7 +43,7 @@ struct PhysicalReferenceStationInfo {
 };
 
 struct Signal {
-    uint32_t      id;
+    SignalId      id;
     SatelliteId   satellite;
     Maybe<double> fine_phase_range;
     Maybe<double> fine_pseudo_range;
@@ -40,6 +51,8 @@ struct Signal {
     Maybe<double> carrier_to_noise_ratio;
     Maybe<double> lock_time;
     bool          half_cycle_ambiguity;
+
+    uint32_t lowest_msm_version() const;
 };
 
 struct Satellite {
@@ -47,19 +60,53 @@ struct Satellite {
     Maybe<int32_t> integer_ms;
     Maybe<double>  rough_range;
     Maybe<double>  rough_phase_range_rate;
-};
 
-enum GenericGnssId {
-    GPS,
-    GLONASS,
-    GALILEO,
-    BEIDOU,
+    Maybe<int32_t> frequency_channel;
+
+    uint32_t lowest_msm_version() const;
 };
 
 struct Observations {
     TAI_Time               time;
     std::vector<Signal>    signals;
     std::vector<Satellite> satellites;
+
+    uint32_t lowest_msm_version() const;
+};
+
+struct BiasInformation {
+    uint32_t      reference_station_id;
+    uint8_t       mask;
+    Maybe<double> l1_ca;
+    Maybe<double> l1_p;
+    Maybe<double> l2_ca;
+    Maybe<double> l2_p;
+    bool          indicator;
+};
+
+struct Residuals {
+    struct Satellite {
+        SatelliteId id;
+        double      s_oc;
+        double      s_od;
+        double      s_oh;
+        double      s_lc;
+        double      s_ld;
+    };
+
+    TAI_Time               time;
+    uint32_t               reference_station_id;
+    uint32_t               n_refs;
+    std::vector<Satellite> satellites;
+};
+
+struct AuxiliaryInformation {
+    struct Satellite {
+        SatelliteId    id;
+        Maybe<int32_t> frequency_channel;
+    };
+
+    std::unordered_map<SatelliteId, Satellite> satellites;
 };
 
 class RtkData {
@@ -68,10 +115,18 @@ public:
     ~RtkData() = default;
 
     std::unique_ptr<CommonObservationInfo>        common_observation_info;
-    std::unique_ptr<ReferenceStationInfo>         reference_station_info;
-    std::unique_ptr<PhysicalReferenceStationInfo> physical_reference_station_info;
+    std::unique_ptr<ReferenceStation>         reference_station;
+    std::unique_ptr<PhysicalReferenceStation> physical_reference_station;
 
     std::unordered_map<GenericGnssId, std::unique_ptr<Observations>> observations;
 
+    std::unique_ptr<BiasInformation>      bias_information;
+    std::unique_ptr<Residuals>            gps_residuals;
+    std::unique_ptr<Residuals>            glonass_residuals;
+    std::unique_ptr<AuxiliaryInformation> auxiliary_information;
+
 private:
 };
+
+}  // namespace rtcm
+}  // namespace generator

@@ -3,6 +3,8 @@
 #include <GNSS-RTK-CommonObservationInfo-r15.h>
 #include <asn.1/bit_string.hpp>
 
+using namespace generator::rtcm;
+
 namespace decode {
 static uint32_t reference_station_id(const GNSS_RTK_CommonObservationInfo_r15& src_common) {
     // TODO(ewasjon): Support parsing the reference station provider name.

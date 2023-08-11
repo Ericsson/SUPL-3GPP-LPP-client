@@ -119,7 +119,7 @@ UTC_Time::UTC_Time(const GLO_Time& time) : tm(time.utc_timestamp()) {}
 UTC_Time::UTC_Time(const GST_Time& time) : tm(time.utc_timestamp()) {}
 UTC_Time::UTC_Time(const BDT_Time& time) : tm(time.utc_timestamp()) {}
 
-std::string UTC_Time::rtklib_time_string() {
+std::string UTC_Time::rtklib_time_string() const {
     constexpr int fraction_digits = 12;
 
     auto ts    = timestamp();

@@ -5,6 +5,7 @@ namespace osr_example {
 
 enum class Format {
     RTCM,
+    RG2,
     XER,
 };
 

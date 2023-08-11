@@ -1,6 +1,6 @@
 #pragma once
-#include "timestamp.hpp"
 #include <string>
+#include "timestamp.hpp"
 
 class TAI_Time;
 class GPS_Time;
@@ -18,7 +18,7 @@ public:
     RTCM_EXPLICIT UTC_Time(const BDT_Time& time);
 
     RTCM_NODISCARD Timestamp timestamp() const { return tm; }
-    RTCM_NODISCARD std::string    rtklib_time_string();
+    RTCM_NODISCARD std::string rtklib_time_string() const;
 
     UTC_Time& add(TsInt seconds) {
         tm.add(seconds);

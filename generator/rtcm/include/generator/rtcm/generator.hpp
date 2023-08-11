@@ -1,6 +1,7 @@
 #pragma once
 #include <generator/rtcm/types.hpp>
 #include <vector>
+#include <memory>
 
 struct LPP_Message;
 
@@ -11,10 +12,10 @@ namespace rtcm {
 struct MessageFilter {
     /// @brief Which GNSS systems to generate RTCM messages for.
     struct {
-        bool gps;
-        bool glonass;
-        bool galileo;
-        bool beidou;
+        bool gps     = true;
+        bool glonass = true;
+        bool galileo = true;
+        bool beidou  = true;
     } systems;
 
     /// @brief Which MSM messages should be considered.
@@ -28,23 +29,26 @@ struct MessageFilter {
         /// @brief If possible generate MSM7 messages.
         bool msm7 = true;
 
-        /// @brief Force generate MSM4 messages, this may not be lossless.
+        /// @brief Force generate MSM4 messages, this may not be lossless. NOTE: Set one of the
+        /// force msm booleans at a time, having more than one set to true is not supported.
         bool force_msm4 = false;
-        /// @brief Force generate MSM5 messages, this may not be lossless.
+        /// @brief Force generate MSM5 messages, this may not be lossless. NOTE: Set one of the
+        /// force msm booleans at a time, having more than one set to true is not supported.
         bool force_msm5 = false;
-        /// @brief Force generate MSM6 messages, this may not be lossless.
+        /// @brief Force generate MSM6 messages, this may not be lossless. NOTE: Set one of the
+        /// force msm booleans at a time, having more than one set to true is not supported.
         bool force_msm6 = false;
-        /// @brief Force generate MSM7 messages, this may not be lossless.
+        /// @brief Force generate MSM7 messages, this may not be lossless. NOTE: Set one of the
+        /// force msm booleans at a time, having more than one set to true is not supported.
         bool force_msm7 = false;
     } msm;
 
     /// @brief Which reference station messages should be generated.
     struct {
-        /// @brief Generate MT1005 - Reference station. NOTE: If mt1005 and mt1006 are both true,
-        /// two messages will be generated.
+        /// @brief Generate MT1005 - Reference station. NOTE: mt1006 has priority over mt1005 if
+        /// both are enabled.
         bool mt1005 = true;
-        /// @brief Generate MT1006 - Reference station (with height). NOTE: If mt1005 and mt1006 are
-        /// both true, two messages will be generated.
+        /// @brief Generate MT1006 - Reference station (with height).
         bool mt1006 = true;
         /// @brief Generate MT1032 - Physical reference station.
         bool mt1032 = true;
@@ -72,12 +76,16 @@ public:
         : mId(id),
           mData(std::move(data)) {}
 
+    RTCM_NODISCARD uint32_t id() const RTCM_NOEXCEPT { return mId; }
+    RTCM_NODISCARD const std::vector<uint8_t>& data() const RTCM_NOEXCEPT { return mData; }
+
 private:
     uint32_t             mId;
     std::vector<uint8_t> mData;
 };
 
-class ObservationData;
+struct ReferenceStation;
+struct PhysicalReferenceStation;
 
 /// @brief Generates RTCM messages based on LPP RTK messages.
 class Generator {
@@ -95,14 +103,9 @@ public:
     std::vector<Message> generate(const LPP_Message* lpp_message, const MessageFilter& filter);
 
 private:
-    struct StoredReferenceStation {
-        uint32_t id;
-        double   x;
-        double   y;
-        double   z;
-    };
-
-    ObservationData* mObservationData;
+    uint32_t mGenerationIndex;
+    std::unique_ptr<ReferenceStation> mReferenceStation;
+    std::unique_ptr<PhysicalReferenceStation> mPhysicalReferenceStation;
 };
 
 }  // namespace rtcm

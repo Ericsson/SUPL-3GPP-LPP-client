@@ -47,7 +47,6 @@
 #endif
 #ifndef UBLOX_UNREACHABLE
 #define UBLOX_UNREACHABLE() ublox_unreachable()
-
 __attribute__((noreturn)) inline void ublox_unreachable() {
     assert(false);
 }
