@@ -14,6 +14,7 @@ static uint32_t msm_message_id(uint32_t msm, GenericGnssId gnss) {
     case GenericGnssId::GALILEO: return 1090 + msm;
     case GenericGnssId::BEIDOU: return 1120 + msm;
     }
+    return 0;
 }
 
 static void df397(Encoder& encoder, const Satellite& satellite) {

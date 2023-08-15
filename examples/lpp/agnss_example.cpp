@@ -5,26 +5,27 @@
 #include <transmitter/transmitter.h>
 #include <utility/types.h>
 
-namespace agnss_example {
-
-static Format                             gFormat;
-static CellID                             gCell;
-static std::vector<interface::Interface*> gInterfaces;
+static agnss_example::Format gFormat;
+static CellID                gCell;
+static Options               gOptions;
 
 static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-void execute(const LocationServerOptions& location_server_options,
-             const IdentityOptions& identity_options, const CellOptions& cell_options,
-             UNUSED const ModemOptions& modem_options, const OutputOptions& output_options,
-             Format format) {
-    gFormat = format;
-    gCell   = CellID{
-          .mcc  = cell_options.mcc,
-          .mnc  = cell_options.mnc,
-          .tac  = cell_options.tac,
-          .cell = cell_options.cid,
+void execute(Options options, agnss_example::Format format) {
+    gOptions = std::move(options);
+    gFormat  = format;
+
+    auto& cell_options            = gOptions.cell_options;
+    auto& location_server_options = gOptions.location_server_options;
+    auto& identity_options        = gOptions.identity_options;
+    auto& output_options          = gOptions.output_options;
+
+    gCell = CellID{
+        .mcc  = cell_options.mcc,
+        .mnc  = cell_options.mnc,
+        .tac  = cell_options.tac,
+        .cell = cell_options.cid,
     };
-    gInterfaces = output_options.interfaces;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -36,7 +37,7 @@ void execute(const LocationServerOptions& location_server_options,
     printf("  cell information:   %ld:%ld:%ld:%ld (mcc:mnc:tac:id)\n", gCell.mcc, gCell.mnc,
            gCell.tac, gCell.cell);
 
-    for (auto interface : gInterfaces) {
+    for (auto& interface : output_options.interfaces) {
         interface->open();
         interface->print_info();
     }
@@ -69,7 +70,7 @@ void execute(const LocationServerOptions& location_server_options,
 
 static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message,
                                            void*) {
-    if (gFormat == Format::XER) {
+    if (gFormat == agnss_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
@@ -80,12 +81,38 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
             },
             &buffer);
         auto message = buffer.str();
-        for (auto interface : gInterfaces) {
+        for (auto& interface : gOptions.output_options.interfaces) {
             interface->write(message.c_str(), message.size());
         }
     } else {
         throw std::runtime_error("Unsupported format");
     }
+}
+
+namespace agnss_example {
+
+void AgnssCommand::parse(args::Subparser& parser) {
+    // NOTE: parse may be called multiple times
+    delete mFormatArg;
+
+    mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format", {'f', "format"},
+                                                  args::Options::Single);
+    mFormatArg->HelpDefault("xer");
+    mFormatArg->HelpChoices({"xer"});
+}
+
+void AgnssCommand::execute(Options options) {
+    auto format = Format::XER;
+
+    if (*mFormatArg) {
+        if (mFormatArg->Get() == "xer") {
+            format = Format::XER;
+        } else {
+            throw args::ValidationError("Invalid format");
+        }
+    }
+
+    ::execute(std::move(options), format);
 }
 
 }  // namespace agnss_example

@@ -1,5 +1,5 @@
 #pragma once
-#include "example.h"
+#include "options.hpp"
 
 namespace ssr_example {
 
@@ -7,9 +7,28 @@ enum class Format {
     XER,
 };
 
-void execute(const LocationServerOptions& location_server_options,
-             const IdentityOptions& identity_options, const CellOptions& cell_options,
-             const ModemOptions& modem_options, const OutputOptions& output_options, Format format,
-             int ura_override, bool ublox_clock_correction, bool force_continuity);
+class SsrCommand final : public Command {
+public:
+    SsrCommand()
+        : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
+          mFormatArg(nullptr), mUraOverrideArg(nullptr), mUbloxClockCorrectionArg(nullptr),
+          mForceContinuityArg(nullptr) {}
+
+    ~SsrCommand() override {
+        delete mFormatArg;
+        delete mUraOverrideArg;
+        delete mUbloxClockCorrectionArg;
+        delete mForceContinuityArg;
+    }
+
+    void parse(args::Subparser& parser) override;
+    void execute(Options options) override;
+
+private:
+    args::ValueFlag<std::string>* mFormatArg;
+    args::ValueFlag<int>*         mUraOverrideArg;
+    args::Flag*                   mUbloxClockCorrectionArg;
+    args::Flag*                   mForceContinuityArg;
+};
 
 }  // namespace ssr_example

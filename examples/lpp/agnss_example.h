@@ -1,5 +1,5 @@
 #pragma once
-#include "example.h"
+#include "options.hpp"
 
 namespace agnss_example {
 
@@ -7,8 +7,19 @@ enum class Format {
     XER,
 };
 
-void execute(const LocationServerOptions& location_server_options,
-             const IdentityOptions& identity_options, const CellOptions& cell_options,
-             const ModemOptions& modem_options, const OutputOptions& output_options, Format format);
+class AgnssCommand final : public Command {
+public:
+    AgnssCommand()
+        : Command("agnss", "Request Assisted GNSS data from the location server"),
+          mFormatArg(nullptr) {}
+
+    ~AgnssCommand() override { delete mFormatArg; }
+
+    void parse(args::Subparser& parser) override;
+    void execute(Options options) override;
+
+private:
+    args::ValueFlag<std::string>* mFormatArg;
+};
 
 }  // namespace agnss_example

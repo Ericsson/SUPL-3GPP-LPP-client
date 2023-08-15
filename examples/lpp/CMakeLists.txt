@@ -6,6 +6,7 @@ add_executable(example_lpp
     "ssr_example.cpp" 
     "agnss_example.cpp" 
     "location_information.cpp"
+    "options.cpp"
 )
 add_executable(examples::lpp ALIAS example_lpp)
 
@@ -15,6 +16,7 @@ target_link_libraries(example_lpp PRIVATE args)
 target_link_libraries(example_lpp PRIVATE transmitter)
 target_link_libraries(example_lpp PRIVATE generator::rtcm)
 target_link_libraries(example_lpp PRIVATE dependency::interface)
+target_link_libraries(example_lpp PRIVATE receiver::ublox)
 
 if (USE_OPENSSL)
 target_link_libraries(example_lpp PRIVATE OpenSSL::SSL)

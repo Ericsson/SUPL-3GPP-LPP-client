@@ -6,7 +6,7 @@
 using namespace generator::rtcm;
 
 extern generator::rtcm::Message generate_1030(const Residuals& residuals) {
-    auto message_id = 1030;
+    auto message_id = 1030U;
     auto time       = GPS_Time(residuals.time).time_of_week().seconds();
 
     auto encoder = Encoder();
@@ -47,7 +47,7 @@ extern generator::rtcm::Message generate_1030(const Residuals& residuals) {
 }
 
 extern generator::rtcm::Message generate_1031(const Residuals& residuals) {
-    auto message_id = 1031;
+    auto message_id = 1031U;
     auto time       = GLO_Time(residuals.time).time_of_day().seconds();
 
     auto encoder = Encoder();
