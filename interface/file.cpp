@@ -7,80 +7,74 @@ namespace interface {
 
 FileInterface::FileInterface(std::string file_path, bool truncate) IF_NOEXCEPT
     : mFilePath(std::move(file_path)),
-      mFileDescriptor(-1),
-      mTruncate(truncate) {}
+      mTruncate(truncate),
+      mFileDescriptor(-1) {}
 
 FileInterface::~FileInterface() IF_NOEXCEPT {
     close();
 }
 
 void FileInterface::open() {
-    if (mFileDescriptor >= 0) {
+    if (is_open()) {
         return;
     }
 
+    int fd = -1;
     if (mTruncate) {
-        mFileDescriptor = ::open(mFilePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        fd = ::open(mFilePath.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     } else {
-        mFileDescriptor = ::open(mFilePath.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+        fd = ::open(mFilePath.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
     }
 
-    if (mFileDescriptor < 0) {
+    if (fd < 0) {
         throw std::runtime_error("Failed to open file");
     }
+
+    mFileDescriptor = FileDescriptor(fd);
 }
 
 void FileInterface::close() {
-    if (mFileDescriptor >= 0) {
-        ::close(mFileDescriptor);
-        mFileDescriptor = -1;
-    }
+    mFileDescriptor.close();
 }
 
 size_t FileInterface::read(void* data, size_t length) {
-    if (mFileDescriptor < 0) {
-        throw std::runtime_error("File not open");
-    }
-
-    auto bytes_read = ::read(mFileDescriptor, data, length);
-    if (bytes_read < 0) {
-        throw std::runtime_error("Failed to read from file");
-    }
-
-    return bytes_read;
+    return mFileDescriptor.read(data, length);
 }
 
 size_t FileInterface::write(const void* data, const size_t size) {
-    if (mFileDescriptor < 0) {
-        throw std::runtime_error("File not open");
-    }
-
-    auto bytes_written = ::write(mFileDescriptor, data, size);
-    if (bytes_written < 0) {
-        throw std::runtime_error("Failed to write to file");
-    }
-
-    return bytes_written;
+    return mFileDescriptor.write(data, size);
 }
 
 bool FileInterface::can_read() IF_NOEXCEPT {
-    return false;
+    return mFileDescriptor.can_read();
 }
 
 bool FileInterface::can_write() IF_NOEXCEPT {
-    return false;
+    return mFileDescriptor.can_write();
 }
 
-void FileInterface::wait_for_read() IF_NOEXCEPT {}
+void FileInterface::wait_for_read() IF_NOEXCEPT {
+    mFileDescriptor.wait_for_read();
+}
 
-void FileInterface::wait_for_write() IF_NOEXCEPT {}
+void FileInterface::wait_for_write() IF_NOEXCEPT {
+    mFileDescriptor.wait_for_write();
+}
 
 bool FileInterface::is_open() IF_NOEXCEPT {
-    return false;
+    return mFileDescriptor.is_open();
 }
 
 void FileInterface::print_info() IF_NOEXCEPT {
-
+    printf("[interface]\n");
+    printf("  type:       file\n");
+    printf("  path:       %s\n", mFilePath.c_str());
+    printf("  truncate:   %s\n", mTruncate ? "true" : "false");
+    if (is_open()) {
+        printf("  fd:         %d\n", mFileDescriptor.fd());
+    } else {
+        printf("  fd:         closed\n");
+    }
 }
 
 //

@@ -45,6 +45,19 @@ public:
     IF_NODISCARD int type() const IF_NOEXCEPT { return mType; }
     IF_NODISCARD int protocol() const IF_NOEXCEPT { return mProtocol; }
 
+    IF_NODISCARD std::string to_string() const IF_NOEXCEPT {
+        char buffer[INET6_ADDRSTRLEN];
+        switch (mFamily) {
+        case AF_INET:
+            inet_ntop(mFamily, &mAddr.in4.sin_addr, buffer, INET_ADDRSTRLEN);
+            return std::string(buffer) + ":" + std::to_string(ntohs(mAddr.in4.sin_port));
+        case AF_INET6:
+            inet_ntop(mFamily, &mAddr.in6.sin6_addr, buffer, INET6_ADDRSTRLEN);
+            return std::string(buffer) + ":" + std::to_string(ntohs(mAddr.in6.sin6_port));
+        default: return "Unsupported network address";
+        }
+    }
+
 private:
     int mFamily;
     int mType;
@@ -90,8 +103,10 @@ public:
 
     IF_NODISCARD Error error() const IF_NOEXCEPT;
     IF_NODISCARD bool  is_open() const IF_NOEXCEPT;
+    IF_NODISCARD int   socket() const IF_NOEXCEPT { return mSocket; }
 
     void set_non_blocking(bool non_blocking) IF_NOEXCEPT;
+
 private:
     IF_NODISCARD bool select(bool read, bool write, bool except, timeval* tv) IF_NOEXCEPT;
     void              set_error(Error error) IF_NOEXCEPT;

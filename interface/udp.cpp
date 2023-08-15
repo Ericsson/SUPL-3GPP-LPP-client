@@ -79,7 +79,12 @@ bool UdpInterface::is_open() IF_NOEXCEPT {
 }
 
 void UdpInterface::print_info() IF_NOEXCEPT {
-
+    printf("[interface]\n");
+    printf("  type:       udp\n");
+    printf("  host:       %s\n", mHost.c_str());
+    printf("  port:       %u\n", mPort);
+    printf("  reconnect:  %s\n", mReconnect ? "true" : "false");
+    mSocket.print_info();
 }
 
 //

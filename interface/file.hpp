@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "file_descriptor.hpp"
 #include "interface.hpp"
 
 namespace interface {
@@ -22,12 +23,12 @@ public:
     void wait_for_write() IF_NOEXCEPT override;
 
     IF_NODISCARD bool is_open() IF_NOEXCEPT override;
-    void print_info() IF_NOEXCEPT override;
+    void              print_info() IF_NOEXCEPT override;
 
 private:
-    std::string mFilePath;
-    int         mFileDescriptor;
-    bool        mTruncate;
+    std::string    mFilePath;
+    bool           mTruncate;
+    FileDescriptor mFileDescriptor;
 };
 
 }  // namespace interface

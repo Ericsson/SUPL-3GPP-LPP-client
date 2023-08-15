@@ -79,7 +79,12 @@ bool TcpInterface::is_open() IF_NOEXCEPT {
 }
 
 void TcpInterface::print_info() IF_NOEXCEPT {
-
+    printf("[interface]\n");
+    printf("  type:       tcp\n");
+    printf("  host:       %s\n", mHost.c_str());
+    printf("  port:       %u\n", mPort);
+    printf("  reconnect:  %s\n", mReconnect ? "true" : "false");
+    mSocket.print_info();
 }
 
 //

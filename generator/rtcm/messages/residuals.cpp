@@ -29,11 +29,11 @@ extern generator::rtcm::Message generate_1030(const Residuals& residuals) {
         if (!satellite.id.as_df009().valid) continue;
 
         encoder.u8(6, satellite.id.as_df009().value);
-        encoder.u32(8, static_cast<int32_t>(satellite.s_oc / 0.5));
-        encoder.u32(9, static_cast<int32_t>(satellite.s_od / 0.01));
-        encoder.u32(6, static_cast<int32_t>(satellite.s_oh / 0.1));
-        encoder.u32(10, static_cast<int32_t>(satellite.s_lc / 0.5));
-        encoder.u32(10, static_cast<int32_t>(satellite.s_ld / 0.01));
+        encoder.u32(8, static_cast<uint32_t>(satellite.s_oc / 0.5));
+        encoder.u32(9, static_cast<uint32_t>(satellite.s_od / 0.01));
+        encoder.u32(6, static_cast<uint32_t>(satellite.s_oh / 0.1));
+        encoder.u32(10, static_cast<uint32_t>(satellite.s_lc / 0.5));
+        encoder.u32(10, static_cast<uint32_t>(satellite.s_ld / 0.01));
     }
 
     auto frame_encoder = Encoder();
@@ -70,11 +70,11 @@ extern generator::rtcm::Message generate_1031(const Residuals& residuals) {
         if (!satellite.id.as_df038().valid) continue;
 
         encoder.u8(6, satellite.id.as_df038().value);
-        encoder.u32(8, static_cast<int32_t>(satellite.s_oc / 0.5));
-        encoder.u32(9, static_cast<int32_t>(satellite.s_od / 0.01));
-        encoder.u32(6, static_cast<int32_t>(satellite.s_oh / 0.1));
-        encoder.u32(10, static_cast<int32_t>(satellite.s_lc / 0.5));
-        encoder.u32(10, static_cast<int32_t>(satellite.s_ld / 0.01));
+        encoder.u32(8, static_cast<uint32_t>(satellite.s_oc / 0.5));
+        encoder.u32(9, static_cast<uint32_t>(satellite.s_od / 0.01));
+        encoder.u32(6, static_cast<uint32_t>(satellite.s_oh / 0.1));
+        encoder.u32(10, static_cast<uint32_t>(satellite.s_lc / 0.5));
+        encoder.u32(10, static_cast<uint32_t>(satellite.s_ld / 0.01));
     }
 
     auto frame_encoder = Encoder();

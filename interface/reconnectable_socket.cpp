@@ -91,6 +91,31 @@ void ReconnectableSocket::try_reconnect() IF_NOEXCEPT {
     mSocket.set_non_blocking(true);
 }
 
+void ReconnectableSocket::print_info() IF_NOEXCEPT {
+    printf("  [socket]\n");
+    switch (mAddress.family()) {
+    case AF_INET: printf("    family:     AF_INET\n"); break;
+    case AF_INET6: printf("    family:     AF_INET6\n"); break;
+    default: printf("    family:     AF_??? (%d)\n", mAddress.family()); break;
+    }
+    switch (mAddress.type()) {
+    case SOCK_STREAM: printf("    type:       SOCK_STREAM\n"); break;
+    case SOCK_DGRAM: printf("    type:       SOCK_DGRAM\n"); break;
+    default: printf("    type:       SOCK_??? (%d)\n", mAddress.type()); break;
+    }
+    switch (mAddress.protocol()) {
+    case IPPROTO_TCP: printf("    protocol:   IPPROTO_TCP\n"); break;
+    case IPPROTO_UDP: printf("    protocol:   IPPROTO_UDP\n"); break;
+    default: printf("    protocol:   IPPROTO_??? (%d)\n", mAddress.protocol()); break;
+    }
+    printf("    address:    %s\n", mAddress.to_string().c_str());
+    if (mSocket.is_open()) {
+        printf("    fd:         %d\n", mSocket.socket());
+    } else {
+        printf("    fd:         closed\n");
+    }
+}
+
 ReconnectableSocket ReconnectableSocket::connect(NetworkAddress address,
                                                  bool           should_reconnect) IF_NOEXCEPT {
     SOCKET_DEBUG("[rcsock/%6d] new socket...\n", -1);

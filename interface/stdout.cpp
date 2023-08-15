@@ -53,7 +53,13 @@ bool StdoutInterface::is_open() IF_NOEXCEPT {
 }
 
 void StdoutInterface::print_info() IF_NOEXCEPT {
-
+    printf("[interface]\n");
+    printf("  type:       stdout\n");
+    if (is_open()) {
+        printf("  fd:         %d\n", mFileDescriptor.fd());
+    } else {
+        printf("  fd:         closed\n");
+    }
 }
 
 //

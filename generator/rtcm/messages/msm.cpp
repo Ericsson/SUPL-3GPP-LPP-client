@@ -64,7 +64,7 @@ static void df_ext(Encoder& encoder, const Satellite& satellite) {
 static void df400(Encoder& encoder, const Signal& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_pseudo_range.value * RTCM_P2_24));
     if (signal.fine_phase_range.valid) {
-        encoder.i16(15, static_cast<uint16_t>(value));
+        encoder.i16(15, static_cast<int16_t>(value));
     } else {
         encoder.i16(15, 0x4000);
     }
@@ -73,7 +73,7 @@ static void df400(Encoder& encoder, const Signal& signal) {
 static void df401(Encoder& encoder, const Signal& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range.value * RTCM_P2_29));
     if (signal.fine_pseudo_range.valid) {
-        encoder.i32(22, static_cast<uint32_t>(value));
+        encoder.i32(22, static_cast<int32_t>(value));
     } else {
         encoder.i32(22, 0x200000);
     }
@@ -109,7 +109,7 @@ static void df404(Encoder& encoder, const Signal& signal) {
 static void df405(Encoder& encoder, const Signal& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_pseudo_range.value * RTCM_P2_29));
     if (signal.fine_phase_range.valid) {
-        encoder.i32(20, static_cast<uint32_t>(value));
+        encoder.i32(20, static_cast<int32_t>(value));
     } else {
         encoder.i32(20, 0x80000);
     }
@@ -118,7 +118,7 @@ static void df405(Encoder& encoder, const Signal& signal) {
 static void df406(Encoder& encoder, const Signal& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range.value * RTCM_P2_31));
     if (signal.fine_pseudo_range.valid) {
-        encoder.i32(24, static_cast<uint32_t>(value));
+        encoder.i32(24, static_cast<int32_t>(value));
     } else {
         encoder.i32(24, 0x800000);
     }

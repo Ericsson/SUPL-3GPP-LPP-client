@@ -67,7 +67,10 @@ bool I2CInterface::is_open() IF_NOEXCEPT {
 }
 
 void I2CInterface::print_info() IF_NOEXCEPT {
-
+    printf("[interface]\n");
+    printf("  type:       i2c\n");
+    printf("  device:     %s\n", mDevicePath.c_str());
+    printf("  address:  0x%02x\n", mAddress);
 }
 
 //

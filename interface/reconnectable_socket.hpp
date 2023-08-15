@@ -24,6 +24,7 @@ public:
 
     IF_NODISCARD bool is_open() const IF_NOEXCEPT;
     void              try_reconnect() IF_NOEXCEPT;
+    void              print_info() IF_NOEXCEPT;
 
     static IF_NODISCARD ReconnectableSocket connect(NetworkAddress address,
                                                     bool           should_reconnect) IF_NOEXCEPT;

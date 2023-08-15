@@ -202,35 +202,34 @@ void SerialInterface::print_info() IF_NOEXCEPT {
     printf("  type:       serial\n");
     printf("  device:     %s\n", mDevicePath.c_str());
     printf("  [configured]\n");
-    printf("    baud rate:  %d (0x%X) 0o%o\n", mBaudRate, mBaudRate, mBaudRateConstant);
+    printf("    baud rate:  %d (0x%X,B%o)\n", mBaudRate, mBaudRate, mBaudRateConstant);
 
     switch (mDataBits) {
-    case DataBits::FIVE: printf("  data bits:  5\n"); break;
-    case DataBits::SIX: printf("  data bits:  6\n"); break;
-    case DataBits::SEVEN: printf("  data bits:  7\n"); break;
-    case DataBits::EIGHT: printf("  data bits:  8\n"); break;
+    case DataBits::FIVE: printf("    data bits:  5\n"); break;
+    case DataBits::SIX: printf("    data bits:  6\n"); break;
+    case DataBits::SEVEN: printf("    data bits:  7\n"); break;
+    case DataBits::EIGHT: printf("    data bits:  8\n"); break;
     }
 
     switch (mStopBits) {
-    case StopBits::ONE: printf("  stop bits:  1\n"); break;
-    case StopBits::TWO: printf("  stop bits:  2\n"); break;
+    case StopBits::ONE: printf("    stop bits:  1\n"); break;
+    case StopBits::TWO: printf("    stop bits:  2\n"); break;
     }
 
     switch (mParityBit) {
-    case ParityBit::NONE: printf("  parity bit: none\n"); break;
-    case ParityBit::ODD: printf("  parity bit: odd\n"); break;
-    case ParityBit::EVEN: printf("  parity bit: even\n"); break;
+    case ParityBit::NONE: printf("    parity bit: none\n"); break;
+    case ParityBit::ODD: printf("    parity bit: odd\n"); break;
+    case ParityBit::EVEN: printf("    parity bit: even\n"); break;
     }
 
     printf("  [actual]\n");
-
     if (mFileDescriptor.is_open()) {
         struct termios tty;
         memset(&tty, 0, sizeof tty);
         if (tcgetattr(mFileDescriptor.fd(), &tty) == 0) {
-            printf("    output baud rate:  %d (0x%X) 0o%o\n", buad_rate_from_constant(tty.c_ospeed),
+            printf("    output baud rate:  %d (0x%X,B%o)\n", buad_rate_from_constant(tty.c_ospeed),
                    buad_rate_from_constant(tty.c_ospeed), tty.c_ospeed);
-            printf("    input baud rate:   %d (0x%X) 0o%o\n", buad_rate_from_constant(tty.c_ispeed),
+            printf("     input baud rate:  %d (0x%X,B%o)\n", buad_rate_from_constant(tty.c_ispeed),
                    buad_rate_from_constant(tty.c_ispeed), tty.c_ispeed);
 
             switch (tty.c_cflag & CSIZE) {
@@ -255,10 +254,10 @@ void SerialInterface::print_info() IF_NOEXCEPT {
             default: printf("    parity bit: none\n"); break;
             }
         } else {
-            printf("    could not get serial device attributes\n");
+            printf("    device: could not get serial device attributes\n");
         }
     } else {
-        printf("    device is not open\n");
+        printf("    device: closed\n");
     }
 }
 
