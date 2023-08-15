@@ -79,6 +79,10 @@ bool FileInterface::is_open() IF_NOEXCEPT {
     return false;
 }
 
+void FileInterface::print_info() IF_NOEXCEPT {
+
+}
+
 //
 //
 //

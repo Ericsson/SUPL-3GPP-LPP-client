@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <sys/ioctl.h>
 #include <unistd.h>
+#include "file_descriptor.hpp"
 
 namespace interface {
 
@@ -17,68 +18,56 @@ I2CInterface::~I2CInterface() IF_NOEXCEPT {
 }
 
 void I2CInterface::open() {
-    if (mFileDescriptor >= 0) {
+    if (mFileDescriptor.is_open()) {
         return;
     }
 
-    mFileDescriptor = ::open(mDevicePath.c_str(), O_RDWR);
-    if (mFileDescriptor < 0) {
+    auto fd = ::open(mDevicePath.c_str(), O_RDWR);
+    if (fd < 0) {
         throw std::runtime_error("Failed to open I2C device");
     }
 
-    if (ioctl(mFileDescriptor, I2C_SLAVE, mAddress) < 0) {
-        mFileDescriptor = -1;
+    if (ioctl(fd, I2C_SLAVE, mAddress) < 0) {
         throw std::runtime_error("Failed to acquire bus access and/or talk to slave");
     }
+
+    mFileDescriptor = FileDescriptor(fd);
 }
 
 void I2CInterface::close() {
-    if (mFileDescriptor >= 0) {
-        ::close(mFileDescriptor);
-        mFileDescriptor = -1;
-    }
+    mFileDescriptor.close();
 }
 
 size_t I2CInterface::read(void* data, const size_t size) {
-    if (mFileDescriptor < 0) {
-        throw std::runtime_error("I2C device not open");
-    }
-
-    auto bytes_read = ::read(mFileDescriptor, data, size);
-    if (bytes_read < 0) {
-        throw std::runtime_error("Failed to read from I2C device");
-    }
-
-    return bytes_read;
+    return mFileDescriptor.read(data, size);
 }
 
 size_t I2CInterface::write(const void* data, const size_t size) {
-    if (mFileDescriptor < 0) {
-        throw std::runtime_error("I2C device not open");
-    }
-
-    auto bytes_written = ::write(mFileDescriptor, data, size);
-    if (bytes_written < 0) {
-        throw std::runtime_error("Failed to write to I2C device");
-    }
-
-    return bytes_written;
+    return mFileDescriptor.write(data, size);
 }
 
 bool I2CInterface::can_read() IF_NOEXCEPT {
-    return false;
+    return mFileDescriptor.can_read();
 }
 
 bool I2CInterface::can_write() IF_NOEXCEPT {
-    return false;
+    return mFileDescriptor.can_write();
 }
 
-void I2CInterface::wait_for_read() IF_NOEXCEPT {}
+void I2CInterface::wait_for_read() IF_NOEXCEPT {
+    mFileDescriptor.wait_for_read();
+}
 
-void I2CInterface::wait_for_write() IF_NOEXCEPT {}
+void I2CInterface::wait_for_write() IF_NOEXCEPT {
+    mFileDescriptor.wait_for_write();
+}
 
 bool I2CInterface::is_open() IF_NOEXCEPT {
-    return false;
+    return mFileDescriptor.is_open();
+}
+
+void I2CInterface::print_info() IF_NOEXCEPT {
+
 }
 
 //

@@ -1,6 +1,6 @@
 #pragma once
-#include "types.hpp"
 #include <sys/time.h>
+#include "types.hpp"
 
 namespace interface {
 
@@ -33,6 +33,7 @@ public:
 
     IF_NODISCARD Error error() const IF_NOEXCEPT;
     IF_NODISCARD bool  is_open() const IF_NOEXCEPT;
+    IF_NODISCARD int   fd() const IF_NOEXCEPT { return mFileDescriptor; }
 
 private:
     IF_NODISCARD bool select(bool read, bool write, bool except, timeval* tv) IF_NOEXCEPT;

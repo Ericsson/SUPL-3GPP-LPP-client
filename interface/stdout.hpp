@@ -1,15 +1,15 @@
 #pragma once
+#include <cstddef>
 #include <string>
 #include "file_descriptor.hpp"
 #include "interface.hpp"
 
 namespace interface {
 
-class SerialInterface final : public Interface {
+class StdoutInterface final : public Interface {
 public:
-    explicit SerialInterface(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                             StopBits stop_bits, ParityBit parity_bit) IF_NOEXCEPT;
-    ~SerialInterface() IF_NOEXCEPT override;
+    explicit StdoutInterface() IF_NOEXCEPT;
+    ~StdoutInterface() IF_NOEXCEPT override;
 
     void open() override;
     void close() override;
@@ -24,15 +24,9 @@ public:
     void wait_for_write() IF_NOEXCEPT override;
 
     IF_NODISCARD bool is_open() IF_NOEXCEPT override;
-    void              print_info() IF_NOEXCEPT override;
+    void print_info() IF_NOEXCEPT override;
 
 private:
-    std::string    mDevicePath;
-    uint32_t       mBaudRate;
-    uint32_t       mBaudRateConstant;
-    DataBits       mDataBits;
-    StopBits       mStopBits;
-    ParityBit      mParityBit;
     FileDescriptor mFileDescriptor;
 };
 

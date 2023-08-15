@@ -5,7 +5,6 @@ namespace osr_example {
 
 enum class Format {
     RTCM,
-    RG2,
     XER,
 };
 
@@ -13,6 +12,7 @@ enum class MsmType {
     ANY,
     MSM4,
     MSM5,
+    MSM6,
     MSM7,
 };
 

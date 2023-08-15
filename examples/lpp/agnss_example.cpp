@@ -7,9 +7,9 @@
 
 namespace agnss_example {
 
-static Format      gFormat;
-static CellID      gCell;
-static Transmitter gTransmitter;
+static Format                             gFormat;
+static CellID                             gCell;
+static std::vector<interface::Interface*> gInterfaces;
 
 static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
@@ -24,6 +24,7 @@ void execute(const LocationServerOptions& location_server_options,
           .tac  = cell_options.tac,
           .cell = cell_options.cid,
     };
+    gInterfaces = output_options.interfaces;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -35,18 +36,10 @@ void execute(const LocationServerOptions& location_server_options,
     printf("  cell information:   %ld:%ld:%ld:%ld (mcc:mnc:tac:id)\n", gCell.mcc, gCell.mnc,
            gCell.tac, gCell.cell);
 
-    if (output_options.file)
-        gTransmitter.add_file_target(output_options.file->file_path, true /* truncate */);
-    if (output_options.serial)
-        gTransmitter.add_serial_target(output_options.serial->device,
-                                       output_options.serial->baud_rate);
-    if (output_options.i2c)
-        gTransmitter.add_i2c_target(output_options.i2c->device, output_options.i2c->address);
-    if (output_options.tcp)
-        gTransmitter.add_tcp_target(output_options.tcp->ip_address, output_options.tcp->port);
-    if (output_options.udp)
-        gTransmitter.add_udp_target(output_options.udp->ip_address, output_options.udp->port);
-    if (output_options.stdout_output) gTransmitter.add_stdout_target();
+    for (auto interface : gInterfaces) {
+        interface->open();
+        interface->print_info();
+    }
 
     LPP_Client client{false /* enable experimental segmentation support */};
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
@@ -86,7 +79,10 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
                 return 0;
             },
             &buffer);
-        gTransmitter.send(buffer.str().c_str(), buffer.str().size());
+        auto message = buffer.str();
+        for (auto interface : gInterfaces) {
+            interface->write(message.c_str(), message.size());
+        }
     } else {
         throw std::runtime_error("Unsupported format");
     }

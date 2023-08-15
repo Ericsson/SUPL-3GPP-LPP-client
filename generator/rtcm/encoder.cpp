@@ -30,8 +30,6 @@ void Encoder::u32(size_t bits, uint32_t value) {
 
 void Encoder::u64(size_t bits, uint64_t value) {
     assert(bits > 0 && bits <= 64);
-    printf("%4lu|%lu|+%2lu  %08X|+%016" PRIx64 " %" PRIu64 "\n", mBuffer.size(), mBitIndex, bits,
-           mBuffer.size() > 0 ? mBuffer[mBuffer.size() - 1] : 0, value, value);
     for (size_t i = 0; i < bits; i++) {
         auto bit = (value >> (bits - i - 1)) & 1;
         append_bit(bit);

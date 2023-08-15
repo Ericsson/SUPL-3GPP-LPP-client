@@ -22,6 +22,7 @@ public:
     void wait_for_write() IF_NOEXCEPT override;
 
     IF_NODISCARD bool is_open() IF_NOEXCEPT override;
+    void print_info() IF_NOEXCEPT override;
 
 private:
     std::string mFilePath;

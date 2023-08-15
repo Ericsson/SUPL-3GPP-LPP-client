@@ -1,15 +1,15 @@
 #pragma once
+#include <cstddef>
 #include <string>
-#include "file_descriptor.hpp"
 #include "interface.hpp"
+#include "reconnectable_socket.hpp"
 
 namespace interface {
 
-class SerialInterface final : public Interface {
+class UdpInterface final : public Interface {
 public:
-    explicit SerialInterface(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                             StopBits stop_bits, ParityBit parity_bit) IF_NOEXCEPT;
-    ~SerialInterface() IF_NOEXCEPT override;
+    explicit UdpInterface(std::string host, uint16_t port, bool reconnect) IF_NOEXCEPT;
+    ~UdpInterface() IF_NOEXCEPT override;
 
     void open() override;
     void close() override;
@@ -27,13 +27,10 @@ public:
     void              print_info() IF_NOEXCEPT override;
 
 private:
-    std::string    mDevicePath;
-    uint32_t       mBaudRate;
-    uint32_t       mBaudRateConstant;
-    DataBits       mDataBits;
-    StopBits       mStopBits;
-    ParityBit      mParityBit;
-    FileDescriptor mFileDescriptor;
+    std::string         mHost;
+    uint16_t            mPort;
+    bool                mReconnect;
+    ReconnectableSocket mSocket;
 };
 
 }  // namespace interface

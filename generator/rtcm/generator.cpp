@@ -129,8 +129,6 @@ std::vector<Message> Generator::generate(const LPP_Message*   lpp_message,
     auto rtk_data = extract_rtk_data(*lpp_message);
     if (!rtk_data) return messages;
 
-    printf("-- RTK DATA\n");
-
     // Get frequency channel etc. from auxiliary information
     if (rtk_data->auxiliary_information) {
         auto& aux = *rtk_data->auxiliary_information.get();
@@ -261,11 +259,6 @@ std::vector<Message> Generator::generate(const LPP_Message*   lpp_message,
     if (rtk_data->glonass_residuals) {
         auto message = generate_1031(*rtk_data->glonass_residuals.get());
         messages.emplace_back(std::move(message));
-    }
-
-    printf("- MESSAGE COUNT: %zu\n", messages.size());
-    for (auto& message : messages) {
-        printf("  - %04d\n", message.id());
     }
 
     // Update reference station

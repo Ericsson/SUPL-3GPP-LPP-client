@@ -62,6 +62,8 @@ args::ValueFlag<std::string> serial_device{
     serial_group, "device", "Device", {"serial"}, args::Options::Single};
 args::ValueFlag<int> serial_baud_rate{
     serial_group, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
+args::ValueFlag<int> serial_data_bits{
+    serial_group, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
 args::ValueFlag<int> serial_stop_bits{
     serial_group, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
 args::ValueFlag<std::string> serial_parity_bits{
@@ -90,6 +92,17 @@ static std::unique_ptr<Interface> parse_serial() {
         baud_rate = serial_baud_rate.Get();
     }
 
+    auto data_bits = DataBits::EIGHT;
+    if (serial_data_bits) {
+        switch (serial_data_bits.Get()) {
+        case 5: data_bits = DataBits::FIVE; break;
+        case 6: data_bits = DataBits::SIX; break;
+        case 7: data_bits = DataBits::SEVEN; break;
+        case 8: data_bits = DataBits::EIGHT; break;
+        default: throw args::ValidationError("Invalid data bits");
+        }
+    }
+
     auto stop_bits = StopBits::ONE;
     if (serial_stop_bits) {
         switch (serial_stop_bits.Get()) {
@@ -116,6 +129,14 @@ static std::unique_ptr<Interface> parse_serial() {
     printf("  type:       serial\n");
     printf("  device:     %s\n", serial_device.Get().c_str());
     printf("  baud rate:  %d (0x%X)\n", baud_rate, baud_rate);
+
+    switch (data_bits) {
+    case DataBits::FIVE: printf("  data bits:  5\n"); break;
+    case DataBits::SIX: printf("  data bits:  6\n"); break;
+    case DataBits::SEVEN: printf("  data bits:  7\n"); break;
+    case DataBits::EIGHT: printf("  data bits:  8\n"); break;
+    }
+
     switch (stop_bits) {
     case StopBits::ONE: printf("  stop bits:  1\n"); break;
     case StopBits::TWO: printf("  stop bits:  2\n"); break;
@@ -128,7 +149,7 @@ static std::unique_ptr<Interface> parse_serial() {
     }
 
     return std::unique_ptr<Interface>(
-        Interface::serial(serial_device.Get(), baud_rate, stop_bits, parity_bit));
+        Interface::serial(serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
 }
 
 static std::unique_ptr<Interface> parse_i2c() {
@@ -213,8 +234,12 @@ std::unique_ptr<UbloxReceiver> parse_configuration(int argc, char** argv) {
 
     i2c_address.HelpDefault("66");
     serial_baud_rate.HelpDefault("115200");
+
+    serial_data_bits.HelpDefault("8");
+    serial_data_bits.HelpChoices({"5", "6", "7", "8"});
+
     serial_stop_bits.HelpDefault("1");
-    serial_parity_bits.HelpChoices({"1", "2"});
+    serial_stop_bits.HelpChoices({"1", "2"});
 
     serial_parity_bits.HelpDefault("none");
     serial_parity_bits.HelpChoices({

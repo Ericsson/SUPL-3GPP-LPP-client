@@ -1,48 +1,93 @@
-#include "tcp.h"
-
+#include "tcp.hpp"
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdexcept>
+#include <sys/socket.h>
 #include <unistd.h>
 
-TcpTarget::TcpTarget(std::string ip_address, const int port)
-    : mIpAddress(std::move(ip_address)), mPort(port) {
-    mSocket = socket(AF_INET, SOCK_STREAM, 0);
-    if (mSocket < 0) {
-        throw std::runtime_error("Failed to create socket");
-    }
+namespace interface {
+
+TcpInterface::TcpInterface(std::string host, uint16_t port, bool reconnect) IF_NOEXCEPT
+    : mHost(std::move(host)),
+      mPort(port),
+      mReconnect(reconnect) {}
+
+TcpInterface::~TcpInterface() IF_NOEXCEPT {
+    close();
 }
 
-TcpTarget::~TcpTarget() {
-    if (mSocket >= 0) {
-        close(mSocket);
-    }
-}
-
-void TcpTarget::connect() {
-    mConnected = false;
-
-    struct sockaddr_in server;
-    server.sin_addr.s_addr = inet_addr(mIpAddress.c_str());
-    server.sin_family      = AF_INET;
-    server.sin_port        = htons(mPort);
-
-    if (::connect(mSocket, (struct sockaddr*)&server, sizeof(server)) == 0) {
-        mConnected = true;
-    }
-}
-
-void TcpTarget::transmit(const void* data, const size_t size) {
-    if (mSocket < 0) {
-        throw std::runtime_error("Socket not open");
+void TcpInterface::open() {
+    if (mSocket.is_open()) {
+        return;
     }
 
-    if (!mConnected) {
-        connect();
+    struct addrinfo hints {};
+    hints.ai_family   = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_protocol = IPPROTO_TCP;
+
+    auto service = std::to_string(mPort);
+
+    struct addrinfo* result;
+    auto             error = getaddrinfo(mHost.c_str(), service.c_str(), &hints, &result);
+    if (error != 0) {
+        throw std::runtime_error("Failed to get address info");
     }
 
-    if (mConnected) {
-        if (write(mSocket, data, size) != size) {
-            mConnected = false;
+    for (auto* rp = result; rp != nullptr; rp = rp->ai_next) {
+        auto address = NetworkAddress::from_addrinfo(rp);
+        mSocket      = ReconnectableSocket::connect(address, mReconnect);
+        if (mSocket.is_open()) {
+            return;
         }
     }
+
+    throw std::runtime_error("Failed to connect to host");
 }
+
+void TcpInterface::close() {
+    mSocket.close();
+}
+
+size_t TcpInterface::read(void* data, const size_t size) {
+    return mSocket.read(data, size);
+}
+
+size_t TcpInterface::write(const void* data, const size_t size) {
+    return mSocket.write(data, size);
+}
+
+bool TcpInterface::can_read() IF_NOEXCEPT {
+    return mSocket.can_read();
+}
+
+bool TcpInterface::can_write() IF_NOEXCEPT {
+    return mSocket.can_write();
+}
+
+void TcpInterface::wait_for_read() IF_NOEXCEPT {
+    mSocket.wait_for_read();
+}
+
+void TcpInterface::wait_for_write() IF_NOEXCEPT {
+    mSocket.wait_for_write();
+}
+
+bool TcpInterface::is_open() IF_NOEXCEPT {
+    return mSocket.is_open();
+}
+
+void TcpInterface::print_info() IF_NOEXCEPT {
+
+}
+
+//
+//
+//
+
+Interface* Interface::tcp(std::string host, uint16_t port, bool reconnect) {
+    return new TcpInterface(std::move(host), port, reconnect);
+}
+
+}  // namespace interface

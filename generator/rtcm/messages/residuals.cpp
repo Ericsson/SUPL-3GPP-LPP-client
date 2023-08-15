@@ -9,8 +9,6 @@ extern generator::rtcm::Message generate_1030(const Residuals& residuals) {
     auto message_id = 1030;
     auto time       = GPS_Time(residuals.time).time_of_week().seconds();
 
-    printf("-----G TIME: %s\n", residuals.time.rtklib_time_string().c_str());
-
     auto encoder = Encoder();
     encoder.u16(12, message_id);
     encoder.u32(20, static_cast<uint32_t>(time));
@@ -51,8 +49,6 @@ extern generator::rtcm::Message generate_1030(const Residuals& residuals) {
 extern generator::rtcm::Message generate_1031(const Residuals& residuals) {
     auto message_id = 1031;
     auto time       = GLO_Time(residuals.time).time_of_day().seconds();
-
-    printf("-----R TIME: %s\n", residuals.time.rtklib_time_string().c_str());
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);

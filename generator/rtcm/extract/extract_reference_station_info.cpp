@@ -84,8 +84,6 @@ extern void extract_reference_station_info(RtkData&                             
     reference.antenna_height       = decode::antenna_height(src_reference);
     reference.is_physical_reference_station = decode::is_physical_reference_station(src_reference);
 
-    xer_fprint(stdout, &asn_DEF_GNSS_RTK_ReferenceStationInfo_r15, &src_reference);
-
     data.reference_station = std::move(dst_reference);
 
     if (src_reference.physical_reference_station_info_r15) {

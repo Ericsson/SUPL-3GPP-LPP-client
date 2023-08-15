@@ -277,9 +277,8 @@ OutputOptions parse_output_options() {
     OutputOptions output{};
 
     if (file_path) {
-        output.file = std::unique_ptr<FileOutput>{new FileOutput{
-            .file_path = file_path.Get(),
-        }};
+        auto interface = interface::Interface::file(file_path.Get(), true);
+        output.interfaces.emplace_back(interface);
     }
 
     if (serial_device || serial_baud_rate) {
@@ -287,15 +286,19 @@ OutputOptions parse_output_options() {
             throw args::RequiredError("serial_device");
         }
 
-        auto baud_rate = 115200;
+        uint32_t baud_rate = 115200;
         if (serial_baud_rate) {
-            baud_rate = serial_baud_rate.Get();
+            if (serial_baud_rate.Get() < 0) {
+                throw args::ValidationError("serial_baud_rate must be positive");
+            }
+
+            baud_rate = static_cast<uint32_t>(serial_baud_rate.Get());
         }
 
-        output.serial = std::unique_ptr<SerialOutput>{new SerialOutput{
-            .device    = serial_device.Get(),
-            .baud_rate = baud_rate,
-        }};
+        auto interface =
+            interface::Interface::serial(serial_device.Get(), baud_rate, interface::DataBits::EIGHT,
+                                         interface::StopBits::ONE, interface::ParityBit::NONE);
+        output.interfaces.emplace_back(interface);
     }
 
     if (i2c_device || i2c_address) {
@@ -307,10 +310,8 @@ OutputOptions parse_output_options() {
             throw args::RequiredError("i2c_address");
         }
 
-        output.i2c = std::unique_ptr<I2COutput>{new I2COutput{
-            .device  = i2c_device.Get(),
-            .address = i2c_address.Get(),
-        }};
+        auto interface = interface::Interface::i2c(i2c_device.Get(), i2c_address.Get());
+        output.interfaces.emplace_back(interface);
     }
 
     if (tcp_ip_address || tcp_port) {
@@ -322,10 +323,9 @@ OutputOptions parse_output_options() {
             throw args::RequiredError("tcp_port");
         }
 
-        output.tcp = std::unique_ptr<TCPOutput>{new TCPOutput{
-            .ip_address = tcp_ip_address.Get(),
-            .port       = tcp_port.Get(),
-        }};
+        auto interface =
+            interface::Interface::tcp(tcp_ip_address.Get(), tcp_port.Get(), true /* reconnect */);
+        output.interfaces.emplace_back(interface);
     }
 
     if (udp_ip_address || udp_port) {
@@ -337,14 +337,18 @@ OutputOptions parse_output_options() {
             throw args::RequiredError("udp_port");
         }
 
-        output.udp = std::unique_ptr<UDPOutput>{new UDPOutput{
-            .ip_address = udp_ip_address.Get(),
-            .port       = udp_port.Get(),
-        }};
+        auto interface =
+            interface::Interface::udp(udp_ip_address.Get(), udp_port.Get(), true /* reconnect */);
+        output.interfaces.emplace_back(interface);
     }
 
     if (stdout_output_flag) {
-        output.stdout_output = std::unique_ptr<StdoutOutput>{new StdoutOutput{}};
+        auto interface = interface::Interface::stdout();
+        output.interfaces.emplace_back(interface);
+    }
+
+    for (auto& interface : output.interfaces) {
+        interface->open();
     }
 
     return output;
@@ -362,7 +366,7 @@ void osr_callback(args::Subparser& parser) {
         parser, "msm_type", "RTCM MSM type", {'y', "msm_type"}, args::Options::Single,
     };
     msm_type_arg.HelpDefault("any");
-    msm_type_arg.HelpChoices({"any", "4", "5", "7"});
+    msm_type_arg.HelpChoices({"any", "4", "5", "6", "7"});
 
     parser.Parse();
 
@@ -378,8 +382,6 @@ void osr_callback(args::Subparser& parser) {
     if (format_arg) {
         if (format_arg.Get() == "rtcm") {
             format = osr_example::Format::RTCM;
-        } else if (format_arg.Get() == "rg2") {
-            format = osr_example::Format::RG2;
         } else if (format_arg.Get() == "xer") {
             format = osr_example::Format::XER;
         } else {
@@ -394,6 +396,8 @@ void osr_callback(args::Subparser& parser) {
             msm_type = osr_example::MsmType::MSM4;
         } else if (msm_type_arg.Get() == "5") {
             msm_type = osr_example::MsmType::MSM5;
+        } else if (msm_type_arg.Get() == "6") {
+            msm_type = osr_example::MsmType::MSM6;
         } else if (msm_type_arg.Get() == "7") {
             msm_type = osr_example::MsmType::MSM7;
         } else {

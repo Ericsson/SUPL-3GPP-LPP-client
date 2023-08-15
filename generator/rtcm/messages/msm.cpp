@@ -151,7 +151,6 @@ static void df420(Encoder& encoder, const Signal& signal) {
 //
 
 #define FOR_EACH_SAT(X)                                                                            \
-    printf("## " #X "\n");                                                                         \
     for (auto& satellite : satellites) {                                                           \
         X(encoder, *satellite);                                                                    \
     }
@@ -256,8 +255,6 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
                                              const Observations&          observations) {
     auto message_id = msm_message_id(msm, gnss);
 
-    printf("##### ENCODER PAYLOAD %4d\n", message_id);
-
     auto encoder = Encoder();
     encoder.u16(12, message_id);
     encoder.u16(12, common.reference_station_id);
@@ -323,9 +320,6 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
         }
     }
 
-    printf("## satellite_ids: %016" PRIx64 " (%zu)\n", satellite_ids, satellite_count);
-    printf("## signal_ids:    %08X (%zu)\n", signal_ids, signal_count);
-
     encoder.u64(64, satellite_ids);
     encoder.u32(32, signal_ids);
 
@@ -350,8 +344,6 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
         for (size_t j = 0; j < signal_count; j++) {
             auto cell_index = i * signal_count + j;
             if (cell_index >= 64) continue;
-            printf("%s %14s: %d\n", satellites[i]->id.to_string().c_str(),
-                   signals[j]->id.to_string().c_str(), cell_data[cell_index]);
         }
     }
 

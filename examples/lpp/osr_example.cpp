@@ -13,10 +13,10 @@ namespace osr_example {
 
 static CellID                                      gCell;
 static std::unique_ptr<Modem_AT>                   gModem;
-static Transmitter                                 gTransmitter;
-static std::unique_ptr<RTCMGenerator>              gGenerator;
 static Format                                      gFormat;
-static std::unique_ptr<generator::rtcm::Generator> gGenerator2;
+static std::unique_ptr<generator::rtcm::Generator> gGenerator;
+static generator::rtcm::MessageFilter              gFilter;
+static std::vector<interface::Interface*>          gInterfaces;
 
 static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
@@ -31,6 +31,7 @@ void execute(const LocationServerOptions& location_server_options,
           .tac  = cell_options.tac,
           .cell = cell_options.cid,
     };
+    gInterfaces = output_options.interfaces;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -46,19 +47,6 @@ void execute(const LocationServerOptions& location_server_options,
         printf("none\n");
     printf("  cell information:   %ld:%ld:%ld:%ld (mcc:mnc:tac:id)\n", gCell.mcc, gCell.mnc,
            gCell.tac, gCell.cell);
-
-    if (output_options.file)
-        gTransmitter.add_file_target(output_options.file->file_path, true /* truncate */);
-    if (output_options.serial)
-        gTransmitter.add_serial_target(output_options.serial->device,
-                                       output_options.serial->baud_rate);
-    if (output_options.i2c)
-        gTransmitter.add_i2c_target(output_options.i2c->device, output_options.i2c->address);
-    if (output_options.tcp)
-        gTransmitter.add_tcp_target(output_options.tcp->ip_address, output_options.tcp->port);
-    if (output_options.udp)
-        gTransmitter.add_udp_target(output_options.udp->ip_address, output_options.udp->port);
-    if (output_options.stdout_output) gTransmitter.add_stdout_target();
 
     if (modem_options.device) {
         gModem = std::unique_ptr<Modem_AT>(
@@ -89,45 +77,53 @@ void execute(const LocationServerOptions& location_server_options,
     }
 
     // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
-    auto gnss = GNSSSystems{
-        .gps     = true,
-        .glonass = true,
-        .galileo = true,
-        .beidou  = true,
-    };
+    gFilter                 = generator::rtcm::MessageFilter{};
+    gFilter.systems.gps     = true;
+    gFilter.systems.glonass = true;
+    gFilter.systems.galileo = true;
+    gFilter.systems.beidou  = true;
 
     printf("  gnss support:      ");
-    if (gnss.gps) printf(" GPS");
-    if (gnss.glonass) printf(" GLO");
-    if (gnss.galileo) printf(" GAL");
-    if (gnss.beidou) printf(" BDS");
+    if (gFilter.systems.gps) printf(" GPS");
+    if (gFilter.systems.glonass) printf(" GLO");
+    if (gFilter.systems.galileo) printf(" GAL");
+    if (gFilter.systems.beidou) printf(" BDS");
     printf("\n");
 
-    // Filter what messages you want generated. (MSM6 is not supported)
+    // Force MSM type if requested.
     auto filter = MessageFilter{};
-    if (msm_type == MsmType::MSM4) {
-        filter.msm.msm4 = true;
-        filter.msm.msm5 = false;
-        filter.msm.msm7 = false;
-    } else if (msm_type == MsmType::MSM5) {
-        filter.msm.msm4 = false;
-        filter.msm.msm5 = true;
-        filter.msm.msm7 = false;
-    } else if (msm_type == MsmType::MSM7) {
-        filter.msm.msm4 = false;
-        filter.msm.msm5 = false;
-        filter.msm.msm7 = true;
+    switch (msm_type) {
+    case MsmType::MSM4: gFilter.msm.force_msm4 = true; break;
+    case MsmType::MSM5: gFilter.msm.force_msm5 = true; break;
+    case MsmType::MSM6: gFilter.msm.force_msm6 = true; break;
+    case MsmType::MSM7: gFilter.msm.force_msm7 = true; break;
+    case MsmType::ANY: break;
     }
 
     printf("  msm support:       ");
-    if (filter.msm.msm4) printf(" MSM4");
-    if (filter.msm.msm5) printf(" MSM5");
-    if (filter.msm.msm7) printf(" MSM7");
+    if (gFilter.msm.force_msm4)
+        printf(" MSM4");
+    else if (gFilter.msm.force_msm5)
+        printf(" MSM5");
+    else if (gFilter.msm.force_msm6)
+        printf(" MSM6");
+    else if (gFilter.msm.force_msm7)
+        printf(" MSM7");
+    else {
+        if (gFilter.msm.msm4) printf(" MSM4");
+        if (gFilter.msm.msm5) printf(" MSM5");
+        if (gFilter.msm.msm5) printf(" MSM6");
+        if (gFilter.msm.msm7) printf(" MSM7");
+    }
     printf("\n");
 
+    for(auto interface : gInterfaces) {
+        interface->open();
+        interface->print_info();
+    }
+
     // Create RTCM generator for converting LPP messages to RTCM messages.
-    gGenerator  = std::unique_ptr<RTCMGenerator>(new RTCMGenerator{gnss, filter});
-    gGenerator2 = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
+    gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
 
     // Request OSR assistance data from location server for the 'cell' and register a callback
     // that will be called when we receive assistance data.
@@ -154,53 +150,23 @@ void execute(const LocationServerOptions& location_server_options,
 static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message,
                                          void*) {
     if (gFormat == Format::RTCM) {
-        if (!gGenerator->process(message)) {
-            // Segmented LPP message, waiting for rest before converting to RTCM.
-            return;
+        auto messages = gGenerator->generate(message, gFilter);
+
+        size_t length = 0;
+        for (auto& message : messages) {
+            length += message.data().size();
         }
 
-        // Convert LPP messages to buffer of RTCM messages.
-        Generated     generated_messages{};
-        unsigned char buffer[4 * 4096];
-        auto          size   = sizeof(buffer);
-        auto          length = gGenerator->convert(buffer, &size, &generated_messages);
-
-        printf("[OSR] length: %4zu | msm%i | ", length, generated_messages.msm);
-        if (generated_messages.mt1074) printf("1074 ");
-        if (generated_messages.mt1075) printf("1075 ");
-        if (generated_messages.mt1076) printf("1076 ");
-        if (generated_messages.mt1077) printf("1077 ");
-        if (generated_messages.mt1084) printf("1084 ");
-        if (generated_messages.mt1085) printf("1085 ");
-        if (generated_messages.mt1086) printf("1086 ");
-        if (generated_messages.mt1087) printf("1087 ");
-        if (generated_messages.mt1094) printf("1094 ");
-        if (generated_messages.mt1095) printf("1095 ");
-        if (generated_messages.mt1096) printf("1096 ");
-        if (generated_messages.mt1097) printf("1097 ");
-        if (generated_messages.mt1124) printf("1124 ");
-        if (generated_messages.mt1125) printf("1125 ");
-        if (generated_messages.mt1126) printf("1126 ");
-        if (generated_messages.mt1127) printf("1127 ");
-        if (generated_messages.mt1030) printf("1030 ");
-        if (generated_messages.mt1031) printf("1031 ");
-        if (generated_messages.mt1230) printf("1230 ");
-        if (generated_messages.mt1006) printf("1006 ");
-        if (generated_messages.mt1032) printf("1032 ");
+        printf("RTCM: %4zu bytes | ", length);
+        for (auto& message : messages) {
+            printf("%4i ", message.id());
+        }
         printf("\n");
-        if (length > 0) {
-            gTransmitter.send(buffer, length);
-        }
-    } else if (gFormat == Format::RG2) {
-        auto filter   = generator::rtcm::MessageFilter{};
-        filter.systems.beidou = true;
-        filter.systems.galileo = true;
-        filter.systems.glonass = true;
-        auto messages = gGenerator2->generate(message, filter);
 
         for (auto& message : messages) {
-            printf("[OSR] length: %4zu | id: %04u\n", message.data().size(), message.id());
-            gTransmitter.send(message.data().data(), message.data().size());
+            for (auto interface : gInterfaces) {
+                interface->write(message.data().data(), message.data().size());
+            }
         }
     } else if (gFormat == Format::XER) {
         std::stringstream buffer;
@@ -212,7 +178,10 @@ static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Mess
                 return 0;
             },
             &buffer);
-        gTransmitter.send(buffer.str().c_str(), buffer.str().size());
+        auto message = buffer.str();
+        for (auto interface : gInterfaces) {
+            interface->write(message.c_str(), message.size());
+        }
     } else {
         throw std::runtime_error("Unsupported format");
     }

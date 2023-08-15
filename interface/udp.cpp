@@ -1,39 +1,93 @@
-#include "udp.h"
-
+#include "udp.hpp"
 #include <arpa/inet.h>
+#include <netdb.h>
+#include <netinet/in.h>
 #include <stdexcept>
+#include <sys/socket.h>
 #include <unistd.h>
 
-UdpTarget::UdpTarget(std::string ip_address, const int port)
-    : mIpAddress(std::move(ip_address)), mPort(port) {
-    mSocket = socket(AF_INET, SOCK_DGRAM, 0);
-    if (mSocket < 0) {
-        throw std::runtime_error("Failed to create socket");
-    }
+namespace interface {
 
-    struct sockaddr_in server;
-    server.sin_addr.s_addr = inet_addr(mIpAddress.c_str());
-    server.sin_family      = AF_INET;
-    server.sin_port        = htons(mPort);
+UdpInterface::UdpInterface(std::string host, uint16_t port, bool reconnect) IF_NOEXCEPT
+    : mHost(std::move(host)),
+      mPort(port),
+      mReconnect(reconnect) {}
 
-    if (connect(mSocket, (struct sockaddr*)&server, sizeof(server)) < 0) {
-        throw std::runtime_error("Failed to connect to server");
-    }
+UdpInterface::~UdpInterface() IF_NOEXCEPT {
+    close();
 }
 
-UdpTarget::~UdpTarget() {
-    if (mSocket >= 0) {
-        close(mSocket);
-    }
-}
-
-void UdpTarget::transmit(const void* data, const size_t size) {
-    if (mSocket < 0) {
-        throw std::runtime_error("Socket not open");
+void UdpInterface::open() {
+    if (mSocket.is_open()) {
+        return;
     }
 
-    // To support reconnecting / starting the client before the server, we
-    // don't check the return value of write. If the server is not running,
-    // the write will fail and we'll just drop the data.
-    write(mSocket, data, size);
+    struct addrinfo hints {};
+    hints.ai_family   = AF_INET;
+    hints.ai_socktype = SOCK_DGRAM;
+    hints.ai_protocol = 0;
+
+    auto service = std::to_string(mPort);
+
+    struct addrinfo* result;
+    auto             error = getaddrinfo(mHost.c_str(), service.c_str(), &hints, &result);
+    if (error != 0) {
+        throw std::runtime_error("Failed to get address info");
+    }
+
+    for (auto* rp = result; rp != nullptr; rp = rp->ai_next) {
+        auto address = NetworkAddress::from_addrinfo(rp);
+        mSocket      = ReconnectableSocket::connect(address, mReconnect);
+        if (mSocket.is_open()) {
+            return;
+        }
+    }
+
+    throw std::runtime_error("Failed to connect to host");
 }
+
+void UdpInterface::close() {
+    mSocket.close();
+}
+
+size_t UdpInterface::read(void* data, const size_t size) {
+    return mSocket.read(data, size);
+}
+
+size_t UdpInterface::write(const void* data, const size_t size) {
+    return mSocket.write(data, size);
+}
+
+bool UdpInterface::can_read() IF_NOEXCEPT {
+    return mSocket.can_read();
+}
+
+bool UdpInterface::can_write() IF_NOEXCEPT {
+    return mSocket.can_write();
+}
+
+void UdpInterface::wait_for_read() IF_NOEXCEPT {
+    mSocket.wait_for_read();
+}
+
+void UdpInterface::wait_for_write() IF_NOEXCEPT {
+    mSocket.wait_for_write();
+}
+
+bool UdpInterface::is_open() IF_NOEXCEPT {
+    return mSocket.is_open();
+}
+
+void UdpInterface::print_info() IF_NOEXCEPT {
+
+}
+
+//
+//
+//
+
+Interface* Interface::udp(std::string host, uint16_t port, bool reconnect) {
+    return new UdpInterface(std::move(host), port, reconnect);
+}
+
+}  // namespace interface

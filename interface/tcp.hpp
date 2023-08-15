@@ -1,15 +1,15 @@
 #pragma once
 #include <cstddef>
 #include <string>
-#include "file_descriptor.hpp"
 #include "interface.hpp"
+#include "reconnectable_socket.hpp"
 
 namespace interface {
 
-class I2CInterface final : public Interface {
+class TcpInterface final : public Interface {
 public:
-    explicit I2CInterface(std::string device_path, uint8_t address) IF_NOEXCEPT;
-    ~I2CInterface() IF_NOEXCEPT override;
+    explicit TcpInterface(std::string host, uint16_t port, bool reconnect) IF_NOEXCEPT;
+    ~TcpInterface() IF_NOEXCEPT override;
 
     void open() override;
     void close() override;
@@ -27,9 +27,10 @@ public:
     void print_info() IF_NOEXCEPT override;
 
 private:
-    std::string    mDevicePath;
-    uint8_t        mAddress;
-    FileDescriptor mFileDescriptor;
+    std::string         mHost;
+    uint16_t            mPort;
+    bool                mReconnect;
+    ReconnectableSocket mSocket;
 };
 
 }  // namespace interface

@@ -14,6 +14,7 @@ target_link_libraries(example_lpp PRIVATE utility modem rtklib asnlib lpplib osr
 target_link_libraries(example_lpp PRIVATE args)
 target_link_libraries(example_lpp PRIVATE transmitter)
 target_link_libraries(example_lpp PRIVATE generator::rtcm)
+target_link_libraries(example_lpp PRIVATE dependency::interface)
 
 if (USE_OPENSSL)
 target_link_libraries(example_lpp PRIVATE OpenSSL::SSL)
