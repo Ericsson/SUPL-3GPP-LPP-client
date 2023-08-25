@@ -30,7 +30,7 @@ public:
 
     void print() const UBLOX_NOEXCEPT override;
 
-    /// @brief Get the value of a configuration key. If the key is not present,
+    /// Get the value of a configuration key. If the key is not present,
     /// a default-constructed CfgValue will be returned, i.e., of type CfgValue::UNKNOWN.
     CfgValue get(CfgKey key) const UBLOX_NOEXCEPT;
 

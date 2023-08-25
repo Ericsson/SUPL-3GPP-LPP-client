@@ -1,6 +1,6 @@
 #pragma once
-#include <receiver/ublox/message.hpp>
 #include <memory>
+#include <receiver/ublox/message.hpp>
 
 namespace receiver {
 namespace ublox {
@@ -70,15 +70,40 @@ public:
     UBLOX_EXPLICIT UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT;
     ~UbxNavPvt() override = default;
 
-    /// @brief Returns the unprocessed raw payload.
+    /// Returns the unprocessed raw payload.
     UBLOX_NODISCARD const raw::NavPvt& payload() const UBLOX_NOEXCEPT { return mPayload; }
 
-    /// @brief Latitude in degrees.
+    /// Latitude in degrees.
     UBLOX_NODISCARD double latitude() const UBLOX_NOEXCEPT;
-    /// @brief Longitude in degrees.
+    /// Longitude in degrees.
     UBLOX_NODISCARD double longitude() const UBLOX_NOEXCEPT;
-    /// @brief Altitude in meters above ellipsoid
+    /// Altitude in meters above ellipsoid
     UBLOX_NODISCARD double altitude() const UBLOX_NOEXCEPT;
+
+    /// Horizontal accuracy in meters (stddev).
+    UBLOX_NODISCARD double h_acc() const UBLOX_NOEXCEPT;
+    /// Horizontal speed in m/s.
+    UBLOX_NODISCARD double h_vel() const UBLOX_NOEXCEPT;
+    /// Horizontal speed accuracy in m/s.
+    UBLOX_NODISCARD double h_vel_acc() const UBLOX_NOEXCEPT;
+    /// Heading in degrees.
+    UBLOX_NODISCARD double head_mot() const UBLOX_NOEXCEPT;
+
+    /// Vertical accuracy in meters (stddev).
+    UBLOX_NODISCARD double v_acc() const UBLOX_NOEXCEPT;
+    /// Vertical speed in m/s.
+    UBLOX_NODISCARD double v_vel() const UBLOX_NOEXCEPT;
+    /// Vertical speed accuracy in m/s.
+    UBLOX_NODISCARD double v_vel_acc() const UBLOX_NOEXCEPT;
+
+    /// Fix type.
+    UBLOX_NODISCARD uint8_t fix_type() const UBLOX_NOEXCEPT;
+    /// Carrier solution type.
+    UBLOX_NODISCARD uint8_t carr_soln() const UBLOX_NOEXCEPT;
+    /// Number of satellites used in the navigation solution.
+    UBLOX_NODISCARD uint8_t num_sv() const UBLOX_NOEXCEPT;
+    /// Position dilution of precision.
+    UBLOX_NODISCARD double p_dop() const UBLOX_NOEXCEPT;
 
     void print() const UBLOX_NOEXCEPT override;
 

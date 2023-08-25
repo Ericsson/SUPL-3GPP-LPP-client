@@ -17,6 +17,7 @@ static void ublox_loop(UbloxReceiver& receiver) {
     printf("-----------------------------------------------------\n");
 
     for (;;) {
+        // Wait for the next ubx message.
         auto message = receiver.wait_for_message();
         if (message) {
             message->print();

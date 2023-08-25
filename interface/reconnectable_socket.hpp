@@ -4,7 +4,7 @@
 
 namespace interface {
 
-/// @brief Helper class to manage socket and reconnect on error.
+/// Helper class to manage socket and reconnect on error.
 class ReconnectableSocket {
 public:
     IF_EXPLICIT ReconnectableSocket() IF_NOEXCEPT;

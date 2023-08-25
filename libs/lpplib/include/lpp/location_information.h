@@ -24,7 +24,7 @@ struct LocationInformation {
     // Horizontal velocity in m/s. E.g u-blox F9P UBX-NAV-PVT attribute gSpeed, converted from mm/s
     // to m/s
     double horizontal_speed;
-    // Horizontal velocity uncertainty in m/s. E.g u-blox F9P UBX-NAV-PVT attribute sAcc, converfted
+    // Horizontal velocity uncertainty in m/s. E.g u-blox F9P UBX-NAV-PVT attribute sAcc, converted
     // from mm/s to m/s
     double horizontal_speed_accuracy;
     // Heading in decimal degrees. E.g u-blox F9P UBX-NAV-PVT attribute headMot.

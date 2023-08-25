@@ -5,6 +5,7 @@ add_library(receiver_ublox STATIC
     "parser.cpp"
     "message.cpp"
     "receiver.cpp"
+    "threaded_receiver.cpp"
     "ubx_nav_pvt.cpp"
     "ubx_mon_ver.cpp"
     "ubx_cfg.cpp"

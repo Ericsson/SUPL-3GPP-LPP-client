@@ -2,38 +2,39 @@
 #include <args.hpp>
 #include <interface/interface.hpp>
 #include <memory>
+#include <receiver/ublox/receiver.hpp>
 #include <string>
 #include <vector>
 
-/// @brief Location server options.
+/// Location server options.
 struct LocationServerOptions {
-    /// @brief Hostname or IP address of the location server.
+    /// Hostname or IP address of the location server.
     std::string host;
-    /// @brief Port of the location server. Which is usually 5431 for non-SSL.
+    /// Port of the location server. Which is usually 5431 for non-SSL.
     int port;
-    /// @brief Whether to use SSL or not.
+    /// Whether to use SSL or not.
     bool ssl;
 };
 
-/// @brief Identity options.
+/// Identity options.
 struct IdentityOptions {
-    /// @brief Identify the device with MSISDN.
+    /// Identify the device with MSISDN.
     std::unique_ptr<unsigned long> msisdn;
-    /// @brief Identify the device with IMSI.
+    /// Identify the device with IMSI.
     std::unique_ptr<unsigned long> imsi;
-    /// @brief Identify the device with IPv4 address.
+    /// Identify the device with IPv4 address.
     std::unique_ptr<std::string> ipv4;
 };
 
-/// @brief Cell options.
+/// Cell options.
 struct CellOptions {
-    /// @brief Mobile Country Code.
+    /// Mobile Country Code.
     int mcc;
-    /// @brief Mobile Network Code.
+    /// Mobile Network Code.
     int mnc;
-    /// @brief Tracking Area Code.
+    /// Tracking Area Code.
     int tac;
-    /// @brief Cell ID.
+    /// Cell ID.
     int cid;
 };
 
@@ -42,41 +43,50 @@ struct ModemDevice {
     int         baud_rate;
 };
 
-/// @brief Modem options.
+/// Modem options.
 struct ModemOptions {
     std::unique_ptr<ModemDevice> device;
 };
 
-/// @brief Output options.
+/// Output options.
 struct OutputOptions {
-    /// @brief Interfaces to output data to.
+    /// Interfaces to output data to.
     std::vector<std::unique_ptr<interface::Interface>> interfaces;
 };
 
-/// @brief Options.
+/// Ublox options.
+struct UbloxOptions {
+    /// Port on the u-blox receiver.
+    receiver::ublox::Port port;
+    /// Interface to use for communication with the receiver.
+    std::unique_ptr<interface::Interface> interface;
+};
+
+/// Options.
 struct Options {
     LocationServerOptions location_server_options;
     IdentityOptions       identity_options;
     CellOptions           cell_options;
     ModemOptions          modem_options;
     OutputOptions         output_options;
+    UbloxOptions          ublox_options;
 };
 
-/// @brief Command.
+/// Command.
 class Command {
 public:
     Command(std::string name, std::string description)
         : mName(std::move(name)), mDescription(std::move(description)) {}
     virtual ~Command() = default;
 
-    /// @brief Name of the command. This is used to invoke the command.
+    /// Name of the command. This is used to invoke the command.
     const std::string& name() const { return mName; }
-    /// @brief Description of the command.
+    /// Description of the command.
     const std::string& description() const { return mDescription; }
 
-    /// @brief Parse additional arguments for the command.
+    /// Parse additional arguments for the command.
     virtual void parse(args::Subparser& parser) = 0;
-    /// @brief Execute the command.
+    /// Execute the command.
     virtual void execute(Options options) = 0;
 
 protected:
@@ -85,18 +95,18 @@ protected:
     std::unique_ptr<args::Command> mCommand;
 };
 
-/// @brief Option parser.
+/// Option parser.
 class OptionParser {
 public:
     OptionParser();
 
-    /// @brief Add a command.
+    /// Add a command.
     void add_command(Command* command);
 
-    /// @brief Add a command.
+    /// Add a command.
     void add_command(std::unique_ptr<Command> command);
 
-    /// @brief Parse and execute the command.
+    /// Parse and execute the command.
     int parse_and_execute(int argc, char** argv);
 
 private:

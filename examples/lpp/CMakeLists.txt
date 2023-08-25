@@ -18,6 +18,9 @@ target_link_libraries(example_lpp PRIVATE generator::rtcm)
 target_link_libraries(example_lpp PRIVATE dependency::interface)
 target_link_libraries(example_lpp PRIVATE receiver::ublox)
 
+set_target_properties(example_lpp PROPERTIES OUTPUT_NAME "example-lpp")
+set_target_properties(example_lpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
+
 if (USE_OPENSSL)
 target_link_libraries(example_lpp PRIVATE OpenSSL::SSL)
 target_compile_definitions(example_lpp PRIVATE "USE_OPENSSL=1")

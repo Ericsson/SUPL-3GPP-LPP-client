@@ -20,6 +20,50 @@ double UbxNavPvt::altitude() const UBLOX_NOEXCEPT {
     return static_cast<double>(mPayload.height) * 1e-3;
 }
 
+double UbxNavPvt::h_acc() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.h_acc) * 1e-3;
+}
+
+double UbxNavPvt::h_vel() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.g_speed) * 1e-3;
+}
+
+double UbxNavPvt::h_vel_acc() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.s_acc) * 1e-3;
+}
+
+double UbxNavPvt::head_mot() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.head_mot) * 1e-5;
+}
+
+double UbxNavPvt::v_acc() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.v_acc) * 1e-3;
+}
+
+double UbxNavPvt::v_vel() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.vel_d) * 1e-3;
+}
+
+double UbxNavPvt::v_vel_acc() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.s_acc) * 1e-3;
+}
+
+uint8_t UbxNavPvt::fix_type() const UBLOX_NOEXCEPT {
+    return mPayload.fix_type;
+}
+
+uint8_t UbxNavPvt::carr_soln() const UBLOX_NOEXCEPT {
+    return mPayload.flags.carr_soln;
+}
+
+uint8_t UbxNavPvt::num_sv() const UBLOX_NOEXCEPT {
+    return mPayload.num_sv;
+}
+
+double UbxNavPvt::p_dop() const UBLOX_NOEXCEPT {
+    return static_cast<double>(mPayload.p_dop) * 0.01;
+}
+
 void UbxNavPvt::print() const UBLOX_NOEXCEPT {
     printf("[%02X %02X] UBX-NAV-PVT:\n", message_class(), message_id());
     printf("[.....]    i_tow: %u\n", mPayload.i_tow);

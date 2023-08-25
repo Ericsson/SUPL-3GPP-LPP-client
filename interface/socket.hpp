@@ -11,7 +11,7 @@
 
 namespace interface {
 
-/// @brief Helper class to manage socket address.
+/// Helper class to manage socket address.
 class NetworkAddress {
 public:
     static NetworkAddress from_addrinfo(const addrinfo* addr) {
@@ -70,7 +70,7 @@ private:
     } mAddr;
 };
 
-/// @brief Helper class to manage socket.
+/// Helper class to manage socket.
 class Socket {
 public:
     IF_EXPLICIT Socket() IF_NOEXCEPT;

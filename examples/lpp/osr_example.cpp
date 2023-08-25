@@ -3,6 +3,7 @@
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
 #include <modem.h>
+#include <receiver/ublox/threaded_receiver.hpp>
 #include <rtcm_generator.h>
 #include <sstream>
 #include <stdexcept>
@@ -10,15 +11,18 @@
 #include "location_information.h"
 
 using RtcmGenerator = std::unique_ptr<generator::rtcm::Generator>;
+using UReceiver     = receiver::ublox::ThreadedReceiver;
 
 static CellID                         gCell;
-static std::unique_ptr<Modem_AT>      gModem;
 static osr_example::Format            gFormat;
 static RtcmGenerator                  gGenerator;
 static generator::rtcm::MessageFilter gFilter;
 static Options                        gOptions;
 
-static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+static std::unique_ptr<Modem_AT>  gModem;
+static std::unique_ptr<UReceiver> gUbloxReceiver;
+
+static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
 void execute(Options options, osr_example::Format format, osr_example::MsmType msm_type) {
     gOptions = std::move(options);
@@ -29,6 +33,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     auto& identity_options        = gOptions.identity_options;
     auto& modem_options           = gOptions.modem_options;
     auto& output_options          = gOptions.output_options;
+    auto& ublox_options           = gOptions.ublox_options;
 
     gCell = CellID{
         .mcc  = cell_options.mcc,
@@ -106,6 +111,16 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         interface->print_info();
     }
 
+    if (ublox_options.interface) {
+        printf("[ublox]\n");
+        ublox_options.interface->open();
+        ublox_options.interface->print_info();
+
+        gUbloxReceiver = std::unique_ptr<UReceiver>(
+            new UReceiver(ublox_options.port, std::move(ublox_options.interface)));
+        gUbloxReceiver->start();
+    }
+
     // Create RTCM generator for converting LPP messages to RTCM messages.
     gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
 
@@ -121,7 +136,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         throw std::runtime_error("No identity provided");
     }
 
-    client.provide_location_information_callback(NULL, provide_location_information_callback);
+    client.provide_location_information_callback(gUbloxReceiver.get(), provide_location_information_callback_ublox);
     client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
 
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
@@ -132,7 +147,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     // Request OSR assistance data from location server for the 'cell' and register a callback
     // that will be called when we receive assistance data.
     LPP_Client::AD_Request request =
-        client.request_assistance_data(gCell, NULL, osr_assistance_data_callback);
+        client.request_assistance_data(gCell, NULL, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");
     }
@@ -151,7 +166,20 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     }
 }
 
-static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message,
+static void transmit(const void* buffer, size_t size) {
+    for (auto& interface : gOptions.output_options.interfaces) {
+        interface->write(buffer, size);
+    }
+
+    if (gUbloxReceiver) {
+        auto interface = gUbloxReceiver->interface();
+        if (interface) {
+            interface->write(buffer, size);
+        }
+    }
+}
+
+static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message,
                                          void*) {
     if (gFormat == osr_example::Format::RTCM) {
         auto messages = gGenerator->generate(message, gFilter);
@@ -168,10 +196,9 @@ static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Mess
         printf("\n");
 
         for (auto& message : messages) {
-            for (auto& interface : gOptions.output_options.interfaces) {
-                interface->write(message.data().data(), message.data().size());
-            }
+            transmit(message.data().data(), message.data().size());
         }
+
     } else if (gFormat == osr_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
@@ -183,9 +210,7 @@ static void osr_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Mess
             },
             &buffer);
         auto message = buffer.str();
-        for (auto& interface : gOptions.output_options.interfaces) {
-            interface->write(message.c_str(), message.size());
-        }
+        transmit(message.data(), message.size());
     } else {
         throw std::runtime_error("Unsupported format");
     }

@@ -544,17 +544,14 @@ static Port ublox_parse_port() {
     }
 }
 
-static std::unique_ptr<UbloxReceiver> ublox_parse_receiver() {
-    auto port      = ublox_parse_port();
-    auto interface = ublox_parse_interface();
-
-    interface->open();
-    if (!interface->is_open()) {
-        throw std::runtime_error("Could not open interface");
+static UbloxOptions ublox_parse_options() {
+    if (ublox_serial_device || ublox_i2c_device || ublox_tcp_ip_address || ublox_udp_ip_address) {
+        auto port      = ublox_parse_port();
+        auto interface = ublox_parse_interface();
+        return UbloxOptions{port, std::move(interface)};
+    } else {
+        return UbloxOptions{};
     }
-
-    auto receiver = std::unique_ptr<UbloxReceiver>(new UbloxReceiver(port, std::move(interface)));
-    return receiver;
 }
 
 //
@@ -605,6 +602,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                                   options.cell_options            = parse_cell_options();
                                   options.modem_options           = parse_modem_options();
                                   options.output_options          = parse_output_options();
+                                  options.ublox_options           = ublox_parse_options();
                                   command_ptr->execute(std::move(options));
                               }));
     }

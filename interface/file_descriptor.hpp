@@ -4,7 +4,7 @@
 
 namespace interface {
 
-/// @brief Helper class to manage file descriptors.
+/// Helper class to manage file descriptors.
 class FileDescriptor {
 public:
     IF_EXPLICIT FileDescriptor(int file_descriptor) IF_NOEXCEPT;

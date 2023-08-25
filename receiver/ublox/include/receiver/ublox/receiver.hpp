@@ -28,58 +28,62 @@ class Message;
 class Parser;
 class UbloxReceiver {
 public:
-    /// @brief Construct a receiver. This will block until the receiver configuration has been
+    /// Construct a receiver. This will block until the receiver configuration has been
     /// acquired.
     UBLOX_EXPLICIT UbloxReceiver(Port                                  port,
                                  std::unique_ptr<interface::Interface> interface) UBLOX_NOEXCEPT;
     ~UbloxReceiver() UBLOX_NOEXCEPT;
 
-    /// @brief Enable message to be sent by the receiver periodically. This will only take effect
+    /// Enable message to be sent by the receiver periodically. This will only take effect
     /// after the next call to configure().
     /// @param message_id The message to enable.
     void enable_message(MessageId message_id);
 
-    /// @brief Disable message to be sent by the receiver periodically. This will only take effect
+    /// Disable message to be sent by the receiver periodically. This will only take effect
     /// after the next call to configure().
     /// @param message_id The message to disable.
     void disable_message(MessageId message_id);
 
-    /// @brief Configure the receiver, i.e. enable/disable messages, set port formats, etc.
+    /// Configure the receiver, i.e. enable/disable messages, set port formats, etc.
     void configure();
 
-    /// @brief Read bytes from the interface and append them to the parse buffer. This will not
+    /// Read bytes from the interface and append them to the parse buffer. This will not
     /// block.
     void process();
 
-    /// @brief  Block until a message is available.
+    ///  Block until a message is available.
     /// @return A pointer to the message, or nullptr if the interface is closed.
     UBLOX_NODISCARD std::unique_ptr<Message> wait_for_message();
 
-    /// @brief  Try to parse a message in the parse buffer. This will not block.
+    ///  Try to parse a message in the parse buffer. This will not block.
     /// @return A pointer to the message, or nullptr if no message is available.
     UBLOX_NODISCARD std::unique_ptr<Message> try_parse();
 
-    /// @brief Get the software version of the receiver.
+    /// Get the software version of the receiver.
     /// @return The software version.
     UBLOX_NODISCARD const std::string& software_version() const UBLOX_NOEXCEPT {
         return mSoftwareVersion;
     }
 
-    /// @brief Get the hardware version of the receiver.
+    /// Get the hardware version of the receiver.
     /// @return The hardware version.
     UBLOX_NODISCARD const std::string& hardware_version() const UBLOX_NOEXCEPT {
         return mHardwareVersion;
     }
 
-    /// @brief Get the extensions of the receiver.
+    /// Get the extensions of the receiver.
     /// @return The extensions.
     UBLOX_NODISCARD const std::vector<std::string>& extensions() const UBLOX_NOEXCEPT {
         return mExtensions;
     }
 
-    /// @brief The receiver supports the SPARTN protocol.
+    /// The receiver supports the SPARTN protocol.
     /// @return True if the receiver supports the SPARTN protocol.
     UBLOX_NODISCARD bool spartn_support() const UBLOX_NOEXCEPT { return mSpartnSupport; }
+
+    /// The receiver interface.
+    /// @return The receiver interface.
+    UBLOX_NODISCARD interface::Interface& interface() const UBLOX_NOEXCEPT { return *mInterface; }
 
 protected:
     void poll_mon_ver();
