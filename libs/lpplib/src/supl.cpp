@@ -174,6 +174,7 @@ void SUPL_Client::set_session(std::unique_ptr<SUPL_Session> session) {
 
 bool SUPL_Client::connect(const std::string& host, int port, bool use_ssl) {
     if (!mSession) {
+        printf("ERROR: Missing SUPL session\n");
         return false;
     } else {
         return mTCP->connect(host, port, use_ssl);

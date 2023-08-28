@@ -12,6 +12,11 @@ LPP_Client::LPP_Client(bool segmentation) {
     client_id           = 0xC0DEC0DE;
     mEnableSegmentation = segmentation;
     mSUPL               = std::make_unique<SUPL_Client>();
+
+    main_request_callback  = nullptr;
+    main_request_userdata  = nullptr;
+    agnss_request_callback = nullptr;
+    agnss_request_userdata = nullptr;
 }
 
 LPP_Client::~LPP_Client() {}
@@ -201,13 +206,16 @@ LPP_Message* LPP_Client::decode(OCTET_STRING* data) {
 }
 
 bool LPP_Client::connect(const std::string& host, int port, bool use_ssl, CellID supl_cell) {
+    printf("DEBUG: Connecting to SUPL server %s:%d\n", host.c_str(), port);
     // Initialize and connect to the location server
     if (!mSUPL->connect(host, port, use_ssl)) {
+        printf("ERROR: Failed to connect to SUPL server\n");
         return false;
     }
 
     // Send SUPL-START request
     if (!supl_start(supl_cell)) {
+        printf("ERROR: Failed to send SUPL-START\n");
         mSUPL->disconnect();
         return false;
     }
@@ -220,6 +228,7 @@ bool LPP_Client::connect(const std::string& host, int port, bool use_ssl, CellID
 
     // Send SUPL-POSINIT
     if (!supl_send_posinit(supl_cell)) {
+        printf("ERROR: Failed to send SUPL-POSINIT\n");
         mSUPL->disconnect();
         return false;
     }
@@ -427,16 +436,16 @@ bool LPP_Client::request_agnss(CellID cell, void* userdata, AD_Callback callback
             return false;
         }
 
-        lpp_destroy(message);
-
         agnss_request_callback    = callback;
         agnss_request_userdata    = userdata;
         agnss_request_transaction = transaction;
         if (!wait_for_assistance_data_response(&transaction)) {
+            lpp_destroy(message);
             return false;
+        } else {
+            lpp_destroy(message);
+            return true;
         }
-
-        return true;
     };
 
     request_agnss_for(GNSS_ID__gnss_id_gps);
