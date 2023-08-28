@@ -5,7 +5,6 @@
 #include <modem.h>
 #include <sstream>
 #include <stdexcept>
-#include <transmitter/transmitter.h>
 #include "location_information.h"
 
 static CellID                    gCell;

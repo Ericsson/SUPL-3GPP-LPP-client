@@ -4,10 +4,8 @@
 #include <lpp/lpp.h>
 #include <modem.h>
 #include <receiver/ublox/threaded_receiver.hpp>
-#include <rtcm_generator.h>
 #include <sstream>
 #include <stdexcept>
-#include <transmitter/transmitter.h>
 #include "location_information.h"
 
 using RtcmGenerator = std::unique_ptr<generator::rtcm::Generator>;
@@ -80,7 +78,6 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     printf("\n");
 
     // Force MSM type if requested.
-    auto filter = MessageFilter{};
     switch (msm_type) {
     case osr_example::MsmType::MSM4: gFilter.msm.force_msm4 = true; break;
     case osr_example::MsmType::MSM5: gFilter.msm.force_msm5 = true; break;
@@ -136,7 +133,8 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         throw std::runtime_error("No identity provided");
     }
 
-    client.provide_location_information_callback(gUbloxReceiver.get(), provide_location_information_callback_ublox);
+    client.provide_location_information_callback(gUbloxReceiver.get(),
+                                                 provide_location_information_callback_ublox);
     client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
 
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
@@ -170,17 +168,9 @@ static void transmit(const void* buffer, size_t size) {
     for (auto& interface : gOptions.output_options.interfaces) {
         interface->write(buffer, size);
     }
-
-    if (gUbloxReceiver) {
-        auto interface = gUbloxReceiver->interface();
-        if (interface) {
-            interface->write(buffer, size);
-        }
-    }
 }
 
-static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message,
-                                         void*) {
+static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
     if (gFormat == osr_example::Format::RTCM) {
         auto messages = gGenerator->generate(message, gFilter);
 
@@ -196,9 +186,17 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("\n");
 
         for (auto& message : messages) {
-            transmit(message.data().data(), message.data().size());
-        }
+            auto buffer = message.data().data();
+            auto size   = message.data().size();
+            transmit(buffer, size);
 
+            if (gUbloxReceiver) {
+                auto interface = gUbloxReceiver->interface();
+                if (interface) {
+                    interface->write(buffer, size);
+                }
+            }
+        }
     } else if (gFormat == osr_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(

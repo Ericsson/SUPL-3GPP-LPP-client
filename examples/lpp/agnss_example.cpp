@@ -2,7 +2,6 @@
 #include <lpp/lpp.h>
 #include <sstream>
 #include <stdexcept>
-#include <transmitter/transmitter.h>
 #include <utility/types.h>
 
 static agnss_example::Format gFormat;

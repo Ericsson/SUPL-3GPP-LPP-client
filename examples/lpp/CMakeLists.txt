@@ -11,9 +11,8 @@ add_executable(example_lpp
 add_executable(examples::lpp ALIAS example_lpp)
 
 target_include_directories(example_lpp PRIVATE "./")
-target_link_libraries(example_lpp PRIVATE utility modem rtklib asnlib lpplib osr rtcm_generator Threads::Threads)
+target_link_libraries(example_lpp PRIVATE utility modem asnlib lpplib Threads::Threads)
 target_link_libraries(example_lpp PRIVATE args)
-target_link_libraries(example_lpp PRIVATE transmitter)
 target_link_libraries(example_lpp PRIVATE generator::rtcm)
 target_link_libraries(example_lpp PRIVATE dependency::interface)
 target_link_libraries(example_lpp PRIVATE receiver::ublox)
