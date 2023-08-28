@@ -570,7 +570,7 @@ void OptionParser::add_command(std::unique_ptr<Command> command) {
 
 int OptionParser::parse_and_execute(int argc, char** argv) {
     args::ArgumentParser parser(
-        "Example - LPP " VERSION "",
+        "Example - LPP Client",
         "This is a simple client examples that requests assistance data from a location server. It "
         "supports OSR, SSR, and AGNSS requests. The assistance data can be outputted to a file, "
         "serial port, TCP, UDP or stdout. It can also be converted to RTCM messages that can be "

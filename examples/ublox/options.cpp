@@ -2,8 +2,6 @@
 #include <interface/interface.hpp>
 #include <receiver/ublox/receiver.hpp>
 
-#define VERSION "v3.3.0"
-
 using namespace interface;
 using namespace receiver::ublox;
 
@@ -223,7 +221,7 @@ static std::unique_ptr<UbloxReceiver> create_receiver() {
 
 std::unique_ptr<UbloxReceiver> parse_configuration(int argc, char** argv) {
     args::ArgumentParser parser(
-        "Example - u-blox Receiver " VERSION,
+        "Example - u-blox Receiver",
         "This is an example program that "
         "demonstrates how to use the u-Blox "
         "receiver library.\n\n"
