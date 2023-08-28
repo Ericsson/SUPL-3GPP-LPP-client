@@ -103,14 +103,14 @@ static TimeEpoch date_from_utc(Timestamp time) {
     auto tom     = toh - minutes * MINUTE_IN_SECONDS;
     auto seconds = tom;
 
-    return TimeEpoch{
-        .year    = year,
-        .month   = month,
-        .day     = day,
-        .hour    = hour,
-        .minutes = minutes,
-        .seconds = seconds + time.fraction(),
-    };
+    TimeEpoch epoch{};
+    epoch.year    = year;
+    epoch.month   = month;
+    epoch.day     = day;
+    epoch.hour    = hour;
+    epoch.minutes = minutes;
+    epoch.seconds = seconds + time.fraction();
+    return epoch;
 }
 
 UTC_Time::UTC_Time(const TAI_Time& time) : tm(time.utc_timestamp()) {}

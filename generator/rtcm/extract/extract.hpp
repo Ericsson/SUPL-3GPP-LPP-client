@@ -26,8 +26,11 @@ extern void extract_residuals(generator::rtcm::RtkData& data, GenericGnssId gnss
 extern void extract_auxiliary_information(generator::rtcm::RtkData&        data,
                                           const GNSS_AuxiliaryInformation& src_aux);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-ID.h>
 #include <GNSS-SystemTime.h>
+#pragma GCC diagnostic pop
 
 namespace decode {
 

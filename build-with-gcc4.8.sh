@@ -2,8 +2,11 @@
 mkdir -p build
 mkdir -p build/docker
 
-cp -r include build/docker/.
-cp -r src build/docker/.
+cp -r generator build/docker/.
+cp -r interface build/docker/.
+cp -r asn.1 build/docker/.
+cp -r examples build/docker/.
+cp -r receiver build/docker/.
 cp -r libs build/docker/.
 cp CMakeLists.txt build/docker/.
 

@@ -43,16 +43,16 @@ target_compile_options(generator_rtcm PRIVATE
     "-Woverloaded-virtual"
     "-Wsign-conversion"
     "-Wno-conversion"
-    "-Wmisleading-indentation"
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    
+    target_compile_options(generator_rtcm PRIVATE
+        "-Wmisleading-indentation"
+    )
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(generator_rtcm PRIVATE
-        "-Wduplicated-cond"
-        "-Wduplicated-branches"
+        "-Wno-missing-field-initializers"
     )
 endif()

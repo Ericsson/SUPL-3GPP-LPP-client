@@ -1,4 +1,5 @@
 #include "satellite_id.hpp"
+#include <cinttypes>
 
 RTCM_CONSTEXPR static long LPP_SATELLITE_ID_LIMIT = 64;
 
@@ -53,11 +54,11 @@ SatelliteId::Gnss SatelliteId::gnss() const {
 std::string SatelliteId::to_string() const {
     char buffer[32];
     switch (mGnss) {
-    case Gnss::GPS: snprintf(buffer, sizeof(buffer), "G%02ld", mLppId); break;
-    case Gnss::GLONASS: snprintf(buffer, sizeof(buffer), "R%02ld", mLppId); break;
-    case Gnss::GALILEO: snprintf(buffer, sizeof(buffer), "E%02ld", mLppId); break;
-    case Gnss::BEIDOU: snprintf(buffer, sizeof(buffer), "C%02ld", mLppId); break;
-    default: snprintf(buffer, sizeof(buffer), "U%02ld", mLppId); break;
+    case Gnss::GPS: snprintf(buffer, sizeof(buffer), "G%02" PRId32 "", mLppId); break;
+    case Gnss::GLONASS: snprintf(buffer, sizeof(buffer), "R%02" PRId32 "", mLppId); break;
+    case Gnss::GALILEO: snprintf(buffer, sizeof(buffer), "E%02" PRId32 "", mLppId); break;
+    case Gnss::BEIDOU: snprintf(buffer, sizeof(buffer), "C%02" PRId32 "", mLppId); break;
+    default: snprintf(buffer, sizeof(buffer), "U%02" PRId32 "", mLppId); break;
     }
     return std::string(buffer);
 }

@@ -35,16 +35,16 @@ target_compile_options(receiver_ublox PRIVATE
     "-Woverloaded-virtual"
     "-Wsign-conversion"
     "-Wno-conversion"
-    "-Wmisleading-indentation"
 )
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    
+    target_compile_options(receiver_ublox PRIVATE
+        "-Wmisleading-indentation"
+    )
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(receiver_ublox PRIVATE
-        "-Wduplicated-cond"
-        "-Wduplicated-branches"
+        "-Wno-missing-field-initializers"
     )
 endif()

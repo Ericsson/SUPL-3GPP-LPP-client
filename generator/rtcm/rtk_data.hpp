@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -14,6 +15,13 @@ enum GenericGnssId {
     GALILEO,
     BEIDOU,
 };
+
+namespace std {
+template <>
+struct hash<GenericGnssId> {
+    auto operator()(const GenericGnssId& id) const -> size_t { return hash<int>{}(id); }
+};
+}  // namespace std
 
 namespace generator {
 namespace rtcm {
@@ -114,7 +122,7 @@ public:
     RtkData()  = default;
     ~RtkData() = default;
 
-    std::unique_ptr<CommonObservationInfo>        common_observation_info;
+    std::unique_ptr<CommonObservationInfo>    common_observation_info;
     std::unique_ptr<ReferenceStation>         reference_station;
     std::unique_ptr<PhysicalReferenceStation> physical_reference_station;
 

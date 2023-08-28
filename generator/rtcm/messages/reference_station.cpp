@@ -29,7 +29,7 @@ static void df028(Encoder& encoder, double value) {
 extern generator::rtcm::Message generate_1005(const ReferenceStation& reference_station,
                                               bool gps_indicator, bool glonass_indicator,
                                               bool galileo_indicator) {
-    auto message_id = 1005;
+    auto message_id = 1005U;
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);
@@ -59,7 +59,7 @@ extern generator::rtcm::Message generate_1005(const ReferenceStation& reference_
 extern generator::rtcm::Message generate_1006(const ReferenceStation& reference_station,
                                               bool gps_indicator, bool glonass_indicator,
                                               bool galileo_indicator) {
-    auto message_id = 1006;
+    auto message_id = 1006U;
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);
@@ -94,7 +94,7 @@ extern generator::rtcm::Message generate_1006(const ReferenceStation& reference_
 extern generator::rtcm::Message
 generate_1032(const ReferenceStation&         reference_station,
               const PhysicalReferenceStation& physical_reference_station) {
-    auto message_id = 1032;
+    auto message_id = 1032U;
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);

@@ -23,16 +23,14 @@ target_compile_options(asn1_helper PRIVATE
     "-Woverloaded-virtual"
     "-Wsign-conversion"
     "-Wno-conversion"
-    "-Wmisleading-indentation"
-)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    )
     
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(asn1_helper PRIVATE
+        "-Wmisleading-indentation"
+    )
 endif()
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(asn1_helper PRIVATE
-        "-Wduplicated-cond"
-        "-Wduplicated-branches"
-    )
+
 endif()
