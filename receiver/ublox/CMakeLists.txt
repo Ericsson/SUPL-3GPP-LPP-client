@@ -48,3 +48,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         "-Wno-missing-field-initializers"
     )
 endif()
+
+if(${RECEIVER_UBLOX_THREADED})
+    target_compile_definitions(receiver_ublox PUBLIC RECEIVER_UBLOX_THREADED=1)
+endif()
