@@ -62,10 +62,10 @@ void ThreadedReceiver::run() {
 
             if (mReceiver) {
                 RUT_DEBUG("[rut] process\n");
-                process();
+                mReceiver->process();
 
                 RUT_DEBUG("[rut] check\n");
-                auto message = try_parse();
+                auto message = mReceiver->try_parse();
                 if (message) {
                     if (message->message_class() == UbxNavPvt::CLASS_ID &&
                         message->message_id() == UbxNavPvt::MESSAGE_ID) {
@@ -81,7 +81,7 @@ void ThreadedReceiver::run() {
 
         if (mReceiver) {
             RUT_DEBUG("[rut] wait\n");
-            mReceiver->wait_for_read();
+            mReceiver->interface().wait_for_read();
         }
 
         RUT_DEBUG("[rut] sleep\n");
