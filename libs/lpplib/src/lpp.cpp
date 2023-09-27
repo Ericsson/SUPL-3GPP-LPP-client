@@ -530,6 +530,10 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
             has_information = true;
         }
 
+        printf("DEBUG: provide_location_information_callback: %p (%p): %s\n", pli_callback,
+               pli_userdata,
+                has_information ? "has information" : "no information");
+
         message = lpp_PLI_location_estimate(&pli->transaction, &li, has_information);
     } else if (pli->type == LocationInformationType_locationMeasurementsRequired) {
         ECIDInformation ecid{};
