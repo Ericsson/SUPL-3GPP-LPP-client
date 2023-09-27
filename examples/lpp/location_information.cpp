@@ -39,11 +39,9 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
                                                  UNUSED HaGnssMetrics&       metrics,
                                                  UNUSED void*                userdata) {
     auto receiver = reinterpret_cast<receiver::ublox::ThreadedReceiver*>(userdata);
-    printf("provide_location_information_callback_ublox: %p (%p)\n", receiver, userdata);
     if (!receiver) return false;
 
     auto nav_pvt = receiver->nav_pvt();
-    printf("nav_pvt: %p\n", nav_pvt.get());
     if(!nav_pvt) return false;
 
     location.time                      = time(NULL);  // TODO(ewasjon): use time from nav_pvt
