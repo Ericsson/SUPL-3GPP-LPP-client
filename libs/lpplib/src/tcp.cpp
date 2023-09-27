@@ -217,6 +217,15 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
 }
 
 int TCP_Client::send(void* buffer, int size) {
+#if 0
+    // hexdump
+    for (int i = 0; i < size; i++) {
+        printf("%02x ", ((uint8_t*)buffer)[i]);
+        if (i % 16 == 15) {
+            printf("\n");
+        }
+    }
+#endif
 #if USE_OPENSSL
     if (mUseSSL)
         return SSL_write(mSSL, buffer, size);

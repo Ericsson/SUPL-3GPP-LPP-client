@@ -25,21 +25,11 @@ public:
 
     /// Interface of the receiver.
     /// @return A pointer to the interface, or nullptr if the receiver is not running.
-    UBLOX_NODISCARD interface::Interface* interface() UBLOX_NOEXCEPT {
-        if (!mReceiver) return nullptr;
-        std::lock_guard<std::mutex> lock(mMutex);
-        return &mReceiver->interface();
-    }
+    UBLOX_NODISCARD interface::Interface* interface() UBLOX_NOEXCEPT;
 
     /// Get the last received NavPvt message.
     /// @return A unique pointer to the message, or nullptr if no message has been received.
-    UBLOX_NODISCARD std::unique_ptr<UbxNavPvt> nav_pvt() UBLOX_NOEXCEPT {
-        if (!mReceiver) return nullptr;
-        if (!mNavPvt) return nullptr;
-        std::lock_guard<std::mutex> lock(mMutex);
-        // Copy mNavPvt to avoid locking the mutex for too long.
-        return std::unique_ptr<UbxNavPvt>(new UbxNavPvt(*mNavPvt));
-    }
+    UBLOX_NODISCARD std::unique_ptr<UbxNavPvt> nav_pvt() UBLOX_NOEXCEPT;
 
 protected:
     /// This function is called at the start of the receiver thread. It handles the blocking

@@ -42,6 +42,7 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
     if (!receiver) return false;
 
     auto nav_pvt = receiver->nav_pvt();
+    if(!nav_pvt) return false;
 
     location.time                      = time(NULL);  // TODO(ewasjon): use time from nav_pvt
     location.latitude                  = nav_pvt->latitude();

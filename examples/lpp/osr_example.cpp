@@ -189,10 +189,14 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
             auto buffer = message.data().data();
             auto size   = message.data().size();
             transmit(buffer, size);
+        }
 
-            if (gUbloxReceiver) {
-                auto interface = gUbloxReceiver->interface();
-                if (interface) {
+        if (gUbloxReceiver) {
+            auto interface = gUbloxReceiver->interface();
+            if (interface) {
+                for (auto& message : messages) {
+                    auto buffer = message.data().data();
+                    auto size   = message.data().size();
                     interface->write(buffer, size);
                 }
             }
