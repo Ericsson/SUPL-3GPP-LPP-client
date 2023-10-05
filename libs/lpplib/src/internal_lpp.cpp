@@ -195,7 +195,7 @@ static long high_accuracy_uncertainity(double r) {
 }
 
 static long HAAltitude(double a) {
-    long res = (long)a * 128;
+    long res = (long)(a * 128.0);
     if (res < -64000) return -64000;
     if (res > 1280000) return 1280000;
     return res;

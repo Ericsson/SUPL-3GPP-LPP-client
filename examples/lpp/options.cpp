@@ -2,7 +2,7 @@
 #include <interface/interface.hpp>
 #include <receiver/ublox/receiver.hpp>
 
-#define VERSION "v3.3.0 (public)"
+#define VERSION "v3.3.1 (public)"
 
 using namespace interface;
 using namespace receiver::ublox;
