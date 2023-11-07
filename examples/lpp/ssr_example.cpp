@@ -6,6 +6,8 @@
 #include <sstream>
 #include <stdexcept>
 #include "location_information.h"
+#include <generator/spartn/generator.h>
+#include <generator/spartn/transmitter.h>
 
 static CellID                    gCell;
 static std::unique_ptr<Modem_AT> gModem;
@@ -14,6 +16,7 @@ static int                       gUraOverride;
 static bool                      gUBloxClockCorrection;
 static bool                      gForceIodeContinuity;
 static Options                   gOptions;
+static SPARTN_Generator          gSpartnGenerator;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
@@ -106,7 +109,16 @@ void execute(Options options, ssr_example::Format format, int ura_override,
 }
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
-    if (gFormat == ssr_example::Format::XER) {
+    if (gFormat == ssr_example::Format::SPARTN) {
+        auto messages = gSpartnGenerator.generate(message, gUraOverride, gUBloxClockCorrection,
+                                                  gForceIodeContinuity);
+        for (auto& msg : messages) {
+            auto bytes = SPARTN_Transmitter::build(msg);
+            for (auto& interface : gOptions.output_options.interfaces) {
+                interface->write(bytes.data(), bytes.size());
+            }
+        }
+    } else if (gFormat == ssr_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
@@ -137,7 +149,7 @@ void SsrCommand::parse(args::Subparser& parser) {
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
     mFormatArg->HelpDefault("xer");
-    mFormatArg->HelpChoices({"xer"});
+    mFormatArg->HelpChoices({"xer","spartn"});
 
     mUraOverrideArg = new args::ValueFlag<int>(
         parser, "ura",
@@ -159,6 +171,8 @@ void SsrCommand::execute(Options options) {
     if (*mFormatArg) {
         if (mFormatArg->Get() == "xer") {
             format = ssr_example::Format::XER;
+        } else if (mFormatArg->Get() == "spartn") {
+            format = ssr_example::Format::SPARTN;
         } else {
             throw args::ValidationError("Invalid format");
         }
