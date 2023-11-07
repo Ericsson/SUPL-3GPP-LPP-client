@@ -1,22 +1,27 @@
 #include "ssr_example.h"
+#include <generator/spartn/generator.h>
+#include <generator/spartn/transmitter.h>
 #include <iostream>
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
 #include <modem.h>
+#include <receiver/ublox/threaded_receiver.hpp>
 #include <sstream>
 #include <stdexcept>
 #include "location_information.h"
-#include <generator/spartn/generator.h>
-#include <generator/spartn/transmitter.h>
 
-static CellID                    gCell;
-static std::unique_ptr<Modem_AT> gModem;
-static ssr_example::Format       gFormat;
-static int                       gUraOverride;
-static bool                      gUBloxClockCorrection;
-static bool                      gForceIodeContinuity;
-static Options                   gOptions;
-static SPARTN_Generator          gSpartnGenerator;
+using UReceiver     = receiver::ublox::ThreadedReceiver;
+
+static CellID              gCell;
+static ssr_example::Format gFormat;
+static int                 gUraOverride;
+static bool                gUBloxClockCorrection;
+static bool                gForceIodeContinuity;
+static Options             gOptions;
+static SPARTN_Generator    gSpartnGenerator;
+
+static std::unique_ptr<Modem_AT>  gModem;
+static std::unique_ptr<UReceiver> gUbloxReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
@@ -33,6 +38,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     auto& identity_options        = gOptions.identity_options;
     auto& modem_options           = gOptions.modem_options;
     auto& output_options          = gOptions.output_options;
+    auto& ublox_options           = gOptions.ublox_options;
 
     gCell = CellID{
         .mcc  = cell_options.mcc,
@@ -69,6 +75,16 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         interface->print_info();
     }
 
+    if (ublox_options.interface) {
+        printf("[ublox]\n");
+        ublox_options.interface->open();
+        ublox_options.interface->print_info();
+
+        gUbloxReceiver = std::unique_ptr<UReceiver>(
+            new UReceiver(ublox_options.port, std::move(ublox_options.interface)));
+        gUbloxReceiver->start();
+    }
+
     LPP_Client client{false /* experimental segmentation support */};
 
     if (identity_options.imsi) {
@@ -81,7 +97,8 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         throw std::runtime_error("No identity provided");
     }
 
-    client.provide_location_information_callback(NULL, provide_location_information_callback);
+    client.provide_location_information_callback(gUbloxReceiver.get(),
+                                                 provide_location_information_callback_ublox);
     client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
 
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
@@ -149,7 +166,7 @@ void SsrCommand::parse(args::Subparser& parser) {
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
     mFormatArg->HelpDefault("xer");
-    mFormatArg->HelpChoices({"xer","spartn"});
+    mFormatArg->HelpChoices({"xer", "spartn"});
 
     mUraOverrideArg = new args::ValueFlag<int>(
         parser, "ura",
