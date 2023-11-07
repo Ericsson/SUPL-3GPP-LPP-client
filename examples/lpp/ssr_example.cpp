@@ -10,7 +10,7 @@
 #include <stdexcept>
 #include "location_information.h"
 
-using UReceiver     = receiver::ublox::ThreadedReceiver;
+using UReceiver = receiver::ublox::ThreadedReceiver;
 
 static CellID              gCell;
 static ssr_example::Format gFormat;
@@ -133,6 +133,13 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
             auto bytes = SPARTN_Transmitter::build(msg);
             for (auto& interface : gOptions.output_options.interfaces) {
                 interface->write(bytes.data(), bytes.size());
+            }
+
+            if (gUbloxReceiver) {
+                auto interface = gUbloxReceiver->interface();
+                if (interface) {
+                    interface->write(bytes.data(), bytes.size());
+                }
             }
         }
     } else if (gFormat == ssr_example::Format::XER) {
