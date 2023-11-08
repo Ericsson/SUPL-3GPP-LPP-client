@@ -330,8 +330,8 @@ OutputOptions parse_output_options() {
         }
 
         auto data_bits = DataBits::EIGHT;
-        if (ublox_serial_data_bits) {
-            switch (ublox_serial_data_bits.Get()) {
+        if (serial_data_bits) {
+            switch (serial_data_bits.Get()) {
             case 5: data_bits = DataBits::FIVE; break;
             case 6: data_bits = DataBits::SIX; break;
             case 7: data_bits = DataBits::SEVEN; break;
@@ -341,8 +341,8 @@ OutputOptions parse_output_options() {
         }
 
         auto stop_bits = StopBits::ONE;
-        if (ublox_serial_stop_bits) {
-            switch (ublox_serial_stop_bits.Get()) {
+        if (serial_stop_bits) {
+            switch (serial_stop_bits.Get()) {
             case 1: stop_bits = StopBits::ONE; break;
             case 2: stop_bits = StopBits::TWO; break;
             default: throw args::ValidationError("Invalid stop bits");
@@ -350,12 +350,12 @@ OutputOptions parse_output_options() {
         }
 
         auto parity_bit = ParityBit::NONE;
-        if (ublox_serial_parity_bits) {
-            if (ublox_serial_parity_bits.Get() == "none") {
+        if (serial_parity_bits) {
+            if (serial_parity_bits.Get() == "none") {
                 parity_bit = ParityBit::NONE;
-            } else if (ublox_serial_parity_bits.Get() == "odd") {
+            } else if (serial_parity_bits.Get() == "odd") {
                 parity_bit = ParityBit::ODD;
-            } else if (ublox_serial_parity_bits.Get() == "even") {
+            } else if (serial_parity_bits.Get() == "even") {
                 parity_bit = ParityBit::EVEN;
             } else {
                 throw args::ValidationError("Invalid parity bits");

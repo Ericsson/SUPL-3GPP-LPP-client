@@ -64,6 +64,9 @@ public:
     void provide_location_information_callback(void* userdata, PLI_Callback callback);
     void provide_ecid_callback(void* userdata, PECID_Callback callback);
 
+    OCTET_STRING* encode(LPP_Message* message);
+    LPP_Message*  decode(OCTET_STRING* data);
+
 private:
     bool wait_for_assistance_data_response(LPP_Transaction* transaction);
     bool process_message(LPP_Message*, LPP_Transaction* transaction);
@@ -77,8 +80,6 @@ private:
     bool supl_send(LPP_Message* message);
     bool supl_send(const std::vector<LPP_Message*>& messages);
 
-    OCTET_STRING* encode(LPP_Message* message);
-    LPP_Message*  decode(OCTET_STRING* data);
 
     LPP_Transaction new_transaction();
 

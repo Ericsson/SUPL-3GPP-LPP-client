@@ -125,7 +125,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     }
 }
 
-static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
+static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message, void*) {
     if (gFormat == ssr_example::Format::SPARTN) {
         auto messages = gSpartnGenerator.generate(message, gUraOverride, gUBloxClockCorrection,
                                                   gForceIodeContinuity);
@@ -156,6 +156,15 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         for (auto& interface : gOptions.output_options.interfaces) {
             interface->write(message.c_str(), message.size());
         }
+    } else if (gFormat == ssr_example::Format::ASN1_UPER) {
+        auto octet = client->encode(message);
+        if(octet) {
+            for (auto& interface : gOptions.output_options.interfaces) {
+                interface->write(octet->buf, octet->size);
+            }
+
+            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
+        }
     } else {
         throw std::runtime_error("Unsupported format");
     }
@@ -173,7 +182,7 @@ void SsrCommand::parse(args::Subparser& parser) {
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
     mFormatArg->HelpDefault("xer");
-    mFormatArg->HelpChoices({"xer", "spartn"});
+    mFormatArg->HelpChoices({"xer", "spartn", "asn1-uper"});
 
     mUraOverrideArg = new args::ValueFlag<int>(
         parser, "ura",
@@ -197,6 +206,8 @@ void SsrCommand::execute(Options options) {
             format = ssr_example::Format::XER;
         } else if (mFormatArg->Get() == "spartn") {
             format = ssr_example::Format::SPARTN;
+        } else if (mFormatArg->Get() == "asn1-uper") {
+            format = ssr_example::Format::ASN1_UPER;
         } else {
             throw args::ValidationError("Invalid format");
         }

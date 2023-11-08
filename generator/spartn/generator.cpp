@@ -935,6 +935,7 @@ bool SPARTN_Generator::generate_tropo_coef(
     const uint8_t     qual_class = qual_indi ? *qual_indi->buf >> 3 : 0;
     const uint8_t     qual_value = qual_indi ? *qual_indi->buf & 3 : 0;
 
+
     uint8_t tropo_qual = 7;
 
     if (qual_class == 0 && qual_value == 0) {
@@ -952,6 +953,9 @@ bool SPARTN_Generator::generate_tropo_coef(
             }
         }
     }
+
+    printf("tropo class=%i, value=%i => qual=%i\n", qual_class, qual_value,
+           tropo_qual);
 
     SPARTN_Generator::add_field_to_block(tropo_coef_block, 42, 3, tropo_qual);
 
@@ -1173,6 +1177,9 @@ void SPARTN_Generator::generate_iono_sat_block(const std::unique_ptr<SPARTN_Bloc
             }
         }
     }
+
+    printf("iono class=%i, value=%i, index=%2i => qual=%2i\n", stec_class, stec_value, index,
+           spartn_iono_quality);
 
     SPARTN_Generator::add_field_to_block(iono_poly_block, 55, 4, spartn_iono_quality);
 

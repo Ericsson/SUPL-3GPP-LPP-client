@@ -6,6 +6,7 @@ namespace ssr_example {
 enum class Format {
     XER,
     SPARTN,
+    ASN1_UPER,
 };
 
 class SsrCommand final : public Command {
