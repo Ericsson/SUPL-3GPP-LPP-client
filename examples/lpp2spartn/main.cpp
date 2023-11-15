@@ -84,6 +84,35 @@ LPP_Message* next_message(StdinStream& stream) {
     return NULL;
 }
 
+static void hexdump(const uint8_t* data, size_t size) {
+    // hexdump with ascii
+    constexpr auto width = 16;
+    for (size_t i = 0; i < size; i += width) {
+        printf("%04zx: ", i);
+        for (size_t j = 0; j < width; j++) {
+            if (i + j < size) {
+                printf("%02x ", data[i + j]);
+            } else {
+                printf("   ");
+            }
+        }
+        printf(" ");
+        for (size_t j = 0; j < width; j++) {
+            if (i + j < size) {
+                auto c = data[i + j];
+                if (c >= 0x20 && c <= 0x7E) {
+                    printf("%c", c);
+                } else {
+                    printf(".");
+                }
+            } else {
+                printf(" ");
+            }
+        }
+        printf("\n");
+    }
+}
+
 int main(int argc, char** argv) {
     auto  options = parse_configuration(argc, argv);
     auto& output  = options.output;
@@ -101,10 +130,21 @@ int main(int argc, char** argv) {
         auto gUBloxClockCorrection = true;
         auto gForceIodeContinuity  = true;
 
+#if 1
+        auto messages2 = spartn2_generator.generate(message);
+
+        for (auto& msg : messages2) {
+            printf("Message: %d-%d\n", msg.message_type(), msg.message_subtype());
+            auto data = msg.build();
+            hexdump(data.data(), data.size());
+
+            for (auto& interface : output.interfaces) {
+                interface->write(data.data(), data.size());
+            }
+        }
+#else
         auto messages =
             generator.generate(message, gUraOverride, gUBloxClockCorrection, gForceIodeContinuity);
-
-        auto messages2 = spartn2_generator.generate(message);
 
         printf("Generated %zu messages\n", messages.size());
 
@@ -114,7 +154,7 @@ int main(int argc, char** argv) {
                 interface->write(bytes.data(), bytes.size());
             }
         }
-
+#endif
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, message);
     }
 

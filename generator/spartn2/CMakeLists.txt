@@ -2,6 +2,9 @@
 add_library(generator_spartn2 STATIC 
     "generator.cpp"
     "ocb.cpp"
+    "time.cpp"
+    "builder.cpp"
+    "message.cpp"
 )
 add_library(generator::spartn2 ALIAS generator_spartn2)
 

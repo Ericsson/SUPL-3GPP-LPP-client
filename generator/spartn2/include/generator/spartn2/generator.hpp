@@ -10,7 +10,26 @@ namespace generator {
 namespace spartn {
 
 /// SPARTN message
-class Message {};
+class Message {
+public:
+    SPARTN_EXPLICIT Message(uint8_t message_type, uint8_t message_subtype, uint32_t message_time,
+                            std::vector<uint8_t>&& payload);
+
+    /// Message type
+    uint8_t message_type() const { return mMessageType; }
+    /// Message subtype
+    uint8_t message_subtype() const { return mMessageSubtype; }
+    /// Message data
+    const std::vector<uint8_t>& payload() const { return mPayload; }
+
+    std::vector<uint8_t> build();
+
+private:
+    uint8_t              mMessageType;
+    uint8_t              mMessageSubtype;
+    uint32_t             mMessageTime;
+    std::vector<uint8_t> mPayload;
+};
 
 struct CorrectionPointSet;
 struct OcbData;
@@ -34,9 +53,9 @@ private:
     void find_ocb_corrections(const ProvideAssistanceData_r9_IEs* message);
 
 private:
-    uint32_t mGenerationIndex;
+    uint32_t                            mGenerationIndex;
     std::unique_ptr<CorrectionPointSet> mCorrectionPointSet;
-    std::unique_ptr<OcbData> mOcbData;
+    std::unique_ptr<OcbData>            mOcbData;
 };
 
 }  // namespace spartn
