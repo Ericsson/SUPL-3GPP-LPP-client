@@ -1,6 +1,7 @@
 #pragma once
 #include <generator/spartn2/types.hpp>
 #include <memory>
+#include <unordered_map>
 #include <vector>
 
 struct LPP_Message;
@@ -32,7 +33,7 @@ private:
 };
 
 struct CorrectionPointSet;
-struct OcbData;
+struct CorrectionData;
 
 /// Generates SPARTN messages based on LPP SSR messages.
 class Generator {
@@ -43,6 +44,25 @@ public:
     /// Destructor.
     ~Generator();
 
+    void set_ura_override(int ura_override) { mUraOverride = ura_override; }
+
+    void set_continuity_indicator(double continuity_indicator) {
+        mContinuityIndicator = continuity_indicator;
+    }
+
+    void set_ublox_clock_correction(bool ublox_clock_correction) {
+        mUBloxClockCorrection = ublox_clock_correction;
+    }
+
+    void set_generate_ocb(bool generate_ocb) { mGenerateOcb = generate_ocb; }
+    void set_generate_hpac(bool generate_hpac) { mGenerateHpac = generate_hpac; }
+    void set_generate_gad(bool generate_gad) { mGenerateGad = generate_gad; }
+
+    void set_gps_supported(bool gps_supported) { mGpsSupported = gps_supported; }
+    void set_glonass_supported(bool glonass_supported) { mGlonassSupported = glonass_supported; }
+    void set_galileo_supported(bool galileo_supported) { mGalileoSupported = galileo_supported; }
+    void set_beidou_supported(bool beidou_supported) { mBeidouSupported = beidou_supported; }
+
     /// Generate SPARTN messages based on LPP SSR messages.
     /// @param[in] lpp_message The LPP SSR message.
     /// @return The generated SPARTN messages.
@@ -51,11 +71,43 @@ public:
 private:
     void find_correction_point_set(const ProvideAssistanceData_r9_IEs* message);
     void find_ocb_corrections(const ProvideAssistanceData_r9_IEs* message);
+    void find_hpac_corrections(const ProvideAssistanceData_r9_IEs* message);
+
+    void generate_gad(long iod, long set_id);
+    void generate_ocb(long iod);
+    void generate_hpac(long iod);
+
+    uint16_t next_area_id() {
+        auto id     = mNextAreaId;
+        mNextAreaId = (mNextAreaId + 1) % 256;
+        return id;
+    }
 
 private:
-    uint32_t                            mGenerationIndex;
-    std::unique_ptr<CorrectionPointSet> mCorrectionPointSet;
-    std::unique_ptr<OcbData>            mOcbData;
+    uint32_t mGenerationIndex;
+    uint16_t mNextAreaId;
+
+    std::unordered_map<uint16_t, std::unique_ptr<CorrectionPointSet>> mCorrectionPointSets;
+    std::unique_ptr<CorrectionData>                                   mCorrectionData;
+    std::vector<Message>                                              mMessages;
+
+    int    mUraOverride;          // <0 = no override
+    double mContinuityIndicator;  // <0 = no override
+    bool   mUBloxClockCorrection;
+
+    // SF055:
+    int mIonosphereQualityOverride;  // <0 = no override
+    int mIonosphereQualityDefault;
+
+    bool mComputeAverageZenithDelay;
+
+    bool mGenerateGad;
+    bool mGenerateOcb;
+    bool mGenerateHpac;
+    bool mGpsSupported;
+    bool mGlonassSupported;
+    bool mGalileoSupported;
+    bool mBeidouSupported;
 };
 
 }  // namespace spartn

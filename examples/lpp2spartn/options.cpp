@@ -1,10 +1,36 @@
-#include <args.hpp>
 #include "options.hpp"
+#include <args.hpp>
 
 using namespace interface;
 
 args::Group arguments{"Arguments:"};
 
+//
+// Format
+//
+
+args::Group format{
+    "Format:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::ValueFlag<std::string> format_value{
+    format, "format", "Format", {"format"}, args::Options::Single};
+
+Format parse_format_options() {
+    if (!format_value) {
+        throw args::RequiredError("format");
+    }
+
+    if (format_value.Get() == "spartn") {
+        return Format::SPARTN;
+    } else if (format_value.Get() == "spartn2") {
+        return Format::SPARTN2;
+    } else {
+        throw args::ValidationError("Invalid format");
+    }
+}
 
 //
 // Output
@@ -80,7 +106,6 @@ args::Group stdout_output{
     args::Options::Global,
 };
 args::Flag stdout_output_flag{stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
-
 
 OutputOptions parse_output_options() {
     OutputOptions output{};
@@ -201,6 +226,10 @@ Options parse_configuration(int argc, char** argv) {
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
 
+    format_value.HelpChoices({
+        "spartn",
+        "spartn2",
+    });
 
     i2c_address.HelpDefault("66");
     serial_baud_rate.HelpDefault("115200");
@@ -219,11 +248,13 @@ Options parse_configuration(int argc, char** argv) {
     });
 
     // Globals
+    args::GlobalOptions format_globals{parser, format};
     args::GlobalOptions output_globals{parser, output};
 
     try {
         parser.ParseCLI(argc, argv);
         return Options{
+            .format = parse_format_options(),
             .output = parse_output_options(),
         };
     } catch (const args::ValidationError& e) {

@@ -5,13 +5,17 @@
 #include "builder.hpp"
 #include "data.hpp"
 
+#include <map>
+#include <stdio.h>
+
 #define SPARTN_CRC_16_CCITT 1
 
 struct BIT_STRING_s;
+struct GNSS_SSR_STEC_Correction_r16;
 
 struct ByteRange {
     uint8_t* ptr;
-    size_t size;
+    size_t   size;
 };
 
 class TransportBuilder {
@@ -19,8 +23,8 @@ public:
     SPARTN_EXPLICIT TransportBuilder();
 
     std::vector<uint8_t> build();
-    ByteRange range(size_t begin_bit, size_t end_bit);
-    size_t bit_length();
+    ByteRange            range(size_t begin_bit, size_t end_bit);
+    size_t               bit_length();
 
     // TF001 - Preamble
     inline void tf001() { mBuilder.u8(0x73); }
@@ -140,6 +144,9 @@ public:
     // Satellite Mask: (SF011, SF012, ...)
     void satellite_mask(long                                                gnss_id,
                         const std::vector<generator::spartn::OcbSatellite>& satellites);
+    void satellite_mask(long                                                 gnss_id,
+                        const std::vector<generator::spartn::HpacSatellite>& satellites);
+    void satellite_mask(long gnss_id, uint64_t count, bool* bits);
 
     // SF013 - Do not use (DNU)
     inline void sf013(bool dnu) { mBuilder.b(dnu); }
@@ -227,39 +234,367 @@ public:
             sf024_raw(7);
     }
 
-    // SF025 - GPS phase bias mask
-    inline void sf025_raw(bool extended, uint32_t mask) {
+    // SFXXX - General bias mask
+    inline void sfxxx_bias_mask_raw(uint8_t low, uint8_t high, bool extended, uint32_t mask) {
         mBuilder.b(extended);
         if (extended) {
-            mBuilder.bits(mask, 11);
+            mBuilder.bits(mask, high);
         } else {
-            mBuilder.bits(mask, 6);
+            mBuilder.bits(mask, low);
         }
     }
 
     template <typename T>
-    inline void sf025(const std::unordered_map<uint8_t, T>* types) {
-        uint32_t mask = 0;
-        for (auto& kvp : (*types)) {
-            if (kvp.first >= 11) continue;
-            mask |= 1U << kvp.first;
+    inline void sfxxx_bias_mask(uint8_t low, uint8_t high, const std::map<uint8_t, T>* types) {
+        uint8_t size = 0;
+        if (types->size() > low) {
+            size = high;
+            mBuilder.b(true);
+        } else {
+            size = low;
+            mBuilder.b(false);
         }
 
-        sf025_raw((mask & 0x7E0) != 0, mask);
+        for (uint8_t i = 0; i < size; ++i) {
+            mBuilder.b(types->count(i) > 0);
+        }
+    }
+
+    // SF025 - GPS phase bias mask
+    inline void sf025_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(6, 11, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf025(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(6, 11, types);
+    }
+
+    // SF026 - GLONASS phase bias mask
+    inline void sf026_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(5, 9, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf026(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(5, 9, types);
     }
 
     // SF027 - GPS code bias mask
     inline void sf027_raw(bool extended, uint32_t mask) {
-        mBuilder.b(extended);
-        if (extended) {
-            mBuilder.bits(mask, 11);
-        } else {
-            mBuilder.bits(mask, 6);
+        sfxxx_bias_mask_raw(6, 11, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf027(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(6, 11, types);
+    }
+
+    // SF028 - GLONASS code bias mask
+    inline void sf028_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(5, 9, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf028(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(5, 9, types);
+    }
+
+    // SF029 - Code bias correction
+    inline void sf029(double value) { mBuilder.double_to_bits(-20.46, 20.46, 0.02, value, 11); }
+
+    // SF030 - Area Count
+    inline void sf030(uint8_t count) {
+        assert(count >= 1);
+        assert(count <= 32);
+        mBuilder.bits(count - 1, 5);
+    }
+
+    // SF031 - Area ID
+    inline void sf031(uint8_t id) { mBuilder.bits(id, 8); }
+
+    // SF032 - Area reference latitude
+    inline void sf032(double latitude) { mBuilder.double_to_bits(-90, 90, 0.1, latitude, 11); }
+
+    // SF033 - Area reference longitude
+    inline void sf033(double longitude) { mBuilder.double_to_bits(-180, 180, 0.1, longitude, 12); }
+
+    // SF034 - Area latitude grid node count
+    inline void sf034(uint8_t count) {
+        assert(count >= 1);
+        assert(count <= 8);
+        mBuilder.bits(count - 1, 3);
+    }
+
+    // SF035 - Area longitude grid node count
+    inline void sf035(uint8_t count) {
+        assert(count >= 1);
+        assert(count <= 8);
+        mBuilder.bits(count - 1, 3);
+    }
+
+    // SF036 - Area latitude grid node spacing
+    inline void sf036(double spacing) { mBuilder.double_to_bits(0.1, 3.2, 0.1, spacing, 5); }
+
+    // SF037 - Area longitude grid node spacing
+    inline void sf037(double spacing) { mBuilder.double_to_bits(0.1, 3.2, 0.1, spacing, 5); }
+
+    // SF039 - Number of grid points present
+    inline void sf039(uint8_t count) {
+        assert(count >= 0);
+        assert(count <= 127);
+        mBuilder.bits(count, 7);
+    }
+
+    // SF040 - Poly/Grid block present indicator
+    inline void sf040(uint8_t type) { mBuilder.bits(type, 2); }
+
+    // SF041 - Troposphere equation type
+    inline void sf041(uint8_t type) { mBuilder.bits(type, 3); }
+
+    // SF042 - Troposphere quality
+    inline void sf042_raw(uint8_t quality) { mBuilder.bits(quality, 3); }
+    inline void sf042(double quality) {
+        if (quality <= 0.010)
+            sf042_raw(1);
+        else if (quality <= 0.020)
+            sf042_raw(2);
+        else if (quality <= 0.040)
+            sf042_raw(3);
+        else if (quality <= 0.080)
+            sf042_raw(4);
+        else if (quality <= 0.160)
+            sf042_raw(5);
+        else if (quality <= 0.320)
+            sf042_raw(6);
+        else
+            sf042_raw(7);
+    }
+
+    // SF043 - Area average vertical hydrostatic delay
+    inline void sf043(double delay) { mBuilder.double_to_bits(-0.508, 0.505, 0.004, delay, 8); }
+
+    // SF044 - Troposphere polynomial coefficient size indicator
+    inline void sf044(uint8_t size) { mBuilder.bits(size, 1); }
+
+    // SF045 - Small troposphere coefficient T_00
+    inline void sf045(double value) { mBuilder.double_to_bits(-0.252, 0.252, 0.004, value, 7); }
+
+    // SF046 - Troposphere polynomial coefficient T_10/T_01
+    inline void sf046(double value) { mBuilder.double_to_bits(-0.063, 0.063, 0.001, value, 7); }
+
+    // SF047 - Small troposphere coefficient T_11
+    inline void sf047(double value) { mBuilder.double_to_bits(-0.051, 0.051, 0.0002, value, 9); }
+
+    // SF048 - Large troposphere coefficient T_00
+    inline void sf048(double value) { mBuilder.double_to_bits(-1.020, 1.020, 0.004, value, 9); }
+
+    // SF049 - Large troposphere coefficient T_10/T_01
+    inline void sf049(double value) { mBuilder.double_to_bits(-0.255, 0.255, 0.001, value, 9); }
+
+    // SF050 - Large troposphere coefficient T_11
+    inline void sf050(double value) { mBuilder.double_to_bits(-0.2046, 0.2046, 0.0002, value, 11); }
+
+    // SF051 - Troposphere residual field size
+    inline void sf051(uint8_t size) { mBuilder.bits(size, 1); }
+
+    // SF052 - Small troposphere residual zenith delay
+    inline void sf052_invalid() { mBuilder.bits(0x3F, 6); }
+    inline void sf052(double value) { mBuilder.double_to_bits(-0.124, 0.124, 0.004, value, 6); }
+
+    // SF053 - Large troposphere residual zenith delay
+    inline void sf053_invalid() { mBuilder.bits(0xFF, 8); }
+    inline void sf053(double value) { mBuilder.double_to_bits(-0.508, 0.508, 0.004, value, 8); }
+
+    // SF054 - Ionosphere equation type
+    inline void sf054(int type) { mBuilder.bits(type, 3); }
+
+    // SF055 - Ionosphere quality
+    inline void sf055_raw(int value) { mBuilder.bits(value, 4); }
+    inline void sf055_invalid() { sf055_raw(0); }
+    inline void sf055(double quality) {
+        if (quality <= 0.03)
+            sf055_raw(1);
+        else if (quality <= 0.05)
+            sf055_raw(2);
+        else if (quality <= 0.07)
+            sf055_raw(3);
+        else if (quality <= 0.14)
+            sf055_raw(4);
+        else if (quality <= 0.28)
+            sf055_raw(5);
+        else if (quality <= 0.56)
+            sf055_raw(6);
+        else if (quality <= 1.12)
+            sf055_raw(7);
+        else if (quality <= 2.24)
+            sf055_raw(8);
+        else if (quality <= 4.48)
+            sf055_raw(9);
+        else if (quality <= 8.96)
+            sf055_raw(10);
+        else if (quality <= 17.92)
+            sf055_raw(11);
+        else if (quality <= 35.84)
+            sf055_raw(12);
+        else if (quality <= 71.68)
+            sf055_raw(13);
+        else if (quality <= 143.36)
+            sf055_raw(14);
+        else
+            sf055_raw(15);
+    }
+
+    // SF056 - Ionosphere polynomial coefficient size indicator
+    inline void sf056(bool large_coefficient) { mBuilder.b(large_coefficient); }
+
+    // SF057 - Small ionosphere coefficient C00
+    inline void sf057(double value) { mBuilder.double_to_bits(-81.88, 81.88, 0.04, value, 12); }
+
+    // SF058 - Small ionosphere coefficient C10/C01
+    inline void sf058(double value) { mBuilder.double_to_bits(-16.376, 16.376, 0.008, value, 12); }
+
+    // SF059 - Small ionosphere coefficient C11
+    inline void sf059(double value) { mBuilder.double_to_bits(-8.190, 8.190, 0.002, value, 13); }
+
+    // SF060 - Large ionosphere coefficient C00
+    inline void sf060(double value) { mBuilder.double_to_bits(-327.64, 327.64, 0.04, value, 14); }
+
+    // SF061 - Large ionosphere coefficient C10/C01
+    inline void sf061(double value) { mBuilder.double_to_bits(-65.528, 65.528, 0.008, value, 14); }
+
+    // SF062 - Large ionosphere coefficient C11
+    inline void sf062(double value) { mBuilder.double_to_bits(-32.766, 32.766, 0.002, value, 15); }
+
+    // SF0XX - Ionosphere coefficient C00
+    inline void ionosphere_coefficient_c00(bool large_coefficient, double value) {
+        if (large_coefficient)
+            sf060(value);
+        else
+            sf057(value);
+    }
+
+    // SF0XX - Ionosphere coefficient C10/C01
+    inline void ionosphere_coefficient_c10_c01(bool large_coefficient, double value) {
+        if (large_coefficient)
+            sf061(value);
+        else
+            sf058(value);
+    }
+
+    // SF0XX - Ionosphere coefficient C11
+    inline void ionosphere_coefficient_c11(bool large_coefficient, double value) {
+        if (large_coefficient)
+            sf062(value);
+        else
+            sf059(value);
+    }
+
+    // SF063 - Ionosphere residual field size
+    inline void sf063(uint8_t size) { mBuilder.bits(size, 2); }
+
+    // SF064 - Small ionosphere residual slant delay
+    inline void sf064_invalid() { mBuilder.bits(0xF, 4); }
+    inline void sf064(double value) { mBuilder.double_to_bits(-0.28, 0.28, 0.04, value, 4); }
+
+    // SF065 - Medium ionosphere residual slant delay
+    inline void sf065_invalid() { mBuilder.bits(0x7F, 7); }
+    inline void sf065(double value) { mBuilder.double_to_bits(-2.52, 2.52, 0.04, value, 7); }
+
+    // SF066 - Large ionosphere residual slant delay
+    inline void sf066_invalid() { mBuilder.bits(0x3FF, 10); }
+    inline void sf066(double value) { mBuilder.double_to_bits(-20.44, 20.44, 0.04, value, 10); }
+
+    // SF067 - Extra-large ionosphere residual slant delay
+    inline void sf067_invalid() { mBuilder.bits(0x3FFF, 14); }
+    inline void sf067(double value) { mBuilder.double_to_bits(-327.64, 327.64, 0.04, value, 14); }
+
+    // SF0XX - Ionosphere residual slant delay
+    inline void ionosphere_residual(uint8_t size, double value) {
+        switch (size) {
+        case 0: sf064(value); break;
+        case 1: sf065(value); break;
+        case 2: sf066(value); break;
+        case 3: sf067(value); break;
+        default: SPARTN_UNREACHABLE();
         }
     }
 
+    inline void ionosphere_residual_invalid(uint8_t size) {
+        switch (size) {
+        case 0: sf064_invalid(); break;
+        case 1: sf065_invalid(); break;
+        case 2: sf066_invalid(); break;
+        case 3: sf067_invalid(); break;
+        default: SPARTN_UNREACHABLE();
+        }
+    }
+
+    // SF068 - Area Issue of Update (AIOU)
+    inline void sf068(uint8_t aiou) { mBuilder.bits(aiou, 4); }
+
     // SF069 - Reserved
     inline void sf069() { mBuilder.bits(0, 1); }
+
+    // SF102 - Galileo phase bias mask
+    inline void sf102_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(8, 15, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf102(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(8, 15, types);
+    }
+
+    // SF103 - BDS phase bias mask
+    inline void sf103_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(8, 15, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf103(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(8, 15, types);
+    }
+
+    // SF104 - QZSS phase bias mask
+    inline void sf104_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(6, 11, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf104(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(6, 11, types);
+    }
+
+    // SF105 - Galileo code bias mask
+    inline void sf105_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(8, 15, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf105(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(8, 15, types);
+    }
+
+    // SF106 - BDS code bias mask
+    inline void sf106_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(8, 15, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf106(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(8, 15, types);
+    }
+
+    // SF107 - QZSS code bias mask
+    inline void sf107_raw(bool extended, uint32_t mask) {
+        sfxxx_bias_mask_raw(6, 11, extended, mask);
+    }
+
+    template <typename T>
+    inline void sf107(const std::map<uint8_t, T>* types) {
+        sfxxx_bias_mask(6, 11, types);
+    }
 
 private:
     uint8_t  mMessageType;

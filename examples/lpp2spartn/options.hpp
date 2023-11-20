@@ -3,6 +3,14 @@
 #include <interface/interface.hpp>
 #include <vector>
 
+/// Format options.
+enum class Format {
+    /// SPARTN format.
+    SPARTN,
+    /// SPARTN2 format.
+    SPARTN2,
+};
+
 /// Output options.
 struct OutputOptions {
     /// Interfaces to output data to.
@@ -10,6 +18,7 @@ struct OutputOptions {
 };
 
 struct Options {
+    Format        format;
     OutputOptions output;
 };
 

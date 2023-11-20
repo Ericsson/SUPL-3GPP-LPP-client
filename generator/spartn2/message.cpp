@@ -6,7 +6,8 @@
 #define GNSS_ID_BDS 5
 #define GNSS_ID_QZS 2
 
-#include "BIT_STRING.h"
+#include <BIT_STRING.h>
+#include <GNSS-SSR-STEC-Correction-r16.h>
 
 static uint16_t crc16_ccitt(uint8_t* data, size_t length) {
     // CRC 16 CCITT
@@ -117,65 +118,89 @@ generator::spartn::Message MessageBuilder::build() {
     return generator::spartn::Message{mMessageType, mMessageSubtype, mMessageTime, std::move(data)};
 }
 
-void MessageBuilder::satellite_mask(
-    long gnss_id, const std::vector<generator::spartn::OcbSatellite>& satellites) {
-    uint64_t mask  = 0;
-    uint64_t count = 0;
-    for (auto& satellite : satellites) {
-        auto prn = satellite.prn();
-        auto bit = prn - 1;
-        mask |= (1 << bit);
-        count++;
-    }
-
+void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
     switch (gnss_id) {
     case GNSS_ID_GPS:  // SF011 - GPS Satellite Mask
         if (count > 56) {
             mBuilder.bits(3, 2);
-            mBuilder.bits(mask, 64);
+            count = 64;
         } else if (count > 44) {
             mBuilder.bits(2, 2);
-            mBuilder.bits(mask, 56);
+            count = 56;
         } else if (count > 32) {
             mBuilder.bits(1, 2);
-            mBuilder.bits(mask, 44);
+            count = 44;
         } else {
             mBuilder.bits(0, 2);
-            mBuilder.bits(mask, 32);
+            count = 32;
         }
         break;
     case GNSS_ID_GLO:  // SF012 - GLONASS Satellite Mask
         if (count > 48) {
             mBuilder.bits(3, 2);
-            mBuilder.bits(mask, 63);
+            count = 63;
         } else if (count > 36) {
             mBuilder.bits(2, 2);
-            mBuilder.bits(mask, 48);
+            count = 48;
         } else if (count > 24) {
             mBuilder.bits(1, 2);
-            mBuilder.bits(mask, 36);
+            count = 36;
         } else {
             mBuilder.bits(0, 2);
-            mBuilder.bits(mask, 24);
+            count = 24;
         }
         break;
     case GNSS_ID_GAL:  // SF093 - Galileo Satellite Mask
         if (count > 54) {
             mBuilder.bits(3, 2);
-            mBuilder.bits(mask, 64);
+            count = 64;
         } else if (count > 45) {
             mBuilder.bits(2, 2);
-            mBuilder.bits(mask, 54);
+            count = 54;
         } else if (count > 36) {
             mBuilder.bits(1, 2);
-            mBuilder.bits(mask, 45);
+            count = 45;
         } else {
             mBuilder.bits(0, 2);
-            mBuilder.bits(mask, 36);
+            count = 36;
         }
         break;
     default: SPARTN_UNREACHABLE();
     }
+
+    for (uint8_t i = 0; i < count; i++) {
+        mBuilder.b(bits[i]);
+    }
+}
+
+void MessageBuilder::satellite_mask(
+    long gnss_id, const std::vector<generator::spartn::OcbSatellite>& satellites) {
+    uint64_t count    = 0;
+    bool     bits[64] = {false};
+    for (auto& satellite : satellites) {
+        auto prn = satellite.prn();
+        // NOTE(ewasjon): 0th bit is used for PRN 1
+        auto bit  = prn - 1;
+        bits[bit] = true;
+        count++;
+    }
+
+    satellite_mask(gnss_id, count, bits);
+}
+
+void MessageBuilder::satellite_mask(
+    long gnss_id, const std::vector<generator::spartn::HpacSatellite>& satellites) {
+    uint64_t count    = 0;
+    bool     bits[64] = {false};
+    for (auto& satellite : satellites) {
+        auto prn = satellite.prn();
+        // NOTE(ewasjon): 0th bit is used for PRN 1
+        auto bit  = prn - 1;
+        bits[bit] = true;
+        count++;
+    }
+
+    satellite_mask(gnss_id, count, bits);
 }
 
 void MessageBuilder::ephemeris_type(long gnss_id) {
@@ -199,19 +224,27 @@ void MessageBuilder::ephemeris_type(long gnss_id) {
     }
 }
 
-void MessageBuilder::orbit_iode(long gnss_id, SPARTN_UNUSED BIT_STRING_s& iode) {
+void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string) {
+    long iode = 0;
+    for (size_t i = 0; i < bit_string.size; i++) {
+        iode <<= 8;
+        iode |= bit_string.buf[i];
+    }
+    iode >>= bit_string.bits_unused;
+
+    // TODO(ewasjon): I cannot explain this shifting at the moment. The data feed we're receiving is
+    // only matching if this shift is included.
+    iode >>= 3;
+
     switch (gnss_id) {
     case GNSS_ID_GPS:  // SF018 - GPS IODE
-                       // TODO(ewasjon): compute the IODE
-        mBuilder.bits(0, 8);
+        mBuilder.bits(iode & 0xFF, 8);
         break;
     case GNSS_ID_GLO:  // SF019 - GLONASS IODE
-                       // TODO(ewasjon): compute the IODE
-        mBuilder.bits(0, 7);
+        mBuilder.bits(iode & 0x7F, 7);
         break;
     case GNSS_ID_GAL:  // SF099 - Galileo IOD
-                       // TODO(ewasjon): compute the IOD
-        mBuilder.bits(0, 10);
+        mBuilder.bits(iode & 0x3FF, 10);
         break;
     default: SPARTN_UNREACHABLE();
     }

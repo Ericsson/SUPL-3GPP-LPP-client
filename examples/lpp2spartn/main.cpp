@@ -120,42 +120,107 @@ int main(int argc, char** argv) {
     StdinStream      stream{};
     SPARTN_Generator generator{};
 
+    auto gUraOverride          = 2;
+    auto gUBloxClockCorrection = true;
+    auto gForceIodeContinuity  = true;
+
     generator::spartn::Generator spartn2_generator{};
+
+    spartn2_generator.set_ura_override(gUraOverride);
+    spartn2_generator.set_ublox_clock_correction(gUBloxClockCorrection);
+    if (gForceIodeContinuity) {
+        spartn2_generator.set_continuity_indicator(320.0);
+    }
+
+    spartn2_generator.set_generate_hpac(true);
+
+    spartn2_generator.set_galileo_supported(true);
 
     for (;;) {
         auto message = next_message(stream);
         if (!message) break;
 
-        auto gUraOverride          = 2;
-        auto gUBloxClockCorrection = true;
-        auto gForceIodeContinuity  = true;
+        if (options.format == Format::SPARTN2) {
+            auto messages2 = spartn2_generator.generate(message);
 
-#if 1
-        auto messages2 = spartn2_generator.generate(message);
+            for (auto& msg : messages2) {
+                printf("Message: %d-%d\n", msg.message_type(), msg.message_subtype());
+                auto data = msg.build();
+                hexdump(data.data(), data.size());
 
-        for (auto& msg : messages2) {
-            printf("Message: %d-%d\n", msg.message_type(), msg.message_subtype());
-            auto data = msg.build();
-            hexdump(data.data(), data.size());
+                for (auto& interface : output.interfaces) {
+                    interface->write(data.data(), data.size());
+                }
+            }
+        } else if (options.format == Format::SPARTN) {
+            auto messages = generator.generate(message, gUraOverride, gUBloxClockCorrection,
+                                               gForceIodeContinuity);
 
-            for (auto& interface : output.interfaces) {
-                interface->write(data.data(), data.size());
+            printf("Generated %zu messages\n", messages.size());
+
+            for (auto& msg : messages) {
+                if (msg->message_type == 2 && msg->message_sub_type == 0) {
+                    auto bytes = SPARTN_Transmitter::build(msg);
+                    for (auto& interface : output.interfaces) {
+                        interface->write(bytes.data(), bytes.size());
+                    }
+                }
+            }
+
+            for (auto& msg : messages) {
+                if (msg->message_type == 0 && msg->message_sub_type == 0) {
+                    auto bytes = SPARTN_Transmitter::build(msg);
+                    for (auto& interface : output.interfaces) {
+                        interface->write(bytes.data(), bytes.size());
+                    }
+                }
+            }
+
+            for (auto& msg : messages) {
+                if (msg->message_type == 0 && msg->message_sub_type == 1) {
+                    auto bytes = SPARTN_Transmitter::build(msg);
+                    for (auto& interface : output.interfaces) {
+                        interface->write(bytes.data(), bytes.size());
+                    }
+                }
+            }
+
+            for (auto& msg : messages) {
+                if (msg->message_type == 0 && msg->message_sub_type == 2) {
+                    auto bytes = SPARTN_Transmitter::build(msg);
+                    for (auto& interface : output.interfaces) {
+                        interface->write(bytes.data(), bytes.size());
+                    }
+                }
+            }
+            for (auto& msg : messages) {
+                if (msg->message_type == 1 && msg->message_sub_type == 0) {
+                    auto bytes = SPARTN_Transmitter::build(msg);
+                    for (auto& interface : output.interfaces) {
+                        interface->write(bytes.data(), bytes.size());
+                    }
+                }
+            }
+            for (auto& msg : messages) {
+                if (msg->message_type == 1 && msg->message_sub_type == 1) {
+                    auto bytes = SPARTN_Transmitter::build(msg);
+                    for (auto& interface : output.interfaces) {
+                        interface->write(bytes.data(), bytes.size());
+                    }
+                }
+            }
+            for (auto& msg : messages) {
+                if (msg->message_type == 1 && msg->message_sub_type == 2) {
+                    auto bytes = SPARTN_Transmitter::build(msg);
+                    for (auto& interface : output.interfaces) {
+                        interface->write(bytes.data(), bytes.size());
+                    }
+                }
             }
         }
-#else
-        auto messages =
-            generator.generate(message, gUraOverride, gUBloxClockCorrection, gForceIodeContinuity);
 
-        printf("Generated %zu messages\n", messages.size());
-
-        for (auto& msg : messages) {
-            auto bytes = SPARTN_Transmitter::build(msg);
-            for (auto& interface : output.interfaces) {
-                interface->write(bytes.data(), bytes.size());
-            }
-        }
-#endif
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, message);
+        break;
     }
 
     return 0;

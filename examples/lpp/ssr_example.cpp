@@ -1,6 +1,7 @@
 #include "ssr_example.h"
 #include <generator/spartn/generator.h>
 #include <generator/spartn/transmitter.h>
+#include <generator/spartn2/generator.hpp>
 #include <iostream>
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
@@ -12,13 +13,14 @@
 
 using UReceiver = receiver::ublox::ThreadedReceiver;
 
-static CellID              gCell;
-static ssr_example::Format gFormat;
-static int                 gUraOverride;
-static bool                gUBloxClockCorrection;
-static bool                gForceIodeContinuity;
-static Options             gOptions;
-static SPARTN_Generator    gSpartnGenerator;
+static CellID                       gCell;
+static ssr_example::Format          gFormat;
+static int                          gUraOverride;
+static bool                         gUBloxClockCorrection;
+static bool                         gForceIodeContinuity;
+static Options                      gOptions;
+static SPARTN_Generator             gSpartnGenerator;
+static generator::spartn::Generator gSpartnGenerator2;
 
 static std::unique_ptr<Modem_AT>  gModem;
 static std::unique_ptr<UReceiver> gUbloxReceiver;
@@ -85,6 +87,12 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         gUbloxReceiver->start();
     }
 
+    gSpartnGenerator2.set_ura_override(gUraOverride);
+    gSpartnGenerator2.set_ublox_clock_correction(gUBloxClockCorrection);
+    if (gForceIodeContinuity) {
+        gSpartnGenerator2.set_continuity_indicator(320.0);
+    }
+
     LPP_Client client{false /* experimental segmentation support */};
 
     if (identity_options.imsi) {
@@ -125,7 +133,8 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     }
 }
 
-static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message, void*) {
+static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message,
+                                     void*) {
     if (gFormat == ssr_example::Format::SPARTN) {
         auto messages = gSpartnGenerator.generate(message, gUraOverride, gUBloxClockCorrection,
                                                   gForceIodeContinuity);
@@ -139,6 +148,22 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                 auto interface = gUbloxReceiver->interface();
                 if (interface) {
                     interface->write(bytes.data(), bytes.size());
+                }
+            }
+        }
+    } else if (gFormat == ssr_example::Format::SPARTN2) {
+        auto messages = gSpartnGenerator2.generate(message);
+        for (auto& msg : messages) {
+            auto data = msg.build();
+
+            for (auto& interface : gOptions.output_options.interfaces) {
+                interface->write(data.data(), data.size());
+            }
+
+            if (gUbloxReceiver) {
+                auto interface = gUbloxReceiver->interface();
+                if (interface) {
+                    interface->write(data.data(), data.size());
                 }
             }
         }
@@ -158,7 +183,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
         }
     } else if (gFormat == ssr_example::Format::ASN1_UPER) {
         auto octet = client->encode(message);
-        if(octet) {
+        if (octet) {
             for (auto& interface : gOptions.output_options.interfaces) {
                 interface->write(octet->buf, octet->size);
             }
@@ -182,7 +207,7 @@ void SsrCommand::parse(args::Subparser& parser) {
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
     mFormatArg->HelpDefault("xer");
-    mFormatArg->HelpChoices({"xer", "spartn", "asn1-uper"});
+    mFormatArg->HelpChoices({"xer", "spartn", "spartn2", "asn1-uper"});
 
     mUraOverrideArg = new args::ValueFlag<int>(
         parser, "ura",
@@ -206,6 +231,8 @@ void SsrCommand::execute(Options options) {
             format = ssr_example::Format::XER;
         } else if (mFormatArg->Get() == "spartn") {
             format = ssr_example::Format::SPARTN;
+        } else if (mFormatArg->Get() == "spartn2") {
+            format = ssr_example::Format::SPARTN2;
         } else if (mFormatArg->Get() == "asn1-uper") {
             format = ssr_example::Format::ASN1_UPER;
         } else {

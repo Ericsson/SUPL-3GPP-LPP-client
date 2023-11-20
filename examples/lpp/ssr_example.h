@@ -6,6 +6,7 @@ namespace ssr_example {
 enum class Format {
     XER,
     SPARTN,
+    SPARTN2,
     ASN1_UPER,
 };
 

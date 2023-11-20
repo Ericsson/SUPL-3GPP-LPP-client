@@ -2,6 +2,8 @@
 add_library(generator_spartn2 STATIC 
     "generator.cpp"
     "ocb.cpp"
+    "gad.cpp"
+    "hpac.cpp"
     "time.cpp"
     "builder.cpp"
     "message.cpp"
