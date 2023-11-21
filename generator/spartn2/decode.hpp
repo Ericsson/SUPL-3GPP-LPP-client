@@ -133,7 +133,7 @@ static StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
     assert(index < 64);
     return StecQualityIndicator{
         index == 0,
-        QUALITY_INDICATOR[64 - index],
+        QUALITY_INDICATOR[63 - index],
     };
 }
 

@@ -223,66 +223,127 @@ struct Bias {
     double  continuity_indicator;
     bool    fix_flag;
     uint8_t type;
+    bool    mapped;
+
+    static Bias invalid() { return Bias{-1, 0.0, 0.0, false, 0, false}; }
+};
+
+#define X 255
+
+static SPARTN_CONSTEXPR uint8_t GPS_TO_SPARTN[24] = {
+    0,  // L1 C/A -> L1C
+    X,  // L1C
+    X,  // L2C
+    X,  // L5
+    X,  // L1 P
+    X,  // L1 Z-tracking
+    X,  // L2 C/A
+    X,  // L2 P
+    1,  // L2 Z-tracking -> L2W
+    X,  // L2 L2C(M)
+    2,  // L2 L2C(L) -> L2L
+    X,  // L2 L2C(M+L)
+    X,  // L5 I
+    3,  // L5 Q -> L5Q
+    X,  // L5 I+Q
+    X,  // L1 L1C(D)
+    X,  // L1 L1C(P)
+    X,  // L1 L1C(D+P)
+    // Reserved
+    X,
+    X,
+    X,
+    X,
+    X,
+    X,
+};
+
+static SPARTN_CONSTEXPR uint8_t GPS_MAPPING[32] = {
+    X,   // L1 C/A
+    X,   // L1C
+    X,   // L2C
+    X,   // L5
+    X,   // L1 P
+    X,   // L1 Z-tracking
+    X,   // L2 C/A
+    X,   // L2 P
+    X,   // L2 Z-tracking
+    X,   // L2 L2C(M)
+    X,   // L2 L2C(L)
+    10,  // L2 L2C(M+L) -> L2 L2C(L)
+    X,   // L5 I
+    X,   // L5 Q
+    X,   // L5 I+Q
+    X,   // L1 L1C(D)
+    X,   // L1 L1C(P)
+    X,   // L1 L1C(D+P)
+    // Reserved
+    X,
+    X,
+    X,
+    X,
+    X,
+    X,
+};
+
+#define GPS_L1 1575.42
+#define GPS_L2 1227.60
+#define GPS_L5 1176.45
+static SPARTN_CONSTEXPR double GPS_FREQ[24] = {
+    GPS_L1,  // L1 C/A
+    GPS_L1,  // L1C
+    GPS_L2,  // L2C
+    GPS_L5,  // L5
+    GPS_L1,  // L1 P
+    GPS_L1,  // L1 Z-tracking
+    GPS_L2,  // L2 C/A
+    GPS_L2,  // L2 P
+    GPS_L2,  // L2 Z-tracking
+    GPS_L2,  // L2 L2C(M)
+    GPS_L2,  // L2 L2C(L)
+    GPS_L2,  // L2 L2C(M+L)
+    GPS_L5,  // L5 I
+    GPS_L5,  // L5 Q
+    GPS_L5,  // L5 I+Q
+    GPS_L1,  // L1 L1C(D)
+    GPS_L1,  // L1 L1C(P)
+    GPS_L1,  // L1 L1C(D+P)
+    // Reserved
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
 };
 
 static Bias gps_bias_from_signal(long signal_id, double correction, double continuity_indicator,
                                  bool fix_flag) {
-    static SPARTN_CONSTEXPR uint8_t GPS_MAPPABLE[32] = {
-        1, 0, 0, 0, 0, 0, 0, 0, 2, 0,  //
-        3, 0, 0, 4, 0, 0, 0, 0, 0, 0,  //
-        0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  //
-        0, 0,
-    };
-
-    static SPARTN_CONSTEXPR uint8_t GPS_CONVERTABLE[32] = {
-        0, 0,  0, 0, 0, 0, 0, 0, 0, 0,  //
-        0, 10, 0, 0, 0, 0, 0, 0, 0, 0,  //
-        0, 0,  0, 0, 0, 0, 0, 0, 0, 0,  //
-        0, 0,
-    };
-
-    static SPARTN_CONSTEXPR double GPS_FREQ[32] = {
-        1575.42,  // 0: L1 C/A
-        1575.42,  // 1: L1C
-        1227.60,  // 2: L2C
-        1176.45,  // 3: L5
-        1575.42,  // 4: L1 P
-        1227.60,  // 5: L1 Z-tracking
-        1227.60,  // 6: L2 C/A
-        1227.60,  // 7: L2 P
-        1227.60,  // 8: L2 Z-tracking
-        1227.60,  // 9: L2 L2C(M)
-        1227.60,  // 10: L2 L2C(L)
-        1227.60,  // 11: L2 L2C(M+L)
-        1176.45,  // 12: L5 I
-        1176.45,  // 13: L5 Q
-        1176.45,  // 14: L5 I+Q
-        1575.42,  // 15: L1 L1C(D)
-        1575.42,  // 16: L1 L1C(P)
-        1575.42,  // 17: L1 L1C(D+P)
-        0,       0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-    };
-
-    auto type = GPS_MAPPABLE[signal_id];
-    if (type > 0) {
-        return Bias{signal_id, correction, continuity_indicator, fix_flag,
-                    static_cast<uint8_t>(type - 1)};
-    } else {
-        printf("GPS: unsupported signal id %ld\n", signal_id);
-        // TODO(ewasjon): verify that is works
-        auto convert_to_id  = GPS_CONVERTABLE[signal_id];
-        auto converted_type = GPS_MAPPABLE[convert_to_id];
-        if (converted_type > 0) {
-            auto from_freq          = GPS_FREQ[signal_id];
-            auto to_freq            = GPS_FREQ[convert_to_id];
-            auto shifted_correction = correction * (to_freq / from_freq);
-
-            return Bias{convert_to_id, shifted_correction, continuity_indicator, fix_flag,
-                        static_cast<uint8_t>(converted_type - 1)};
-        } else {
-            return Bias{-1, 0.0, 0.0, false, 0};
-        }
+    if (signal_id >= 24) {
+        printf("GPS: unsupported signal id %2ld\n", signal_id);
+        return Bias::invalid();
     }
+
+    auto type = GPS_TO_SPARTN[signal_id];
+    if (type == X) {
+        auto from_id = signal_id;
+        auto to_id   = GPS_MAPPING[from_id];
+        if (to_id == X) {
+            printf("GPS: unsupported signal id %2ld\n", from_id);
+            return Bias::invalid();
+        }
+
+        auto from_freq          = GPS_FREQ[from_id];
+        auto to_freq            = GPS_FREQ[to_id];
+        auto scale              = from_freq / to_freq;
+        auto shifted_correction = correction * scale;
+        printf("GPS: mapping signal id %2ld to %2u (%.2f / %.2f = %.4f)\n", from_id, to_id,
+               from_freq, to_freq, scale);
+
+        return gps_bias_from_signal(to_id, shifted_correction, continuity_indicator, fix_flag);
+    }
+
+    return Bias{signal_id, correction, continuity_indicator, fix_flag, type, false};
 }
 
 static Bias glo_bias_from_signal(long signal_id, double correction, double continuity_indicator,
@@ -297,33 +358,131 @@ static Bias glo_bias_from_signal(long signal_id, double correction, double conti
     // TODO(ewasjon): Support signal conversion
     auto type = MAPPABLE[signal_id];
     if (type > 0) {
-        return Bias{signal_id, correction, continuity_indicator, fix_flag,
-                    static_cast<uint8_t>(type - 1)};
+        return Bias{
+            signal_id, correction, continuity_indicator, fix_flag, static_cast<uint8_t>(type - 1),
+            false};
     } else {
         printf("GLO: unsupported signal id %ld\n", signal_id);
-        return Bias{-1, 0.0, 0.0, false, 0};
+        return Bias{-1, 0.0, 0.0, false, 0, false};
     }
 }
+
+static SPARTN_CONSTEXPR uint8_t GAL_TO_SPARTN[24] = {
+    X,  // E1
+    X,  // E5A
+    X,  // E5B
+    X,  // E6
+    X,  // E5A+E5B
+    0,  // E1 C No data -> L1C
+    X,  // E1 A
+    X,  // E1 B I/NAV OS/CS/SoL
+    X,  // E1 B+C
+    X,  // E1 A+B+C
+    X,  // E6 C
+    X,  // E6 A
+    X,  // E6 B
+    X,  // E6 B+C
+    X,  // E6 A+B+C
+    X,  // E5B I
+    2,  // E5B Q -> L7Q
+    X,  // E5B I+Q
+    X,  // E5(A+B) I
+    X,  // E5(A+B) Q
+    X,  // E5(A+B) I+Q
+    X,  // E5A I
+    1,  // E5A Q -> L5Q
+    X,  // E5A I+Q
+};
+
+static SPARTN_CONSTEXPR uint8_t GAL_MAPPING[32] = {
+    X,   // E1
+    X,   // E5A
+    X,   // E5B
+    X,   // E6
+    X,   // E5A+E5B
+    X,   // E1 C No data
+    X,   // E1 A
+    X,   // E1 B I/NAV OS/CS/SoL
+    5,   // E1 B+C
+    X,   // E1 A+B+C
+    X,   // E6 C
+    X,   // E6 A
+    X,   // E6 B
+    X,   // E6 B+C
+    X,   // E6 A+B+C
+    X,   // E5B I
+    X,   // E5B Q
+    X,   // E5B I+Q
+    X,   // E5(A+B) I
+    X,   // E5(A+B) Q
+    16,  // E5(A+B) I+Q
+    X,   // E5A I
+    X,   // E5A Q
+    X,   // E5A I+Q
+};
+
+#define GAL_E1 1575.420
+#define GAL_E6 1278.750
+#define GAL_E5 1191.795
+#define GAL_E5a 1176.450
+#define GAL_E5b 1207.140
+static SPARTN_CONSTEXPR double GAL_FREQ[24] = {
+    GAL_E1,   // E1
+    GAL_E5a,  // E5A
+    GAL_E5b,  // E5B
+    GAL_E6,   // E6
+    0.0,      // E5A+E5B
+    GAL_E1,   // E1 C No data
+    GAL_E1,   // E1 A
+    GAL_E1,   // E1 B I/NAV OS/CS/SoL
+    GAL_E1,   // E1 B+C
+    GAL_E1,   // E1 A+B+C
+    GAL_E6,   // E6 C
+    GAL_E6,   // E6 A
+    GAL_E6,   // E6 B
+    GAL_E6,   // E6 B+C
+    GAL_E6,   // E6 A+B+C
+    GAL_E5b,  // E5B I
+    GAL_E5b,  // E5B Q
+    GAL_E5b,  // E5B I+Q
+    GAL_E5,   // E5(A+B) I
+    GAL_E5,   // E5(A+B) Q
+    GAL_E5,   // E5(A+B) I+Q
+    GAL_E5a,  // E5A I
+    GAL_E5a,  // E5A Q
+    GAL_E5a,  // E5A I+Q
+};
 
 static Bias gal_bias_from_signal(long signal_id, double correction, double continuity_indicator,
                                  bool fix_flag) {
-    static SPARTN_CONSTEXPR uint8_t MAPPABLE[32] = {
-        0, 0, 0, 0, 0, 1, 0, 0, 0, 0,  //
-        0, 0, 0, 0, 0, 0, 3, 0, 0, 0,  //
-        0, 0, 2, 0, 0, 0, 0, 0, 0, 0,  //
-        0, 0,
-    };
-
-    // TODO(ewasjon): Support signal conversion
-    auto type = MAPPABLE[signal_id];
-    if (type > 0) {
-        return Bias{signal_id, correction, continuity_indicator, fix_flag,
-                    static_cast<uint8_t>(type - 1)};
-    } else {
-        printf("GAL: unsupported signal id %ld\n", signal_id);
-        return Bias{-1, 0.0, 0.0, false, 0};
+    if (signal_id >= 24) {
+        printf("GAL: unsupported signal id %2ld\n", signal_id);
+        return Bias::invalid();
     }
+
+    auto type = GAL_TO_SPARTN[signal_id];
+    if (type == X) {
+        auto from_id = signal_id;
+        auto to_id   = GAL_MAPPING[from_id];
+        if (to_id == X) {
+            printf("GAL: unsupported signal id %2ld\n", from_id);
+            return Bias::invalid();
+        }
+
+        auto from_freq          = GAL_FREQ[from_id];
+        auto to_freq            = GAL_FREQ[to_id];
+        auto scale              = from_freq / to_freq;
+        auto shifted_correction = correction * scale;
+        printf("GAL: mapping signal id %2ld to %2u (%.2f / %.2f = %.4f)\n", from_id, to_id,
+               from_freq, to_freq, scale);
+
+        return gal_bias_from_signal(to_id, shifted_correction, continuity_indicator, fix_flag);
+    }
+
+    return Bias{signal_id, correction, continuity_indicator, fix_flag, type, false};
 }
+
+#undef X
 
 static bool phase_bias_fix_flag(const SSR_PhaseBiasSignalElement_r16& signal) {
     if (!signal.phaseBiasIntegerIndicator_r16) {
@@ -361,8 +520,15 @@ static std::map<uint8_t, Bias> phase_biases(const SSR_PhaseBiasSatElement_r16& s
 
         if (biases_by_type.count(bias.type) == 0) {
             biases_by_type[bias.type] = bias;
+        } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
+            // If the bias is mapped and the new bias is not mapped, then we want to prioritize
+            // the "original" bias.
+            printf("replacing bias type %u (id=%ld) with %u (id=%ld)\n",
+                   biases_by_type[bias.type].type, biases_by_type[bias.type].signal_id, bias.type,
+                   bias.signal_id);
+            biases_by_type[bias.type] = bias;
         } else {
-            // TODO(ewasjon): report error?
+            printf("duplicate bias type %u\n", bias.type);
         }
     }
 
@@ -586,9 +752,9 @@ void Generator::generate_ocb(long iod) {
                     builder.sf022(320.0);  // TODO(ewasjon): compute the continuity indicator
                 }
 
-                // NOTE(ewasjon): SPARTN has a single value of the clock correction term. 3GPP LPP
-                // has model this as an polynomial around the middle of the ssr update rate. Thus,
-                // the single value at epoch time must be computed.
+                // NOTE(ewasjon): SPARTN has a single value of the clock correction term. 3GPP
+                // LPP has model this as an polynomial around the middle of the ssr update rate.
+                // Thus, the single value at epoch time must be computed.
 
                 auto c0 = decode::delta_Clock_C0_r15(clock.delta_Clock_C0_r15);
                 auto c1 = decode::delta_Clock_C2_r15(clock.delta_Clock_C1_r15);
@@ -603,10 +769,10 @@ void Generator::generate_ocb(long iod) {
                 auto dt = t - t0;
                 auto dc = c0 + c1 * dt + c2 * dt * dt;
 
-                // NOTE(ewasjon): Geo++ observed that changing the sign of the clock corrections (in
-                // there correction feed) improved the result. They assumed that u-blox implemented
-                // it with a flipped sign. Thus, we also need to flip the sign to conform to the
-                // u-blox implementation.
+                // NOTE(ewasjon): Geo++ observed that changing the sign of the clock corrections
+                // (in there correction feed) improved the result. They assumed that u-blox
+                // implemented it with a flipped sign. Thus, we also need to flip the sign to
+                // conform to the u-blox implementation.
                 if (mUBloxClockCorrection) {
                     dc *= -1;
                 }
