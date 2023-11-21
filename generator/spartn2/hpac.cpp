@@ -130,7 +130,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
     auto epoch_time = spartn_time_from(gridded->epochTime_r16);
     auto set_id     = gridded->correctionPointSetID_r16;
-    auto key        = HpacKey{set_id, gnss_id, epoch_time.rounded_seconds};
+    auto key = HpacKey{set_id, gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = hpac.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -147,7 +147,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16* 
 
     auto set_id     = stec->correctionPointSetID_r16;
     auto epoch_time = spartn_time_from(stec->epochTime_r16);
-    auto key        = HpacKey{set_id, gnss_id, epoch_time.rounded_seconds};
+    auto key = HpacKey{set_id, gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = hpac.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;

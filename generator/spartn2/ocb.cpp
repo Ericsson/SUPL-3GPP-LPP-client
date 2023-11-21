@@ -148,7 +148,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15*
 
     // TODO(ewasjon): filter based on satellite reference datum
     auto epoch_time = spartn_time_from(orbit->epochTime_r15);
-    auto key        = OcbKey{gnss_id, epoch_time.rounded_seconds};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -163,7 +163,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15*
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(clock->epochTime_r15);
-    auto key        = OcbKey{gnss_id, epoch_time.rounded_seconds};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -178,7 +178,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bi
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(code_bias->epochTime_r15);
-    auto key        = OcbKey{gnss_id, epoch_time.rounded_seconds};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -193,7 +193,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_PhaseBias_r16* phase_
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(phase_bias->epochTime_r16);
-    auto key        = OcbKey{gnss_id, epoch_time.rounded_seconds};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -208,7 +208,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_URA_r16* ura) {
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(ura->epochTime_r16);
-    auto key        = OcbKey{gnss_id, epoch_time.rounded_seconds};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;

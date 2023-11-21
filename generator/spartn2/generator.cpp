@@ -23,9 +23,10 @@ namespace spartn {
 Generator::Generator()
     : mGenerationIndex(0), mNextAreaId(1), mUraOverride(-1), mContinuityIndicator(-1),
       mUBloxClockCorrection(false), mIonosphereQualityOverride(-1),
-      mIonosphereQualityDefault(0 /* SF055(0) = invalid */), mComputeAverageZenithDelay(true),
-      mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
-      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false) {}
+      mIonosphereQualityDefault(0 /* SF055(0) = invalid */), mComputeAverageZenithDelay(false),
+      mGroupByEpochTime(false), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
+      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
+      mBeidouSupported(false) {}
 
 Generator::~Generator() = default;
 
@@ -46,7 +47,7 @@ std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
         return mMessages;
 
     // Initialze (and clear previous) correction data
-    mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
+    mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData(mGroupByEpochTime));
 
     auto message = &pad.criticalExtensions.choice.c1.choice.provideAssistanceData_r9;
     find_correction_point_set(message);

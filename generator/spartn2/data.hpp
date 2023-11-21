@@ -153,8 +153,11 @@ struct HpacData {
 };
 
 struct CorrectionData {
+    bool                               group_by_epoch_time;
     std::unordered_map<long, OcbData>  mOcbData;
     std::unordered_map<long, HpacData> mHpacData;
+
+    CorrectionData(bool group_by_epoch_time) : group_by_epoch_time(group_by_epoch_time) {}
 
     std::vector<long> iods() const;
     std::vector<long> set_ids() const;

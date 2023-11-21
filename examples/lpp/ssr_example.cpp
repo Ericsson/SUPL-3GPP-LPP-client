@@ -18,6 +18,7 @@ static ssr_example::Format          gFormat;
 static int                          gUraOverride;
 static bool                         gUBloxClockCorrection;
 static bool                         gForceIodeContinuity;
+static bool                         gAverageZenithDelay;
 static Options                      gOptions;
 static SPARTN_Generator             gSpartnGenerator;
 static generator::spartn::Generator gSpartnGenerator2;
@@ -28,12 +29,13 @@ static std::unique_ptr<UReceiver> gUbloxReceiver;
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
 void execute(Options options, ssr_example::Format format, int ura_override,
-             bool ublox_clock_correction, bool force_continuity) {
+             bool ublox_clock_correction, bool force_continuity, bool average_zenith_delay) {
     gOptions              = std::move(options);
     gFormat               = format;
     gUraOverride          = ura_override;
     gUBloxClockCorrection = ublox_clock_correction;
     gForceIodeContinuity  = force_continuity;
+    gAverageZenithDelay   = average_zenith_delay;
 
     auto& cell_options            = gOptions.cell_options;
     auto& location_server_options = gOptions.location_server_options;
@@ -91,6 +93,9 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     gSpartnGenerator2.set_ublox_clock_correction(gUBloxClockCorrection);
     if (gForceIodeContinuity) {
         gSpartnGenerator2.set_continuity_indicator(320.0);
+    }
+    if (gAverageZenithDelay) {
+        gSpartnGenerator2.set_compute_average_zenith_delay(true);
     }
 
     LPP_Client client{false /* experimental segmentation support */};
@@ -203,6 +208,7 @@ void SsrCommand::parse(args::Subparser& parser) {
     delete mUraOverrideArg;
     delete mUbloxClockCorrectionArg;
     delete mForceContinuityArg;
+    delete mAverageZenithDelayArg;
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
@@ -222,6 +228,11 @@ void SsrCommand::parse(args::Subparser& parser) {
     mForceContinuityArg =
         new args::Flag(parser, "force-continuity", "Force SF022 (IODE Continuity) to be 320 secs",
                        {"force-continuity"});
+
+    mAverageZenithDelayArg =
+        new args::Flag(parser, "average-zenith-delay",
+                       "Compute the average zenith delay and differential for residuals",
+                       {"average-zenith-delay"});
 }
 
 void SsrCommand::execute(Options options) {
@@ -255,7 +266,13 @@ void SsrCommand::execute(Options options) {
         force_continuity = mForceContinuityArg->Get();
     }
 
-    ::execute(std::move(options), format, ura_override, ublox_clock_correction, force_continuity);
+    auto average_zenith_delay = false;
+    if (*mAverageZenithDelayArg) {
+        average_zenith_delay = mAverageZenithDelayArg->Get();
+    }
+
+    ::execute(std::move(options), format, ura_override, ublox_clock_correction, force_continuity,
+              average_zenith_delay);
 }
 
 }  // namespace ssr_example

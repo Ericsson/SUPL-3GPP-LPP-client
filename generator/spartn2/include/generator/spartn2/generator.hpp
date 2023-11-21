@@ -54,6 +54,10 @@ public:
         mUBloxClockCorrection = ublox_clock_correction;
     }
 
+    void set_compute_average_zenith_delay(bool compute_average_zenith_delay) {
+        mComputeAverageZenithDelay = compute_average_zenith_delay;
+    }
+
     void set_generate_ocb(bool generate_ocb) { mGenerateOcb = generate_ocb; }
     void set_generate_hpac(bool generate_hpac) { mGenerateHpac = generate_hpac; }
     void set_generate_gad(bool generate_gad) { mGenerateGad = generate_gad; }
@@ -100,6 +104,7 @@ private:
     int mIonosphereQualityDefault;
 
     bool mComputeAverageZenithDelay;
+    bool mGroupByEpochTime;
 
     bool mGenerateGad;
     bool mGenerateOcb;
