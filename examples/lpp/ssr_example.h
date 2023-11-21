@@ -15,7 +15,8 @@ public:
     SsrCommand()
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
           mFormatArg(nullptr), mUraOverrideArg(nullptr), mUbloxClockCorrectionArg(nullptr),
-          mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr) {}
+          mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr),
+          mDisableIodeShift(nullptr) {}
 
     ~SsrCommand() override {
         delete mFormatArg;

@@ -233,11 +233,23 @@ void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string, bool iod
     }
     iode >>= bit_string.bits_unused;
 
+    printf("----- IODE:          11\n");
+    printf("            12345678901\n");
+    printf("before    : ");
+    for (size_t i = 0; i < 11; i++) {
+        printf("%d", (iode >> (10 - i)) & 1);
+    }
+    printf("\n");
+
     if (iode_shift) {
-        // TODO(ewasjon): I cannot explain this shifting at the moment. The data feed we're
-        // receiving is only matching if this shift is included.
         iode >>= 3;
     }
+
+    printf("after     : ");
+    for (size_t i = 0; i < 11; i++) {
+        printf("%d", (iode >> (10 - i)) & 1);
+    }
+    printf("\n");
 
     switch (gnss_id) {
     case GNSS_ID_GPS:  // SF018 - GPS IODE
