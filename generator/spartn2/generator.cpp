@@ -24,8 +24,8 @@ Generator::Generator()
     : mGenerationIndex(0), mNextAreaId(1), mUraOverride(-1), mContinuityIndicator(-1),
       mUBloxClockCorrection(false), mIonosphereQualityOverride(-1),
       mIonosphereQualityDefault(0 /* SF055(0) = invalid */), mComputeAverageZenithDelay(false),
-      mGroupByEpochTime(false), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
-      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
+      mGroupByEpochTime(false), mIodeShift(true), mGenerateGad(true), mGenerateOcb(true),
+      mGenerateHpac(true), mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
       mBeidouSupported(false) {}
 
 Generator::~Generator() = default;
@@ -130,6 +130,19 @@ void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* me
             correction_point_set.numberOfStepsLongitude_r16  = array.numberOfStepsLongitude_r16;
             correction_point_set.stepOfLatitude_r16          = array.stepOfLatitude_r16;
             correction_point_set.stepOfLongitude_r16         = array.stepOfLongitude_r16;
+
+            uint64_t bitmask = 0;
+            if (array.bitmaskOfGrids_r16) {
+                for (int i = 0; i < array.bitmaskOfGrids_r16->size; i++) {
+                    bitmask |= static_cast<uint64_t>(array.bitmaskOfGrids_r16->buf[i]) << (i * 8);
+                }
+                bitmask >>= array.bitmaskOfGrids_r16->bits_unused;
+                printf(" bitmask: %d bytes, %d bits, 0x%016lX\n", array.bitmaskOfGrids_r16->size,
+                       array.bitmaskOfGrids_r16->bits_unused, bitmask);
+            } else {
+                bitmask = 0xFFFFFFFFFFFFFFFF;
+            }
+            correction_point_set.bitmask = bitmask;
 
             auto correction_point_set_ptr =
                 std::unique_ptr<CorrectionPointSet>(new CorrectionPointSet(correction_point_set));

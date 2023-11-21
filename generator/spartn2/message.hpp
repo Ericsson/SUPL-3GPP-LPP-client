@@ -182,7 +182,7 @@ public:
     void ephemeris_type(long gnss_id);
 
     // Issue of data ephemeris
-    void orbit_iode(long gnss_id, BIT_STRING_s& iode);
+    void orbit_iode(long gnss_id, BIT_STRING_s& iode, bool iode_shift);
 
     // SF020 - Satellite corrections
     inline void sf020(double value) { mBuilder.double_to_bits(-16.382, 16.382, 0.002, value, 14); }

@@ -265,6 +265,7 @@ static void troposphere_data_block(MessageBuilder&                       builder
 
     auto hydrostatic_delay_avg = hydrostatic_delay_sum / grid_count;
     builder.sf043(hydrostatic_delay_avg);
+    printf("  hydrostatic_delay_avg: %f\n", hydrostatic_delay_avg);
 
     // NOTE(ewasjon): 3GPP LPP doesn't include a polynomial for the wet delay (zenith delay). Thus,
     // we can set this to a constant value of 0.0. We can also compute the average zenith delay for
@@ -288,19 +289,24 @@ static void troposphere_data_block(MessageBuilder&                       builder
         average_zenith_delay = 0.0;
     }
 
+    printf("  average_zenith_delay: %f\n", average_zenith_delay);
+
     // TODO(ewasjon): We could maybe compute best residual field size to minimize the size of the
     // message. However, this is not a priority. Thus, we just use the maximum size.
     builder.sf051(1);  // Large residuals
 
+    // TODO(ewasjon): This must reference the correction point set
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
         if (!element) continue;
         if (!element->tropospericDelayCorrection_r16) {
+            printf("    grid[%2d] = invalid\n", i);
             builder.sf053_invalid();
         } else {
             auto& grid_point = *element->tropospericDelayCorrection_r16;
             auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
             builder.sf053(residual - average_zenith_delay);
+            printf("    grid[%2d] = %f\n", i, residual - average_zenith_delay);
         }
     }
 }
@@ -427,13 +433,16 @@ static void ionosphere_data_block_2(MessageBuilder& builder, long grid_points,
 
     printf("  residual_field_size=%d\n", residual_field_size);
 
+    // TODO(ewasjon): This must reference the correction point set
     for (long i = 0; i < grid_points; i++) {
         auto it = satellite.residuals.find(i);
         if (it == satellite.residuals.end()) {
+            printf("    grid[%2ld] = invalid\n", i);
             builder.ionosphere_residual_invalid(residual_field_size);
         } else {
             auto& element  = *it->second;
             auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
+            printf("    grid[%2ld] = %f\n", i, residual);
             builder.ionosphere_residual(residual_field_size, residual);
         }
     }

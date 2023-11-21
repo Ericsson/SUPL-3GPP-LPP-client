@@ -77,6 +77,7 @@ struct CorrectionPointSet {
     long     numberOfStepsLongitude_r16;
     long     stepOfLatitude_r16;
     long     stepOfLongitude_r16;
+    uint64_t bitmask;
 };
 
 struct OcbSatellite {

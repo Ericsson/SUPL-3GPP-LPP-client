@@ -58,6 +58,8 @@ public:
         mComputeAverageZenithDelay = compute_average_zenith_delay;
     }
 
+    void set_iode_shift(bool iode_shift) { mIodeShift = iode_shift; }
+
     void set_generate_ocb(bool generate_ocb) { mGenerateOcb = generate_ocb; }
     void set_generate_hpac(bool generate_hpac) { mGenerateHpac = generate_hpac; }
     void set_generate_gad(bool generate_gad) { mGenerateGad = generate_gad; }
@@ -105,6 +107,7 @@ private:
 
     bool mComputeAverageZenithDelay;
     bool mGroupByEpochTime;
+    bool mIodeShift;
 
     bool mGenerateGad;
     bool mGenerateOcb;

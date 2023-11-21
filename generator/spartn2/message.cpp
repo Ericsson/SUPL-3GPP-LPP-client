@@ -225,7 +225,7 @@ void MessageBuilder::ephemeris_type(long gnss_id) {
     }
 }
 
-void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string) {
+void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string, bool iode_shift) {
     long iode = 0;
     for (size_t i = 0; i < bit_string.size; i++) {
         iode <<= 8;
@@ -233,9 +233,11 @@ void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string) {
     }
     iode >>= bit_string.bits_unused;
 
-    // TODO(ewasjon): I cannot explain this shifting at the moment. The data feed we're receiving is
-    // only matching if this shift is included.
-    iode >>= 3;
+    if (iode_shift) {
+        // TODO(ewasjon): I cannot explain this shifting at the moment. The data feed we're
+        // receiving is only matching if this shift is included.
+        iode >>= 3;
+    }
 
     switch (gnss_id) {
     case GNSS_ID_GPS:  // SF018 - GPS IODE

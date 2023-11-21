@@ -320,7 +320,6 @@ static SPARTN_CONSTEXPR double GPS_FREQ[24] = {
 static Bias gps_bias_from_signal(long signal_id, double correction, double continuity_indicator,
                                  bool fix_flag) {
     if (signal_id >= 24) {
-        printf("GPS: unsupported signal id %2ld\n", signal_id);
         return Bias::invalid();
     }
 
@@ -329,7 +328,6 @@ static Bias gps_bias_from_signal(long signal_id, double correction, double conti
         auto from_id = signal_id;
         auto to_id   = GPS_MAPPING[from_id];
         if (to_id == X) {
-            printf("GPS: unsupported signal id %2ld\n", from_id);
             return Bias::invalid();
         }
 
@@ -348,6 +346,10 @@ static Bias gps_bias_from_signal(long signal_id, double correction, double conti
 
 static Bias glo_bias_from_signal(long signal_id, double correction, double continuity_indicator,
                                  bool fix_flag) {
+    if (signal_id >= 32) {
+        return Bias::invalid();
+    }
+
     static SPARTN_CONSTEXPR uint8_t MAPPABLE[32] = {
         1, 2, 0, 0, 0, 0, 0, 0, 0, 0,  //
         0, 0, 0, 0, 0, 0, 0, 0, 0, 0,  //
@@ -362,8 +364,7 @@ static Bias glo_bias_from_signal(long signal_id, double correction, double conti
             signal_id, correction, continuity_indicator, fix_flag, static_cast<uint8_t>(type - 1),
             false};
     } else {
-        printf("GLO: unsupported signal id %ld\n", signal_id);
-        return Bias{-1, 0.0, 0.0, false, 0, false};
+        return Bias::invalid();
     }
 }
 
@@ -456,7 +457,6 @@ static SPARTN_CONSTEXPR double GAL_FREQ[24] = {
 static Bias gal_bias_from_signal(long signal_id, double correction, double continuity_indicator,
                                  bool fix_flag) {
     if (signal_id >= 24) {
-        printf("GAL: unsupported signal id %2ld\n", signal_id);
         return Bias::invalid();
     }
 
@@ -465,7 +465,6 @@ static Bias gal_bias_from_signal(long signal_id, double correction, double conti
         auto from_id = signal_id;
         auto to_id   = GAL_MAPPING[from_id];
         if (to_id == X) {
-            printf("GAL: unsupported signal id %2ld\n", from_id);
             return Bias::invalid();
         }
 
@@ -513,12 +512,15 @@ static std::map<uint8_t, Bias> phase_biases(const SSR_PhaseBiasSatElement_r16& s
         auto correction           = decode::phaseBias_r16(element->phaseBias_r16);
         auto continuity_indicator = 320.0;  // TODO(ewasjon): compute the continuity indicator
         auto fix_flag             = phase_bias_fix_flag(*element);
-        if (signal_id >= 32) continue;
 
         auto bias = (*bias_to_signal)(signal_id, correction, continuity_indicator, fix_flag);
-        if (bias.signal_id == -1) continue;
+        if (bias.signal_id == -1) {
+            printf("unsupported bias for signal id %2ld\n", signal_id);
+            continue;
+        }
 
         if (biases_by_type.count(bias.type) == 0) {
+            printf("adding bias type %u (id=%ld)\n", bias.type, bias.signal_id);
             biases_by_type[bias.type] = bias;
         } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
             // If the bias is mapped and the new bias is not mapped, then we want to prioritize
@@ -547,15 +549,25 @@ static std::map<uint8_t, Bias> code_biases(const SSR_CodeBiasSatElement_r15& sat
 
         auto signal_id  = decode::signal_id(element->signal_and_tracking_mode_ID_r15);
         auto correction = decode::codeBias_r15(element->codeBias_r15);
-        if (signal_id >= 32) continue;
 
         auto bias = (*bias_to_signal)(signal_id, correction, 0.0, false);
-        if (bias.signal_id == -1) continue;
+        if (bias.signal_id == -1) {
+            printf("unsupported bias for signal id %2ld\n", signal_id);
+            continue;
+        }
 
         if (biases_by_type.count(bias.type) == 0) {
+            printf("adding bias type %u (id=%ld)\n", bias.type, bias.signal_id);
+            biases_by_type[bias.type] = bias;
+        } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
+            // If the bias is mapped and the new bias is not mapped, then we want to prioritize
+            // the "original" bias.
+            printf("replacing bias type %u (id=%ld) with %u (id=%ld)\n",
+                   biases_by_type[bias.type].type, biases_by_type[bias.type].signal_id, bias.type,
+                   bias.signal_id);
             biases_by_type[bias.type] = bias;
         } else {
-            // TODO(ewasjon): report error?
+            printf("duplicate bias type %u\n", bias.type);
         }
     }
 
@@ -565,6 +577,7 @@ static std::map<uint8_t, Bias> code_biases(const SSR_CodeBiasSatElement_r15& sat
 static void generate_gps_bias_block(MessageBuilder&                    builder,
                                     const SSR_CodeBiasSatElement_r15*  code_bias,
                                     const SSR_PhaseBiasSatElement_r16* phase_bias) {
+    printf("GPS: ---------------------------------------------\n");
     if (!phase_bias) {
         builder.sf025_raw(false, 0);
     } else {
@@ -593,6 +606,7 @@ static void generate_gps_bias_block(MessageBuilder&                    builder,
 static void generate_glo_bias_block(MessageBuilder&                    builder,
                                     const SSR_CodeBiasSatElement_r15*  code_bias,
                                     const SSR_PhaseBiasSatElement_r16* phase_bias) {
+    printf("GLO: ---------------------------------------------\n");
     if (!phase_bias) {
         builder.sf026_raw(false, 0);
     } else {
@@ -621,6 +635,7 @@ static void generate_glo_bias_block(MessageBuilder&                    builder,
 static void generate_gal_bias_block(MessageBuilder&                    builder,
                                     const SSR_CodeBiasSatElement_r15*  code_bias,
                                     const SSR_PhaseBiasSatElement_r16* phase_bias) {
+    printf("GAL: ---------------------------------------------\n");
     if (!phase_bias) {
         builder.sf102_raw(false, 0);
     } else {
@@ -729,7 +744,7 @@ void Generator::generate_ocb(long iod) {
 
             if (satellite.orbit) {
                 auto& orbit = *satellite.orbit;
-                builder.orbit_iode(gnss_id, orbit.iod_r15);
+                builder.orbit_iode(gnss_id, orbit.iod_r15, mIodeShift);
 
                 auto radial = decode::delta_radial_r15(orbit.delta_radial_r15);
                 auto along  = decode::delta_AlongTrack_r15(orbit.delta_AlongTrack_r15);

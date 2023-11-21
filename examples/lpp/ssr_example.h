@@ -23,6 +23,7 @@ public:
         delete mUbloxClockCorrectionArg;
         delete mForceContinuityArg;
         delete mAverageZenithDelayArg;
+        delete mDisableIodeShift;
     }
 
     void parse(args::Subparser& parser) override;
@@ -34,6 +35,7 @@ private:
     args::Flag*                   mUbloxClockCorrectionArg;
     args::Flag*                   mForceContinuityArg;
     args::Flag*                   mAverageZenithDelayArg;
+    args::Flag*                   mDisableIodeShift;
 };
 
 }  // namespace ssr_example
