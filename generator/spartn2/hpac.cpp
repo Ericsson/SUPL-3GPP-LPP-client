@@ -176,7 +176,8 @@ static uint8_t compute_troposphere_block_type(const GNSS_SSR_GriddedCorrection_r
     // support type 0 and 2. Another problem is 3GPP LPP has greater controller over the grid
     // point values. Where some values can be missing, this doesn't work with SPARTN.
 
-    // TODO(ewasjon): Is this check required?
+    // TODO(ewasjon): [low-priority] Are we losing potential corrections by filtering them out due
+    // to missing troposphere correction for a grid point? This should be investigated.
     auto& list = ptr->gridList_r16.list;
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
@@ -235,7 +236,7 @@ static void troposphere_data_block(MessageBuilder&                       builder
     if (ura_override >= 0) {
         builder.sf042_raw(ura_override);
     } else if (data.troposphericDelayQualityIndicator_r16) {
-        // TODO(ewasjon): refactor as function in decode namespace
+        // TODO(ewasjon): Refactor as function in decode namespace
         auto& quality = *data.troposphericDelayQualityIndicator_r16;
         auto  cls     = (quality.buf[0] >> 3) & 0x7;
         auto  val     = quality.buf[0] & 0x7;
@@ -265,7 +266,10 @@ static void troposphere_data_block(MessageBuilder&                       builder
 
     auto hydrostatic_delay_avg = hydrostatic_delay_sum / grid_count;
     builder.sf043(hydrostatic_delay_avg);
+
+#ifdef SPARTN_DEBUG_PRINT
     printf("  hydrostatic_delay_avg: %f\n", hydrostatic_delay_avg);
+#endif
 
     // NOTE(ewasjon): 3GPP LPP doesn't include a polynomial for the wet delay (zenith delay). Thus,
     // we can set this to a constant value of 0.0. We can also compute the average zenith delay for
@@ -289,24 +293,28 @@ static void troposphere_data_block(MessageBuilder&                       builder
         average_zenith_delay = 0.0;
     }
 
+#ifdef SPARTN_DEBUG_PRINT
     printf("  average_zenith_delay: %f\n", average_zenith_delay);
+#endif
 
-    // TODO(ewasjon): We could maybe compute best residual field size to minimize the size of the
-    // message. However, this is not a priority. Thus, we just use the maximum size.
+    // TODO(ewasjon): [low-priority] Compute the minimum residual field size for all grid points.
     builder.sf051(1);  // Large residuals
 
-    // TODO(ewasjon): This must reference the correction point set
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
         if (!element) continue;
         if (!element->tropospericDelayCorrection_r16) {
+#ifdef SPARTN_DEBUG_PRINT
             printf("    grid[%2d] = invalid\n", i);
+#endif
             builder.sf053_invalid();
         } else {
             auto& grid_point = *element->tropospericDelayCorrection_r16;
             auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
             builder.sf053(residual - average_zenith_delay);
+#ifdef SPARTN_DEBUG_PRINT
             printf("    grid[%2d] = %f\n", i, residual - average_zenith_delay);
+#endif
         }
     }
 }
@@ -431,18 +439,23 @@ static void ionosphere_data_block_2(MessageBuilder& builder, long grid_points,
     auto residual_field_size = compute_residual_field_size(satellite);
     builder.sf063(residual_field_size);
 
+#ifdef SPARTN_DEBUG_PRINT
     printf("  residual_field_size=%d\n", residual_field_size);
+#endif
 
-    // TODO(ewasjon): This must reference the correction point set
     for (long i = 0; i < grid_points; i++) {
         auto it = satellite.residuals.find(i);
         if (it == satellite.residuals.end()) {
+#ifdef SPARTN_DEBUG_PRINT
             printf("    grid[%2ld] = invalid\n", i);
+#endif
             builder.ionosphere_residual_invalid(residual_field_size);
         } else {
             auto& element  = *it->second;
             auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
+#ifdef SPARTN_DEBUG_PRINT
             printf("    grid[%2ld] = %f\n", i, residual);
+#endif
             builder.ionosphere_residual(residual_field_size, residual);
         }
     }
@@ -504,12 +517,14 @@ void Generator::generate_hpac(long iod) {
         auto  gnss_id     = corrections.gnss_id;
         auto  set_id      = corrections.set_id;
 
-        printf("HPAC: time=%u, set=%ld, gnss=%ld, iod=%ld\n", epoch_time, set_id, gnss_id, iod);
-
         auto cps_it = mCorrectionPointSets.find(set_id);
         if (cps_it == mCorrectionPointSets.end()) continue;
         auto& correction_point_set = *(cps_it->second.get());
+
+#ifdef SPARTN_DEBUG_PRINT
+        printf("HPAC: time=%u, set=%ld, gnss=%ld, iod=%ld\n", epoch_time, set_id, gnss_id, iod);
         printf("  area_id=%u\n", correction_point_set.area_id);
+#endif
 
         auto subtype                = subtype_from_gnss_id(gnss_id);
         auto troposphere_block_type = compute_troposphere_block_type(corrections.gridded);
@@ -518,7 +533,7 @@ void Generator::generate_hpac(long iod) {
 
         MessageBuilder builder{1 /* HPAC */, subtype, epoch_time};
         builder.sf005(iod);
-        builder.sf068(0);  // TODO(ewasjon): We could include AIOU in the correction point set, to
+        builder.sf068(0);  // TODO(ewasjon): [low-priority] We could include AIOU in the correction point set, to
                            // handle overflow
         builder.sf069();
         builder.sf030(1);

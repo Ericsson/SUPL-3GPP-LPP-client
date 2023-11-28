@@ -20,6 +20,10 @@ target_compile_options(generator_spartn2 PRIVATE -fsanitize=address,undefined,le
 target_link_libraries(generator_spartn2 PRIVATE -fsanitize=address,undefined,leak)
 endif (USE_ASAN)
 
+if (SPARTN_DEBUG_PRINT)
+target_compile_definitions(generator_spartn2 PRIVATE SPARTN_DEBUG_PRINT)
+endif (SPARTN_DEBUG_PRINT)
+
 target_compile_options(generator_spartn2 PRIVATE
     "-Wall"
     "-Wextra"

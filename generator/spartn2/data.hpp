@@ -186,7 +186,6 @@ struct CorrectionData {
 };
 
 inline uint8_t subtype_from_gnss_id(long gnss_id) {
-    // TODO(ewasjon): Confirm that the subtypes are correct
     if (gnss_id == GNSS_ID__gnss_id_gps) return 0;
     if (gnss_id == GNSS_ID__gnss_id_glonass) return 1;
     if (gnss_id == GNSS_ID__gnss_id_galileo) return 2;

@@ -109,7 +109,8 @@ public:
 
     // TF016 -
     inline void tf016(std::vector<uint8_t> payload) {
-        // TODO(ewasjon): You should be able to memcpy this!
+        // TODO(ewasjon): [low-priority] This is really inefficient, we should be able to memcpy
+        // most of the payload data.
         for (auto byte : payload) {
             mBuilder.u8(byte);
         }

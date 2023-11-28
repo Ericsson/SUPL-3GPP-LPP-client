@@ -10,7 +10,7 @@ args::Group arguments{"Arguments:"};
 //
 
 args::Group format{
-    "Format:",
+    "Options:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
@@ -18,18 +18,31 @@ args::Group format{
 args::ValueFlag<std::string> format_value{
     format, "format", "Format", {"format"}, args::Options::Single};
 
+args::Flag iode_shift{format, "iode-shift", "IODE Shift", {"iode-shift"}, args::Options::Single};
+
 Format parse_format_options() {
     if (!format_value) {
         throw args::RequiredError("format");
     }
 
     if (format_value.Get() == "spartn") {
-        return Format::SPARTN;
-    } else if (format_value.Get() == "spartn2") {
-        return Format::SPARTN2;
+        return Format::SPARTN_NEW;
+    } else if (format_value.Get() == "spartn-old") {
+        return Format::SPARTN_OLD;
     } else {
         throw args::ValidationError("Invalid format");
     }
+}
+
+SpartnOptions parse_spartn_options() {
+    SpartnOptions options{};
+    options.iode_shift = false;
+
+    if (iode_shift) {
+        options.iode_shift = iode_shift.Get();
+    }
+
+    return options;
 }
 
 //
@@ -228,7 +241,7 @@ Options parse_configuration(int argc, char** argv) {
 
     format_value.HelpChoices({
         "spartn",
-        "spartn2",
+        "spartn-old",
     });
 
     i2c_address.HelpDefault("66");
@@ -256,6 +269,7 @@ Options parse_configuration(int argc, char** argv) {
         return Options{
             .format = parse_format_options(),
             .output = parse_output_options(),
+            .spartn = parse_spartn_options(),
         };
     } catch (const args::ValidationError& e) {
         std::cerr << e.what() << std::endl;

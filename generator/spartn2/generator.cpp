@@ -56,7 +56,9 @@ std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
 
     auto iods = mCorrectionData->iods();
     for (auto iod : iods) {
+#ifdef SPARTN_DEBUG_PRINT
         printf("-- iod=%ld\n", iod);
+#endif
 
         auto ocb  = mCorrectionData->ocb(iod);
         auto hpac = mCorrectionData->hpac(iod);
@@ -66,31 +68,19 @@ std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
             hpac->set_ids(set_ids);
 
             for (auto set_id : set_ids) {
+#ifdef SPARTN_DEBUG_PRINT
                 printf("GAD: set=%ld, iod=%ld\n", set_id, iod);
+#endif
+
                 generate_gad(iod, set_id);
             }
         }
 
         if (ocb && mGenerateOcb) {
-            for (auto kvp : ocb->mKeyedCorrections) {
-                printf("OCB: gnss=%ld, iod=%ld\n", kvp.first.gnss_id, iod);
-                printf("  orbit:      %p\n", kvp.second.orbit);
-                printf("  clock:      %p\n", kvp.second.clock);
-                printf("  code_bias:  %p\n", kvp.second.code_bias);
-                printf("  phase_bias: %p\n", kvp.second.phase_bias);
-                printf("  ura:        %p\n", kvp.second.ura);
-            }
             generate_ocb(iod);
         }
 
         if (hpac && mGenerateHpac) {
-            for (auto kvp : hpac->mKeyedCorrections) {
-                printf("HPAC: gnss=%ld, set=%ld, iod=%ld\n", kvp.first.gnss_id, kvp.first.set_id,
-                       iod);
-                printf("  orbit:      %p\n", kvp.second.gridded);
-                printf("  clock:      %p\n", kvp.second.stec);
-            }
-
             generate_hpac(iod);
         }
     }
@@ -133,11 +123,12 @@ void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* me
 
             uint64_t bitmask = 0;
             if (array.bitmaskOfGrids_r16) {
-                for (int i = 0; i < array.bitmaskOfGrids_r16->size; i++) {
-                    bitmask |= static_cast<uint64_t>(array.bitmaskOfGrids_r16->buf[i]) << (i * 8);
+                for (size_t i = 0; i < array.bitmaskOfGrids_r16->size; i++) {
+                    bitmask <<= 8;
+                    bitmask |= static_cast<uint64_t>(array.bitmaskOfGrids_r16->buf[i]);
                 }
                 bitmask >>= array.bitmaskOfGrids_r16->bits_unused;
-                printf(" bitmask: %d bytes, %d bits, 0x%016lX\n", array.bitmaskOfGrids_r16->size,
+                printf(" bitmask: %ld bytes, %d bits, 0x%016lX\n", array.bitmaskOfGrids_r16->size,
                        array.bitmaskOfGrids_r16->bits_unused, bitmask);
             } else {
                 bitmask = 0xFFFFFFFFFFFFFFFF;
@@ -150,7 +141,7 @@ void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* me
                 std::make_pair(ssr.correctionPointSetID_r16, std::move(correction_point_set_ptr)));
         }
     } else {
-        // TODO(ewasjon): handle other types
+        // TODO(ewasjon): [low-priority] Support list of correction points
     }
 }
 

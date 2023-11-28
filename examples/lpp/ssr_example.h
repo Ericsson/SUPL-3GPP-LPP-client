@@ -5,8 +5,8 @@ namespace ssr_example {
 
 enum class Format {
     XER,
-    SPARTN,
-    SPARTN2,
+    SPARTN_NEW,
+    SPARTN_OLD,
     ASN1_UPER,
 };
 
@@ -16,7 +16,7 @@ public:
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
           mFormatArg(nullptr), mUraOverrideArg(nullptr), mUbloxClockCorrectionArg(nullptr),
           mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr),
-          mDisableIodeShift(nullptr) {}
+          mEnableIodeShift(nullptr) {}
 
     ~SsrCommand() override {
         delete mFormatArg;
@@ -24,7 +24,7 @@ public:
         delete mUbloxClockCorrectionArg;
         delete mForceContinuityArg;
         delete mAverageZenithDelayArg;
-        delete mDisableIodeShift;
+        delete mEnableIodeShift;
     }
 
     void parse(args::Subparser& parser) override;
@@ -36,7 +36,7 @@ private:
     args::Flag*                   mUbloxClockCorrectionArg;
     args::Flag*                   mForceContinuityArg;
     args::Flag*                   mAverageZenithDelayArg;
-    args::Flag*                   mDisableIodeShift;
+    args::Flag*                   mEnableIodeShift;
 };
 
 }  // namespace ssr_example

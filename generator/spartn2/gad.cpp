@@ -11,10 +11,12 @@ void Generator::generate_gad(long iod, long set_id) {
     if (cps_it == mCorrectionPointSets.end()) return;
     auto& correction_point_set = *(cps_it->second.get());
 
+#ifdef SPARTN_DEBUG_PRINT
     printf("  grid points: %ld\n", correction_point_set.grid_points);
     printf("  bitmask:     ");
     for (auto i = 0; i < correction_point_set.grid_points; i++) {
-        auto bit = (correction_point_set.bitmask >> i) & 1;
+        auto bit_index = 64 - i - 1;
+        auto bit       = (correction_point_set.bitmask >> bit_index) & 1;
         printf("%d", bit ? 1 : 0);
     }
     printf("\n");
@@ -32,8 +34,9 @@ void Generator::generate_gad(long iod, long set_id) {
     // print the grid in ascii
     for (auto i = 0; i < correction_point_set.numberOfStepsLatitude_r16 + 1; i++) {
         for (auto j = 0; j < correction_point_set.numberOfStepsLongitude_r16 + 1; j++) {
-            auto index = i * (correction_point_set.numberOfStepsLongitude_r16 + 1) + j;
-            auto bit   = (correction_point_set.bitmask >> index) & 1;
+            auto index     = i * (correction_point_set.numberOfStepsLongitude_r16 + 1) + j;
+            auto bit_index = 64 - index - 1;
+            auto bit       = (correction_point_set.bitmask >> bit_index) & 1;
             if (bit == 0) {
                 printf("-- ");
             } else {
@@ -42,6 +45,7 @@ void Generator::generate_gad(long iod, long set_id) {
         }
         printf("\n");
     }
+#endif
 
     MessageBuilder builder{2 /* GAD */, 0, 0};
     builder.sf005(iod);  // TODO(ewasjon): We could include AIOU in the correction point set, to

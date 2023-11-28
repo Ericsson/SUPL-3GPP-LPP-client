@@ -146,7 +146,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15*
     auto  iod = orbit->iod_ssr_r15;
     auto& ocb = mOcbData[iod];
 
-    // TODO(ewasjon): filter based on satellite reference datum
+    // TODO(ewasjon): [low-priority] Filter based on satellite reference datum.
     auto epoch_time = spartn_time_from(orbit->epochTime_r15);
     auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
@@ -335,8 +335,10 @@ static Bias gps_bias_from_signal(long signal_id, double correction, double conti
         auto to_freq            = GPS_FREQ[to_id];
         auto scale              = from_freq / to_freq;
         auto shifted_correction = correction * scale;
-        printf("GPS: mapping signal id %2ld to %2u (%.2f / %.2f = %.4f)\n", from_id, to_id,
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  GPS: mapping signal id %2ld to %2u (%.2f / %.2f = %.4f)\n", from_id, to_id,
                from_freq, to_freq, scale);
+#endif
 
         return gps_bias_from_signal(to_id, shifted_correction, continuity_indicator, fix_flag);
     }
@@ -357,7 +359,6 @@ static Bias glo_bias_from_signal(long signal_id, double correction, double conti
         0, 0,
     };
 
-    // TODO(ewasjon): Support signal conversion
     auto type = MAPPABLE[signal_id];
     if (type > 0) {
         return Bias{
@@ -472,8 +473,10 @@ static Bias gal_bias_from_signal(long signal_id, double correction, double conti
         auto to_freq            = GAL_FREQ[to_id];
         auto scale              = from_freq / to_freq;
         auto shifted_correction = correction * scale;
-        printf("GAL: mapping signal id %2ld to %2u (%.2f / %.2f = %.4f)\n", from_id, to_id,
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  GAL: mapping signal id %2ld to %2u (%.2f / %.2f = %.4f)\n", from_id, to_id,
                from_freq, to_freq, scale);
+#endif
 
         return gal_bias_from_signal(to_id, shifted_correction, continuity_indicator, fix_flag);
     }
@@ -508,29 +511,38 @@ static std::map<uint8_t, Bias> phase_biases(const SSR_PhaseBiasSatElement_r16& s
         auto element = list.array[i];
         if (!element) continue;
 
-        auto signal_id            = decode::signal_id(element->signal_and_tracking_mode_ID_r16);
-        auto correction           = decode::phaseBias_r16(element->phaseBias_r16);
-        auto continuity_indicator = 320.0;  // TODO(ewasjon): compute the continuity indicator
-        auto fix_flag             = phase_bias_fix_flag(*element);
+        auto signal_id  = decode::signal_id(element->signal_and_tracking_mode_ID_r16);
+        auto correction = decode::phaseBias_r16(element->phaseBias_r16);
+        auto continuity_indicator =
+            320.0;  // TODO(ewasjon): [low-priority] Compute the continuity indicator.
+        auto fix_flag = phase_bias_fix_flag(*element);
 
         auto bias = (*bias_to_signal)(signal_id, correction, continuity_indicator, fix_flag);
         if (bias.signal_id == -1) {
-            printf("unsupported bias for signal id %2ld\n", signal_id);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  unsupported bias for signal id %2ld\n", signal_id);
+#endif
             continue;
         }
 
         if (biases_by_type.count(bias.type) == 0) {
-            printf("adding bias type %u (id=%ld)\n", bias.type, bias.signal_id);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  adding bias type %u (id=%ld)\n", bias.type, bias.signal_id);
+#endif
             biases_by_type[bias.type] = bias;
         } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
+#ifdef SPARTN_DEBUG_PRINT
             // If the bias is mapped and the new bias is not mapped, then we want to prioritize
             // the "original" bias.
-            printf("replacing bias type %u (id=%ld) with %u (id=%ld)\n",
+            printf("  replacing bias type %u (id=%ld) with %u (id=%ld)\n",
                    biases_by_type[bias.type].type, biases_by_type[bias.type].signal_id, bias.type,
                    bias.signal_id);
+#endif
             biases_by_type[bias.type] = bias;
         } else {
-            printf("duplicate bias type %u\n", bias.type);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  duplicate bias type %u\n", bias.type);
+#endif
         }
     }
 
@@ -552,22 +564,30 @@ static std::map<uint8_t, Bias> code_biases(const SSR_CodeBiasSatElement_r15& sat
 
         auto bias = (*bias_to_signal)(signal_id, correction, 0.0, false);
         if (bias.signal_id == -1) {
-            printf("unsupported bias for signal id %2ld\n", signal_id);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  unsupported bias for signal id %2ld\n", signal_id);
+#endif
             continue;
         }
 
         if (biases_by_type.count(bias.type) == 0) {
-            printf("adding bias type %u (id=%ld)\n", bias.type, bias.signal_id);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  adding bias type %u (id=%ld)\n", bias.type, bias.signal_id);
+#endif
             biases_by_type[bias.type] = bias;
         } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
+#ifdef SPARTN_DEBUG_PRINT
             // If the bias is mapped and the new bias is not mapped, then we want to prioritize
             // the "original" bias.
-            printf("replacing bias type %u (id=%ld) with %u (id=%ld)\n",
+            printf("  replacing bias type %u (id=%ld) with %u (id=%ld)\n",
                    biases_by_type[bias.type].type, biases_by_type[bias.type].signal_id, bias.type,
                    bias.signal_id);
+#endif
             biases_by_type[bias.type] = bias;
         } else {
-            printf("duplicate bias type %u\n", bias.type);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  duplicate bias type %u\n", bias.type);
+#endif
         }
     }
 
@@ -577,7 +597,6 @@ static std::map<uint8_t, Bias> code_biases(const SSR_CodeBiasSatElement_r15& sat
 static void generate_gps_bias_block(MessageBuilder&                    builder,
                                     const SSR_CodeBiasSatElement_r15*  code_bias,
                                     const SSR_PhaseBiasSatElement_r16* phase_bias) {
-    printf("GPS: ---------------------------------------------\n");
     if (!phase_bias) {
         builder.sf025_raw(false, 0);
     } else {
@@ -606,7 +625,6 @@ static void generate_gps_bias_block(MessageBuilder&                    builder,
 static void generate_glo_bias_block(MessageBuilder&                    builder,
                                     const SSR_CodeBiasSatElement_r15*  code_bias,
                                     const SSR_PhaseBiasSatElement_r16* phase_bias) {
-    printf("GLO: ---------------------------------------------\n");
     if (!phase_bias) {
         builder.sf026_raw(false, 0);
     } else {
@@ -635,7 +653,6 @@ static void generate_glo_bias_block(MessageBuilder&                    builder,
 static void generate_gal_bias_block(MessageBuilder&                    builder,
                                     const SSR_CodeBiasSatElement_r15*  code_bias,
                                     const SSR_PhaseBiasSatElement_r16* phase_bias) {
-    printf("GAL: ---------------------------------------------\n");
     if (!phase_bias) {
         builder.sf102_raw(false, 0);
     } else {
@@ -687,6 +704,7 @@ void Generator::generate_ocb(long iod) {
 
         auto satellites = corrections.satellites();
 
+#ifdef SPARTN_DEBUG_PRINT
         printf("OCB: time=%u, gnss=%ld, iod=%ld\n", epoch_time, gnss_id, iod);
         for (auto& satellite : satellites) {
             printf("  satellite: %4ld  ", satellite.id);
@@ -717,8 +735,8 @@ void Generator::generate_ocb(long iod) {
             }
             printf("\n");
         }
+#endif
 
-        // TODO(ewasjon): End of OCB set. How does this work with different epoch-times?
         auto eos               = (message_id + 1) == messages.size();
         auto yaw_angle_present = false;
         auto subtype           = subtype_from_gnss_id(gnss_id);
@@ -733,6 +751,10 @@ void Generator::generate_ocb(long iod) {
         builder.satellite_mask(gnss_id, satellites);
 
         for (auto& satellite : satellites) {
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  SATELLITE: %4ld\n", satellite.id);
+#endif
+
             builder.sf013(false /* do use this satellite */);
             builder.sf014(satellite.orbit != nullptr, satellite.clock != nullptr,
                           satellite.code_bias != nullptr || satellite.phase_bias != nullptr);
@@ -764,7 +786,8 @@ void Generator::generate_ocb(long iod) {
                 if (mContinuityIndicator >= 0.0) {
                     builder.sf022(mContinuityIndicator);
                 } else {
-                    builder.sf022(320.0);  // TODO(ewasjon): compute the continuity indicator
+                    // TODO(ewasjon): [low-priority] Compute the continuity indicator.
+                    builder.sf022(320.0);
                 }
 
                 // NOTE(ewasjon): SPARTN has a single value of the clock correction term. 3GPP
@@ -776,18 +799,21 @@ void Generator::generate_ocb(long iod) {
                 auto c2 = decode::delta_Clock_C1_r15(clock.delta_Clock_C2_r15);
 
                 // t_0 = epochTime + (0.5 * ssrUpdateInterval)
-                auto t0 =
-                    corrections.epoch_time.seconds;  // TODO(ewasjon): include ssr update interval.
-                auto t = t0;  // TODO(ewasjon): What should we do here? Why are we using t_0 == t?
+                // TODO(ewasjon): [low-priority] Include SSR update interval.This is fine not to
+                // include while we are using t=t0.
+                auto t0 = corrections.epoch_time.seconds;
+                // TODO(ewasjon): [low-priority] We don't have an actual time available, is it
+                // possible for us to have access to that? If not, we will continue to use t=t0.
+                auto t = t0;
 
                 // delta_c = c_0 + c_1 (t - t_0) + [c_2 (t - t_0)]^2
                 auto dt = t - t0;
                 auto dc = c0 + c1 * dt + c2 * dt * dt;
 
-                // NOTE(ewasjon): Geo++ observed that changing the sign of the clock corrections
-                // (in there correction feed) improved the result. They assumed that u-blox
-                // implemented it with a flipped sign. Thus, we also need to flip the sign to
-                // conform to the u-blox implementation.
+                // NOTE(ewasjon): [REDACTED] observed that changing the sign of the clock
+                // corrections (in there correction feed) improved the result. They assumed that
+                // u-Blox implemented it with a flipped sign. Thus, we also need to flip the sign to
+                // conform to the u-Blox implementation.
                 if (mUBloxClockCorrection) {
                     dc *= -1;
                 }

@@ -1,14 +1,19 @@
 #pragma once
-#include <memory>
 #include <interface/interface.hpp>
+#include <memory>
 #include <vector>
 
 /// Format options.
 enum class Format {
-    /// SPARTN format.
-    SPARTN,
-    /// SPARTN2 format.
-    SPARTN2,
+    /// SPARTN format, using the old SPARTN generator.
+    SPARTN_OLD,
+    /// SPARTN format, using the new SPARTN generator.
+    SPARTN_NEW,
+};
+
+/// SPARTN options.
+struct SpartnOptions {
+    bool iode_shift;
 };
 
 /// Output options.
@@ -20,6 +25,7 @@ struct OutputOptions {
 struct Options {
     Format        format;
     OutputOptions output;
+    SpartnOptions spartn;
 };
 
 extern Options parse_configuration(int argc, char** argv);

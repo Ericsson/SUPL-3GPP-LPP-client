@@ -8,6 +8,7 @@
 
 #include <BIT_STRING.h>
 #include <GNSS-SSR-STEC-Correction-r16.h>
+#include <asn.1/bit_string.hpp>
 
 static uint16_t crc16_ccitt(uint8_t* data, size_t length) {
     // CRC 16 CCITT
@@ -47,7 +48,6 @@ static uint16_t crc16_ccitt(uint8_t* data, size_t length) {
     uint16_t crc = 0;
     for (size_t i = 0; i < length; i++) {
         auto value = data[i];
-        // printf("byte: %02X\n", value);
         auto index = static_cast<uint16_t>(value) ^ (crc >> 8);
         crc        = CRC16_LOOKUP[index] ^ (crc << 8);
     }
@@ -125,7 +125,7 @@ void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
         if (count > 56) {
             mBuilder.bits(3, 2);
             count = 64;
-        } else if (count > 44 || true /* TODO(ewasjon): REMOVE */) {
+        } else if (count > 44) {
             mBuilder.bits(2, 2);
             count = 56;
         } else if (count > 32) {
@@ -226,30 +226,10 @@ void MessageBuilder::ephemeris_type(long gnss_id) {
 }
 
 void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string, bool iode_shift) {
-    long iode = 0;
-    for (size_t i = 0; i < bit_string.size; i++) {
-        iode <<= 8;
-        iode |= bit_string.buf[i];
-    }
-    iode >>= bit_string.bits_unused;
-
-    printf("----- IODE:          11\n");
-    printf("            12345678901\n");
-    printf("before    : ");
-    for (size_t i = 0; i < 11; i++) {
-        printf("%d", (iode >> (10 - i)) & 1);
-    }
-    printf("\n");
-
+    auto iode = helper::BitString::from(&bit_string)->as_int64();
     if (iode_shift) {
         iode >>= 3;
     }
-
-    printf("after     : ");
-    for (size_t i = 0; i < 11; i++) {
-        printf("%d", (iode >> (10 - i)) & 1);
-    }
-    printf("\n");
 
     switch (gnss_id) {
     case GNSS_ID_GPS:  // SF018 - GPS IODE

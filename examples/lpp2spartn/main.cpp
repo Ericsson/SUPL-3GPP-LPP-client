@@ -84,80 +84,50 @@ LPP_Message* next_message(StdinStream& stream) {
     return NULL;
 }
 
-static void hexdump(const uint8_t* data, size_t size) {
-    // hexdump with ascii
-    constexpr auto width = 16;
-    for (size_t i = 0; i < size; i += width) {
-        printf("%04zx: ", i);
-        for (size_t j = 0; j < width; j++) {
-            if (i + j < size) {
-                printf("%02x ", data[i + j]);
-            } else {
-                printf("   ");
-            }
-        }
-        printf(" ");
-        for (size_t j = 0; j < width; j++) {
-            if (i + j < size) {
-                auto c = data[i + j];
-                if (c >= 0x20 && c <= 0x7E) {
-                    printf("%c", c);
-                } else {
-                    printf(".");
-                }
-            } else {
-                printf(" ");
-            }
-        }
-        printf("\n");
-    }
-}
-
 int main(int argc, char** argv) {
     auto  options = parse_configuration(argc, argv);
     auto& output  = options.output;
+    auto& spartn  = options.spartn;
 
     StdinStream      stream{};
-    SPARTN_Generator generator{};
+    SPARTN_Generator old_generator{};
 
     auto gUraOverride          = 2;
     auto gUBloxClockCorrection = true;
     auto gForceIodeContinuity  = true;
 
-    generator::spartn::Generator spartn2_generator{};
+    generator::spartn::Generator new_generator{};
 
-    spartn2_generator.set_ura_override(gUraOverride);
-    spartn2_generator.set_ublox_clock_correction(gUBloxClockCorrection);
+    new_generator.set_ura_override(gUraOverride);
+    new_generator.set_ublox_clock_correction(gUBloxClockCorrection);
     if (gForceIodeContinuity) {
-        spartn2_generator.set_continuity_indicator(320.0);
+        new_generator.set_continuity_indicator(320.0);
     }
 
-    spartn2_generator.set_generate_hpac(true);
-
-    spartn2_generator.set_galileo_supported(true);
+    if (spartn.iode_shift) {
+        new_generator.set_iode_shift(true);
+    } else {
+        new_generator.set_iode_shift(false);
+    }
 
     for (;;) {
         auto message = next_message(stream);
         if (!message) break;
 
-        if (options.format == Format::SPARTN2) {
-            auto messages2 = spartn2_generator.generate(message);
-
+        if (options.format == Format::SPARTN_NEW) {
+            auto messages2 = new_generator.generate(message);
             for (auto& msg : messages2) {
-                printf("Message: %d-%d\n", msg.message_type(), msg.message_subtype());
                 auto data = msg.build();
-                hexdump(data.data(), data.size());
-
                 for (auto& interface : output.interfaces) {
                     interface->write(data.data(), data.size());
                 }
             }
-        } else if (options.format == Format::SPARTN) {
-            auto messages = generator.generate(message, gUraOverride, gUBloxClockCorrection,
-                                               gForceIodeContinuity);
+        } else if (options.format == Format::SPARTN_OLD) {
+            auto messages = old_generator.generate(message, gUraOverride, gUBloxClockCorrection,
+                                                   gForceIodeContinuity);
 
-            printf("Generated %zu messages\n", messages.size());
-
+            // NOTE(ewasjon): This looks stupid, and it is, but for testing purposes we want to
+            // output the messages in a specific order. Will be fixed in the future.
             for (auto& msg : messages) {
                 if (msg->message_type == 2 && msg->message_sub_type == 0) {
                     auto bytes = SPARTN_Transmitter::build(msg);
@@ -220,7 +190,6 @@ int main(int argc, char** argv) {
         }
 
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, message);
-        break;
     }
 
     return 0;
