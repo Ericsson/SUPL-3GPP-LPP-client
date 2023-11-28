@@ -1,12 +1,12 @@
 #pragma once
 
+#include <assert.h>
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
 
 typedef uint8_t  u8;
 typedef int8_t   s8;
@@ -22,7 +22,11 @@ typedef double f64;
 
 #if defined(__has_cpp_attribute)
 #if __has_cpp_attribute(nodiscard)
+#if defined(__cplusplus) && __cplusplus >= 201703L
 #define NO_DISCARD [[nodiscard]]
+#else
+#define NO_DISCARD
+#endif
 #else
 #define NO_DISCARD
 #endif

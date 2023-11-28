@@ -713,7 +713,7 @@ private:
         sat_mask_bitset <<= sat_mask_bit_count - 2;
 
         const uint16_t sat_mask_length = sat_mask_bit_count - 3;
-        static constexpr std::bitset<Constants::max_spartn_bit_count> new_sv = 0b1;
+        static constexpr std::bitset<Constants::max_spartn_bit_count> new_sv = 1;
 
         for (const auto& sv_ocb : sv_ocbs) {
             sat_mask_bitset |= new_sv << (sat_mask_length - sv_ocb.first);
