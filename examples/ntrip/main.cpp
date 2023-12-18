@@ -126,6 +126,13 @@ public:
         }
     }
 
+    void nmea_update(const std::string& nmea) {
+        std::string request = nmea + "\r\n";
+        if (send(mSocket, request.c_str(), request.size(), 0) < 0) {
+            throw std::runtime_error("Failed to send request");
+        }
+    }
+
     ssize_t read(void* buffer, size_t size) { return ::read(mSocket, buffer, size); }
 
 private:
@@ -133,6 +140,7 @@ private:
     std::string mUsername;
     std::string mPassword;
 };
+
 int main(int argc, char** argv) {
     auto  options = parse_configuration(argc, argv);
     auto& host    = options.host;
@@ -144,7 +152,16 @@ int main(int argc, char** argv) {
     // connect to host
     Ntrip ntrip(addr);
     ntrip.authorize(host.username, host.password);
-    ntrip.request(host.mountpoint);
+
+    if (host.mountpoint) {
+        ntrip.request(*host.mountpoint);
+    } else {
+        ntrip.request("");
+    }
+
+    if (!host.nmea.empty()) {
+        ntrip.nmea_update(host.nmea);
+    }
 
     char temp[4096];
     for (;;) {

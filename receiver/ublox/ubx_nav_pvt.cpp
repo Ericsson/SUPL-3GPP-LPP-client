@@ -64,6 +64,32 @@ double UbxNavPvt::p_dop() const UBLOX_NOEXCEPT {
     return static_cast<double>(mPayload.p_dop) * 0.01;
 }
 
+time_t UbxNavPvt::timestamp() const UBLOX_NOEXCEPT {
+    struct tm tm {};
+    tm.tm_year  = mPayload.year - 1900;
+    tm.tm_mon   = mPayload.month - 1;
+    tm.tm_mday  = mPayload.day;
+    tm.tm_hour  = mPayload.hour;
+    tm.tm_min   = mPayload.min;
+    tm.tm_sec   = mPayload.sec;
+    tm.tm_isdst = 0;
+
+    auto time = mktime(&tm);
+    return time;
+}
+
+TAI_Time UbxNavPvt::tai_time() const UBLOX_NOEXCEPT {
+    auto time     = timestamp();
+    auto seconds  = static_cast<s64>(time);
+    auto fraction = mPayload.nano * 1e-9;
+    auto ts       = Timestamp{seconds, fraction};
+    return TAI_Time{UTC_Time{ts}};
+}
+
+bool UbxNavPvt::valid_time() const UBLOX_NOEXCEPT {
+    return mPayload.valid.valid_date != 0 && mPayload.valid.valid_time != 0;
+}
+
 void UbxNavPvt::print() const UBLOX_NOEXCEPT {
     printf("[%02X %02X] UBX-NAV-PVT:\n", message_class(), message_id());
     printf("[.....]    i_tow: %u\n", mPayload.i_tow);

@@ -62,14 +62,27 @@ struct UbloxOptions {
     std::unique_ptr<interface::Interface> interface;
 };
 
+/// Location information options.
+struct LocationInformationOptions {
+    /// Enable fake location information.
+    bool enabled;
+    /// Fake latitude.
+    double latitude;
+    /// Fake longitude.
+    double longitude;
+    /// Fake altitude.
+    double altitude;
+};
+
 /// Options.
 struct Options {
-    LocationServerOptions location_server_options;
-    IdentityOptions       identity_options;
-    CellOptions           cell_options;
-    ModemOptions          modem_options;
-    OutputOptions         output_options;
-    UbloxOptions          ublox_options;
+    LocationServerOptions      location_server_options;
+    IdentityOptions            identity_options;
+    CellOptions                cell_options;
+    ModemOptions               modem_options;
+    OutputOptions              output_options;
+    UbloxOptions               ublox_options;
+    LocationInformationOptions location_information_options;
 };
 
 /// Command.
