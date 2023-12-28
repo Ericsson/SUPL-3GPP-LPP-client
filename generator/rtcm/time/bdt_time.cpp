@@ -1,6 +1,7 @@
 #include "bdt_time.hpp"
 #include "utc_time.hpp"
 
+namespace ts {
 static TsInt leap_seconds_utc_bdt() {
     // NOTE(ewasjon): There are 33 leapseconds between the start of UTC and the start of BDT, after
     // that BDT includes leapseconds similar to UTC.
@@ -69,3 +70,4 @@ BDT_Time BDT_Time::now() {
 Timestamp BDT_Time::utc_timestamp() const {
     return bdt_2_utc(tm);
 }
+}  // namespace ts

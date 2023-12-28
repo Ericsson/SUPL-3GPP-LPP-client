@@ -1,6 +1,7 @@
 #pragma once
 #include "timestamp.hpp"
 
+namespace ts {
 class TAI_Time;
 class UTC_Time;
 class BDT_Time {
@@ -30,3 +31,4 @@ private:
     // away from TAI as of (2022-09-22) and changes with added or subtracted leap-seconds.
     Timestamp tm;
 };
+}  // namespace ts

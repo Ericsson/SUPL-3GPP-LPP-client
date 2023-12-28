@@ -66,6 +66,8 @@ struct UbloxOptions {
 struct LocationInformationOptions {
     /// Enable fake location information.
     bool enabled;
+    /// Force location information to be sent, even if it hasn't been requested.
+    bool force;
     /// Fake latitude.
     double latitude;
     /// Fake longitude.

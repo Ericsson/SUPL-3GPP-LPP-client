@@ -64,6 +64,9 @@ public:
     void provide_location_information_callback(void* userdata, PLI_Callback callback);
     void provide_ecid_callback(void* userdata, PECID_Callback callback);
 
+    // Force provide location information to be unsolicited sent.
+    void force_location_information();
+
     OCTET_STRING* encode(LPP_Message* message);
     LPP_Message*  decode(OCTET_STRING* data);
 
@@ -107,6 +110,7 @@ private:
 
     ProvideLI provide_li;
 
+    bool mForceLocationInformation;
     bool mEnableSegmentation;
 };
 

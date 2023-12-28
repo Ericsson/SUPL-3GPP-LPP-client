@@ -138,8 +138,16 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         client.provide_location_information_callback(gUbloxReceiver.get(),
                                                      provide_location_information_callback_ublox);
     } else if (location_information_options.enabled) {
+        printf("[simulating location information]\n");
         client.provide_location_information_callback(&location_information_options,
                                                      provide_location_information_callback_fake);
+
+        if (location_information_options.force) {
+            client.force_location_information();
+            printf("  force: true\n");
+        } else {
+            printf("  force: false\n");
+        }
     } else {
         client.provide_location_information_callback(gUbloxReceiver.get(),
                                                      provide_location_information_callback);

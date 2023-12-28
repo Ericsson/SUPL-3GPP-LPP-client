@@ -1,16 +1,17 @@
 #pragma once
 #include "types.hpp"
 
-using TsInt  = int64_t;
+namespace ts {
+using TsInt   = int64_t;
 using TsFloat = double;
 
-RTCM_CONSTEXPR static TsInt DAYS_PER_WEEK = 7LL;
-RTCM_CONSTEXPR static TsInt DAYS_PER_YEAR = 365LL;
-RTCM_CONSTEXPR static TsInt MINUTE_IN_SECONDS = 60LL;
-RTCM_CONSTEXPR static TsInt HOUR_IN_SECONDS   = MINUTE_IN_SECONDS * 60LL;
-RTCM_CONSTEXPR static TsInt DAY_IN_SECONDS    = HOUR_IN_SECONDS * 24LL;
-RTCM_CONSTEXPR static TsInt WEEK_IN_SECONDS   = DAY_IN_SECONDS * DAYS_PER_WEEK;
-RTCM_CONSTEXPR static TsInt YEAR_IN_SECONDS   = DAY_IN_SECONDS * 365LL;
+RTCM_CONSTEXPR static TsInt DAYS_PER_WEEK           = 7LL;
+RTCM_CONSTEXPR static TsInt DAYS_PER_YEAR           = 365LL;
+RTCM_CONSTEXPR static TsInt MINUTE_IN_SECONDS       = 60LL;
+RTCM_CONSTEXPR static TsInt HOUR_IN_SECONDS         = MINUTE_IN_SECONDS * 60LL;
+RTCM_CONSTEXPR static TsInt DAY_IN_SECONDS          = HOUR_IN_SECONDS * 24LL;
+RTCM_CONSTEXPR static TsInt WEEK_IN_SECONDS         = DAY_IN_SECONDS * DAYS_PER_WEEK;
+RTCM_CONSTEXPR static TsInt YEAR_IN_SECONDS         = DAY_IN_SECONDS * 365LL;
 RTCM_CONSTEXPR static TsInt MILLISECONDS_PER_SECOND = 1000LL;
 
 // Total time in seconds (+fractions) since a start date. The date depends on
@@ -27,9 +28,11 @@ public:
         normalize();
     }
 
-    RTCM_NODISCARD TsInt  seconds() const { return mSeconds; }
+    RTCM_NODISCARD TsInt   seconds() const { return mSeconds; }
     RTCM_NODISCARD TsFloat fraction() const { return mFraction; }
-    RTCM_NODISCARD TsFloat full_seconds() const { return static_cast<TsFloat>(mSeconds) + mFraction; }
+    RTCM_NODISCARD TsFloat full_seconds() const {
+        return static_cast<TsFloat>(mSeconds) + mFraction;
+    }
 
     RTCM_NODISCARD Timestamp operator+(const Timestamp& other) const {
         return Timestamp{seconds() + other.seconds(), fraction() + other.fraction()};
@@ -61,7 +64,7 @@ public:
     }
 
 private:
-    TsInt  mSeconds;
+    TsInt   mSeconds;
     TsFloat mFraction;
 };
 
@@ -71,3 +74,4 @@ public:
         return 37;  // TODO(ewasjon): SHOULD NOT BE HARDCODED!
     }
 };
+}  // namespace ts

@@ -1,13 +1,15 @@
 #include "utc_time.hpp"
-#include <array>
-#include <inttypes.h>
-#include <sys/time.h>
 #include "bdt_time.hpp"
 #include "glo_time.hpp"
 #include "gps_time.hpp"
 #include "gst_time.hpp"
 #include "tai_time.hpp"
 
+#include <array>
+#include <inttypes.h>
+#include <sys/time.h>
+
+namespace ts {
 // NOTE: The day each month of the year starts with.
 RTCM_CONSTEXPR static std::array<TsInt, 12> day_of_year = {
     1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335,
@@ -154,3 +156,4 @@ UTC_Time UTC_Time::now() {
 
     return UTC_Time(timestamp);
 }
+}  // namespace ts

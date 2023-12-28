@@ -245,6 +245,13 @@ args::Flag li_enable{
     location_infomation, "location-info",       "Location Information",
     {"location-info"},   args::Options::Single,
 };
+args::Flag li_force{
+    location_infomation,
+    "force-location-info",
+    "Force Location Information (always send even if not requested)",
+    {"force-location-info"},
+    args::Options::Single,
+};
 args::ValueFlag<double> li_latitude{
     location_infomation, "latitude", "Latitude", {"latitude"}, args::Options::Single};
 args::ValueFlag<double> li_longitude{
@@ -580,9 +587,14 @@ static LocationInformationOptions parse_location_information_options() {
     location_information.latitude  = 69.0599730655754;
     location_information.longitude = 20.54864403253676;
     location_information.altitude  = 0;
+    location_information.force    = false;
 
     if (li_enable) {
         location_information.enabled = true;
+
+        if (li_force) {
+            location_information.force = true;
+        }
 
         if (li_latitude) {
             location_information.latitude = li_latitude.Get();

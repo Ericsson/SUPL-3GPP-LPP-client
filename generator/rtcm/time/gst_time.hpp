@@ -1,6 +1,7 @@
 #pragma once
 #include "timestamp.hpp"
 
+namespace ts {
 class TAI_Time;
 class UTC_Time;
 class GST_Time {
@@ -27,3 +28,4 @@ protected:
 private:
     Timestamp tm;
 };
+}  // namespace ts

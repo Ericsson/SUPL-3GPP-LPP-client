@@ -37,6 +37,8 @@ OCTET_STRING* lpp_encode(LPP_Message* lpp) {
     asn_enc_rval_t ret =
         uper_encode_to_buffer(&asn_DEF_LPP_Message, NULL, lpp, buffer, sizeof(buffer));
     if (ret.encoded == -1) {
+        printf("ERROR: Encoding failed: %s\n",
+               ret.failed_type ? ret.failed_type->name : "<unknown>");
         return NULL;
     }
 
@@ -312,14 +314,19 @@ static GNSS_LocationInformation* lpp_LocationInformation(const LocationInformati
     auto time = GPS_Time{location.tai_time};
     auto tod  = time.time_of_day();
     // time of day in milliseconds
-    auto msec = tod.full_seconds() * 1000;
+    auto msec = static_cast<long>(tod.full_seconds() * 1000);
     // time of day in 250 nanoseconds
-    auto nfrac = tod.full_seconds() - msec / 1000.0;
-    nfrac *= 1000.0 * 1000.0 * 4.0;
+    auto nfrac = tod.full_seconds() * 1000.0 - static_cast<double>(msec);
+    nfrac *= 1000.0 * 4.0;
 
     mrt.gnss_TimeID.gnss_id = GNSS_ID__gnss_id_gps;
-    mrt.gnss_TOD_msec       = msec;
-    mrt.gnss_TOD_frac       = newLong((long)nfrac);
+    // only take the first 3600 * 1000 milliseconds of the day
+    mrt.gnss_TOD_msec = msec % (3600 * 1000);
+    mrt.gnss_TOD_frac = newLong((long)nfrac);
+
+    auto bitmask = BitString::allocate(6, &location_information->agnss_List.gnss_ids);
+    bitmask->set_bit(0);  // GPS
+
     return location_information;
 }
 
