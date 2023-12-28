@@ -5,13 +5,14 @@
 #include <utility/cpp.h>
 
 LPP_Client::LPP_Client(bool segmentation) {
-    connected           = false;
-    main_request        = AD_REQUEST_INVALID;
-    provide_li.type     = -1;
-    transaction_counter = 1;
-    client_id           = 0xC0DEC0DE;
-    mEnableSegmentation = segmentation;
-    mSUPL               = std::make_unique<SUPL_Client>();
+    connected                 = false;
+    main_request              = AD_REQUEST_INVALID;
+    provide_li.type           = -1;
+    transaction_counter       = 1;
+    client_id                 = 0xC0DEC0DE;
+    mEnableSegmentation       = segmentation;
+    mForceLocationInformation = false;
+    mSUPL                     = std::make_unique<SUPL_Client>();
 
     main_request_callback  = nullptr;
     main_request_userdata  = nullptr;
@@ -186,6 +187,8 @@ bool LPP_Client::supl_send(const std::vector<LPP_Message*>& messages) {
             auto lpp = encode(data);
             if (lpp) {
                 asn_sequence_add(&payload->list, lpp);
+            } else {
+                printf("ERROR: Failed to encode LPP message\n");
             }
         }
 
@@ -545,8 +548,18 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
 
     assert(message);
     if (!supl_send(message)) {
+        printf("ERROR: Failed to send LPP message\n");
         return false;
     }
 
     return false;
+}
+
+void LPP_Client::force_location_information() {
+    mForceLocationInformation        = true;
+    provide_li.type                  = LocationInformationType_locationEstimateRequired;
+    provide_li.last                  = std::chrono::system_clock::now();
+    provide_li.transaction.id        = 200;
+    provide_li.transaction.end       = 0;
+    provide_li.transaction.initiator = 0;
 }

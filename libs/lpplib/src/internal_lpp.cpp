@@ -2,8 +2,10 @@
 #include "location_information.h"
 #include "lpp.h"
 
+#include <A-GNSS-ProvideLocationInformation.h>
 #include <math.h>
 #include <time.h>
+#include <utility/time.h>
 
 bool lpp_harvest_transaction(LPP_Transaction* transaction, LPP_Message* lpp) {
     if (!lpp) return false;
@@ -35,6 +37,8 @@ OCTET_STRING* lpp_encode(LPP_Message* lpp) {
     asn_enc_rval_t ret =
         uper_encode_to_buffer(&asn_DEF_LPP_Message, NULL, lpp, buffer, sizeof(buffer));
     if (ret.encoded == -1) {
+        printf("ERROR: Encoding failed: %s\n",
+               ret.failed_type ? ret.failed_type->name : "<unknown>");
         return NULL;
     }
 
@@ -276,7 +280,8 @@ lpp_PLI_CIE_ext2(const LocationInformation& location) {
     locationSource->set_bit(LocationSource_r13_ha_gnss_v1510);
 
     struct tm tm {};
-    auto      current_time = location.time;
+    auto      seconds      = UTC_Time{location.tai_time}.timestamp().seconds();
+    auto      current_time = static_cast<time_t>(seconds);
     auto      ptm          = gmtime_r(&current_time, &tm);
 
     ext2->locationTimestamp_r13 = asn_time2UT(NULL, ptm, 1);
@@ -302,6 +307,40 @@ lpp_PLI_CommonIEsProvideLocationInformation(const LocationInformation& location,
     return CIE_PLI;
 }
 
+static GNSS_LocationInformation* lpp_LocationInformation(const LocationInformation& location) {
+    auto  location_information = ALLOC_ZERO(GNSS_LocationInformation);
+    auto& mrt                  = location_information->measurementReferenceTime;
+
+    auto time = GPS_Time{location.tai_time};
+    auto tod  = time.time_of_day();
+    // time of day in milliseconds
+    auto msec = static_cast<long>(tod.full_seconds() * 1000);
+    // time of day in 250 nanoseconds
+    auto nfrac = tod.full_seconds() * 1000.0 - static_cast<double>(msec);
+    nfrac *= 1000.0 * 4.0;
+
+    mrt.gnss_TimeID.gnss_id = GNSS_ID__gnss_id_gps;
+    // only take the first 3600 * 1000 milliseconds of the day
+    mrt.gnss_TOD_msec = msec % (3600 * 1000);
+    mrt.gnss_TOD_frac = newLong((long)nfrac);
+
+    auto bitmask = BitString::allocate(6, &location_information->agnss_List.gnss_ids);
+    bitmask->set_bit(0);  // GPS
+
+    return location_information;
+}
+
+static A_GNSS_ProvideLocationInformation*
+lpp_PLI_A_GNSS_ProvideLocationInformation(const LocationInformation& location,
+                                          bool                       has_information) {
+    if (!has_information) return nullptr;
+
+    auto provide_location_information = ALLOC_ZERO(A_GNSS_ProvideLocationInformation);
+    provide_location_information->gnss_LocationInformation = lpp_LocationInformation(location);
+
+    return provide_location_information;
+}
+
 LPP_Message* lpp_PLI_location_estimate(LPP_Transaction* transaction, LocationInformation* li,
                                        bool has_information) {
     //
@@ -319,6 +358,8 @@ LPP_Message* lpp_PLI_location_estimate(LPP_Transaction* transaction, LocationInf
 
     auto CIE_PLI = lpp_PLI_CommonIEsProvideLocationInformation(*li, has_information);
     PLI->commonIEsProvideLocationInformation = CIE_PLI;
+    PLI->a_gnss_ProvideLocationInformation =
+        lpp_PLI_A_GNSS_ProvideLocationInformation(*li, has_information);
 
     return lpp;
 }

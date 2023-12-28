@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <receiver/ublox/message.hpp>
+#include <utility/time.h>
 
 namespace receiver {
 namespace ublox {
@@ -104,6 +105,14 @@ public:
     UBLOX_NODISCARD uint8_t num_sv() const UBLOX_NOEXCEPT;
     /// Position dilution of precision.
     UBLOX_NODISCARD double p_dop() const UBLOX_NOEXCEPT;
+
+    /// UTC timestamp of the navigation epoch. (as a UNIX timestamp)
+    UBLOX_NODISCARD time_t timestamp() const UBLOX_NOEXCEPT;
+    /// TAI timestamp of the navigation epoch.
+    UBLOX_NODISCARD TAI_Time tai_time() const UBLOX_NOEXCEPT;
+
+    /// UTC timestamp is valid.
+    UBLOX_NODISCARD bool valid_time() const UBLOX_NOEXCEPT;
 
     void print() const UBLOX_NOEXCEPT override;
 

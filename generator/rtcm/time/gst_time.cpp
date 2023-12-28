@@ -1,6 +1,7 @@
 #include "gst_time.hpp"
 #include "utc_time.hpp"
 
+namespace ts {
 static TsInt leap_seconds_utc_gst() {
     // NOTE(ewasjon): The leapseconds difference between UTC and GST is 13 (because of the begining)
     // and the difference between in leapseconds sinec the start (which is 5 as of 2022:09:22). Or
@@ -82,3 +83,4 @@ GST_Time GST_Time::now() {
 Timestamp GST_Time::utc_timestamp() const {
     return gst_2_utc(tm);
 }
+}  // namespace ts

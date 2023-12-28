@@ -232,6 +232,34 @@ args::Group stdout_output{
 args::Flag stdout_output_flag{stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
 
 //
+// Output
+//
+
+args::Group location_infomation{
+    "Location Infomation:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Flag li_enable{
+    location_infomation, "location-info",       "Location Information",
+    {"location-info"},   args::Options::Single,
+};
+args::Flag li_force{
+    location_infomation,
+    "force-location-info",
+    "Force Location Information (always send even if not requested)",
+    {"force-location-info"},
+    args::Options::Single,
+};
+args::ValueFlag<double> li_latitude{
+    location_infomation, "latitude", "Latitude", {"latitude"}, args::Options::Single};
+args::ValueFlag<double> li_longitude{
+    location_infomation, "longitude", "Longitude", {"longitude"}, args::Options::Single};
+args::ValueFlag<double> li_altitude{
+    location_infomation, "altitude", "Altitude", {"altitude"}, args::Options::Single};
+
+//
 // Options
 //
 
@@ -554,6 +582,36 @@ static UbloxOptions ublox_parse_options() {
     }
 }
 
+static LocationInformationOptions parse_location_information_options() {
+    LocationInformationOptions location_information{};
+    location_information.latitude  = 69.0599730655754;
+    location_information.longitude = 20.54864403253676;
+    location_information.altitude  = 0;
+    location_information.force    = false;
+
+    if (li_enable) {
+        location_information.enabled = true;
+
+        if (li_force) {
+            location_information.force = true;
+        }
+
+        if (li_latitude) {
+            location_information.latitude = li_latitude.Get();
+        }
+
+        if (li_longitude) {
+            location_information.longitude = li_longitude.Get();
+        }
+
+        if (li_altitude) {
+            location_information.altitude = li_altitude.Get();
+        }
+    }
+
+    return location_information;
+}
+
 //
 // Option Parser
 //
@@ -590,21 +648,22 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     std::vector<std::unique_ptr<args::Command>> args_commands;
     for (auto& command : mCommands) {
         auto command_ptr = command.get();
-        args_commands.emplace_back(
-            new args::Command(commands, command->name(), command->description(),
-                              [command_ptr](args::Subparser& parser) {
-                                  command_ptr->parse(parser);
-                                  parser.Parse();
+        args_commands.emplace_back(new args::Command(
+            commands, command->name(), command->description(),
+            [command_ptr](args::Subparser& parser) {
+                command_ptr->parse(parser);
+                parser.Parse();
 
-                                  Options options{};
-                                  options.location_server_options = parse_location_server_options();
-                                  options.identity_options        = parse_identity_options();
-                                  options.cell_options            = parse_cell_options();
-                                  options.modem_options           = parse_modem_options();
-                                  options.output_options          = parse_output_options();
-                                  options.ublox_options           = ublox_parse_options();
-                                  command_ptr->execute(std::move(options));
-                              }));
+                Options options{};
+                options.location_server_options      = parse_location_server_options();
+                options.identity_options             = parse_identity_options();
+                options.cell_options                 = parse_cell_options();
+                options.modem_options                = parse_modem_options();
+                options.output_options               = parse_output_options();
+                options.ublox_options                = ublox_parse_options();
+                options.location_information_options = parse_location_information_options();
+                command_ptr->execute(std::move(options));
+            }));
     }
 
     // Defaults
@@ -652,6 +711,10 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
         "even",
     });
 
+    li_latitude.HelpDefault("69.0599730655754");
+    li_longitude.HelpDefault("20.54864403253676");
+    li_altitude.HelpDefault("0");
+
     // Globals
     args::GlobalOptions location_server_globals{parser, location_server};
     args::GlobalOptions identity_globals{parser, identity};
@@ -659,6 +722,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     args::GlobalOptions modem_globals{parser, modem};
     args::GlobalOptions ublox_receiver_globals{parser, ublox_receiver_group};
     args::GlobalOptions output_globals{parser, output};
+    args::GlobalOptions location_information_globals{parser, location_infomation};
 
     // Parse
     try {

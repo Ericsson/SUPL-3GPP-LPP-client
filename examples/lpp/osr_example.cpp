@@ -26,12 +26,13 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     gOptions = std::move(options);
     gFormat  = format;
 
-    auto& cell_options            = gOptions.cell_options;
-    auto& location_server_options = gOptions.location_server_options;
-    auto& identity_options        = gOptions.identity_options;
-    auto& modem_options           = gOptions.modem_options;
-    auto& output_options          = gOptions.output_options;
-    auto& ublox_options           = gOptions.ublox_options;
+    auto& cell_options                 = gOptions.cell_options;
+    auto& location_server_options      = gOptions.location_server_options;
+    auto& identity_options             = gOptions.identity_options;
+    auto& modem_options                = gOptions.modem_options;
+    auto& output_options               = gOptions.output_options;
+    auto& ublox_options                = gOptions.ublox_options;
+    auto& location_information_options = gOptions.location_information_options;
 
     gCell = CellID{
         .mcc  = cell_options.mcc,
@@ -133,8 +134,25 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         throw std::runtime_error("No identity provided");
     }
 
-    client.provide_location_information_callback(gUbloxReceiver.get(),
-                                                 provide_location_information_callback_ublox);
+    if (gUbloxReceiver.get()) {
+        client.provide_location_information_callback(gUbloxReceiver.get(),
+                                                     provide_location_information_callback_ublox);
+    } else if (location_information_options.enabled) {
+        printf("[simulating location information]\n");
+        client.provide_location_information_callback(&location_information_options,
+                                                     provide_location_information_callback_fake);
+
+        if (location_information_options.force) {
+            client.force_location_information();
+            printf("  force: true\n");
+        } else {
+            printf("  force: false\n");
+        }
+    } else {
+        client.provide_location_information_callback(gUbloxReceiver.get(),
+                                                     provide_location_information_callback);
+    }
+
     client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
 
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
@@ -171,6 +189,8 @@ static void transmit(const void* buffer, size_t size) {
 }
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
+    //
+
     if (gFormat == osr_example::Format::RTCM) {
         auto messages = gGenerator->generate(message, gFilter);
 

@@ -26,13 +26,17 @@ args::ValueFlag<std::string> ntrip_username{
 args::ValueFlag<std::string> ntrip_password{
     ntrip, "password", "Password", {"password"}, args::Options::Single};
 
+args::ValueFlag<std::string> nmea_string{
+    ntrip, "nmea_string", "NMEA String", {"nmea"}, args::Options::Single};
+
 HostOptions parse_host_options() {
     if (!ntrip_hostname) {
         throw args::RequiredError("ntrip_hostname");
     }
 
-    if (!ntrip_mountpoint) {
-        throw args::RequiredError("ntrip_mountpoint");
+    std::unique_ptr<std::string> mountpoint;
+    if (ntrip_mountpoint) {
+        mountpoint = std::unique_ptr<std::string>(new std::string(ntrip_mountpoint.Get()));
     }
 
     uint16_t port = 2101;
@@ -54,12 +58,18 @@ HostOptions parse_host_options() {
         password = ntrip_password.Get();
     }
 
+    std::string nmea;
+    if (nmea_string) {
+        nmea = nmea_string.Get();
+    }
+
     return HostOptions{
         .hostname   = ntrip_hostname.Get(),
         .port       = port,
-        .mountpoint = ntrip_mountpoint.Get(),
+        .mountpoint = std::move(mountpoint),
         .username   = username,
         .password   = password,
+        .nmea       = nmea,
     };
 }
 

@@ -5,13 +5,14 @@
 #include <receiver/ublox/threaded_receiver.hpp>
 #include <receiver/ublox/ubx_nav_pvt.hpp>
 #include "lpp/location_information.h"
+#include "options.hpp"
 #include "utility/types.h"
 
 bool provide_location_information_callback(UNUSED LocationInformation& location,
                                            UNUSED HaGnssMetrics& metrics, UNUSED void* userdata) {
 #if 0
     // Example implementation
-    location.time      = time(NULL);
+    location.tai_time      = TAI_Time::now();
     location.latitude  = 20;
     location.longitude = 25;
     location.altitude = 30;
@@ -36,15 +37,17 @@ bool provide_location_information_callback(UNUSED LocationInformation& location,
 }
 
 bool provide_location_information_callback_ublox(UNUSED LocationInformation& location,
-                                                 UNUSED HaGnssMetrics&       metrics,
-                                                 UNUSED void*                userdata) {
+                                                 UNUSED HaGnssMetrics& metrics, void* userdata) {
     auto receiver = reinterpret_cast<receiver::ublox::ThreadedReceiver*>(userdata);
     if (!receiver) return false;
 
     auto nav_pvt = receiver->nav_pvt();
-    if(!nav_pvt) return false;
+    if (!nav_pvt) return false;
 
-    location.time                      = time(NULL);  // TODO(ewasjon): use time from nav_pvt
+    // TODO(ewasjon): Should we use the system time if the UTC time from u-blox is invalid?
+    if (!nav_pvt->valid_time()) return false;
+
+    location.tai_time                  = nav_pvt->tai_time();
     location.latitude                  = nav_pvt->latitude();
     location.longitude                 = nav_pvt->longitude();
     location.altitude                  = nav_pvt->altitude();
@@ -77,6 +80,19 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
     metrics.age  = 0;  // TODO(ewasjon): requires another message
     metrics.hdop = 0;
     metrics.pdop = nav_pvt->p_dop();
+    return true;
+}
+
+bool provide_location_information_callback_fake(UNUSED LocationInformation& location,
+                                                UNUSED HaGnssMetrics& metrics, void* userdata) {
+    auto options = reinterpret_cast<LocationInformationOptions*>(userdata);
+    if (!options) return false;
+
+    location.tai_time  = TAI_Time::now();
+    location.latitude  = options->latitude;
+    location.longitude = options->longitude;
+    location.altitude  = options->altitude;
+
     return true;
 }
 

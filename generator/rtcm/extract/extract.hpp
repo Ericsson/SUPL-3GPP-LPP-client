@@ -62,7 +62,7 @@ static GenericGnssId gnss_id(const GNSS_SystemTime& src_time) {
     return GenericGnssId::GPS;
 }
 
-static TAI_Time epoch_time(const GNSS_SystemTime& src_time) {
+static ts::TAI_Time epoch_time(const GNSS_SystemTime& src_time) {
     auto day_number           = decode::day_number(src_time);
     auto time_of_day_seconds  = decode::time_of_day(src_time);
     auto time_of_day_fraction = decode::time_of_day_fraction(src_time);
@@ -73,12 +73,12 @@ static TAI_Time epoch_time(const GNSS_SystemTime& src_time) {
 
     auto gnss = decode::gnss_id(src_time);
     switch (gnss) {
-    case GenericGnssId::GPS: return TAI_Time(GPS_Time(day_number, time_of_day));
-    case GenericGnssId::GLONASS: return TAI_Time(GLO_Time(day_number, time_of_day));
-    case GenericGnssId::GALILEO: return TAI_Time(GST_Time(day_number, time_of_day));
-    case GenericGnssId::BEIDOU: return TAI_Time(BDT_Time(day_number, time_of_day));
+    case GenericGnssId::GPS: return ts::TAI_Time(ts::GPS_Time(day_number, time_of_day));
+    case GenericGnssId::GLONASS: return ts::TAI_Time(ts::GLO_Time(day_number, time_of_day));
+    case GenericGnssId::GALILEO: return ts::TAI_Time(ts::GST_Time(day_number, time_of_day));
+    case GenericGnssId::BEIDOU: return ts::TAI_Time(ts::BDT_Time(day_number, time_of_day));
     }
 
-    return TAI_Time::now();
+    return ts::TAI_Time::now();
 }
 }  // namespace decode

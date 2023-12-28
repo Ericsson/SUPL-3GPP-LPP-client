@@ -40,12 +40,13 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     gAverageZenithDelay   = average_zenith_delay;
     gEnableIodeShift      = enable_iode_shift;
 
-    auto& cell_options            = gOptions.cell_options;
-    auto& location_server_options = gOptions.location_server_options;
-    auto& identity_options        = gOptions.identity_options;
-    auto& modem_options           = gOptions.modem_options;
-    auto& output_options          = gOptions.output_options;
-    auto& ublox_options           = gOptions.ublox_options;
+    auto& cell_options                 = gOptions.cell_options;
+    auto& location_server_options      = gOptions.location_server_options;
+    auto& identity_options             = gOptions.identity_options;
+    auto& modem_options                = gOptions.modem_options;
+    auto& output_options               = gOptions.output_options;
+    auto& ublox_options                = gOptions.ublox_options;
+    auto& location_information_options = gOptions.location_information_options;
 
     gCell = CellID{
         .mcc  = cell_options.mcc,
@@ -118,8 +119,17 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         throw std::runtime_error("No identity provided");
     }
 
-    client.provide_location_information_callback(gUbloxReceiver.get(),
-                                                 provide_location_information_callback_ublox);
+    if (gUbloxReceiver.get()) {
+        client.provide_location_information_callback(gUbloxReceiver.get(),
+                                                     provide_location_information_callback_ublox);
+    } else if (location_information_options.enabled) {
+        client.provide_location_information_callback(&location_information_options,
+                                                     provide_location_information_callback_fake);
+    } else {
+        client.provide_location_information_callback(gUbloxReceiver.get(),
+                                                     provide_location_information_callback);
+    }
+
     client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
 
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
@@ -168,6 +178,10 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
         auto messages = gSpartnGeneratorNew.generate(message);
         for (auto& msg : messages) {
             auto data = msg.build();
+            if (data.size() == 0) {
+                printf("Size of SPARTN payload is above the 1024 byte limit\n");
+                continue;
+            }
 
             for (auto& interface : gOptions.output_options.interfaces) {
                 interface->write(data.data(), data.size());

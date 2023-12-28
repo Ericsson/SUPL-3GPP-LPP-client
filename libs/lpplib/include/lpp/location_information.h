@@ -1,12 +1,13 @@
 #pragma once
 #include <ctime>
 #include <lpp/cell_id.h>
+#include <utility/time.h>
 
 enum class VerticalDirection { UP, DOWN };
 
 struct LocationInformation {
-    // Time of the location estimate in UTC.
-    time_t time;
+    // Time of the location estimate in TAI.
+    TAI_Time tai_time;
 
     // Latitude represented as a decimal degree value in the interval [-90,90] with positive values
     // north of the equator. E.g u-blox F9P UBX-NAV-PVT attribute lat.

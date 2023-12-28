@@ -63,7 +63,9 @@ Message::Message(uint8_t message_type, uint8_t message_subtype, uint32_t message
       mPayload(std::move(payload)) {}
 
 std::vector<uint8_t> Message::build() {
-    assert(mPayload.size() <= 1023);
+    if(mPayload.size() > 1023) {
+        return {};
+    }
 
     TransportBuilder builder{};
     builder.tf001();

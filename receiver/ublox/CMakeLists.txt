@@ -19,6 +19,7 @@ add_library(receiver::ublox ALIAS receiver_ublox)
 target_include_directories(receiver_ublox PRIVATE "./" "include/receiver/ublox/")
 target_include_directories(receiver_ublox PUBLIC "include/")
 target_link_libraries(receiver_ublox PRIVATE dependency::interface)
+target_link_libraries(receiver_ublox PRIVATE utility)
 
 if (USE_ASAN)
 target_compile_options(receiver_ublox PRIVATE -fsanitize=address,undefined,leak)

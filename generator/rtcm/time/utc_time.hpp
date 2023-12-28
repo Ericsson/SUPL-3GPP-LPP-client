@@ -1,7 +1,9 @@
 #pragma once
-#include <string>
 #include "timestamp.hpp"
 
+#include <string>
+
+namespace ts {
 class TAI_Time;
 class GPS_Time;
 class GLO_Time;
@@ -30,3 +32,4 @@ public:
 private:
     Timestamp tm;
 };
+}  // namespace ts

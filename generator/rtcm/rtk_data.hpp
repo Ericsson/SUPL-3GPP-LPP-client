@@ -75,7 +75,7 @@ struct Satellite {
 };
 
 struct Observations {
-    TAI_Time               time;
+    ts::TAI_Time           time;
     std::vector<Signal>    signals;
     std::vector<Satellite> satellites;
 
@@ -102,7 +102,7 @@ struct Residuals {
         double      s_ld;
     };
 
-    TAI_Time               time;
+    ts::TAI_Time           time;
     uint32_t               reference_station_id;
     uint32_t               n_refs;
     std::vector<Satellite> satellites;

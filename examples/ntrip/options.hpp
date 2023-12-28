@@ -12,13 +12,16 @@ struct HostOptions {
     uint16_t port;
 
     /// Mountpoint to connect to.
-    std::string mountpoint;
+    std::unique_ptr<std::string> mountpoint;
 
     /// Username to connect with.
     std::string username;
 
     /// Password to connect with.
     std::string password;
+
+    /// Nmea String
+    std::string nmea;
 };
 
 /// Output options.
