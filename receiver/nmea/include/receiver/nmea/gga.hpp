@@ -8,7 +8,7 @@
 namespace receiver {
 namespace nmea {
 
-enum class GpggaFixQuality {
+enum class GgaFixQuality {
     Invalid       = 0,
     GpsFix        = 1,
     DgpsFix       = 2,
@@ -18,9 +18,9 @@ enum class GpggaFixQuality {
     DeadReckoning = 6,
 };
 
-class GpggaMessage final : public Message {
+class GgaMessage final : public Message {
 public:
-    ~GpggaMessage() override = default;
+    ~GgaMessage() override = default;
 
     void print() const NMEA_NOEXCEPT override;
 
@@ -34,21 +34,22 @@ public:
     NMEA_NODISCARD double longitude() const NMEA_NOEXCEPT { return mLongitude; }
 
     /// Get the fix quality.
-    NMEA_NODISCARD GpggaFixQuality fix_quality() const NMEA_NOEXCEPT { return mFixQuality; }
+    NMEA_NODISCARD GgaFixQuality fix_quality() const NMEA_NOEXCEPT { return mFixQuality; }
 
     /// Get the number of satellites in view.
     NMEA_NODISCARD int satellites_in_view() const NMEA_NOEXCEPT { return mSatellitesInView; }
 
-    NMEA_NODISCARD static std::unique_ptr<GpggaMessage> parse(const std::string& payload);
+    NMEA_NODISCARD static std::unique_ptr<GgaMessage> parse(std::string        prefix,
+                                                            const std::string& payload);
 
 private:
-    NMEA_EXPLICIT GpggaMessage() NMEA_NOEXCEPT;
+    NMEA_EXPLICIT GgaMessage(std::string prefix) NMEA_NOEXCEPT;
 
-    TAI_Time        mTimeOfDay;
-    double          mLatitude;
-    double          mLongitude;
-    GpggaFixQuality mFixQuality;
-    int             mSatellitesInView;
+    TAI_Time      mTimeOfDay;
+    double        mLatitude;
+    double        mLongitude;
+    GgaFixQuality mFixQuality;
+    int           mSatellitesInView;
 };
 
 }  // namespace nmea

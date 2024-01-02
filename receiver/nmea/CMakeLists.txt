@@ -4,7 +4,8 @@ add_library(receiver_nmea STATIC
     "parser.cpp"
     "receiver.cpp"
     "threaded_receiver.cpp"
-    "gpgga.cpp"
+    "gga.cpp"
+    "vtg.cpp"
 )
 add_library(receiver::nmea ALIAS receiver_nmea)
 
@@ -44,4 +45,8 @@ endif()
 
 if(${RECEIVER_NMEA_THREADED})
     target_compile_definitions(receiver_nmea PUBLIC RECEIVER_NMEA_THREADED=1)
+endif()
+
+if(${RECEIVER_NMEA_DEBUG})
+    target_compile_definitions(receiver_nmea PUBLIC RECEIVER_NMEA_DEBUG=1)
 endif()

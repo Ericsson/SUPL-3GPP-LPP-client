@@ -1,6 +1,7 @@
 #include "parser.hpp"
-#include "gpgga.hpp"
+#include "gga.hpp"
 #include "message.hpp"
+#include "vtg.hpp"
 
 #include <cstdio>
 
@@ -87,12 +88,38 @@ std::unique_ptr<Message> Parser::try_parse() NMEA_NOEXCEPT {
     copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length + 2);
     skip(length + 2);
 
+    // check checksum
+    auto result = checksum(payload);
+    if (result != ChecksumResult::OK) {
+        // checksum failed
+        return nullptr;
+    }
+
+    auto length_with_clrf = length + 2;
+    auto prefix = parse_prefix(reinterpret_cast<const uint8_t*>(payload.data()), length_with_clrf);
+    if (prefix.empty()) {
+        // invalid prefix
+        return nullptr;
+    }
+
+    // '$XXXXX,' [data] '*XY\r\n'
+    auto data_start = prefix.size() + 1;
+    auto data_end   = length_with_clrf - 5;
+    if (data_start >= data_end) {
+        // no data
+        return nullptr;
+    }
+
+    auto data_length  = data_end - data_start;
+    auto data_payload = payload.substr(data_start, data_length);
+
     // parse message
-    auto prefix = parse_prefix(reinterpret_cast<const uint8_t*>(payload.data()), length);
-    if (prefix == "$GPGGA") {
-        return GpggaMessage::parse(payload);
+    if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {
+        return GgaMessage::parse(prefix, data_payload);
+    } else if (prefix == "GPVTG" || prefix == "GLVTG" || prefix == "GAVTG" || prefix == "GNVTG") {
+        return VtgMessage::parse(prefix, data_payload);
     } else {
-        return std::unique_ptr<UnsupportedMessage>(new UnsupportedMessage(prefix, payload));
+        return std::unique_ptr<UnsupportedMessage>(new UnsupportedMessage(prefix, data_payload));
     }
 }
 
@@ -137,18 +164,31 @@ void Parser::copy_to_buffer(uint8_t* data, uint32_t length) NMEA_NOEXCEPT {
     }
 }
 
-uint16_t Parser::checksum_message(const uint8_t* message_data, uint16_t message_length) {
-    return checksum(message_data + 2, message_length - 4);
-}
-
-uint16_t Parser::checksum(const uint8_t* payload, uint16_t length) {
-    uint8_t CK_A = 0, CK_B = 0;
-    for (uint16_t I = 0; I < length; I++) {
-        CK_A = CK_A + payload[I];
-        CK_B = CK_B + CK_A;
+ChecksumResult Parser::checksum(const std::string& buffer) {
+    auto nmea_end = buffer.find_last_of('*');
+    if (nmea_end == std::string::npos) {
+        return ChecksumResult::INVALID_STRING_NOSTAR;
     }
 
-    return (static_cast<uint16_t>(CK_B) << 8U) | static_cast<uint16_t>(CK_A);
+    if (nmea_end + 3 /* *XY */ + 2 /* \r\n */ != buffer.size()) {
+        return ChecksumResult::INVALID_STRING_LENGTH;
+    }
+
+    auto nmea_string = buffer.substr(1, nmea_end - 1);
+
+    auto expected_checksum_hex = buffer.substr(nmea_end + 1, nmea_end + 3);
+    auto expected_checksum     = std::stoull(std::string{expected_checksum_hex}, nullptr, 16);
+
+    auto calculated_checksum = 0ULL;
+    for (auto nmea_char : nmea_string) {
+        calculated_checksum = calculated_checksum ^ static_cast<unsigned long>(nmea_char);
+    }
+
+    if (expected_checksum == calculated_checksum) {
+        return ChecksumResult::OK;
+    } else {
+        return ChecksumResult::INVALID_VALUE;
+    }
 }
 
 std::string Parser::parse_prefix(const uint8_t* data, uint32_t length) const NMEA_NOEXCEPT {
@@ -163,7 +203,12 @@ std::string Parser::parse_prefix(const uint8_t* data, uint32_t length) const NME
         prefix += c;
     }
 
-    return prefix;
+    if (prefix.size() != 6) {
+        return "";
+    }
+
+    // remove $
+    return prefix.substr(1);
 }
 
 }  // namespace nmea

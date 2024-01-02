@@ -5,6 +5,13 @@
 namespace receiver {
 namespace nmea {
 
+enum class ChecksumResult {
+    OK = 0,
+    INVALID_STRING_NOSTAR,
+    INVALID_STRING_LENGTH,
+    INVALID_VALUE,
+};
+
 class Message;
 class Parser {
 public:
@@ -18,9 +25,7 @@ public:
     NMEA_NODISCARD uint32_t                 buffer_length() const NMEA_NOEXCEPT;
     NMEA_NODISCARD uint32_t                 available_space() const NMEA_NOEXCEPT;
 
-    NMEA_NODISCARD static uint16_t checksum_message(const uint8_t* message_data,
-                                                    uint16_t       message_length);
-    NMEA_NODISCARD static uint16_t checksum(const uint8_t* payload, uint16_t length);
+    NMEA_NODISCARD static ChecksumResult checksum(const std::string& buffer);
 
 protected:
     NMEA_NODISCARD uint8_t peek(uint32_t index) const NMEA_NOEXCEPT;

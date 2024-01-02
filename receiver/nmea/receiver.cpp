@@ -54,7 +54,7 @@ std::unique_ptr<Message> NmeaReceiver::wait_for_message() {
         }
 
         mInterface->wait_for_read();
-        if (!mInterface->is_open()) {
+        if (!mInterface->is_open() && mParser->buffer_length() == 0) {
             return nullptr;
         }
     }

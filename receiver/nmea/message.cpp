@@ -16,7 +16,7 @@ UnsupportedMessage::UnsupportedMessage(std::string prefix, std::string payload) 
       mPayload(payload) {}
 
 void UnsupportedMessage::print() const NMEA_NOEXCEPT {
-    printf("[%6s] %s\n", prefix().c_str(), payload().c_str());
+    printf("[%5s] %s\n", prefix().c_str(), payload().c_str());
 }
 
 }  // namespace nmea
