@@ -107,6 +107,9 @@ public:
 
     /// Create a stdout interface.
     static Interface* stdout();
+
+    /// Create a stdin interface.
+    static Interface* stdin();
 };
 
 }  // namespace interface

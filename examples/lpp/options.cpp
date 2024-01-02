@@ -157,6 +157,36 @@ args::ValueFlag<int> ublox_udp_port{
     ublox_udp_device, "port", "Port", {"ublox-udp-port"}, args::Options::Single};
 
 //
+// NMEA
+//
+
+args::Group nmea_receiver_group{
+    "NMEA Receiver:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Group nmea_serial_group{
+    nmea_receiver_group,
+    "Serial:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+args::ValueFlag<std::string> nmea_serial_device{
+    nmea_receiver_group, "device", "Device", {"nmea-serial"}, args::Options::Single};
+args::ValueFlag<int> nmea_serial_baud_rate{
+    nmea_receiver_group, "baud_rate", "Baud Rate", {"nmea-serial-baud"}, args::Options::Single};
+args::ValueFlag<int> nmea_serial_data_bits{
+    nmea_receiver_group, "data_bits", "Data Bits", {"nmea-serial-data"}, args::Options::Single};
+args::ValueFlag<int> nmea_serial_stop_bits{
+    nmea_receiver_group, "stop_bits", "Stop Bits", {"nmea-serial-stop"}, args::Options::Single};
+args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
+                                                     "parity_bits",
+                                                     "Parity Bits",
+                                                     {"nmea-serial-parity"},
+                                                     args::Options::Single};
+
+//
 // Output
 //
 
@@ -582,12 +612,64 @@ static UbloxOptions ublox_parse_options() {
     }
 }
 
+static NmeaOptions nmea_parse_options() {
+    if (nmea_serial_device) {
+        uint32_t baud_rate = 115200;
+        if (nmea_serial_baud_rate) {
+            if (nmea_serial_baud_rate.Get() < 0) {
+                throw args::ValidationError("nmea-serial-baud-rate must be positive");
+            }
+
+            baud_rate = static_cast<uint32_t>(nmea_serial_baud_rate.Get());
+        }
+
+        auto data_bits = DataBits::EIGHT;
+        if (nmea_serial_data_bits) {
+            switch (nmea_serial_data_bits.Get()) {
+            case 5: data_bits = DataBits::FIVE; break;
+            case 6: data_bits = DataBits::SIX; break;
+            case 7: data_bits = DataBits::SEVEN; break;
+            case 8: data_bits = DataBits::EIGHT; break;
+            default: throw args::ValidationError("Invalid data bits");
+            }
+        }
+
+        auto stop_bits = StopBits::ONE;
+        if (nmea_serial_stop_bits) {
+            switch (nmea_serial_stop_bits.Get()) {
+            case 1: stop_bits = StopBits::ONE; break;
+            case 2: stop_bits = StopBits::TWO; break;
+            default: throw args::ValidationError("Invalid stop bits");
+            }
+        }
+
+        auto parity_bit = ParityBit::NONE;
+        if (nmea_serial_parity_bits) {
+            if (nmea_serial_parity_bits.Get() == "none") {
+                parity_bit = ParityBit::NONE;
+            } else if (nmea_serial_parity_bits.Get() == "odd") {
+                parity_bit = ParityBit::ODD;
+            } else if (nmea_serial_parity_bits.Get() == "even") {
+                parity_bit = ParityBit::EVEN;
+            } else {
+                throw args::ValidationError("Invalid parity bits");
+            }
+        }
+
+        auto interface = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
+                                                      data_bits, stop_bits, parity_bit);
+        return NmeaOptions{std::unique_ptr<Interface>(interface)};
+    } else {
+        return NmeaOptions{};
+    }
+}
+
 static LocationInformationOptions parse_location_information_options() {
     LocationInformationOptions location_information{};
     location_information.latitude  = 69.0599730655754;
     location_information.longitude = 20.54864403253676;
     location_information.altitude  = 0;
-    location_information.force    = false;
+    location_information.force     = false;
 
     if (li_enable) {
         location_information.enabled = true;
@@ -661,6 +743,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 options.modem_options                = parse_modem_options();
                 options.output_options               = parse_output_options();
                 options.ublox_options                = ublox_parse_options();
+                options.nmea_options                 = nmea_parse_options();
                 options.location_information_options = parse_location_information_options();
                 command_ptr->execute(std::move(options));
             }));
@@ -669,13 +752,10 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     // Defaults
     ublox_i2c_address.HelpDefault("66");
     ublox_serial_baud_rate.HelpDefault("115200");
-
     ublox_serial_data_bits.HelpDefault("8");
     ublox_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-
     ublox_serial_stop_bits.HelpDefault("1");
     ublox_serial_stop_bits.HelpChoices({"1", "2"});
-
     ublox_serial_parity_bits.HelpDefault("none");
     ublox_serial_parity_bits.HelpChoices({
         "none",
@@ -689,6 +769,18 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
         "uart2",
         "i2c",
         "usb",
+    });
+
+    nmea_serial_baud_rate.HelpDefault("115200");
+    nmea_serial_data_bits.HelpDefault("8");
+    nmea_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
+    nmea_serial_stop_bits.HelpDefault("1");
+    nmea_serial_stop_bits.HelpChoices({"1", "2"});
+    nmea_serial_parity_bits.HelpDefault("none");
+    nmea_serial_parity_bits.HelpChoices({
+        "none",
+        "odd",
+        "even",
     });
 
     location_server_port.HelpDefault("5431");
@@ -721,6 +813,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     args::GlobalOptions cell_information_globals{parser, cell_information};
     args::GlobalOptions modem_globals{parser, modem};
     args::GlobalOptions ublox_receiver_globals{parser, ublox_receiver_group};
+    args::GlobalOptions nmea_receiver_globals{parser, nmea_receiver_group};
     args::GlobalOptions output_globals{parser, output};
     args::GlobalOptions location_information_globals{parser, location_infomation};
 

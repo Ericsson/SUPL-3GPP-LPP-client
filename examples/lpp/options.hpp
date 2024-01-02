@@ -62,6 +62,12 @@ struct UbloxOptions {
     std::unique_ptr<interface::Interface> interface;
 };
 
+/// Nmea options.
+struct NmeaOptions {
+    /// Interface to use for communication with the receiver.
+    std::unique_ptr<interface::Interface> interface;
+};
+
 /// Location information options.
 struct LocationInformationOptions {
     /// Enable fake location information.
@@ -84,6 +90,7 @@ struct Options {
     ModemOptions               modem_options;
     OutputOptions              output_options;
     UbloxOptions               ublox_options;
+    NmeaOptions                nmea_options;
     LocationInformationOptions location_information_options;
 };
 

@@ -18,6 +18,7 @@ target_link_libraries(example_lpp PRIVATE generator::spartn)
 target_link_libraries(example_lpp PRIVATE generator::spartn2)
 target_link_libraries(example_lpp PRIVATE dependency::interface)
 target_link_libraries(example_lpp PRIVATE receiver::ublox)
+target_link_libraries(example_lpp PRIVATE receiver::nmea)
 target_link_libraries(example_lpp PRIVATE asn1::generated asn1::helper)
 
 set_target_properties(example_lpp PROPERTIES OUTPUT_NAME "example-lpp")

@@ -6,3 +6,4 @@ This folder contains the code for the interface library. The interface library i
 - TCP
 - UDP
 - Stdout (one-way communication)
+- Stdin (one-way communication)

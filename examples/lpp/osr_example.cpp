@@ -3,6 +3,7 @@
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
 #include <modem.h>
+#include <receiver/nmea/threaded_receiver.hpp>
 #include <receiver/ublox/threaded_receiver.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -10,6 +11,7 @@
 
 using RtcmGenerator = std::unique_ptr<generator::rtcm::Generator>;
 using UReceiver     = receiver::ublox::ThreadedReceiver;
+using NReceiver     = receiver::nmea::ThreadedReceiver;
 
 static CellID                         gCell;
 static osr_example::Format            gFormat;
@@ -19,6 +21,7 @@ static Options                        gOptions;
 
 static std::unique_ptr<Modem_AT>  gModem;
 static std::unique_ptr<UReceiver> gUbloxReceiver;
+static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
@@ -32,6 +35,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     auto& modem_options                = gOptions.modem_options;
     auto& output_options               = gOptions.output_options;
     auto& ublox_options                = gOptions.ublox_options;
+    auto& nmea_options                 = gOptions.nmea_options;
     auto& location_information_options = gOptions.location_information_options;
 
     gCell = CellID{
@@ -119,6 +123,16 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         gUbloxReceiver->start();
     }
 
+    if (nmea_options.interface) {
+        printf("[nmea]\n");
+        nmea_options.interface->open();
+        nmea_options.interface->print_info();
+
+        gNmeaReceiver =
+            std::unique_ptr<NReceiver>(new NReceiver(std::move(nmea_options.interface)));
+        gNmeaReceiver->start();
+    }
+
     // Create RTCM generator for converting LPP messages to RTCM messages.
     gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
 
@@ -137,6 +151,9 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     if (gUbloxReceiver.get()) {
         client.provide_location_information_callback(gUbloxReceiver.get(),
                                                      provide_location_information_callback_ublox);
+    } else if (gNmeaReceiver.get()) {
+        // TODO:
+
     } else if (location_information_options.enabled) {
         printf("[simulating location information]\n");
         client.provide_location_information_callback(&location_information_options,
