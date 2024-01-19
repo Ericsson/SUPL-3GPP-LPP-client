@@ -4,6 +4,183 @@
 #include <iostream>
 #include <sstream>
 
+static void BIT_STRING_initialize(BIT_STRING_s* bit_string, size_t bits) {
+    BIT_STRING_free(&asn_DEF_BIT_STRING, bit_string, ASFM_FREE_UNDERLYING_AND_RESET);
+
+    auto bytes       = (bits + 7) / 8;
+    auto total_bits  = bytes * 8;
+    auto unused_bits = total_bits - bits;
+    bit_string->size = bytes;
+    assert(unused_bits >= 0);
+    assert(unused_bits <= 7);
+    bit_string->bits_unused = unused_bits;
+    bit_string->buf         = reinterpret_cast<uint8_t*>(calloc(bit_string->size, sizeof(uint8_t)));
+}
+
+BIT_STRING_s* BitStringBuilder::to_bit_string(size_t bits) {
+    auto bit_string = asn1_allocate<BIT_STRING_s>();
+    return into_bit_string(bits, bit_string);
+}
+
+static const BIT_STRING_t* BIT_STRING__compactify(const BIT_STRING_t* st, BIT_STRING_t* tmp) {
+    const uint8_t* b;
+    union {
+        const uint8_t* c_buf;
+        uint8_t*       nc_buf;
+    } unconst;
+
+    if (st->size == 0) {
+        assert(st->bits_unused == 0);
+        return st;
+    } else {
+        for (b = &st->buf[st->size - 1]; b > st->buf && *b == 0; b--) {
+            ;
+        }
+        /* b points to the last byte which may contain data */
+        if (*b) {
+            int     unused = 7;
+            uint8_t v      = *b;
+            v &= -(int8_t)v;
+            if (v & 0x0F) unused -= 4;
+            if (v & 0x33) unused -= 2;
+            if (v & 0x55) unused -= 1;
+            tmp->size        = b - st->buf + 1;
+            tmp->bits_unused = unused;
+        } else {
+            tmp->size        = b - st->buf;
+            tmp->bits_unused = 0;
+        }
+
+        assert(b >= st->buf);
+    }
+
+    unconst.c_buf = st->buf;
+    tmp->buf      = unconst.nc_buf;
+    return tmp;
+}
+
+static int BIT_STRING_byte_index(const BIT_STRING_t* st, size_t bit_index) {
+    size_t byte_index = (st->bits_unused + bit_index) / 8;
+    if (byte_index >= st->size) {
+        return -1;
+    } else {
+        return st->size - 1 - byte_index;
+    }
+}
+
+static int BIT_STRING_bit_index(const BIT_STRING_t* st, size_t bit_index) {
+    size_t bit_offset = (st->bits_unused + bit_index) % 8;
+    if (bit_offset >= 8) {
+        return -1;
+    } else {
+        return bit_offset;
+    }
+}
+
+BIT_STRING_s* BitStringBuilder::into_bit_string(size_t bits, BIT_STRING_s* bit_string) {
+    BIT_STRING_initialize(bit_string, bits);
+
+    for (size_t i = 0; i < bits; i++) {
+        auto index = static_cast<size_t>(bit_string->bits_unused) + i;
+        auto byte_index = BIT_STRING_byte_index(bit_string, i);
+        if (mBits & (1 << i)) bit_string->buf[byte_index] |= 1 << ((index % 8));
+    }
+
+    printf("bits:  ");
+    for (auto i = (int)bits - 1; i >= 0; i--) {
+        if (mBits & (1 << i))
+            printf("1");
+        else
+            printf("0");
+    }
+    printf("\n");
+
+    printf("       ");
+    for (auto i = (int)bits - 1; i >= 0; i--) {
+        auto byte_index = BIT_STRING_byte_index(bit_string, i);
+        auto bit_index  = BIT_STRING_bit_index(bit_string, i);
+        if (byte_index < 0) {
+            printf(" ");
+        } else {
+            printf("%d", byte_index % 10);
+        }
+    }
+    printf("\n");
+    printf("       ");
+    for (auto i = (int)bits - 1; i >= 0; i--) {
+        auto bit_index = BIT_STRING_bit_index(bit_string, i);
+        if (bit_index < 0) {
+            printf(" ");
+        } else {
+            printf("%d", bit_index % 10);
+        }
+    }
+    printf("\n");
+    printf("bytes: ");
+    for (auto i = (int)bits - 1; i >= 0; i--) {
+        auto byte_index = BIT_STRING_byte_index(bit_string, i);
+        auto bit_index  = BIT_STRING_bit_index(bit_string, i);
+        if (byte_index < 0) {
+            printf(" ");
+        } else {
+            printf("%d", bit_string->buf[byte_index] & (1 << bit_index) ? 1 : 0);
+        }
+    }
+    printf("\n");
+
+    auto func = [](const void* buffer, size_t size, void* application_specific_key) {
+        auto& stream = *reinterpret_cast<std::stringstream*>(application_specific_key);
+        stream << std::string{reinterpret_cast<const char*>(buffer), size};
+        return static_cast<int>(size);
+    };
+
+    BIT_STRING_s tmp{};
+    BIT_STRING__compactify(bit_string, &tmp);
+    printf("       ");
+    for (auto i = (int)(tmp.size * 8 - tmp.bits_unused) - 1; i >= 0; i--) {
+        auto byte_index = BIT_STRING_byte_index(&tmp, i);
+        auto bit_index  = BIT_STRING_bit_index(&tmp, i);
+        if (byte_index < 0) {
+            printf(" ");
+        } else {
+            printf("%d", byte_index % 10);
+        }
+    }
+    printf("\n");
+    printf("       ");
+    for (auto i = (int)(tmp.size * 8 - tmp.bits_unused) - 1; i >= 0; i--) {
+        auto bit_index = BIT_STRING_bit_index(&tmp, i);
+        if (bit_index < 0) {
+            printf(" ");
+        } else {
+            printf("%d", bit_index % 10);
+        }
+    }
+    printf("\n");
+    printf("bytes: ");
+    for (auto i = (int)(tmp.size * 8 - tmp.bits_unused) - 1; i >= 0; i--) {
+        auto byte_index = BIT_STRING_byte_index(&tmp, i);
+        auto bit_index  = BIT_STRING_bit_index(&tmp, i);
+        if (byte_index < 0) {
+            printf(" ");
+        } else {
+            printf("%d", tmp.buf[byte_index] & (1 << bit_index) ? 1 : 0);
+        }
+    }
+    printf("\n");
+
+    std::stringstream stream;
+    stream << "before: ";
+    BIT_STRING_print(&asn_DEF_BIT_STRING, bit_string, 0, func, &stream);
+    stream << '\n';
+    stream << "after:  ";
+    BIT_STRING_print(&asn_DEF_BIT_STRING, &tmp, 0, func, &stream);
+    stream << '\n';
+    printf("%s", stream.str().c_str());
+
+    return bit_string;
+}
+
 BitString::BitString(size_t bits) {
     buf         = nullptr;
     size        = 0;
@@ -72,8 +249,7 @@ bool BitString::get_bit(ssize_t index) {
 void BitString::set_integer(size_t begin, size_t length, size_t value) {
     for (size_t i = 0; i < length; i++) {
         auto index = begin + i;
-        if (value & (1 << i))
-            set_bit(index);
+        if (value & (1 << i)) set_bit(index);
     }
 }
 
@@ -121,9 +297,8 @@ std::string BitString::as_string() {
     }
 
     for (size_t i = 0; i < size * 8 - bits_unused; i++) {
-        auto index = bit_index(i);
-        data[index.byte_index * 8 + index.local_bit] =
-            "0123456789ABCDEF"[i % 16];
+        auto index                                   = bit_index(i);
+        data[index.byte_index * 8 + index.local_bit] = "0123456789ABCDEF"[i % 16];
     }
 
     for (size_t i = 0; i < size; i++) {
@@ -135,10 +310,8 @@ std::string BitString::as_string() {
     }
     stream << '\n';
 
-    auto func = [](const void* buffer, size_t size,
-                   void* application_specific_key) {
-        auto& stream =
-            *reinterpret_cast<std::stringstream*>(application_specific_key);
+    auto func = [](const void* buffer, size_t size, void* application_specific_key) {
+        auto& stream = *reinterpret_cast<std::stringstream*>(application_specific_key);
         stream << std::string{reinterpret_cast<const char*>(buffer), size};
         return static_cast<int>(size);
     };
@@ -166,13 +339,21 @@ std::string BitString::as_string() {
 }
 
 void supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value) {
-    auto bit_string = BitString::allocate(16, tac); 
+    auto bit_string = BitString::allocate(16, tac);
     bit_string->set_integer(0, 16, tac_value);
 }
 
 void supl_fill_cell_identity(CellIdentity_t* identity, size_t value) {
-    auto bit_string = BitString::allocate(28, identity); 
-    bit_string->set_integer(0, 28, value);
+    // auto bit_string = BitString::allocate(28, identity);
+    // bit_string->set_integer(0, 28, value);
+    BitStringBuilder{}.set_int(0, 28, value).into_bit_string(28, identity);
+
+    //BitStringBuilder{}
+    //    .set(1)
+    //    .set(2)
+    //    .set(3)
+    //    .set(27)
+    //    .into_bit_string(28, identity);
 }
 
 MCC* supl_create_mcc(int mcc_value) {
@@ -241,14 +422,12 @@ ECGI* ecgi_create(long mcc, long mnc, long id) {
 }
 
 double long_pointer2scaled_double(long* ptr, double def, double arg) {
-    if (!ptr)
-        return def;
+    if (!ptr) return def;
     return *ptr / arg;
 }
 
 double long_pointer(long* ptr, long def) {
-    if (!ptr)
-        return def;
+    if (!ptr) return def;
     return *ptr;
 }
 
@@ -259,4 +438,3 @@ long gnss2long(GNSS_SignalID_t gnss_id) {
         return gnss_id.gnss_SignalID;
     }
 }
-

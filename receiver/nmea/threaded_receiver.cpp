@@ -62,10 +62,20 @@ void ThreadedReceiver::run() {
                 RNT_DEBUG("[rnt] process\n");
                 mReceiver->process();
 
-                RNT_DEBUG("[rnt] check\n");
-                auto message = mReceiver->try_parse();
-                if (message) {
-                    // TODO:
+                for (;;) {
+                    RNT_DEBUG("[rnt] check\n");
+                    auto message = mReceiver->try_parse();
+                    if (message) {
+                        if (dynamic_cast<GgaMessage*>(message.get())) {
+                            mGga = std::unique_ptr<GgaMessage>(
+                                static_cast<GgaMessage*>(message.release()));
+                        } else if (dynamic_cast<VtgMessage*>(message.get())) {
+                            mVtg = std::unique_ptr<VtgMessage>(
+                                static_cast<VtgMessage*>(message.release()));
+                        }
+                    } else {
+                        break;
+                    }
                 }
             }
             RNT_DEBUG("[rnt] unlock (run)\n");
@@ -88,6 +98,24 @@ interface::Interface* ThreadedReceiver::interface() NMEA_NOEXCEPT {
     auto                        interface = &mReceiver->interface();
     RNT_DEBUG("[rnt] unlock (interface)\n");
     return interface;
+}
+
+std::unique_ptr<GgaMessage> ThreadedReceiver::gga() NMEA_NOEXCEPT {
+    if (!mReceiver) return nullptr;
+    RNT_DEBUG("[rnt] lock (gga)\n");
+    std::lock_guard<std::mutex> lock(mMutex);
+    auto                        gga = std::move(mGga);
+    RNT_DEBUG("[rnt] unlock (gga)\n");
+    return gga;
+}
+
+std::unique_ptr<VtgMessage> ThreadedReceiver::vtg() NMEA_NOEXCEPT {
+    if (!mReceiver) return nullptr;
+    RNT_DEBUG("[rnt] lock (vtg)\n");
+    std::lock_guard<std::mutex> lock(mMutex);
+    auto                        vtg = std::move(mVtg);
+    RNT_DEBUG("[rnt] unlock (vtg)\n");
+    return vtg;
 }
 
 }  // namespace nmea

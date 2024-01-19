@@ -1,8 +1,7 @@
 #include <utility/time.h>
-
-#include <sys/time.h>
-
 #include <array>
+#include <time.h>
+#include <sys/time.h>
 
 // NOTE: The day each month of the year starts with.
 constexpr static std::array<s64, 12> day_of_year = {

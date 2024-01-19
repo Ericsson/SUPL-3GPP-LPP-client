@@ -81,8 +81,18 @@ time_t UbxNavPvt::timestamp() const UBLOX_NOEXCEPT {
 TAI_Time UbxNavPvt::tai_time() const UBLOX_NOEXCEPT {
     auto time     = timestamp();
     auto seconds  = static_cast<s64>(time);
-    auto fraction = mPayload.nano * 1e-9;
-    auto ts       = Timestamp{seconds, fraction};
+    auto fraction = static_cast<f64>(mPayload.nano) * 1.0e-9;
+    if (fraction < 0.0) {
+        seconds -= 1;
+        fraction += 1.0;
+    }
+
+    if (seconds < 0) {
+        seconds  = 0;
+        fraction = 0.0;
+    }
+
+    auto ts = Timestamp{seconds, fraction};
     return TAI_Time{UTC_Time{ts}};
 }
 

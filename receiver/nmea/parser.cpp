@@ -103,7 +103,7 @@ std::unique_ptr<Message> Parser::try_parse() NMEA_NOEXCEPT {
     }
 
     // '$XXXXX,' [data] '*XY\r\n'
-    auto data_start = prefix.size() + 1;
+    auto data_start = prefix.size() + 1 /* $ */ + 1 /* , */;
     auto data_end   = length_with_clrf - 5;
     if (data_start >= data_end) {
         // no data
@@ -115,9 +115,19 @@ std::unique_ptr<Message> Parser::try_parse() NMEA_NOEXCEPT {
 
     // parse message
     if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {
-        return GgaMessage::parse(prefix, data_payload);
+        auto message = GgaMessage::parse(prefix, data_payload);
+        if (message) {
+            return message;
+        } else {
+            return std::unique_ptr<ErrorMessage>(new ErrorMessage(prefix, data_payload));
+        }
     } else if (prefix == "GPVTG" || prefix == "GLVTG" || prefix == "GAVTG" || prefix == "GNVTG") {
-        return VtgMessage::parse(prefix, data_payload);
+        auto message = VtgMessage::parse(prefix, data_payload);
+        if (message) {
+            return message;
+        } else {
+            return std::unique_ptr<ErrorMessage>(new ErrorMessage(prefix, data_payload));
+        }
     } else {
         return std::unique_ptr<UnsupportedMessage>(new UnsupportedMessage(prefix, data_payload));
     }

@@ -2,6 +2,7 @@
 #include "internal_lpp.h"
 #include "supl.h"
 
+#include <OCTET_STRING.h>
 #include <utility/cpp.h>
 
 LPP_Client::LPP_Client(bool segmentation) {
@@ -13,6 +14,7 @@ LPP_Client::LPP_Client(bool segmentation) {
     mEnableSegmentation       = segmentation;
     mForceLocationInformation = false;
     mSUPL                     = std::make_unique<SUPL_Client>();
+    mSuplIdentityFix          = true;
 
     main_request_callback  = nullptr;
     main_request_userdata  = nullptr;
@@ -22,14 +24,18 @@ LPP_Client::LPP_Client(bool segmentation) {
 
 LPP_Client::~LPP_Client() {}
 
+void LPP_Client::use_incorrect_supl_identity() {
+    mSuplIdentityFix = false;
+}
+
 void LPP_Client::set_identity_msisdn(unsigned long msisdn) {
     if (connected) return;
-    mSUPL->set_session(SUPL_Session::msisdn(0, msisdn));
+    mSUPL->set_session(SUPL_Session::msisdn(0, msisdn, mSuplIdentityFix));
 }
 
 void LPP_Client::set_identity_imsi(unsigned long imsi) {
     if (connected) return;
-    mSUPL->set_session(SUPL_Session::imsi(0, imsi));
+    mSUPL->set_session(SUPL_Session::imsi(0, imsi, mSuplIdentityFix));
 }
 
 void LPP_Client::set_identity_ipv4(const std::string& ipv4) {
@@ -58,6 +64,25 @@ bool LPP_Client::supl_start(CellID cell) {
         pos_protocol_ext->posProtocolVersionLPP = lpp_pos_protocol;
 
         start->sETCapabilities.posProtocol.ver2_PosProtocol_extension = pos_protocol_ext;
+    }
+
+    {
+        // Application Id
+        auto application_id = ALLOC_ZERO(ApplicationID);
+        OCTET_STRING_fromString(&application_id->appName, "SUPL-3GPP-LPP-Client");
+        OCTET_STRING_fromString(&application_id->appProvider, "Ericsson");
+
+        std::string client_version = CLIENT_VERSION;
+        if (mSuplIdentityFix) {
+            client_version += "+sif";
+        }
+
+        application_id->appVersion = ALLOC_ZERO(IA5String_t);
+        OCTET_STRING_fromString(application_id->appVersion, client_version.c_str());
+
+        auto ext                         = ALLOC_ZERO(Ver2_SUPL_START_extension);
+        ext->applicationID               = application_id;
+        start->ver2_SUPL_START_extension = ext;
     }
 
     {
@@ -188,7 +213,9 @@ bool LPP_Client::supl_send(const std::vector<LPP_Message*>& messages) {
             if (lpp) {
                 asn_sequence_add(&payload->list, lpp);
             } else {
+#if DEBUG_LPP_LIB
                 printf("ERROR: Failed to encode LPP message\n");
+#endif
             }
         }
 
@@ -209,29 +236,41 @@ LPP_Message* LPP_Client::decode(OCTET_STRING* data) {
 }
 
 bool LPP_Client::connect(const std::string& host, int port, bool use_ssl, CellID supl_cell) {
+#if DEBUG_LPP_LIB
     printf("DEBUG: Connecting to SUPL server %s:%d\n", host.c_str(), port);
+#endif
+
     // Initialize and connect to the location server
     if (!mSUPL->connect(host, port, use_ssl)) {
+#if DEBUG_LPP_LIB
         printf("ERROR: Failed to connect to SUPL server\n");
+#endif
         return false;
     }
 
     // Send SUPL-START request
     if (!supl_start(supl_cell)) {
+#if DEBUG_LPP_LIB
         printf("ERROR: Failed to send SUPL-START\n");
+#endif
         mSUPL->disconnect();
         return false;
     }
 
     // Wait for SUPL-RESPONSE with slp session
     if (!supl_response()) {
+#if DEBUG_LPP_LIB
+        printf("ERROR: Failed to receive SUPL-RESPONSE\n");
+#endif
         mSUPL->disconnect();
         return false;
     }
 
     // Send SUPL-POSINIT
     if (!supl_send_posinit(supl_cell)) {
+#if DEBUG_LPP_LIB
         printf("ERROR: Failed to send SUPL-POSINIT\n");
+#endif
         mSUPL->disconnect();
         return false;
     }
@@ -282,6 +321,9 @@ bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transact
 
         auto message = lpp_provide_capabilities(transaction, mEnableSegmentation);
         if (!supl_send(message)) {
+#if DEBUG_LPP_LIB
+            printf("ERROR: Failed to send LPP Provide Capabilities\n");
+#endif
             lpp_destroy(message);
             disconnect();
             return false;

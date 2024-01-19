@@ -37,5 +37,20 @@ private:
     std::string mPayload;
 };
 
+/// Error message. This is used to indicate that the message could not be parsed.
+class ErrorMessage final : public Message {
+public:
+    NMEA_EXPLICIT ErrorMessage(std::string prefix, std::string payload) NMEA_NOEXCEPT;
+    ~ErrorMessage() override = default;
+
+    void print() const NMEA_NOEXCEPT override;
+
+    /// Get the message payload.
+    NMEA_NODISCARD const std::string& payload() const NMEA_NOEXCEPT { return mPayload; }
+
+private:
+    std::string mPayload;
+};
+
 }  // namespace nmea
 }  // namespace receiver

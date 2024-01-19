@@ -1,4 +1,5 @@
 #pragma once
+#include <features.h>
 #include <utility/types.h>
 
 constexpr s64 DAYS_PER_WEEK = 7LL;

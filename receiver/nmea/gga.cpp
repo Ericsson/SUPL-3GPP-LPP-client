@@ -101,6 +101,28 @@ static bool parse_satellites_in_view(const std::string& satellites_in_view, int&
     }
 }
 
+static bool parse_hdop(const std::string& hdop, double& value) {
+    try {
+        value = std::stod(hdop);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
+static bool parse_altitude(const std::string& altitude, const std::string& units, double& value) {
+    try {
+        value = std::stod(altitude);
+        if (units == "M") {
+            return true;
+        } else {
+            return false;
+        }
+    } catch (...) {
+        return false;
+    }
+}
+
 GgaMessage::GgaMessage(std::string prefix) NMEA_NOEXCEPT : Message{prefix},
                                                            mTimeOfDay{TAI_Time::now()},
                                                            mLatitude{0.0},
@@ -125,6 +147,8 @@ void GgaMessage::print() const NMEA_NOEXCEPT {
     }
     printf(" (%d)\n", static_cast<int>(fix_quality()));
     printf("  satellites:  %d\n", satellites_in_view());
+    printf("  hdop:        %.4f\n", h_dop());
+    printf("  altitude:    %.2f\n", altitude());
 }
 
 std::unique_ptr<GgaMessage> GgaMessage::parse(std::string prefix, const std::string& payload) {
@@ -144,6 +168,9 @@ std::unique_ptr<GgaMessage> GgaMessage::parse(std::string prefix, const std::str
     success &= parse_longitude(tokens[3], tokens[4], message->mLongitude);
     success &= parse_fix_quality(tokens[5], message->mFixQuality);
     success &= parse_satellites_in_view(tokens[6], message->mSatellitesInView);
+    success &= parse_hdop(tokens[7], message->mHdop);
+    success &= parse_altitude(tokens[8], tokens[9], message->mMsl);
+    success &= parse_altitude(tokens[10], tokens[11], message->mGeoidSeparation);
 
     if (success) {
         return message;

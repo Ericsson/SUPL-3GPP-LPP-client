@@ -15,6 +15,8 @@
 #include <MCC.h>
 #include <MNC.h>
 #include <TrackingAreaCode.h>
+#include <ApplicationID.h>
+#include <Ver2-SUPL-START-extension.h>
 
 typedef BIT_STRING_t   BIT_STRING;
 typedef OCTET_STRING_t OCTET_STRING;

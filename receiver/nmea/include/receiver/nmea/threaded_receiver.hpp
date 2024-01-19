@@ -1,6 +1,8 @@
 #pragma once
+#include <receiver/nmea/gga.hpp>
 #include <receiver/nmea/receiver.hpp>
 #include <receiver/nmea/types.hpp>
+#include <receiver/nmea/vtg.hpp>
 
 #include <atomic>
 #include <mutex>
@@ -26,6 +28,14 @@ public:
     /// @return A pointer to the interface, or nullptr if the receiver is not running.
     NMEA_NODISCARD interface::Interface* interface() NMEA_NOEXCEPT;
 
+    /// Get the last received GGA message.
+    /// @return A unique pointer to the message, or nullptr if no message has been received.
+    NMEA_NODISCARD std::unique_ptr<GgaMessage> gga() NMEA_NOEXCEPT;
+
+    /// Get the last received VTG message.
+    /// @return A unique pointer to the message, or nullptr if no message has been received.
+    NMEA_NODISCARD std::unique_ptr<VtgMessage> vtg() NMEA_NOEXCEPT;
+
 protected:
     /// This function is called at the start of the receiver thread. It handles the blocking
     /// communication with the receiver.
@@ -37,6 +47,9 @@ private:
     std::unique_ptr<std::thread>          mThread;
     std::atomic<bool>                     mRunning;
     std::mutex                            mMutex;
+
+    std::unique_ptr<GgaMessage> mGga;
+    std::unique_ptr<VtgMessage> mVtg;
 };
 
 }  // namespace nmea

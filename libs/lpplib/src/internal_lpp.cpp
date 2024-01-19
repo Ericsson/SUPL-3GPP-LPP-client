@@ -267,7 +267,7 @@ static void lpp_HWVVAU(HorizontalWithVerticalVelocityAndUncertainty_t* HWVVAU,
 static Velocity_t* lpp_Velocity(const LocationInformation& location) {
     auto V     = ALLOC_ZERO(Velocity_t);
     V->present = Velocity_PR_horizontalWithVerticalVelocityAndUncertainty;
-    lpp_HWVVAU(&V->choice.horizontalWithVerticalVelocityAndUncertainty, location);
+    lpp_HWVVAU(&V->choice.horizontalWithVerticalVelocityAndUncertainty, location); // TODO: 
     return V;
 }
 

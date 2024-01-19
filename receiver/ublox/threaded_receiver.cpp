@@ -64,15 +64,19 @@ void ThreadedReceiver::run() {
                 RUT_DEBUG("[rut] process\n");
                 mReceiver->process();
 
-                RUT_DEBUG("[rut] check\n");
-                auto message = mReceiver->try_parse();
-                if (message) {
-                    if (message->message_class() == UbxNavPvt::CLASS_ID &&
-                        message->message_id() == UbxNavPvt::MESSAGE_ID) {
-                        RUT_DEBUG("[rut] save navpvt\n");
-                        // Cast unique_ptr<Message> to unique_ptr<UbxNavPvt>.
-                        mNavPvt =
-                            std::unique_ptr<UbxNavPvt>(static_cast<UbxNavPvt*>(message.release()));
+                for (;;) {
+                    RUT_DEBUG("[rut] check\n");
+                    auto message = mReceiver->try_parse();
+                    if (message) {
+                        if (message->message_class() == UbxNavPvt::CLASS_ID &&
+                            message->message_id() == UbxNavPvt::MESSAGE_ID) {
+                            RUT_DEBUG("[rut] save navpvt\n");
+                            // Cast unique_ptr<Message> to unique_ptr<UbxNavPvt>.
+                            mNavPvt = std::unique_ptr<UbxNavPvt>(
+                                static_cast<UbxNavPvt*>(message.release()));
+                        }
+                    } else {
+                        break;
                     }
                 }
             }

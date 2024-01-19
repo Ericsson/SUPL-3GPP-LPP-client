@@ -1,6 +1,8 @@
 #include "location_information.h"
 #include <cmath>
 #include <modem.h>
+#include <receiver/nmea/gga.hpp>
+#include <receiver/nmea/threaded_receiver.hpp>
 #include <receiver/ublox/message.hpp>
 #include <receiver/ublox/threaded_receiver.hpp>
 #include <receiver/ublox/ubx_nav_pvt.hpp>
@@ -45,7 +47,10 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
     if (!nav_pvt) return false;
 
     // TODO(ewasjon): Should we use the system time if the UTC time from u-blox is invalid?
-    if (!nav_pvt->valid_time()) return false;
+    if (!nav_pvt->valid_time()) {
+        printf("u-blox time is invalid\n");
+        return false;
+    }
 
     location.tai_time                  = nav_pvt->tai_time();
     location.latitude                  = nav_pvt->latitude();
@@ -80,6 +85,56 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
     metrics.age  = 0;  // TODO(ewasjon): requires another message
     metrics.hdop = 0;
     metrics.pdop = nav_pvt->p_dop();
+    return true;
+}
+
+bool provide_location_information_callback_nmea(LocationInformation& location,
+                                                HaGnssMetrics& metrics, void* userdata) {
+    auto receiver = reinterpret_cast<receiver::nmea::ThreadedReceiver*>(userdata);
+    if (!receiver) return false;
+
+    // NOTE(ewasjon): We require GGA, VTG, and GST message to produce a valid location information, 
+    // if either is missing we will skip sending a provider location information message.
+    // TODO(ewasjon): These methods should _really_ clone the message and not take ownership of it.
+    auto gga = receiver->gga();
+    auto vtg = receiver->vtg();
+    auto gst = false;
+    if (!gga || !vtg || !gst) {
+        return false;
+    }
+
+    location.tai_time                  = gga->time_of_day();
+    location.latitude                  = gga->latitude();
+    location.longitude                 = gga->longitude();
+    location.altitude                  = gga->altitude();
+    location.horizontal_accuracy       = 0;
+    location.horizontal_speed          = vtg->speed_over_ground();
+    location.horizontal_speed_accuracy = 0;
+    location.bearing                   = vtg->true_course_over_ground();
+
+    // TODO(ewasjon): Are these not available in NMEA?
+    location.vertical_accuracy           = 0;
+    location.vertical_speed              = 0;
+    location.vertical_speed_accuracy     = 0;
+    location.vertical_velocity_direction = VerticalDirection::UP;
+
+    switch (gga->fix_quality()) {
+    case receiver::nmea::GgaFixQuality::Invalid: metrics.fixq = FixQuality::INVALID; break;
+    case receiver::nmea::GgaFixQuality::GpsFix: metrics.fixq = FixQuality::STANDALONE; break;
+    case receiver::nmea::GgaFixQuality::DgpsFix: metrics.fixq = FixQuality::DGPS_FIX; break;
+    case receiver::nmea::GgaFixQuality::PpsFix: metrics.fixq = FixQuality::PPS_FIX; break;
+    case receiver::nmea::GgaFixQuality::RtkFixed: metrics.fixq = FixQuality::RTK_FIX; break;
+    case receiver::nmea::GgaFixQuality::RtkFloat: metrics.fixq = FixQuality::RTK_FLOAT; break;
+    case receiver::nmea::GgaFixQuality::DeadReckoning:
+        metrics.fixq = FixQuality::DEAD_RECKONING;
+        break;
+    default: metrics.fixq = FixQuality::INVALID;
+    }
+
+    metrics.sats = static_cast<u8>(gga->satellites_in_view());
+    metrics.age  = 0;  // TODO: requires another message
+    metrics.hdop = gga->h_dop();
+    metrics.pdop = 0;
     return true;
 }
 

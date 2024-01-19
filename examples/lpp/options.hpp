@@ -24,6 +24,9 @@ struct IdentityOptions {
     std::unique_ptr<unsigned long> imsi;
     /// Identify the device with IPv4 address.
     std::unique_ptr<std::string> ipv4;
+
+    /// Whether to switch the order of the digits in the identity.
+    bool use_supl_identity_fix;
 };
 
 /// Cell options.

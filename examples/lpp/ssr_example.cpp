@@ -109,6 +109,10 @@ void execute(Options options, ssr_example::Format format, int ura_override,
 
     LPP_Client client{false /* experimental segmentation support */};
 
+    if (!identity_options.use_supl_identity_fix) {
+        client.use_incorrect_supl_identity();
+    }
+
     if (identity_options.imsi) {
         client.set_identity_imsi(*identity_options.imsi);
     } else if (identity_options.msisdn) {

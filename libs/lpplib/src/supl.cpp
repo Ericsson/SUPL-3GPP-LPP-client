@@ -20,7 +20,9 @@ void ASN_Deleter<OCTET_STRING>::operator()(OCTET_STRING* ptr) {
 //
 //
 
-static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
+static void binary_coded_decimal(unsigned long value, unsigned char* buf, bool switch_order) {
+    // `switch_order` = false, this will encode it in the wrong order
+
     // msisdn, mnd and imsi are a BCD (Binary Coded Decimal) string
     // represent digits from 0 through 9,
     // two digits per octet, each digit encoded 0000 to 1001 (0 to 9)
@@ -44,7 +46,7 @@ static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
 
     int j = 0;
     while(i > 0) {
-        if(j % 2 == 0) {
+        if(j % 2 == (switch_order ? 1 : 0)) {
             buf[j / 2] |= digits[i - 1] << 4;
         } else {
             buf[j / 2] |= digits[i - 1];
@@ -63,25 +65,25 @@ static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
     }
 }
 
-std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long msisdn) {
+std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long msisdn, bool switch_order) {
     auto set           = ALLOC_ZERO(SetSessionID);
     set->sessionId     = id;
     set->setId.present = SETId_PR_msisdn;
 
     unsigned char buf[8];
-    binary_coded_decimal(msisdn, buf);
+    binary_coded_decimal(msisdn, buf, switch_order);
     OCTET_STRING_fromBuf(&set->setId.choice.msisdn, reinterpret_cast<char*>(buf), sizeof(buf));
 
     return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));
 }
 
-std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long imsi) {
+std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long imsi, bool switch_order) {
     auto set           = ALLOC_ZERO(SetSessionID);
     set->sessionId     = id;
     set->setId.present = SETId_PR_imsi;
 
     unsigned char buf[8];
-    binary_coded_decimal(imsi, buf);
+    binary_coded_decimal(imsi, buf, switch_order);
     OCTET_STRING_fromBuf(&set->setId.choice.imsi, reinterpret_cast<char*>(buf), sizeof(buf));
 
     return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));

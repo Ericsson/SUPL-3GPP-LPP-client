@@ -40,6 +40,11 @@ args::ValueFlag<unsigned long> msisdn{
     identity, "msisdn", "MSISDN", {"msisdn"}, args::Options::Single};
 args::ValueFlag<unsigned long> imsi{identity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
 args::ValueFlag<std::string>   ipv4{identity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
+args::Flag                     use_supl_identity_fix{identity,
+                                 "supl-identity-fix",
+                                 "Use SUPL Identity Fix",
+                                                     {"supl-identity-fix"},
+                                 args::Options::Single};
 
 //
 // Cell Information
@@ -313,6 +318,7 @@ LocationServerOptions parse_location_server_options() {
 
 IdentityOptions parse_identity_options() {
     IdentityOptions identity{};
+    identity.use_supl_identity_fix = false;
 
     if (msisdn) {
         identity.msisdn = std::unique_ptr<unsigned long>{new unsigned long{msisdn.Get()}};
@@ -328,6 +334,10 @@ IdentityOptions parse_identity_options() {
 
     if (!identity.msisdn && !identity.imsi && !identity.ipv4) {
         identity.imsi = std::unique_ptr<unsigned long>{new unsigned long{2460813579lu}};
+    }
+
+    if (use_supl_identity_fix) {
+        identity.use_supl_identity_fix = true;
     }
 
     return identity;
@@ -671,13 +681,12 @@ static LocationInformationOptions parse_location_information_options() {
     location_information.altitude  = 0;
     location_information.force     = false;
 
+    if (li_force) {
+        location_information.force = true;
+    }
+
     if (li_enable) {
         location_information.enabled = true;
-
-        if (li_force) {
-            location_information.force = true;
-        }
-
         if (li_latitude) {
             location_information.latitude = li_latitude.Get();
         }

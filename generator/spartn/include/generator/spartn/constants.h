@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <map>
 #include <string>
+#include <array>
 
 namespace Constants {
 static constexpr uint16_t max_payload_size     = 8192;

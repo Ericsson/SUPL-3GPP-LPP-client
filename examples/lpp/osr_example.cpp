@@ -18,6 +18,7 @@ static osr_example::Format            gFormat;
 static RtcmGenerator                  gGenerator;
 static generator::rtcm::MessageFilter gFilter;
 static Options                        gOptions;
+static bool                           gPrintRtcm;
 
 static std::unique_ptr<Modem_AT>  gModem;
 static std::unique_ptr<UReceiver> gUbloxReceiver;
@@ -25,9 +26,11 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-void execute(Options options, osr_example::Format format, osr_example::MsmType msm_type) {
-    gOptions = std::move(options);
-    gFormat  = format;
+void execute(Options options, osr_example::Format format, osr_example::MsmType msm_type,
+             bool print_rtcm) {
+    gOptions   = std::move(options);
+    gFormat    = format;
+    gPrintRtcm = print_rtcm;
 
     auto& cell_options                 = gOptions.cell_options;
     auto& location_server_options      = gOptions.location_server_options;
@@ -138,6 +141,10 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
 
     LPP_Client client{false /* enable experimental segmentation support */};
 
+    if(!identity_options.use_supl_identity_fix) {
+        client.use_incorrect_supl_identity();
+    }
+
     if (identity_options.imsi) {
         client.set_identity_imsi(*identity_options.imsi);
     } else if (identity_options.msisdn) {
@@ -148,26 +155,30 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         throw std::runtime_error("No identity provided");
     }
 
+    printf("[location information]\n");
     if (gUbloxReceiver.get()) {
+        printf("  source: ublox\n");
         client.provide_location_information_callback(gUbloxReceiver.get(),
                                                      provide_location_information_callback_ublox);
     } else if (gNmeaReceiver.get()) {
-        // TODO:
-
+        printf("  source: nmea\n");
+        client.provide_location_information_callback(gNmeaReceiver.get(),
+                                                     provide_location_information_callback_nmea);
     } else if (location_information_options.enabled) {
-        printf("[simulating location information]\n");
+        printf("  source: simulated\n");
         client.provide_location_information_callback(&location_information_options,
                                                      provide_location_information_callback_fake);
-
-        if (location_information_options.force) {
-            client.force_location_information();
-            printf("  force: true\n");
-        } else {
-            printf("  force: false\n");
-        }
     } else {
-        client.provide_location_information_callback(gUbloxReceiver.get(),
+        printf("  source: none\n");
+        client.provide_location_information_callback(nullptr,
                                                      provide_location_information_callback);
+    }
+
+    if (location_information_options.force) {
+        client.force_location_information();
+        printf("  force: true\n");
+    } else {
+        printf("  force: false\n");
     }
 
     client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
@@ -206,21 +217,21 @@ static void transmit(const void* buffer, size_t size) {
 }
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
-    //
-
     if (gFormat == osr_example::Format::RTCM) {
         auto messages = gGenerator->generate(message, gFilter);
 
-        size_t length = 0;
-        for (auto& message : messages) {
-            length += message.data().size();
-        }
+        if (gPrintRtcm) {
+            size_t length = 0;
+            for (auto& message : messages) {
+                length += message.data().size();
+            }
 
-        printf("RTCM: %4zu bytes | ", length);
-        for (auto& message : messages) {
-            printf("%4i ", message.id());
+            printf("RTCM: %4zu bytes | ", length);
+            for (auto& message : messages) {
+                printf("%4i ", message.id());
+            }
+            printf("\n");
         }
-        printf("\n");
 
         for (auto& message : messages) {
             auto buffer = message.data().data();
@@ -230,6 +241,15 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
         if (gUbloxReceiver) {
             auto interface = gUbloxReceiver->interface();
+            if (interface) {
+                for (auto& message : messages) {
+                    auto buffer = message.data().data();
+                    auto size   = message.data().size();
+                    interface->write(buffer, size);
+                }
+            }
+        } else if (gNmeaReceiver) {
+            auto interface = gNmeaReceiver->interface();
             if (interface) {
                 for (auto& message : messages) {
                     auto buffer = message.data().data();
@@ -261,6 +281,7 @@ void OsrCommand::parse(args::Subparser& parser) {
     // NOTE: parse may be called multiple times
     delete mFormatArg;
     delete mMsmTypeArg;
+    delete mPrintRTCMArg;
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format", {'f', "format"},
                                                   args::Options::Single);
@@ -271,6 +292,10 @@ void OsrCommand::parse(args::Subparser& parser) {
                                                    {'y', "msm_type"}, args::Options::Single);
     mMsmTypeArg->HelpDefault("any");
     mMsmTypeArg->HelpChoices({"any", "4", "5", "6", "7"});
+
+    // the default value is true, thus this is a negated flag
+    mPrintRTCMArg = new args::Flag(parser, "print_rtcm", "Do not print RTCM messages info",
+                                   {"rtcm-print"}, args::Options::Single);
 }
 
 void OsrCommand::execute(Options options) {
@@ -303,7 +328,12 @@ void OsrCommand::execute(Options options) {
         }
     }
 
-    ::execute(std::move(options), format, msm_type);
+    auto print_rtcm = true;
+    if (*mPrintRTCMArg) {
+        print_rtcm = false;
+    }
+
+    ::execute(std::move(options), format, msm_type, print_rtcm);
 }
 
 }  // namespace osr_example

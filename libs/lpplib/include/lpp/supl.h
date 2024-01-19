@@ -8,8 +8,8 @@ using SUPL_EncodedMessage = ASN_Unique<OCTET_STRING>;
 
 class SUPL_Session {
 public:
-    static std::unique_ptr<SUPL_Session> msisdn(long id, unsigned long msisdn);
-    static std::unique_ptr<SUPL_Session> imsi(long id, unsigned long imsi);
+    static std::unique_ptr<SUPL_Session> msisdn(long id, unsigned long msisdn, bool switch_order);
+    static std::unique_ptr<SUPL_Session> imsi(long id, unsigned long imsi, bool switch_order);
     static std::unique_ptr<SUPL_Session> ip_address(long id, const std::string& addr);
     static std::unique_ptr<SUPL_Session> ip_address(long id, uint32_t addr);
 

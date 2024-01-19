@@ -31,6 +31,8 @@ public:
     LPP_Client(bool segmentation);
     ~LPP_Client();
 
+    void use_incorrect_supl_identity();
+
     void set_identity_msisdn(unsigned long msisdn);
     void set_identity_imsi(unsigned long imsi);
     void set_identity_ipv4(const std::string& ipv4);
@@ -112,6 +114,7 @@ private:
 
     bool mForceLocationInformation;
     bool mEnableSegmentation;
+    bool mSuplIdentityFix;
 };
 
 void network_initialize();
