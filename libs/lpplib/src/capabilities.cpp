@@ -160,11 +160,10 @@ LPP_Message* lpp_provide_capabilities(LPP_Transaction* transaction, bool segment
 
     auto ext2 = ALLOC_ZERO(A_GNSS_ProvideCapabilities::A_GNSS_ProvideCapabilities__ext2);
 
-    auto pad =
-        BitStringBuilder{}
-            .set(7 - A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_solicited)
-            .set(7 - A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_unsolicited)
-            .to_bit_string(8);
+    auto pad = BitStringBuilder{}
+                   .set(A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_solicited)
+                   .set(A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_unsolicited)
+                   .to_bit_string(8);
     ext2->periodicAssistanceData_r15 = pad;
 
     auto gnss_capabilities                       = ALLOC_ZERO(A_GNSS_ProvideCapabilities);

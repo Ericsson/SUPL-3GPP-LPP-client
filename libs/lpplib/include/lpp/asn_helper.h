@@ -52,53 +52,6 @@ private:
     uint64_t mBits;
 };
 
-#if 0
-class BitString : public BIT_STRING_s {
-public:
-    explicit BitString(size_t bits);
-
-    void set_bit(ssize_t);
-    void clear_bit(ssize_t);
-    bool get_bit(ssize_t);
-    void set_integer(size_t, size_t, size_t);
-
-    int64_t as_int64();
-
-    std::string as_string();
-
-    static BitString* allocate(size_t bits) {
-        auto data = asn1_allocate<BIT_STRING_s>();
-        return allocate(bits, data);
-    }
-
-    static BitString* allocate(size_t bits, BIT_STRING_s* inner) {
-        auto bit_string = reinterpret_cast<BitString*>(inner);
-        bit_string->initialize(bits);
-        return bit_string;
-    }
-
-    static BitString* from(BIT_STRING_s* inner) {
-        auto bit_string = reinterpret_cast<BitString*>(inner);
-        return bit_string;
-    }
-
-    void destroy();
-
-private:
-    void initialize(size_t bits);
-
-    struct Index {
-        size_t byte_index;
-        size_t local_bit;
-    };
-
-    Index bit_index(ssize_t index);
-};
-
-static_assert(sizeof(BitString) == sizeof(BIT_STRING_s),
-              "BitString must be the same size as BIT_STRING_s");
-#endif
-
 void   supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value);
 void   supl_fill_cell_identity(CellIdentity_t*, size_t value);
 MCC*   supl_create_mcc(int mcc_value);
