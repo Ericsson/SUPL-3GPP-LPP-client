@@ -41,7 +41,7 @@ void supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value) {
 }
 
 void supl_fill_cell_identity(CellIdentity_t* identity, size_t value) {
-    BitStringBuilder{}.integer(0, 28, 14).into_bit_string(28, identity);
+    BitStringBuilder{}.integer(0, 28, value).into_bit_string(28, identity);
 }
 
 MCC* supl_create_mcc(int mcc_value) {
