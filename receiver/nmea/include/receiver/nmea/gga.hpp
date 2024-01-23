@@ -45,8 +45,8 @@ public:
     /// Get the altitude in meters.
     NMEA_NODISCARD double altitude() const NMEA_NOEXCEPT { return mMsl + mGeoidSeparation; }
 
-    NMEA_NODISCARD static std::unique_ptr<GgaMessage> parse(std::string        prefix,
-                                                            const std::string& payload);
+    NMEA_NODISCARD static std::unique_ptr<Message> parse(std::string        prefix,
+                                                         const std::string& payload);
 
 private:
     NMEA_EXPLICIT GgaMessage(std::string prefix) NMEA_NOEXCEPT;

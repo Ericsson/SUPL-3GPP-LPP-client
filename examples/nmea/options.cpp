@@ -8,26 +8,6 @@ using namespace receiver::nmea;
 args::Group arguments{"Arguments:"};
 
 //
-// Configuration
-//
-
-args::Group configuration_group{
-    "Configuration:",
-    args::Group::Validators::AllChildGroups,
-    args::Options::Global,
-};
-
-//
-// Receiver
-//
-
-args::Group receiver_group{
-    "Receiver:",
-    args::Group::Validators::AllChildGroups,
-    args::Options::Global,
-};
-
-//
 // Interface
 //
 
@@ -175,12 +155,11 @@ static std::unique_ptr<NmeaReceiver> create_receiver() {
 }
 
 std::unique_ptr<NmeaReceiver> parse_configuration(int argc, char** argv) {
-    args::ArgumentParser parser("Example - NMEA Receiver",
-                                "This is an example program that "
-                                "demonstrates how to use the NMEA "
-                                "receiver library.\n\n"
-                                "The program takes an interface and port associated with the "
-                                "receiver as arguments and print all received messages.");
+    args::ArgumentParser parser(
+        "NMEA Example (" CLIENT_VERSION
+        ") - This is an example program that demonstrates how to use the NMEA receiver "
+        "library. The program takes an interface and port associated with the "
+        "receiver as arguments and print all received messages.");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
@@ -201,12 +180,16 @@ std::unique_ptr<NmeaReceiver> parse_configuration(int argc, char** argv) {
         "even",
     });
 
-    args::GlobalOptions configruation_globals{parser, configuration_group};
-    args::GlobalOptions receiver_globals{parser, receiver_group};
     args::GlobalOptions interface_globals{parser, interface_group};
 
     try {
         parser.ParseCLI(argc, argv);
+
+        if (version) {
+            std::cout << "NMEA Example (" << CLIENT_VERSION << ")" << std::endl;
+            exit(0);
+        }
+
         return create_receiver();
     } catch (const args::ValidationError& e) {
         std::cerr << e.what() << std::endl;

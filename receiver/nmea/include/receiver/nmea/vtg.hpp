@@ -10,7 +10,7 @@ namespace nmea {
 
 enum class ModeIndicator {
     Unknown,
-    Autonomous = 'A',
+    Autonomous   = 'A',
     Differential = 'D',
 };
 
@@ -19,9 +19,6 @@ public:
     ~VtgMessage() override = default;
 
     void print() const NMEA_NOEXCEPT override;
-
-    NMEA_NODISCARD static std::unique_ptr<VtgMessage> parse(std::string        prefix,
-                                                            const std::string& payload);
 
     /// Get the true course over ground in degrees from true north.
     NMEA_NODISCARD double true_course_over_ground() const NMEA_NOEXCEPT {
@@ -32,6 +29,9 @@ public:
     NMEA_NODISCARD double speed_over_ground() const NMEA_NOEXCEPT {
         return mSpeedOverGroundKmh / 3.6;
     }
+
+    NMEA_NODISCARD static std::unique_ptr<Message> parse(std::string        prefix,
+                                                         const std::string& payload);
 
 private:
     NMEA_EXPLICIT VtgMessage(std::string prefix) NMEA_NOEXCEPT;

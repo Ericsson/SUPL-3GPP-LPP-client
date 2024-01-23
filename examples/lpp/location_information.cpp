@@ -132,7 +132,7 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
     }
 
     metrics.sats = static_cast<u8>(gga->satellites_in_view());
-    metrics.age  = 0;  // TODO: requires another message
+    metrics.age  = 0;  // TODO: ?
     metrics.hdop = gga->h_dop();
     metrics.pdop = 0;
     return true;

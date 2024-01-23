@@ -234,7 +234,9 @@ OutputOptions parse_output_options() {
 }
 
 Options parse_configuration(int argc, char** argv) {
-    args::ArgumentParser parser("Example - LPP to SPARTN Converter", "");
+    args::ArgumentParser parser("LPP2SPARTN Example (" CLIENT_VERSION
+                                ") - This sample code takes UPER encoded 3GPP LPP messages from "
+                                "STDIN and transforms them into SPARTN messages.");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
@@ -266,6 +268,12 @@ Options parse_configuration(int argc, char** argv) {
 
     try {
         parser.ParseCLI(argc, argv);
+
+        if (version) {
+            std::cout << "LPP2SPARTN Example (" CLIENT_VERSION << ")" << std::endl;
+            exit(0);
+        }
+
         return Options{
             .format = parse_format_options(),
             .output = parse_output_options(),

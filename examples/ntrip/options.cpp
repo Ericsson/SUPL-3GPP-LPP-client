@@ -262,7 +262,10 @@ OutputOptions parse_output_options() {
 }
 
 Options parse_configuration(int argc, char** argv) {
-    args::ArgumentParser parser("Example - LPP to SPARTN Converter", "");
+    args::ArgumentParser parser("NTRIP Example (" CLIENT_VERSION
+                                ") - This sample code illustrates the process of utilizing the "
+                                "NTRIP client to establish a communication link with a caster and "
+                                "transmit the data to a serial port, file, or stdout.");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
@@ -291,6 +294,12 @@ Options parse_configuration(int argc, char** argv) {
 
     try {
         parser.ParseCLI(argc, argv);
+
+        if (version) {
+            std::cout << "NTRIP Example (" CLIENT_VERSION ")" << std::endl;
+            exit(0);
+        }
+
         return Options{
             .host   = parse_host_options(),
             .output = parse_output_options(),

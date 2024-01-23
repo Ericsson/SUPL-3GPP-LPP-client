@@ -719,11 +719,12 @@ void OptionParser::add_command(std::unique_ptr<Command> command) {
 
 int OptionParser::parse_and_execute(int argc, char** argv) {
     args::ArgumentParser parser(
-        "Example - LPP Client",
-        "This is a simple client examples that requests assistance data from a location server. It "
-        "supports OSR, SSR, and AGNSS requests. The assistance data can be outputted to a file, "
-        "serial port, TCP, UDP or stdout. It can also be converted to RTCM messages that can be "
-        "transmitted to any GNSS receiver that supports it.");
+        "3GPP LPP Example (" CLIENT_VERSION
+        ") - This sample code is a simple client that asks for assistance data from a location "
+        "server. It can handle OSR, SSR, and AGNSS requests. The assistance data can converted to "
+        "RTCM or SPARTN before being sent to a GNSS receiver or other interface. The client also "
+        "supports to 3GPP LPP Provide Location Information, which can be used to send the device's "
+        "location to the location server.");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
@@ -829,6 +830,11 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     // Parse
     try {
         parser.ParseCLI(argc, argv);
+        if (version) {
+            std::cout << "3GPP LPP Example (" << CLIENT_VERSION << ")" << std::endl;
+            return 0;
+        }
+
         return 0;
     } catch (const args::ValidationError& e) {
         std::cerr << e.what() << std::endl;

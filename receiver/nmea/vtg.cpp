@@ -63,7 +63,7 @@ void VtgMessage::print() const NMEA_NOEXCEPT {
     }
 }
 
-std::unique_ptr<VtgMessage> VtgMessage::parse(std::string prefix, const std::string& payload) {
+std::unique_ptr<Message> VtgMessage::parse(std::string prefix, const std::string& payload) {
     // split payload by ','
     auto tokens = split(payload, ',');
 
@@ -75,10 +75,8 @@ std::unique_ptr<VtgMessage> VtgMessage::parse(std::string prefix, const std::str
         return nullptr;
     }
 
-    // ,T,,M,0.017,N,0.032,K,D
-
     // parse
-    auto message = std::unique_ptr<VtgMessage>(new VtgMessage(prefix));
+    auto message = new VtgMessage(prefix);
     auto success = true;
     success &= parse_double_opt(tokens[0], message->mTrueCourseOverGround);
     success &= parse_double_opt(tokens[2], message->mMagneticCourseOverGround);
@@ -88,11 +86,12 @@ std::unique_ptr<VtgMessage> VtgMessage::parse(std::string prefix, const std::str
     success &= parse_mode_indicator(tokens[8], message->mModeIndicator);
 
     if (success) {
-        return message;
+        return std::unique_ptr<VtgMessage>(message);
     } else {
 #if RECEIVER_NMEA_DEBUG
         printf("[--VTG] failed to parse message\n");
 #endif
+        delete message;
         return nullptr;
     }
 }

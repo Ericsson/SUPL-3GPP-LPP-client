@@ -151,7 +151,7 @@ void GgaMessage::print() const NMEA_NOEXCEPT {
     printf("  altitude:    %.2f\n", altitude());
 }
 
-std::unique_ptr<GgaMessage> GgaMessage::parse(std::string prefix, const std::string& payload) {
+std::unique_ptr<Message> GgaMessage::parse(std::string prefix, const std::string& payload) {
     // split payload by ','
     auto tokens = split(payload, ',');
 
@@ -161,7 +161,7 @@ std::unique_ptr<GgaMessage> GgaMessage::parse(std::string prefix, const std::str
     }
 
     // parse
-    auto message = std::unique_ptr<GgaMessage>(new GgaMessage(prefix));
+    auto message = new GgaMessage(prefix);
     auto success = true;
     success &= parse_utc(tokens[0], message->mTimeOfDay);
     success &= parse_latitude(tokens[1], tokens[2], message->mLatitude);
@@ -173,8 +173,9 @@ std::unique_ptr<GgaMessage> GgaMessage::parse(std::string prefix, const std::str
     success &= parse_altitude(tokens[10], tokens[11], message->mGeoidSeparation);
 
     if (success) {
-        return message;
+        return std::unique_ptr<GgaMessage>(message);
     } else {
+        delete message;
         return nullptr;
     }
 }
