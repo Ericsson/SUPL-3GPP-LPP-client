@@ -252,11 +252,13 @@ static asn_enc_rval_t uper_encode_to_length(const asn_TYPE_descriptor_t* td,
 SUPL_EncodedMessage SUPL_Client::encode(SUPL_Message& message) {
     auto pdu = message.get();
 
-    // xer_fprint(stdout, &asn_DEF_ULP_PDU, pdu);
+    xer_fprint(stdout, &asn_DEF_ULP_PDU, pdu);
 
     // Determine the PDU length
     auto result = uper_encode_to_length(&asn_DEF_ULP_PDU, NULL, pdu);
     if (result.encoded < 0) {
+        printf("ERROR: Failed to determine PDU length\n");
+        printf("ERROR: %s\n", result.failed_type->name);
         return nullptr;
     }
 
@@ -273,11 +275,13 @@ SUPL_EncodedMessage SUPL_Client::encode(SUPL_Message& message) {
     // Encode PDU as UPER
     result = uper_encode_to_buffer(&asn_DEF_ULP_PDU, NULL, pdu, buffer, length);
     if (result.encoded < 0) {
+        printf("ERROR: Failed to encode PDU\n");
         return nullptr;
     }
 
     // Make sure that the PDU stayed intact and that length wasn't adjusted.
     if (length != (result.encoded + 7) / 8) {
+        printf("ERROR: PDU length mismatch\n");
         return nullptr;
     }
 
@@ -291,11 +295,13 @@ bool SUPL_Client::send(SUPL_Message& message) {
 
     auto encoded_message = encode(message);
     if (!encoded_message) {
+        printf("ERROR: Failed to encode message\n");
         return false;
     }
 
     auto bytes = mTCP->send(encoded_message->buf, encoded_message->size);
     if (bytes != encoded_message->size) {
+        printf("ERROR: Failed to send message\n");
         return false;
     }
 

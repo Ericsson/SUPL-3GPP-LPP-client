@@ -68,14 +68,17 @@ bool LPP_Client::supl_start(CellID cell) {
 
     {
         // Application Id
-        auto application_id = ALLOC_ZERO(ApplicationID);
-        OCTET_STRING_fromString(&application_id->appName, "SUPL-3GPP-LPP-Client");
-        OCTET_STRING_fromString(&application_id->appProvider, "Ericsson");
-
+        std::string client_name = "supl-3gpp-lpp-client";
+        std::string client_provider = "ericsson";
         std::string client_version = CLIENT_VERSION;
+
         if (mSuplIdentityFix) {
-            client_version += "+sif";
+            client_name += "/sif";
         }
+
+        auto application_id = ALLOC_ZERO(ApplicationID);
+        OCTET_STRING_fromString(&application_id->appName, client_name.c_str());
+        OCTET_STRING_fromString(&application_id->appProvider, client_provider.c_str());
 
         application_id->appVersion = ALLOC_ZERO(IA5String_t);
         OCTET_STRING_fromString(application_id->appVersion, client_version.c_str());

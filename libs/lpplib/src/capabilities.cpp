@@ -3,19 +3,18 @@
 
 static GNSS_SupportElement* build_support_element(long gnss_id) {
     auto element                        = ALLOC_ZERO(GNSS_SupportElement);
-    element->gnss_ID.gnss_id            = GNSS_ID__gnss_id_gps;
+    element->gnss_ID.gnss_id            = gnss_id;
     element->adr_Support                = false;
     element->velocityMeasurementSupport = true;
 
     BitStringBuilder{}
-        .set(7 - PositioningModes__posModes_ue_based)
-        .set(7 - PositioningModes__posModes_ue_assisted)
+        .set(PositioningModes__posModes_ue_based)
+        .set(PositioningModes__posModes_ue_assisted)
         .into_bit_string(8, &element->agnss_Modes.posModes);
 
     auto ha_gnss_modes_r15 = ALLOC_ZERO(PositioningModes);
     BitStringBuilder{}
-        .set(7 - PositioningModes__posModes_ue_based)
-        .set(7 - PositioningModes__posModes_ue_assisted)
+        .set(PositioningModes__posModes_ue_based)
         .into_bit_string(8, &ha_gnss_modes_r15->posModes);
 
     auto ext               = ALLOC_ZERO(GNSS_SupportElement::GNSS_SupportElement__ext1);
@@ -23,7 +22,7 @@ static GNSS_SupportElement* build_support_element(long gnss_id) {
     element->ext1          = ext;
 
     BitStringBuilder{}
-        .set_int(0, 8, 0xFF)
+        .integer(0, 8, 0xFF)
         .into_bit_string(8, &element->gnss_Signals.gnss_SignalIDs);
 
     return element;
@@ -66,16 +65,11 @@ static AssistanceDataSupportList* build_assistance_support() {
             GNSS_GenericAssistDataSupportElement::GNSS_GenericAssistDataSupportElement__ext2);
         gps_assistance->ext2                  = ext;
         ext->gnss_RTK_ObservationsSupport_r15 = ALLOC_ZERO(GNSS_RTK_ObservationsSupport_r15_t);
-        auto signals                          = BitString::allocate(
-            8, &ext->gnss_RTK_ObservationsSupport_r15->gnssSignalIDs_r15.gnss_SignalIDs);
-        signals->set_bit(0);
-        signals->set_bit(1);
-        signals->set_bit(2);
-        signals->set_bit(3);
-        signals->set_bit(4);
-        signals->set_bit(5);
-        signals->set_bit(6);
-        signals->set_bit(7);
+
+        BitStringBuilder{}
+            .integer(0, 8, 0xFF)
+            .into_bit_string(
+                8, &ext->gnss_RTK_ObservationsSupport_r15->gnssSignalIDs_r15.gnss_SignalIDs);
 
         ext->gnss_RTK_ResidualsSupport_r15 = ALLOC_ZERO(GNSS_RTK_ResidualsSupport_r15_t);
         GNSS_Link_CombinationsList_r15_t* link_list =
@@ -102,16 +96,11 @@ static AssistanceDataSupportList* build_assistance_support() {
             GNSS_GenericAssistDataSupportElement::GNSS_GenericAssistDataSupportElement__ext2);
         glonass_assistance->ext2              = ext;
         ext->gnss_RTK_ObservationsSupport_r15 = ALLOC_ZERO(GNSS_RTK_ObservationsSupport_r15_t);
-        auto signals                          = BitString::allocate(
-            8, &ext->gnss_RTK_ObservationsSupport_r15->gnssSignalIDs_r15.gnss_SignalIDs);
-        signals->set_bit(0);
-        signals->set_bit(1);
-        signals->set_bit(2);
-        signals->set_bit(3);
-        signals->set_bit(4);
-        signals->set_bit(5);
-        signals->set_bit(6);
-        signals->set_bit(7);
+
+        BitStringBuilder{}
+            .integer(0, 8, 0xFF)
+            .into_bit_string(
+                8, &ext->gnss_RTK_ObservationsSupport_r15->gnssSignalIDs_r15.gnss_SignalIDs);
 
         ext->glo_RTK_BiasInformationSupport_r15 = ALLOC_ZERO(GLO_RTK_BiasInformationSupport_r15_t);
         ext->gnss_RTK_ResidualsSupport_r15      = ALLOC_ZERO(GNSS_RTK_ResidualsSupport_r15_t);
@@ -138,16 +127,11 @@ static AssistanceDataSupportList* build_assistance_support() {
             GNSS_GenericAssistDataSupportElement::GNSS_GenericAssistDataSupportElement__ext2);
         galileo_assistance->ext2              = ext;
         ext->gnss_RTK_ObservationsSupport_r15 = ALLOC_ZERO(GNSS_RTK_ObservationsSupport_r15_t);
-        auto signals                          = BitString::allocate(
-            8, &ext->gnss_RTK_ObservationsSupport_r15->gnssSignalIDs_r15.gnss_SignalIDs);
-        signals->set_bit(0);
-        signals->set_bit(1);
-        signals->set_bit(2);
-        signals->set_bit(3);
-        signals->set_bit(4);
-        signals->set_bit(5);
-        signals->set_bit(6);
-        signals->set_bit(7);
+
+        BitStringBuilder{}
+            .integer(0, 8, 0xFF)
+            .into_bit_string(
+                8, &ext->gnss_RTK_ObservationsSupport_r15->gnssSignalIDs_r15.gnss_SignalIDs);
 
         ext->gnss_RTK_ResidualsSupport_r15 = ALLOC_ZERO(GNSS_RTK_ResidualsSupport_r15_t);
         auto link_list = &ext->gnss_RTK_ResidualsSupport_r15->link_combinations_support_r15;
@@ -191,22 +175,24 @@ LPP_Message* lpp_provide_capabilities(LPP_Transaction* transaction, bool segment
     auto ecid_capabilities = ALLOC_ZERO(ECID_ProvideCapabilities);
 
     BitStringBuilder{}
-        .set(7 - ECID_ProvideCapabilities__ecid_MeasSupported_rsrpSup)
-        .set(7 - ECID_ProvideCapabilities__ecid_MeasSupported_rsrqSup)
-        .set(7 - ECID_ProvideCapabilities__ecid_MeasSupported_ueRxTxSup)
-        .set(7 - ECID_ProvideCapabilities__ecid_MeasSupported_nrsrpSup_r14)
-        .set(7 - ECID_ProvideCapabilities__ecid_MeasSupported_nrsrqSup_r14)
+        .set(ECID_ProvideCapabilities__ecid_MeasSupported_rsrpSup)
+        .set(ECID_ProvideCapabilities__ecid_MeasSupported_rsrqSup)
+        .set(ECID_ProvideCapabilities__ecid_MeasSupported_ueRxTxSup)
+        .set(ECID_ProvideCapabilities__ecid_MeasSupported_nrsrpSup_r14)
+        .set(ECID_ProvideCapabilities__ecid_MeasSupported_nrsrqSup_r14)
         .into_bit_string(8, &ecid_capabilities->ecid_MeasSupported);
 
     auto common_capabilities = ALLOC_ZERO(CommonIEsProvideCapabilities);
     auto cc_ext1 = ALLOC_ZERO(CommonIEsProvideCapabilities::CommonIEsProvideCapabilities__ext1);
-    auto segmentation_support = BitString::allocate(2);
+    auto segmentation_support = BitStringBuilder{};
     if (segmentation) {
-        segmentation_support->set_bit(0);  // Support receiving segmented messages
+        segmentation_support.set(
+            CommonIEsProvideCapabilities__ext1__lpp_message_segmentation_r14_serverToTarget);
+        segmentation_support.set(
+            CommonIEsProvideCapabilities__ext1__lpp_message_segmentation_r14_targetToServer);
     }
-    cc_ext1->lpp_message_segmentation_r14 = segmentation_support;
+    cc_ext1->lpp_message_segmentation_r14 = segmentation_support.to_bit_string(2);
     common_capabilities->ext1             = cc_ext1;
-    // segmentation
 
     auto pcr9                          = &cext->choice.c1.choice.provideCapabilities_r9;
     pcr9->commonIEsProvideCapabilities = common_capabilities;

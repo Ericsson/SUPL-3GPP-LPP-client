@@ -7,13 +7,9 @@
 static void BIT_STRING_initialize(BIT_STRING_s* bit_string, size_t bits) {
     BIT_STRING_free(&asn_DEF_BIT_STRING, bit_string, ASFM_FREE_UNDERLYING_AND_RESET);
 
-    auto bytes       = (bits + 7) / 8;
-    auto total_bits  = bytes * 8;
-    auto unused_bits = total_bits - bits;
-    bit_string->size = bytes;
-    assert(unused_bits >= 0);
-    assert(unused_bits <= 7);
-    bit_string->bits_unused = unused_bits;
+    auto bytes              = (bits + 7) / 8;
+    bit_string->size        = bytes;
+    bit_string->bits_unused = 0;
     bit_string->buf         = reinterpret_cast<uint8_t*>(calloc(bit_string->size, sizeof(uint8_t)));
 }
 
@@ -59,128 +55,28 @@ static const BIT_STRING_t* BIT_STRING__compactify(const BIT_STRING_t* st, BIT_ST
     return tmp;
 }
 
-static int BIT_STRING_byte_index(const BIT_STRING_t* st, size_t bit_index) {
-    size_t byte_index = (st->bits_unused + bit_index) / 8;
-    if (byte_index >= st->size) {
-        return -1;
-    } else {
-        return st->size - 1 - byte_index;
-    }
-}
-
-static int BIT_STRING_bit_index(const BIT_STRING_t* st, size_t bit_index) {
-    size_t bit_offset = (st->bits_unused + bit_index) % 8;
-    if (bit_offset >= 8) {
-        return -1;
-    } else {
-        return bit_offset;
-    }
-}
-
 BIT_STRING_s* BitStringBuilder::into_bit_string(size_t bits, BIT_STRING_s* bit_string) {
     BIT_STRING_initialize(bit_string, bits);
 
-    for (size_t i = 0; i < bits; i++) {
-        auto index = static_cast<size_t>(bit_string->bits_unused) + i;
-        auto byte_index = BIT_STRING_byte_index(bit_string, i);
-        if (mBits & (1 << i)) bit_string->buf[byte_index] |= 1 << ((index % 8));
-    }
-
-    printf("bits:  ");
-    for (auto i = (int)bits - 1; i >= 0; i--) {
-        if (mBits & (1 << i))
-            printf("1");
-        else
-            printf("0");
-    }
-    printf("\n");
-
-    printf("       ");
-    for (auto i = (int)bits - 1; i >= 0; i--) {
-        auto byte_index = BIT_STRING_byte_index(bit_string, i);
-        auto bit_index  = BIT_STRING_bit_index(bit_string, i);
-        if (byte_index < 0) {
-            printf(" ");
-        } else {
-            printf("%d", byte_index % 10);
+    assert(bits <= 64);
+    for (int j = 0; j < 64; j++) {
+        if (mBits & (1llu << j)) {
+            auto x = j / 8;
+            auto y = 7 - (j % 8);
+            assert(x < bit_string->size);
+            if (x < bit_string->size) {
+                bit_string->buf[x] |= 1 << y;
+            }
         }
     }
-    printf("\n");
-    printf("       ");
-    for (auto i = (int)bits - 1; i >= 0; i--) {
-        auto bit_index = BIT_STRING_bit_index(bit_string, i);
-        if (bit_index < 0) {
-            printf(" ");
-        } else {
-            printf("%d", bit_index % 10);
-        }
-    }
-    printf("\n");
-    printf("bytes: ");
-    for (auto i = (int)bits - 1; i >= 0; i--) {
-        auto byte_index = BIT_STRING_byte_index(bit_string, i);
-        auto bit_index  = BIT_STRING_bit_index(bit_string, i);
-        if (byte_index < 0) {
-            printf(" ");
-        } else {
-            printf("%d", bit_string->buf[byte_index] & (1 << bit_index) ? 1 : 0);
-        }
-    }
-    printf("\n");
 
-    auto func = [](const void* buffer, size_t size, void* application_specific_key) {
-        auto& stream = *reinterpret_cast<std::stringstream*>(application_specific_key);
-        stream << std::string{reinterpret_cast<const char*>(buffer), size};
-        return static_cast<int>(size);
-    };
-
-    BIT_STRING_s tmp{};
-    BIT_STRING__compactify(bit_string, &tmp);
-    printf("       ");
-    for (auto i = (int)(tmp.size * 8 - tmp.bits_unused) - 1; i >= 0; i--) {
-        auto byte_index = BIT_STRING_byte_index(&tmp, i);
-        auto bit_index  = BIT_STRING_bit_index(&tmp, i);
-        if (byte_index < 0) {
-            printf(" ");
-        } else {
-            printf("%d", byte_index % 10);
-        }
-    }
-    printf("\n");
-    printf("       ");
-    for (auto i = (int)(tmp.size * 8 - tmp.bits_unused) - 1; i >= 0; i--) {
-        auto bit_index = BIT_STRING_bit_index(&tmp, i);
-        if (bit_index < 0) {
-            printf(" ");
-        } else {
-            printf("%d", bit_index % 10);
-        }
-    }
-    printf("\n");
-    printf("bytes: ");
-    for (auto i = (int)(tmp.size * 8 - tmp.bits_unused) - 1; i >= 0; i--) {
-        auto byte_index = BIT_STRING_byte_index(&tmp, i);
-        auto bit_index  = BIT_STRING_bit_index(&tmp, i);
-        if (byte_index < 0) {
-            printf(" ");
-        } else {
-            printf("%d", tmp.buf[byte_index] & (1 << bit_index) ? 1 : 0);
-        }
-    }
-    printf("\n");
-
-    std::stringstream stream;
-    stream << "before: ";
-    BIT_STRING_print(&asn_DEF_BIT_STRING, bit_string, 0, func, &stream);
-    stream << '\n';
-    stream << "after:  ";
-    BIT_STRING_print(&asn_DEF_BIT_STRING, &tmp, 0, func, &stream);
-    stream << '\n';
-    printf("%s", stream.str().c_str());
-
+    BIT_STRING_s temp{};
+    // BIT_STRING__compactify(bit_string, &temp);
+    //*bit_string = temp;
     return bit_string;
 }
 
+#if 0
 BitString::BitString(size_t bits) {
     buf         = nullptr;
     size        = 0;
@@ -337,23 +233,14 @@ std::string BitString::as_string() {
     delete[] data;
     return stream.str();
 }
+#endif
 
 void supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value) {
-    auto bit_string = BitString::allocate(16, tac);
-    bit_string->set_integer(0, 16, tac_value);
+    BitStringBuilder{}.integer(0, 16, tac_value).into_bit_string(16, tac);
 }
 
 void supl_fill_cell_identity(CellIdentity_t* identity, size_t value) {
-    // auto bit_string = BitString::allocate(28, identity);
-    // bit_string->set_integer(0, 28, value);
-    BitStringBuilder{}.set_int(0, 28, value).into_bit_string(28, identity);
-
-    //BitStringBuilder{}
-    //    .set(1)
-    //    .set(2)
-    //    .set(3)
-    //    .set(27)
-    //    .into_bit_string(28, identity);
+    BitStringBuilder{}.integer(0, 28, 14).into_bit_string(28, identity);
 }
 
 MCC* supl_create_mcc(int mcc_value) {

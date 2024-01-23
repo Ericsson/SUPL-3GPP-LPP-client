@@ -267,7 +267,7 @@ static void lpp_HWVVAU(HorizontalWithVerticalVelocityAndUncertainty_t* HWVVAU,
 static Velocity_t* lpp_Velocity(const LocationInformation& location) {
     auto V     = ALLOC_ZERO(Velocity_t);
     V->present = Velocity_PR_horizontalWithVerticalVelocityAndUncertainty;
-    lpp_HWVVAU(&V->choice.horizontalWithVerticalVelocityAndUncertainty, location); // TODO: 
+    lpp_HWVVAU(&V->choice.horizontalWithVerticalVelocityAndUncertainty, location);  // TODO:
     return V;
 }
 
@@ -275,9 +275,8 @@ static CommonIEsProvideLocationInformation_t::CommonIEsProvideLocationInformatio
 lpp_PLI_CIE_ext2(const LocationInformation& location) {
     auto ext2 = ALLOC_ZERO(
         CommonIEsProvideLocationInformation_t::CommonIEsProvideLocationInformation__ext2);
-    auto locationSource      = BitString::allocate(6);
-    ext2->locationSource_r13 = locationSource;
-    locationSource->set_bit(LocationSource_r13_ha_gnss_v1510);
+    ext2->locationSource_r13 =
+        BitStringBuilder{}.set(LocationSource_r13_ha_gnss_v1510).to_bit_string(6);
 
     struct tm tm {};
     auto      seconds      = UTC_Time{location.tai_time}.timestamp().seconds();
@@ -324,8 +323,9 @@ static GNSS_LocationInformation* lpp_LocationInformation(const LocationInformati
     mrt.gnss_TOD_msec = msec % (3600 * 1000);
     mrt.gnss_TOD_frac = newLong((long)nfrac);
 
-    auto bitmask = BitString::allocate(6, &location_information->agnss_List.gnss_ids);
-    bitmask->set_bit(0);  // GPS
+    BitStringBuilder{}
+        .set(GNSS_ID_Bitmap__gnss_ids_gps)
+        .into_bit_string(6, &location_information->agnss_List.gnss_ids);
 
     return location_information;
 }
@@ -409,8 +409,9 @@ lpp_PLI_get_ECID_ProvideLocationInformation(ECIDInformation* ecid, bool has_info
     CellGlobalIdEUTRA_AndUTRA_t* CGI = ALLOC_ZERO(CellGlobalIdEUTRA_AndUTRA_t);
     CGI->cellIdentity.present        = CellGlobalIdEUTRA_AndUTRA__cellIdentity_PR_eutra;
 
-    auto eutra = BitString::allocate(28, &CGI->cellIdentity.choice.eutra);
-    eutra->set_integer(0, 28, ecid->cell.cell);
+    BitStringBuilder{}
+        .integer(0, 28, ecid->cell.cell)
+        .into_bit_string(28, &CGI->cellIdentity.choice.eutra);
 
     int mcc  = ecid->cell.mcc;
     int temp = (int)(mcc - mcc % 100) / 100;

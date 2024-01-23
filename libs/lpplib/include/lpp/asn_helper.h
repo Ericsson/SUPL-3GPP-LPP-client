@@ -17,23 +17,31 @@ public:
     template <typename T>
     BitStringBuilder& set(T index) {
         assert(index < 64);
-        mBits |= 1 << index;
+        mBits |= 1llu << index;
         return *this;
     }
 
     template <typename T>
     BitStringBuilder& clear(T index) {
         assert(index < 64);
-        mBits &= ~(1 << index);
+        mBits &= ~(1llu << index);
         return *this;
     }
 
     template <typename T>
-    BitStringBuilder& set_int(T index, T bits, uint32_t value) {
-        assert(index < 64);
-        assert(bits <= 32);
-        assert(value < (1 << bits));
-        mBits |= (value & ((1 << bits) - 1)) << index;
+    BitStringBuilder& integer(T index, T bits, uint64_t value) {
+        // NOTE(ewasjon): A bit string is numbered from left to right, so the
+        // first bit is the most significant bit. This is the opposite of how
+        // we usually number bits in C, so we need to reverse the order of the
+        // bits.
+        for (T i = 0; i < bits; i++) {
+            auto bit = bits - i - 1;
+            if (value & (1llu << bit)) {
+                set(index + i);
+            } else {
+                clear(index + i);
+            }
+        }
         return *this;
     }
 
@@ -44,6 +52,7 @@ private:
     uint64_t mBits;
 };
 
+#if 0
 class BitString : public BIT_STRING_s {
 public:
     explicit BitString(size_t bits);
@@ -88,6 +97,7 @@ private:
 
 static_assert(sizeof(BitString) == sizeof(BIT_STRING_s),
               "BitString must be the same size as BIT_STRING_s");
+#endif
 
 void   supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value);
 void   supl_fill_cell_identity(CellIdentity_t*, size_t value);
