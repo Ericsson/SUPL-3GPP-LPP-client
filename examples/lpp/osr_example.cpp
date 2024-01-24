@@ -121,8 +121,8 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         ublox_options.interface->open();
         ublox_options.interface->print_info();
 
-        gUbloxReceiver = std::unique_ptr<UReceiver>(
-            new UReceiver(ublox_options.port, std::move(ublox_options.interface)));
+        gUbloxReceiver = std::unique_ptr<UReceiver>(new UReceiver(
+            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages));
         gUbloxReceiver->start();
     }
 
@@ -131,8 +131,8 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         nmea_options.interface->open();
         nmea_options.interface->print_info();
 
-        gNmeaReceiver =
-            std::unique_ptr<NReceiver>(new NReceiver(std::move(nmea_options.interface)));
+        gNmeaReceiver = std::unique_ptr<NReceiver>(
+            new NReceiver(std::move(nmea_options.interface), nmea_options.print_messages));
         gNmeaReceiver->start();
     }
 
@@ -141,7 +141,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
 
     LPP_Client client{false /* enable experimental segmentation support */};
 
-    if(!identity_options.use_supl_identity_fix) {
+    if (!identity_options.use_supl_identity_fix) {
         client.use_incorrect_supl_identity();
     }
 

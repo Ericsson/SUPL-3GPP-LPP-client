@@ -22,6 +22,15 @@ class GgaMessage final : public Message {
 public:
     ~GgaMessage() override = default;
 
+    GgaMessage(const GgaMessage& other)
+        : Message(other), mTimeOfDay(other.mTimeOfDay), mLatitude(other.mLatitude),
+          mLongitude(other.mLongitude), mFixQuality(other.mFixQuality),
+          mSatellitesInView(other.mSatellitesInView), mHdop(other.mHdop), mMsl(other.mMsl),
+          mGeoidSeparation(other.mGeoidSeparation) {}
+    GgaMessage(GgaMessage&&)                 = delete;
+    GgaMessage& operator=(const GgaMessage&) = delete;
+    GgaMessage& operator=(GgaMessage&&)      = delete;
+
     void print() const NMEA_NOEXCEPT override;
 
     /// Get the time of day.

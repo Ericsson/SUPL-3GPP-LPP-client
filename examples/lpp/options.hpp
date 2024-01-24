@@ -63,12 +63,16 @@ struct UbloxOptions {
     receiver::ublox::Port port;
     /// Interface to use for communication with the receiver.
     std::unique_ptr<interface::Interface> interface;
+    /// Whether to print messages.
+    bool print_messages;
 };
 
 /// Nmea options.
 struct NmeaOptions {
     /// Interface to use for communication with the receiver.
     std::unique_ptr<interface::Interface> interface;
+    /// Whether to print messages.
+    bool print_messages;
 };
 
 /// Location information options.

@@ -13,8 +13,8 @@ namespace ublox {
 class ThreadedReceiver {
 public:
     /// The receiver will be created on the thread, thus this will _not_ block.
-    UBLOX_EXPLICIT ThreadedReceiver(Port                                  port,
-                                    std::unique_ptr<interface::Interface> interface) UBLOX_NOEXCEPT;
+    UBLOX_EXPLICIT ThreadedReceiver(Port port, std::unique_ptr<interface::Interface> interface,
+                                    bool print_messages) UBLOX_NOEXCEPT;
     ~ThreadedReceiver() UBLOX_NOEXCEPT;
 
     /// Start the receiver thread.
@@ -43,6 +43,7 @@ private:
     std::unique_ptr<std::thread>          mThread;
     std::atomic<bool>                     mRunning;
     std::mutex                            mMutex;
+    bool                                  mPrintMessages;
 
     std::unique_ptr<UbxNavPvt> mNavPvt;
 };

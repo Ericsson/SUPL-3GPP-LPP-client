@@ -1,5 +1,6 @@
 #include "parser.hpp"
 #include "gga.hpp"
+#include "gst.hpp"
 #include "message.hpp"
 #include "vtg.hpp"
 
@@ -123,6 +124,13 @@ std::unique_ptr<Message> Parser::try_parse() NMEA_NOEXCEPT {
         }
     } else if (prefix == "GPVTG" || prefix == "GLVTG" || prefix == "GAVTG" || prefix == "GNVTG") {
         auto message = VtgMessage::parse(prefix, data_payload);
+        if (message) {
+            return message;
+        } else {
+            return std::unique_ptr<ErrorMessage>(new ErrorMessage(prefix, data_payload));
+        }
+    } else if (prefix == "GPGST" || prefix == "GLGST" || prefix == "GAGST" || prefix == "GNGST") {
+        auto message = GstMessage::parse(prefix, data_payload);
         if (message) {
             return message;
         } else {

@@ -1,5 +1,6 @@
 #pragma once
 #include <receiver/nmea/gga.hpp>
+#include <receiver/nmea/gst.hpp>
 #include <receiver/nmea/receiver.hpp>
 #include <receiver/nmea/types.hpp>
 #include <receiver/nmea/vtg.hpp>
@@ -15,7 +16,8 @@ namespace nmea {
 class ThreadedReceiver {
 public:
     /// The receiver will be created on the thread, thus this will _not_ block.
-    NMEA_EXPLICIT ThreadedReceiver(std::unique_ptr<interface::Interface> interface) NMEA_NOEXCEPT;
+    NMEA_EXPLICIT ThreadedReceiver(std::unique_ptr<interface::Interface> interface,
+                                   bool print_messages) NMEA_NOEXCEPT;
     ~ThreadedReceiver() NMEA_NOEXCEPT;
 
     /// Start the receiver thread.
@@ -36,6 +38,10 @@ public:
     /// @return A unique pointer to the message, or nullptr if no message has been received.
     NMEA_NODISCARD std::unique_ptr<VtgMessage> vtg() NMEA_NOEXCEPT;
 
+    /// Get the last received GST message.
+    /// @return A unique pointer to the message, or nullptr if no message has been received.
+    NMEA_NODISCARD std::unique_ptr<GstMessage> gst() NMEA_NOEXCEPT;
+
 protected:
     /// This function is called at the start of the receiver thread. It handles the blocking
     /// communication with the receiver.
@@ -47,9 +53,11 @@ private:
     std::unique_ptr<std::thread>          mThread;
     std::atomic<bool>                     mRunning;
     std::mutex                            mMutex;
+    bool                                  mPrintMessages;
 
     std::unique_ptr<GgaMessage> mGga;
     std::unique_ptr<VtgMessage> mVtg;
+    std::unique_ptr<GstMessage> mGst;
 };
 
 }  // namespace nmea

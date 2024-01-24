@@ -252,7 +252,7 @@ static asn_enc_rval_t uper_encode_to_length(const asn_TYPE_descriptor_t* td,
 SUPL_EncodedMessage SUPL_Client::encode(SUPL_Message& message) {
     auto pdu = message.get();
 
-    xer_fprint(stdout, &asn_DEF_ULP_PDU, pdu);
+    // xer_fprint(stdout, &asn_DEF_ULP_PDU, pdu);
 
     // Determine the PDU length
     auto result = uper_encode_to_length(&asn_DEF_ULP_PDU, NULL, pdu);

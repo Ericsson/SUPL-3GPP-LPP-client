@@ -165,26 +165,26 @@ std::unique_ptr<Message> UbxNavPvt::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     payload.sec   = decoder.U1();
 
     auto valid                   = decoder.X1();
-    payload.valid.valid_date     = valid & 0x01;
-    payload.valid.valid_time     = valid & 0x02;
-    payload.valid.fully_resolved = valid & 0x04;
-    payload.valid.valid_mag      = valid & 0x08;
+    payload.valid.valid_date     = (valid >> 0) & 0x01;
+    payload.valid.valid_time     = (valid >> 1) & 0x02;
+    payload.valid.fully_resolved = (valid >> 2) & 0x04;
+    payload.valid.valid_mag      = (valid >> 3) & 0x08;
 
     payload.t_acc    = decoder.U4();
     payload.nano     = decoder.I4();
     payload.fix_type = decoder.U1();
 
     auto flags                   = decoder.X1();
-    payload.flags.gnss_fix_ok    = flags & 0x01;
-    payload.flags.diff_soln      = flags & 0x02;
+    payload.flags.gnss_fix_ok    = (flags >> 0) & 0x01;
+    payload.flags.diff_soln      = (flags >> 1) & 0x02;
     payload.flags.psm_state      = (flags >> 2) & 0x07;
-    payload.flags.head_veh_valid = flags & 0x20;
+    payload.flags.head_veh_valid = (flags >> 5) & 0x20;
     payload.flags.carr_soln      = (flags >> 6) & 0x03;
 
     auto flags2                   = decoder.X1();
-    payload.flags2.confirmed_avai = flags2 & 0x20;
-    payload.flags2.confirmed_date = flags2 & 0x40;
-    payload.flags2.confirmed_time = flags2 & 0x80;
+    payload.flags2.confirmed_avai = (flags2 >> 5) & 0x20;
+    payload.flags2.confirmed_date = (flags2 >> 6) & 0x40;
+    payload.flags2.confirmed_time = (flags2 >> 7) & 0x80;
 
     payload.num_sv   = decoder.U1();
     payload.lon      = decoder.I4();
@@ -203,7 +203,7 @@ std::unique_ptr<Message> UbxNavPvt::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     payload.p_dop    = decoder.U2();
 
     auto flags3                        = decoder.X1();
-    payload.flags3.invalid_llh         = flags3 & 0x01;
+    payload.flags3.invalid_llh         = (flags3 >> 0) & 0x01;
     payload.flags3.last_correction_arg = (flags3 >> 1) & 0x0F;
 
     decoder.skip(4);

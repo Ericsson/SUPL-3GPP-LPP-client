@@ -195,6 +195,22 @@ args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
 // Output
 //
 
+args::Group other_receiver_group{
+    "Other Receiver Options:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Flag print_messages{other_receiver_group,
+                          "print-receiver-messages",
+                          "Print Receiver Messages",
+                          {"print-receiver-messages", "prm"},
+                          args::Options::Single};
+
+//
+// Output
+//
+
 args::Group output{
     "Output:",
     args::Group::Validators::AllChildGroups,
@@ -267,7 +283,7 @@ args::Group stdout_output{
 args::Flag stdout_output_flag{stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
 
 //
-// Output
+// Location Information
 //
 
 args::Group location_infomation{
@@ -612,11 +628,20 @@ static Port ublox_parse_port() {
     }
 }
 
+static bool print_receiver_options_parse() {
+    if (print_messages) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 static UbloxOptions ublox_parse_options() {
     if (ublox_serial_device || ublox_i2c_device || ublox_tcp_ip_address || ublox_udp_ip_address) {
-        auto port      = ublox_parse_port();
-        auto interface = ublox_parse_interface();
-        return UbloxOptions{port, std::move(interface)};
+        auto port           = ublox_parse_port();
+        auto interface      = ublox_parse_interface();
+        auto print_messages = print_receiver_options_parse();
+        return UbloxOptions{port, std::move(interface), print_messages};
     } else {
         return UbloxOptions{};
     }
@@ -666,9 +691,10 @@ static NmeaOptions nmea_parse_options() {
             }
         }
 
-        auto interface = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
-                                                      data_bits, stop_bits, parity_bit);
-        return NmeaOptions{std::unique_ptr<Interface>(interface)};
+        auto interface      = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
+                                                           data_bits, stop_bits, parity_bit);
+        auto print_messages = print_receiver_options_parse();
+        return NmeaOptions{std::unique_ptr<Interface>(interface), print_messages};
     } else {
         return NmeaOptions{};
     }
@@ -824,6 +850,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     args::GlobalOptions modem_globals{parser, modem};
     args::GlobalOptions ublox_receiver_globals{parser, ublox_receiver_group};
     args::GlobalOptions nmea_receiver_globals{parser, nmea_receiver_group};
+    args::GlobalOptions other_receiver_globals{parser, other_receiver_group};
     args::GlobalOptions output_globals{parser, output};
     args::GlobalOptions location_information_globals{parser, location_infomation};
 
