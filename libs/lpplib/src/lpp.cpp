@@ -68,9 +68,9 @@ bool LPP_Client::supl_start(CellID cell) {
 
     {
         // Application Id
-        std::string client_name = "supl-3gpp-lpp-client";
+        std::string client_name     = "supl-3gpp-lpp-client";
         std::string client_provider = "ericsson";
-        std::string client_version = CLIENT_VERSION;
+        std::string client_version  = CLIENT_VERSION;
 
         if (mSuplIdentityFix) {
             client_name += "/sif";
@@ -171,8 +171,14 @@ bool LPP_Client::supl_send_posinit(CellID cell) {
     return mSUPL->send(message);
 }
 
-bool LPP_Client::supl_receive(std::vector<LPP_Message*>& messages, int milliseconds) {
-    auto message = mSUPL->receive(milliseconds);
+bool LPP_Client::supl_receive(std::vector<LPP_Message*>& messages, int milliseconds,
+                              bool blocking) {
+    SUPL_Message message{};
+    if (blocking) {
+        message = mSUPL->receive(milliseconds);
+    } else {
+        message = mSUPL->receive2();
+    }
     if (!message) {
         return false;
     }
@@ -341,24 +347,25 @@ bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transact
 }
 
 bool LPP_Client::process() {
+    using namespace std::chrono;
     if (!mSUPL->is_connected()) {
         return false;
     }
 
+    int timeout = -1;
     if (provide_li.type >= 0) {
-        using namespace std::chrono;
         auto current  = system_clock::now();
         auto duration = current - provide_li.last;
         if (duration > std::chrono::seconds(1)) {
             handle_provide_location_information(&provide_li);
-            provide_li.last = current - (duration - std::chrono::seconds(1));
+            provide_li.last = current;
+        } else {
+            timeout = duration_cast<milliseconds>(duration).count();
         }
     }
 
-    int timeout = -1;
-
     std::vector<LPP_Message*> messages;
-    if (!supl_receive(messages, timeout)) {
+    if (!supl_receive(messages, timeout, false)) {
         if (!mSUPL->is_connected()) {
             return false;
         }
@@ -386,7 +393,7 @@ bool LPP_Client::wait_for_assistance_data_response(LPP_Transaction* transaction)
     auto last            = time(NULL);
     while (time(NULL) - last < timeout_seconds && !ok) {
         std::vector<LPP_Message*> messages;
-        if (!supl_receive(messages, timeout_seconds * 1000)) {
+        if (!supl_receive(messages, timeout_seconds * 1000, true)) {
             disconnect();
             return false;
         }

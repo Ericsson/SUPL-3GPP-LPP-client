@@ -71,6 +71,11 @@ public:
     UBLOX_EXPLICIT UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT;
     ~UbxNavPvt() override = default;
 
+    UbxNavPvt(const UbxNavPvt& other) : Message(other), mPayload(other.mPayload) {}
+    UbxNavPvt(UbxNavPvt&&)                 = delete;
+    UbxNavPvt& operator=(const UbxNavPvt&) = delete;
+    UbxNavPvt& operator=(UbxNavPvt&&)      = delete;
+
     /// Returns the unprocessed raw payload.
     UBLOX_NODISCARD const raw::NavPvt& payload() const UBLOX_NOEXCEPT { return mPayload; }
 

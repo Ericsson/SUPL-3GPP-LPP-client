@@ -95,7 +95,6 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
 
     // NOTE(ewasjon): We require GGA, VTG, and GST message to produce a valid location information,
     // if either is missing we will skip sending a provider location information message.
-    // TODO(ewasjon): These methods should _really_ clone the message and not take ownership of it.
     auto gga = receiver->gga();
     auto vtg = receiver->vtg();
     auto gst = receiver->gst();
@@ -113,7 +112,7 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
     location.bearing                   = vtg->true_course_over_ground();
 
     // TODO(ewasjon): Are these not available in NMEA?
-    location.vertical_accuracy           = 0;
+    location.vertical_accuracy           = gst->vertical_position_error();
     location.vertical_speed              = 0;
     location.vertical_speed_accuracy     = 0;
     location.vertical_velocity_direction = VerticalDirection::UP;

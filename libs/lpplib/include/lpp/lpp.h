@@ -1,6 +1,6 @@
 #pragma once
-#include <lpp/cell_id.h>
 #include <chrono>
+#include <lpp/cell_id.h>
 #include <vector>
 #include "asn_helper.h"
 #include "asnlib.h"
@@ -18,9 +18,9 @@ class SUPL_Client;
 class LPP_Client {
 public:
     typedef int32_t AD_Request;
-    typedef void    (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
-    typedef bool    (*PLI_Callback)(LocationInformation&, HaGnssMetrics&, void*);
-    typedef bool    (*PECID_Callback)(ECIDInformation&, void*);
+    typedef void (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+    typedef bool (*PLI_Callback)(LocationInformation&, HaGnssMetrics&, void*);
+    typedef bool (*PECID_Callback)(ECIDInformation&, void*);
 
     struct ProvideLI {
         LocationInformationType_t             type;
@@ -81,10 +81,9 @@ private:
     bool supl_start(CellID cell);
     bool supl_response();
     bool supl_send_posinit(CellID cell);
-    bool supl_receive(std::vector<LPP_Message*>& messages, int milliseconds);
+    bool supl_receive(std::vector<LPP_Message*>& messages, int timeout_ms, bool blocking);
     bool supl_send(LPP_Message* message);
     bool supl_send(const std::vector<LPP_Message*>& messages);
-
 
     LPP_Transaction new_transaction();
 

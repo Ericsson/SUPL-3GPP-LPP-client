@@ -180,9 +180,9 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
         timeout.tv_usec = (milliseconds % 1000) * 1000;
 
         auto timeout_ptr = &timeout;
-        if (milliseconds == 0) {
-            timeout_ptr = NULL;
-        }
+        // if (milliseconds == 0) {
+        //     timeout_ptr = NULL;
+        // }
 
         fd_set sock;
         FD_ZERO(&sock);

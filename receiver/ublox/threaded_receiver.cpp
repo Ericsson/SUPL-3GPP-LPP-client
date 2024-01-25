@@ -58,9 +58,6 @@ void ThreadedReceiver::run() {
 
     while (mRunning) {
         {
-            RUT_DEBUG("[rut] lock (run)\n");
-            std::lock_guard<std::mutex> lock(mMutex);
-
             if (mReceiver) {
                 RUT_DEBUG("[rut] process\n");
                 mReceiver->process();
@@ -69,6 +66,9 @@ void ThreadedReceiver::run() {
                     RUT_DEBUG("[rut] check\n");
                     auto message = mReceiver->try_parse();
                     if (message) {
+                        RUT_DEBUG("[rut] lock (run)\n");
+                        std::lock_guard<std::mutex> lock(mMutex);
+
                         if (mPrintMessages) {
                             message->print();
                         }
@@ -79,12 +79,12 @@ void ThreadedReceiver::run() {
                             mNavPvt = std::unique_ptr<UbxNavPvt>(
                                 static_cast<UbxNavPvt*>(message.release()));
                         }
+                        RUT_DEBUG("[rut] unlock (run)\n");
                     } else {
                         break;
                     }
                 }
             }
-            RUT_DEBUG("[rut] unlock (run)\n");
         }
 
         if (mReceiver) {

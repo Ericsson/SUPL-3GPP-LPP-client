@@ -28,6 +28,11 @@ public:
     UBLOX_EXPLICIT UbxCfgValget(raw::CfgValget payload) UBLOX_NOEXCEPT;
     ~UbxCfgValget() override = default;
 
+    UbxCfgValget(const UbxCfgValget& other) : Message(other), mPayload(other.mPayload) {}
+    UbxCfgValget(UbxCfgValget&&)                 = delete;
+    UbxCfgValget& operator=(const UbxCfgValget&) = delete;
+    UbxCfgValget& operator=(UbxCfgValget&&)      = delete;
+
     void print() const UBLOX_NOEXCEPT override;
 
     /// Get the value of a configuration key. If the key is not present,
