@@ -1,6 +1,6 @@
 #pragma once
-#include <utility/types.h>
 #include <utility/time.h>
+#include <utility/types.h>
 
 #include <string>
 
@@ -21,7 +21,7 @@ public:
     explicit TAI_Time(const BDT_Time& time);
 
     NO_DISCARD Timestamp timestamp() const { return tm; }
-    NO_DISCARD std::string    rtklib_time_string();
+    NO_DISCARD std::string rtklib_time_string() const;
 
     NO_DISCARD static TAI_Time now();
 

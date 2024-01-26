@@ -1,6 +1,6 @@
 #pragma once
-#include <lpp/cell_id.h>
 #include <chrono>
+#include <lpp/cell_id.h>
 #include <vector>
 #include "asn_helper.h"
 #include "asnlib.h"
@@ -18,9 +18,9 @@ class SUPL_Client;
 class LPP_Client {
 public:
     typedef int32_t AD_Request;
-    typedef void    (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
-    typedef bool    (*PLI_Callback)(LocationInformation&, HaGnssMetrics&, void*);
-    typedef bool    (*PECID_Callback)(ECIDInformation&, void*);
+    typedef void (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+    typedef bool (*PLI_Callback)(LocationInformation&, HaGnssMetrics&, void*);
+    typedef bool (*PECID_Callback)(ECIDInformation&, void*);
 
     struct ProvideLI {
         LocationInformationType_t             type;
@@ -30,6 +30,8 @@ public:
 
     LPP_Client(bool segmentation);
     ~LPP_Client();
+
+    void use_incorrect_supl_identity();
 
     void set_identity_msisdn(unsigned long msisdn);
     void set_identity_imsi(unsigned long imsi);
@@ -64,6 +66,12 @@ public:
     void provide_location_information_callback(void* userdata, PLI_Callback callback);
     void provide_ecid_callback(void* userdata, PECID_Callback callback);
 
+    // Force provide location information to be unsolicited sent.
+    void force_location_information();
+
+    OCTET_STRING* encode(LPP_Message* message);
+    LPP_Message*  decode(OCTET_STRING* data);
+
 private:
     bool wait_for_assistance_data_response(LPP_Transaction* transaction);
     bool process_message(LPP_Message*, LPP_Transaction* transaction);
@@ -73,12 +81,9 @@ private:
     bool supl_start(CellID cell);
     bool supl_response();
     bool supl_send_posinit(CellID cell);
-    bool supl_receive(std::vector<LPP_Message*>& messages, int milliseconds);
+    bool supl_receive(std::vector<LPP_Message*>& messages, int timeout_ms, bool blocking);
     bool supl_send(LPP_Message* message);
     bool supl_send(const std::vector<LPP_Message*>& messages);
-
-    OCTET_STRING* encode(LPP_Message* message);
-    LPP_Message*  decode(OCTET_STRING* data);
 
     LPP_Transaction new_transaction();
 
@@ -106,7 +111,9 @@ private:
 
     ProvideLI provide_li;
 
+    bool mForceLocationInformation;
     bool mEnableSegmentation;
+    bool mSuplIdentityFix;
 };
 
 void network_initialize();

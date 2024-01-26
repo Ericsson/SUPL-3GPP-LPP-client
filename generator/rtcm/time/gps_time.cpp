@@ -1,6 +1,7 @@
 #include "gps_time.hpp"
 #include "utc_time.hpp"
 
+namespace ts {
 static TsInt leap_seconds_utc_gps() {
     // TODO(ewasjon): This will not always be correct. Use LeapSeconds::
     // instead.
@@ -77,3 +78,4 @@ GPS_Time GPS_Time::now() {
 Timestamp GPS_Time::utc_timestamp() const {
     return gps_2_utc(tm);
 }
+}  // namespace ts

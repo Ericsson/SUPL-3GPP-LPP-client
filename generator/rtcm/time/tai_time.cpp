@@ -1,6 +1,7 @@
 #include "tai_time.hpp"
 #include "utc_time.hpp"
 
+namespace ts {
 static Timestamp utc_2_tai(Timestamp timestamp) {
     timestamp.subtract(LeapSeconds::count());
     return timestamp;
@@ -28,3 +29,4 @@ TAI_Time TAI_Time::now() {
 Timestamp TAI_Time::utc_timestamp() const {
     return tai_2_utc(tm);
 }
+}  // namespace ts

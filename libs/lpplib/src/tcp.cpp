@@ -180,9 +180,9 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
         timeout.tv_usec = (milliseconds % 1000) * 1000;
 
         auto timeout_ptr = &timeout;
-        if (milliseconds == 0) {
-            timeout_ptr = NULL;
-        }
+        // if (milliseconds == 0) {
+        //     timeout_ptr = NULL;
+        // }
 
         fd_set sock;
         FD_ZERO(&sock);
@@ -217,15 +217,6 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
 }
 
 int TCP_Client::send(void* buffer, int size) {
-#if 0
-    // hexdump
-    for (int i = 0; i < size; i++) {
-        printf("%02x ", ((uint8_t*)buffer)[i]);
-        if (i % 16 == 15) {
-            printf("\n");
-        }
-    }
-#endif
 #if USE_OPENSSL
     if (mUseSSL)
         return SSL_write(mSSL, buffer, size);

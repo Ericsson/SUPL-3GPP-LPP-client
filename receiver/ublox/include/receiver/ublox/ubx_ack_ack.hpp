@@ -1,8 +1,8 @@
 #pragma once
+#include <memory>
 #include <receiver/ublox/message.hpp>
 #include <string>
 #include <vector>
-#include <memory>
 
 namespace receiver {
 namespace ublox {
@@ -22,6 +22,11 @@ public:
 
     UBLOX_EXPLICIT UbxAckAck(raw::AckAck payload) UBLOX_NOEXCEPT;
     ~UbxAckAck() override = default;
+
+    UbxAckAck(const UbxAckAck& other) : Message(other), mPayload(other.mPayload) {}
+    UbxAckAck(UbxAckAck&&)                 = delete;
+    UbxAckAck& operator=(const UbxAckAck&) = delete;
+    UbxAckAck& operator=(UbxAckAck&&)      = delete;
 
     UBLOX_NODISCARD const raw::AckAck& payload() const UBLOX_NOEXCEPT { return mPayload; }
 

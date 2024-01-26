@@ -1,7 +1,9 @@
 #pragma once
-#include <string>
 #include "timestamp.hpp"
 
+#include <string>
+
+namespace ts {
 class GPS_Time;
 class GLO_Time;
 class GST_Time;
@@ -34,3 +36,4 @@ private:
     // january 1970).
     Timestamp tm;
 };
+}  // namespace ts

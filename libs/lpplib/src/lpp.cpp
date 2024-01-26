@@ -2,16 +2,19 @@
 #include "internal_lpp.h"
 #include "supl.h"
 
+#include <OCTET_STRING.h>
 #include <utility/cpp.h>
 
 LPP_Client::LPP_Client(bool segmentation) {
-    connected           = false;
-    main_request        = AD_REQUEST_INVALID;
-    provide_li.type     = -1;
-    transaction_counter = 1;
-    client_id           = 0xC0DEC0DE;
-    mEnableSegmentation = segmentation;
-    mSUPL               = std::make_unique<SUPL_Client>();
+    connected                 = false;
+    main_request              = AD_REQUEST_INVALID;
+    provide_li.type           = -1;
+    transaction_counter       = 1;
+    client_id                 = 0xC0DEC0DE;
+    mEnableSegmentation       = segmentation;
+    mForceLocationInformation = false;
+    mSUPL                     = std::make_unique<SUPL_Client>();
+    mSuplIdentityFix          = true;
 
     main_request_callback  = nullptr;
     main_request_userdata  = nullptr;
@@ -21,14 +24,18 @@ LPP_Client::LPP_Client(bool segmentation) {
 
 LPP_Client::~LPP_Client() {}
 
+void LPP_Client::use_incorrect_supl_identity() {
+    mSuplIdentityFix = false;
+}
+
 void LPP_Client::set_identity_msisdn(unsigned long msisdn) {
     if (connected) return;
-    mSUPL->set_session(SUPL_Session::msisdn(0, msisdn));
+    mSUPL->set_session(SUPL_Session::msisdn(0, msisdn, mSuplIdentityFix));
 }
 
 void LPP_Client::set_identity_imsi(unsigned long imsi) {
     if (connected) return;
-    mSUPL->set_session(SUPL_Session::imsi(0, imsi));
+    mSUPL->set_session(SUPL_Session::imsi(0, imsi, mSuplIdentityFix));
 }
 
 void LPP_Client::set_identity_ipv4(const std::string& ipv4) {
@@ -57,6 +64,28 @@ bool LPP_Client::supl_start(CellID cell) {
         pos_protocol_ext->posProtocolVersionLPP = lpp_pos_protocol;
 
         start->sETCapabilities.posProtocol.ver2_PosProtocol_extension = pos_protocol_ext;
+    }
+
+    {
+        // Application Id
+        std::string client_name     = "supl-3gpp-lpp-client";
+        std::string client_provider = "ericsson";
+        std::string client_version  = CLIENT_VERSION;
+
+        if (mSuplIdentityFix) {
+            client_name += "/sif";
+        }
+
+        auto application_id = ALLOC_ZERO(ApplicationID);
+        OCTET_STRING_fromString(&application_id->appName, client_name.c_str());
+        OCTET_STRING_fromString(&application_id->appProvider, client_provider.c_str());
+
+        application_id->appVersion = ALLOC_ZERO(IA5String_t);
+        OCTET_STRING_fromString(application_id->appVersion, client_version.c_str());
+
+        auto ext                         = ALLOC_ZERO(Ver2_SUPL_START_extension);
+        ext->applicationID               = application_id;
+        start->ver2_SUPL_START_extension = ext;
     }
 
     {
@@ -142,8 +171,14 @@ bool LPP_Client::supl_send_posinit(CellID cell) {
     return mSUPL->send(message);
 }
 
-bool LPP_Client::supl_receive(std::vector<LPP_Message*>& messages, int milliseconds) {
-    auto message = mSUPL->receive(milliseconds);
+bool LPP_Client::supl_receive(std::vector<LPP_Message*>& messages, int milliseconds,
+                              bool blocking) {
+    SUPL_Message message{};
+    if (blocking) {
+        message = mSUPL->receive(milliseconds);
+    } else {
+        message = mSUPL->receive2();
+    }
     if (!message) {
         return false;
     }
@@ -186,6 +221,10 @@ bool LPP_Client::supl_send(const std::vector<LPP_Message*>& messages) {
             auto lpp = encode(data);
             if (lpp) {
                 asn_sequence_add(&payload->list, lpp);
+            } else {
+#if DEBUG_LPP_LIB
+                printf("ERROR: Failed to encode LPP message\n");
+#endif
             }
         }
 
@@ -206,29 +245,41 @@ LPP_Message* LPP_Client::decode(OCTET_STRING* data) {
 }
 
 bool LPP_Client::connect(const std::string& host, int port, bool use_ssl, CellID supl_cell) {
+#if DEBUG_LPP_LIB
     printf("DEBUG: Connecting to SUPL server %s:%d\n", host.c_str(), port);
+#endif
+
     // Initialize and connect to the location server
     if (!mSUPL->connect(host, port, use_ssl)) {
+#if DEBUG_LPP_LIB
         printf("ERROR: Failed to connect to SUPL server\n");
+#endif
         return false;
     }
 
     // Send SUPL-START request
     if (!supl_start(supl_cell)) {
+#if DEBUG_LPP_LIB
         printf("ERROR: Failed to send SUPL-START\n");
+#endif
         mSUPL->disconnect();
         return false;
     }
 
     // Wait for SUPL-RESPONSE with slp session
     if (!supl_response()) {
+#if DEBUG_LPP_LIB
+        printf("ERROR: Failed to receive SUPL-RESPONSE\n");
+#endif
         mSUPL->disconnect();
         return false;
     }
 
     // Send SUPL-POSINIT
     if (!supl_send_posinit(supl_cell)) {
+#if DEBUG_LPP_LIB
         printf("ERROR: Failed to send SUPL-POSINIT\n");
+#endif
         mSUPL->disconnect();
         return false;
     }
@@ -279,6 +330,9 @@ bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transact
 
         auto message = lpp_provide_capabilities(transaction, mEnableSegmentation);
         if (!supl_send(message)) {
+#if DEBUG_LPP_LIB
+            printf("ERROR: Failed to send LPP Provide Capabilities\n");
+#endif
             lpp_destroy(message);
             disconnect();
             return false;
@@ -293,24 +347,25 @@ bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transact
 }
 
 bool LPP_Client::process() {
+    using namespace std::chrono;
     if (!mSUPL->is_connected()) {
         return false;
     }
 
+    int timeout = -1;
     if (provide_li.type >= 0) {
-        using namespace std::chrono;
         auto current  = system_clock::now();
         auto duration = current - provide_li.last;
         if (duration > std::chrono::seconds(1)) {
             handle_provide_location_information(&provide_li);
-            provide_li.last = current - (duration - std::chrono::seconds(1));
+            provide_li.last = current;
+        } else {
+            timeout = duration_cast<milliseconds>(duration).count();
         }
     }
 
-    int timeout = -1;
-
     std::vector<LPP_Message*> messages;
-    if (!supl_receive(messages, timeout)) {
+    if (!supl_receive(messages, timeout, false)) {
         if (!mSUPL->is_connected()) {
             return false;
         }
@@ -338,7 +393,7 @@ bool LPP_Client::wait_for_assistance_data_response(LPP_Transaction* transaction)
     auto last            = time(NULL);
     while (time(NULL) - last < timeout_seconds && !ok) {
         std::vector<LPP_Message*> messages;
-        if (!supl_receive(messages, timeout_seconds * 1000)) {
+        if (!supl_receive(messages, timeout_seconds * 1000, true)) {
             disconnect();
             return false;
         }
@@ -545,8 +600,18 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
 
     assert(message);
     if (!supl_send(message)) {
+        printf("ERROR: Failed to send LPP message\n");
         return false;
     }
 
     return false;
+}
+
+void LPP_Client::force_location_information() {
+    mForceLocationInformation        = true;
+    provide_li.type                  = LocationInformationType_locationEstimateRequired;
+    provide_li.last                  = std::chrono::system_clock::now();
+    provide_li.transaction.id        = 200;
+    provide_li.transaction.end       = 0;
+    provide_li.transaction.initiator = 0;
 }

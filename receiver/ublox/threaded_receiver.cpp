@@ -13,11 +13,12 @@
 namespace receiver {
 namespace ublox {
 
-ThreadedReceiver::ThreadedReceiver(Port                                  port,
-                                   std::unique_ptr<interface::Interface> interface) UBLOX_NOEXCEPT
+ThreadedReceiver::ThreadedReceiver(Port port, std::unique_ptr<interface::Interface> interface,
+                                   bool print_messages) UBLOX_NOEXCEPT
     : mPort(port),
       mInterface(std::move(interface)),
-      mRunning(false) {
+      mRunning(false),
+      mPrintMessages(print_messages) {
     RUT_DEBUG("[rut] created\n");
 }
 
@@ -57,26 +58,33 @@ void ThreadedReceiver::run() {
 
     while (mRunning) {
         {
-            RUT_DEBUG("[rut] lock (run)\n");
-            std::lock_guard<std::mutex> lock(mMutex);
-
             if (mReceiver) {
                 RUT_DEBUG("[rut] process\n");
                 mReceiver->process();
 
-                RUT_DEBUG("[rut] check\n");
-                auto message = mReceiver->try_parse();
-                if (message) {
-                    if (message->message_class() == UbxNavPvt::CLASS_ID &&
-                        message->message_id() == UbxNavPvt::MESSAGE_ID) {
-                        RUT_DEBUG("[rut] save navpvt\n");
-                        // Cast unique_ptr<Message> to unique_ptr<UbxNavPvt>.
-                        mNavPvt =
-                            std::unique_ptr<UbxNavPvt>(static_cast<UbxNavPvt*>(message.release()));
+                for (;;) {
+                    RUT_DEBUG("[rut] check\n");
+                    auto message = mReceiver->try_parse();
+                    if (message) {
+                        RUT_DEBUG("[rut] lock (run)\n");
+                        std::lock_guard<std::mutex> lock(mMutex);
+
+                        if (mPrintMessages) {
+                            message->print();
+                        }
+                        if (message->message_class() == UbxNavPvt::CLASS_ID &&
+                            message->message_id() == UbxNavPvt::MESSAGE_ID) {
+                            RUT_DEBUG("[rut] save navpvt\n");
+                            // Cast unique_ptr<Message> to unique_ptr<UbxNavPvt>.
+                            mNavPvt = std::unique_ptr<UbxNavPvt>(
+                                static_cast<UbxNavPvt*>(message.release()));
+                        }
+                        RUT_DEBUG("[rut] unlock (run)\n");
+                    } else {
+                        break;
                     }
                 }
             }
-            RUT_DEBUG("[rut] unlock (run)\n");
         }
 
         if (mReceiver) {

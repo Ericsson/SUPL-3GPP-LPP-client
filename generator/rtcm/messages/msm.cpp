@@ -1,9 +1,10 @@
 #include "msm.hpp"
+#include "encoder.hpp"
+#include "helper.hpp"
+
 #include <cmath>
 #include <cstdio>
 #include <inttypes.h>
-#include "encoder.hpp"
-#include "helper.hpp"
 
 using namespace generator::rtcm;
 

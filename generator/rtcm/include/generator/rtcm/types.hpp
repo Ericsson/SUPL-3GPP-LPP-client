@@ -1,7 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #ifndef RTCM_EXPLICIT
 #define RTCM_EXPLICIT explicit

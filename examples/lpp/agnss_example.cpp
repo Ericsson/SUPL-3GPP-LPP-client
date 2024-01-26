@@ -42,6 +42,11 @@ void execute(Options options, agnss_example::Format format) {
     }
 
     LPP_Client client{false /* enable experimental segmentation support */};
+
+    if (!identity_options.use_supl_identity_fix) {
+        client.use_incorrect_supl_identity();
+    }
+
     if (identity_options.imsi) {
         client.set_identity_imsi(*identity_options.imsi);
     } else if (identity_options.msisdn) {
@@ -51,7 +56,7 @@ void execute(Options options, agnss_example::Format format) {
     } else {
         throw std::runtime_error("No identity provided");
     }
-    
+
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
                         location_server_options.ssl, gCell)) {
         throw std::runtime_error("Unable to connect to location server");

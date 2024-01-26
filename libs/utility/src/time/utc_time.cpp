@@ -1,8 +1,7 @@
 #include <utility/time.h>
-
-#include <sys/time.h>
-
 #include <array>
+#include <time.h>
+#include <sys/time.h>
 
 // NOTE: The day each month of the year starts with.
 constexpr static std::array<s64, 12> day_of_year = {
@@ -108,22 +107,28 @@ static TimeEpoch date_from_utc(Timestamp time) {
     };
 }
 
+UTC_Time::UTC_Time(s64 days, f64 tod) : tm(static_cast<f64>(days * DAY_IN_SECONDS) + tod) {}
 UTC_Time::UTC_Time(const TAI_Time& time) : tm(time.utc_timestamp()) {}
 UTC_Time::UTC_Time(const GPS_Time& time) : tm(time.utc_timestamp()) {}
 UTC_Time::UTC_Time(const GLO_Time& time) : tm(time.utc_timestamp()) {}
 UTC_Time::UTC_Time(const GST_Time& time) : tm(time.utc_timestamp()) {}
 UTC_Time::UTC_Time(const BDT_Time& time) : tm(time.utc_timestamp()) {}
 
-std::string UTC_Time::rtklib_time_string() {
+s64 UTC_Time::days() const {
+    return tm.seconds() / DAY_IN_SECONDS;
+}
+
+std::string UTC_Time::rtklib_time_string() const {
     constexpr int fraction_digits = 12;
 
     auto ts    = timestamp();
     auto epoch = date_from_utc(ts);
 
     std::array<char, 256> buffer;
-    snprintf(buffer.data(), buffer.size(), "%04" PRId64 "/%02" PRId64 "/%02" PRId64 " %02" PRId64 ":%02" PRId64 ":%0*.*f", epoch.year,
-             epoch.month + 1, epoch.day + 1, epoch.hour, epoch.minutes, fraction_digits + 3,
-             fraction_digits, epoch.seconds);
+    snprintf(buffer.data(), buffer.size(),
+             "%04" PRId64 "/%02" PRId64 "/%02" PRId64 " %02" PRId64 ":%02" PRId64 ":%0*.*f",
+             epoch.year, epoch.month + 1, epoch.day + 1, epoch.hour, epoch.minutes,
+             fraction_digits + 3, fraction_digits, epoch.seconds);
 
     return std::string{buffer.data()};
 }

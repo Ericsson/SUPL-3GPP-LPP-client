@@ -10,15 +10,15 @@
 
 #define ROUND(x) (floor((x) + 0.5))
 
-static void epoch_time(Encoder& encoder, const TAI_Time& time, GenericGnssId gnss) {
+static void epoch_time(Encoder& encoder, const ts::TAI_Time& time, GenericGnssId gnss) {
     switch (gnss) {
     case GenericGnssId::GPS: {
-        auto tow          = GPS_Time(time).time_of_week();
+        auto tow          = ts::GPS_Time(time).time_of_week();
         auto milliseconds = tow.full_seconds() * 1000;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::GLONASS: {
-        auto glo          = GLO_Time(time);
+        auto glo          = ts::GLO_Time(time);
         auto dow          = glo.days() % 7;
         auto tow          = glo.time_of_day();
         auto milliseconds = tow.full_seconds() * 1000;
@@ -26,12 +26,12 @@ static void epoch_time(Encoder& encoder, const TAI_Time& time, GenericGnssId gns
         encoder.u32(27, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::GALILEO: {
-        auto tow          = GST_Time(time).time_of_week();
+        auto tow          = ts::GST_Time(time).time_of_week();
         auto milliseconds = tow.full_seconds() * 1000;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::BEIDOU: {
-        auto tow          = BDT_Time(time).time_of_week();
+        auto tow          = ts::BDT_Time(time).time_of_week();
         auto milliseconds = tow.full_seconds() * 1000;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;

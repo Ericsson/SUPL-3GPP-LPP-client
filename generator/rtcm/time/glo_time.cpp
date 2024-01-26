@@ -1,6 +1,7 @@
 #include "glo_time.hpp"
 #include "utc_time.hpp"
 
+namespace ts {
 static Timestamp utc_2_glo(Timestamp timestamp) {
     timestamp.add(3 * HOUR_IN_SECONDS);
 
@@ -52,3 +53,4 @@ GLO_Time GLO_Time::now() {
 Timestamp GLO_Time::utc_timestamp() const {
     return glo_2_utc(tm);
 }
+}  // namespace ts

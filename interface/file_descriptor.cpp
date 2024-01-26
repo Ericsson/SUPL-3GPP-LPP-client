@@ -6,6 +6,7 @@
 
 #ifdef INTERFACE_FD_DEBUG
 #include <cstdio>
+#include <string.h>
 #define FD_DEBUG(...) printf(__VA_ARGS__)
 #else
 #define FD_DEBUG(...)
@@ -87,7 +88,7 @@ bool FileDescriptor::select(bool read, bool write, bool except, timeval* tv) IF_
              tv ? (tv->tv_sec + tv->tv_usec / 1000000.0) : 0.0, ret,
              tv ? " (timeout)" : "");
     if (ret < 0) {
-        FD_DEBUG("[fd/%6d]   failed=%d\n", mFileDescriptor, errno);
+        FD_DEBUG("[fd/%6d]   failed=%d (%s)\n", mFileDescriptor, errno, strerror(errno));
         if (errno == EBADF) {
             mError = BAD_FILE_DESCRIPTOR;
             close();
@@ -104,7 +105,7 @@ size_t FileDescriptor::read(void* data, size_t length) IF_NOEXCEPT {
     }
 
     auto bytes_read = ::read(mFileDescriptor, data, length);
-    FD_DEBUG("[fd/%6d] read(%zu bytes) = %d\n", mFileDescriptor, length, bytes_read);
+    FD_DEBUG("[fd/%6d] read(%zu bytes) = %ld\n", mFileDescriptor, length, bytes_read);
     if (bytes_read < 0) {
         FD_DEBUG("[fd/%6d]   failed=%d\n", mFileDescriptor, errno);
         if (errno == EBADF) {
@@ -123,7 +124,7 @@ size_t FileDescriptor::write(const void* data, size_t length) IF_NOEXCEPT {
     }
 
     auto bytes_written = ::write(mFileDescriptor, data, length);
-    FD_DEBUG("[fd/%6d] write(%zu bytes) = %d\n", mFileDescriptor, length, bytes_written);
+    FD_DEBUG("[fd/%6d] write(%zu bytes) = %ld\n", mFileDescriptor, length, bytes_written);
     if (bytes_written < 0) {
         FD_DEBUG("[fd/%6d]   failed=%d\n", mFileDescriptor, errno);
         if (errno == EBADF) {

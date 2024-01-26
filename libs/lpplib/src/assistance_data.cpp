@@ -16,16 +16,14 @@ static GNSS_ReferenceTimeReq_t* request_reference_time(long gnss_id) {
 
 static GNSS_IonosphericModelReq_t* request_ionospheric_model(long gnss_id) {
     if (gnss_id == GNSS_ID__gnss_id_gps || gnss_id == GNSS_ID__gnss_id_glonass) {
-        auto element               = ALLOC_ZERO(GNSS_IonosphericModelReq_t);
-        element->klobucharModelReq = ALLOC_ZERO(BIT_STRING_t);
-        auto bit_string            = BitString::allocate(2, element->klobucharModelReq);
-        bit_string->set_integer(0, 2, 0);
+        auto element = ALLOC_ZERO(GNSS_IonosphericModelReq_t);
+        // Request '00' Klobuchar model
+        element->klobucharModelReq = BitStringBuilder{}.clear(0).clear(1).to_bit_string(2);
         return element;
     } else if (gnss_id == GNSS_ID__gnss_id_bds) {
-        auto element               = ALLOC_ZERO(GNSS_IonosphericModelReq_t);
-        element->klobucharModelReq = ALLOC_ZERO(BIT_STRING_t);
-        auto bit_string            = BitString::allocate(2, element->klobucharModelReq);
-        bit_string->set_integer(0, 2, 1);
+        auto element = ALLOC_ZERO(GNSS_IonosphericModelReq_t);
+        // Request '01' BDS Klobuchar model
+        element->klobucharModelReq = BitStringBuilder{}.clear(0).set(1).to_bit_string(2);
         return element;
     } else if (gnss_id == GNSS_ID__gnss_id_galileo) {
         auto element             = ALLOC_ZERO(GNSS_IonosphericModelReq_t);
@@ -76,23 +74,13 @@ static GNSS_RTK_ObservationsReq_r15_t* request_observations() {
     element->gnss_RTK_PhaseRangeRateReq_r15 = true;
     element->gnss_RTK_CNR_Req_r15           = true;
 
-    auto signals = BitString::allocate(8, &element->gnss_RTK_SignalsReq_r15.gnss_SignalIDs);
-    signals->set_bit(0);
-    signals->set_bit(1);
-    signals->set_bit(2);
-    signals->set_bit(3);
-    signals->set_bit(4);
-    signals->set_bit(5);
-    signals->set_bit(6);
-    signals->set_bit(7);
-
-    auto ext_signals = BitString::allocate(16);
-    for (size_t i = 0; i < 16; i++) {
-        ext_signals->set_bit(i);
-    }
+    BitStringBuilder{}
+        .integer(0, 8, 0xFF)
+        .into_bit_string(8, &element->gnss_RTK_SignalsReq_r15.gnss_SignalIDs);
 
     element->gnss_RTK_SignalsReq_r15.ext1 = ALLOC_ZERO(GNSS_SignalIDs::GNSS_SignalIDs__ext1);
-    element->gnss_RTK_SignalsReq_r15.ext1->gnss_SignalIDs_Ext_r15 = ext_signals;
+    element->gnss_RTK_SignalsReq_r15.ext1->gnss_SignalIDs_Ext_r15 =
+        BitStringBuilder{}.integer(0, 16, 0xFFFF).to_bit_string(16);
     return element;
 }
 
@@ -108,46 +96,29 @@ static GNSS_SSR_ClockCorrectionsReq_r15_t* request_clocks() {
 
 static GNSS_SSR_CodeBiasReq_r15_t* request_codebias() {
     auto element = ALLOC_ZERO(GNSS_SSR_CodeBiasReq_r15_t);
-    auto signals =
-        BitString::allocate(8, &element->signal_and_tracking_mode_ID_Map_r15.gnss_SignalIDs);
-    signals->set_bit(0);
-    signals->set_bit(1);
-    signals->set_bit(2);
-    signals->set_bit(3);
-    signals->set_bit(4);
-    signals->set_bit(5);
-    signals->set_bit(6);
-    signals->set_bit(7);
 
-    auto ext_signals = BitString::allocate(16);
-    for (size_t i = 0; i < 16; i++) {
-        ext_signals->set_bit(i);
-    }
+    BitStringBuilder{}
+        .integer(0, 8, 0xFF)
+        .into_bit_string(8, &element->signal_and_tracking_mode_ID_Map_r15.gnss_SignalIDs);
 
-    element->signal_and_tracking_mode_ID_Map_r15.ext1 = ALLOC_ZERO(GNSS_SignalIDs::GNSS_SignalIDs__ext1);
-    element->signal_and_tracking_mode_ID_Map_r15.ext1->gnss_SignalIDs_Ext_r15 = ext_signals;
+    element->signal_and_tracking_mode_ID_Map_r15.ext1 =
+        ALLOC_ZERO(GNSS_SignalIDs::GNSS_SignalIDs__ext1);
+    element->signal_and_tracking_mode_ID_Map_r15.ext1->gnss_SignalIDs_Ext_r15 =
+        BitStringBuilder{}.integer(0, 16, 0xFFFF).to_bit_string(16);
     return element;
 }
 
 static GNSS_SSR_PhaseBiasReq_r16_t* request_phasebias() {
     auto element = ALLOC_ZERO(GNSS_SSR_PhaseBiasReq_r16_t);
-    auto signals =
-        BitString::allocate(8, &element->signal_and_tracking_mode_ID_Map_r16.gnss_SignalIDs);
-    signals->set_bit(0);
-    signals->set_bit(1);
-    signals->set_bit(2);
-    signals->set_bit(3);
-    signals->set_bit(4);
-    signals->set_bit(5);
-    signals->set_bit(6);
-    signals->set_bit(7);
-    auto ext_signals = BitString::allocate(16);
-    for (size_t i = 0; i < 16; i++) {
-        ext_signals->set_bit(i);
-    }
 
-    element->signal_and_tracking_mode_ID_Map_r16.ext1 = ALLOC_ZERO(GNSS_SignalIDs::GNSS_SignalIDs__ext1);
-    element->signal_and_tracking_mode_ID_Map_r16.ext1->gnss_SignalIDs_Ext_r15 = ext_signals;
+    BitStringBuilder{}
+        .integer(0, 8, 0xFF)
+        .into_bit_string(8, &element->signal_and_tracking_mode_ID_Map_r16.gnss_SignalIDs);
+
+    element->signal_and_tracking_mode_ID_Map_r16.ext1 =
+        ALLOC_ZERO(GNSS_SignalIDs::GNSS_SignalIDs__ext1);
+    element->signal_and_tracking_mode_ID_Map_r16.ext1->gnss_SignalIDs_Ext_r15 =
+        BitStringBuilder{}.integer(0, 16, 0xFFFF).to_bit_string(16);
     return element;
 }
 
@@ -273,8 +244,7 @@ LPP_Message* lpp_request_assistance_data(LPP_Transaction* transaction, CellID ce
     return message;
 }
 
-LPP_Message* lpp_request_agnss(LPP_Transaction* transaction, CellID cell,
-                                               long gnss_id) {
+LPP_Message* lpp_request_agnss(LPP_Transaction* transaction, CellID cell, long gnss_id) {
     auto message = lpp_create(transaction, LPP_MessageBody__c1_PR_requestAssistanceData);
     auto body    = message->lpp_MessageBody;
 
@@ -327,7 +297,7 @@ LPP_Message* lpp_request_assistance_data_ssr(LPP_Transaction* transaction, CellI
     cad->ext2          = cad2;
 
     auto car2_ssr = ALLOC_ZERO(GNSS_SSR_CorrectionPointsReq_r16);
-    auto car2 = ALLOC_ZERO(GNSS_CommonAssistDataReq::GNSS_CommonAssistDataReq__ext2);
+    auto car2     = ALLOC_ZERO(GNSS_CommonAssistDataReq::GNSS_CommonAssistDataReq__ext2);
     car2->gnss_SSR_CorrectionPointsReq_r16 = car2_ssr;
 
     auto car  = ALLOC_ZERO(GNSS_CommonAssistDataReq_t);

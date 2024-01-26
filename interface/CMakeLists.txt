@@ -3,6 +3,7 @@ add_library(dependency_interface STATIC
     "file.cpp"
     "serial.cpp"
     "i2c.cpp"
+    "stdin.cpp"
     "stdout.cpp"
     "file_descriptor.cpp"
     "socket.cpp"

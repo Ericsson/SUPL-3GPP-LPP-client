@@ -24,6 +24,9 @@ struct IdentityOptions {
     std::unique_ptr<unsigned long> imsi;
     /// Identify the device with IPv4 address.
     std::unique_ptr<std::string> ipv4;
+
+    /// Whether to switch the order of the digits in the identity.
+    bool use_supl_identity_fix;
 };
 
 /// Cell options.
@@ -60,16 +63,42 @@ struct UbloxOptions {
     receiver::ublox::Port port;
     /// Interface to use for communication with the receiver.
     std::unique_ptr<interface::Interface> interface;
+    /// Whether to print messages.
+    bool print_messages;
+};
+
+/// Nmea options.
+struct NmeaOptions {
+    /// Interface to use for communication with the receiver.
+    std::unique_ptr<interface::Interface> interface;
+    /// Whether to print messages.
+    bool print_messages;
+};
+
+/// Location information options.
+struct LocationInformationOptions {
+    /// Enable fake location information.
+    bool enabled;
+    /// Force location information to be sent, even if it hasn't been requested.
+    bool force;
+    /// Fake latitude.
+    double latitude;
+    /// Fake longitude.
+    double longitude;
+    /// Fake altitude.
+    double altitude;
 };
 
 /// Options.
 struct Options {
-    LocationServerOptions location_server_options;
-    IdentityOptions       identity_options;
-    CellOptions           cell_options;
-    ModemOptions          modem_options;
-    OutputOptions         output_options;
-    UbloxOptions          ublox_options;
+    LocationServerOptions      location_server_options;
+    IdentityOptions            identity_options;
+    CellOptions                cell_options;
+    ModemOptions               modem_options;
+    OutputOptions              output_options;
+    UbloxOptions               ublox_options;
+    NmeaOptions                nmea_options;
+    LocationInformationOptions location_information_options;
 };
 
 /// Command.

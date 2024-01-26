@@ -40,6 +40,11 @@ args::ValueFlag<unsigned long> msisdn{
     identity, "msisdn", "MSISDN", {"msisdn"}, args::Options::Single};
 args::ValueFlag<unsigned long> imsi{identity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
 args::ValueFlag<std::string>   ipv4{identity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
+args::Flag                     use_supl_identity_fix{identity,
+                                 "supl-identity-fix",
+                                 "Use SUPL Identity Fix",
+                                                     {"supl-identity-fix"},
+                                 args::Options::Single};
 
 //
 // Cell Information
@@ -157,6 +162,52 @@ args::ValueFlag<int> ublox_udp_port{
     ublox_udp_device, "port", "Port", {"ublox-udp-port"}, args::Options::Single};
 
 //
+// NMEA
+//
+
+args::Group nmea_receiver_group{
+    "NMEA Receiver:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Group nmea_serial_group{
+    nmea_receiver_group,
+    "Serial:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+args::ValueFlag<std::string> nmea_serial_device{
+    nmea_receiver_group, "device", "Device", {"nmea-serial"}, args::Options::Single};
+args::ValueFlag<int> nmea_serial_baud_rate{
+    nmea_receiver_group, "baud_rate", "Baud Rate", {"nmea-serial-baud"}, args::Options::Single};
+args::ValueFlag<int> nmea_serial_data_bits{
+    nmea_receiver_group, "data_bits", "Data Bits", {"nmea-serial-data"}, args::Options::Single};
+args::ValueFlag<int> nmea_serial_stop_bits{
+    nmea_receiver_group, "stop_bits", "Stop Bits", {"nmea-serial-stop"}, args::Options::Single};
+args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
+                                                     "parity_bits",
+                                                     "Parity Bits",
+                                                     {"nmea-serial-parity"},
+                                                     args::Options::Single};
+
+//
+// Output
+//
+
+args::Group other_receiver_group{
+    "Other Receiver Options:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Flag print_messages{other_receiver_group,
+                          "print-receiver-messages",
+                          "Print Receiver Messages",
+                          {"print-receiver-messages", "prm"},
+                          args::Options::Single};
+
+//
 // Output
 //
 
@@ -232,6 +283,34 @@ args::Group stdout_output{
 args::Flag stdout_output_flag{stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
 
 //
+// Location Information
+//
+
+args::Group location_infomation{
+    "Location Infomation:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Flag li_enable{
+    location_infomation, "location-info",       "Location Information",
+    {"location-info"},   args::Options::Single,
+};
+args::Flag li_force{
+    location_infomation,
+    "force-location-info",
+    "Force Location Information (always send even if not requested)",
+    {"force-location-info"},
+    args::Options::Single,
+};
+args::ValueFlag<double> li_latitude{
+    location_infomation, "latitude", "Latitude", {"latitude"}, args::Options::Single};
+args::ValueFlag<double> li_longitude{
+    location_infomation, "longitude", "Longitude", {"longitude"}, args::Options::Single};
+args::ValueFlag<double> li_altitude{
+    location_infomation, "altitude", "Altitude", {"altitude"}, args::Options::Single};
+
+//
 // Options
 //
 
@@ -255,6 +334,7 @@ LocationServerOptions parse_location_server_options() {
 
 IdentityOptions parse_identity_options() {
     IdentityOptions identity{};
+    identity.use_supl_identity_fix = false;
 
     if (msisdn) {
         identity.msisdn = std::unique_ptr<unsigned long>{new unsigned long{msisdn.Get()}};
@@ -270,6 +350,10 @@ IdentityOptions parse_identity_options() {
 
     if (!identity.msisdn && !identity.imsi && !identity.ipv4) {
         identity.imsi = std::unique_ptr<unsigned long>{new unsigned long{2460813579lu}};
+    }
+
+    if (use_supl_identity_fix) {
+        identity.use_supl_identity_fix = true;
     }
 
     return identity;
@@ -330,8 +414,8 @@ OutputOptions parse_output_options() {
         }
 
         auto data_bits = DataBits::EIGHT;
-        if (ublox_serial_data_bits) {
-            switch (ublox_serial_data_bits.Get()) {
+        if (serial_data_bits) {
+            switch (serial_data_bits.Get()) {
             case 5: data_bits = DataBits::FIVE; break;
             case 6: data_bits = DataBits::SIX; break;
             case 7: data_bits = DataBits::SEVEN; break;
@@ -341,8 +425,8 @@ OutputOptions parse_output_options() {
         }
 
         auto stop_bits = StopBits::ONE;
-        if (ublox_serial_stop_bits) {
-            switch (ublox_serial_stop_bits.Get()) {
+        if (serial_stop_bits) {
+            switch (serial_stop_bits.Get()) {
             case 1: stop_bits = StopBits::ONE; break;
             case 2: stop_bits = StopBits::TWO; break;
             default: throw args::ValidationError("Invalid stop bits");
@@ -350,12 +434,12 @@ OutputOptions parse_output_options() {
         }
 
         auto parity_bit = ParityBit::NONE;
-        if (ublox_serial_parity_bits) {
-            if (ublox_serial_parity_bits.Get() == "none") {
+        if (serial_parity_bits) {
+            if (serial_parity_bits.Get() == "none") {
                 parity_bit = ParityBit::NONE;
-            } else if (ublox_serial_parity_bits.Get() == "odd") {
+            } else if (serial_parity_bits.Get() == "odd") {
                 parity_bit = ParityBit::ODD;
-            } else if (ublox_serial_parity_bits.Get() == "even") {
+            } else if (serial_parity_bits.Get() == "even") {
                 parity_bit = ParityBit::EVEN;
             } else {
                 throw args::ValidationError("Invalid parity bits");
@@ -544,14 +628,105 @@ static Port ublox_parse_port() {
     }
 }
 
+static bool print_receiver_options_parse() {
+    if (print_messages) {
+        return true;
+    } else {
+        return false;
+    }
+}
+
 static UbloxOptions ublox_parse_options() {
     if (ublox_serial_device || ublox_i2c_device || ublox_tcp_ip_address || ublox_udp_ip_address) {
-        auto port      = ublox_parse_port();
-        auto interface = ublox_parse_interface();
-        return UbloxOptions{port, std::move(interface)};
+        auto port           = ublox_parse_port();
+        auto interface      = ublox_parse_interface();
+        auto print_messages = print_receiver_options_parse();
+        return UbloxOptions{port, std::move(interface), print_messages};
     } else {
         return UbloxOptions{};
     }
+}
+
+static NmeaOptions nmea_parse_options() {
+    if (nmea_serial_device) {
+        uint32_t baud_rate = 115200;
+        if (nmea_serial_baud_rate) {
+            if (nmea_serial_baud_rate.Get() < 0) {
+                throw args::ValidationError("nmea-serial-baud-rate must be positive");
+            }
+
+            baud_rate = static_cast<uint32_t>(nmea_serial_baud_rate.Get());
+        }
+
+        auto data_bits = DataBits::EIGHT;
+        if (nmea_serial_data_bits) {
+            switch (nmea_serial_data_bits.Get()) {
+            case 5: data_bits = DataBits::FIVE; break;
+            case 6: data_bits = DataBits::SIX; break;
+            case 7: data_bits = DataBits::SEVEN; break;
+            case 8: data_bits = DataBits::EIGHT; break;
+            default: throw args::ValidationError("Invalid data bits");
+            }
+        }
+
+        auto stop_bits = StopBits::ONE;
+        if (nmea_serial_stop_bits) {
+            switch (nmea_serial_stop_bits.Get()) {
+            case 1: stop_bits = StopBits::ONE; break;
+            case 2: stop_bits = StopBits::TWO; break;
+            default: throw args::ValidationError("Invalid stop bits");
+            }
+        }
+
+        auto parity_bit = ParityBit::NONE;
+        if (nmea_serial_parity_bits) {
+            if (nmea_serial_parity_bits.Get() == "none") {
+                parity_bit = ParityBit::NONE;
+            } else if (nmea_serial_parity_bits.Get() == "odd") {
+                parity_bit = ParityBit::ODD;
+            } else if (nmea_serial_parity_bits.Get() == "even") {
+                parity_bit = ParityBit::EVEN;
+            } else {
+                throw args::ValidationError("Invalid parity bits");
+            }
+        }
+
+        auto interface      = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
+                                                           data_bits, stop_bits, parity_bit);
+        auto print_messages = print_receiver_options_parse();
+        return NmeaOptions{std::unique_ptr<Interface>(interface), print_messages};
+    } else {
+        return NmeaOptions{};
+    }
+}
+
+static LocationInformationOptions parse_location_information_options() {
+    LocationInformationOptions location_information{};
+    location_information.latitude  = 69.0599730655754;
+    location_information.longitude = 20.54864403253676;
+    location_information.altitude  = 0;
+    location_information.force     = false;
+
+    if (li_force) {
+        location_information.force = true;
+    }
+
+    if (li_enable) {
+        location_information.enabled = true;
+        if (li_latitude) {
+            location_information.latitude = li_latitude.Get();
+        }
+
+        if (li_longitude) {
+            location_information.longitude = li_longitude.Get();
+        }
+
+        if (li_altitude) {
+            location_information.altitude = li_altitude.Get();
+        }
+    }
+
+    return location_information;
 }
 
 //
@@ -570,11 +745,12 @@ void OptionParser::add_command(std::unique_ptr<Command> command) {
 
 int OptionParser::parse_and_execute(int argc, char** argv) {
     args::ArgumentParser parser(
-        "Example - LPP Client",
-        "This is a simple client examples that requests assistance data from a location server. It "
-        "supports OSR, SSR, and AGNSS requests. The assistance data can be outputted to a file, "
-        "serial port, TCP, UDP or stdout. It can also be converted to RTCM messages that can be "
-        "transmitted to any GNSS receiver that supports it.");
+        "3GPP LPP Example (" CLIENT_VERSION
+        ") - This sample code is a simple client that asks for assistance data from a location "
+        "server. It can handle OSR, SSR, and AGNSS requests. The assistance data can converted to "
+        "RTCM or SPARTN before being sent to a GNSS receiver or other interface. The client also "
+        "supports to 3GPP LPP Provide Location Information, which can be used to send the device's "
+        "location to the location server.");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
@@ -590,33 +766,32 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     std::vector<std::unique_ptr<args::Command>> args_commands;
     for (auto& command : mCommands) {
         auto command_ptr = command.get();
-        args_commands.emplace_back(
-            new args::Command(commands, command->name(), command->description(),
-                              [command_ptr](args::Subparser& parser) {
-                                  command_ptr->parse(parser);
-                                  parser.Parse();
+        args_commands.emplace_back(new args::Command(
+            commands, command->name(), command->description(),
+            [command_ptr](args::Subparser& parser) {
+                command_ptr->parse(parser);
+                parser.Parse();
 
-                                  Options options{};
-                                  options.location_server_options = parse_location_server_options();
-                                  options.identity_options        = parse_identity_options();
-                                  options.cell_options            = parse_cell_options();
-                                  options.modem_options           = parse_modem_options();
-                                  options.output_options          = parse_output_options();
-                                  options.ublox_options           = ublox_parse_options();
-                                  command_ptr->execute(std::move(options));
-                              }));
+                Options options{};
+                options.location_server_options      = parse_location_server_options();
+                options.identity_options             = parse_identity_options();
+                options.cell_options                 = parse_cell_options();
+                options.modem_options                = parse_modem_options();
+                options.output_options               = parse_output_options();
+                options.ublox_options                = ublox_parse_options();
+                options.nmea_options                 = nmea_parse_options();
+                options.location_information_options = parse_location_information_options();
+                command_ptr->execute(std::move(options));
+            }));
     }
 
     // Defaults
     ublox_i2c_address.HelpDefault("66");
     ublox_serial_baud_rate.HelpDefault("115200");
-
     ublox_serial_data_bits.HelpDefault("8");
     ublox_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-
     ublox_serial_stop_bits.HelpDefault("1");
     ublox_serial_stop_bits.HelpChoices({"1", "2"});
-
     ublox_serial_parity_bits.HelpDefault("none");
     ublox_serial_parity_bits.HelpChoices({
         "none",
@@ -630,6 +805,18 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
         "uart2",
         "i2c",
         "usb",
+    });
+
+    nmea_serial_baud_rate.HelpDefault("115200");
+    nmea_serial_data_bits.HelpDefault("8");
+    nmea_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
+    nmea_serial_stop_bits.HelpDefault("1");
+    nmea_serial_stop_bits.HelpChoices({"1", "2"});
+    nmea_serial_parity_bits.HelpDefault("none");
+    nmea_serial_parity_bits.HelpChoices({
+        "none",
+        "odd",
+        "even",
     });
 
     location_server_port.HelpDefault("5431");
@@ -652,17 +839,29 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
         "even",
     });
 
+    li_latitude.HelpDefault("69.0599730655754");
+    li_longitude.HelpDefault("20.54864403253676");
+    li_altitude.HelpDefault("0");
+
     // Globals
     args::GlobalOptions location_server_globals{parser, location_server};
     args::GlobalOptions identity_globals{parser, identity};
     args::GlobalOptions cell_information_globals{parser, cell_information};
     args::GlobalOptions modem_globals{parser, modem};
     args::GlobalOptions ublox_receiver_globals{parser, ublox_receiver_group};
+    args::GlobalOptions nmea_receiver_globals{parser, nmea_receiver_group};
+    args::GlobalOptions other_receiver_globals{parser, other_receiver_group};
     args::GlobalOptions output_globals{parser, output};
+    args::GlobalOptions location_information_globals{parser, location_infomation};
 
     // Parse
     try {
         parser.ParseCLI(argc, argv);
+        if (version) {
+            std::cout << "3GPP LPP Example (" << CLIENT_VERSION << ")" << std::endl;
+            return 0;
+        }
+
         return 0;
     } catch (const args::ValidationError& e) {
         std::cerr << e.what() << std::endl;

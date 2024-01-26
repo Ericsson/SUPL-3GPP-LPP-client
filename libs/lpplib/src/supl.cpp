@@ -20,7 +20,9 @@ void ASN_Deleter<OCTET_STRING>::operator()(OCTET_STRING* ptr) {
 //
 //
 
-static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
+static void binary_coded_decimal(unsigned long value, unsigned char* buf, bool switch_order) {
+    // `switch_order` = false, this will encode it in the wrong order
+
     // msisdn, mnd and imsi are a BCD (Binary Coded Decimal) string
     // represent digits from 0 through 9,
     // two digits per octet, each digit encoded 0000 to 1001 (0 to 9)
@@ -30,7 +32,7 @@ static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
     unsigned char digits[16];
     int           i = 0;
     while (value > 0) {
-        if(i >= 16) {
+        if (i >= 16) {
             break;
         }
         digits[i] = value % 10;
@@ -43,8 +45,8 @@ static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
     }
 
     int j = 0;
-    while(i > 0) {
-        if(j % 2 == 0) {
+    while (i > 0) {
+        if (j % 2 == (switch_order ? 1 : 0)) {
             buf[j / 2] |= digits[i - 1] << 4;
         } else {
             buf[j / 2] |= digits[i - 1];
@@ -53,8 +55,8 @@ static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
         j++;
     }
 
-    while(j < 16) {
-        if(j % 2 == 0) {
+    while (j < 16) {
+        if (j % 2 == 0) {
             buf[j / 2] |= 0xf0;
         } else {
             buf[j / 2] |= 0xf;
@@ -63,25 +65,26 @@ static void binary_coded_decimal(unsigned long value, unsigned char* buf) {
     }
 }
 
-std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long msisdn) {
+std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long msisdn,
+                                                   bool switch_order) {
     auto set           = ALLOC_ZERO(SetSessionID);
     set->sessionId     = id;
     set->setId.present = SETId_PR_msisdn;
 
     unsigned char buf[8];
-    binary_coded_decimal(msisdn, buf);
+    binary_coded_decimal(msisdn, buf, switch_order);
     OCTET_STRING_fromBuf(&set->setId.choice.msisdn, reinterpret_cast<char*>(buf), sizeof(buf));
 
     return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));
 }
 
-std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long imsi) {
+std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long imsi, bool switch_order) {
     auto set           = ALLOC_ZERO(SetSessionID);
     set->sessionId     = id;
     set->setId.present = SETId_PR_imsi;
 
     unsigned char buf[8];
-    binary_coded_decimal(imsi, buf);
+    binary_coded_decimal(imsi, buf, switch_order);
     OCTET_STRING_fromBuf(&set->setId.choice.imsi, reinterpret_cast<char*>(buf), sizeof(buf));
 
     return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));
@@ -164,7 +167,8 @@ SUPL_Session::~SUPL_Session() {
 //
 //
 
-SUPL_Client::SUPL_Client() : mTCP(std::make_unique<TCP_Client>()), mSession(nullptr) {}
+SUPL_Client::SUPL_Client()
+    : mTCP(std::make_unique<TCP_Client>()), mSession(nullptr), mReceiveLength(0) {}
 
 SUPL_Client::~SUPL_Client() {}
 
@@ -187,6 +191,95 @@ bool SUPL_Client::disconnect() {
 
 bool SUPL_Client::is_connected() {
     return mTCP->is_connected();
+}
+
+SUPL_Message SUPL_Client::process() {
+    if (mReceiveLength < 16) {
+        return nullptr;
+    }
+
+    auto pdu           = (ULP_PDU*)nullptr;
+    long expected_size = 0;
+
+    // NOTE: Some SUPL messages are very big, e.g. supl.google.com SUPLPOS with
+    // ephemeris. This means that sometimes the 'buffer' will not contain the
+    // whole message but only apart of it. This means we need to wait for the
+    // rest of the data. Try to decode the message and if it failed with
+    // RC_WMORE wait for more data and try again.
+    auto result =
+        uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, mReceiveLength);
+    if (result.code == RC_FAIL) {
+        mReceiveLength = 0;
+        return nullptr;
+    } else if (result.code == RC_WMORE) {
+        expected_size = pdu->length;
+        if (expected_size > sizeof(mReceiveBuffer)) {
+            // Unable to handle such big messages
+            mReceiveLength = 0;
+            return nullptr;
+        } else if (expected_size > mReceiveLength) {
+            // Not enough data
+            return nullptr;
+        }
+
+        result =
+            uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, expected_size);
+        if (result.code != RC_OK) {
+            mReceiveLength = 0;
+            return nullptr;
+        }
+    } else {
+        expected_size = pdu->length;
+    }
+
+    // Remove the message from the buffer
+    if(expected_size > mReceiveLength) {
+        mReceiveLength = 0;
+    }
+
+    memmove(mReceiveBuffer, mReceiveBuffer + expected_size, mReceiveLength - expected_size);
+    mReceiveLength -= expected_size;
+
+    // xer_fprint(stdout, &asn_DEF_ULP_PDU, pdu);
+    return ASN_Unique<ULP_PDU>(pdu, {});
+}
+
+SUPL_Message SUPL_Client::receive2() {
+    if (!mTCP->is_connected()) {
+        return nullptr;
+    }
+
+    // Try to parse the message from the buffer
+    auto message = process();
+    if (message) {
+        return message;
+    }
+
+    // If the buffer is full, clear it
+    if (mReceiveLength > SUPL_CLIENT_RECEIVER_BUFFER_SIZE - 64) {
+        mReceiveLength = 0;
+    }
+
+    // Receive more data
+    auto bytes = mTCP->receive(mReceiveBuffer + mReceiveLength,
+                               SUPL_CLIENT_RECEIVER_BUFFER_SIZE - mReceiveLength, 0);
+    if (bytes <= 0) {
+        return nullptr;
+    }
+
+    mReceiveLength += bytes;
+    if(mReceiveLength >= SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
+        mReceiveLength = 0;
+        return nullptr;
+    }
+
+    // Try again to parse the message from the buffer
+    message = process();
+    if (message) {
+        return message;
+    }
+
+    return nullptr;
 }
 
 SUPL_Message SUPL_Client::receive(int milliseconds) {
@@ -233,7 +326,7 @@ SUPL_Message SUPL_Client::receive(int milliseconds) {
         }
     }
 
-    //xer_fprint(stdout, &asn_DEF_ULP_PDU, pdu);
+    // xer_fprint(stdout, &asn_DEF_ULP_PDU, pdu);
     return ASN_Unique<ULP_PDU>(pdu, {});
 }
 
@@ -255,6 +348,8 @@ SUPL_EncodedMessage SUPL_Client::encode(SUPL_Message& message) {
     // Determine the PDU length
     auto result = uper_encode_to_length(&asn_DEF_ULP_PDU, NULL, pdu);
     if (result.encoded < 0) {
+        printf("ERROR: Failed to determine PDU length\n");
+        printf("ERROR: %s\n", result.failed_type->name);
         return nullptr;
     }
 
@@ -271,11 +366,13 @@ SUPL_EncodedMessage SUPL_Client::encode(SUPL_Message& message) {
     // Encode PDU as UPER
     result = uper_encode_to_buffer(&asn_DEF_ULP_PDU, NULL, pdu, buffer, length);
     if (result.encoded < 0) {
+        printf("ERROR: Failed to encode PDU\n");
         return nullptr;
     }
 
     // Make sure that the PDU stayed intact and that length wasn't adjusted.
     if (length != (result.encoded + 7) / 8) {
+        printf("ERROR: PDU length mismatch\n");
         return nullptr;
     }
 
@@ -289,11 +386,13 @@ bool SUPL_Client::send(SUPL_Message& message) {
 
     auto encoded_message = encode(message);
     if (!encoded_message) {
+        printf("ERROR: Failed to encode message\n");
         return false;
     }
 
     auto bytes = mTCP->send(encoded_message->buf, encoded_message->size);
     if (bytes != encoded_message->size) {
+        printf("ERROR: Failed to send message\n");
         return false;
     }
 
