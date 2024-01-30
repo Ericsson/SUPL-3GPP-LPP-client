@@ -116,6 +116,7 @@ std::unique_ptr<GgaMessage> ThreadedReceiver::gga() NMEA_NOEXCEPT {
     RNT_DEBUG("[rnt] lock (gga)\n");
     std::lock_guard<std::mutex> lock(mMutex);
 
+    if (!mGga) return nullptr;
     auto gga = std::unique_ptr<GgaMessage>(new GgaMessage{*mGga.get()});
     // auto gga = std::move(mGga);
     RNT_DEBUG("[rnt] unlock (gga)\n");
@@ -127,6 +128,7 @@ std::unique_ptr<VtgMessage> ThreadedReceiver::vtg() NMEA_NOEXCEPT {
     RNT_DEBUG("[rnt] lock (vtg)\n");
     std::lock_guard<std::mutex> lock(mMutex);
 
+    if(!mVtg) return nullptr;
     auto vtg = std::unique_ptr<VtgMessage>(new VtgMessage{*mVtg.get()});
     // auto vtg = std::move(mVtg);
     RNT_DEBUG("[rnt] unlock (vtg)\n");
@@ -138,6 +140,7 @@ std::unique_ptr<GstMessage> ThreadedReceiver::gst() NMEA_NOEXCEPT {
     RNT_DEBUG("[rnt] lock (gst)\n");
     std::lock_guard<std::mutex> lock(mMutex);
 
+    if(!mGst) return nullptr;
     auto gst = std::unique_ptr<GstMessage>(new GstMessage{*mGst.get()});
     // auto gst = std::move(mGst);
     RNT_DEBUG("[rnt] unlock (gst)\n");

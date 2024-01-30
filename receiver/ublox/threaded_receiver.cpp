@@ -108,9 +108,9 @@ interface::Interface* ThreadedReceiver::interface() UBLOX_NOEXCEPT {
 
 std::unique_ptr<UbxNavPvt> ThreadedReceiver::nav_pvt() UBLOX_NOEXCEPT {
     if (!mReceiver) return nullptr;
-    if (!mNavPvt) return nullptr;
     RUT_DEBUG("[rut] lock (nav_pvt)\n");
     std::lock_guard<std::mutex> lock(mMutex);
+    if (!mNavPvt) return nullptr;
     // Copy mNavPvt to avoid locking the mutex for too long.
     auto nav_pvt = std::unique_ptr<UbxNavPvt>(new UbxNavPvt(*mNavPvt));
     RUT_DEBUG("[rut] unlock (nav_pvt)\n");
