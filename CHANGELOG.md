@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.1]
+- Fixed a crash due to missing null pointer check in NMEA `ThreadedReceiver`.
+
 ## [3.4.0]
 - Support for receivers that communicate using NMEA protocol has been added. The following sentences are now supported:
     - GGA
