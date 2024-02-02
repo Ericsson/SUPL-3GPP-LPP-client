@@ -41,12 +41,13 @@ static bool parse_mode_indicator(const std::string& token, ModeIndicator& mode_i
     }
 }
 
-VtgMessage::VtgMessage(std::string prefix) NMEA_NOEXCEPT : Message{prefix},
-                                                           mTrueCourseOverGround{0.0},
-                                                           mMagneticCourseOverGround{0.0},
-                                                           mSpeedOverGroundKnots{0.0},
-                                                           mSpeedOverGroundKmh{0.0},
-                                                           mModeIndicator{ModeIndicator::Unknown} {}
+VtgMessage::VtgMessage(std::string prefix, std::string payload, std::string checksum) NMEA_NOEXCEPT
+    : Message{prefix, payload, checksum},
+      mTrueCourseOverGround{0.0},
+      mMagneticCourseOverGround{0.0},
+      mSpeedOverGroundKnots{0.0},
+      mSpeedOverGroundKmh{0.0},
+      mModeIndicator{ModeIndicator::Unknown} {}
 
 void VtgMessage::print() const NMEA_NOEXCEPT {
     printf("[%5s]\n", prefix().c_str());
@@ -63,7 +64,8 @@ void VtgMessage::print() const NMEA_NOEXCEPT {
     }
 }
 
-std::unique_ptr<Message> VtgMessage::parse(std::string prefix, const std::string& payload) {
+std::unique_ptr<Message> VtgMessage::parse(std::string prefix, const std::string& payload,
+                                           std::string checksum) {
     // split payload by ','
     auto tokens = split(payload, ',');
 
@@ -76,7 +78,7 @@ std::unique_ptr<Message> VtgMessage::parse(std::string prefix, const std::string
     }
 
     // parse
-    auto message = new VtgMessage(prefix);
+    auto message = new VtgMessage(prefix, payload, checksum);
     auto success = true;
     success &= parse_double_opt(tokens[0], message->mTrueCourseOverGround);
     success &= parse_double_opt(tokens[2], message->mMagneticCourseOverGround);

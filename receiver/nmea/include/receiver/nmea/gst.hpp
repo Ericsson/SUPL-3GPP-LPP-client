@@ -34,11 +34,12 @@ public:
     /// Get the vertical position error.
     NMEA_NODISCARD double vertical_position_error() const NMEA_NOEXCEPT { return mAltitudeError; }
 
-    NMEA_NODISCARD static std::unique_ptr<Message> parse(std::string        prefix,
-                                                         const std::string& payload);
+    NMEA_NODISCARD static std::unique_ptr<Message>
+    parse(std::string prefix, const std::string& payload, std::string checksum);
 
 private:
-    NMEA_EXPLICIT GstMessage(std::string prefix) NMEA_NOEXCEPT;
+    NMEA_EXPLICIT GstMessage(std::string prefix, std::string payload,
+                             std::string checksum) NMEA_NOEXCEPT;
 
     double mRmsValue;
     double mSemiMajorError;

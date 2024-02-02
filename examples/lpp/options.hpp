@@ -73,6 +73,9 @@ struct NmeaOptions {
     std::unique_ptr<interface::Interface> interface;
     /// Whether to print messages.
     bool print_messages;
+    /// Export messages to unix socket (e.g. /tmp/nmea.sock). Using unique_ptr as 
+    /// an optional value indicating if the option was set.
+    std::unique_ptr<std::string> export_socket;
 };
 
 /// Location information options.

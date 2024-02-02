@@ -111,33 +111,38 @@ std::unique_ptr<Message> Parser::try_parse() NMEA_NOEXCEPT {
         return nullptr;
     }
 
-    auto data_length  = data_end - data_start;
-    auto data_payload = payload.substr(data_start, data_length);
+    auto data_length   = data_end - data_start;
+    auto data_payload  = payload.substr(data_start, data_length);
+    auto data_checksum = payload.substr(data_end + 1, data_end + 3);
 
     // parse message
     if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {
-        auto message = GgaMessage::parse(prefix, data_payload);
+        auto message = GgaMessage::parse(prefix, data_payload, data_checksum);
         if (message) {
             return message;
         } else {
-            return std::unique_ptr<ErrorMessage>(new ErrorMessage(prefix, data_payload));
+            return std::unique_ptr<ErrorMessage>(
+                new ErrorMessage(prefix, data_payload, data_checksum));
         }
     } else if (prefix == "GPVTG" || prefix == "GLVTG" || prefix == "GAVTG" || prefix == "GNVTG") {
-        auto message = VtgMessage::parse(prefix, data_payload);
+        auto message = VtgMessage::parse(prefix, data_payload, data_checksum);
         if (message) {
             return message;
         } else {
-            return std::unique_ptr<ErrorMessage>(new ErrorMessage(prefix, data_payload));
+            return std::unique_ptr<ErrorMessage>(
+                new ErrorMessage(prefix, data_payload, data_checksum));
         }
     } else if (prefix == "GPGST" || prefix == "GLGST" || prefix == "GAGST" || prefix == "GNGST") {
-        auto message = GstMessage::parse(prefix, data_payload);
+        auto message = GstMessage::parse(prefix, data_payload, data_checksum);
         if (message) {
             return message;
         } else {
-            return std::unique_ptr<ErrorMessage>(new ErrorMessage(prefix, data_payload));
+            return std::unique_ptr<ErrorMessage>(
+                new ErrorMessage(prefix, data_payload, data_checksum));
         }
     } else {
-        return std::unique_ptr<UnsupportedMessage>(new UnsupportedMessage(prefix, data_payload));
+        return std::unique_ptr<UnsupportedMessage>(
+            new UnsupportedMessage(prefix, data_payload, data_checksum));
     }
 }
 

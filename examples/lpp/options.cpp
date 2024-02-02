@@ -190,6 +190,12 @@ args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
                                                      "Parity Bits",
                                                      {"nmea-serial-parity"},
                                                      args::Options::Single};
+// export nmea to unix socket
+args::ValueFlag<std::string> nmea_export{nmea_receiver_group,
+                                         "export",
+                                         "Export NMEA to unix socket",
+                                         {"nmea-export"},
+                                         args::Options::Single};
 
 //
 // Output
@@ -691,10 +697,16 @@ static NmeaOptions nmea_parse_options() {
             }
         }
 
+        std::string* nmea_export_ptr{};
+        if (nmea_export) {
+            nmea_export_ptr = new std::string{nmea_export.Get()};
+        }
+
         auto interface      = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
                                                            data_bits, stop_bits, parity_bit);
         auto print_messages = print_receiver_options_parse();
-        return NmeaOptions{std::unique_ptr<Interface>(interface), print_messages};
+        return NmeaOptions{std::unique_ptr<Interface>(interface), print_messages,
+                           std::unique_ptr<std::string>(nmea_export_ptr)};
     } else {
         return NmeaOptions{};
     }

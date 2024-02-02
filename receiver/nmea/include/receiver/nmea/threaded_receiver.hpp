@@ -17,7 +17,8 @@ class ThreadedReceiver {
 public:
     /// The receiver will be created on the thread, thus this will _not_ block.
     NMEA_EXPLICIT ThreadedReceiver(std::unique_ptr<interface::Interface> interface,
-                                   bool print_messages) NMEA_NOEXCEPT;
+                                   bool                                  print_messages,
+                                   std::unique_ptr<std::string> export_socket) NMEA_NOEXCEPT;
     ~ThreadedReceiver() NMEA_NOEXCEPT;
 
     /// Start the receiver thread.
@@ -54,6 +55,7 @@ private:
     std::atomic<bool>                     mRunning;
     std::mutex                            mMutex;
     bool                                  mPrintMessages;
+    std::unique_ptr<interface::Interface> mExportInterface;
 
     std::unique_ptr<GgaMessage> mGga;
     std::unique_ptr<VtgMessage> mVtg;

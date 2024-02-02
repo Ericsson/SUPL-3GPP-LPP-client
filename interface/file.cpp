@@ -27,7 +27,7 @@ void FileInterface::open() {
     }
 
     if (fd < 0) {
-        throw std::runtime_error("Failed to open file");
+        throw std::runtime_error("Failed to open file: " + mFilePath);
     }
 
     mFileDescriptor = FileDescriptor(fd);
