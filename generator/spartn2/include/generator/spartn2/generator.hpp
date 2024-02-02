@@ -79,7 +79,7 @@ private:
     void find_ocb_corrections(const ProvideAssistanceData_r9_IEs* message);
     void find_hpac_corrections(const ProvideAssistanceData_r9_IEs* message);
 
-    void generate_gad(long iod, long set_id);
+    void generate_gad(long iod, uint32_t epoch_time, long set_id);
     void generate_ocb(long iod);
     void generate_hpac(long iod);
 

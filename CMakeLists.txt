@@ -28,7 +28,7 @@ find_package(OpenSSL REQUIRED)
 endif (USE_OPENSSL)
 
 add_definitions(-D_POSIX_C_SOURCE=200809L)
-add_definitions(-DCLIENT_VERSION="3.4.1")
+add_definitions(-DCLIENT_VERSION="3.4.2")
 
 if(${ASN_DEBUG})
    add_definitions(-DASN_EMIT_DEBUG=1)

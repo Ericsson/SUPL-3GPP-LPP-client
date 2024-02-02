@@ -123,6 +123,32 @@ std::vector<long> CorrectionData::iods() const {
     return iods;
 }
 
+bool CorrectionData::find_gad_epoch_time(long iod, SpartnTime* epoch_time) const {
+    SpartnTime time{};
+    bool       found = false;
+
+    auto hpac = mHpacData.find(iod);
+    if (hpac != mHpacData.end()) {
+        auto& hpac_data = hpac->second;
+        for (auto& kvp : hpac_data.mKeyedCorrections) {
+            auto& corrections = kvp.second;
+            // NOTE(ewasjon): The GAD message is constellation-less, thus the epoch time that will
+            // be used should be GPS time.
+            if (corrections.gnss_id != 0) continue;
+            if (!found || corrections.epoch_time > time) {
+                time  = corrections.epoch_time;
+                found = true;
+            }
+        }
+    }
+
+    if (found && epoch_time) {
+        *epoch_time = time;
+    }
+
+    return found;
+}
+
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16* gridded) {
     if (!gridded) return;
     auto  iod  = gridded->iod_ssr_r16;
@@ -533,8 +559,8 @@ void Generator::generate_hpac(long iod) {
 
         MessageBuilder builder{1 /* HPAC */, subtype, epoch_time};
         builder.sf005(iod);
-        builder.sf068(0);  // TODO(ewasjon): [low-priority] We could include AIOU in the correction point set, to
-                           // handle overflow
+        builder.sf068(0);  // TODO(ewasjon): [low-priority] We could include AIOU in the correction
+                           // point set, to handle overflow
         builder.sf069();
         builder.sf030(1);
 

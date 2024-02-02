@@ -175,6 +175,8 @@ struct CorrectionData {
         return &it->second;
     }
 
+    bool find_gad_epoch_time(long iod, SpartnTime* epoch_time) const;
+
     void add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15* orbit);
     void add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15* clock);
     void add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bias);
