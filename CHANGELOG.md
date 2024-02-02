@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.4.2]
+- Fixed a bug where GAD messages had TF009 set to 0. It will now be set to time specified in the STEC/Gridded IE.
+- Fixed a bug where parsing bitfields in UBX-NAV-PVT would not be incorrect.
+
 ## [3.4.1]
 - Fixed a crash due to missing null pointer check in NMEA `ThreadedReceiver`.
 

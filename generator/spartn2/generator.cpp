@@ -67,21 +67,29 @@ std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
             std::vector<long> set_ids;
             hpac->set_ids(set_ids);
 
-            for (auto set_id : set_ids) {
+            SpartnTime gad_epoch_time{};
+            if (mCorrectionData->find_gad_epoch_time(iod, &gad_epoch_time)) {
+                for (auto set_id : set_ids) {
 #ifdef SPARTN_DEBUG_PRINT
-                printf("GAD: set=%ld, iod=%ld\n", set_id, iod);
+                    printf("GAD: set=%ld, iod=%ld, time=%u\n", set_id, iod,
+                           gad_epoch_time.rounded_seconds);
 #endif
 
-                generate_gad(iod, set_id);
+                    generate_gad(iod, gad_epoch_time.rounded_seconds, set_id);
+                }
+            } else {
+#ifdef SPARTN_DEBUG_PRINT
+                printf("GAD: no epoch time for iod=%ld\n", iod);
+#endif
             }
-        }
-
-        if (ocb && mGenerateOcb) {
-            generate_ocb(iod);
         }
 
         if (hpac && mGenerateHpac) {
             generate_hpac(iod);
+        }
+
+        if (ocb && mGenerateOcb) {
+            generate_ocb(iod);
         }
     }
 
@@ -128,8 +136,10 @@ void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* me
                     bitmask |= static_cast<uint64_t>(array.bitmaskOfGrids_r16->buf[i]);
                 }
                 bitmask >>= array.bitmaskOfGrids_r16->bits_unused;
+#ifdef SPARTN_DEBUG_PRINT
                 printf(" bitmask: %ld bytes, %d bits, 0x%016lX\n", array.bitmaskOfGrids_r16->size,
                        array.bitmaskOfGrids_r16->bits_unused, bitmask);
+#endif
             } else {
                 bitmask = 0xFFFFFFFFFFFFFFFF;
             }

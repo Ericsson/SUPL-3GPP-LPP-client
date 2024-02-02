@@ -6,7 +6,7 @@
 namespace generator {
 namespace spartn {
 
-void Generator::generate_gad(long iod, long set_id) {
+void Generator::generate_gad(long iod, uint32_t epoch_time, long set_id) {
     auto cps_it = mCorrectionPointSets.find(set_id);
     if (cps_it == mCorrectionPointSets.end()) return;
     auto& correction_point_set = *(cps_it->second.get());
@@ -47,7 +47,7 @@ void Generator::generate_gad(long iod, long set_id) {
     }
 #endif
 
-    MessageBuilder builder{2 /* GAD */, 0, 0};
+    MessageBuilder builder{2 /* GAD */, 0, epoch_time};
     builder.sf005(iod);  // TODO(ewasjon): We could include AIOU in the correction point set, to
                          // handle overflow
     builder.sf068(0);

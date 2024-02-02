@@ -1,5 +1,6 @@
 #include "time.hpp"
 
+#include <utility/time.h>
 #include "GNSS-SystemTime.h"
 
 static SPARTN_CONSTEXPR uint32_t SECONDS_IN_DAY        = 86400;
