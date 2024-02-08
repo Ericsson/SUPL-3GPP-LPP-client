@@ -123,12 +123,13 @@ static bool parse_altitude(const std::string& altitude, const std::string& units
     }
 }
 
-GgaMessage::GgaMessage(std::string prefix) NMEA_NOEXCEPT : Message{prefix},
-                                                           mTimeOfDay{TAI_Time::now()},
-                                                           mLatitude{0.0},
-                                                           mLongitude{0.0},
-                                                           mFixQuality{GgaFixQuality::Invalid},
-                                                           mSatellitesInView{0} {}
+GgaMessage::GgaMessage(std::string prefix, std::string payload, std::string checksum) NMEA_NOEXCEPT
+    : Message{prefix, payload, checksum},
+      mTimeOfDay{TAI_Time::now()},
+      mLatitude{0.0},
+      mLongitude{0.0},
+      mFixQuality{GgaFixQuality::Invalid},
+      mSatellitesInView{0} {}
 
 void GgaMessage::print() const NMEA_NOEXCEPT {
     printf("[%5s]\n", prefix().c_str());
@@ -151,7 +152,8 @@ void GgaMessage::print() const NMEA_NOEXCEPT {
     printf("  altitude:    %.2f\n", altitude());
 }
 
-std::unique_ptr<Message> GgaMessage::parse(std::string prefix, const std::string& payload) {
+std::unique_ptr<Message> GgaMessage::parse(std::string prefix, const std::string& payload,
+                                           std::string checksum) {
     // split payload by ','
     auto tokens = split(payload, ',');
 
@@ -161,7 +163,7 @@ std::unique_ptr<Message> GgaMessage::parse(std::string prefix, const std::string
     }
 
     // parse
-    auto message = new GgaMessage(prefix);
+    auto message = new GgaMessage(prefix, payload, checksum);
     auto success = true;
     success &= parse_utc(tokens[0], message->mTimeOfDay);
     success &= parse_latitude(tokens[1], tokens[2], message->mLatitude);

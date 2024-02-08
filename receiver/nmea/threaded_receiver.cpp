@@ -13,11 +13,13 @@
 namespace receiver {
 namespace nmea {
 
-ThreadedReceiver::ThreadedReceiver(std::unique_ptr<interface::Interface> interface,
-                                   bool print_messages) NMEA_NOEXCEPT
+ThreadedReceiver::ThreadedReceiver(
+    std::unique_ptr<interface::Interface> interface, bool print_messages,
+    std::vector<std::unique_ptr<interface::Interface>> export_interfaces) NMEA_NOEXCEPT
     : mInterface(std::move(interface)),
       mRunning(false),
       mPrintMessages(print_messages),
+      mExportInterfaces(std::move(export_interfaces)),
       mGga(nullptr),
       mVtg(nullptr),
       mGst(nullptr) {
@@ -84,6 +86,15 @@ void ThreadedReceiver::run() {
                             mGst = std::unique_ptr<GstMessage>(
                                 static_cast<GstMessage*>(message.release()));
                         }
+
+                        if (!mExportInterfaces.empty()) {
+                            auto message_data = message->sentence();
+                            for (auto& interface : mExportInterfaces) {
+                                if (interface->can_write()) {
+                                    interface->write(message_data.data(), message_data.size());
+                                }
+                            }
+                        }
                     } else {
                         break;
                     }
@@ -127,7 +138,7 @@ std::unique_ptr<VtgMessage> ThreadedReceiver::vtg() NMEA_NOEXCEPT {
     RNT_DEBUG("[rnt] lock (vtg)\n");
     std::lock_guard<std::mutex> lock(mMutex);
 
-    if(!mVtg) return nullptr;
+    if (!mVtg) return nullptr;
     auto vtg = std::unique_ptr<VtgMessage>(new VtgMessage{*mVtg.get()});
     RNT_DEBUG("[rnt] unlock (vtg)\n");
     return vtg;
@@ -138,7 +149,7 @@ std::unique_ptr<GstMessage> ThreadedReceiver::gst() NMEA_NOEXCEPT {
     RNT_DEBUG("[rnt] lock (gst)\n");
     std::lock_guard<std::mutex> lock(mMutex);
 
-    if(!mGst) return nullptr;
+    if (!mGst) return nullptr;
     auto gst = std::unique_ptr<GstMessage>(new GstMessage{*mGst.get()});
     RNT_DEBUG("[rnt] unlock (gst)\n");
     return gst;

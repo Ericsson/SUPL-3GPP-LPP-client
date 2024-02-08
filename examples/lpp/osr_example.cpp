@@ -131,8 +131,17 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         nmea_options.interface->open();
         nmea_options.interface->print_info();
 
+        if (!nmea_options.export_interfaces.empty()) {
+            printf("[nmea-export]\n");
+            for (auto& interface : nmea_options.export_interfaces) {
+                interface->open();
+                interface->print_info();
+            }
+        }
+
         gNmeaReceiver = std::unique_ptr<NReceiver>(
-            new NReceiver(std::move(nmea_options.interface), nmea_options.print_messages));
+            new NReceiver(std::move(nmea_options.interface), nmea_options.print_messages,
+                          std::move(nmea_options.export_interfaces)));
         gNmeaReceiver->start();
     }
 

@@ -110,6 +110,11 @@ public:
 
     /// Create a stdin interface.
     static Interface* stdin();
+
+    /// Create a unix socket interface. The socket type is SOCK_STREAM.
+    /// @param socket_path The path to the unix socket.
+    /// @param reconnect Whether to reconnect if the connection is lost.
+    static Interface* unix_socket_stream(std::string socket_path, bool reconnect);
 };
 
 }  // namespace interface

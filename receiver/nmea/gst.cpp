@@ -26,14 +26,15 @@ static bool parse_double_opt(const std::string& token, double& value) {
     }
 }
 
-GstMessage::GstMessage(std::string prefix) NMEA_NOEXCEPT : Message{prefix},
-                                                           mRmsValue{0.0},
-                                                           mSemiMajorError{0.0},
-                                                           mSemiMinorError{0.0},
-                                                           mOrientationOfSemiMajorError{0.0},
-                                                           mLatitudeError{0.0},
-                                                           mLongitudeError{0.0},
-                                                           mAltitudeError{0.0} {}
+GstMessage::GstMessage(std::string prefix, std::string payload, std::string checksum) NMEA_NOEXCEPT
+    : Message{prefix, payload, checksum},
+      mRmsValue{0.0},
+      mSemiMajorError{0.0},
+      mSemiMinorError{0.0},
+      mOrientationOfSemiMajorError{0.0},
+      mLatitudeError{0.0},
+      mLongitudeError{0.0},
+      mAltitudeError{0.0} {}
 void GstMessage::print() const NMEA_NOEXCEPT {
     printf("[%5s]\n", prefix().c_str());
     printf("  rms value: %f\n", mRmsValue);
@@ -45,7 +46,8 @@ void GstMessage::print() const NMEA_NOEXCEPT {
     printf("  altitude error: %f\n", mAltitudeError);
 }
 
-std::unique_ptr<Message> GstMessage::parse(std::string prefix, const std::string& payload) {
+std::unique_ptr<Message> GstMessage::parse(std::string prefix, const std::string& payload,
+                                           std::string checksum) {
     // split payload by ','
     auto tokens = split(payload, ',');
 
@@ -58,7 +60,7 @@ std::unique_ptr<Message> GstMessage::parse(std::string prefix, const std::string
     }
 
     // parse
-    auto message = new GstMessage(prefix);
+    auto message = new GstMessage(prefix, payload, checksum);
     auto success = true;
     success &= parse_double_opt(tokens[1], message->mRmsValue);
     success &= parse_double_opt(tokens[2], message->mSemiMajorError);

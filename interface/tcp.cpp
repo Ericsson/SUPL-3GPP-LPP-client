@@ -39,10 +39,12 @@ void TcpInterface::open() {
         auto address = NetworkAddress::from_addrinfo(rp);
         mSocket      = ReconnectableSocket::connect(address, mReconnect);
         if (mSocket.is_open()) {
+            freeaddrinfo(result);
             return;
         }
     }
 
+    freeaddrinfo(result);
     throw std::runtime_error("Failed to connect to host");
 }
 

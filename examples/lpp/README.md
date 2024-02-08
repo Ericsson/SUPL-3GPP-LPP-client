@@ -14,7 +14,7 @@ There are a few required arguments:
 ```
   ./example-lpp COMMAND {OPTIONS}
 
-    3GPP LPP Example (3.4.0) - This sample code is a simple client that asks for
+    3GPP LPP Example (3.4.3) - This sample code is a simple client that asks for
     assistance data from a location server. It can handle OSR, SSR, and AGNSS
     requests. The assistance data can converted to RTCM or SPARTN before being
     sent to a GNSS receiver or other interface. The client also supports to 3GPP
@@ -96,6 +96,11 @@ There are a few required arguments:
                                           Parity Bits
                                           One of: none, odd, even
                                           Default: none
+        --nmea-export-un=[unix socket]    Export NMEA to unix socket
+        --nmea-export-tcp=[ip]            Export NMEA to TCP
+        --nmea-export-tcp-port=[port]     Export NMEA to TCP Port
+      Other Receiver Options:
+        --print-receiver-messages, --prm  Print Receiver Messages
       Output:
         File:
           --file=[file_path]                Path

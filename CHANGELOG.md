@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.4.3]
+- Added option to export NMEA sentences to a unix socket or a TCP connection. See `--nmea-export-*` command-line arguments. This requires the use of the NMEA receiver.
+- Fixed a bug where in cases of TCP connection failure, the addrinfo struct was not freed.
+
 ## [3.4.2]
 - Fixed a bug where GAD messages had TF009 set to 0. It will now be set to time specified in the STEC/Gridded IE.
 - Fixed a bug where parsing bitfields in UBX-NAV-PVT would not be incorrect.

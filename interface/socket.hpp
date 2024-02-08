@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/un.h>
 #include "types.hpp"
 
 namespace interface {
@@ -18,6 +19,7 @@ public:
         switch (addr->ai_family) {
         case AF_INET: break;
         case AF_INET6: break;
+        case AF_UNIX: break;
         default: throw std::runtime_error("Unsupported network address");
         }
         NetworkAddress rtrn{};
@@ -31,12 +33,25 @@ public:
         return rtrn;
     }
 
+    static NetworkAddress unix_socket_stream(const std::string& path) {
+        if (path.size() >= sizeof(sockaddr_un::sun_path)) throw std::runtime_error("Path too long");
+
+        NetworkAddress rtrn{};
+        rtrn.mFamily             = AF_UNIX;
+        rtrn.mType               = SOCK_STREAM;
+        rtrn.mProtocol           = 0;
+        rtrn.mAddr.un.sun_family = AF_UNIX;
+        strncpy(rtrn.mAddr.un.sun_path, path.c_str(), sizeof(rtrn.mAddr.un.sun_path));
+        return rtrn;
+    }
+
     IF_NODISCARD struct sockaddr* ptr() IF_NOEXCEPT { return &mAddr.base; }
 
     IF_NODISCARD std::size_t length() const IF_NOEXCEPT {
         switch (mFamily) {
         case AF_INET: return sizeof(mAddr.in4);
         case AF_INET6: return sizeof(mAddr.in6);
+        case AF_UNIX: return sizeof(mAddr.un);
         default: return 0; /* fail safe in later call */
         }
     }
@@ -54,6 +69,7 @@ public:
         case AF_INET6:
             inet_ntop(mFamily, &mAddr.in6.sin6_addr, buffer, INET6_ADDRSTRLEN);
             return std::string(buffer) + ":" + std::to_string(ntohs(mAddr.in6.sin6_port));
+        case AF_UNIX: return std::string(mAddr.un.sun_path);
         default: return "Unsupported network address";
         }
     }
@@ -67,6 +83,7 @@ private:
         sockaddr     base;
         sockaddr_in  in4;
         sockaddr_in6 in6;
+        sockaddr_un  un;
     } mAddr;
 };
 

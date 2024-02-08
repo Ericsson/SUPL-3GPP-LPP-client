@@ -5,15 +5,18 @@
 namespace receiver {
 namespace nmea {
 
-Message::Message(std::string prefix) NMEA_NOEXCEPT : mPrefix(prefix) {}
+Message::Message(std::string prefix, std::string payload, std::string checksum) NMEA_NOEXCEPT
+    : mPrefix(prefix),
+      mPayload(payload),
+      mChecksum(checksum) {}
 
 //
 //
 //
 
-UnsupportedMessage::UnsupportedMessage(std::string prefix, std::string payload) NMEA_NOEXCEPT
-    : Message(prefix),
-      mPayload(payload) {}
+UnsupportedMessage::UnsupportedMessage(std::string prefix, std::string payload,
+                                       std::string checksum) NMEA_NOEXCEPT
+    : Message(prefix, payload, checksum) {}
 
 void UnsupportedMessage::print() const NMEA_NOEXCEPT {
     printf("[%5s] UNSUPPORTED %s\n", prefix().c_str(), payload().c_str());
@@ -23,9 +26,9 @@ void UnsupportedMessage::print() const NMEA_NOEXCEPT {
 //
 //
 
-ErrorMessage::ErrorMessage(std::string prefix, std::string payload) NMEA_NOEXCEPT
-    : Message(prefix),
-      mPayload(payload) {}
+ErrorMessage::ErrorMessage(std::string prefix, std::string payload,
+                           std::string checksum) NMEA_NOEXCEPT
+    : Message(prefix, payload, checksum) {}
 
 void ErrorMessage::print() const NMEA_NOEXCEPT {
     printf("[%5s] ERROR %s\n", prefix().c_str(), payload().c_str());

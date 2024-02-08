@@ -39,11 +39,12 @@ public:
         return mSpeedOverGroundKmh / 3.6;
     }
 
-    NMEA_NODISCARD static std::unique_ptr<Message> parse(std::string        prefix,
-                                                         const std::string& payload);
+    NMEA_NODISCARD static std::unique_ptr<Message>
+    parse(std::string prefix, const std::string& payload, std::string checksum);
 
 private:
-    NMEA_EXPLICIT VtgMessage(std::string prefix) NMEA_NOEXCEPT;
+    NMEA_EXPLICIT VtgMessage(std::string prefix, std::string payload,
+                             std::string checksum) NMEA_NOEXCEPT;
 
     double        mTrueCourseOverGround;
     double        mMagneticCourseOverGround;
