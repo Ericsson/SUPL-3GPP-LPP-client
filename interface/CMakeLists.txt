@@ -10,6 +10,7 @@ add_library(dependency_interface STATIC
     "reconnectable_socket.cpp"
     "tcp.cpp"
     "udp.cpp"
+    "unix_socket.cpp"
 )
 add_library(dependency::interface ALIAS dependency_interface)
 

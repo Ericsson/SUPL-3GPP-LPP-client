@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <sys/socket.h>
 #include <sys/time.h>
+#include <sys/un.h>
 #include "types.hpp"
 
 namespace interface {
@@ -29,6 +30,18 @@ public:
             memcpy(&rtrn.mAddr, addr->ai_addr, addr->ai_addrlen);
         else
             throw std::runtime_error("Unsupported network address");
+        return rtrn;
+    }
+
+    static NetworkAddress unix_socket_stream(const std::string& path) {
+        if (path.size() >= sizeof(sockaddr_un::sun_path)) throw std::runtime_error("Path too long");
+
+        NetworkAddress rtrn{};
+        rtrn.mFamily             = AF_UNIX;
+        rtrn.mType               = SOCK_STREAM;
+        rtrn.mProtocol           = 0;
+        rtrn.mAddr.un.sun_family = AF_UNIX;
+        strncpy(rtrn.mAddr.un.sun_path, path.c_str(), sizeof(rtrn.mAddr.un.sun_path));
         return rtrn;
     }
 

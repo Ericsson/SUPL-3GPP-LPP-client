@@ -191,11 +191,21 @@ args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
                                                      {"nmea-serial-parity"},
                                                      args::Options::Single};
 // export nmea to unix socket
-args::ValueFlag<std::string> nmea_export{nmea_receiver_group,
-                                         "export",
-                                         "Export NMEA to unix socket",
-                                         {"nmea-export"},
-                                         args::Options::Single};
+args::ValueFlag<std::string> nmea_export_un{nmea_receiver_group,
+                                            "unix socket",
+                                            "Export NMEA to unix socket",
+                                            {"nmea-export-un"},
+                                            args::Options::Single};
+args::ValueFlag<std::string> nmea_export_tcp{nmea_receiver_group,
+                                             "ip",
+                                             "Export NMEA to TCP",
+                                             {"nmea-export-tcp"},
+                                             args::Options::Single};
+args::ValueFlag<int>         nmea_export_tcp_port{nmea_receiver_group,
+                                          "port",
+                                          "Export NMEA to TCP Port",
+                                                  {"nmea-export-tcp-port"},
+                                          args::Options::Single};
 
 //
 // Output
@@ -697,16 +707,27 @@ static NmeaOptions nmea_parse_options() {
             }
         }
 
-        std::string* nmea_export_ptr{};
-        if (nmea_export) {
-            nmea_export_ptr = new std::string{nmea_export.Get()};
+        std::vector<std::unique_ptr<interface::Interface>> nmea_export_interfaces;
+        if (nmea_export_un) {
+            auto interface = interface::Interface::unix_socket_stream(nmea_export_un.Get(), true);
+            nmea_export_interfaces.emplace_back(interface);
+        }
+
+        if (nmea_export_tcp) {
+            if (!nmea_export_tcp_port) {
+                throw args::RequiredError("nmea-export-tcp-port");
+            }
+
+            auto interface =
+                interface::Interface::tcp(nmea_export_tcp.Get(), nmea_export_tcp_port.Get(), true);
+            nmea_export_interfaces.emplace_back(interface);
         }
 
         auto interface      = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
                                                            data_bits, stop_bits, parity_bit);
         auto print_messages = print_receiver_options_parse();
         return NmeaOptions{std::unique_ptr<Interface>(interface), print_messages,
-                           std::unique_ptr<std::string>(nmea_export_ptr)};
+                           std::move(nmea_export_interfaces)};
     } else {
         return NmeaOptions{};
     }

@@ -99,15 +99,20 @@ void execute(Options options, ssr_example::Format format, int ura_override,
 
     if (nmea_options.interface) {
         printf("[nmea]\n");
-        if(nmea_options.export_socket) {
-            printf("  export socket: %s\n", nmea_options.export_socket->c_str());
-        }
         nmea_options.interface->open();
         nmea_options.interface->print_info();
 
+        if (!nmea_options.export_interfaces.empty()) {
+            printf("[nmea-export]\n");
+            for (auto& interface : nmea_options.export_interfaces) {
+                interface->open();
+                interface->print_info();
+            }
+        }
+
         gNmeaReceiver = std::unique_ptr<NReceiver>(
             new NReceiver(std::move(nmea_options.interface), nmea_options.print_messages,
-                          std::move(nmea_options.export_socket)));
+                          std::move(nmea_options.export_interfaces)));
         gNmeaReceiver->start();
     }
 

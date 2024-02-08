@@ -27,7 +27,7 @@ public:
 
     /// Get the reconstructed sentence.
     NMEA_NODISCARD std::string sentence() const NMEA_NOEXCEPT {
-        return mPrefix + "," + mPayload + "*" + mChecksum;
+        return mPrefix + "," + mPayload + "*" + mChecksum + "\r\n";
     }
 
     /// Print the message to stdout.

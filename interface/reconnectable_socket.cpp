@@ -96,6 +96,7 @@ void ReconnectableSocket::print_info() IF_NOEXCEPT {
     switch (mAddress.family()) {
     case AF_INET: printf("    family:     AF_INET\n"); break;
     case AF_INET6: printf("    family:     AF_INET6\n"); break;
+    case AF_UNIX: printf("    family:     AF_UNIX\n"); break;
     default: printf("    family:     AF_??? (%d)\n", mAddress.family()); break;
     }
     switch (mAddress.type()) {
@@ -106,6 +107,7 @@ void ReconnectableSocket::print_info() IF_NOEXCEPT {
     switch (mAddress.protocol()) {
     case IPPROTO_TCP: printf("    protocol:   IPPROTO_TCP\n"); break;
     case IPPROTO_UDP: printf("    protocol:   IPPROTO_UDP\n"); break;
+    case IPPROTO_IP: printf("    protocol:   IPPROTO_IP\n"); break;
     default: printf("    protocol:   IPPROTO_??? (%d)\n", mAddress.protocol()); break;
     }
     printf("    address:    %s\n", mAddress.to_string().c_str());

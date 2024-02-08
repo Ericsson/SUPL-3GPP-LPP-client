@@ -16,9 +16,9 @@ namespace nmea {
 class ThreadedReceiver {
 public:
     /// The receiver will be created on the thread, thus this will _not_ block.
-    NMEA_EXPLICIT ThreadedReceiver(std::unique_ptr<interface::Interface> interface,
-                                   bool                                  print_messages,
-                                   std::unique_ptr<std::string> export_socket) NMEA_NOEXCEPT;
+    NMEA_EXPLICIT ThreadedReceiver(
+        std::unique_ptr<interface::Interface> interface, bool print_messages,
+        std::vector<std::unique_ptr<interface::Interface>> export_interfaces) NMEA_NOEXCEPT;
     ~ThreadedReceiver() NMEA_NOEXCEPT;
 
     /// Start the receiver thread.
@@ -49,13 +49,13 @@ protected:
     void run();
 
 private:
-    std::unique_ptr<interface::Interface> mInterface;
-    std::unique_ptr<NmeaReceiver>         mReceiver;
-    std::unique_ptr<std::thread>          mThread;
-    std::atomic<bool>                     mRunning;
-    std::mutex                            mMutex;
-    bool                                  mPrintMessages;
-    std::unique_ptr<interface::Interface> mExportInterface;
+    std::unique_ptr<interface::Interface>              mInterface;
+    std::unique_ptr<NmeaReceiver>                      mReceiver;
+    std::unique_ptr<std::thread>                       mThread;
+    std::atomic<bool>                                  mRunning;
+    std::mutex                                         mMutex;
+    bool                                               mPrintMessages;
+    std::vector<std::unique_ptr<interface::Interface>> mExportInterfaces;
 
     std::unique_ptr<GgaMessage> mGga;
     std::unique_ptr<VtgMessage> mVtg;
