@@ -51,7 +51,9 @@ inline LocationInformationType_t lpp_get_request_location_information_type(LPP_M
     return r9->commonIEsRequestLocationInformation->locationInformationType;
 }
 
-LPP_Message* lpp_PLI_location_estimate(LPP_Transaction* transaction, LocationInformation* li,
-                                       bool has_information);
-LPP_Message* lpp_PLI_location_measurements(LPP_Transaction* transaction, ECIDInformation* li,
-                                           bool has_information);
+LPP_Message* lpp_PLI_location_estimate(LPP_Transaction*                           transaction,
+                                       location_information::LocationInformation* li,
+                                       bool                                       has_information);
+LPP_Message* lpp_PLI_location_measurements(LPP_Transaction*                       transaction,
+                                           location_information::ECIDInformation* li,
+                                           bool                                   has_information);

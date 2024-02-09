@@ -10,6 +10,8 @@
 #include "options.hpp"
 #include "utility/types.h"
 
+using namespace location_information;
+
 bool provide_location_information_callback(UNUSED LocationInformation& location,
                                            UNUSED HaGnssMetrics& metrics, UNUSED void* userdata) {
 #if 0
@@ -52,39 +54,37 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
         return false;
     }
 
-    location.tai_time                  = nav_pvt->tai_time();
-    location.latitude                  = nav_pvt->latitude();
-    location.longitude                 = nav_pvt->longitude();
-    location.altitude                  = nav_pvt->altitude();
-    location.horizontal_accuracy       = nav_pvt->h_acc();
-    location.horizontal_speed          = nav_pvt->h_vel();
-    location.horizontal_speed_accuracy = nav_pvt->h_vel_acc();
-    location.bearing                   = nav_pvt->head_mot();
-    location.vertical_accuracy         = nav_pvt->v_acc();
-    location.vertical_speed            = fabs(nav_pvt->v_vel());
-    location.vertical_speed_accuracy   = nav_pvt->v_vel_acc();
-    location.vertical_velocity_direction =
-        nav_pvt->v_vel() > 0 ? VerticalDirection::DOWN : VerticalDirection::UP;
+    auto location_shape = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
+        nav_pvt->latitude(), nav_pvt->longitude(), nav_pvt->altitude(),
+        HorizontalAccuracy::from_ellipse(nav_pvt->h_acc(), nav_pvt->h_acc(), 0),
+        VerticalAccuracy::from_1sigma(nav_pvt->v_acc()));
 
-    metrics.fixq = FixQuality::INVALID;
+    auto velocity_shape = VelocityShape::horizontal_vertical_with_uncertainty(
+        nav_pvt->h_vel(), nav_pvt->h_vel_acc(), nav_pvt->head_mot(), fabs(nav_pvt->v_vel()),
+        nav_pvt->v_vel_acc(),
+        nav_pvt->v_vel() > 0 ? VerticalDirection::Down : VerticalDirection::Up);
+
+    location.time     = nav_pvt->tai_time();
+    location.location = location_shape;
+    location.velocity = velocity_shape;
+
+    metrics.fix_quality = FixQuality::INVALID;
     if (nav_pvt->fix_type() == 3) {
         if (nav_pvt->carr_soln() == 2) {
-            metrics.fixq = FixQuality::RTK_FIX;
+            metrics.fix_quality = FixQuality::RTK_FIX;
         } else if (nav_pvt->carr_soln() == 1) {
-            metrics.fixq = FixQuality::RTK_FLOAT;
+            metrics.fix_quality = FixQuality::RTK_FLOAT;
         } else {
-            metrics.fixq = FixQuality::STANDALONE;
+            metrics.fix_quality = FixQuality::STANDALONE;
         }
     } else if (nav_pvt->fix_type() == 2) {
-        metrics.fixq = FixQuality::STANDALONE;
+        metrics.fix_quality = FixQuality::STANDALONE;
     } else if (nav_pvt->fix_type() == 1) {
-        metrics.fixq = FixQuality::DEAD_RECKONING;
+        metrics.fix_quality = FixQuality::DEAD_RECKONING;
     }
 
-    metrics.sats = nav_pvt->num_sv();
-    metrics.age  = 0;  // TODO(ewasjon): requires another message
-    metrics.hdop = 0;
-    metrics.pdop = nav_pvt->p_dop();
+    metrics.number_of_satellites = nav_pvt->num_sv();
+    metrics.pdop                 = nav_pvt->p_dop();
     return true;
 }
 
@@ -102,51 +102,45 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
         return false;
     }
 
-    location.tai_time                  = gga->time_of_day();
-    location.latitude                  = gga->latitude();
-    location.longitude                 = gga->longitude();
-    location.altitude                  = gga->altitude();
-    location.horizontal_accuracy       = gst->horizontal_position_error();
-    location.horizontal_speed          = vtg->speed_over_ground();
-    location.horizontal_speed_accuracy = 0;
-    location.bearing                   = vtg->true_course_over_ground();
-
-    // TODO(ewasjon): Are these not available in NMEA?
-    location.vertical_accuracy           = gst->vertical_position_error();
-    location.vertical_speed              = 0;
-    location.vertical_speed_accuracy     = 0;
-    location.vertical_velocity_direction = VerticalDirection::UP;
+    location.time     = gga->time_of_day();
+    location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
+        gga->latitude(), gga->longitude(), gga->altitude(),
+        HorizontalAccuracy::from_ellipse(gst->semi_major(), gst->semi_minor(), gst->orientation()),
+        VerticalAccuracy::from_1sigma(gst->vertical_position_error()));
+    location.velocity =
+        VelocityShape::horizontal(vtg->speed_over_ground(), vtg->true_course_over_ground());
 
     switch (gga->fix_quality()) {
-    case receiver::nmea::GgaFixQuality::Invalid: metrics.fixq = FixQuality::INVALID; break;
-    case receiver::nmea::GgaFixQuality::GpsFix: metrics.fixq = FixQuality::STANDALONE; break;
-    case receiver::nmea::GgaFixQuality::DgpsFix: metrics.fixq = FixQuality::DGPS_FIX; break;
-    case receiver::nmea::GgaFixQuality::PpsFix: metrics.fixq = FixQuality::PPS_FIX; break;
-    case receiver::nmea::GgaFixQuality::RtkFixed: metrics.fixq = FixQuality::RTK_FIX; break;
-    case receiver::nmea::GgaFixQuality::RtkFloat: metrics.fixq = FixQuality::RTK_FLOAT; break;
-    case receiver::nmea::GgaFixQuality::DeadReckoning:
-        metrics.fixq = FixQuality::DEAD_RECKONING;
+    case receiver::nmea::GgaFixQuality::Invalid: metrics.fix_quality = FixQuality::INVALID; break;
+    case receiver::nmea::GgaFixQuality::GpsFix: metrics.fix_quality = FixQuality::STANDALONE; break;
+    case receiver::nmea::GgaFixQuality::DgpsFix: metrics.fix_quality = FixQuality::DGPS_FIX; break;
+    case receiver::nmea::GgaFixQuality::PpsFix: metrics.fix_quality = FixQuality::PPS_FIX; break;
+    case receiver::nmea::GgaFixQuality::RtkFixed: metrics.fix_quality = FixQuality::RTK_FIX; break;
+    case receiver::nmea::GgaFixQuality::RtkFloat:
+        metrics.fix_quality = FixQuality::RTK_FLOAT;
         break;
-    default: metrics.fixq = FixQuality::INVALID;
+    case receiver::nmea::GgaFixQuality::DeadReckoning:
+        metrics.fix_quality = FixQuality::DEAD_RECKONING;
+        break;
+    default: metrics.fix_quality = FixQuality::INVALID;
     }
 
-    metrics.sats = static_cast<u8>(gga->satellites_in_view());
-    metrics.age  = 0;  // TODO: ?
-    metrics.hdop = gga->h_dop();
-    metrics.pdop = 0;
+    metrics.number_of_satellites = gga->satellites_in_view();
+    metrics.hdop                 = gga->h_dop();
     return true;
 }
 
-bool provide_location_information_callback_fake(UNUSED LocationInformation& location,
+bool provide_location_information_callback_fake(LocationInformation&  location,
                                                 UNUSED HaGnssMetrics& metrics, void* userdata) {
     auto options = reinterpret_cast<LocationInformationOptions*>(userdata);
     if (!options) return false;
 
-    location.tai_time  = TAI_Time::now();
-    location.latitude  = options->latitude;
-    location.longitude = options->longitude;
-    location.altitude  = options->altitude;
+    location.time     = TAI_Time::now();
+    location.location = LocationShape::ha_ellipsoid_altitude_uncertainty(
+        options->latitude, options->longitude, options->altitude,
+        HorizontalAccuracy::from_ellipse(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
 
+    metrics.fix_quality = FixQuality::STANDALONE;
     return true;
 }
 

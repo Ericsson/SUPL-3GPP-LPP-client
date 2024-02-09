@@ -7,3 +7,4 @@ This folder contains the code for the interface library. The interface library i
 - UDP
 - Stdout (one-way communication)
 - Stdin (one-way communication)
+- Unix socket

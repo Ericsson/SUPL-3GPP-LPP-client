@@ -579,6 +579,8 @@ bool LPP_Client::handle_request_location_information(LPP_Message*     message,
 }
 
 bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli) {
+    using namespace location_information;
+
     LPP_Message* message = NULL;
     if (pli->type == LocationInformationType_locationEstimateRequired) {
         LocationInformation li{};

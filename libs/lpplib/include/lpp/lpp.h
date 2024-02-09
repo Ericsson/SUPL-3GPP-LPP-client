@@ -19,8 +19,9 @@ class LPP_Client {
 public:
     typedef int32_t AD_Request;
     typedef void (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
-    typedef bool (*PLI_Callback)(LocationInformation&, HaGnssMetrics&, void*);
-    typedef bool (*PECID_Callback)(ECIDInformation&, void*);
+    typedef bool (*PLI_Callback)(location_information::LocationInformation&,
+                                 location_information::HaGnssMetrics&, void*);
+    typedef bool (*PECID_Callback)(location_information::ECIDInformation&, void*);
 
     struct ProvideLI {
         LocationInformationType_t             type;
