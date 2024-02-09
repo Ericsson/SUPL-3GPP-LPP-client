@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.4.*]
+## [3.4.4]
 - Fixed message nullptr exception.
 - IMSI and MSISDN used `unsigned long` which doesn't have enough bits to store all possible values. Changed to `unsigned long long`.
 - Added support to use 5G NR cells in addition to LTE cells.
