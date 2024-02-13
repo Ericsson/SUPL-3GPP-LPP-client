@@ -136,7 +136,7 @@ bool provide_location_information_callback_fake(LocationInformation&  location,
     if (!options) return false;
 
     location.time     = TAI_Time::now();
-    location.location = LocationShape::ha_ellipsoid_altitude_uncertainty(
+    location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
         options->latitude, options->longitude, options->altitude,
         HorizontalAccuracy::from_ellipse(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
 

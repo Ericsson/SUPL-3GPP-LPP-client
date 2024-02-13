@@ -51,6 +51,40 @@ inline LocationInformationType_t lpp_get_request_location_information_type(LPP_M
     return r9->commonIEsRequestLocationInformation->locationInformationType;
 }
 
+inline int lpp_get_request_location_interval(LPP_Message* lpp) {
+    if (!lpp) return -1;
+    if (!lpp->lpp_MessageBody) return -1;
+    if (lpp->lpp_MessageBody->present != LPP_MessageBody_PR_c1) return -1;
+    if (lpp->lpp_MessageBody->choice.c1.present !=
+        LPP_MessageBody__c1_PR_requestLocationInformation)
+        return -1;
+
+    auto rli = &lpp->lpp_MessageBody->choice.c1.choice.requestLocationInformation;
+    if (rli->criticalExtensions.present != RequestLocationInformation__criticalExtensions_PR_c1)
+        return -1;
+    if (rli->criticalExtensions.choice.c1.present !=
+        RequestLocationInformation__criticalExtensions__c1_PR_requestLocationInformation_r9)
+        return -1;
+
+    auto r9 = &rli->criticalExtensions.choice.c1.choice.requestLocationInformation_r9;
+    if (!r9->commonIEsRequestLocationInformation) return -1;
+    if (!r9->commonIEsRequestLocationInformation->periodicalReporting) return -1;
+
+    switch (r9->commonIEsRequestLocationInformation->periodicalReporting->reportingInterval) {
+    case PeriodicalReportingCriteria__reportingInterval_noPeriodicalReporting: return -1;
+    case PeriodicalReportingCriteria__reportingInterval_ri0_25: return 1000;
+    case PeriodicalReportingCriteria__reportingInterval_ri0_5: return 2000;
+    case PeriodicalReportingCriteria__reportingInterval_ri1: return 4000;
+    case PeriodicalReportingCriteria__reportingInterval_ri2: return 8000;
+    case PeriodicalReportingCriteria__reportingInterval_ri4: return 10000;
+    case PeriodicalReportingCriteria__reportingInterval_ri8: return 16000;
+    case PeriodicalReportingCriteria__reportingInterval_ri16: return 20000;
+    case PeriodicalReportingCriteria__reportingInterval_ri32: return 32000;
+    case PeriodicalReportingCriteria__reportingInterval_ri64: return 64000;
+    default: return -1;
+    }
+}
+
 LPP_Message* lpp_PLI_location_estimate(LPP_Transaction*                           transaction,
                                        location_information::LocationInformation* li,
                                        bool                                       has_information);

@@ -27,6 +27,7 @@ public:
         LocationInformationType_t             type;
         LPP_Transaction                       transaction;
         std::chrono::system_clock::time_point last;
+        int                                   interval;
     };
 
     LPP_Client(bool segmentation);
@@ -69,6 +70,9 @@ public:
 
     // Force provide location information to be unsolicited sent.
     void force_location_information();
+
+    /// Unlock ProvideLocationInformation update rate.
+    void unlock_update_rate();
 
     OCTET_STRING* encode(LPP_Message* message);
     LPP_Message*  decode(OCTET_STRING* data);
@@ -115,6 +119,7 @@ private:
     bool mForceLocationInformation;
     bool mEnableSegmentation;
     bool mSuplIdentityFix;
+    bool mLocationUpdateUnlocked;
 };
 
 void network_initialize();

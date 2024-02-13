@@ -201,12 +201,6 @@ UbloxReceiver::UbloxReceiver(Port                                  port,
     // Clear residual data from the interface
     process();
     mParser->clear();
-
-    // Load receiver configuration
-    load_receiver_configuration();
-
-    // By default, enable UBX-NAV-PVT
-    enable_message(MessageId::UbxNavPvt);
 }
 
 UbloxReceiver::~UbloxReceiver() UBLOX_NOEXCEPT {
@@ -361,7 +355,14 @@ void UbloxReceiver::store_receiver_configuration() {
     }
 }
 
-void UbloxReceiver::configure() {
+void UbloxReceiver::load_configuration() {
+    load_receiver_configuration();
+
+    // By default, enable UBX-NAV-PVT
+    enable_message(MessageId::UbxNavPvt);
+}
+
+void UbloxReceiver::store_configuration() {
     poll_mon_ver();
 
     // Enable fixed DGNSS mode
@@ -400,7 +401,7 @@ void UbloxReceiver::configure() {
 }
 
 void UbloxReceiver::process() {
-    if(!mInterface->is_open()) {
+    if (!mInterface->is_open()) {
         mInterface->open();
     }
 

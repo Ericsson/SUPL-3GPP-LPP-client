@@ -307,8 +307,11 @@ args::Group location_infomation{
 };
 
 args::Flag li_enable{
-    location_infomation, "location-info",       "Location Information",
-    {"location-info"},   args::Options::Single,
+    location_infomation,
+    "location-info",
+    "Enable sending fake location information. Configure with '--fake-*' options.",
+    {"fake-location-info", "fli"},
+    args::Options::Single,
 };
 args::Flag li_force{
     location_infomation,
@@ -317,12 +320,29 @@ args::Flag li_force{
     {"force-location-info"},
     args::Options::Single,
 };
-args::ValueFlag<double> li_latitude{
-    location_infomation, "latitude", "Latitude", {"latitude"}, args::Options::Single};
-args::ValueFlag<double> li_longitude{
-    location_infomation, "longitude", "Longitude", {"longitude"}, args::Options::Single};
-args::ValueFlag<double> li_altitude{
-    location_infomation, "altitude", "Altitude", {"altitude"}, args::Options::Single};
+args::Flag li_unlocked{
+    location_infomation,
+    "unlocked",
+    "Send location reports without locking the update rate. By default, the update rate is locked "
+    "to 1 second.",
+    {"location-report-unlocked"},
+    args::Options::Single,
+};
+args::ValueFlag<double> li_latitude{location_infomation,
+                                    "latitude",
+                                    "Fake Latitude",
+                                    {"fake-latitude", "flat"},
+                                    args::Options::Single};
+args::ValueFlag<double> li_longitude{location_infomation,
+                                     "longitude",
+                                     "Fake Longitude",
+                                     {"fake-longitude", "flon"},
+                                     args::Options::Single};
+args::ValueFlag<double> li_altitude{location_infomation,
+                                    "altitude",
+                                    "Fake Altitude",
+                                    {"fake-altitude", "falt"},
+                                    args::Options::Single};
 
 //
 // Options
@@ -738,9 +758,14 @@ static LocationInformationOptions parse_location_information_options() {
     location_information.longitude = 20.54864403253676;
     location_information.altitude  = 0;
     location_information.force     = false;
+    location_information.unlock_update_rate = false;
 
     if (li_force) {
         location_information.force = true;
+    }
+
+    if(li_unlocked) {
+        location_information.unlock_update_rate = true;
     }
 
     if (li_enable) {
