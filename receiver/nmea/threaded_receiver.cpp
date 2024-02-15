@@ -76,6 +76,16 @@ void ThreadedReceiver::run() {
                         if (mPrintMessages) {
                             message->print();
                         }
+
+                        if (!mExportInterfaces.empty()) {
+                            auto message_data = message->sentence();
+                            for (auto& interface : mExportInterfaces) {
+                                if (interface->can_write()) {
+                                    interface->write(message_data.data(), message_data.size());
+                                }
+                            }
+                        }
+
                         if (dynamic_cast<GgaMessage*>(message.get())) {
                             mGga = std::unique_ptr<GgaMessage>(
                                 static_cast<GgaMessage*>(message.release()));
@@ -85,15 +95,6 @@ void ThreadedReceiver::run() {
                         } else if (dynamic_cast<GstMessage*>(message.get())) {
                             mGst = std::unique_ptr<GstMessage>(
                                 static_cast<GstMessage*>(message.release()));
-                        }
-
-                        if (!mExportInterfaces.empty()) {
-                            auto message_data = message->sentence();
-                            for (auto& interface : mExportInterfaces) {
-                                if (interface->can_write()) {
-                                    interface->write(message_data.data(), message_data.size());
-                                }
-                            }
                         }
                     } else {
                         break;

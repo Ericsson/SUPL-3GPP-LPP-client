@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.*]
+- Fixed message nullptr exception.
+
 ## [3.4.3]
 - Added option to export NMEA sentences to a unix socket or a TCP connection. See `--nmea-export-*` command-line arguments. This requires the use of the NMEA receiver.
 - Fixed a bug where in cases of TCP connection failure, the addrinfo struct was not freed.
