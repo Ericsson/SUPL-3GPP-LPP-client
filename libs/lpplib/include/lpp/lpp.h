@@ -33,8 +33,8 @@ public:
 
     void use_incorrect_supl_identity();
 
-    void set_identity_msisdn(unsigned long msisdn);
-    void set_identity_imsi(unsigned long imsi);
+    void set_identity_msisdn(unsigned long long msisdn);
+    void set_identity_imsi(unsigned long long imsi);
     void set_identity_ipv4(const std::string& ipv4);
 
     // Open connection to location server.

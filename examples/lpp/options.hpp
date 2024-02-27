@@ -19,9 +19,9 @@ struct LocationServerOptions {
 /// Identity options.
 struct IdentityOptions {
     /// Identify the device with MSISDN.
-    std::unique_ptr<unsigned long> msisdn;
+    std::unique_ptr<unsigned long long> msisdn;
     /// Identify the device with IMSI.
-    std::unique_ptr<unsigned long> imsi;
+    std::unique_ptr<unsigned long long> imsi;
     /// Identify the device with IPv4 address.
     std::unique_ptr<std::string> ipv4;
 

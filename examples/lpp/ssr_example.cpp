@@ -64,9 +64,9 @@ void execute(Options options, ssr_example::Format format, int ura_override,
            location_server_options.port, location_server_options.ssl ? "[ssl]" : "");
     printf("  identity:           ");
     if (identity_options.imsi)
-        printf("imsi: %lu\n", *identity_options.imsi);
+        printf("imsi: %llu\n", *identity_options.imsi);
     else if (identity_options.msisdn)
-        printf("msisdn: %lu\n", *identity_options.msisdn);
+        printf("msisdn: %llu\n", *identity_options.msisdn);
     else if (identity_options.ipv4)
         printf("ipv4: %s\n", identity_options.ipv4->c_str());
     else

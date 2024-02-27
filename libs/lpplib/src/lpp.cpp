@@ -28,12 +28,12 @@ void LPP_Client::use_incorrect_supl_identity() {
     mSuplIdentityFix = false;
 }
 
-void LPP_Client::set_identity_msisdn(unsigned long msisdn) {
+void LPP_Client::set_identity_msisdn(unsigned long long msisdn) {
     if (connected) return;
     mSUPL->set_session(SUPL_Session::msisdn(0, msisdn, mSuplIdentityFix));
 }
 
-void LPP_Client::set_identity_imsi(unsigned long imsi) {
+void LPP_Client::set_identity_imsi(unsigned long long imsi) {
     if (connected) return;
     mSUPL->set_session(SUPL_Session::imsi(0, imsi, mSuplIdentityFix));
 }

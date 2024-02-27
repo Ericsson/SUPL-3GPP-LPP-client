@@ -30,8 +30,8 @@ void execute(Options options, agnss_example::Format format) {
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
            location_server_options.port, location_server_options.ssl ? "[ssl]" : "");
     printf("  identity:           ");
-    if (identity_options.imsi) printf("imsi: %lu\n", *identity_options.imsi);
-    if (identity_options.msisdn) printf("msisdn: %lu\n", *identity_options.msisdn);
+    if (identity_options.imsi) printf("imsi: %llu\n", *identity_options.imsi);
+    if (identity_options.msisdn) printf("msisdn: %llu\n", *identity_options.msisdn);
     if (identity_options.ipv4) printf("ipv4: %s\n", identity_options.ipv4->c_str());
     printf("  cell information:   %ld:%ld:%ld:%ld (mcc:mnc:tac:id)\n", gCell.mcc, gCell.mnc,
            gCell.tac, gCell.cell);

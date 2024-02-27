@@ -20,7 +20,7 @@ void ASN_Deleter<OCTET_STRING>::operator()(OCTET_STRING* ptr) {
 //
 //
 
-static void binary_coded_decimal(unsigned long value, unsigned char* buf, bool switch_order) {
+static void binary_coded_decimal(unsigned long long value, unsigned char* buf, bool switch_order) {
     // `switch_order` = false, this will encode it in the wrong order
 
     // msisdn, mnd and imsi are a BCD (Binary Coded Decimal) string
@@ -65,7 +65,7 @@ static void binary_coded_decimal(unsigned long value, unsigned char* buf, bool s
     }
 }
 
-std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long msisdn,
+std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long long msisdn,
                                                    bool switch_order) {
     auto set           = ALLOC_ZERO(SetSessionID);
     set->sessionId     = id;
@@ -78,7 +78,8 @@ std::unique_ptr<SUPL_Session> SUPL_Session::msisdn(long id, unsigned long msisdn
     return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));
 }
 
-std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long imsi, bool switch_order) {
+std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long long imsi,
+                                                 bool switch_order) {
     auto set           = ALLOC_ZERO(SetSessionID);
     set->sessionId     = id;
     set->setId.present = SETId_PR_imsi;
@@ -233,7 +234,7 @@ SUPL_Message SUPL_Client::process() {
     }
 
     // Remove the message from the buffer
-    if(expected_size > mReceiveLength) {
+    if (expected_size > mReceiveLength) {
         mReceiveLength = 0;
     }
 
@@ -268,7 +269,7 @@ SUPL_Message SUPL_Client::receive2() {
     }
 
     mReceiveLength += bytes;
-    if(mReceiveLength >= SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
+    if (mReceiveLength >= SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
         mReceiveLength = 0;
         return nullptr;
     }

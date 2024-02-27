@@ -36,14 +36,14 @@ args::Group identity{
     args::Options::Global,
 };
 
-args::ValueFlag<unsigned long> msisdn{
+args::ValueFlag<unsigned long long> msisdn{
     identity, "msisdn", "MSISDN", {"msisdn"}, args::Options::Single};
-args::ValueFlag<unsigned long> imsi{identity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
-args::ValueFlag<std::string>   ipv4{identity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
-args::Flag                     use_supl_identity_fix{identity,
+args::ValueFlag<unsigned long long> imsi{identity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
+args::ValueFlag<std::string>        ipv4{identity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
+args::Flag                          use_supl_identity_fix{identity,
                                  "supl-identity-fix",
                                  "Use SUPL Identity Fix",
-                                                     {"supl-identity-fix"},
+                                                          {"supl-identity-fix"},
                                  args::Options::Single};
 
 //
@@ -196,15 +196,12 @@ args::ValueFlag<std::string> nmea_export_un{nmea_receiver_group,
                                             "Export NMEA to unix socket",
                                             {"nmea-export-un"},
                                             args::Options::Single};
-args::ValueFlag<std::string> nmea_export_tcp{nmea_receiver_group,
-                                             "ip",
-                                             "Export NMEA to TCP",
-                                             {"nmea-export-tcp"},
-                                             args::Options::Single};
-args::ValueFlag<int>         nmea_export_tcp_port{nmea_receiver_group,
+args::ValueFlag<std::string> nmea_export_tcp{
+    nmea_receiver_group, "ip", "Export NMEA to TCP", {"nmea-export-tcp"}, args::Options::Single};
+args::ValueFlag<int> nmea_export_tcp_port{nmea_receiver_group,
                                           "port",
                                           "Export NMEA to TCP Port",
-                                                  {"nmea-export-tcp-port"},
+                                          {"nmea-export-tcp-port"},
                                           args::Options::Single};
 
 //
@@ -353,11 +350,11 @@ IdentityOptions parse_identity_options() {
     identity.use_supl_identity_fix = false;
 
     if (msisdn) {
-        identity.msisdn = std::unique_ptr<unsigned long>{new unsigned long{msisdn.Get()}};
+        identity.msisdn = std::unique_ptr<unsigned long long>{new unsigned long long{msisdn.Get()}};
     }
 
     if (imsi) {
-        identity.imsi = std::unique_ptr<unsigned long>{new unsigned long{imsi.Get()}};
+        identity.imsi = std::unique_ptr<unsigned long long>{new unsigned long long{imsi.Get()}};
     }
 
     if (ipv4) {
@@ -365,7 +362,7 @@ IdentityOptions parse_identity_options() {
     }
 
     if (!identity.msisdn && !identity.imsi && !identity.ipv4) {
-        identity.imsi = std::unique_ptr<unsigned long>{new unsigned long{2460813579lu}};
+        identity.imsi = std::unique_ptr<unsigned long long>{new unsigned long long{2460813579lu}};
     }
 
     if (use_supl_identity_fix) {
