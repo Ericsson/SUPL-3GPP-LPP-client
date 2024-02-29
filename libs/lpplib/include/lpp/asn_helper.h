@@ -53,11 +53,12 @@ private:
 };
 
 void   supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value);
-void   supl_fill_cell_identity(CellIdentity_t*, size_t value);
+void   supl_fill_cell_identity(CellIdentity_t*, unsigned long long value);
 MCC*   supl_create_mcc(int mcc_value);
 void   supl_fill_mcc(MCC* mcc, int mcc_value);
 void   supl_fill_mnc(MNC* mnc, int mnc_value);
-ECGI*  ecgi_create(long mcc, long mnc, long id);
+ECGI*  ecgi_create(long mcc, long mnc, unsigned long long id);
+NCGI_r15* ncgi_create(long mcc, long mnc, unsigned long long id);
 double long_pointer2scaled_double(long* ptr, double def, double arg);
 double long_pointer(long* ptr, long def);
 long   gnss2long(GNSS_SignalID_t gnss_id);

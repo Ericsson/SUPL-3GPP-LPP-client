@@ -33,8 +33,8 @@ void execute(Options options, agnss_example::Format format) {
     if (identity_options.imsi) printf("imsi: %llu\n", *identity_options.imsi);
     if (identity_options.msisdn) printf("msisdn: %llu\n", *identity_options.msisdn);
     if (identity_options.ipv4) printf("ipv4: %s\n", identity_options.ipv4->c_str());
-    printf("  cell information:   %ld:%ld:%ld:%ld (mcc:mnc:tac:id)\n", gCell.mcc, gCell.mnc,
-           gCell.tac, gCell.cell);
+    printf("  cell information:   %s %ld:%ld:%ld:%llu (mcc:mnc:tac:id)\n",
+           cell_options.is_nr ? "[nr]" : "[lte]", gCell.mcc, gCell.mnc, gCell.tac, gCell.cell);
 
     for (auto& interface : output_options.interfaces) {
         interface->open();

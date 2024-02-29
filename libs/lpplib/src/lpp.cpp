@@ -92,6 +92,7 @@ bool LPP_Client::supl_start(CellID cell) {
         auto cell_info     = &start->locationId.cellInfo;
         cell_info->present = CellInfo_PR_ver2_CellInfo_extension;
 
+        // TODO(ewasjon): what to do here about NR cells?
         auto cell_v2     = &cell_info->choice.ver2_CellInfo_extension;
         cell_v2->present = Ver2_CellInfo_extension_PR_lteCell;
 
@@ -106,6 +107,7 @@ bool LPP_Client::supl_start(CellID cell) {
         lte_cell->rsrpResult          = OPTIONAL_MISSING;
         lte_cell->rsrqResult          = OPTIONAL_MISSING;
         lte_cell->measResultListEUTRA = OPTIONAL_MISSING;
+    
     }
 
     return mSUPL->send(message);
@@ -152,6 +154,7 @@ bool LPP_Client::supl_send_posinit(CellID cell) {
         auto cell_info     = &posinit->locationId.cellInfo;
         cell_info->present = CellInfo_PR_ver2_CellInfo_extension;
 
+        // TODO(ewasjon): what to do here about NR cells?
         auto cell_v2     = &cell_info->choice.ver2_CellInfo_extension;
         cell_v2->present = Ver2_CellInfo_extension_PR_lteCell;
 

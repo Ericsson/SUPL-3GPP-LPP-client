@@ -4,7 +4,8 @@ struct CellID {
     long mcc;
     long mnc;
     long tac;
-    long cell;
+    unsigned long long cell;
+    bool is_nr;
 };
 
 struct NeighborCell {

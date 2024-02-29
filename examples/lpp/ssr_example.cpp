@@ -71,8 +71,8 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         printf("ipv4: %s\n", identity_options.ipv4->c_str());
     else
         printf("none\n");
-    printf("  cell information:   %ld:%ld:%ld:%ld (mcc:mnc:tac:id)\n", gCell.mcc, gCell.mnc,
-           gCell.tac, gCell.cell);
+    printf("  cell information:   %s %ld:%ld:%ld:%llu (mcc:mnc:tac:id)\n",
+           cell_options.is_nr ? "[nr]" : "[lte]", gCell.mcc, gCell.mnc, gCell.tac, gCell.cell);
 
     if (modem_options.device) {
         gModem = std::unique_ptr<Modem_AT>(

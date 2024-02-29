@@ -42,10 +42,11 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     auto& location_information_options = gOptions.location_information_options;
 
     gCell = CellID{
-        .mcc  = cell_options.mcc,
-        .mnc  = cell_options.mnc,
-        .tac  = cell_options.tac,
-        .cell = cell_options.cid,
+        .mcc   = cell_options.mcc,
+        .mnc   = cell_options.mnc,
+        .tac   = cell_options.tac,
+        .cell  = cell_options.cid,
+        .is_nr = cell_options.is_nr,
     };
 
     printf("[settings]\n");
@@ -60,8 +61,8 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         printf("ipv4: %s\n", identity_options.ipv4->c_str());
     else
         printf("none\n");
-    printf("  cell information:   %ld:%ld:%ld:%ld (mcc:mnc:tac:id)\n", gCell.mcc, gCell.mnc,
-           gCell.tac, gCell.cell);
+    printf("  cell information:   %s %ld:%ld:%ld:%llu (mcc:mnc:tac:id)\n",
+           cell_options.is_nr ? "[nr]" : "[lte]", gCell.mcc, gCell.mnc, gCell.tac, gCell.cell);
 
     if (modem_options.device) {
         gModem = std::unique_ptr<Modem_AT>(

@@ -3,6 +3,7 @@
 ## [3.4.*]
 - Fixed message nullptr exception.
 - IMSI and MSISDN used `unsigned long` which doesn't have enough bits to store all possible values. Changed to `unsigned long long`.
+- Added support to use 5G NR cells in addition to LTE cells.
 
 ## [3.4.3]
 - Added option to export NMEA sentences to a unix socket or a TCP connection. See `--nmea-export-*` command-line arguments. This requires the use of the NMEA receiver.

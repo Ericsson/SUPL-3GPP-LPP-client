@@ -40,7 +40,7 @@ void supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value) {
     BitStringBuilder{}.integer(0, 16, tac_value).into_bit_string(16, tac);
 }
 
-void supl_fill_cell_identity(CellIdentity_t* identity, size_t value) {
+void supl_fill_cell_identity(CellIdentity_t* identity, unsigned long long value) {
     BitStringBuilder{}.integer(0, 28, value).into_bit_string(28, identity);
 }
 
@@ -99,13 +99,25 @@ void supl_fill_mnc(MNC* mnc, int mnc_value) {
     }
 }
 
-ECGI* ecgi_create(long mcc, long mnc, long id) {
+ECGI* ecgi_create(long mcc, long mnc, unsigned long long id) {
     ECGI* primary_cell = ALLOC_ZERO(ECGI);
 
     supl_fill_mcc((MCC*)&primary_cell->mcc, mcc);
     supl_fill_mnc((MNC*)&primary_cell->mnc, mnc);
 
-    supl_fill_cell_identity(&primary_cell->cellidentity, (size_t)id);
+    supl_fill_cell_identity(&primary_cell->cellidentity, id);
+    return primary_cell;
+}
+
+NCGI_r15* ncgi_create(long mcc, long mnc, unsigned long long id) {
+    NCGI_r15* primary_cell = ALLOC_ZERO(NCGI_r15);
+
+    supl_fill_mcc((MCC*)&primary_cell->mcc_r15, mcc);
+    supl_fill_mnc((MNC*)&primary_cell->mnc_r15, mnc);
+
+    BitStringBuilder{}
+        .integer(0, 36, id)
+        .into_bit_string(36, &primary_cell->nr_cellidentity_r15);
     return primary_cell;
 }
 

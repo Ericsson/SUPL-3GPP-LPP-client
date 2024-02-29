@@ -70,11 +70,12 @@ args::ValueFlag<int> tac{cell_information,
                          "Tracking Area Code",
                          {'t', "lac", "tac"},
                          args::Options::Single | args::Options::Required};
-args::ValueFlag<int> ci{cell_information,
+args::ValueFlag<unsigned long long> ci{cell_information,
                         "ci",
                         "Cell Identity",
                         {'i', "ci"},
                         args::Options::Single | args::Options::Required};
+args::Flag is_nr{cell_information, "nr", "The cell specified is a 5G NR cell", {"nr"}};
 
 //
 // Modem
@@ -378,6 +379,7 @@ CellOptions parse_cell_options() {
         .mnc = mnc.Get(),
         .tac = tac.Get(),
         .cid = ci.Get(),
+        .is_nr = is_nr ? is_nr.Get() : false,
     };
 
     return cell_information;

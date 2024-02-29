@@ -206,8 +206,14 @@ LPP_Message* lpp_request_assistance_data(LPP_Transaction* transaction, CellID ce
     auto cad2 = ALLOC_ZERO(CommonIEsRequestAssistanceData::CommonIEsRequestAssistanceData__ext2);
     cad2->periodicAssistanceDataReq_r15 = pad;
 
+    if(cell.is_nr) {
+        cad2->primaryCellID_r15 = ncgi_create(cell.mcc, cell.mnc, cell.cell);
+    }
+
     auto cad           = ALLOC_ZERO(CommonIEsRequestAssistanceData);
-    cad->primaryCellID = ecgi_create(cell.mcc, cell.mnc, cell.cell);
+    if(!cell.is_nr) {
+        cad->primaryCellID = ecgi_create(cell.mcc, cell.mnc, cell.cell);
+    }
     cad->ext2          = cad2;
 
     auto car1 = ALLOC_ZERO(GNSS_CommonAssistDataReq::GNSS_CommonAssistDataReq__ext1);

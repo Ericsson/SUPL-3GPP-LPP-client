@@ -38,7 +38,9 @@ struct CellOptions {
     /// Tracking Area Code.
     int tac;
     /// Cell ID.
-    int cid;
+    unsigned long long cid;
+    /// Is NR cell.
+    bool is_nr;
 };
 
 struct ModemDevice {
