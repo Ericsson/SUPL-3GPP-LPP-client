@@ -213,7 +213,7 @@ static long encode_orientation(double orientation) {
 }
 
 static long encode_confidence(double confidence) {
-    auto value = (long)confidence;
+    auto value = (long)(confidence * 100.0);
     if (value < 0) value = 0;
     if (value > 100) value = 100;
     return value;
