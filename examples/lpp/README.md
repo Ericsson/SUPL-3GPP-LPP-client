@@ -14,7 +14,7 @@ There are a few required arguments:
 ```
   ./example-lpp COMMAND {OPTIONS}
 
-    3GPP LPP Example (3.4.3) - This sample code is a simple client that asks for
+    3GPP LPP Example (3.4.4) - This sample code is a simple client that asks for
     assistance data from a location server. It can handle OSR, SSR, and AGNSS
     requests. The assistance data can converted to RTCM or SPARTN before being
     sent to a GNSS receiver or other interface. The client also supports to 3GPP
@@ -49,6 +49,7 @@ There are a few required arguments:
         -n[mnc], --mnc=[mnc]              Mobile Network Code
         -t[tac], --lac=[tac], --tac=[tac] Tracking Area Code
         -i[ci], --ci=[ci]                 Cell Identity
+        --nr                              The cell specified is a 5G NR cell
       Modem:
         --modem=[device]                  Device
         --modem-baud=[baud_rate]          Baud Rate
@@ -130,14 +131,21 @@ There are a few required arguments:
         Stdout:
           --stdout                          Stdout
       Location Infomation:
-        --location-info                   Location Information
+        --fake-location-info, --fli       Enable sending fake location
+                                          information. Configure with '--fake-*'
+                                          options.
         --force-location-info             Force Location Information (always
                                           send even if not requested)
-        --latitude=[latitude]             Latitude
+        --location-report-unlocked        Send location reports without locking
+                                          the update rate. By default, the
+                                          update rate is locked to 1 second.
+        --fake-latitude=[latitude],
+        --flat=[latitude]                 Fake Latitude
                                           Default: 69.0599730655754
-        --longitude=[longitude]           Longitude
+        --fake-longitude=[longitude],
+        --flon=[longitude]                Fake Longitude
                                           Default: 20.54864403253676
-        --altitude=[altitude]             Altitude
+        --fake-altitude=[altitude],
+        --falt=[altitude]                 Fake Altitude
                                           Default: 0
-
 ```

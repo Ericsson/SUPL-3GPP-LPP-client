@@ -19,13 +19,15 @@ class LPP_Client {
 public:
     typedef int32_t AD_Request;
     typedef void (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
-    typedef bool (*PLI_Callback)(LocationInformation&, HaGnssMetrics&, void*);
-    typedef bool (*PECID_Callback)(ECIDInformation&, void*);
+    typedef bool (*PLI_Callback)(location_information::LocationInformation&,
+                                 location_information::HaGnssMetrics&, void*);
+    typedef bool (*PECID_Callback)(location_information::ECIDInformation&, void*);
 
     struct ProvideLI {
         LocationInformationType_t             type;
         LPP_Transaction                       transaction;
         std::chrono::system_clock::time_point last;
+        int                                   interval;
     };
 
     LPP_Client(bool segmentation);
@@ -68,6 +70,9 @@ public:
 
     // Force provide location information to be unsolicited sent.
     void force_location_information();
+
+    /// Unlock ProvideLocationInformation update rate.
+    void unlock_update_rate();
 
     OCTET_STRING* encode(LPP_Message* message);
     LPP_Message*  decode(OCTET_STRING* data);
@@ -114,6 +119,7 @@ private:
     bool mForceLocationInformation;
     bool mEnableSegmentation;
     bool mSuplIdentityFix;
+    bool mLocationUpdateUnlocked;
 };
 
 void network_initialize();

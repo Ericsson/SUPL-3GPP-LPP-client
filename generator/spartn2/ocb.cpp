@@ -755,7 +755,7 @@ void Generator::generate_ocb(long iod) {
             printf("  SATELLITE: %4ld\n", satellite.id);
 #endif
 
-            builder.sf013(false /* do use this satellite */);
+            builder.sf013(false /* false = do use this satellite */);
             builder.sf014(satellite.orbit != nullptr, satellite.clock != nullptr,
                           satellite.code_bias != nullptr || satellite.phase_bias != nullptr);
             if (mContinuityIndicator >= 0.0) {
@@ -811,7 +811,7 @@ void Generator::generate_ocb(long iod) {
                 auto dc = c0 + c1 * dt + c2 * dt * dt;
 
                 // NOTE(ewasjon): [REDACTED] observed that changing the sign of the clock
-                // corrections (in there correction feed) improved the result. They assumed that
+                // corrections (in their correction feed) improved the result. They assumed that
                 // u-Blox implemented it with a flipped sign. Thus, we also need to flip the sign to
                 // conform to the u-Blox implementation.
                 if (mUBloxClockCorrection) {

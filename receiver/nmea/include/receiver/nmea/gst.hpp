@@ -31,6 +31,17 @@ public:
         return sqrt(mSemiMajorError * mSemiMajorError + mSemiMinorError * mSemiMinorError);
     }
 
+    /// Get semi-major axis.
+    NMEA_NODISCARD double semi_major() const NMEA_NOEXCEPT { return mSemiMajorError; }
+
+    /// Get semi-minor axis.
+    NMEA_NODISCARD double semi_minor() const NMEA_NOEXCEPT { return mSemiMinorError; }
+
+    /// Get the orientation of the semi-major axis.
+    NMEA_NODISCARD double orientation() const NMEA_NOEXCEPT {
+        return mOrientationOfSemiMajorError;
+    }
+
     /// Get the vertical position error.
     NMEA_NODISCARD double vertical_position_error() const NMEA_NOEXCEPT { return mAltitudeError; }
 

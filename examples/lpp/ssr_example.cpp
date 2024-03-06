@@ -172,6 +172,13 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         printf("  force: false\n");
     }
 
+    if (location_information_options.unlock_update_rate) {
+        client.unlock_update_rate();
+        printf("  unlock update rate: true\n");
+    } else {
+        printf("  unlock update rate: false\n");
+    }
+
     client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
 
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,

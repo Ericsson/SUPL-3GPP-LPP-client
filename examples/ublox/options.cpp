@@ -17,11 +17,12 @@ args::Group configuration_group{
     args::Options::Global,
 };
 
-args::Flag disable_config{configuration_group,
-                          "disable",
-                          "Disable configuration",
-                          {"disable-config"},
-                          args::Options::Single};
+args::Flag disable_config{
+    configuration_group,
+    "disable",
+    "Disable loading and storing of configuration. Without this UBX-NAV-PVT will _not_ be enabled.",
+    {"disable-config"},
+    args::Options::Single};
 
 //
 
@@ -213,7 +214,8 @@ static std::unique_ptr<UbloxReceiver> create_receiver() {
 
     auto receiver = std::unique_ptr<UbloxReceiver>(new UbloxReceiver(port, std::move(interface)));
     if (!disable_config) {
-        receiver->configure();
+        receiver->load_configuration();
+        receiver->store_configuration();
     }
 
     return receiver;

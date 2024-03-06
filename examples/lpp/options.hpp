@@ -91,6 +91,8 @@ struct LocationInformationOptions {
     double longitude;
     /// Fake altitude.
     double altitude;
+    /// Unlock update rate.
+    bool unlock_update_rate;
 };
 
 /// Options.

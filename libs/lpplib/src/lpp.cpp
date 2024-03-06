@@ -15,6 +15,7 @@ LPP_Client::LPP_Client(bool segmentation) {
     mForceLocationInformation = false;
     mSUPL                     = std::make_unique<SUPL_Client>();
     mSuplIdentityFix          = true;
+    mLocationUpdateUnlocked   = false;
 
     main_request_callback  = nullptr;
     main_request_userdata  = nullptr;
@@ -359,7 +360,15 @@ bool LPP_Client::process() {
     if (provide_li.type >= 0) {
         auto current  = system_clock::now();
         auto duration = current - provide_li.last;
-        if (duration > std::chrono::seconds(1)) {
+
+        std::chrono::seconds update_interval{};
+        if (mLocationUpdateUnlocked) {
+            update_interval = duration_cast<seconds>(std::chrono::milliseconds(provide_li.interval));
+        } else {
+            update_interval = std::chrono::seconds(1);
+        }
+
+        if (duration > update_interval) {
             handle_provide_location_information(&provide_li);
             provide_li.last = current;
         } else {
@@ -552,26 +561,31 @@ void LPP_Client::provide_ecid_callback(void* userdata, LPP_Client::PECID_Callbac
 
 bool LPP_Client::handle_request_location_information(LPP_Message*     message,
                                                      LPP_Transaction* transaction) {
+    auto interval_ms = lpp_get_request_location_interval(message);
     switch (lpp_get_request_location_information_type(message)) {
     case LocationInformationType_locationEstimateRequired:
         provide_li.type        = LocationInformationType_locationEstimateRequired;
         provide_li.last        = std::chrono::system_clock::now();
         provide_li.transaction = *transaction;
+        provide_li.interval    = interval_ms;
         return true;
     case LocationInformationType_locationMeasurementsRequired:
         provide_li.type        = LocationInformationType_locationMeasurementsRequired;
         provide_li.last        = std::chrono::system_clock::now();
         provide_li.transaction = *transaction;
+        provide_li.interval    = interval_ms;
         return true;
     case LocationInformationType_locationMeasurementsPreferred:
         provide_li.type        = LocationInformationType_locationMeasurementsPreferred;
         provide_li.last        = std::chrono::system_clock::now();
         provide_li.transaction = *transaction;
+        provide_li.interval    = interval_ms;
         return true;
     case LocationInformationType_locationEstimatePreferred:
         provide_li.type        = LocationInformationType_locationEstimatePreferred;
         provide_li.last        = std::chrono::system_clock::now();
         provide_li.transaction = *transaction;
+        provide_li.interval    = interval_ms;
         return true;
     }
 
@@ -579,6 +593,8 @@ bool LPP_Client::handle_request_location_information(LPP_Message*     message,
 }
 
 bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli) {
+    using namespace location_information;
+
     LPP_Message* message = NULL;
     if (pli->type == LocationInformationType_locationEstimateRequired) {
         LocationInformation li{};
@@ -617,4 +633,9 @@ void LPP_Client::force_location_information() {
     provide_li.transaction.id        = 200;
     provide_li.transaction.end       = 0;
     provide_li.transaction.initiator = 0;
+    provide_li.interval              = 1000;
+}
+
+void LPP_Client::unlock_update_rate() {
+    mLocationUpdateUnlocked = true;
 }

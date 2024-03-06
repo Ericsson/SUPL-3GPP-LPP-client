@@ -44,8 +44,11 @@ public:
     /// @param message_id The message to disable.
     void disable_message(MessageId message_id);
 
-    /// Configure the receiver, i.e. enable/disable messages, set port formats, etc.
-    void configure();
+    /// Load the receiver configuration.
+    void load_configuration();
+
+    /// Store the receiver configuration.
+    void store_configuration();
 
     /// Read bytes from the interface and append them to the parse buffer. This will not
     /// block.

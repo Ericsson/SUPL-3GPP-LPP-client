@@ -1,9 +1,17 @@
 # Changelog
 
-## [3.4.*]
+## [3.4.4]
 - Fixed message nullptr exception.
 - IMSI and MSISDN used `unsigned long` which doesn't have enough bits to store all possible values. Changed to `unsigned long long`.
 - Added support to use 5G NR cells in addition to LTE cells.
+- Reworked `LocationInformation` structure to be more aligned to the 3GPP LPP specification. It now supports more location coordinate and velocity types. All example function to fill in the `LocationInformation` structure have been updated to reflect this change.
+- Changed `--location-info` to `--fake-location-info` (or `-fli`).
+- Changed `--latitude` to `--fake-latitude` (or `-flat`).
+- Changed `--longitude` to `--fake-longitude` (or `-flon`).
+- Changed `--altitude` to `--fake-altitude` (or `-falt`).
+- Added `--location-report-unlocked` to always use the server provided location information update interval. Otherwise, the update interval will be set locked to 1 second.
+- Added support to parse request periodicity from RequestLocationInformation message.
+- When using the u-Blox receiver in `example-lpp`, it will not load the receiver configuration. This behavior is unchanged for `example-ublox` but can still be disabled with `--disable-config`.
 
 ## [3.4.3]
 - Added option to export NMEA sentences to a unix socket or a TCP connection. See `--nmea-export-*` command-line arguments. This requires the use of the NMEA receiver.
