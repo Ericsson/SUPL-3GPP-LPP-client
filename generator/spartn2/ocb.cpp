@@ -210,11 +210,14 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_URA_r16* ura) {
     auto epoch_time = spartn_time_from(ura->epochTime_r16);
     auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
-    corrections.gnss_id    = gnss_id;
-    corrections.iod        = iod;
-    corrections.epoch_time = epoch_time;
-    corrections.ura        = ura;
+    auto& corrections   = ocb.mKeyedCorrections[key];
+    corrections.gnss_id = gnss_id;
+    corrections.iod     = iod;
+    // The URA timestamp is only relevant if the corrections are grouped by epoch time.
+    if (group_by_epoch_time) {
+        corrections.epoch_time = epoch_time;
+    }
+    corrections.ura = ura;
 }
 
 struct Bias {

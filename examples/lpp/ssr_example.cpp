@@ -22,6 +22,7 @@ static bool                         gUBloxClockCorrection;
 static bool                         gForceIodeContinuity;
 static bool                         gAverageZenithDelay;
 static bool                         gEnableIodeShift;
+static int                          gSf055Override;
 static Options                      gOptions;
 static SPARTN_Generator             gSpartnGeneratorOld;
 static generator::spartn::Generator gSpartnGeneratorNew;
@@ -34,7 +35,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
 void execute(Options options, ssr_example::Format format, int ura_override,
              bool ublox_clock_correction, bool force_continuity, bool average_zenith_delay,
-             bool enable_iode_shift) {
+             bool enable_iode_shift, int sf055_override) {
     gOptions              = std::move(options);
     gFormat               = format;
     gUraOverride          = ura_override;
@@ -42,6 +43,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     gForceIodeContinuity  = force_continuity;
     gAverageZenithDelay   = average_zenith_delay;
     gEnableIodeShift      = enable_iode_shift;
+    gSf055Override        = sf055_override;
 
     auto& cell_options                 = gOptions.cell_options;
     auto& location_server_options      = gOptions.location_server_options;
@@ -128,6 +130,9 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         gSpartnGeneratorNew.set_iode_shift(true);
     } else {
         gSpartnGeneratorNew.set_iode_shift(false);
+    }
+    if (gSf055Override >= 0) {
+        gSpartnGeneratorNew.set_ionosphere_quality_override(gSf055Override);
     }
 
     LPP_Client client{false /* experimental segmentation support */};
@@ -318,6 +323,12 @@ void SsrCommand::parse(args::Subparser& parser) {
 
     mEnableIodeShift = new args::Flag(
         parser, "iode-shift", "Enable the IODE shift to fix data stream issues", {"iode-shift"});
+
+    mSf055Override =
+        new args::ValueFlag<int>(parser, "sf055-override",
+                                 "Override the SF055 value, value will be clamped between 0-15. "
+                                 "Where 0 indicates that the value is invalid.",
+                                 {"sf055-override"}, args::Options::Single);
 }
 
 void SsrCommand::execute(Options options) {
@@ -361,8 +372,15 @@ void SsrCommand::execute(Options options) {
         iode_shift = mEnableIodeShift->Get();
     }
 
+    auto sf055_override = -1;
+    if (*mSf055Override) {
+        sf055_override = mSf055Override->Get();
+        if (sf055_override < 0) sf055_override = 0;
+        if (sf055_override > 15) sf055_override = 15;
+    }
+
     ::execute(std::move(options), format, ura_override, ublox_clock_correction, force_continuity,
-              average_zenith_delay, iode_shift);
+              average_zenith_delay, iode_shift, sf055_override);
 }
 
 }  // namespace ssr_example

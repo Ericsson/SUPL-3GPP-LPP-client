@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.4.*]
+- SPARTN generator will not use provided URA epoch-time. This caused issues where only the URA timestamp would be used and because it isn't update vary frequently the corrections data would not be used.
+- Added option to override the ionospheric quality indiciator (SF055). 
+
 ## [3.4.4]
 - Fixed message nullptr exception.
 - IMSI and MSISDN used `unsigned long` which doesn't have enough bits to store all possible values. Changed to `unsigned long long`.

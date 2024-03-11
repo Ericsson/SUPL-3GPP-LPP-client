@@ -59,6 +59,9 @@ public:
     }
 
     void set_iode_shift(bool iode_shift) { mIodeShift = iode_shift; }
+    void set_ionosphere_quality_override(int ionosphere_quality_override) {
+        mIonosphereQualityOverride = ionosphere_quality_override;
+    }
 
     void set_generate_ocb(bool generate_ocb) { mGenerateOcb = generate_ocb; }
     void set_generate_hpac(bool generate_hpac) { mGenerateHpac = generate_hpac; }
