@@ -10,6 +10,9 @@
 #include "options.hpp"
 #include "utility/types.h"
 
+bool   gConvertConfidence95To39      = false;
+double gOverrideHorizontalConfidence = -1;
+
 using namespace location_information;
 
 bool provide_location_information_callback(UNUSED LocationInformation& location,
@@ -54,9 +57,20 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
         return false;
     }
 
+    auto semi_major = nav_pvt->h_acc();
+    auto semi_minor = nav_pvt->h_acc();
+    if (gConvertConfidence95To39) {
+        semi_major = semi_major / 2.4477;
+        semi_minor = semi_minor / 2.4477;
+    }
+
+    auto horizontal_accuracy = HorizontalAccuracy::from_ellipse(semi_major, semi_minor, 0);
+    if (gOverrideHorizontalConfidence >= 0.0) {
+        horizontal_accuracy.confidence = gOverrideHorizontalConfidence;
+    }
+
     auto location_shape = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
-        nav_pvt->latitude(), nav_pvt->longitude(), nav_pvt->altitude(),
-        HorizontalAccuracy::from_ellipse(nav_pvt->h_acc(), nav_pvt->h_acc(), 0),
+        nav_pvt->latitude(), nav_pvt->longitude(), nav_pvt->altitude(), horizontal_accuracy,
         VerticalAccuracy::from_1sigma(nav_pvt->v_acc()));
 
     auto velocity_shape = VelocityShape::horizontal_vertical_with_uncertainty(
@@ -102,10 +116,23 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
         return false;
     }
 
+    auto semi_major = gst->semi_major();
+    auto semi_minor = gst->semi_minor();
+
+    if (gConvertConfidence95To39) {
+        semi_major = semi_major / 2.4477;
+        semi_minor = semi_minor / 2.4477;
+    }
+
+    auto horizontal_accuracy =
+        HorizontalAccuracy::from_ellipse(semi_major, semi_minor, gst->orientation());
+    if (gOverrideHorizontalConfidence >= 0.0) {
+        horizontal_accuracy.confidence = gOverrideHorizontalConfidence;
+    }
+
     location.time     = gga->time_of_day();
     location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
-        gga->latitude(), gga->longitude(), gga->altitude(),
-        HorizontalAccuracy::from_ellipse(gst->semi_major(), gst->semi_minor(), gst->orientation()),
+        gga->latitude(), gga->longitude(), gga->altitude(), horizontal_accuracy,
         VerticalAccuracy::from_1sigma(gst->vertical_position_error()));
     location.velocity =
         VelocityShape::horizontal(vtg->speed_over_ground(), vtg->true_course_over_ground());

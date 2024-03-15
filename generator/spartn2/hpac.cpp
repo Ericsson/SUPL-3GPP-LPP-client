@@ -557,8 +557,13 @@ void Generator::generate_hpac(long iod) {
         auto ionosphere_block_type =
             compute_ionosphere_block_type(corrections.stec, corrections.gridded);
 
+        auto siou = iod;
+        if (mIncreasingSiou) {
+            siou = mSiouIndex;
+        }
+
         MessageBuilder builder{1 /* HPAC */, subtype, epoch_time};
-        builder.sf005(iod);
+        builder.sf005(siou);
         builder.sf068(0);  // TODO(ewasjon): [low-priority] We could include AIOU in the correction
                            // point set, to handle overflow
         builder.sf069();

@@ -93,6 +93,10 @@ struct LocationInformationOptions {
     double altitude;
     /// Unlock update rate.
     bool unlock_update_rate;
+    /// Convert confidence 95% to 39%.
+    bool convert_confidence_95_to_39;
+    /// Override horizontal confidence.
+    double override_horizontal_confidence;
 };
 
 /// Options.

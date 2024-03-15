@@ -59,6 +59,12 @@ struct HorizontalAccuracy {
         auto semi_minor_rescaled = semi_minor / SQRT_2;
 #undef SQRT_2
         auto confidence = 0.39;
+
+        while (orientation < 0)
+            orientation += 180;
+        while(orientation >= 180)
+            orientation -= 180;
+
         return HorizontalAccuracy{semi_major_rescaled, semi_minor_rescaled, orientation,
                                   confidence};
     }

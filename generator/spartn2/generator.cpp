@@ -24,9 +24,9 @@ Generator::Generator()
     : mGenerationIndex(0), mNextAreaId(1), mUraOverride(-1), mContinuityIndicator(-1),
       mUBloxClockCorrection(false), mIonosphereQualityOverride(-1),
       mIonosphereQualityDefault(0 /* SF055(0) = invalid */), mComputeAverageZenithDelay(false),
-      mGroupByEpochTime(false), mIodeShift(true), mGenerateGad(true), mGenerateOcb(true),
-      mGenerateHpac(true), mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
-      mBeidouSupported(false) {}
+      mGroupByEpochTime(false), mIodeShift(true), mIncreasingSiou(false), mSiouIndex(1),
+      mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
+      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false) {}
 
 Generator::~Generator() = default;
 
@@ -62,6 +62,14 @@ std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
 
         auto ocb  = mCorrectionData->ocb(iod);
         auto hpac = mCorrectionData->hpac(iod);
+
+        if (mIncreasingSiou) {
+            // Only update SIOU when a new GAD/HPAC message is generated
+            if (hpac && mGenerateHpac) {
+                mSiouIndex++;
+                mSiouIndex %= 512;
+            }
+        }
 
         if (hpac && mGenerateGad) {
             std::vector<long> set_ids;

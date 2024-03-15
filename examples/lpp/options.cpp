@@ -55,26 +55,26 @@ args::Group cell_information{
     args::Options::Global,
 };
 
-args::ValueFlag<int> mcc{cell_information,
+args::ValueFlag<int>                mcc{cell_information,
                          "mcc",
                          "Mobile Country Code",
-                         {'c', "mcc"},
+                                        {'c', "mcc"},
                          args::Options::Single | args::Options::Required};
-args::ValueFlag<int> mnc{cell_information,
+args::ValueFlag<int>                mnc{cell_information,
                          "mnc",
                          "Mobile Network Code",
-                         {'n', "mnc"},
+                                        {'n', "mnc"},
                          args::Options::Single | args::Options::Required};
-args::ValueFlag<int> tac{cell_information,
+args::ValueFlag<int>                tac{cell_information,
                          "tac",
                          "Tracking Area Code",
-                         {'t', "lac", "tac"},
+                                        {'t', "lac", "tac"},
                          args::Options::Single | args::Options::Required};
 args::ValueFlag<unsigned long long> ci{cell_information,
-                        "ci",
-                        "Cell Identity",
-                        {'i', "ci"},
-                        args::Options::Single | args::Options::Required};
+                                       "ci",
+                                       "Cell Identity",
+                                       {'i', "ci"},
+                                       args::Options::Single | args::Options::Required};
 args::Flag is_nr{cell_information, "nr", "The cell specified is a 5G NR cell", {"nr"}};
 
 //
@@ -343,6 +343,18 @@ args::ValueFlag<double> li_altitude{location_infomation,
                                     "Fake Altitude",
                                     {"fake-altitude", "falt"},
                                     args::Options::Single};
+args::Flag              li_conf95to39{location_infomation,
+                         "confidence-95to39",
+                         "Convert 95p confidence to 39p confidence",
+                                      {"confidence-95to39"},
+                         args::Options::Single};
+args::ValueFlag<double> li_override_horizontal_confidence{
+    location_infomation,
+    "override-horizontal-confidence",
+    "Override horizontal confidence [0.0-1.0]",
+    {"override-horizontal-confidence"},
+    args::Options::Single,
+};
 
 //
 // Options
@@ -395,10 +407,10 @@ IdentityOptions parse_identity_options() {
 
 CellOptions parse_cell_options() {
     CellOptions cell_information{
-        .mcc = mcc.Get(),
-        .mnc = mnc.Get(),
-        .tac = tac.Get(),
-        .cid = ci.Get(),
+        .mcc   = mcc.Get(),
+        .mnc   = mnc.Get(),
+        .tac   = tac.Get(),
+        .cid   = ci.Get(),
         .is_nr = is_nr ? is_nr.Get() : false,
     };
 
@@ -754,17 +766,19 @@ static NmeaOptions nmea_parse_options() {
 
 static LocationInformationOptions parse_location_information_options() {
     LocationInformationOptions location_information{};
-    location_information.latitude  = 69.0599730655754;
-    location_information.longitude = 20.54864403253676;
-    location_information.altitude  = 0;
-    location_information.force     = false;
-    location_information.unlock_update_rate = false;
+    location_information.latitude                       = 69.0599730655754;
+    location_information.longitude                      = 20.54864403253676;
+    location_information.altitude                       = 0;
+    location_information.force                          = false;
+    location_information.unlock_update_rate             = false;
+    location_information.convert_confidence_95_to_39    = false;
+    location_information.override_horizontal_confidence = -1.0;
 
     if (li_force) {
         location_information.force = true;
     }
 
-    if(li_unlocked) {
+    if (li_unlocked) {
         location_information.unlock_update_rate = true;
     }
 
@@ -780,6 +794,20 @@ static LocationInformationOptions parse_location_information_options() {
 
         if (li_altitude) {
             location_information.altitude = li_altitude.Get();
+        }
+    }
+
+    if (li_conf95to39) {
+        location_information.convert_confidence_95_to_39 = true;
+    }
+
+    if (li_override_horizontal_confidence) {
+        location_information.override_horizontal_confidence =
+            li_override_horizontal_confidence.Get();
+        if (location_information.override_horizontal_confidence < 0 ||
+            location_information.override_horizontal_confidence > 1) {
+            throw args::ValidationError(
+                "Override horizontal confidence must be between 0.0 and 1.0");
         }
     }
 

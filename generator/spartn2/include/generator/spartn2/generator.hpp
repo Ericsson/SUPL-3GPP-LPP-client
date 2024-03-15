@@ -63,6 +63,8 @@ public:
         mIonosphereQualityOverride = ionosphere_quality_override;
     }
 
+    void set_increasing_siou(bool increasing_siou) { mIncreasingSiou = increasing_siou; }
+
     void set_generate_ocb(bool generate_ocb) { mGenerateOcb = generate_ocb; }
     void set_generate_hpac(bool generate_hpac) { mGenerateHpac = generate_hpac; }
     void set_generate_gad(bool generate_gad) { mGenerateGad = generate_gad; }
@@ -111,6 +113,8 @@ private:
     bool mComputeAverageZenithDelay;
     bool mGroupByEpochTime;
     bool mIodeShift;
+    bool mIncreasingSiou;
+    int  mSiouIndex;
 
     bool mGenerateGad;
     bool mGenerateOcb;

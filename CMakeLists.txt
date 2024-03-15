@@ -52,4 +52,5 @@ add_subdirectory("examples/nmea")
 add_subdirectory("examples/lpp")
 add_subdirectory("examples/lpp2spartn")
 add_subdirectory("examples/ntrip")
+add_subdirectory("examples/client")
 

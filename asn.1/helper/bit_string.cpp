@@ -4,6 +4,8 @@
 #include <sstream>
 
 namespace helper {
+
+#if 1
 BitString::BitString(size_t bits) {
     buf         = nullptr;
     size        = 0;
@@ -160,4 +162,39 @@ std::string BitString::as_string() const {
     delete[] data;
     return stream.str();
 }
+
+#endif
+
+static void BIT_STRING_initialize(BIT_STRING_s* bit_string, size_t bits) {
+    BIT_STRING_free(&asn_DEF_BIT_STRING, bit_string, ASFM_FREE_UNDERLYING_AND_RESET);
+
+    auto bytes              = (bits + 7) / 8;
+    bit_string->size        = bytes;
+    bit_string->bits_unused = 0;
+    bit_string->buf         = reinterpret_cast<uint8_t*>(calloc(bit_string->size, sizeof(uint8_t)));
+}
+
+BIT_STRING_s* BitStringBuilder::to_bit_string(size_t bits) {
+    auto bit_string = asn1_allocate<BIT_STRING_s>();
+    return into_bit_string(bits, bit_string);
+}
+
+BIT_STRING_s* BitStringBuilder::into_bit_string(size_t bits, BIT_STRING_s* bit_string) {
+    BIT_STRING_initialize(bit_string, bits);
+
+    assert(bits <= 64);
+    for (int j = 0; j < 64; j++) {
+        if (mBits & (1llu << j)) {
+            auto x = j / 8;
+            auto y = 7 - (j % 8);
+            assert(x < bit_string->size);
+            if (x < bit_string->size) {
+                bit_string->buf[x] |= 1 << y;
+            }
+        }
+    }
+
+    return bit_string;
+}
+
 }  // namespace helper
