@@ -29,4 +29,5 @@ public:
 protected:
     int        mFd;
     EpollEvent mEvent;
+    bool mActive;
 };

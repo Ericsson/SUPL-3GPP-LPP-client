@@ -1,10 +1,15 @@
 #include "tcp_client.hpp"
+#include "supl.hpp"
 
 #include <cstring>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
+
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "supl"
 
 namespace supl {
 
@@ -53,54 +58,76 @@ TcpClient::~TcpClient() {
     disconnect();
 }
 
-bool TcpClient::is_connected() {
-    return mSocket >= 0;
+static std::string addr_to_string(const struct sockaddr* addr) {
+    char host[1024];
+    auto result =
+        getnameinfo(addr, sizeof(struct sockaddr), host, sizeof(host), NULL, 0, NI_NUMERICHOST);
+    if (result != 0) {
+        return "unknown";
+    } else {
+        return host;
+    }
 }
 
 bool TcpClient::initialize_socket() {
+    SCOPE_FUNCTION();
+
     char port_as_string[8];
     snprintf(port_as_string, sizeof(port_as_string), "%i", mPort);
+
+    VERBOSEF("connecting to %s:%s", mHost.c_str(), port_as_string);
 
     struct addrinfo hint;
     memset(&hint, 0, sizeof(struct addrinfo));
     hint.ai_socktype = SOCK_STREAM;
 
     struct addrinfo *ailist, *aip;
-    auto             err = getaddrinfo(mHost.c_str(), port_as_string, &hint, &ailist);
-    if (err != 0) {
+    auto             result = getaddrinfo(mHost.c_str(), port_as_string, &hint, &ailist);
+    if (result != 0) {
+        WARNF("failed to get address info: %d (%s)", result, gai_strerror(result));
         return false;
     }
 
-    int fd = -1;
+    SUPL_DEFER {
+        freeaddrinfo(ailist);
+    };
+
+    char host[1024];
     for (aip = ailist; aip; aip = aip->ai_next) {
-        char host[256];
-        err =
-            getnameinfo(aip->ai_addr, aip->ai_addrlen, host, sizeof(host), NULL, 0, NI_NUMERICHOST);
-        if (err != 0) {
-            return false;
+        auto fd = socket(aip->ai_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        if (fd < 0) {
+            WARNF("failed to create socket: %d (%s)", errno, strerror(errno));
+            continue;
         }
 
-        if ((fd = socket(aip->ai_family, SOCK_STREAM, 0)) < 0) {
-            err = errno;
-        }
+        VERBOSEF("created socket %d", fd);
 
-        err = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
-        if (err != 0) {
-            freeaddrinfo(ailist);
-            return false;
-        }
+        auto addr_str = addr_to_string(aip->ai_addr);
+        result        = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
+        if (result != 0) {
+            if (errno == EINPROGRESS) {
+                VERBOSEF("connection inprogress to %s", addr_str.c_str());
+                mSocket = fd;
+                return true;
+            }
 
-        break;
+            WARNF("failed to connect to %s: %d (%s)", addr_str.c_str(), errno, strerror(errno));
+            VERBOSEF("closing socket %d", fd);
+            close(fd);
+            continue;
+        } else {
+            mSocket = fd;
+            return true;
+        }
     }
 
-    mSocket = fd;
-    freeaddrinfo(ailist);
-    return true;
+    WARNF("no connection could be established to any address");
+    return false;
 }
 
 bool TcpClient::connect(const std::string& host, int port, bool use_ssl) {
-    if (is_connected()) {
-        return true;
+    if (is_disconnected()) {
+        return false;
     }
 
     mHost   = host;
@@ -131,20 +158,46 @@ bool TcpClient::connect(const std::string& host, int port, bool use_ssl) {
         return false;
     }
 
+    mState = State::CONNECTING;
+    return true;
+}
+
+bool TcpClient::handle_connection() {
+    if (!is_connecting()) {
+        disconnect();
+        return false;
+    }
+
+    // check that the connection was successful
+    int       error = 0;
+    socklen_t len   = sizeof(error);
+    if (getsockopt(mSocket, SOL_SOCKET, SO_ERROR, &error, &len) < 0) {
+        disconnect();
+        return false;
+    }
+
+    if (error != 0) {
+        disconnect();
+        return false;
+    }
+
 #if USE_OPENSSL
     if (mUseSSL) {
         SSL_set_fd(mSSL, mSocket);
         if (SSL_connect(mSSL) == -1) {
+            disconnect();
             return false;
         }
     }
 #endif
 
+    VERBOSEF("connected to %s:%d", mHost.c_str(), mPort);
+    mState = State::CONNECTED;
     return true;
 }
 
 bool TcpClient::disconnect() {
-    if (!is_connected()) {
+    if (is_disconnected()) {
         return true;
     }
 
@@ -160,12 +213,18 @@ bool TcpClient::disconnect() {
     mSSL        = nullptr;
 #endif
 
+    VERBOSEF("closing socket %d", mSocket);
     close(mSocket);
     mSocket = -1;
+    mState  = State::DISCONNECTED;
     return true;
 }
 
 int TcpClient::receive(void* buffer, int size) {
+    if (!is_connected()) {
+        return -1;
+    }
+
 #if USE_OPENSSL
     if (mUseSSL)
         return SSL_read(mSSL, buffer, size);
@@ -177,6 +236,10 @@ int TcpClient::receive(void* buffer, int size) {
 }
 
 int TcpClient::send(const void* buffer, int size) {
+    if (!is_connected()) {
+        return -1;
+    }
+
 #if USE_OPENSSL
     if (mUseSSL)
         return SSL_write(mSSL, buffer, size);

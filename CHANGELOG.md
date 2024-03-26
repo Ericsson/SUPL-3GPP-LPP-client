@@ -2,7 +2,8 @@
 
 ## [3.4.*]
 - SPARTN generator will not use provided URA epoch-time. This caused issues where only the URA timestamp would be used and because it isn't update vary frequently the corrections data would not be used.
-- Added option to override the ionospheric quality indiciator (SF055). 
+- Added option to override the ionospheric quality indiciator (SF055).
+- Added support for external control commands. This allows the client to be controlled by an external application. See `CONTROL.md` for more information.
 
 ## [3.4.4]
 - Fixed message nullptr exception.

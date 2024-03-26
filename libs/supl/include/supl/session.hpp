@@ -40,14 +40,32 @@ public:
         POS,
     };
 
+    enum class State {
+        UNKNOWN,
+        CONNECTING,
+        CONNECTED,
+        WAIT_FOR_HANDSHAKE,
+        DISCONNECTED,
+    };
+
+    enum class Handshake {
+        OK = 0,
+        ERROR,
+        NO_DATA,
+    };
+
     explicit Session(Version version, Identity identity);
     ~Session();
 
     bool connect(const std::string& ip, uint16_t port);
-    void disconnect();
-    bool is_connected() const;
+    bool handle_connection();
 
-    bool handshake(const START& message);
+    void                disconnect();
+    bool                is_connected() const;
+    SUPL_NODISCARD bool is_disconnected() const { return mState == State::DISCONNECTED; }
+
+    bool      handshake(const START& message);
+    Handshake handle_handshake();
 
     bool send(const START& message);
     bool send(const POSINIT& message);
@@ -72,6 +90,7 @@ protected:
 
 private:
     Version mVersion;
+    State   mState;
 
     SET mSETSession;
     SLP mSLPSession;

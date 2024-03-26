@@ -10,6 +10,8 @@
 #include <receiver/ublox/threaded_receiver.hpp>
 #include <sstream>
 #include <stdexcept>
+
+#include "control.hpp"
 #include "location_information.h"
 
 using UReceiver = receiver::ublox::ThreadedReceiver;
@@ -27,6 +29,7 @@ static bool                         gIncreasingSiou;
 static Options                      gOptions;
 static SPARTN_Generator             gSpartnGeneratorOld;
 static generator::spartn::Generator gSpartnGeneratorNew;
+static ControlParser                gControlParser;
 
 static std::unique_ptr<Modem_AT>  gModem;
 static std::unique_ptr<UReceiver> gUbloxReceiver;
@@ -55,6 +58,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     auto& ublox_options                = gOptions.ublox_options;
     auto& nmea_options                 = gOptions.nmea_options;
     auto& location_information_options = gOptions.location_information_options;
+    auto& control_options              = gOptions.control_options;
 
     gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
@@ -204,11 +208,27 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         throw std::runtime_error("Unable to request assistance data");
     }
 
+    if (control_options.interface) {
+        printf("[control]\n");
+        control_options.interface->open();
+        control_options.interface->print_info();
+
+        gControlParser.on_cid = [&](CellID cell) {
+            printf("[control] cell: %ld:%ld:%ld:%llu\n", cell.mcc, cell.mnc, cell.tac, cell.cell);
+            gCell = cell;
+            client.update_assistance_data(request, gCell);
+        };
+    }
+
     for (;;) {
         struct timespec timeout;
         timeout.tv_sec  = 0;
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
         nanosleep(&timeout, NULL);
+
+        if (control_options.interface) {
+            gControlParser.parse(control_options.interface);
+        }
 
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.

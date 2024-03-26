@@ -12,6 +12,8 @@
     DEBUGF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                 \
     LOGLET_INDENT_SCOPE()
 
+#include <memory>
+
 // Defer Macro
 // https://gist.github.com/win-t/125f9e75c0a0f4a74a951478d27ccb4f
 template <typename F>

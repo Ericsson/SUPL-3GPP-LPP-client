@@ -2,7 +2,7 @@
 #include <loglet/types.hpp>
 
 #define LOGLET_CURRENT_FUNCTION __FUNCTION__
-#define LOGLET_INDENT_SCOPE() loglet::ScopeFunction _loglet_scope_function{};
+#define LOGLET_INDENT_SCOPE() loglet::ScopeFunction _loglet_scope_function{LOGLET_CURRENT_MODULE};
 
 #define VERBOSEF(fmt, ...) loglet::verbosef(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define DEBUGF(fmt, ...) loglet::debugf(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
@@ -21,6 +21,8 @@ enum class Level {
 };
 
 void set_level(Level level);
+void disable_module(const char* module);
+bool is_module_enabled(const char* module);
 void push_indent();
 void pop_indent();
 
@@ -41,8 +43,18 @@ void vwarnf(const char* module, const char* format, va_list args);
 void verrorf(const char* module, const char* format, va_list args);
 
 struct ScopeFunction {
-    ScopeFunction() { push_indent(); }
-    ~ScopeFunction() { pop_indent(); }
+    bool indent = false;
+    ScopeFunction(const char* module) {
+        if (is_module_enabled(module)) {
+            push_indent();
+            indent = true;
+        }
+    }
+    ~ScopeFunction() {
+        if (indent) {
+            pop_indent();
+        }
+    }
 };
 
 }  // namespace loglet

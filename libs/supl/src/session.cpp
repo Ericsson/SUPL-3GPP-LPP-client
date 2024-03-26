@@ -16,7 +16,8 @@
 
 namespace supl {
 
-Session::Session(Version version, Identity identity) : mVersion(std::move(version)) {
+Session::Session(Version version, Identity identity)
+    : mVersion(std::move(version)), mState(State::UNKNOWN) {
     SCOPE_FUNCTION();
 
     mReceiveBufferSize   = UPER_DECODE_BUFFER_SIZE;
@@ -51,19 +52,46 @@ Session::~Session() {
 bool Session::connect(const std::string& ip, uint16_t port) {
     SCOPE_FUNCTIONF("%s,%d", ip.c_str(), port);
 
-    if (mTcpClient) {
-        WARNF("already connected");
-        return true;
+    if (mState != State::UNKNOWN) {
+        WARNF("mState != State::UNKNOWN");
+        return false;
     }
 
     mTcpClient = new TcpClient();
-    if (mTcpClient->connect(ip, port, false)) {
-        DEBUGF("connected");
+    if (!mTcpClient) {
+        WARNF("failed to create TcpClient");
+        return false;
+    }
+
+    if (!mTcpClient->connect(ip, port, false)) {
+        WARNF("connect failed");
+        delete mTcpClient;
+        mTcpClient = nullptr;
+        return false;
+    }
+
+    mState = State::CONNECTING;
+    return true;
+}
+
+bool Session::handle_connection() {
+    if (mState != State::CONNECTING) {
+        WARNF("mState != State::CONNECTING");
+        return false;
+    }
+
+    if (!mTcpClient) {
+        WARNF("mTcpClient is null");
+        return false;
+    }
+
+    if (mTcpClient->handle_connection()) {
+        mState                = State::CONNECTED;
         mSETSession.is_active = true;
         mSLPSession.is_active = false;
         return true;
     } else {
-        WARNF("connect failed");
+        mState                = State::DISCONNECTED;
         mSETSession.is_active = false;
         mSLPSession.is_active = false;
         delete mTcpClient;
@@ -82,26 +110,48 @@ void Session::disconnect() {
 }
 
 bool Session::is_connected() const {
-    return mTcpClient && mSETSession.is_active;
+    return mTcpClient && mTcpClient->is_connected();
 }
 
 bool Session::handshake(const START& message) {
     SCOPE_FUNCTION();
+
+    if (mState != State::CONNECTED) {
+        WARNF("mState != State::CONNECTED");
+        return false;
+    }
 
     if (!send(message)) {
         WARNF("send failed");
         return false;
     }
 
-    RESPONSE response{};
-    END      end{};
-    auto     received = block_receive(&response, &end, nullptr);
-    if (received != Received::RESPONSE) {
-        WARNF("expected SUPLRESPONSE");
-        return false;
+    mState = State::WAIT_FOR_HANDSHAKE;
+    return true;
+}
+
+Session::Handshake Session::handle_handshake() {
+    SCOPE_FUNCTION();
+
+    if (mState != State::WAIT_FOR_HANDSHAKE) {
+        WARNF("mState != State::WAIT_FOR_HANDSHAKE");
+        return Handshake::ERROR;
     }
 
-    return true;
+    fill_receive_buffer();
+
+    RESPONSE response{};
+    END      end{};
+    auto     received = try_receive(&response, &end, nullptr);
+    if (received == Received::NO_DATA) {
+        return Handshake::NO_DATA;
+    } else if (received != Received::RESPONSE) {
+        WARNF("expected SUPLRESPONSE");
+        return Handshake::ERROR;
+    }
+
+    mState = State::CONNECTED;
+    return Handshake::OK;
 }
 
 bool Session::send(const START& message) {
@@ -140,7 +190,6 @@ bool Session::send(const POSINIT& message) {
 
 bool Session::send(const POS& message) {
     SCOPE_FUNCTIONF("POS");
-
     if (!is_connected()) {
         WARNF("not connected");
         return false;

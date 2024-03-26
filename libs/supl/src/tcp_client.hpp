@@ -1,4 +1,6 @@
 #pragma once
+#include "supl.hpp"
+
 #if USE_OPENSSL
 #include <openssl/crypto.h>
 #include <openssl/err.h>
@@ -13,12 +15,22 @@ namespace supl {
 
 class TcpClient {
 public:
+    enum class State {
+        DISCONNECTED,
+        CONNECTING,
+        CONNECTED,
+    };
+
     TcpClient();
     ~TcpClient();
 
     bool connect(const std::string& host, int port, bool use_ssl);
+    bool handle_connection();
     bool disconnect();
-    bool is_connected();
+
+    SUPL_NODISCARD bool is_disconnected() const { return mState == State::DISCONNECTED; }
+    SUPL_NODISCARD bool is_connecting() const { return mState == State::CONNECTING; }
+    SUPL_NODISCARD bool is_connected() const { return mState == State::CONNECTED; }
 
     int receive(void* buffer, int size);
     int send(const void* buffer, int size);
@@ -33,6 +45,7 @@ private:
     int         mPort;
     bool        mUseSSL;
     int         mSocket;
+    State       mState;
 
 #if USE_OPENSSL
     const SSL_METHOD* mSSLMethod;

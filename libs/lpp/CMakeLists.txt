@@ -3,6 +3,12 @@ add_library(lpp
     "src/session.cpp"
     "src/transaction.cpp"
     "src/message.cpp"
+    "src/client.cpp"
+    "src/request_assistance_data.cpp"
+    "src/provide_capabilities.cpp"
+    "src/abort.cpp"
+    "src/periodic_session/handler.cpp"
+    "src/periodic_session/assistance_data.cpp"
 )
 target_include_directories(lpp PUBLIC "include/")
 target_link_libraries(lpp PRIVATE Threads::Threads atomic)

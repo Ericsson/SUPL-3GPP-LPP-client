@@ -99,6 +99,12 @@ struct LocationInformationOptions {
     double override_horizontal_confidence;
 };
 
+/// Control options.
+struct ControlOptions {
+    /// Control interface.
+    std::unique_ptr<interface::Interface> interface;
+};
+
 /// Options.
 struct Options {
     LocationServerOptions      location_server_options;
@@ -109,6 +115,7 @@ struct Options {
     UbloxOptions               ublox_options;
     NmeaOptions                nmea_options;
     LocationInformationOptions location_information_options;
+    ControlOptions             control_options;
 };
 
 /// Command.

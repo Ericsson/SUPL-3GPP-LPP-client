@@ -7,6 +7,7 @@ add_executable(example_lpp
     "agnss_example.cpp" 
     "location_information.cpp"
     "options.cpp"
+    "control.cpp"
 )
 add_executable(examples::lpp ALIAS example_lpp)
 

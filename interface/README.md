@@ -3,8 +3,8 @@ This folder contains the code for the interface library. The interface library i
 - Serial
 - I2C
 - File (one-way communication)
-- TCP
-- UDP
+- TCP Client
+- UDP Client
 - Stdout (one-way communication)
 - Stdin (one-way communication)
 - Unix socket

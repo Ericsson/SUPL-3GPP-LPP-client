@@ -10,7 +10,7 @@
 
 #define LOGLET_CURRENT_MODULE "sched"
 
-Scheduler::Scheduler() : mEpollFd(-1), mInterruptFd(-1) {
+Scheduler::Scheduler() : mEpollFd(-1), mInterruptFd(-1), mEpollCount(0) {
     DEBUGF("Scheduler()");
 
     mEpollFd = epoll_create1(0);
@@ -47,31 +47,72 @@ void Scheduler::schedule(Task* task) {
     task->register_task(this);
 }
 
-void Scheduler::cancel(Task* task) {}
+void Scheduler::cancel(Task* task) {
+    task->unregister_task(this);
+}
 
-void Scheduler::add_epoll_fd(int fd, uint32_t events, EpollEvent* event) {
+bool Scheduler::add_epoll_fd(int fd, uint32_t events, EpollEvent* event) {
     VERBOSEF("add_epoll_fd(%d, %d, %p)", fd, events, event);
     struct epoll_event epoll_event;
     epoll_event.events   = events;
     epoll_event.data.ptr = event;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, fd, &epoll_event) == -1) {
         ERRORF("failed to add file descriptor to epoll instance: %s", strerror(errno));
-        throw std::runtime_error("Failed to add file descriptor to epoll instance");
+        return false;
     }
+
+    mEpollCount++;
+    return true;
 }
 
-void Scheduler::remove_epoll_fd(int fd) {
-    VERBOSEF("[scheduler] remove_epoll_fd(%d)", fd);
+bool Scheduler::remove_epoll_fd(int fd) {
+    VERBOSEF("remove_epoll_fd(%d)", fd);
     if (epoll_ctl(mEpollFd, EPOLL_CTL_DEL, fd, nullptr) == -1) {
         ERRORF("failed to remove file descriptor from epoll instance: %s", strerror(errno));
-        throw std::runtime_error("Failed to remove file descriptor from epoll instance");
+        return false;
     }
+
+    mEpollCount--;
+    return true;
+}
+
+bool Scheduler::update_epoll_fd(int fd, uint32_t events, EpollEvent* event) {
+    VERBOSEF("update_epoll_fd(%d, %d, %p)", fd, events, event);
+    struct epoll_event epoll_event;
+    epoll_event.events   = events;
+    epoll_event.data.ptr = event;
+    if (epoll_ctl(mEpollFd, EPOLL_CTL_MOD, fd, &epoll_event) == -1) {
+        ERRORF("failed to modify file descriptor to epoll instance: %s", strerror(errno));
+        return false;
+    }
+
+    return true;
 }
 
 void Scheduler::add_timeout(TimeoutEvent* event) {
     mTimeouts.push(event);
 
     // Notify the scheduler that a new timeout has been added.
+    uint64_t value = 1;
+    if (write(mInterruptFd, &value, sizeof(value)) == -1) {
+        throw std::runtime_error("Failed to write to eventfd");
+    }
+}
+
+void Scheduler::remove_timeout(TimeoutEvent* event) {
+    // Is this _really_ the best way to remove an element from a priority queue?
+    std::priority_queue<TimeoutEvent*, std::vector<TimeoutEvent*>, CompareTimeouts> new_queue;
+    while (!mTimeouts.empty()) {
+        auto timeout = mTimeouts.top();
+        mTimeouts.pop();
+        if (timeout != event) {
+            new_queue.push(timeout);
+        }
+    }
+
+    mTimeouts = new_queue;
+
+    // Notify the scheduler that a timeout has been removed.
     uint64_t value = 1;
     if (write(mInterruptFd, &value, sizeof(value)) == -1) {
         throw std::runtime_error("Failed to write to eventfd");
@@ -86,13 +127,14 @@ TimeoutEvent* Scheduler::next_timeout() const {
     }
 }
 
-void Scheduler::execute_forever() {
-    VERBOSEF("[scheduler] execute_forever()");
+void Scheduler::execute() {
+    VERBOSEF("execute()");
 
     struct epoll_event events[16];
     for (;;) {
         // Notfiy all timeouts that have expired.
         auto now = std::chrono::steady_clock::now();
+        VERBOSEF("timeouts: %d", mTimeouts.size());
         while (!mTimeouts.empty()) {
             auto timeout = mTimeouts.top();
             if (!timeout) {
@@ -100,10 +142,15 @@ void Scheduler::execute_forever() {
                 continue;
             }
 
+            // If the timeout has not expired, stop processing timeouts. To limit looping when the
+            // timeout is near the current time we check that the timeout is at least 1ms.
             if (timeout->time > now) {
-                break;
+                if (timeout->time - now > std::chrono::milliseconds(1)) {
+                    break;
+                }
             }
 
+            mTimeouts.pop();
             timeout->event();
         }
 
@@ -128,9 +175,14 @@ void Scheduler::execute_forever() {
             }
         }
 
+        // If there are no epoll events and no timeouts, then we will exit the loop. 
+        if (mEpollCount == 0 && !next_timeout) {
+            break;
+        }
+
         // Wait for the nearest timeout or for a file descriptor to become
         // ready.
-        VERBOSEF("waiting for events (timeout: %dms)", timeout_ms);
+        DEBUGF("waiting for events (timeout: %dms)", timeout_ms);
         auto nfds = epoll_pwait(mEpollFd, events, 16, timeout_ms, nullptr);
         if (nfds == -1) {
             if (errno == EINTR) {
@@ -141,7 +193,7 @@ void Scheduler::execute_forever() {
         }
 
         // Handle the file descriptors that are ready.
-        VERBOSEF("%d file descriptors are ready", nfds);
+        DEBUGF("%d file descriptors are ready", nfds);
         for (int i = 0; i < nfds; i++) {
             auto& event = events[i];
             if (event.data.fd == mInterruptFd) {

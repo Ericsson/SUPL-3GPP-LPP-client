@@ -20,6 +20,11 @@ void PeriodicTask::register_task(Scheduler* scheduler) {
     mScheduler->add_timeout(&mTimeout);
 }
 
+void PeriodicTask::unregister_task(Scheduler* scheduler) {
+    Task::unregister_task(scheduler);
+    mScheduler->remove_timeout(&mTimeout);
+}
+
 PeriodicCallbackTask::PeriodicCallbackTask(
     std::chrono::steady_clock::duration                      interval,
     std::function<void(std::chrono::steady_clock::duration)> callback)

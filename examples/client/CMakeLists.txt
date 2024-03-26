@@ -1,6 +1,7 @@
 
 add_executable(example_client 
     "main.cpp" 
+    "assistance_data.cpp" 
 )
 add_executable(examples::client ALIAS example_client)
 

@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <ctime>
 #include <vector>
+#include <cstring>
 
 #define COLOR_RESET "\033[0m"
 #define COLOR_RED "\033[31m"
@@ -22,11 +23,25 @@ struct Scope {
 
 namespace loglet {
 
-static Level              sLevel = Level::Debug;
-static std::vector<Scope> sScopes;
+static Level                    sLevel = Level::Debug;
+static std::vector<Scope>       sScopes;
+static std::vector<const char*> sDisabledModules;
 
 void set_level(Level level) {
     sLevel = level;
+}
+
+void disable_module(const char* module) {
+    sDisabledModules.push_back(module);
+}
+
+bool is_module_enabled(const char* module) {
+    for (const auto& disabled_module : sDisabledModules) {
+        if (strcmp(module, disabled_module) == 0) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void push_indent() {
@@ -60,6 +75,14 @@ static const char* level_to_color(Level level) {
 }
 
 void log(const char* module, Level level, const char* message) {
+    if (level < sLevel) {
+        return;
+    }
+
+    if(!is_module_enabled(module)) {
+        return;
+    }
+
     auto        now   = std::chrono::system_clock::now();
     std::time_t now_c = std::chrono::system_clock::to_time_t(now);
     char        buffer[64];

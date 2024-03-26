@@ -8,6 +8,7 @@ public:
     virtual ~PeriodicTask() = default;
 
     virtual void register_task(Scheduler* scheduler) override;
+    virtual void unregister_task(Scheduler* scheduler) override;
     virtual void event(std::chrono::steady_clock::duration difference) = 0;
 
 protected:
