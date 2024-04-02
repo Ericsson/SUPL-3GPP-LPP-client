@@ -1,7 +1,10 @@
 #include "extract.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-RTK-ReferenceStationInfo-r15.h>
 #include <PhysicalReferenceStationInfo-r15.h>
+#pragma GCC diagnostic pop
 
 using namespace generator::rtcm;
 

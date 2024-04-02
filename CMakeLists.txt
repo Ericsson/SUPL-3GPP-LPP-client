@@ -6,7 +6,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(example LANGUAGES C CXX)
 
-option(USE_OPENSSL "USE_OPENSSL" ON)
+option(USE_OPENSSL "USE_OPENSSL" OFF)
 option(USE_ASAN "USE_ASAN" OFF)
 option(ASN_DEBUG "ASN_DEBUG" OFF)
 option(INTERFACE_FD_DEBUG "Print FD debug information" OFF)
@@ -29,8 +29,8 @@ find_package(OpenSSL REQUIRED)
 endif (USE_OPENSSL)
 
 add_definitions(-D_POSIX_C_SOURCE=200809L)
-add_definitions(-DCLIENT_VERSION="3.4.4")
-add_definitions(-DCLIENT_VERSION_INT=0x030404)
+add_definitions(-DCLIENT_VERSION="3.4.5")
+add_definitions(-DCLIENT_VERSION_INT=0x030405)
 
 if(${ASN_DEBUG})
    add_definitions(-DASN_EMIT_DEBUG=1)

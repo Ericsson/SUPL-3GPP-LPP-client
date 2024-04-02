@@ -9,6 +9,7 @@ add_library(generator_rtcm STATIC
     "extract/extract_bias_information.cpp"
     "extract/residuals.cpp"
     "extract/auxiliary_information.cpp"
+    "extract/extract.cpp"
     "time/tai_time.cpp"
     "time/gps_time.cpp"
     "time/utc_time.cpp"

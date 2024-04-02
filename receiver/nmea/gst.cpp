@@ -4,18 +4,6 @@
 namespace receiver {
 namespace nmea {
 
-static bool parse_double(const std::string& token, double& value) {
-    try {
-        value = std::stod(token);
-        return true;
-    } catch (...) {
-#if RECEIVER_NMEA_DEBUG
-        printf("[--GST] failed to parse double: \"%s\"\n", token.c_str());
-#endif
-        return false;
-    }
-}
-
 static bool parse_double_opt(const std::string& token, double& value) {
     try {
         value = std::stod(token);

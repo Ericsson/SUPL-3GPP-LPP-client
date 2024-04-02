@@ -12,19 +12,6 @@ static std::string GPS_NAMES[24] = {
     "Reserved", "Reserved", "Reserved",      "Reserved",  "Reserved",  "Reserved",
 };
 
-RTCM_CONSTEXPR static int32_t GPS_RTCM_MSM_TO_LPP[33] = {
-    -1, -1, 0,  4,  5,  -1, -1, -1, 6,  7,  8,  -1, -1, -1, -1, 9,  10,
-    11, -1, -1, -1, -1, 12, 13, 14, -1, -1, -1, -1, -1, 15, 16, 17,
-};
-
-RTCM_CONSTEXPR static int32_t GPS_RTCM_DF380_TO_LPP[32] = {
-    0,  4,  5,  -1, -1, 6,  -1 /* TODO(ewasjon): */,
-    9,  10, 11, 7,  8,  -1, -1,
-    12, 13, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1,
-};
-
 RTCM_CONSTEXPR static int32_t GPS_LPP_TO_RTCM[24] = {
     2, -1, -1, -1, 3, 4, 8, 9, 10, 15, 16, 17, 22, 23, 24, 30, 31, 32, -1, -1, -1, -1, -1, -1,
 };
@@ -36,11 +23,6 @@ static std::string GLONASS_NAMES[24] = {
     "G1 C/A",   "G2 C/A",   "G3",       "G1 P",     "G2 P",     "G1a(D)",   "G1a(P)",   "G1a (D+P)",
     "G2a(I)",   "G2a(P)",   "G2a(I+P)", "G3 I",     "G3 Q",     "G3 I+Q",   "Reserved", "Reserved",
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
-};
-
-RTCM_CONSTEXPR static int32_t GLONASS_RTCM_MSM_TO_LPP[33] = {
-    -1, -1, 0,  3,  -1, -1, -1, -1, 1,  4,  -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
 RTCM_CONSTEXPR static int32_t GLONASS_LPP_TO_RTCM[24] = {
@@ -59,16 +41,6 @@ static std::string GALILEO_NAMES[24] = {
     "E5(A+B) I+Q", "E5A I",        "E5A Q",     "E5A I+Q",
 };
 
-RTCM_CONSTEXPR static int32_t GALILEO_RTCM_MSM_TO_LPP[33] = {
-    -1, -1, 5,  6,  7,  8,  9,  -1, 10, 11, 12, 13, 14, -1, 15, 16, 17,
-    -1, 18, 19, 20, -1, 21, 22, 23, -1, -1, -1, -1, -1, -1, -1, -1,
-};
-
-RTCM_CONSTEXPR static int32_t GALILEO_RTCM_DF382_TO_LPP[32] = {
-    6,  7,  5,  -1, -1, 21, 22, -1, 15, 16, -1, -1 /*E5I*/, -1 /*E5Q*/, -1, 11, 12,
-    10, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,         -1,         -1, -1, -1,
-};
-
 RTCM_CONSTEXPR static int32_t GALILEO_LPP_TO_RTCM[24] = {
     -1, -1, -1, -1, -1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 18, 19, 20, 22, 23, 24,
 };
@@ -81,16 +53,6 @@ static std::string BDS_NAMES[24] = {
     "B1 I",     "B1 Q",     "B1 I+Q",   "B3 I",     "B3 Q",     "B3 I+Q",   "B2 I",     "B2 Q",
     "B2 I+Q",   "B1C(D)",   "B1C(P)",   "B1C(D+P)", "Reserved", "Reserved", "Reserved", "Reserved",
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
-};
-
-RTCM_CONSTEXPR static int32_t BDS_RTCM_MSM_TO_LPP[33] = {
-    -1, -1, 0,  1,  2,  -1, -1, -1, 3,  4,  5,  -1, -1, -1, 6,  7,  8,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-};
-
-RTCM_CONSTEXPR static int32_t BDS_RTCM_DF467_TO_LPP[32] = {
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
-    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
 RTCM_CONSTEXPR static int32_t BDS_LPP_TO_RTCM[24] = {
