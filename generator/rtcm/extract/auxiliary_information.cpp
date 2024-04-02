@@ -1,8 +1,11 @@
 #include "extract.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-AuxiliaryInformation.h>
 #include <GNSS-ID-GLONASS-SatElement.h>
 #include <GNSS-ID-GLONASS.h>
+#pragma GCC diagnostic pop
 
 using namespace generator::rtcm;
 

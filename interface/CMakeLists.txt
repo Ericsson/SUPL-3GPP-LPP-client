@@ -29,3 +29,27 @@ endif(${INTERFACE_FD_DEBUG})
 if(${INTERFACE_SOCKET_DEBUG})
     target_compile_definitions(dependency_interface PRIVATE INTERFACE_SOCKET_DEBUG=1)
 endif(${INTERFACE_SOCKET_DEBUG})
+
+target_compile_options(dependency_interface PRIVATE
+    "-Wall"
+    "-Wextra"
+    "-Wpedantic"
+    "-Wnon-virtual-dtor"
+    "-Wold-style-cast"
+    "-Wcast-align"
+    "-Woverloaded-virtual"
+    "-Wsign-conversion"
+    "-Wno-conversion"
+)
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(dependency_interface PRIVATE
+        "-Wmisleading-indentation"
+    )
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    target_compile_options(dependency_interface PRIVATE
+        "-Wno-missing-field-initializers"
+    )
+endif()

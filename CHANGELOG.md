@@ -1,6 +1,14 @@
 # Changelog
 
-## [3.4.4]
+## [3.4.5] 2024-04-02
+- SPARTN generator will not use provided URA epoch-time. This caused issues where only the URA timestamp would be used and because it isn't update vary frequently the corrections data would not be used.
+- SPARTN is now "officially" supported. It has been tested with multiple data feed providers and is working as expected.
+- Added option to override the ionospheric quality indiciator (SF055).
+- Added support for external control commands. This allows the client to be controlled by an external application. See `CONTROL.md` for more information.
+- Building with OpenSSL support is now off by default. To enable it, use `-DUSE_OPENSSL=ON` when building with CMake.
+- Experimental changes can now be toggled with `-DEXPERIMENTAL=ON` when building with CMake.
+
+## [3.4.4] 2024-03-06
 - Fixed message nullptr exception.
 - IMSI and MSISDN used `unsigned long` which doesn't have enough bits to store all possible values. Changed to `unsigned long long`.
 - Added support to use 5G NR cells in addition to LTE cells.
@@ -13,18 +21,18 @@
 - Added support to parse request periodicity from RequestLocationInformation message.
 - When using the u-Blox receiver in `example-lpp`, it will not load the receiver configuration. This behavior is unchanged for `example-ublox` but can still be disabled with `--disable-config`.
 
-## [3.4.3]
+## [3.4.3] 2024-02-08
 - Added option to export NMEA sentences to a unix socket or a TCP connection. See `--nmea-export-*` command-line arguments. This requires the use of the NMEA receiver.
 - Fixed a bug where in cases of TCP connection failure, the addrinfo struct was not freed.
 
-## [3.4.2]
+## [3.4.2] 2024-02-02
 - Fixed a bug where GAD messages had TF009 set to 0. It will now be set to time specified in the STEC/Gridded IE.
 - Fixed a bug where parsing bitfields in UBX-NAV-PVT would not be incorrect.
 
-## [3.4.1]
+## [3.4.1] 2024-01-30
 - Fixed a crash due to missing null pointer check in NMEA `ThreadedReceiver`.
 
-## [3.4.0]
+## [3.4.0] 2024-01-26
 - Support for receivers that communicate using NMEA protocol has been added. The following sentences are now supported:
     - GGA
     - GST

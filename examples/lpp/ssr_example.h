@@ -15,8 +15,8 @@ public:
     SsrCommand()
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
           mFormatArg(nullptr), mUraOverrideArg(nullptr), mUbloxClockCorrectionArg(nullptr),
-          mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr) {
-    }
+          mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr),
+          mSf055Override(nullptr), mIncreasingSiou(nullptr) {}
 
     ~SsrCommand() override {
         delete mFormatArg;
@@ -25,6 +25,8 @@ public:
         delete mForceContinuityArg;
         delete mAverageZenithDelayArg;
         delete mEnableIodeShift;
+        delete mSf055Override;
+        delete mIncreasingSiou;
     }
 
     void parse(args::Subparser& parser) override;
@@ -37,6 +39,8 @@ private:
     args::Flag*                   mForceContinuityArg;
     args::Flag*                   mAverageZenithDelayArg;
     args::Flag*                   mEnableIodeShift;
+    args::ValueFlag<int>*         mSf055Override;
+    args::Flag*                   mIncreasingSiou;
 };
 
 }  // namespace ssr_example

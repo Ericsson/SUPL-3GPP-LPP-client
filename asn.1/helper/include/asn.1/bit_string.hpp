@@ -5,6 +5,8 @@
 
 namespace helper {
 
+#if 1
+
 class BitString : public BIT_STRING_s {
 public:
     explicit BitString(size_t bits);
@@ -53,4 +55,49 @@ private:
 
 static_assert(sizeof(BitString) == sizeof(BIT_STRING_s),
               "BitString must be the same size as BIT_STRING_s");
+
+#endif
+
+class BitStringBuilder {
+public:
+    explicit BitStringBuilder() { mBits = 0; }
+
+    template <typename T>
+    BitStringBuilder& set(T index) {
+        assert(index < 64);
+        mBits |= 1llu << index;
+        return *this;
+    }
+
+    template <typename T>
+    BitStringBuilder& clear(T index) {
+        assert(index < 64);
+        mBits &= ~(1llu << index);
+        return *this;
+    }
+
+    template <typename T>
+    BitStringBuilder& integer(T index, T bits, uint64_t value) {
+        // NOTE(ewasjon): A bit string is numbered from left to right, so the
+        // first bit is the most significant bit. This is the opposite of how
+        // we usually number bits in C, so we need to reverse the order of the
+        // bits.
+        for (T i = 0; i < bits; i++) {
+            auto bit = bits - i - 1;
+            if (value & (1llu << bit)) {
+                set(index + i);
+            } else {
+                clear(index + i);
+            }
+        }
+        return *this;
+    }
+
+    BIT_STRING_s* to_bit_string(size_t bits);
+    BIT_STRING_s* into_bit_string(size_t bits, BIT_STRING_s* bit_string);
+
+private:
+    uint64_t mBits;
+};
+
 }  // namespace helper

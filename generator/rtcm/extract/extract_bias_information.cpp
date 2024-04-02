@@ -1,6 +1,10 @@
 #include "extract.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GLO-RTK-BiasInformation-r15.h>
+#pragma GCC diagnostic pop
+
 #include <asn.1/bit_string.hpp>
 
 using namespace generator::rtcm;

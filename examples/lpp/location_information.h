@@ -21,3 +21,6 @@ bool provide_location_information_callback_fake(location_information::LocationIn
                                                 location_information::HaGnssMetrics&       metrics,
                                                 void* userdata);
 bool provide_ecid_callback(location_information::ECIDInformation& ecid, void* userdata);
+
+extern bool   gConvertConfidence95To39;
+extern double gOverrideHorizontalConfidence;

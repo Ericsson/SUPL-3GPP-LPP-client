@@ -55,26 +55,26 @@ args::Group cell_information{
     args::Options::Global,
 };
 
-args::ValueFlag<int> mcc{cell_information,
+args::ValueFlag<int>                mcc{cell_information,
                          "mcc",
                          "Mobile Country Code",
-                         {'c', "mcc"},
+                                        {'c', "mcc"},
                          args::Options::Single | args::Options::Required};
-args::ValueFlag<int> mnc{cell_information,
+args::ValueFlag<int>                mnc{cell_information,
                          "mnc",
                          "Mobile Network Code",
-                         {'n', "mnc"},
+                                        {'n', "mnc"},
                          args::Options::Single | args::Options::Required};
-args::ValueFlag<int> tac{cell_information,
+args::ValueFlag<int>                tac{cell_information,
                          "tac",
                          "Tracking Area Code",
-                         {'t', "lac", "tac"},
+                                        {'t', "lac", "tac"},
                          args::Options::Single | args::Options::Required};
 args::ValueFlag<unsigned long long> ci{cell_information,
-                        "ci",
-                        "Cell Identity",
-                        {'i', "ci"},
-                        args::Options::Single | args::Options::Required};
+                                       "ci",
+                                       "Cell Identity",
+                                       {'i', "ci"},
+                                       args::Options::Single | args::Options::Required};
 args::Flag is_nr{cell_information, "nr", "The cell specified is a 5G NR cell", {"nr"}};
 
 //
@@ -343,6 +343,96 @@ args::ValueFlag<double> li_altitude{location_infomation,
                                     "Fake Altitude",
                                     {"fake-altitude", "falt"},
                                     args::Options::Single};
+args::Flag              li_conf95to39{location_infomation,
+                         "confidence-95to39",
+                         "Convert 95p confidence to 39p confidence",
+                                      {"confidence-95to39"},
+                         args::Options::Single};
+args::ValueFlag<double> li_override_horizontal_confidence{
+    location_infomation,
+    "override-horizontal-confidence",
+    "Override horizontal confidence [0.0-1.0]",
+    {"override-horizontal-confidence"},
+    args::Options::Single,
+};
+
+//
+// Control Options
+//
+
+args::Group control_options{
+    "Control Options:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+args::Group control_interface{
+    control_options,
+    "Interface:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+
+args::Group ctrl_serial_output{
+    control_interface,
+    "Serial:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+args::ValueFlag<std::string> ctrl_serial_device{
+    ctrl_serial_output, "device", "Device", {"ctrl-serial"}, args::Options::Single};
+args::ValueFlag<int> ctrl_serial_baud_rate{
+    ctrl_serial_output, "baud_rate", "Baud Rate", {"ctrl-serial-baud"}, args::Options::Single};
+args::ValueFlag<int> ctrl_serial_data_bits{
+    ctrl_serial_output, "data_bits", "Data Bits", {"ctrl-serial-data"}, args::Options::Single};
+args::ValueFlag<int> ctrl_serial_stop_bits{
+    ctrl_serial_output, "stop_bits", "Stop Bits", {"ctrl-serial-stop"}, args::Options::Single};
+args::ValueFlag<std::string> ctrl_serial_parity_bits{ctrl_serial_output,
+                                                     "parity_bits",
+                                                     "Parity Bits",
+                                                     {"ctrl-serial-parity"},
+                                                     args::Options::Single};
+
+args::Group ctrl_tcp_output{
+    control_interface,
+    "TCP:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+args::ValueFlag<std::string> ctrl_tcp_ip_address{
+    ctrl_tcp_output, "ip_address", "Host or IP Address", {"ctrl-tcp"}, args::Options::Single};
+args::ValueFlag<int> ctrl_tcp_port{
+    ctrl_tcp_output, "port", "Port", {"ctrl-tcp-port"}, args::Options::Single};
+
+args::Group ctrl_udp_output{
+    control_interface,
+    "UDP:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+args::ValueFlag<std::string> ctrl_udp_ip_address{
+    ctrl_udp_output, "ip_address", "Host or IP Address", {"ctrl-udp"}, args::Options::Single};
+args::ValueFlag<int> ctrl_udp_port{
+    ctrl_udp_output, "port", "Port", {"ctrl-udp-port"}, args::Options::Single};
+
+args::Group ctrl_stdin_output{
+    control_interface,
+    "Stdin:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+args::Flag ctrl_stdin_output_flag{
+    ctrl_stdin_output, "stdin", "Stdin", {"ctrl-stdin"}, args::Options::Single};
+
+args::Group ctrl_un_output{
+    control_interface,
+    "Unix Socket:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+
+args::ValueFlag<std::string> ctrl_un_output_path{
+    ctrl_un_output, "path", "Path", {"ctrl-un"}, args::Options::Single};
 
 //
 // Options
@@ -395,10 +485,10 @@ IdentityOptions parse_identity_options() {
 
 CellOptions parse_cell_options() {
     CellOptions cell_information{
-        .mcc = mcc.Get(),
-        .mnc = mnc.Get(),
-        .tac = tac.Get(),
-        .cid = ci.Get(),
+        .mcc   = mcc.Get(),
+        .mnc   = mnc.Get(),
+        .tac   = tac.Get(),
+        .cid   = ci.Get(),
         .is_nr = is_nr ? is_nr.Get() : false,
     };
 
@@ -754,17 +844,19 @@ static NmeaOptions nmea_parse_options() {
 
 static LocationInformationOptions parse_location_information_options() {
     LocationInformationOptions location_information{};
-    location_information.latitude  = 69.0599730655754;
-    location_information.longitude = 20.54864403253676;
-    location_information.altitude  = 0;
-    location_information.force     = false;
-    location_information.unlock_update_rate = false;
+    location_information.latitude                       = 69.0599730655754;
+    location_information.longitude                      = 20.54864403253676;
+    location_information.altitude                       = 0;
+    location_information.force                          = false;
+    location_information.unlock_update_rate             = false;
+    location_information.convert_confidence_95_to_39    = false;
+    location_information.override_horizontal_confidence = -1.0;
 
     if (li_force) {
         location_information.force = true;
     }
 
-    if(li_unlocked) {
+    if (li_unlocked) {
         location_information.unlock_update_rate = true;
     }
 
@@ -783,7 +875,129 @@ static LocationInformationOptions parse_location_information_options() {
         }
     }
 
+    if (li_conf95to39) {
+        location_information.convert_confidence_95_to_39 = true;
+    }
+
+    if (li_override_horizontal_confidence) {
+        location_information.override_horizontal_confidence =
+            li_override_horizontal_confidence.Get();
+        if (location_information.override_horizontal_confidence < 0 ||
+            location_information.override_horizontal_confidence > 1) {
+            throw args::ValidationError(
+                "Override horizontal confidence must be between 0.0 and 1.0");
+        }
+    }
+
     return location_information;
+}
+
+static std::unique_ptr<Interface> control_parse_serial() {
+    assert(ctrl_serial_device);
+
+    uint32_t baud_rate = 115200;
+    if (ctrl_serial_baud_rate) {
+        if (ctrl_serial_baud_rate.Get() < 0) {
+            throw args::ValidationError("ctrl-serial-baud-rate must be positive");
+        }
+
+        baud_rate = static_cast<uint32_t>(ctrl_serial_baud_rate.Get());
+    }
+
+    auto data_bits = DataBits::EIGHT;
+    if (ctrl_serial_data_bits) {
+        switch (ctrl_serial_data_bits.Get()) {
+        case 5: data_bits = DataBits::FIVE; break;
+        case 6: data_bits = DataBits::SIX; break;
+        case 7: data_bits = DataBits::SEVEN; break;
+        case 8: data_bits = DataBits::EIGHT; break;
+        default: throw args::ValidationError("Invalid data bits");
+        }
+    }
+
+    auto stop_bits = StopBits::ONE;
+    if (ctrl_serial_stop_bits) {
+        switch (ctrl_serial_stop_bits.Get()) {
+        case 1: stop_bits = StopBits::ONE; break;
+        case 2: stop_bits = StopBits::TWO; break;
+        default: throw args::ValidationError("Invalid stop bits");
+        }
+    }
+
+    auto parity_bit = ParityBit::NONE;
+    if (ctrl_serial_parity_bits) {
+        if (ctrl_serial_parity_bits.Get() == "none") {
+            parity_bit = ParityBit::NONE;
+        } else if (ctrl_serial_parity_bits.Get() == "odd") {
+            parity_bit = ParityBit::ODD;
+        } else if (ctrl_serial_parity_bits.Get() == "even") {
+            parity_bit = ParityBit::EVEN;
+        } else {
+            throw args::ValidationError("Invalid parity bits");
+        }
+    }
+
+    return std::unique_ptr<Interface>(
+        Interface::serial(ctrl_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+}
+
+static std::unique_ptr<Interface> control_parse_tcp() {
+    assert(ctrl_tcp_ip_address);
+
+    if (!ctrl_tcp_port) {
+        throw args::RequiredError("ctrl-tcp-port");
+    }
+
+    return std::unique_ptr<Interface>(
+        Interface::tcp(ctrl_tcp_ip_address.Get(), ctrl_tcp_port.Get(), true /* reconnect */));
+}
+
+static std::unique_ptr<Interface> control_parse_udp() {
+    assert(ctrl_udp_ip_address);
+
+    if (!ctrl_udp_port) {
+        throw args::RequiredError("ctrl-udp-port");
+    }
+
+    return std::unique_ptr<Interface>(
+        Interface::udp(ctrl_udp_ip_address.Get(), ctrl_udp_port.Get(), true /* reconnect */));
+}
+
+static std::unique_ptr<Interface> control_parse_stdin() {
+    return std::unique_ptr<Interface>(Interface::stdin());
+}
+
+static std::unique_ptr<Interface> control_parse_unix_socket() {
+    assert(ctrl_un_output_path);
+
+    return std::unique_ptr<Interface>(
+        Interface::unix_socket_stream(ctrl_un_output_path.Get(), true));
+}
+
+static std::unique_ptr<Interface> control_parse_interface() {
+    if (ctrl_serial_device) {
+        return control_parse_serial();
+    } else if (ctrl_tcp_ip_address) {
+        return control_parse_tcp();
+    } else if (ctrl_udp_ip_address) {
+        return control_parse_udp();
+    } else if (ctrl_stdin_output_flag) {
+        return control_parse_stdin();
+    } else if (ctrl_un_output_path) {
+        return control_parse_unix_socket();
+    } else {
+        throw args::RequiredError("No device/interface specified for control interface");
+    }
+}
+
+static ControlOptions parse_control_options() {
+    if (ctrl_serial_device || ctrl_tcp_ip_address || ctrl_udp_ip_address ||
+        ctrl_stdin_output_flag || ctrl_un_output_path) {
+        auto interface = control_parse_interface();
+        return ControlOptions{std::move(interface)};
+    } else {
+        return ControlOptions{};
+    }
 }
 
 //
@@ -838,6 +1052,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 options.ublox_options                = ublox_parse_options();
                 options.nmea_options                 = nmea_parse_options();
                 options.location_information_options = parse_location_information_options();
+                options.control_options              = parse_control_options();
                 command_ptr->execute(std::move(options));
             }));
     }
@@ -882,13 +1097,10 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
 
     i2c_address.HelpDefault("66");
     serial_baud_rate.HelpDefault("115200");
-
     serial_data_bits.HelpDefault("8");
     serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-
     serial_stop_bits.HelpDefault("1");
     serial_stop_bits.HelpChoices({"1", "2"});
-
     serial_parity_bits.HelpDefault("none");
     serial_parity_bits.HelpChoices({
         "none",
@@ -900,6 +1112,18 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     li_longitude.HelpDefault("20.54864403253676");
     li_altitude.HelpDefault("0");
 
+    ctrl_serial_baud_rate.HelpDefault("115200");
+    ctrl_serial_data_bits.HelpDefault("8");
+    ctrl_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
+    ctrl_serial_stop_bits.HelpDefault("1");
+    ctrl_serial_stop_bits.HelpChoices({"1", "2"});
+    ctrl_serial_parity_bits.HelpDefault("none");
+    ctrl_serial_parity_bits.HelpChoices({
+        "none",
+        "odd",
+        "even",
+    });
+
     // Globals
     args::GlobalOptions location_server_globals{parser, location_server};
     args::GlobalOptions identity_globals{parser, identity};
@@ -910,6 +1134,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     args::GlobalOptions other_receiver_globals{parser, other_receiver_group};
     args::GlobalOptions output_globals{parser, output};
     args::GlobalOptions location_information_globals{parser, location_infomation};
+    args::GlobalOptions control_options_globals{parser, control_options};
 
     // Parse
     try {

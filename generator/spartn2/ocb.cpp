@@ -210,11 +210,14 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_URA_r16* ura) {
     auto epoch_time = spartn_time_from(ura->epochTime_r16);
     auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
-    corrections.gnss_id    = gnss_id;
-    corrections.iod        = iod;
-    corrections.epoch_time = epoch_time;
-    corrections.ura        = ura;
+    auto& corrections   = ocb.mKeyedCorrections[key];
+    corrections.gnss_id = gnss_id;
+    corrections.iod     = iod;
+    // The URA timestamp is only relevant if the corrections are grouped by epoch time.
+    if (group_by_epoch_time) {
+        corrections.epoch_time = epoch_time;
+    }
+    corrections.ura = ura;
 }
 
 struct Bias {
@@ -741,8 +744,13 @@ void Generator::generate_ocb(long iod) {
         auto yaw_angle_present = false;
         auto subtype           = subtype_from_gnss_id(gnss_id);
 
+        auto siou = iod;
+        if (mIncreasingSiou) {
+            siou = mSiouIndex;
+        }
+
         MessageBuilder builder{0 /* OCB */, subtype, epoch_time};
-        builder.sf005(iod);
+        builder.sf005(siou);
         builder.sf010(eos);
         builder.sf069();
         builder.sf008(yaw_angle_present);
@@ -759,7 +767,7 @@ void Generator::generate_ocb(long iod) {
             builder.sf014(satellite.orbit != nullptr, satellite.clock != nullptr,
                           satellite.code_bias != nullptr || satellite.phase_bias != nullptr);
             if (mContinuityIndicator >= 0.0) {
-                builder.sf022(mContinuityIndicator);
+                builder.sf015(mContinuityIndicator);
             } else {
                 builder.sf015(320.0);  // TODO(ewasjon): compute the continuity indicator
             }

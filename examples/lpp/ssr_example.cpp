@@ -10,6 +10,8 @@
 #include <receiver/ublox/threaded_receiver.hpp>
 #include <sstream>
 #include <stdexcept>
+
+#include "control.hpp"
 #include "location_information.h"
 
 using UReceiver = receiver::ublox::ThreadedReceiver;
@@ -22,9 +24,12 @@ static bool                         gUBloxClockCorrection;
 static bool                         gForceIodeContinuity;
 static bool                         gAverageZenithDelay;
 static bool                         gEnableIodeShift;
+static int                          gSf055Override;
+static bool                         gIncreasingSiou;
 static Options                      gOptions;
 static SPARTN_Generator             gSpartnGeneratorOld;
 static generator::spartn::Generator gSpartnGeneratorNew;
+static ControlParser                gControlParser;
 
 static std::unique_ptr<Modem_AT>  gModem;
 static std::unique_ptr<UReceiver> gUbloxReceiver;
@@ -34,7 +39,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
 void execute(Options options, ssr_example::Format format, int ura_override,
              bool ublox_clock_correction, bool force_continuity, bool average_zenith_delay,
-             bool enable_iode_shift) {
+             bool enable_iode_shift, int sf055_override, bool increasing_siou) {
     gOptions              = std::move(options);
     gFormat               = format;
     gUraOverride          = ura_override;
@@ -42,6 +47,8 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     gForceIodeContinuity  = force_continuity;
     gAverageZenithDelay   = average_zenith_delay;
     gEnableIodeShift      = enable_iode_shift;
+    gSf055Override        = sf055_override;
+    gIncreasingSiou       = increasing_siou;
 
     auto& cell_options                 = gOptions.cell_options;
     auto& location_server_options      = gOptions.location_server_options;
@@ -51,6 +58,10 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     auto& ublox_options                = gOptions.ublox_options;
     auto& nmea_options                 = gOptions.nmea_options;
     auto& location_information_options = gOptions.location_information_options;
+    auto& control_options              = gOptions.control_options;
+
+    gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
+    gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
     gCell = CellID{
         .mcc  = cell_options.mcc,
@@ -129,6 +140,12 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     } else {
         gSpartnGeneratorNew.set_iode_shift(false);
     }
+    if (gSf055Override >= 0) {
+        gSpartnGeneratorNew.set_ionosphere_quality_override(gSf055Override);
+    }
+    if (gIncreasingSiou) {
+        gSpartnGeneratorNew.set_increasing_siou(true);
+    }
 
     LPP_Client client{false /* experimental segmentation support */};
 
@@ -191,11 +208,27 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         throw std::runtime_error("Unable to request assistance data");
     }
 
+    if (control_options.interface) {
+        printf("[control]\n");
+        control_options.interface->open();
+        control_options.interface->print_info();
+
+        gControlParser.on_cid = [&](CellID cell) {
+            printf("[control] cell: %ld:%ld:%ld:%llu\n", cell.mcc, cell.mnc, cell.tac, cell.cell);
+            gCell = cell;
+            client.update_assistance_data(request, gCell);
+        };
+    }
+
     for (;;) {
         struct timespec timeout;
         timeout.tv_sec  = 0;
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
         nanosleep(&timeout, NULL);
+
+        if (control_options.interface) {
+            gControlParser.parse(control_options.interface);
+        }
 
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.
@@ -291,6 +324,8 @@ void SsrCommand::parse(args::Subparser& parser) {
     delete mForceContinuityArg;
     delete mAverageZenithDelayArg;
     delete mEnableIodeShift;
+    delete mSf055Override;
+    delete mIncreasingSiou;
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
@@ -318,6 +353,16 @@ void SsrCommand::parse(args::Subparser& parser) {
 
     mEnableIodeShift = new args::Flag(
         parser, "iode-shift", "Enable the IODE shift to fix data stream issues", {"iode-shift"});
+
+    mSf055Override =
+        new args::ValueFlag<int>(parser, "sf055-override",
+                                 "Override the SF055 value, value will be clamped between 0-15. "
+                                 "Where 0 indicates that the value is invalid.",
+                                 {"sf055-override"}, args::Options::Single);
+
+    mIncreasingSiou =
+        new args::Flag(parser, "increasing-siou", "Enable the increasing SIoU feature for SPARTN",
+                       {"increasing-siou"});
 }
 
 void SsrCommand::execute(Options options) {
@@ -361,8 +406,20 @@ void SsrCommand::execute(Options options) {
         iode_shift = mEnableIodeShift->Get();
     }
 
+    auto sf055_override = -1;
+    if (*mSf055Override) {
+        sf055_override = mSf055Override->Get();
+        if (sf055_override < 0) sf055_override = 0;
+        if (sf055_override > 15) sf055_override = 15;
+    }
+
+    auto increasing_siou = false;
+    if (*mIncreasingSiou) {
+        increasing_siou = mIncreasingSiou->Get();
+    }
+
     ::execute(std::move(options), format, ura_override, ublox_clock_correction, force_continuity,
-              average_zenith_delay, iode_shift);
+              average_zenith_delay, iode_shift, sf055_override, increasing_siou);
 }
 
 }  // namespace ssr_example

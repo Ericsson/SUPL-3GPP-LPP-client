@@ -47,8 +47,13 @@ void Generator::generate_gad(long iod, uint32_t epoch_time, long set_id) {
     }
 #endif
 
+    auto siou = iod;
+    if(mIncreasingSiou) {
+        siou = mSiouIndex;
+    }
+
     MessageBuilder builder{2 /* GAD */, 0, epoch_time};
-    builder.sf005(iod);  // TODO(ewasjon): We could include AIOU in the correction point set, to
+    builder.sf005(siou);  // TODO(ewasjon): We could include AIOU in the correction point set, to
                          // handle overflow
     builder.sf068(0);
     builder.sf069();

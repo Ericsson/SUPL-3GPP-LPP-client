@@ -41,6 +41,9 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     auto& nmea_options                 = gOptions.nmea_options;
     auto& location_information_options = gOptions.location_information_options;
 
+    gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
+    gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
+
     gCell = CellID{
         .mcc   = cell_options.mcc,
         .mnc   = cell_options.mnc,
@@ -191,7 +194,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         printf("  force: false\n");
     }
 
-    if(location_information_options.unlock_update_rate) {
+    if (location_information_options.unlock_update_rate) {
         client.unlock_update_rate();
         printf("  unlock update rate: true\n");
     } else {

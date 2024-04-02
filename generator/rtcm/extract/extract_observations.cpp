@@ -1,8 +1,12 @@
 #include "extract.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-RTK-Observations-r15.h>
 #include <GNSS-RTK-SatelliteDataElement-r15.h>
 #include <GNSS-RTK-SatelliteSignalDataElement-r15.h>
+#pragma GCC diagnostic pop
+
 #include <asn.1/bit_string.hpp>
 
 using namespace generator::rtcm;
