@@ -36,7 +36,7 @@ Generator::Generator()
 
 Generator::~Generator() = default;
 
-std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
+std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     // Clear previous messages
     mMessages.clear();
     if (!lpp_message) return mMessages;
@@ -112,7 +112,7 @@ std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
     return mMessages;
 }
 
-void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* message) {
+void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* message) {
     if (!message->a_gnss_ProvideAssistanceData) return;
     if (!message->a_gnss_ProvideAssistanceData->gnss_CommonAssistData) return;
 
@@ -123,8 +123,8 @@ void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* me
     auto& ssr = *cad.ext2->gnss_SSR_CorrectionPoints_r16;
     if (ssr.correctionPoints_r16.present ==
         GNSS_SSR_CorrectionPoints_r16__correctionPoints_r16_PR_arrayOfCorrectionPoints_r16) {
-        auto& array = ssr.correctionPoints_r16.choice.arrayOfCorrectionPoints_r16;
-        auto correction_point_set_id = static_cast<uint16_t>(ssr.correctionPointSetID_r16);
+        auto& array                   = ssr.correctionPoints_r16.choice.arrayOfCorrectionPoints_r16;
+        auto  correction_point_set_id = static_cast<uint16_t>(ssr.correctionPointSetID_r16);
         if (mCorrectionPointSets.find(correction_point_set_id) != mCorrectionPointSets.end()) {
             // NOTE(ewasjon): We assume that the correction point set cannot be changed. From an
             // location server point-of-view, this should never happen. The correction point set is
@@ -169,7 +169,7 @@ void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* me
     }
 }
 
-void Generator::find_ocb_corrections(const ProvideAssistanceData_r9_IEs* message) {
+void Generator::find_ocb_corrections(ProvideAssistanceData_r9_IEs const* message) {
     if (!message->a_gnss_ProvideAssistanceData) return;
     if (!message->a_gnss_ProvideAssistanceData->gnss_GenericAssistData) return;
 
@@ -192,7 +192,7 @@ void Generator::find_ocb_corrections(const ProvideAssistanceData_r9_IEs* message
     }
 }
 
-void Generator::find_hpac_corrections(const ProvideAssistanceData_r9_IEs* message) {
+void Generator::find_hpac_corrections(ProvideAssistanceData_r9_IEs const* message) {
     if (!message->a_gnss_ProvideAssistanceData) return;
     if (!message->a_gnss_ProvideAssistanceData->gnss_GenericAssistData) return;
 

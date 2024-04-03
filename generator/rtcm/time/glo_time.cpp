@@ -27,8 +27,8 @@ GLO_Time::GLO_Time(TsInt day, TsFloat tod) : tm{} {
     tm.add(tod);
 }
 
-GLO_Time::GLO_Time(const TAI_Time& time) : GLO_Time(UTC_Time(time)) {}
-GLO_Time::GLO_Time(const UTC_Time& time) : tm(utc_2_glo(time.timestamp())) {}
+GLO_Time::GLO_Time(TAI_Time const& time) : GLO_Time(UTC_Time(time)) {}
+GLO_Time::GLO_Time(UTC_Time const& time) : tm(utc_2_glo(time.timestamp())) {}
 
 TsInt GLO_Time::days() const {
     return tm.seconds() / DAY_IN_SECONDS;

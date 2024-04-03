@@ -25,9 +25,9 @@ public:
     UBLOX_EXPLICIT UbxMonVer(raw::MonVer payload) UBLOX_NOEXCEPT;
     ~UbxMonVer() override = default;
 
-    UbxMonVer(const UbxMonVer& other) : Message(other), mPayload(other.mPayload) {}
+    UbxMonVer(UbxMonVer const& other) : Message(other), mPayload(other.mPayload) {}
     UbxMonVer(UbxMonVer&&)                 = delete;
-    UbxMonVer& operator=(const UbxMonVer&) = delete;
+    UbxMonVer& operator=(UbxMonVer const&) = delete;
     UbxMonVer& operator=(UbxMonVer&&)      = delete;
 
     UBLOX_NODISCARD const raw::MonVer& payload() const UBLOX_NOEXCEPT { return mPayload; }

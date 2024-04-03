@@ -15,7 +15,7 @@ public:
     void close() override;
 
     size_t read(void* data, size_t length) override;
-    size_t write(const void* data, size_t length) override;
+    size_t write(void const* data, size_t length) override;
 
     IF_NODISCARD bool can_read() IF_NOEXCEPT override;
     IF_NODISCARD bool can_write() IF_NOEXCEPT override;
@@ -24,7 +24,7 @@ public:
     void wait_for_write() IF_NOEXCEPT override;
 
     IF_NODISCARD bool is_open() IF_NOEXCEPT override;
-    void print_info() IF_NOEXCEPT override;
+    void              print_info() IF_NOEXCEPT override;
 
 private:
     std::string         mHost;

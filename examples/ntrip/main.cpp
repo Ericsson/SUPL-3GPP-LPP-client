@@ -100,7 +100,7 @@ public:
         if (mSocket < 0) throw std::runtime_error("Failed to create socket");
 
         auto socket_addr = reinterpret_cast<sockaddr*>(&addr);
-        auto socket_len = static_cast<socklen_t>(sizeof(addr));
+        auto socket_len  = static_cast<socklen_t>(sizeof(addr));
         if (connect(mSocket, socket_addr, socket_len) < 0) {
             throw std::runtime_error("Failed to connect to host");
         }

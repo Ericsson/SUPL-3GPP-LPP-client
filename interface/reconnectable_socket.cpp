@@ -52,7 +52,7 @@ size_t ReconnectableSocket::read(void* data, size_t length) IF_NOEXCEPT {
     return mSocket.read(data, length);
 }
 
-size_t ReconnectableSocket::write(const void* data, size_t length) IF_NOEXCEPT {
+size_t ReconnectableSocket::write(void const* data, size_t length) IF_NOEXCEPT {
     try_reconnect();
     return mSocket.write(data, length);
 }

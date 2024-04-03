@@ -70,7 +70,7 @@ Message::Message(uint8_t message_type, uint8_t message_subtype, uint32_t message
       mPayload(std::move(payload)) {}
 
 std::vector<uint8_t> Message::build() {
-    if(mPayload.size() > 1023) {
+    if (mPayload.size() > 1023) {
         return {};
     }
 
@@ -184,7 +184,7 @@ void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
 }
 
 void MessageBuilder::satellite_mask(
-    long gnss_id, const std::vector<generator::spartn::OcbSatellite>& satellites) {
+    long gnss_id, std::vector<generator::spartn::OcbSatellite> const& satellites) {
     uint64_t count    = 0;
     bool     bits[64] = {false};
     for (auto& satellite : satellites) {
@@ -199,7 +199,7 @@ void MessageBuilder::satellite_mask(
 }
 
 void MessageBuilder::satellite_mask(
-    long gnss_id, const std::vector<generator::spartn::HpacSatellite>& satellites) {
+    long gnss_id, std::vector<generator::spartn::HpacSatellite> const& satellites) {
     uint64_t count    = 0;
     bool     bits[64] = {false};
     for (auto& satellite : satellites) {

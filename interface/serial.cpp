@@ -186,7 +186,7 @@ size_t SerialInterface::read(void* data, size_t size) {
     return mFileDescriptor.read(data, size);
 }
 
-size_t SerialInterface::write(const void* data, size_t size) {
+size_t SerialInterface::write(void const* data, size_t size) {
     return mFileDescriptor.write(data, size);
 }
 

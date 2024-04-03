@@ -141,7 +141,8 @@ int main(int argc, char** argv) {
                 &asn_DEF_LPP_Message, message, XER_F_BASIC,
                 [](void const* text_buffer, size_t text_size, void* app_key) -> int {
                     auto string_stream = static_cast<std::ostream*>(app_key);
-                    string_stream->write(static_cast<char const*>(text_buffer), static_cast<std::streamsize>(text_size));
+                    string_stream->write(static_cast<char const*>(text_buffer),
+                                         static_cast<std::streamsize>(text_size));
                     return 0;
                 },
                 &buffer);

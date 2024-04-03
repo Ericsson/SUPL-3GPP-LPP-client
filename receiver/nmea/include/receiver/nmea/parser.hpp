@@ -25,14 +25,14 @@ public:
     NMEA_NODISCARD uint32_t                 buffer_length() const NMEA_NOEXCEPT;
     NMEA_NODISCARD uint32_t                 available_space() const NMEA_NOEXCEPT;
 
-    NMEA_NODISCARD static ChecksumResult checksum(const std::string& buffer);
+    NMEA_NODISCARD static ChecksumResult checksum(std::string const& buffer);
 
 protected:
     NMEA_NODISCARD uint8_t peek(uint32_t index) const NMEA_NOEXCEPT;
     void                   skip(uint32_t length) NMEA_NOEXCEPT;
     void                   copy_to_buffer(uint8_t* data, uint32_t length) NMEA_NOEXCEPT;
 
-    NMEA_NODISCARD std::string parse_prefix(const uint8_t* data,
+    NMEA_NODISCARD std::string parse_prefix(uint8_t const* data,
                                             uint32_t       length) const NMEA_NOEXCEPT;
 
 private:

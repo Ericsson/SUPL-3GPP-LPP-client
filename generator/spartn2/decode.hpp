@@ -1,6 +1,6 @@
 #pragma once
-#include <generator/spartn2/types.hpp>
 #include <cmath>
+#include <generator/spartn2/types.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -45,7 +45,7 @@ inline double delta_Clock_C2_r15(long* value) {
     return value ? (static_cast<double>(*value) * CLOCK_C2_RESOLUTION) : 0.0;
 }
 
-inline long signal_id(const GNSS_SignalID& signal_id) {
+inline long signal_id(GNSS_SignalID const& signal_id) {
     if (signal_id.ext1 && signal_id.ext1->gnss_SignalID_Ext_r15) {
         return *signal_id.ext1->gnss_SignalID_Ext_r15;
     } else {
@@ -82,11 +82,13 @@ static SPARTN_CONSTEXPR double REFERENCE_POINT_LONGITUDE_DEG        = 180.0;
 static SPARTN_CONSTEXPR double REFERENCE_POINT_LONGITUDE_RESOLUTION = 0.000030517578125;  // 2^-15
 
 inline double referencePointLatitude_r16(long value) {
-    return (static_cast<double>(value) * REFERENCE_POINT_LATITUDE_DEG) * REFERENCE_POINT_LATITUDE_RESOLUTION;
+    return (static_cast<double>(value) * REFERENCE_POINT_LATITUDE_DEG) *
+           REFERENCE_POINT_LATITUDE_RESOLUTION;
 }
 
 inline double referencePointLongitude_r16(long value) {
-    return (static_cast<double>(value) * REFERENCE_POINT_LONGITUDE_DEG) * REFERENCE_POINT_LONGITUDE_RESOLUTION;
+    return (static_cast<double>(value) * REFERENCE_POINT_LONGITUDE_DEG) *
+           REFERENCE_POINT_LONGITUDE_RESOLUTION;
 }
 
 static SPARTN_CONSTEXPR double STEP_OF_LONGITUDE_RESOLUTION = 0.01;

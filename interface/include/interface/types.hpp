@@ -1,7 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #ifndef IF_EXPLICIT
 #define IF_EXPLICIT explicit
@@ -52,5 +52,3 @@ __attribute__((noreturn)) inline void if_unreachable() {
 }
 #endif
 #endif
-
-

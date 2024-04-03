@@ -24,11 +24,11 @@ void StdoutInterface::close() {
     mFileDescriptor.close();
 }
 
-size_t StdoutInterface::read(void* data, const size_t size) {
+size_t StdoutInterface::read(void* data, size_t const size) {
     return mFileDescriptor.read(data, size);
 }
 
-size_t StdoutInterface::write(const void* data, const size_t size) {
+size_t StdoutInterface::write(void const* data, size_t const size) {
     return mFileDescriptor.write(data, size);
 }
 

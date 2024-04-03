@@ -11,13 +11,13 @@
 #pragma GCC diagnostic pop
 
 static SPARTN_CONSTEXPR uint32_t SECONDS_IN_DAY        = 86400;
-static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_1980 = 3657;   // Jan 6
-static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_1996 = 9496;   // Jan 1
-static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_1999 = 10825;  // Aug 2
-static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_2006 = 13149;  // Jan 1
-static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_2010 = 14610;  // Jan 1
+static SPARTN_CONSTEXPR uint64_t DAY_BETWEEN_1970_1980 = 3657;   // Jan 6
+static SPARTN_CONSTEXPR uint64_t DAY_BETWEEN_1970_1996 = 9496;   // Jan 1
+static SPARTN_CONSTEXPR uint64_t DAY_BETWEEN_1970_1999 = 10825;  // Aug 2
+static SPARTN_CONSTEXPR uint64_t DAY_BETWEEN_1970_2006 = 13149;  // Jan 1
+static SPARTN_CONSTEXPR uint64_t DAY_BETWEEN_1970_2010 = 14610;  // Jan 1
 
-uint64_t standard_day_number(const long gnss_id, const long day_number) {
+uint64_t standard_day_number(long const gnss_id, long const day_number) {
     switch (gnss_id) {
     case GNSS_ID__gnss_id_gps: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1980;
     case GNSS_ID__gnss_id_galileo: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1999;
@@ -27,7 +27,7 @@ uint64_t standard_day_number(const long gnss_id, const long day_number) {
     }
 }
 
-SpartnTime spartn_time_from(const GNSS_SystemTime& epoch_time) {
+SpartnTime spartn_time_from(GNSS_SystemTime const& epoch_time) {
     auto time_of_day = static_cast<double>(epoch_time.gnss_TimeOfDay);
     if (epoch_time.gnss_TimeOfDayFrac_msec) {
         time_of_day += static_cast<double>(*epoch_time.gnss_TimeOfDayFrac_msec) / 1000.0;

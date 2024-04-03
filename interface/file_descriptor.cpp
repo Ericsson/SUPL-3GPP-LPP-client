@@ -118,7 +118,7 @@ size_t FileDescriptor::read(void* data, size_t length) IF_NOEXCEPT {
     return static_cast<size_t>(bytes_read);
 }
 
-size_t FileDescriptor::write(const void* data, size_t length) IF_NOEXCEPT {
+size_t FileDescriptor::write(void const* data, size_t length) IF_NOEXCEPT {
     if (mFileDescriptor < 0) {
         return 0;
     }

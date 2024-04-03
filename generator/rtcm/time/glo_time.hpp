@@ -10,9 +10,9 @@ public:
 
     GLO_Time() = default;
     RTCM_EXPLICIT GLO_Time(TsInt day, TsFloat tod);
-    RTCM_EXPLICIT GLO_Time(const Timestamp& timestamp) : tm{timestamp} {}
-    RTCM_EXPLICIT GLO_Time(const TAI_Time& time);
-    RTCM_EXPLICIT GLO_Time(const UTC_Time& time);
+    RTCM_EXPLICIT GLO_Time(Timestamp const& timestamp) : tm{timestamp} {}
+    RTCM_EXPLICIT GLO_Time(TAI_Time const& time);
+    RTCM_EXPLICIT GLO_Time(UTC_Time const& time);
 
     RTCM_NODISCARD TsInt     days() const;
     RTCM_NODISCARD TsInt     week() const;

@@ -14,7 +14,7 @@
 
 using namespace generator::rtcm;
 
-static void epoch_time(Encoder& encoder, const ts::TAI_Time& time, GenericGnssId gnss) {
+static void epoch_time(Encoder& encoder, ts::TAI_Time const& time, GenericGnssId gnss) {
     switch (gnss) {
     case GenericGnssId::GPS: {
         auto tow          = ts::GPS_Time(time).time_of_week();

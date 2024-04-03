@@ -5,7 +5,7 @@
 namespace generator {
 namespace rtcm {
 
-static bool can_be_encoded_as_msm(const Signal& signal, uint32_t msm_version) {
+static bool can_be_encoded_as_msm(Signal const& signal, uint32_t msm_version) {
     // RTCM cannot encode DF402 as missing
     if (!signal.lock_time.valid) return false;
 
@@ -72,7 +72,7 @@ uint32_t Signal::lowest_msm_version() const {
     return 0;
 }
 
-static bool can_be_encoded_as_msm(const Satellite& satellite, uint32_t msm_version) {
+static bool can_be_encoded_as_msm(Satellite const& satellite, uint32_t msm_version) {
     // RTCM cannot encode DF398 as missing
     if (!satellite.rough_range.valid) return false;
 

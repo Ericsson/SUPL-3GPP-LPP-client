@@ -1,7 +1,7 @@
 #include "decoder.hpp"
 
-#include <endian.h>
 #include <cstring>
+#include <endian.h>
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #else
@@ -121,7 +121,7 @@ int64_t Decoder::I8() UBLOX_NOEXCEPT {
 }
 
 float Decoder::R4() UBLOX_NOEXCEPT {
-    auto value = X4();
+    auto  value = X4();
     float result;
     static_assert(sizeof(float) == sizeof(uint32_t), "float is not 32 bits");
     std::memcpy(&result, &value, sizeof(float));
@@ -129,7 +129,7 @@ float Decoder::R4() UBLOX_NOEXCEPT {
 }
 
 double Decoder::R8() UBLOX_NOEXCEPT {
-    auto value = X8();
+    auto   value = X8();
     double result;
     static_assert(sizeof(double) == sizeof(uint64_t), "double is not 64 bits");
     std::memcpy(&result, &value, sizeof(double));

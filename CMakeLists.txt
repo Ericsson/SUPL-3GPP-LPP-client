@@ -51,9 +51,6 @@ endif(${ASN_DEBUG})
 
 find_package(Threads REQUIRED)
 
-#add_compile_options("-Wall" "-Wno-unused-function" "-Wno-unused-variable" "-Wno-sign-compare")
-
-# function to setup the target
 function(setup_target target)
     target_compile_options(${target} PRIVATE
         "-Wall"

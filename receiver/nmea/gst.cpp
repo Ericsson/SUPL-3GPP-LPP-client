@@ -4,7 +4,7 @@
 namespace receiver {
 namespace nmea {
 
-static bool parse_double_opt(const std::string& token, double& value) {
+static bool parse_double_opt(std::string const& token, double& value) {
     try {
         value = std::stod(token);
         return true;
@@ -34,7 +34,7 @@ void GstMessage::print() const NMEA_NOEXCEPT {
     printf("  altitude error: %f\n", mAltitudeError);
 }
 
-std::unique_ptr<Message> GstMessage::parse(std::string prefix, const std::string& payload,
+std::unique_ptr<Message> GstMessage::parse(std::string prefix, std::string const& payload,
                                            std::string checksum) {
     // split payload by ','
     auto tokens = split(payload, ',');

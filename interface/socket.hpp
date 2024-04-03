@@ -15,7 +15,7 @@ namespace interface {
 /// Helper class to manage socket address.
 class NetworkAddress {
 public:
-    static NetworkAddress from_addrinfo(const addrinfo* addr) {
+    static NetworkAddress from_addrinfo(addrinfo const* addr) {
         switch (addr->ai_family) {
         case AF_INET: break;
         case AF_INET6: break;
@@ -33,7 +33,7 @@ public:
         return rtrn;
     }
 
-    static NetworkAddress unix_socket_stream(const std::string& path) {
+    static NetworkAddress unix_socket_stream(std::string const& path) {
         if (path.size() >= sizeof(sockaddr_un::sun_path)) throw std::runtime_error("Path too long");
 
         NetworkAddress rtrn{};
@@ -94,8 +94,8 @@ public:
     IF_EXPLICIT Socket(int socket) IF_NOEXCEPT;
     ~Socket() IF_NOEXCEPT;
 
-    Socket(const Socket&)            = delete;
-    Socket& operator=(const Socket&) = delete;
+    Socket(Socket const&)            = delete;
+    Socket& operator=(Socket const&) = delete;
     Socket(Socket&& other) IF_NOEXCEPT;
     Socket& operator=(Socket&& other) IF_NOEXCEPT;
 
@@ -108,7 +108,7 @@ public:
     bool wait_for_write() IF_NOEXCEPT;
 
     IF_NODISCARD size_t read(void* data, size_t length) IF_NOEXCEPT;
-    IF_NODISCARD size_t write(const void* data, size_t length) IF_NOEXCEPT;
+    IF_NODISCARD size_t write(void const* data, size_t length) IF_NOEXCEPT;
 
     enum Error {
         NONE                = 0,

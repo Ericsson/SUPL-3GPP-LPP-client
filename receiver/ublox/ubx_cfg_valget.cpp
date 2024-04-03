@@ -26,7 +26,7 @@ void UbxCfgValget::print() const UBLOX_NOEXCEPT {
     }
     printf("[.....]    position: %u\n", mPayload.position);
     printf("[.....]    data:\n");
-    for (const auto& kvp : mPayload.values) {
+    for (auto const& kvp : mPayload.values) {
         auto  key   = kvp.first;
         auto& value = kvp.second;
         printf("[.....]        %08X: ", key);
@@ -86,7 +86,7 @@ std::unique_ptr<Message> UbxCfgValget::parse(Decoder& decoder) UBLOX_NOEXCEPT {
 }
 
 uint32_t UbxCfgValget::poll(Encoder& encoder, CfgLayer layer, uint16_t position,
-                            const std::vector<CfgKey>& keys) UBLOX_NOEXCEPT {
+                            std::vector<CfgKey> const& keys) UBLOX_NOEXCEPT {
     UBLOX_ASSERT(keys.size() <= 0xFF, "Too many keys to poll (max 255)");
 
     auto begin = encoder.ptr();

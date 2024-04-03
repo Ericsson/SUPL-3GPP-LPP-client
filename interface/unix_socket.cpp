@@ -32,11 +32,11 @@ void UnixSocketInterface::close() {
     mSocket.close();
 }
 
-size_t UnixSocketInterface::read(void* data, const size_t size) {
+size_t UnixSocketInterface::read(void* data, size_t const size) {
     return mSocket.read(data, size);
 }
 
-size_t UnixSocketInterface::write(const void* data, const size_t size) {
+size_t UnixSocketInterface::write(void const* data, size_t const size) {
     return mSocket.write(data, size);
 }
 

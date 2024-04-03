@@ -40,8 +40,8 @@ public:
     IF_EXPLICIT Interface() IF_NOEXCEPT = default;
     virtual ~Interface() IF_NOEXCEPT    = default;
 
-    Interface(const Interface&)            = delete;
-    Interface& operator=(const Interface&) = delete;
+    Interface(Interface const&)            = delete;
+    Interface& operator=(Interface const&) = delete;
     Interface(Interface&&)                 = delete;
     Interface& operator=(Interface&&)      = delete;
 
@@ -55,7 +55,7 @@ public:
     virtual size_t read(void* data, size_t length) = 0;
     /// Write data to the interface.
     /// @return The number of bytes written.
-    virtual size_t write(const void* data, size_t length) = 0;
+    virtual size_t write(void const* data, size_t length) = 0;
 
     /// Check if the interface can read (i.e. if there is data available to read).
     IF_NODISCARD virtual bool can_read() IF_NOEXCEPT = 0;

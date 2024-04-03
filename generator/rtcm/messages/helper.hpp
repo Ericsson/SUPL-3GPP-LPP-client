@@ -1,5 +1,5 @@
 #pragma once
-#include "encoder.hpp"
 #include <cmath>
+#include "encoder.hpp"
 
 #define ROUND(x) (floor((x) + 0.5))

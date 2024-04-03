@@ -23,9 +23,9 @@ public:
     UBLOX_EXPLICIT UbxAckNak(raw::AckNak payload) UBLOX_NOEXCEPT;
     ~UbxAckNak() override = default;
 
-    UbxAckNak(const UbxAckNak& other) : Message(other), mPayload(other.mPayload) {}
+    UbxAckNak(UbxAckNak const& other) : Message(other), mPayload(other.mPayload) {}
     UbxAckNak(UbxAckNak&&)                 = delete;
-    UbxAckNak& operator=(const UbxAckNak&) = delete;
+    UbxAckNak& operator=(UbxAckNak const&) = delete;
     UbxAckNak& operator=(UbxAckNak&&)      = delete;
 
     UBLOX_NODISCARD const raw::AckNak& payload() const UBLOX_NOEXCEPT { return mPayload; }

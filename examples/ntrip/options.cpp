@@ -74,12 +74,12 @@ static HostOptions parse_host_options() {
     }
 
     HostOptions hostOptions;
-    hostOptions.hostname = ntrip_hostname.Get();
-    hostOptions.port = port;
+    hostOptions.hostname   = ntrip_hostname.Get();
+    hostOptions.port       = port;
     hostOptions.mountpoint = std::move(mountpoint);
-    hostOptions.username = username;
-    hostOptions.password = password;
-    hostOptions.nmea = nmea;
+    hostOptions.username   = username;
+    hostOptions.password   = password;
+    hostOptions.nmea       = nmea;
     return hostOptions;
 }
 

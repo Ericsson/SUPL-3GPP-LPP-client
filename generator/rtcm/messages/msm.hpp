@@ -3,8 +3,8 @@
 #include "rtk_data.hpp"
 
 extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
-                                             const generator::rtcm::CommonObservationInfo& common,
-                                             const generator::rtcm::Observations& observations);
+                                             generator::rtcm::CommonObservationInfo const& common,
+                                             generator::rtcm::Observations const& observations);
 
 RTCM_CONSTEXPR static int      mlt_size                  = 22;
 RTCM_CONSTEXPR static uint64_t mlt_coefficient[mlt_size] = {

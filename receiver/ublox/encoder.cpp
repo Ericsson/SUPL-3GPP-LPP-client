@@ -132,7 +132,7 @@ void Encoder::L(bool value) UBLOX_NOEXCEPT {
     X1(value ? 1 : 0);
 }
 
-void Encoder::CH(const std::string& value, uint32_t length) UBLOX_NOEXCEPT {
+void Encoder::CH(std::string const& value, uint32_t length) UBLOX_NOEXCEPT {
     auto bytes = value.size() + 1;
     if (bytes > length) {
         bytes = length;

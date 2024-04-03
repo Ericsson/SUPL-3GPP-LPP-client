@@ -7,8 +7,8 @@
 
 #include <array>
 #include <inttypes.h>
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
 
 namespace ts {
 // NOTE: The day each month of the year starts with.
@@ -116,11 +116,11 @@ static TimeEpoch date_from_utc(Timestamp time) {
     return epoch;
 }
 
-UTC_Time::UTC_Time(const TAI_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const GPS_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const GLO_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const GST_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const BDT_Time& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(TAI_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(GPS_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(GLO_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(GST_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(BDT_Time const& time) : tm(time.utc_timestamp()) {}
 
 std::string UTC_Time::rtklib_time_string() const {
     constexpr int fraction_digits = 12;

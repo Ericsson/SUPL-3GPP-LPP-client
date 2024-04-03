@@ -29,7 +29,7 @@ static CfgKey cfg_key_from_message_id(Port port, MessageId message_id) {
 
     UBLOX_UNREACHABLE();
 }
-static const char* configuration_name_from_key(CfgKey key) {
+static char const* configuration_name_from_key(CfgKey key) {
     switch (key) {
     case CFG_KEY_UART1_ENABLED: return "UART1-ENABLED";
     case CFG_KEY_UART1_BAUDRATE: return "UART1-BAUDRATE";
@@ -86,7 +86,7 @@ static const char* configuration_name_from_key(CfgKey key) {
     }
 }
 
-static void print_configuration(const std::unordered_map<CfgKey, CfgValue>& configuration,
+static void print_configuration(std::unordered_map<CfgKey, CfgValue> const& configuration,
                                 Port                                        port) {
 #if 1
 #define PRINT_CFG_VALUE(KEY)                                                                       \

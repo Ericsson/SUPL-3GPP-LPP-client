@@ -48,13 +48,13 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
 #endif
 
     auto siou = iod;
-    if(mIncreasingSiou) {
+    if (mIncreasingSiou) {
         siou = mSiouIndex;
     }
 
     MessageBuilder builder{2 /* GAD */, 0, epoch_time};
     builder.sf005(siou);  // TODO(ewasjon): We could include AIOU in the correction point set, to
-                         // handle overflow
+                          // handle overflow
     builder.sf068(0);
     builder.sf069();
 
@@ -62,7 +62,7 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
     builder.sf030(1);
 
     {
-        // TODO(ewasjon): Not sure why the area_id is a uint16_t, because the value is only 8 bits. 
+        // TODO(ewasjon): Not sure why the area_id is a uint16_t, because the value is only 8 bits.
         builder.sf031(static_cast<uint8_t>(correction_point_set.area_id));
 
         auto reference_point_lat =

@@ -4,7 +4,7 @@
 #include <sstream>
 #include <vector>
 
-static std::vector<std::string> split(const std::string& str, char delimiter) {
+static std::vector<std::string> split(std::string const& str, char delimiter) {
     std::vector<std::string> tokens;
     std::string              token;
     std::istringstream       token_stream(str);

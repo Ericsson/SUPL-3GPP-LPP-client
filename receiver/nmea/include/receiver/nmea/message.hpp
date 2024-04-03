@@ -13,10 +13,10 @@ public:
                           std::string checksum) NMEA_NOEXCEPT;
     virtual ~Message() = default;
 
-    Message(const Message& other)
+    Message(Message const& other)
         : mPrefix(other.mPrefix), mPayload(other.mPayload), mChecksum(other.mChecksum) {}
     Message(Message&&)                 = delete;
-    Message& operator=(const Message&) = delete;
+    Message& operator=(Message const&) = delete;
     Message& operator=(Message&&)      = delete;
 
     /// Get the message prefix, e.g. "$GPGGA".
@@ -46,9 +46,9 @@ public:
                                      std::string checksum) NMEA_NOEXCEPT;
     ~UnsupportedMessage() override = default;
 
-    UnsupportedMessage(const UnsupportedMessage& other) : Message(other) {}
+    UnsupportedMessage(UnsupportedMessage const& other) : Message(other) {}
     UnsupportedMessage(UnsupportedMessage&&)                 = delete;
-    UnsupportedMessage& operator=(const UnsupportedMessage&) = delete;
+    UnsupportedMessage& operator=(UnsupportedMessage const&) = delete;
     UnsupportedMessage& operator=(UnsupportedMessage&&)      = delete;
 
     void print() const NMEA_NOEXCEPT override;
@@ -61,9 +61,9 @@ public:
                                std::string checksum) NMEA_NOEXCEPT;
     ~ErrorMessage() override = default;
 
-    ErrorMessage(const ErrorMessage& other) : Message(other) {}
+    ErrorMessage(ErrorMessage const& other) : Message(other) {}
     ErrorMessage(ErrorMessage&&)                 = delete;
-    ErrorMessage& operator=(const ErrorMessage&) = delete;
+    ErrorMessage& operator=(ErrorMessage const&) = delete;
     ErrorMessage& operator=(ErrorMessage&&)      = delete;
 
     void print() const NMEA_NOEXCEPT override;

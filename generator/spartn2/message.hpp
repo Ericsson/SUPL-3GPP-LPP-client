@@ -82,7 +82,7 @@ public:
         };
 
         uint8_t crc = 0;
-        for (const auto byte : bytes) {
+        for (auto const byte : bytes) {
             auto index = byte ^ crc;
             crc        = CRC4_LOOKUP[index];
             crc &= 0xF;
@@ -144,9 +144,9 @@ public:
 
     // Satellite Mask: (SF011, SF012, ...)
     void satellite_mask(long                                                gnss_id,
-                        const std::vector<generator::spartn::OcbSatellite>& satellites);
+                        std::vector<generator::spartn::OcbSatellite> const& satellites);
     void satellite_mask(long                                                 gnss_id,
-                        const std::vector<generator::spartn::HpacSatellite>& satellites);
+                        std::vector<generator::spartn::HpacSatellite> const& satellites);
     void satellite_mask(long gnss_id, uint64_t count, bool* bits);
 
     // SF013 - Do not use (DNU)
@@ -246,7 +246,7 @@ public:
     }
 
     template <typename T>
-    inline void sfxxx_bias_mask(uint8_t low, uint8_t high, const std::map<uint8_t, T>* types) {
+    inline void sfxxx_bias_mask(uint8_t low, uint8_t high, std::map<uint8_t, T> const* types) {
         uint8_t size = 0;
         if (types->size() > low) {
             size = high;
@@ -267,7 +267,7 @@ public:
     }
 
     template <typename T>
-    inline void sf025(const std::map<uint8_t, T>* types) {
+    inline void sf025(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(6, 11, types);
     }
 
@@ -277,7 +277,7 @@ public:
     }
 
     template <typename T>
-    inline void sf026(const std::map<uint8_t, T>* types) {
+    inline void sf026(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(5, 9, types);
     }
 
@@ -287,7 +287,7 @@ public:
     }
 
     template <typename T>
-    inline void sf027(const std::map<uint8_t, T>* types) {
+    inline void sf027(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(6, 11, types);
     }
 
@@ -297,7 +297,7 @@ public:
     }
 
     template <typename T>
-    inline void sf028(const std::map<uint8_t, T>* types) {
+    inline void sf028(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(5, 9, types);
     }
 
@@ -543,7 +543,7 @@ public:
     }
 
     template <typename T>
-    inline void sf102(const std::map<uint8_t, T>* types) {
+    inline void sf102(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(8, 15, types);
     }
 
@@ -553,7 +553,7 @@ public:
     }
 
     template <typename T>
-    inline void sf103(const std::map<uint8_t, T>* types) {
+    inline void sf103(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(8, 15, types);
     }
 
@@ -563,7 +563,7 @@ public:
     }
 
     template <typename T>
-    inline void sf104(const std::map<uint8_t, T>* types) {
+    inline void sf104(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(6, 11, types);
     }
 
@@ -573,7 +573,7 @@ public:
     }
 
     template <typename T>
-    inline void sf105(const std::map<uint8_t, T>* types) {
+    inline void sf105(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(8, 15, types);
     }
 
@@ -583,7 +583,7 @@ public:
     }
 
     template <typename T>
-    inline void sf106(const std::map<uint8_t, T>* types) {
+    inline void sf106(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(8, 15, types);
     }
 
@@ -593,7 +593,7 @@ public:
     }
 
     template <typename T>
-    inline void sf107(const std::map<uint8_t, T>* types) {
+    inline void sf107(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(6, 11, types);
     }
 

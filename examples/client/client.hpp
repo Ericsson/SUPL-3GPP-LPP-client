@@ -3,4 +3,4 @@
 
 #include <lpp/message.hpp>
 
-void process_assistance_data(const Config& config, lpp::Message message);
+void process_assistance_data(Config const& config, lpp::Message message);

@@ -31,11 +31,11 @@ public:
     RTCM_NODISCARD Gnss gnss() const;
     RTCM_NODISCARD std::string to_string() const;
 
-    inline bool operator==(const SatelliteId& other) const {
+    inline bool operator==(SatelliteId const& other) const {
         return mGnss == other.mGnss && mLppId == other.mLppId;
     }
 
-    inline bool operator!=(const SatelliteId& other) const { return !(*this == other); }
+    inline bool operator!=(SatelliteId const& other) const { return !(*this == other); }
 
 private:
     explicit SatelliteId(Gnss gnss, int32_t lpp_id) : mGnss(gnss), mLppId(lpp_id) {}
@@ -47,9 +47,9 @@ private:
 namespace std {
 template <>
 struct hash<SatelliteId> {
-    std::size_t operator()(const SatelliteId& k) const RTCM_NOEXCEPT {
-        auto hash_gnss = std::hash<int>()(static_cast<int>(k.gnss()));
-        auto hash_lpp_id = std::hash<long>()(k.lpp_id().value);
+    std::size_t operator()(SatelliteId const& k) const RTCM_NOEXCEPT {
+        auto hash_gnss         = std::hash<int>()(static_cast<int>(k.gnss()));
+        auto hash_lpp_id       = std::hash<long>()(k.lpp_id().value);
         auto hash_lpp_id_maybe = std::hash<bool>()(k.lpp_id().valid);
         return hash_gnss ^ hash_lpp_id ^ hash_lpp_id_maybe;
     }

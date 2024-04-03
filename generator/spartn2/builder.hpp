@@ -18,9 +18,7 @@ public:
     inline void i32(int32_t value) { signed_bits(static_cast<int64_t>(value), 32); }
     inline void i64(int64_t value) { signed_bits(static_cast<int64_t>(value), 64); }
 
-    inline void b(bool value) { 
-        bits(static_cast<uint64_t>(value), 1); 
-    }
+    inline void b(bool value) { bits(static_cast<uint64_t>(value), 1); }
 
     void double_to_bits(double min_range, double max_range, double resolution, double value,
                         uint8_t bits);

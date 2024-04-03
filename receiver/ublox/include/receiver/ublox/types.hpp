@@ -1,7 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #ifndef UBLOX_EXPLICIT
 #define UBLOX_EXPLICIT explicit

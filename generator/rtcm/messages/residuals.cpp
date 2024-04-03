@@ -1,13 +1,13 @@
 #include "residuals.hpp"
 #include "encoder.hpp"
-#include "time/gps_time.hpp"
 #include "time/glo_time.hpp"
+#include "time/gps_time.hpp"
 
 using namespace generator::rtcm;
 
-extern generator::rtcm::Message generate_1030(const Residuals& residuals) {
+extern generator::rtcm::Message generate_1030(Residuals const& residuals) {
     uint16_t message_id = 1030U;
-    auto time       = ts::GPS_Time(residuals.time).time_of_week().seconds();
+    auto     time       = ts::GPS_Time(residuals.time).time_of_week().seconds();
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);
@@ -48,9 +48,9 @@ extern generator::rtcm::Message generate_1030(const Residuals& residuals) {
     return generator::rtcm::Message(message_id, frame_encoder.buffer());
 }
 
-extern generator::rtcm::Message generate_1031(const Residuals& residuals) {
+extern generator::rtcm::Message generate_1031(Residuals const& residuals) {
     uint16_t message_id = 1031U;
-    auto time       = ts::GLO_Time(residuals.time).time_of_day().seconds();
+    auto     time       = ts::GLO_Time(residuals.time).time_of_day().seconds();
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);

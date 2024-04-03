@@ -5,7 +5,7 @@ std::vector<uint8_t> SPARTN_Transmitter::build(std::unique_ptr<SPARTN_Message>& 
     std::cout << " of type (" << (int)message->message_type << ", ";
     std::cout << (int)message->message_sub_type << ")";
 
-    const std::pair<std::bitset<Constants::max_payload_size>, uint32_t> payload_size =
+    std::pair<std::bitset<Constants::max_payload_size>, uint32_t> const payload_size =
         SPARTN_Transmitter::generate_message_payload(message);
 
     std::unique_ptr<SPARTN_Field> TF001(new SPARTN_Field{1, 8, 115});
@@ -80,7 +80,7 @@ SPARTN_Transmitter::generate_message_payload(std::unique_ptr<SPARTN_Message>& me
                                                      current_length);
     SPARTN_Transmitter::add_bits_to_bitset_from_data(payload, message->data, current_length);
 
-    const uint64_t shift_amount = (8 - (current_length % 8)) % 8;
+    uint64_t const shift_amount = (8 - (current_length % 8)) % 8;
     current_length += shift_amount;
     payload <<= shift_amount;  // byte align
 
@@ -88,10 +88,10 @@ SPARTN_Transmitter::generate_message_payload(std::unique_ptr<SPARTN_Message>& me
 }
 
 std::vector<uint8_t>
-SPARTN_Transmitter::output(const std::vector<std::unique_ptr<SPARTN_Field>>& fields_to_16,
-                           const std::vector<std::unique_ptr<SPARTN_Field>>& fields_from_16,
-                           const std::bitset<Constants::max_payload_size>&   payload,
-                           const uint64_t                                    payload_length) {
+SPARTN_Transmitter::output(std::vector<std::unique_ptr<SPARTN_Field>> const& fields_to_16,
+                           std::vector<std::unique_ptr<SPARTN_Field>> const& fields_from_16,
+                           std::bitset<Constants::max_payload_size> const&   payload,
+                           uint64_t const                                    payload_length) {
     std::bitset<Constants::max_message_size> message(0);
     uint64_t                                 message_size = 0;
 
@@ -104,9 +104,9 @@ SPARTN_Transmitter::output(const std::vector<std::unique_ptr<SPARTN_Field>>& fie
 
     SPARTN_Transmitter::add_bits_to_bitset(message, fields_from_16, message_size);
 
-    const uint64_t shift_amount              = (8 - (message_size % 8)) % 8;
-    const int64_t  byte_aligned_message_size = (int64_t)(message_size + shift_amount);
-    const std::bitset<Constants::max_message_size> byte_aligned_message = message << shift_amount;
+    uint64_t const shift_amount              = (8 - (message_size % 8)) % 8;
+    int64_t const  byte_aligned_message_size = (int64_t)(message_size + shift_amount);
+    std::bitset<Constants::max_message_size> const byte_aligned_message = message << shift_amount;
 
     /*
      * Seems as if i2c doesn't like one byte being stored at a time, sending
@@ -118,8 +118,8 @@ SPARTN_Transmitter::output(const std::vector<std::unique_ptr<SPARTN_Field>>& fie
     std::vector<uint8_t>     output;
 
     for (ssize_t i = (byte_aligned_message_size / 8) - 1; i >= 0; i--) {
-        const uint64_t byte_i    = i * 8;
-        const uint8_t  this_byte = SPARTN_Transmitter::get_byte(byte_aligned_message, byte_i);
+        uint64_t const byte_i    = i * 8;
+        uint8_t const  this_byte = SPARTN_Transmitter::get_byte(byte_aligned_message, byte_i);
 
         bytes_to_send[byte_to_write] = (char)this_byte;
         if ((++byte_to_write % 2) == 0) {
@@ -193,8 +193,8 @@ void SPARTN_Transmitter::add_bits_to_bitset_from_data(
 }
 
 std::unique_ptr<SPARTN_Field> SPARTN_Transmitter::generate_tf006(
-    const std::unique_ptr<SPARTN_Field>& TF002, const std::unique_ptr<SPARTN_Field>& TF003,
-    const std::unique_ptr<SPARTN_Field>& TF004, const std::unique_ptr<SPARTN_Field>& TF005) {
+    std::unique_ptr<SPARTN_Field> const& TF002, std::unique_ptr<SPARTN_Field> const& TF003,
+    std::unique_ptr<SPARTN_Field> const& TF004, std::unique_ptr<SPARTN_Field> const& TF005) {
     // concatenate all the bits into one variable - 24 bits long
     std::bitset<Constants::max_spartn_bit_count> tf2to5 = TF002->bits;
     tf2to5 <<= TF003->bit_count;
@@ -210,7 +210,7 @@ std::unique_ptr<SPARTN_Field> SPARTN_Transmitter::generate_tf006(
 
     static constexpr std::bitset<Constants::max_spartn_bit_count> mask = 0xFF;
     // get each first 3 bytes out of the bit string
-    const uint8_t crc4 = SPARTN_Transmitter::generate_crc4_for_tf006(
+    uint8_t const crc4 = SPARTN_Transmitter::generate_crc4_for_tf006(
         {(uint8_t)((tf2to5 >> (size_t)(2 * 8)) & mask).to_ulong(),
          (uint8_t)((tf2to5 >> (size_t)(1 * 8)) & mask).to_ulong(),
          (uint8_t)((tf2to5 >> (size_t)(0 * 8)) & mask).to_ulong()});
@@ -220,8 +220,8 @@ std::unique_ptr<SPARTN_Field> SPARTN_Transmitter::generate_tf006(
 }
 
 uint16_t SPARTN_Transmitter::generate_crc16(
-    const std::vector<std::unique_ptr<SPARTN_Field>>& fields_02_to_16,
-    const std::bitset<Constants::max_payload_size>& payload, const uint64_t payload_length) {
+    std::vector<std::unique_ptr<SPARTN_Field>> const& fields_02_to_16,
+    std::bitset<Constants::max_payload_size> const& payload, uint64_t const payload_length) {
     std::bitset<Constants::max_message_size> message(0);
     uint64_t                                 message_size = 0;
 
@@ -233,14 +233,14 @@ uint16_t SPARTN_Transmitter::generate_crc16(
 
     uint16_t crc = 0;
 
-    const uint8_t shift_amount              = (8 - (message_size % 8)) % 8;
-    const int64_t byte_aligned_message_size = (int64_t)(message_size + shift_amount);
-    const std::bitset<Constants::max_message_size> byte_aligned_message = message << shift_amount;
+    uint8_t const shift_amount              = (8 - (message_size % 8)) % 8;
+    int64_t const byte_aligned_message_size = (int64_t)(message_size + shift_amount);
+    std::bitset<Constants::max_message_size> const byte_aligned_message = message << shift_amount;
 
     for (ssize_t i = (byte_aligned_message_size / 8) - 1; i >= 0; i--) {
-        const uint64_t byte_i    = i * 8;
-        const uint8_t  this_byte = SPARTN_Transmitter::get_byte(byte_aligned_message, byte_i);
-        const uint16_t iCrc      = this_byte ^ (crc >> 8);
+        uint64_t const byte_i    = i * 8;
+        uint8_t const  this_byte = SPARTN_Transmitter::get_byte(byte_aligned_message, byte_i);
+        uint16_t const iCrc      = this_byte ^ (crc >> 8);
         crc                      = Constants::lib_crc_kCrc16qtable[iCrc] ^ (crc << 8);
     }
 
@@ -248,7 +248,7 @@ uint16_t SPARTN_Transmitter::generate_crc16(
     return crc;
 }
 
-int SPARTN_Transmitter::open_serial(const char* path) {
+int SPARTN_Transmitter::open_serial(char const* path) {
     int fd;
     if (strcmp(path, "/dev/ttyS0") == 0) {
         struct termios        options;

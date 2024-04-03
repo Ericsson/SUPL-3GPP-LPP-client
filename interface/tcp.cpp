@@ -52,11 +52,11 @@ void TcpInterface::close() {
     mSocket.close();
 }
 
-size_t TcpInterface::read(void* data, const size_t size) {
+size_t TcpInterface::read(void* data, size_t const size) {
     return mSocket.read(data, size);
 }
 
-size_t TcpInterface::write(const void* data, const size_t size) {
+size_t TcpInterface::write(void const* data, size_t const size) {
     return mSocket.write(data, size);
 }
 

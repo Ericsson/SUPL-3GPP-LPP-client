@@ -22,13 +22,13 @@ class GgaMessage final : public Message {
 public:
     ~GgaMessage() override = default;
 
-    GgaMessage(const GgaMessage& other)
+    GgaMessage(GgaMessage const& other)
         : Message(other), mTimeOfDay(other.mTimeOfDay), mLatitude(other.mLatitude),
           mLongitude(other.mLongitude), mFixQuality(other.mFixQuality),
           mSatellitesInView(other.mSatellitesInView), mHdop(other.mHdop), mMsl(other.mMsl),
           mGeoidSeparation(other.mGeoidSeparation) {}
     GgaMessage(GgaMessage&&)                 = delete;
-    GgaMessage& operator=(const GgaMessage&) = delete;
+    GgaMessage& operator=(GgaMessage const&) = delete;
     GgaMessage& operator=(GgaMessage&&)      = delete;
 
     void print() const NMEA_NOEXCEPT override;
@@ -55,7 +55,7 @@ public:
     NMEA_NODISCARD double altitude() const NMEA_NOEXCEPT { return mMsl + mGeoidSeparation; }
 
     NMEA_NODISCARD static std::unique_ptr<Message>
-    parse(std::string prefix, const std::string& payload, std::string checksum);
+    parse(std::string prefix, std::string const& payload, std::string checksum);
 
 private:
     NMEA_EXPLICIT GgaMessage(std::string prefix, std::string payload,

@@ -26,8 +26,8 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-[[noreturn]] void execute(Options options, osr_example::Format format, osr_example::MsmType msm_type,
-             bool print_rtcm) {
+[[noreturn]] void execute(Options options, osr_example::Format format,
+                          osr_example::MsmType msm_type, bool print_rtcm) {
     gOptions   = std::move(options);
     gFormat    = format;
     gPrintRtcm = print_rtcm;

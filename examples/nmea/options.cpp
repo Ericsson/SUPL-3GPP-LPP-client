@@ -201,18 +201,18 @@ std::unique_ptr<NmeaReceiver> parse_configuration(int argc, char** argv) {
         }
 
         return create_receiver();
-    } catch (const args::ValidationError& e) {
+    } catch (args::ValidationError const& e) {
         std::cerr << e.what() << std::endl;
         parser.Help(std::cerr);
         exit(1);
-    } catch (const args::Help&) {
+    } catch (args::Help const&) {
         std::cout << parser;
         exit(0);
-    } catch (const args::ParseError& e) {
+    } catch (args::ParseError const& e) {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
         exit(1);
-    } catch (const std::exception& e) {
+    } catch (std::exception const& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         exit(1);
     }

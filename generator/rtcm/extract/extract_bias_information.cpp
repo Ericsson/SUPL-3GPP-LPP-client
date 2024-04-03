@@ -13,11 +13,11 @@
 using namespace generator::rtcm;
 
 namespace decode {
-static uint32_t reference_station_id(const GLO_RTK_BiasInformation_r15& src_bias_info) {
+static uint32_t reference_station_id(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     return static_cast<uint32_t>(src_bias_info.referenceStationID_r15.referenceStationID_r15);
 }
 
-static uint8_t mask(const GLO_RTK_BiasInformation_r15& src_bias_info) {
+static uint8_t mask(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     return (src_bias_info.l1_ca_cpBias_r15 ? 0x01 : 0x00) |
            (src_bias_info.l1_p_cpBias_r15 ? 0x02 : 0x00) |
            (src_bias_info.l2_ca_cpBias_r15 ? 0x04 : 0x00) |
@@ -28,7 +28,7 @@ static double bias(long value) {
     return static_cast<double>(value) * 0.02;
 }
 
-static Maybe<double> l1_ca(const GLO_RTK_BiasInformation_r15& src_bias_info) {
+static Maybe<double> l1_ca(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     if (src_bias_info.l1_ca_cpBias_r15) {
         return bias(*src_bias_info.l1_ca_cpBias_r15);
     } else {
@@ -36,7 +36,7 @@ static Maybe<double> l1_ca(const GLO_RTK_BiasInformation_r15& src_bias_info) {
     }
 }
 
-static Maybe<double> l1_p(const GLO_RTK_BiasInformation_r15& src_bias_info) {
+static Maybe<double> l1_p(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     if (src_bias_info.l1_p_cpBias_r15) {
         return bias(*src_bias_info.l1_p_cpBias_r15);
     } else {
@@ -44,7 +44,7 @@ static Maybe<double> l1_p(const GLO_RTK_BiasInformation_r15& src_bias_info) {
     }
 }
 
-static Maybe<double> l2_ca(const GLO_RTK_BiasInformation_r15& src_bias_info) {
+static Maybe<double> l2_ca(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     if (src_bias_info.l2_ca_cpBias_r15) {
         return bias(*src_bias_info.l2_ca_cpBias_r15);
     } else {
@@ -52,7 +52,7 @@ static Maybe<double> l2_ca(const GLO_RTK_BiasInformation_r15& src_bias_info) {
     }
 }
 
-static Maybe<double> l2_p(const GLO_RTK_BiasInformation_r15& src_bias_info) {
+static Maybe<double> l2_p(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     if (src_bias_info.l2_p_cpBias_r15) {
         return bias(*src_bias_info.l2_p_cpBias_r15);
     } else {
@@ -60,14 +60,14 @@ static Maybe<double> l2_p(const GLO_RTK_BiasInformation_r15& src_bias_info) {
     }
 }
 
-static bool indicator(const GLO_RTK_BiasInformation_r15& src_bias_info) {
+static bool indicator(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     auto indicator = helper::BitString::from(&src_bias_info.cpbIndicator_r15);
     return indicator->get_bit(0) != 0;
 }
 }  // namespace decode
 
 extern void extract_bias_information(RtkData&                           data,
-                                     const GLO_RTK_BiasInformation_r15& src_bias_info) {
+                                     GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     auto  dst_bias_info            = std::unique_ptr<BiasInformation>(new BiasInformation());
     auto& bias_info                = *dst_bias_info.get();
     bias_info.reference_station_id = decode::reference_station_id(src_bias_info);

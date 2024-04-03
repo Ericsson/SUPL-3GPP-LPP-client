@@ -28,9 +28,9 @@ public:
     UBLOX_EXPLICIT UbxCfgValget(raw::CfgValget payload) UBLOX_NOEXCEPT;
     ~UbxCfgValget() override = default;
 
-    UbxCfgValget(const UbxCfgValget& other) : Message(other), mPayload(other.mPayload) {}
+    UbxCfgValget(UbxCfgValget const& other) : Message(other), mPayload(other.mPayload) {}
     UbxCfgValget(UbxCfgValget&&)                 = delete;
-    UbxCfgValget& operator=(const UbxCfgValget&) = delete;
+    UbxCfgValget& operator=(UbxCfgValget const&) = delete;
     UbxCfgValget& operator=(UbxCfgValget&&)      = delete;
 
     void print() const UBLOX_NOEXCEPT override;
@@ -41,7 +41,7 @@ public:
 
     UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
     UBLOX_NODISCARD static uint32_t poll(Encoder& encoder, CfgLayer layer, uint16_t position,
-                                         const std::vector<CfgKey>& keys) UBLOX_NOEXCEPT;
+                                         std::vector<CfgKey> const& keys) UBLOX_NOEXCEPT;
 
 private:
     raw::CfgValget mPayload;

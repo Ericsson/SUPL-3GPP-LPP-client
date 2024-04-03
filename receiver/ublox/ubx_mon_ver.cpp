@@ -15,7 +15,7 @@ void UbxMonVer::print() const UBLOX_NOEXCEPT {
     printf("[.....]    sw_version: \"%s\"\n", mPayload.sw_version.c_str());
     printf("[.....]    hw_version: \"%s\"\n", mPayload.hw_version.c_str());
     printf("[.....]    extensions:\n");
-    for (const auto& extension : mPayload.extensions) {
+    for (auto const& extension : mPayload.extensions) {
         printf("[.....]        \"%s\"\n", extension.c_str());
     }
 }

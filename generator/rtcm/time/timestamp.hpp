@@ -35,11 +35,11 @@ public:
         return static_cast<TsFloat>(mSeconds) + mFraction;
     }
 
-    RTCM_NODISCARD Timestamp operator+(const Timestamp& other) const {
+    RTCM_NODISCARD Timestamp operator+(Timestamp const& other) const {
         return Timestamp{seconds() + other.seconds(), fraction() + other.fraction()};
     }
 
-    RTCM_NODISCARD Timestamp operator-(const Timestamp& other) const {
+    RTCM_NODISCARD Timestamp operator-(Timestamp const& other) const {
         return Timestamp{seconds() - other.seconds(), fraction() - other.fraction()};
     }
 

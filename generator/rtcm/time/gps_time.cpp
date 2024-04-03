@@ -52,8 +52,8 @@ GPS_Time::GPS_Time(TsInt week, TsInt tow, TsFloat fractions) : tm{} {
     tm.add(fractions);
 }
 
-GPS_Time::GPS_Time(const TAI_Time& time) : GPS_Time(UTC_Time(time)) {}
-GPS_Time::GPS_Time(const UTC_Time& time) : tm{utc_2_gps(time.timestamp())} {}
+GPS_Time::GPS_Time(TAI_Time const& time) : GPS_Time(UTC_Time(time)) {}
+GPS_Time::GPS_Time(UTC_Time const& time) : tm{utc_2_gps(time.timestamp())} {}
 
 TsInt GPS_Time::days() const {
     return tm.seconds() / DAY_IN_SECONDS;

@@ -20,7 +20,7 @@ public:
     bool wait_for_write() IF_NOEXCEPT;
 
     IF_NODISCARD size_t read(void* data, size_t length) IF_NOEXCEPT;
-    IF_NODISCARD size_t write(const void* data, size_t length) IF_NOEXCEPT;
+    IF_NODISCARD size_t write(void const* data, size_t length) IF_NOEXCEPT;
 
     IF_NODISCARD bool is_open() const IF_NOEXCEPT;
     void              try_reconnect() IF_NOEXCEPT;

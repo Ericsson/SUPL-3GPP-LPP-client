@@ -1,6 +1,6 @@
 #pragma once
-#include "types.hpp"
 #include <vector>
+#include "types.hpp"
 
 class Encoder {
 public:
@@ -24,9 +24,9 @@ public:
     void checksum();
 
     std::vector<uint8_t> buffer();
-    size_t byte_count() const { return mBuffer.size(); }
+    size_t               byte_count() const { return mBuffer.size(); }
 
 private:
     std::vector<uint8_t> mBuffer;
-    size_t mBitIndex;
+    size_t               mBitIndex;
 };

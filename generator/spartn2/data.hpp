@@ -19,17 +19,17 @@ struct OcbKey {
     long     gnss_id;
     uint32_t epoch_time;
 
-    bool operator==(const OcbKey& other) const {
+    bool operator==(OcbKey const& other) const {
         return gnss_id == other.gnss_id && epoch_time == other.epoch_time;
     }
 };
 
 struct HpacKey {
-    uint16_t     set_id;
+    uint16_t set_id;
     long     gnss_id;
     uint32_t epoch_time;
 
-    bool operator==(const HpacKey& other) const {
+    bool operator==(HpacKey const& other) const {
         return gnss_id == other.gnss_id && set_id == other.set_id && epoch_time == other.epoch_time;
     }
 };
@@ -37,14 +37,14 @@ struct HpacKey {
 namespace std {
 template <>
 struct hash<OcbKey> {
-    size_t operator()(const OcbKey& iod_gnss) const {
+    size_t operator()(OcbKey const& iod_gnss) const {
         return hash<long>()(iod_gnss.gnss_id) ^ hash<uint32_t>()(iod_gnss.epoch_time);
     }
 };
 
 template <>
 struct hash<HpacKey> {
-    size_t operator()(const HpacKey& iod_gnss_set) const {
+    size_t operator()(HpacKey const& iod_gnss_set) const {
         return hash<long>()(iod_gnss_set.gnss_id) ^ hash<uint16_t>()(iod_gnss_set.set_id) ^
                hash<uint32_t>()(iod_gnss_set.epoch_time);
     }
@@ -73,7 +73,7 @@ namespace generator {
 namespace spartn {
 
 struct CorrectionPointSet {
-    uint16_t     set_id;
+    uint16_t set_id;
     uint16_t area_id;
     long     grid_points;
     long     referencePointLatitude_r16;
@@ -87,7 +87,7 @@ struct CorrectionPointSet {
 
 struct OcbSatellite {
     long                                     id;
-    uint16_t                                     iod;
+    uint16_t                                 iod;
     SSR_OrbitCorrectionSatelliteElement_r15* orbit;
     SSR_ClockCorrectionSatelliteElement_r15* clock;
     SSR_CodeBiasSatElement_r15*              code_bias;
@@ -105,7 +105,7 @@ struct OcbSatellite {
 
 struct OcbCorrections {
     long       gnss_id;
-    uint16_t       iod;
+    uint16_t   iod;
     SpartnTime epoch_time;
 
     GNSS_SSR_OrbitCorrections_r15* orbit;
@@ -126,7 +126,7 @@ struct OcbData {
 
 struct HpacSatellite {
     long                                                   id;
-    uint16_t                                                   iod;
+    uint16_t                                               iod;
     STEC_SatElement_r16*                                   stec;
     std::unordered_map<long, STEC_ResidualSatElement_r16*> residuals;
 
@@ -139,8 +139,8 @@ struct HpacSatellite {
 
 struct HpacCorrections {
     long       gnss_id;
-    uint16_t       iod;
-    uint16_t       set_id;
+    uint16_t   iod;
+    uint16_t   set_id;
     SpartnTime epoch_time;
 
     GNSS_SSR_GriddedCorrection_r16* gridded;
@@ -159,7 +159,7 @@ struct HpacData {
 };
 
 struct CorrectionData {
-    bool                               mGroupByEpochTime;
+    bool                                   mGroupByEpochTime;
     std::unordered_map<uint16_t, OcbData>  mOcbData;
     std::unordered_map<uint16_t, HpacData> mHpacData;
 

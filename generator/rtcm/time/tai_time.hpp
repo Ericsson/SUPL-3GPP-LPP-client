@@ -14,12 +14,12 @@ public:
     friend UTC_Time;
 
     TAI_Time() = default;
-    RTCM_EXPLICIT TAI_Time(const Timestamp& timestamp) : tm(timestamp) {}
-    RTCM_EXPLICIT TAI_Time(const GPS_Time& time);
-    RTCM_EXPLICIT TAI_Time(const GLO_Time& time);
-    RTCM_EXPLICIT TAI_Time(const GST_Time& time);
-    RTCM_EXPLICIT TAI_Time(const UTC_Time& time);
-    RTCM_EXPLICIT TAI_Time(const BDT_Time& time);
+    RTCM_EXPLICIT TAI_Time(Timestamp const& timestamp) : tm(timestamp) {}
+    RTCM_EXPLICIT TAI_Time(GPS_Time const& time);
+    RTCM_EXPLICIT TAI_Time(GLO_Time const& time);
+    RTCM_EXPLICIT TAI_Time(GST_Time const& time);
+    RTCM_EXPLICIT TAI_Time(UTC_Time const& time);
+    RTCM_EXPLICIT TAI_Time(BDT_Time const& time);
 
     RTCM_NODISCARD Timestamp timestamp() const { return tm; }
     RTCM_NODISCARD std::string rtklib_time_string() const;
