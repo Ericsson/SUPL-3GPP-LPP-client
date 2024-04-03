@@ -78,9 +78,13 @@ bool Socket::select(bool read, bool write, bool except, timeval* tv) IF_NOEXCEPT
         return false;
     }
 
+// TODO(ewasjon): How to handle this?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(mSocket, &fds);
+#pragma GCC diagnostic pop
 
     auto read_fds   = read ? &fds : nullptr;
     auto write_fds  = write ? &fds : nullptr;
@@ -113,7 +117,8 @@ size_t Socket::read(void* data, size_t length) IF_NOEXCEPT {
         return 0;
     }
 
-    return bytes_read;
+    // TODO(ewasjon): Maybe we should return ssize_t instead of size_t?
+    return static_cast<size_t>(bytes_read);
 }
 
 size_t Socket::write(const void* data, size_t length) IF_NOEXCEPT {
@@ -130,7 +135,8 @@ size_t Socket::write(const void* data, size_t length) IF_NOEXCEPT {
         return 0;
     }
 
-    return bytes_written;
+    // TODO(ewasjon): Maybe we should return ssize_t instead of size_t?
+    return static_cast<size_t>(bytes_written);
 }
 
 Socket::Error Socket::error() const IF_NOEXCEPT {

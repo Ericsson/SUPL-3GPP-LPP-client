@@ -47,11 +47,11 @@ public:
 
     IF_NODISCARD struct sockaddr* ptr() IF_NOEXCEPT { return &mAddr.base; }
 
-    IF_NODISCARD std::size_t length() const IF_NOEXCEPT {
+    IF_NODISCARD socklen_t length() const IF_NOEXCEPT {
         switch (mFamily) {
-        case AF_INET: return sizeof(mAddr.in4);
-        case AF_INET6: return sizeof(mAddr.in6);
-        case AF_UNIX: return sizeof(mAddr.un);
+        case AF_INET: return static_cast<socklen_t>(sizeof(mAddr.in4));
+        case AF_INET6: return static_cast<socklen_t>(sizeof(mAddr.in6));
+        case AF_UNIX: return static_cast<socklen_t>(sizeof(mAddr.un));
         default: return 0; /* fail safe in later call */
         }
     }

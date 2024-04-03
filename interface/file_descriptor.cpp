@@ -70,13 +70,17 @@ bool FileDescriptor::wait_for_write() IF_NOEXCEPT {
 }
 
 bool FileDescriptor::select(bool read, bool write, bool except, timeval* tv) IF_NOEXCEPT {
-    if(mFileDescriptor < 0) {
+    if (mFileDescriptor < 0) {
         return false;
     }
-    
+
+// TODO(ewasjon): How to handle this?
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(mFileDescriptor, &fds);
+#pragma GCC diagnostic pop
 
     auto read_fds   = read ? &fds : nullptr;
     auto write_fds  = write ? &fds : nullptr;
@@ -85,8 +89,7 @@ bool FileDescriptor::select(bool read, bool write, bool except, timeval* tv) IF_
     auto ret = ::select(mFileDescriptor + 1, read_fds, write_fds, except_fds, tv);
     FD_DEBUG("[fd/%6d] select(%i,%i,%i,%f) = %d%s\n", mFileDescriptor, read_fds != nullptr,
              write_fds != nullptr, except_fds != nullptr,
-             tv ? (tv->tv_sec + tv->tv_usec / 1000000.0) : 0.0, ret,
-             tv ? " (timeout)" : "");
+             tv ? (tv->tv_sec + tv->tv_usec / 1000000.0) : 0.0, ret, tv ? " (timeout)" : "");
     if (ret < 0) {
         FD_DEBUG("[fd/%6d]   failed=%d (%s)\n", mFileDescriptor, errno, strerror(errno));
         if (errno == EBADF) {
@@ -115,7 +118,8 @@ size_t FileDescriptor::read(void* data, size_t length) IF_NOEXCEPT {
         return 0;
     }
 
-    return bytes_read;
+    // TODO(ewasjon): Maybe we should return ssize_t instead of size_t?
+    return static_cast<size_t>(bytes_read);
 }
 
 size_t FileDescriptor::write(const void* data, size_t length) IF_NOEXCEPT {
@@ -134,7 +138,8 @@ size_t FileDescriptor::write(const void* data, size_t length) IF_NOEXCEPT {
         return 0;
     }
 
-    return bytes_written;
+    // TODO(ewasjon): Maybe we should return ssize_t instead of size_t?
+    return static_cast<size_t>(bytes_written);
 }
 
 IF_NODISCARD FileDescriptor::Error FileDescriptor::error() const IF_NOEXCEPT {
