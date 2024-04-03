@@ -74,13 +74,9 @@ bool FileDescriptor::select(bool read, bool write, bool except, timeval* tv) IF_
         return false;
     }
 
-// TODO(ewasjon): How to handle this?
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wunsafe-buffer-usage"
     fd_set fds;
     FD_ZERO(&fds);
     FD_SET(mFileDescriptor, &fds);
-#pragma GCC diagnostic pop
 
     auto read_fds   = read ? &fds : nullptr;
     auto write_fds  = write ? &fds : nullptr;

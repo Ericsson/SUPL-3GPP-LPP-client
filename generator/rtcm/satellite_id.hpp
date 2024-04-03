@@ -48,7 +48,10 @@ namespace std {
 template <>
 struct hash<SatelliteId> {
     std::size_t operator()(const SatelliteId& k) const RTCM_NOEXCEPT {
-        return ((std::hash<int>()(static_cast<int>(k.gnss())) ^ (std::hash<int>()(k.lpp_id().value) << 1)) >> 1);
+        auto hash_gnss = std::hash<int>()(static_cast<int>(k.gnss()));
+        auto hash_lpp_id = std::hash<long>()(k.lpp_id().value);
+        auto hash_lpp_id_maybe = std::hash<bool>()(k.lpp_id().valid);
+        return hash_gnss ^ hash_lpp_id ^ hash_lpp_id_maybe;
     }
 };
 }  // namespace std

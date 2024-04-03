@@ -1,7 +1,7 @@
-#include <utility/time.h>
 #include <array>
-#include <time.h>
 #include <sys/time.h>
+#include <time.h>
+#include <utility/time.h>
 
 // NOTE: The day each month of the year starts with.
 constexpr static std::array<s64, 12> day_of_year = {
@@ -97,22 +97,22 @@ static TimeEpoch date_from_utc(Timestamp time) {
     auto tom     = toh - minutes * MINUTE_IN_SECONDS;
     auto seconds = tom;
 
-    return TimeEpoch{
-        .year    = year,
-        .month   = month,
-        .day     = day,
-        .hour    = hour,
-        .minutes = minutes,
-        .seconds = seconds + time.fraction(),
-    };
+    TimeEpoch epoch{};
+    epoch.year    = year;
+    epoch.month   = month;
+    epoch.day     = day;
+    epoch.hour    = hour;
+    epoch.minutes = minutes;
+    epoch.seconds = seconds + time.fraction();
+    return epoch;
 }
 
 UTC_Time::UTC_Time(s64 days, f64 tod) : tm(static_cast<f64>(days * DAY_IN_SECONDS) + tod) {}
-UTC_Time::UTC_Time(const TAI_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const GPS_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const GLO_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const GST_Time& time) : tm(time.utc_timestamp()) {}
-UTC_Time::UTC_Time(const BDT_Time& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(TAI_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(GPS_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(GLO_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(GST_Time const& time) : tm(time.utc_timestamp()) {}
+UTC_Time::UTC_Time(BDT_Time const& time) : tm(time.utc_timestamp()) {}
 
 s64 UTC_Time::days() const {
     return tm.seconds() / DAY_IN_SECONDS;

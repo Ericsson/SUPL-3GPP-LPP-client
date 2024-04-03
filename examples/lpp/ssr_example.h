@@ -5,9 +5,13 @@ namespace ssr_example {
 
 enum class Format {
     XER,
-    SPARTN_NEW,
-    SPARTN_OLD,
     ASN1_UPER,
+#ifdef INCLUDE_GENERATOR_SPARTN
+    SPARTN_NEW,
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
+    SPARTN_OLD,
+#endif
 };
 
 class SsrCommand final : public Command {

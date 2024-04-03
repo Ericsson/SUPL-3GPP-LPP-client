@@ -112,7 +112,7 @@ static TimeEpoch date_from_utc(Timestamp time) {
     epoch.day     = day;
     epoch.hour    = hour;
     epoch.minutes = minutes;
-    epoch.seconds = seconds + time.fraction();
+    epoch.seconds = static_cast<double>(seconds) + time.fraction();
     return epoch;
 }
 

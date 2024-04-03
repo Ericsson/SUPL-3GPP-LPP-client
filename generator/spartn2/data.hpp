@@ -18,12 +18,20 @@
 struct OcbKey {
     long     gnss_id;
     uint32_t epoch_time;
+
+    bool operator==(const OcbKey& other) const {
+        return gnss_id == other.gnss_id && epoch_time == other.epoch_time;
+    }
 };
 
 struct HpacKey {
     uint16_t     set_id;
     long     gnss_id;
     uint32_t epoch_time;
+
+    bool operator==(const HpacKey& other) const {
+        return gnss_id == other.gnss_id && set_id == other.set_id && epoch_time == other.epoch_time;
+    }
 };
 
 namespace std {
@@ -42,15 +50,6 @@ struct hash<HpacKey> {
     }
 };
 }  // namespace std
-
-static bool operator==(const OcbKey& lhs, const OcbKey& rhs) {
-    return lhs.gnss_id == rhs.gnss_id && lhs.epoch_time == rhs.epoch_time;
-}
-
-static bool operator==(const HpacKey& lhs, const HpacKey& rhs) {
-    return lhs.gnss_id == rhs.gnss_id && lhs.set_id == rhs.set_id &&
-           lhs.epoch_time == rhs.epoch_time;
-}
 
 struct GNSS_SSR_OrbitCorrections_r15;
 struct GNSS_SSR_ClockCorrections_r15;

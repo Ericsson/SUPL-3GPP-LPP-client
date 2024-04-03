@@ -1,4 +1,6 @@
 #include "serial.hpp"
+#include "interface/types.hpp"
+
 #include <cstring>
 #include <fcntl.h>
 #include <stdexcept>
@@ -128,7 +130,7 @@ void SerialInterface::open() {
     case DataBits::SEVEN: cflag |= CS7; break;
     case DataBits::EIGHT: cflag |= CS8; break;
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    default: INTERFACE_UNREACHABLE(); break;
+    default: IF_UNREACHABLE(); break;
 #endif
     }
 
@@ -136,7 +138,7 @@ void SerialInterface::open() {
     case StopBits::ONE: cflag &= ~CSTOPB; break;
     case StopBits::TWO: cflag |= CSTOPB; break;
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    default: INTERFACE_UNREACHABLE(); break;
+    default: IF_UNREACHABLE(); break;
 #endif
     }
 
@@ -151,7 +153,7 @@ void SerialInterface::open() {
         cflag &= ~PARODD;
         break;
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    default: INTERFACE_UNREACHABLE(); break;
+    default: IF_UNREACHABLE(); break;
 #endif
     }
 

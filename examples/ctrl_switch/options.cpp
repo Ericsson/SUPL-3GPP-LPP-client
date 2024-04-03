@@ -1,8 +1,18 @@
 #include "options.hpp"
-#include <args.hpp>
 
-args::Group                       arguments{"Arguments:"};
-args::PositionalList<std::string> commands{arguments, "commands", "List of commands"};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#include <args.hpp>
+#pragma GCC diagnostic pop
+
+static args::Group                       arguments{"Arguments:"};
+static args::PositionalList<std::string> commands{arguments, "commands", "List of commands"};
 
 Config parse_configuration(int argc, char** argv) {
     args::ArgumentParser parser(

@@ -20,7 +20,4 @@ add_library(utility ${UTILITY_SOURCES})
 target_include_directories(utility PUBLIC "include/")
 target_link_libraries(utility PRIVATE Threads::Threads)
 
-if (USE_ASAN)
-target_compile_options(utility PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(utility PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
+setup_target(utility)

@@ -1,6 +1,12 @@
 #include "msm.hpp"
 #include "encoder.hpp"
 #include "helper.hpp"
+#include "time/bdt_time.hpp"
+#include "time/glo_time.hpp"
+#include "time/gps_time.hpp"
+#include "time/gst_time.hpp"
+#include "time/tai_time.hpp"
+#include "time/utc_time.hpp"
 
 #include <cmath>
 #include <cstdio>
@@ -8,17 +14,46 @@
 
 using namespace generator::rtcm;
 
-static uint32_t msm_message_id(uint32_t msm, GenericGnssId gnss) {
+static void epoch_time(Encoder& encoder, const ts::TAI_Time& time, GenericGnssId gnss) {
     switch (gnss) {
-    case GenericGnssId::GPS: return 1070 + msm;
-    case GenericGnssId::GLONASS: return 1080 + msm;
-    case GenericGnssId::GALILEO: return 1090 + msm;
-    case GenericGnssId::BEIDOU: return 1120 + msm;
+    case GenericGnssId::GPS: {
+        auto tow          = ts::GPS_Time(time).time_of_week();
+        auto milliseconds = tow.full_seconds() * 1000;
+        encoder.u32(30, static_cast<uint32_t>(milliseconds));
+    } break;
+    case GenericGnssId::GLONASS: {
+        auto glo          = ts::GLO_Time(time);
+        auto dow          = glo.days() % 7;
+        auto tow          = glo.time_of_day();
+        auto milliseconds = tow.full_seconds() * 1000;
+        encoder.u8(3, static_cast<uint8_t>(dow));
+        encoder.u32(27, static_cast<uint32_t>(milliseconds));
+    } break;
+    case GenericGnssId::GALILEO: {
+        auto tow          = ts::GST_Time(time).time_of_week();
+        auto milliseconds = tow.full_seconds() * 1000;
+        encoder.u32(30, static_cast<uint32_t>(milliseconds));
+    } break;
+    case GenericGnssId::BEIDOU: {
+        auto tow          = ts::BDT_Time(time).time_of_week();
+        auto milliseconds = tow.full_seconds() * 1000;
+        encoder.u32(30, static_cast<uint32_t>(milliseconds));
+    } break;
+    }
+}
+
+static uint16_t msm_message_id(uint32_t msm, GenericGnssId gnss) {
+    // TODO(ewasjon): Why is the type of msm uint32_t?
+    switch (gnss) {
+    case GenericGnssId::GPS: return 1070 + static_cast<uint16_t>(msm);
+    case GenericGnssId::GLONASS: return 1080 + static_cast<uint16_t>(msm);
+    case GenericGnssId::GALILEO: return 1090 + static_cast<uint16_t>(msm);
+    case GenericGnssId::BEIDOU: return 1120 + static_cast<uint16_t>(msm);
     }
     return 0;
 }
 
-static void df397(Encoder& encoder, const Satellite& satellite) {
+static void df397(Encoder& encoder, Satellite const& satellite) {
     if (satellite.integer_ms.valid && satellite.integer_ms.value >= 0 &&
         satellite.integer_ms.value <= 254) {
         encoder.u8(8, static_cast<uint8_t>(satellite.integer_ms.value));
@@ -27,17 +62,17 @@ static void df397(Encoder& encoder, const Satellite& satellite) {
     }
 }
 
-static void df398(Encoder& encoder, const Satellite& satellite) {
+static void df398(Encoder& encoder, Satellite const& satellite) {
     auto value = ROUND(satellite.rough_range.value * RTCM_P2_10);
     if (satellite.rough_range.valid && value >= 0 && value <= 1024) {
-        encoder.u16(10, static_cast<uint32_t>(value));
+        encoder.u16(10, static_cast<uint16_t>(value));
     } else {
         // TODO: How to we report an invalid if the DF doesn't have an invalid bit pattern?
         encoder.u16(10, 0x3FF);
     }
 }
 
-static void df399(Encoder& encoder, const Satellite& satellite) {
+static void df399(Encoder& encoder, Satellite const& satellite) {
     auto value = static_cast<int64_t>(ROUND(satellite.rough_phase_range_rate.value));
     if (satellite.rough_phase_range_rate.valid && value >= -8191 && value <= 8191) {
         encoder.i16(14, static_cast<int16_t>(value));
@@ -46,7 +81,7 @@ static void df399(Encoder& encoder, const Satellite& satellite) {
     }
 }
 
-static void df419(Encoder& encoder, const Satellite& satellite) {
+static void df419(Encoder& encoder, Satellite const& satellite) {
     auto channel = satellite.frequency_channel.value + 7;
     if (satellite.frequency_channel.valid && channel >= 0 && channel <= 14) {
         encoder.u8(4, static_cast<uint8_t>(channel));
@@ -55,7 +90,7 @@ static void df419(Encoder& encoder, const Satellite& satellite) {
     }
 }
 
-static void df_ext(Encoder& encoder, const Satellite& satellite) {
+static void df_ext(Encoder& encoder, Satellite const& satellite) {
     if (satellite.id.gnss() == SatelliteId::Gnss::GLONASS) {
         df419(encoder, satellite);
     } else {
@@ -63,7 +98,7 @@ static void df_ext(Encoder& encoder, const Satellite& satellite) {
     }
 }
 
-static void df400(Encoder& encoder, const Signal& signal) {
+static void df400(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_pseudo_range.value * RTCM_P2_24));
     if (signal.fine_phase_range.valid) {
         encoder.i16(15, static_cast<int16_t>(value));
@@ -72,7 +107,7 @@ static void df400(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df401(Encoder& encoder, const Signal& signal) {
+static void df401(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range.value * RTCM_P2_29));
     if (signal.fine_pseudo_range.valid) {
         encoder.i32(22, static_cast<int32_t>(value));
@@ -81,7 +116,7 @@ static void df401(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df402(Encoder& encoder, const Signal& signal) {
+static void df402(Encoder& encoder, Signal const& signal) {
     auto value = to_msm_lock(signal.lock_time.value);
     if (signal.lock_time.valid && value >= 0 && value <= 15) {
         encoder.u8(4, static_cast<uint8_t>(value));
@@ -90,7 +125,7 @@ static void df402(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df403(Encoder& encoder, const Signal& signal) {
+static void df403(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.carrier_to_noise_ratio.value));
     if (signal.carrier_to_noise_ratio.valid && value >= 1 && value <= 63) {
         encoder.u8(6, static_cast<uint8_t>(value));
@@ -99,7 +134,7 @@ static void df403(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df404(Encoder& encoder, const Signal& signal) {
+static void df404(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range_rate.value / 0.0001));
     if (signal.fine_phase_range_rate.valid && value > -16384 && value <= 16383) {
         encoder.i16(15, static_cast<int16_t>(value));
@@ -108,7 +143,7 @@ static void df404(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df405(Encoder& encoder, const Signal& signal) {
+static void df405(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_pseudo_range.value * RTCM_P2_29));
     if (signal.fine_phase_range.valid) {
         encoder.i32(20, static_cast<int32_t>(value));
@@ -117,7 +152,7 @@ static void df405(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df406(Encoder& encoder, const Signal& signal) {
+static void df406(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range.value * RTCM_P2_31));
     if (signal.fine_pseudo_range.valid) {
         encoder.i32(24, static_cast<int32_t>(value));
@@ -126,7 +161,7 @@ static void df406(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df407(Encoder& encoder, const Signal& signal) {
+static void df407(Encoder& encoder, Signal const& signal) {
     auto value = to_msm_lock_ex(signal.lock_time.value);
     if (signal.lock_time.valid && value >= 0 && value <= 704) {
         encoder.u16(10, static_cast<uint16_t>(value));
@@ -135,7 +170,7 @@ static void df407(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df408(Encoder& encoder, const Signal& signal) {
+static void df408(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(ROUND(signal.carrier_to_noise_ratio.value / 0.0625));
     if (signal.carrier_to_noise_ratio.valid && value >= 1 && value <= 1023) {
         encoder.u16(10, static_cast<uint16_t>(value));
@@ -144,7 +179,7 @@ static void df408(Encoder& encoder, const Signal& signal) {
     }
 }
 
-static void df420(Encoder& encoder, const Signal& signal) {
+static void df420(Encoder& encoder, Signal const& signal) {
     encoder.b(signal.half_cycle_ambiguity);
 }
 
@@ -153,18 +188,20 @@ static void df420(Encoder& encoder, const Signal& signal) {
 //
 
 #define FOR_EACH_SAT(X)                                                                            \
-    for (auto& satellite : satellites) {                                                           \
-        X(encoder, *satellite);                                                                    \
-    }
+    do {                                                                                           \
+        for (auto& satellite : satellites) {                                                       \
+            X(encoder, *satellite);                                                                \
+        }                                                                                          \
+    } while (false)
 
 static void generate_msm4_satellites(Encoder&                             encoder,
-                                     const std::vector<const Satellite*>& satellites) {
+                                     std::vector<Satellite const*> const& satellites) {
     FOR_EACH_SAT(df397);
     FOR_EACH_SAT(df398);
 }
 
 static void generate_msm5_satellites(Encoder&                             encoder,
-                                     const std::vector<const Satellite*>& satellites) {
+                                     std::vector<Satellite const*> const& satellites) {
     FOR_EACH_SAT(df397);
     FOR_EACH_SAT(df_ext);
     FOR_EACH_SAT(df398);
@@ -172,13 +209,13 @@ static void generate_msm5_satellites(Encoder&                             encode
 }
 
 static void generate_msm6_satellites(Encoder&                             encoder,
-                                     const std::vector<const Satellite*>& satellites) {
+                                     std::vector<Satellite const*> const& satellites) {
     FOR_EACH_SAT(df397);
     FOR_EACH_SAT(df398);
 }
 
 static void generate_msm7_satellites(Encoder&                             encoder,
-                                     const std::vector<const Satellite*>& satellites) {
+                                     std::vector<Satellite const*> const& satellites) {
     FOR_EACH_SAT(df397);
     FOR_EACH_SAT(df_ext);
     FOR_EACH_SAT(df398);
@@ -186,7 +223,7 @@ static void generate_msm7_satellites(Encoder&                             encode
 }
 
 static void generate_msm_satellites(uint32_t msm, Encoder& encoder,
-                                    const std::vector<const Satellite*>& satellites) {
+                                    std::vector<Satellite const*> const& satellites) {
     switch (msm) {
     case 4: generate_msm4_satellites(encoder, satellites); break;
     case 5: generate_msm5_satellites(encoder, satellites); break;
@@ -200,11 +237,13 @@ static void generate_msm_satellites(uint32_t msm, Encoder& encoder,
 //
 
 #define FOR_EACH_SIG(X)                                                                            \
-    for (auto& signal : signals) {                                                                 \
-        X(encoder, *signal);                                                                       \
-    }
+    do {                                                                                           \
+        for (auto& signal : signals) {                                                             \
+            X(encoder, *signal);                                                                   \
+        }                                                                                          \
+    } while (false)
 
-static void generate_msm4_signals(Encoder& encoder, const std::vector<const Signal*>& signals) {
+static void generate_msm4_signals(Encoder& encoder, std::vector<Signal const*> const& signals) {
     FOR_EACH_SIG(df400);
     FOR_EACH_SIG(df401);
     FOR_EACH_SIG(df402);
@@ -212,7 +251,7 @@ static void generate_msm4_signals(Encoder& encoder, const std::vector<const Sign
     FOR_EACH_SIG(df403);
 }
 
-static void generate_msm5_signals(Encoder& encoder, const std::vector<const Signal*>& signals) {
+static void generate_msm5_signals(Encoder& encoder, std::vector<Signal const*> const& signals) {
     FOR_EACH_SIG(df400);
     FOR_EACH_SIG(df401);
     FOR_EACH_SIG(df402);
@@ -221,7 +260,7 @@ static void generate_msm5_signals(Encoder& encoder, const std::vector<const Sign
     FOR_EACH_SIG(df404);
 }
 
-static void generate_msm6_signals(Encoder& encoder, const std::vector<const Signal*>& signals) {
+static void generate_msm6_signals(Encoder& encoder, std::vector<Signal const*> const& signals) {
     FOR_EACH_SIG(df405);
     FOR_EACH_SIG(df406);
     FOR_EACH_SIG(df407);
@@ -229,7 +268,7 @@ static void generate_msm6_signals(Encoder& encoder, const std::vector<const Sign
     FOR_EACH_SIG(df408);
 }
 
-static void generate_msm7_signals(Encoder& encoder, const std::vector<const Signal*>& signals) {
+static void generate_msm7_signals(Encoder& encoder, std::vector<Signal const*> const& signals) {
     FOR_EACH_SIG(df405);
     FOR_EACH_SIG(df406);
     FOR_EACH_SIG(df407);
@@ -239,7 +278,7 @@ static void generate_msm7_signals(Encoder& encoder, const std::vector<const Sign
 }
 
 static void generate_msm_signals(uint32_t msm, Encoder& encoder,
-                                 const std::vector<const Signal*>& signals) {
+                                 std::vector<Signal const*> const& signals) {
     switch (msm) {
     case 4: generate_msm4_signals(encoder, signals); break;
     case 5: generate_msm5_signals(encoder, signals); break;
@@ -253,13 +292,13 @@ static void generate_msm_signals(uint32_t msm, Encoder& encoder,
 //
 
 extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
-                                             const CommonObservationInfo& common,
-                                             const Observations&          observations) {
+                                             CommonObservationInfo const& common,
+                                             Observations const&          observations) {
     auto message_id = msm_message_id(msm, gnss);
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);
-    encoder.u16(12, common.reference_station_id);
+    encoder.u16(12, static_cast<uint16_t>(common.reference_station_id));
     epoch_time(encoder, observations.time, gnss);
     encoder.b(!last_msm /* multiple message bit */);
     encoder.u8(3, 0u /* iod */);
@@ -269,8 +308,8 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
     encoder.u8(1, static_cast<uint8_t>(common.smooth_indicator));
     encoder.u8(3, static_cast<uint8_t>(common.smooth_interval));
 
-    std::vector<const Satellite*> satellites;
-    std::vector<const Signal*>    signals;
+    std::vector<Satellite const*> satellites;
+    std::vector<Signal const*>    signals;
 
     for (auto& satellite : observations.satellites) {
         auto id = satellite.id.as_msm();
@@ -356,10 +395,12 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
     generate_msm_satellites(msm, encoder, satellites);
     generate_msm_signals(msm, encoder, signals);
 
+    auto length = static_cast<uint16_t>(encoder.byte_count());
+
     auto frame_encoder = Encoder();
     frame_encoder.u8(8, 0xD3);
     frame_encoder.u8(6, 0);
-    frame_encoder.u16(10, encoder.byte_count());
+    frame_encoder.u16(10, length);
     frame_encoder.copy(encoder.buffer());
     frame_encoder.checksum();
 

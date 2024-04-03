@@ -60,6 +60,7 @@ PenaltyReturnTypeOnItsOwnLine: 60
 PointerAlignment: Left
 ReflowComments:  true
 SortIncludes:    true
+SortIncludesOptions: CaseSensitive
 SpaceAfterCStyleCast: false
 SpaceBeforeAssignmentOperators: true
 SpaceBeforeParens: ControlStatements
@@ -72,4 +73,7 @@ SpacesInParentheses: false
 SpacesInSquareBrackets: false
 TabWidth:        4
 UseTab:          false
+InsertNewlineAtEOF: true
+QualifierAlignment: Right
+RemoveSemicolon: true
 ...

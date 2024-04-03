@@ -26,7 +26,7 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-void execute(Options options, osr_example::Format format, osr_example::MsmType msm_type,
+[[noreturn]] void execute(Options options, osr_example::Format format, osr_example::MsmType msm_type,
              bool print_rtcm) {
     gOptions   = std::move(options);
     gFormat    = format;
@@ -44,13 +44,11 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
-    gCell = CellID{
-        .mcc   = cell_options.mcc,
-        .mnc   = cell_options.mnc,
-        .tac   = cell_options.tac,
-        .cell  = cell_options.cid,
-        .is_nr = cell_options.is_nr,
-    };
+    gCell.mcc   = cell_options.mcc;
+    gCell.mnc   = cell_options.mnc;
+    gCell.tac   = cell_options.tac;
+    gCell.cell  = cell_options.cid;
+    gCell.is_nr = cell_options.is_nr;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -211,7 +209,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     // Request OSR assistance data from location server for the 'cell' and register a callback
     // that will be called when we receive assistance data.
     LPP_Client::AD_Request request =
-        client.request_assistance_data(gCell, NULL, assistance_data_callback);
+        client.request_assistance_data(gCell, nullptr, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");
     }
@@ -220,7 +218,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         struct timespec timeout;
         timeout.tv_sec  = 0;
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
-        nanosleep(&timeout, NULL);
+        nanosleep(&timeout, nullptr);
 
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.
@@ -230,7 +228,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     }
 }
 
-static void transmit(const void* buffer, size_t size) {
+static void transmit(void const* buffer, size_t size) {
     for (auto& interface : gOptions.output_options.interfaces) {
         interface->write(buffer, size);
     }
@@ -242,38 +240,38 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
         if (gPrintRtcm) {
             size_t length = 0;
-            for (auto& message : messages) {
-                length += message.data().size();
+            for (auto& submessage : messages) {
+                length += submessage.data().size();
             }
 
             printf("RTCM: %4zu bytes | ", length);
-            for (auto& message : messages) {
-                printf("%4i ", message.id());
+            for (auto& submessage : messages) {
+                printf("%4i ", submessage.id());
             }
             printf("\n");
         }
 
-        for (auto& message : messages) {
-            auto buffer = message.data().data();
-            auto size   = message.data().size();
+        for (auto& submessage : messages) {
+            auto buffer = submessage.data().data();
+            auto size   = submessage.data().size();
             transmit(buffer, size);
         }
 
         if (gUbloxReceiver) {
             auto interface = gUbloxReceiver->interface();
             if (interface) {
-                for (auto& message : messages) {
-                    auto buffer = message.data().data();
-                    auto size   = message.data().size();
+                for (auto& submessage : messages) {
+                    auto buffer = submessage.data().data();
+                    auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
             }
         } else if (gNmeaReceiver) {
             auto interface = gNmeaReceiver->interface();
             if (interface) {
-                for (auto& message : messages) {
-                    auto buffer = message.data().data();
-                    auto size   = message.data().size();
+                for (auto& submessage : messages) {
+                    auto buffer = submessage.data().data();
+                    auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
             }
@@ -282,14 +280,15 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         std::stringstream buffer;
         xer_encode(
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
-            [](const void* buffer, size_t size, void* app_key) -> int {
-                auto stream = static_cast<std::ostream*>(app_key);
-                stream->write(static_cast<const char*>(buffer), size);
+            [](void const* text_buffer, size_t text_size, void* app_key) -> int {
+                auto string_stream = static_cast<std::ostream*>(app_key);
+                string_stream->write(static_cast<const char*>(text_buffer),
+                                     static_cast<std::streamsize>(text_size));
                 return 0;
             },
             &buffer);
-        auto message = buffer.str();
-        transmit(message.data(), message.size());
+        auto xer_message = buffer.str();
+        transmit(xer_message.data(), xer_message.size());
     } else {
         throw std::runtime_error("Unsupported format");
     }

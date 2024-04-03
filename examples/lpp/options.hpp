@@ -1,8 +1,19 @@
 #pragma once
-#include <args.hpp>
 #include <interface/interface.hpp>
-#include <memory>
 #include <receiver/ublox/receiver.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#include <args.hpp>
+#pragma GCC diagnostic pop
+
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -126,9 +137,9 @@ public:
     virtual ~Command() = default;
 
     /// Name of the command. This is used to invoke the command.
-    const std::string& name() const { return mName; }
+    std::string const& name() const { return mName; }
     /// Description of the command.
-    const std::string& description() const { return mDescription; }
+    std::string const& description() const { return mDescription; }
 
     /// Parse additional arguments for the command.
     virtual void parse(args::Subparser& parser) = 0;

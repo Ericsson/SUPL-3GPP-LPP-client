@@ -137,6 +137,10 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
     location.velocity =
         VelocityShape::horizontal(vtg->speed_over_ground(), vtg->true_course_over_ground());
 
+    metrics.fix_quality          = FixQuality::INVALID;
+    metrics.number_of_satellites = gga->satellites_in_view();
+    metrics.hdop                 = gga->h_dop();
+
     switch (gga->fix_quality()) {
     case receiver::nmea::GgaFixQuality::Invalid: metrics.fix_quality = FixQuality::INVALID; break;
     case receiver::nmea::GgaFixQuality::GpsFix: metrics.fix_quality = FixQuality::STANDALONE; break;
@@ -149,11 +153,8 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
     case receiver::nmea::GgaFixQuality::DeadReckoning:
         metrics.fix_quality = FixQuality::DEAD_RECKONING;
         break;
-    default: metrics.fix_quality = FixQuality::INVALID;
     }
 
-    metrics.number_of_satellites = gga->satellites_in_view();
-    metrics.hdop                 = gga->h_dop();
     return true;
 }
 
@@ -184,12 +185,11 @@ bool provide_ecid_callback(ECIDInformation& ecid, void* userdata) {
 
     for (auto& neighbor_cell : neighbors) {
         if (ecid.neighbor_count < 16) {
-            ecid.neighbors[ecid.neighbor_count++] = {
-                .id     = neighbor_cell.id,
-                .earfcn = neighbor_cell.EARFCN,
-                .rsrp   = neighbor_cell.rsrp,
-                .rsrq   = neighbor_cell.rsrq,
-            };
+            auto& neighbor  = ecid.neighbors[ecid.neighbor_count++];
+            neighbor.id     = neighbor_cell.id;
+            neighbor.earfcn = neighbor_cell.EARFCN;
+            neighbor.rsrp   = neighbor_cell.rsrp;
+            neighbor.rsrq   = neighbor_cell.rsrq;
         }
     }
 

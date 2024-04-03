@@ -56,3 +56,11 @@ __attribute__((noreturn)) inline void ublox_unreachable() {
 #ifndef UBLOX_ASSERT
 #define UBLOX_ASSERT(cond, msg) assert((cond) && msg)
 #endif
+
+#ifndef UBLOX_NORETURN
+#if defined(__has_cpp_attribute)
+#if __has_cpp_attribute(noreturn)
+#define UBLOX_NORETURN [[noreturn]]
+#endif
+#endif
+#endif

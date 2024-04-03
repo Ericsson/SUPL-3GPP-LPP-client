@@ -1,57 +1,67 @@
-#include <args.hpp>
 #include <interface/interface.hpp>
 #include <receiver/nmea/receiver.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#include <args.hpp>
+#pragma GCC diagnostic pop
 
 using namespace interface;
 using namespace receiver::nmea;
 
-args::Group arguments{"Arguments:"};
+static args::Group arguments{"Arguments:"};
 
 //
 // Interface
 //
 
-args::Group interface_group{
+static args::Group interface_group{
     "Interface:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Group serial_group{
+static args::Group serial_group{
     interface_group,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> serial_device{
+static args::ValueFlag<std::string> serial_device{
     serial_group, "device", "Device", {"serial"}, args::Options::Single};
-args::ValueFlag<int> serial_baud_rate{
+static args::ValueFlag<uint32_t> serial_baud_rate{
     serial_group, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
-args::ValueFlag<int> serial_data_bits{
+static args::ValueFlag<int> serial_data_bits{
     serial_group, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
-args::ValueFlag<int> serial_stop_bits{
+static args::ValueFlag<int> serial_stop_bits{
     serial_group, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
-args::ValueFlag<std::string> serial_parity_bits{
+static args::ValueFlag<std::string> serial_parity_bits{
     serial_group, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
 
-args::Group i2c_group{
+static args::Group i2c_group{
     interface_group,
     "I2C:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> i2c_device{
+static args::ValueFlag<std::string> i2c_device{
     i2c_group, "device", "Device", {"i2c"}, args::Options::Single};
-args::ValueFlag<uint8_t> i2c_address{
+static args::ValueFlag<uint8_t> i2c_address{
     i2c_group, "address", "Address", {"i2c-address"}, args::Options::Single};
 
-args::Group stdin_group{
+static args::Group stdin_group{
     interface_group,
     "Stdin:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::Flag stdin_device{stdin_group, "", "Enable stdin", {"stdin"}, args::Options::Single};
+static args::Flag stdin_device{stdin_group, "", "Enable stdin", {"stdin"}, args::Options::Single};
 
 //
 //
@@ -60,7 +70,7 @@ args::Flag stdin_device{stdin_group, "", "Enable stdin", {"stdin"}, args::Option
 static std::unique_ptr<Interface> parse_serial() {
     assert(serial_device);
 
-    auto baud_rate = 115200;
+    uint32_t baud_rate = 115200;
     if (serial_baud_rate) {
         baud_rate = serial_baud_rate.Get();
     }
@@ -123,7 +133,7 @@ static std::unique_ptr<Interface> parse_serial() {
 static std::unique_ptr<Interface> parse_i2c() {
     assert(i2c_device);
 
-    auto address = 66;
+    uint8_t address = 66;
     if (i2c_address) {
         address = i2c_address.Get();
     }

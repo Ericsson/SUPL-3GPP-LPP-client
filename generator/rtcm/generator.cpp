@@ -8,12 +8,18 @@
 #include "rtk_data.hpp"
 #include "satellite_id.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
+#pragma GCC diagnostic pop
 
 using namespace generator::rtcm;
 

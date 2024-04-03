@@ -34,7 +34,7 @@ public:
     SPARTN_Field(const uint8_t id_, const uint8_t bit_count_, const int64_t bits_) {
         this->id        = id_;
         this->bit_count = bit_count_;
-        this->bits      = bits_ < 0 ? bits_ & ((1 << bit_count_) - 1) : bits_;
+        this->bits      = bits_ < 0 ? static_cast<uint64_t>(bits_) & ((1 << bit_count_) - 1) : bits_;
     }
 
     SPARTN_Field(const uint8_t id_, const uint8_t bit_count_,

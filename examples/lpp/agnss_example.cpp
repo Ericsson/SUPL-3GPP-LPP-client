@@ -10,7 +10,7 @@ static Options               gOptions;
 
 static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-void execute(Options options, agnss_example::Format format) {
+[[noreturn]] void execute(Options options, agnss_example::Format format) {
     gOptions = std::move(options);
     gFormat  = format;
 
@@ -19,12 +19,11 @@ void execute(Options options, agnss_example::Format format) {
     auto& identity_options        = gOptions.identity_options;
     auto& output_options          = gOptions.output_options;
 
-    gCell = CellID{
-        .mcc  = cell_options.mcc,
-        .mnc  = cell_options.mnc,
-        .tac  = cell_options.tac,
-        .cell = cell_options.cid,
-    };
+    gCell.mcc   = cell_options.mcc;
+    gCell.mnc   = cell_options.mnc;
+    gCell.tac   = cell_options.tac;
+    gCell.cell  = cell_options.cid;
+    gCell.is_nr = cell_options.is_nr;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -63,7 +62,7 @@ void execute(Options options, agnss_example::Format format) {
     }
 
     LPP_Client::AD_Request request =
-        client.request_agnss(gCell, NULL, agnss_assistance_data_callback);
+        client.request_agnss(gCell, nullptr, agnss_assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");
     }
@@ -72,7 +71,7 @@ void execute(Options options, agnss_example::Format format) {
         struct timespec timeout;
         timeout.tv_sec  = 0;
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
-        nanosleep(&timeout, NULL);
+        nanosleep(&timeout, nullptr);
 
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.
@@ -88,15 +87,16 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
         std::stringstream buffer;
         xer_encode(
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
-            [](const void* buffer, size_t size, void* app_key) -> int {
-                auto stream = static_cast<std::ostream*>(app_key);
-                stream->write(static_cast<const char*>(buffer), size);
+            [](void const* text_buffer, size_t text_size, void* app_key) -> int {
+                auto string_stream = static_cast<std::ostream*>(app_key);
+                string_stream->write(static_cast<const char*>(text_buffer),
+                                     static_cast<std::streamsize>(text_size));
                 return 0;
             },
             &buffer);
-        auto message = buffer.str();
+        auto xer_message = buffer.str();
         for (auto& interface : gOptions.output_options.interfaces) {
-            interface->write(message.c_str(), message.size());
+            interface->write(xer_message.c_str(), xer_message.size());
         }
     } else {
         throw std::runtime_error("Unsupported format");

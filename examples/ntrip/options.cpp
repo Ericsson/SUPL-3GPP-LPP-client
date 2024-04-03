@@ -1,35 +1,45 @@
 #include "options.hpp"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
 #include <args.hpp>
+#pragma GCC diagnostic pop
 
 using namespace interface;
 
-args::Group arguments{"Arguments:"};
+static args::Group arguments{"Arguments:"};
 
 //
 // NTRIP
 //
 
-args::Group ntrip{
+static args::Group ntrip{
     arguments,
     "NTRIP:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::ValueFlag<std::string> ntrip_hostname{
+static args::ValueFlag<std::string> ntrip_hostname{
     ntrip, "hostname", "Hostname", {"host"}, args::Options::Single};
-args::ValueFlag<int>         ntrip_port{ntrip, "port", "Port", {"port"}, args::Options::Single};
-args::ValueFlag<std::string> ntrip_mountpoint{
+static args::ValueFlag<int> ntrip_port{ntrip, "port", "Port", {"port"}, args::Options::Single};
+static args::ValueFlag<std::string> ntrip_mountpoint{
     ntrip, "mountpoint", "Mountpoint", {"mountpoint"}, args::Options::Single};
-args::ValueFlag<std::string> ntrip_username{
+static args::ValueFlag<std::string> ntrip_username{
     ntrip, "username", "Username", {"username"}, args::Options::Single};
-args::ValueFlag<std::string> ntrip_password{
+static args::ValueFlag<std::string> ntrip_password{
     ntrip, "password", "Password", {"password"}, args::Options::Single};
 
-args::ValueFlag<std::string> nmea_string{
+static args::ValueFlag<std::string> nmea_string{
     ntrip, "nmea_string", "NMEA String", {"nmea"}, args::Options::Single};
 
-HostOptions parse_host_options() {
+static HostOptions parse_host_options() {
     if (!ntrip_hostname) {
         throw args::RequiredError("ntrip_hostname");
     }
@@ -63,97 +73,100 @@ HostOptions parse_host_options() {
         nmea = nmea_string.Get();
     }
 
-    return HostOptions{
-        .hostname   = ntrip_hostname.Get(),
-        .port       = port,
-        .mountpoint = std::move(mountpoint),
-        .username   = username,
-        .password   = password,
-        .nmea       = nmea,
-    };
+    HostOptions hostOptions;
+    hostOptions.hostname = ntrip_hostname.Get();
+    hostOptions.port = port;
+    hostOptions.mountpoint = std::move(mountpoint);
+    hostOptions.username = username;
+    hostOptions.password = password;
+    hostOptions.nmea = nmea;
+    return hostOptions;
 }
 
 //
 // Output
 //
 
-args::Group output{
+static args::Group output{
     "Output:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Group file_output{
+static args::Group file_output{
     output,
     "File:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> file_path{
+static args::ValueFlag<std::string> file_path{
     file_output, "file_path", "Path", {"file"}, args::Options::Single};
 
-args::Group serial_output{
+static args::Group serial_output{
     output,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> serial_device{
+static args::ValueFlag<std::string> serial_device{
     serial_output, "device", "Device", {"serial"}, args::Options::Single};
-args::ValueFlag<int> serial_baud_rate{
+static args::ValueFlag<int> serial_baud_rate{
     serial_output, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
-args::ValueFlag<int> serial_data_bits{
+static args::ValueFlag<int> serial_data_bits{
     serial_output, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
-args::ValueFlag<int> serial_stop_bits{
+static args::ValueFlag<int> serial_stop_bits{
     serial_output, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
-args::ValueFlag<std::string> serial_parity_bits{
+static args::ValueFlag<std::string> serial_parity_bits{
     serial_output, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
 
-args::Group i2c_output{
+static args::Group i2c_output{
     output,
     "I2C:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> i2c_device{
+static args::ValueFlag<std::string> i2c_device{
     i2c_output, "device", "Device", {"i2c"}, args::Options::Single};
-args::ValueFlag<uint8_t> i2c_address{
+static args::ValueFlag<uint8_t> i2c_address{
     i2c_output, "address", "Address", {"i2c-address"}, args::Options::Single};
 
-args::Group tcp_output{
+static args::Group tcp_output{
     output,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> tcp_ip_address{
+static args::ValueFlag<std::string> tcp_ip_address{
     tcp_output, "ip_address", "Host or IP Address", {"tcp"}, args::Options::Single};
-args::ValueFlag<int> tcp_port{tcp_output, "port", "Port", {"tcp-port"}, args::Options::Single};
+static args::ValueFlag<uint16_t> tcp_port{
+    tcp_output, "port", "Port", {"tcp-port"}, args::Options::Single};
 
-args::Group udp_output{
+static args::Group udp_output{
     output,
     "UDP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> udp_ip_address{
+static args::ValueFlag<std::string> udp_ip_address{
     udp_output, "ip_address", "Host or IP Address", {"udp"}, args::Options::Single};
-args::ValueFlag<int> udp_port{udp_output, "port", "Port", {"udp-port"}, args::Options::Single};
+static args::ValueFlag<uint16_t> udp_port{
+    udp_output, "port", "Port", {"udp-port"}, args::Options::Single};
 
-args::Group stdout_output{
+static args::Group stdout_output{
     output,
     "Stdout:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::Flag stdout_output_flag{stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
+static args::Flag stdout_output_flag{
+    stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
 
-OutputOptions parse_output_options() {
-    OutputOptions output{};
+static OutputOptions parse_output_options() {
+    OutputOptions output_options{};
 
     if (file_path) {
         auto interface = interface::Interface::file(file_path.Get(), true);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (serial_device || serial_baud_rate) {
@@ -205,7 +218,7 @@ OutputOptions parse_output_options() {
 
         auto interface = interface::Interface::serial(serial_device.Get(), baud_rate, data_bits,
                                                       stop_bits, parity_bit);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (i2c_device || i2c_address) {
@@ -218,7 +231,7 @@ OutputOptions parse_output_options() {
         }
 
         auto interface = interface::Interface::i2c(i2c_device.Get(), i2c_address.Get());
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (tcp_ip_address || tcp_port) {
@@ -232,7 +245,7 @@ OutputOptions parse_output_options() {
 
         auto interface =
             interface::Interface::tcp(tcp_ip_address.Get(), tcp_port.Get(), true /* reconnect */);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (udp_ip_address || udp_port) {
@@ -246,19 +259,19 @@ OutputOptions parse_output_options() {
 
         auto interface =
             interface::Interface::udp(udp_ip_address.Get(), udp_port.Get(), true /* reconnect */);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (stdout_output_flag) {
         auto interface = interface::Interface::stdout();
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
-    for (auto& interface : output.interfaces) {
+    for (auto& interface : output_options.interfaces) {
         interface->open();
     }
 
-    return output;
+    return output_options;
 }
 
 Options parse_configuration(int argc, char** argv) {
@@ -300,22 +313,22 @@ Options parse_configuration(int argc, char** argv) {
             exit(0);
         }
 
-        return Options{
-            .host   = parse_host_options(),
-            .output = parse_output_options(),
-        };
-    } catch (const args::ValidationError& e) {
+        Options options{};
+        options.host   = parse_host_options();
+        options.output = parse_output_options();
+        return options;
+    } catch (args::ValidationError const& e) {
         std::cerr << e.what() << std::endl;
         parser.Help(std::cerr);
         exit(1);
-    } catch (const args::Help&) {
+    } catch (args::Help const&) {
         std::cout << parser;
         exit(0);
-    } catch (const args::ParseError& e) {
+    } catch (args::ParseError const& e) {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
         exit(1);
-    } catch (const std::exception& e) {
+    } catch (std::exception const& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         exit(1);
     }

@@ -2,21 +2,24 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
 #include <GNSS-ID.h>
 #include <GNSS-SystemTime.h>
 #pragma GCC diagnostic pop
 
 namespace decode {
 
-long day_number(const GNSS_SystemTime& src_time) {
+long day_number(GNSS_SystemTime const& src_time) {
     return src_time.gnss_DayNumber;
 }
 
-double time_of_day(const GNSS_SystemTime& src_time) {
+double time_of_day(GNSS_SystemTime const& src_time) {
     return static_cast<double>(src_time.gnss_TimeOfDay);
 }
 
-Maybe<double> time_of_day_fraction(const GNSS_SystemTime& src_time) {
+Maybe<double> time_of_day_fraction(GNSS_SystemTime const& src_time) {
     if (src_time.gnss_TimeOfDayFrac_msec) {
         return static_cast<double>(*src_time.gnss_TimeOfDayFrac_msec) / 1000.0;
     } else {
@@ -24,7 +27,7 @@ Maybe<double> time_of_day_fraction(const GNSS_SystemTime& src_time) {
     }
 }
 
-GenericGnssId gnss_id(const GNSS_SystemTime& src_time) {
+GenericGnssId gnss_id(GNSS_SystemTime const& src_time) {
     switch (src_time.gnss_TimeID.gnss_id) {
     case GNSS_ID__gnss_id_gps: return GenericGnssId::GPS;
     case GNSS_ID__gnss_id_glonass: return GenericGnssId::GLONASS;
@@ -33,10 +36,12 @@ GenericGnssId gnss_id(const GNSS_SystemTime& src_time) {
     }
 
     RTCM_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
     return GenericGnssId::GPS;
+#endif
 }
 
-ts::TAI_Time epoch_time(const GNSS_SystemTime& src_time) {
+ts::TAI_Time epoch_time(GNSS_SystemTime const& src_time) {
     auto day_number           = decode::day_number(src_time);
     auto time_of_day_seconds  = decode::time_of_day(src_time);
     auto time_of_day_fraction = decode::time_of_day_fraction(src_time);

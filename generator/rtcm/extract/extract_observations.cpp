@@ -2,6 +2,9 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
 #include <GNSS-RTK-Observations-r15.h>
 #include <GNSS-RTK-SatelliteDataElement-r15.h>
 #include <GNSS-RTK-SatelliteSignalDataElement-r15.h>
@@ -13,16 +16,16 @@ using namespace generator::rtcm;
 
 namespace decode {
 
-static Maybe<double> fine_phase_range(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+static Maybe<double> fine_phase_range(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     return static_cast<double>(src_signal.fine_PhaseRange_r15) * RTCM_N2_31;
 }
 
-static Maybe<double> fine_pseudo_range(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+static Maybe<double> fine_pseudo_range(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     return static_cast<double>(src_signal.fine_PseudoRange_r15) * RTCM_N2_29;
 }
 
 static Maybe<double>
-fine_phase_range_rate(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+fine_phase_range_rate(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     if (src_signal.fine_PhaseRangeRate_r15) {
         return static_cast<double>(*src_signal.fine_PhaseRangeRate_r15) * 0.0001;
     } else {
@@ -31,7 +34,7 @@ fine_phase_range_rate(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal)
 }
 
 static Maybe<double>
-carrier_to_noise_ratio(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+carrier_to_noise_ratio(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     if (src_signal.carrier_to_noise_ratio_r15) {
         return static_cast<double>(*src_signal.carrier_to_noise_ratio_r15) * RTCM_N2_4;
     } else {
@@ -56,7 +59,7 @@ RTCM_CONSTEXPR static uint64_t LOCK_TIME_BASE[LOCK_TIME_SIZE] = {
     384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704,
 };
 
-static Maybe<double> lock_time(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+static Maybe<double> lock_time(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     auto value = static_cast<uint64_t>(src_signal.lockTimeIndicator_r15);
     if (value >= LOCK_TIME_BASE[LOCK_TIME_SIZE - 1]) {
         return 67108864 / 1000.0;
@@ -66,23 +69,24 @@ static Maybe<double> lock_time(const GNSS_RTK_SatelliteSignalDataElement_r15& sr
         auto start = LOCK_TIME_BASE[i];
         auto end   = LOCK_TIME_BASE[i + 1];
         if (value >= start && value < end) {
-            return (LOCK_TIME_COEFF[i] * value - LOCK_TIME_OFFSET[i]) / 1000.0;
+            auto calculated_value = LOCK_TIME_COEFF[i] * value - LOCK_TIME_OFFSET[i];
+            return static_cast<double>(calculated_value) / 1000.0;
         }
     }
 
     return Maybe<double>();
 }
 
-static bool half_cycle_ambiguity(const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+static bool half_cycle_ambiguity(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     auto halfcycle = helper::BitString::from(&src_signal.halfCycleAmbiguityIndicator_r15);
     return halfcycle->get_bit(0) != 0;
 }
 
-static Maybe<double> rough_range(const GNSS_RTK_SatelliteDataElement_r15& src_satellite) {
+static Maybe<double> rough_range(GNSS_RTK_SatelliteDataElement_r15 const& src_satellite) {
     return static_cast<double>(src_satellite.rough_range_r15) * RTCM_N2_10;
 }
 
-static Maybe<int32_t> integer_ms(const GNSS_RTK_SatelliteDataElement_r15& src_satellite) {
+static Maybe<int32_t> integer_ms(GNSS_RTK_SatelliteDataElement_r15 const& src_satellite) {
     if (src_satellite.integer_ms_r15) {
         return static_cast<int32_t>(*src_satellite.integer_ms_r15);
     } else {
@@ -91,7 +95,7 @@ static Maybe<int32_t> integer_ms(const GNSS_RTK_SatelliteDataElement_r15& src_sa
 }
 
 static Maybe<double>
-rough_phase_range_rate(const GNSS_RTK_SatelliteDataElement_r15& src_satellite) {
+rough_phase_range_rate(GNSS_RTK_SatelliteDataElement_r15 const& src_satellite) {
     if (src_satellite.rough_phase_range_rate_r15) {
         return static_cast<double>(*src_satellite.rough_phase_range_rate_r15);
     } else {
@@ -100,7 +104,7 @@ rough_phase_range_rate(const GNSS_RTK_SatelliteDataElement_r15& src_satellite) {
 }
 
 static SatelliteId satellite_id(GenericGnssId                            gnss_id,
-                                const GNSS_RTK_SatelliteDataElement_r15& src_satellite) {
+                                GNSS_RTK_SatelliteDataElement_r15 const& src_satellite) {
     auto gnss = SatelliteId::Gnss::UNKNOWN;
     switch (gnss_id) {
     case GenericGnssId::GPS: gnss = SatelliteId::Gnss::GPS; break;
@@ -114,7 +118,7 @@ static SatelliteId satellite_id(GenericGnssId                            gnss_id
 }
 
 static SignalId signal_id(GenericGnssId                                  gnss_id,
-                          const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+                          GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     auto gnss = SignalId::Gnss::UNKNOWN;
     switch (gnss_id) {
     case GenericGnssId::GPS: gnss = SignalId::Gnss::GPS; break;
@@ -135,7 +139,7 @@ static SignalId signal_id(GenericGnssId                                  gnss_id
 
 static void extract_signal(Observations& observations, GenericGnssId gnss_id,
                            SatelliteId                                    satellite_id,
-                           const GNSS_RTK_SatelliteSignalDataElement_r15& src_signal) {
+                           GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     Signal dst_signal{};
     dst_signal.id                     = decode::signal_id(gnss_id, src_signal);
     dst_signal.satellite              = satellite_id;
@@ -150,7 +154,7 @@ static void extract_signal(Observations& observations, GenericGnssId gnss_id,
 }
 
 static void extract_satellite(Observations& observations, GenericGnssId gnss_id,
-                              const GNSS_RTK_SatelliteDataElement_r15& src_satellite) {
+                              GNSS_RTK_SatelliteDataElement_r15 const& src_satellite) {
     Satellite dst_satellite{};
     dst_satellite.id                     = decode::satellite_id(gnss_id, src_satellite);
     dst_satellite.rough_range            = decode::rough_range(src_satellite);
@@ -167,7 +171,7 @@ static void extract_satellite(Observations& observations, GenericGnssId gnss_id,
 }
 
 extern void extract_observations(RtkData& data, GenericGnssId gnss_id,
-                                 const GNSS_RTK_Observations_r15& src_observation) {
+                                 GNSS_RTK_Observations_r15 const& src_observation) {
     auto  dst_observation = std::unique_ptr<Observations>(new Observations());
     auto& observation     = *dst_observation.get();
     observation.time      = decode::epoch_time(src_observation.epochTime_r15);

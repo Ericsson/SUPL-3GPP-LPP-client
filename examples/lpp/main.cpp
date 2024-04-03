@@ -1,4 +1,3 @@
-#include <args.hpp>
 #include <lpp/lpp.h>
 #include "agnss_example.h"
 #include "options.hpp"

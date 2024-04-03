@@ -139,7 +139,7 @@ std::vector<OcbSatellite> OcbCorrections::satellites() const {
     }
 
     // Sort by satellite id
-    std::sort(result.begin(), result.end(), [](const OcbSatellite& a, const OcbSatellite& b) {
+    std::sort(result.begin(), result.end(), [](OcbSatellite const& a, OcbSatellite const& b) {
         return a.id < b.id;
     });
 
@@ -217,9 +217,10 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_URA_r16* ura) {
 
     auto& corrections   = ocb.mKeyedCorrections[key];
     corrections.gnss_id = gnss_id;
-    corrections.iod        = iod;
-    // URA epoch time may update slower and using it could override the epoch time for the other data in OCB. Therefore, we don't set the epoch time here, except if
-    // the corrections are grouped by epoch time.
+    corrections.iod     = iod;
+    // URA epoch time may update slower and using it could override the epoch time for the other
+    // data in OCB. Therefore, we don't set the epoch time here, except if the corrections are
+    // grouped by epoch time.
     if (mGroupByEpochTime) {
         corrections.epoch_time = epoch_time;
     }
@@ -495,7 +496,7 @@ static Bias gal_bias_from_signal(long signal_id, double correction, double conti
 
 #undef X
 
-static bool phase_bias_fix_flag(const SSR_PhaseBiasSignalElement_r16& signal) {
+static bool phase_bias_fix_flag(SSR_PhaseBiasSignalElement_r16 const& signal) {
     if (!signal.phaseBiasIntegerIndicator_r16) {
         // TODO(ewasjon): What should we do here if the fix flag information is missing? The
         // original SPARTN implementation used a default value of 'true'.
@@ -511,7 +512,7 @@ static bool phase_bias_fix_flag(const SSR_PhaseBiasSignalElement_r16& signal) {
 }
 
 template <typename BiasToSignal>
-static std::map<uint8_t, Bias> phase_biases(const SSR_PhaseBiasSatElement_r16& satellite,
+static std::map<uint8_t, Bias> phase_biases(SSR_PhaseBiasSatElement_r16 const& satellite,
                                             BiasToSignal*                      bias_to_signal) {
     std::map<uint8_t, Bias> biases_by_type;
 
@@ -559,7 +560,7 @@ static std::map<uint8_t, Bias> phase_biases(const SSR_PhaseBiasSatElement_r16& s
 }
 
 template <typename BiasToSignal>
-static std::map<uint8_t, Bias> code_biases(const SSR_CodeBiasSatElement_r15& satellite,
+static std::map<uint8_t, Bias> code_biases(SSR_CodeBiasSatElement_r15 const& satellite,
                                            BiasToSignal*                     bias_to_signal) {
     std::map<uint8_t, Bias> biases_by_type;
 
@@ -604,8 +605,8 @@ static std::map<uint8_t, Bias> code_biases(const SSR_CodeBiasSatElement_r15& sat
 }
 
 static void generate_gps_bias_block(MessageBuilder&                    builder,
-                                    const SSR_CodeBiasSatElement_r15*  code_bias,
-                                    const SSR_PhaseBiasSatElement_r16* phase_bias) {
+                                    SSR_CodeBiasSatElement_r15 const*  code_bias,
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias) {
     if (!phase_bias) {
         builder.sf025_raw(false, 0);
     } else {
@@ -632,8 +633,8 @@ static void generate_gps_bias_block(MessageBuilder&                    builder,
 }
 
 static void generate_glo_bias_block(MessageBuilder&                    builder,
-                                    const SSR_CodeBiasSatElement_r15*  code_bias,
-                                    const SSR_PhaseBiasSatElement_r16* phase_bias) {
+                                    SSR_CodeBiasSatElement_r15 const*  code_bias,
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias) {
     if (!phase_bias) {
         builder.sf026_raw(false, 0);
     } else {
@@ -660,8 +661,8 @@ static void generate_glo_bias_block(MessageBuilder&                    builder,
 }
 
 static void generate_gal_bias_block(MessageBuilder&                    builder,
-                                    const SSR_CodeBiasSatElement_r15*  code_bias,
-                                    const SSR_PhaseBiasSatElement_r16* phase_bias) {
+                                    SSR_CodeBiasSatElement_r15 const*  code_bias,
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias) {
     if (!phase_bias) {
         builder.sf102_raw(false, 0);
     } else {
@@ -702,7 +703,7 @@ void Generator::generate_ocb(uint16_t iod) {
     }
 
     std::sort(messages.begin(), messages.end(),
-              [](const OcbCorrections* a, const OcbCorrections* b) {
+              [](OcbCorrections const* a, OcbCorrections const* b) {
                   return subtype_from_gnss_id(a->gnss_id) < subtype_from_gnss_id(b->gnss_id);
               });
 

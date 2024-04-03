@@ -2,6 +2,9 @@
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
 #include <GNSS-RTK-ReferenceStationInfo-r15.h>
 #include <PhysicalReferenceStationInfo-r15.h>
 #pragma GCC diagnostic pop
@@ -10,29 +13,29 @@ using namespace generator::rtcm;
 
 namespace decode {
 
-static uint32_t reference_station_id(const GNSS_RTK_ReferenceStationInfo_r15& src_reference) {
+static uint32_t reference_station_id(GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     return static_cast<uint32_t>(src_reference.referenceStationID_r15.referenceStationID_r15);
 }
 
-static double reference_point(const INTEGER_t& src) {
+static double reference_point(INTEGER_t const& src) {
     intmax_t value = 0;
     asn_INTEGER2imax(&src, &value);
     return static_cast<double>(value) * 0.0001;
 }
 
-static double reference_point_x(const GNSS_RTK_ReferenceStationInfo_r15& src_reference) {
+static double reference_point_x(GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     return reference_point(src_reference.antenna_reference_point_ECEF_X_r15);
 }
 
-static double reference_point_y(const GNSS_RTK_ReferenceStationInfo_r15& src_reference) {
+static double reference_point_y(GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     return reference_point(src_reference.antenna_reference_point_ECEF_Y_r15);
 }
 
-static double reference_point_z(const GNSS_RTK_ReferenceStationInfo_r15& src_reference) {
+static double reference_point_z(GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     return reference_point(src_reference.antenna_reference_point_ECEF_Z_r15);
 }
 
-static Maybe<double> antenna_height(const GNSS_RTK_ReferenceStationInfo_r15& src_reference) {
+static Maybe<double> antenna_height(GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     if (src_reference.antennaHeight_r15) {
         return static_cast<double>(*src_reference.antennaHeight_r15) * 0.0001;
     } else {
@@ -40,32 +43,32 @@ static Maybe<double> antenna_height(const GNSS_RTK_ReferenceStationInfo_r15& src
     }
 }
 
-static bool is_physical_reference_station(const GNSS_RTK_ReferenceStationInfo_r15& src_reference) {
+static bool is_physical_reference_station(GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     return src_reference.referenceStationIndicator_r15 ==
            GNSS_RTK_ReferenceStationInfo_r15__referenceStationIndicator_r15_physical;
 }
 
-static uint32_t reference_station_id(const PhysicalReferenceStationInfo_r15& src_reference) {
+static uint32_t reference_station_id(PhysicalReferenceStationInfo_r15 const& src_reference) {
     return static_cast<uint32_t>(
         src_reference.physicalReferenceStationID_r15.referenceStationID_r15);
 }
 
-static double reference_point_x(const PhysicalReferenceStationInfo_r15& src_reference) {
+static double reference_point_x(PhysicalReferenceStationInfo_r15 const& src_reference) {
     return reference_point(src_reference.physical_ARP_ECEF_X_r15);
 }
 
-static double reference_point_y(const PhysicalReferenceStationInfo_r15& src_reference) {
+static double reference_point_y(PhysicalReferenceStationInfo_r15 const& src_reference) {
     return reference_point(src_reference.physical_ARP_ECEF_Y_r15);
 }
 
-static double reference_point_z(const PhysicalReferenceStationInfo_r15& src_reference) {
+static double reference_point_z(PhysicalReferenceStationInfo_r15 const& src_reference) {
     return reference_point(src_reference.physical_ARP_ECEF_Z_r15);
 }
 }  // namespace decode
 
 static void
 extract_physical_reference_station_info(RtkData&                                data,
-                                        const PhysicalReferenceStationInfo_r15& src_physical) {
+                                        PhysicalReferenceStationInfo_r15 const& src_physical) {
     auto  dst_physical = std::unique_ptr<PhysicalReferenceStation>(new PhysicalReferenceStation());
     auto& physical     = *dst_physical.get();
     physical.reference_station_id = decode::reference_station_id(src_physical);
@@ -77,7 +80,7 @@ extract_physical_reference_station_info(RtkData&                                
 }
 
 extern void extract_reference_station_info(RtkData&                                 data,
-                                           const GNSS_RTK_ReferenceStationInfo_r15& src_reference) {
+                                           GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     auto  dst_reference            = std::unique_ptr<ReferenceStation>(new ReferenceStation());
     auto& reference                = *dst_reference.get();
     reference.reference_station_id = decode::reference_station_id(src_reference);

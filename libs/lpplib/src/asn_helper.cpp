@@ -22,10 +22,10 @@ BIT_STRING_s* BitStringBuilder::into_bit_string(size_t bits, BIT_STRING_s* bit_s
     BIT_STRING_initialize(bit_string, bits);
 
     assert(bits <= 64);
-    for (int j = 0; j < 64; j++) {
+    for (size_t j = 0; j < 64; j++) {
         if (mBits & (1llu << j)) {
-            auto x = j / 8;
-            auto y = 7 - (j % 8);
+            size_t x = j / 8;
+            size_t y = 7 - (j % 8);
             assert(x < bit_string->size);
             if (x < bit_string->size) {
                 bit_string->buf[x] |= 1 << y;

@@ -17,15 +17,15 @@ static SPARTN_CONSTEXPR double ORBIT_RADIAL_RESOLUTION = 0.0001;
 static SPARTN_CONSTEXPR double ORBIT_ALONG_RESOLUTION  = 0.0004;
 static SPARTN_CONSTEXPR double ORBIT_CROSS_RESOLUTION  = 0.0004;
 
-static double delta_radial_r15(long value) {
+inline double delta_radial_r15(long value) {
     return static_cast<double>(value) * ORBIT_RADIAL_RESOLUTION;
 }
 
-static double delta_AlongTrack_r15(long value) {
+inline double delta_AlongTrack_r15(long value) {
     return static_cast<double>(value) * ORBIT_ALONG_RESOLUTION;
 }
 
-static double delta_CrossTrack_r15(long value) {
+inline double delta_CrossTrack_r15(long value) {
     return static_cast<double>(value) * ORBIT_CROSS_RESOLUTION;
 }
 
@@ -33,19 +33,19 @@ static SPARTN_CONSTEXPR double CLOCK_C0_RESOLUTION = 0.0001;
 static SPARTN_CONSTEXPR double CLOCK_C1_RESOLUTION = 0.000001;
 static SPARTN_CONSTEXPR double CLOCK_C2_RESOLUTION = 0.00000002;
 
-static double delta_Clock_C0_r15(long value) {
+inline double delta_Clock_C0_r15(long value) {
     return static_cast<double>(value) * CLOCK_C0_RESOLUTION;
 }
 
-static double delta_Clock_C1_r15(long* value) {
+inline double delta_Clock_C1_r15(long* value) {
     return value ? (static_cast<double>(*value) * CLOCK_C1_RESOLUTION) : 0.0;
 }
 
-static double delta_Clock_C2_r15(long* value) {
+inline double delta_Clock_C2_r15(long* value) {
     return value ? (static_cast<double>(*value) * CLOCK_C2_RESOLUTION) : 0.0;
 }
 
-static long signal_id(const GNSS_SignalID& signal_id) {
+inline long signal_id(const GNSS_SignalID& signal_id) {
     if (signal_id.ext1 && signal_id.ext1->gnss_SignalID_Ext_r15) {
         return *signal_id.ext1->gnss_SignalID_Ext_r15;
     } else {
@@ -56,15 +56,15 @@ static long signal_id(const GNSS_SignalID& signal_id) {
 static SPARTN_CONSTEXPR double PHASE_BIAS_RESOLUTION = 0.001;
 static SPARTN_CONSTEXPR double CODE_BIAS_RESOLUTION  = 0.01;
 
-static double phaseBias_r16(long value) {
+inline double phaseBias_r16(long value) {
     return static_cast<double>(value) * PHASE_BIAS_RESOLUTION;
 }
 
-static double codeBias_r15(long value) {
+inline double codeBias_r15(long value) {
     return static_cast<double>(value) * CODE_BIAS_RESOLUTION;
 }
 
-static double ssr_URA_r16(BIT_STRING_s ura) {
+inline double ssr_URA_r16(BIT_STRING_s ura) {
     auto bits = ura.buf[0];
     auto cls  = (bits >> 3) & 0x7;
     auto val  = bits & 0x7;
@@ -81,33 +81,33 @@ static SPARTN_CONSTEXPR double REFERENCE_POINT_LATITUDE_RESOLUTION = 0.000061035
 static SPARTN_CONSTEXPR double REFERENCE_POINT_LONGITUDE_DEG        = 180.0;
 static SPARTN_CONSTEXPR double REFERENCE_POINT_LONGITUDE_RESOLUTION = 0.000030517578125;  // 2^-15
 
-static double referencePointLatitude_r16(long value) {
+inline double referencePointLatitude_r16(long value) {
     return (static_cast<double>(value) * REFERENCE_POINT_LATITUDE_DEG) * REFERENCE_POINT_LATITUDE_RESOLUTION;
 }
 
-static double referencePointLongitude_r16(long value) {
+inline double referencePointLongitude_r16(long value) {
     return (static_cast<double>(value) * REFERENCE_POINT_LONGITUDE_DEG) * REFERENCE_POINT_LONGITUDE_RESOLUTION;
 }
 
 static SPARTN_CONSTEXPR double STEP_OF_LONGITUDE_RESOLUTION = 0.01;
 static SPARTN_CONSTEXPR double STEP_OF_LATITUDE_RESOLUTION  = 0.01;
 
-static double stepOfLatitude_r16(long value) {
+inline double stepOfLatitude_r16(long value) {
     return static_cast<double>(value) * STEP_OF_LONGITUDE_RESOLUTION;
 }
 
-static double stepOfLongitude_r16(long value) {
+inline double stepOfLongitude_r16(long value) {
     return static_cast<double>(value) * STEP_OF_LATITUDE_RESOLUTION;
 }
 
 static SPARTN_CONSTEXPR double TROPOSPHERIC_HYDRO_STATIC_DELAY_RESOLUTION = 0.004;
 static SPARTN_CONSTEXPR double TROPOSPHERIC_WET_DELAY_RESOLUTION          = 0.004;
 
-static double tropoHydroStaticVerticalDelay_r16(long value) {
+inline double tropoHydroStaticVerticalDelay_r16(long value) {
     return static_cast<double>(value) * TROPOSPHERIC_HYDRO_STATIC_DELAY_RESOLUTION;
 }
 
-static double tropoWetVerticalDelay_r16(long value) {
+inline double tropoWetVerticalDelay_r16(long value) {
     return static_cast<double>(value) * TROPOSPHERIC_WET_DELAY_RESOLUTION;
 }
 
@@ -116,7 +116,7 @@ struct StecQualityIndicator {
     double value;
 };
 
-static StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
+inline StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
     static SPARTN_CONSTEXPR double QUALITY_INDICATOR[64] = {
         33.6664, 30.2992, 26.9319, 23.5647, 20.1974, 16.8301, 13.4629, 12.3405, 11.2180,
         10.0956, 8.9732,  7.8508,  6.7284,  5.6059,  4.4835,  4.1094,  3.7352,  3.3611,
@@ -147,26 +147,26 @@ static SPARTN_CONSTEXPR double STEC_C01_RESOLUTION = 0.02;
 static SPARTN_CONSTEXPR double STEC_C10_RESOLUTION = 0.02;
 static SPARTN_CONSTEXPR double STEC_C11_RESOLUTION = 0.02;
 
-static double stec_C00_r16(long value) {
+inline double stec_C00_r16(long value) {
     return static_cast<double>(value) * STEC_C00_RESOLUTION;
 }
 
-static double stec_C01_r16(long* value) {
+inline double stec_C01_r16(long* value) {
     return (value ? static_cast<double>(*value) : 0) * STEC_C01_RESOLUTION;
 }
 
-static double stec_C10_r16(long* value) {
+inline double stec_C10_r16(long* value) {
     return (value ? static_cast<double>(*value) : 0) * STEC_C10_RESOLUTION;
 }
 
-static double stec_C11_r16(long* value) {
+inline double stec_C11_r16(long* value) {
     return (value ? static_cast<double>(*value) : 0) * STEC_C11_RESOLUTION;
 }
 
 static SPARTN_CONSTEXPR double STEC_RESIDUAL_B7_RESOLUTION  = 0.04;
 static SPARTN_CONSTEXPR double STEC_RESIDUAL_B16_RESOLUTION = 0.04;
 
-static double stecResidualCorrection_r16(
+inline double stecResidualCorrection_r16(
     STEC_ResidualSatElement_r16::STEC_ResidualSatElement_r16__stecResidualCorrection_r16
         correction) {
     switch (correction.present) {

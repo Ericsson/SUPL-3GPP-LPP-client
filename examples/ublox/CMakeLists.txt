@@ -12,7 +12,4 @@ target_link_libraries(example_ublox PRIVATE dependency::interface)
 set_target_properties(example_ublox PROPERTIES OUTPUT_NAME "example-ublox")
 set_target_properties(example_ublox PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-if (USE_ASAN)
-target_compile_options(example_ublox PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(example_ublox PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
+setup_target(example_ublox)
