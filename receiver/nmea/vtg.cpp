@@ -60,7 +60,6 @@ void VtgMessage::print() const NMEA_NOEXCEPT {
     case ModeIndicator::Unknown: printf("unknown\n"); break;
     case ModeIndicator::Autonomous: printf("autonomous\n"); break;
     case ModeIndicator::Differential: printf("differential\n"); break;
-    default: printf("invalid\n"); break;
     }
 }
 

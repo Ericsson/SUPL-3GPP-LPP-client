@@ -204,7 +204,7 @@ ChecksumResult Parser::checksum(const std::string& buffer) {
 
     auto calculated_checksum = 0ULL;
     for (auto nmea_char : nmea_string) {
-        calculated_checksum = calculated_checksum ^ static_cast<unsigned long>(nmea_char);
+        calculated_checksum = calculated_checksum ^ static_cast<unsigned long long>(nmea_char);
     }
 
     if (expected_checksum == calculated_checksum) {
@@ -223,7 +223,7 @@ std::string Parser::parse_prefix(const uint8_t* data, uint32_t length) const NME
             break;
         }
 
-        prefix += c;
+        prefix += static_cast<char>(c);
     }
 
     if (prefix.size() != 6) {
