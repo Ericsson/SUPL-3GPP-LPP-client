@@ -4,14 +4,19 @@
 #include "message.hpp"
 #include "time.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-SSR-ClockCorrections-r15.h>
 #include <GNSS-SSR-CodeBias-r15.h>
 #include <GNSS-SSR-OrbitCorrections-r15.h>
 #include <GNSS-SSR-PhaseBias-r16.h>
 #include <GNSS-SSR-URA-r16.h>
-
 #include <SSR-OrbitCorrectionList-r15.h>
 #include <SSR-OrbitCorrectionSatelliteElement-r15.h>
+#pragma GCC diagnostic pop
 
 #include <algorithm>
 #include <map>
@@ -21,32 +26,32 @@ namespace spartn {
 
 uint32_t OcbSatellite::prn() const {
     // NOTE(ewasjon): 3GPP LPP defines PRN starting at 0 instead of 1.
-    return id + 1;
+    return static_cast<uint32_t>(id + 1);
 }
 
-void OcbSatellite::add_correction(SSR_OrbitCorrectionSatelliteElement_r15* orbit) {
-    if (!orbit) return;
-    this->orbit = orbit;
+void OcbSatellite::add_correction(SSR_OrbitCorrectionSatelliteElement_r15* new_orbit) {
+    if (!new_orbit) return;
+    orbit = new_orbit;
 }
 
-void OcbSatellite::add_correction(SSR_ClockCorrectionSatelliteElement_r15* clock) {
-    if (!clock) return;
-    this->clock = clock;
+void OcbSatellite::add_correction(SSR_ClockCorrectionSatelliteElement_r15* new_clock) {
+    if (!new_clock) return;
+    clock = new_clock;
 }
 
-void OcbSatellite::add_correction(SSR_CodeBiasSatElement_r15* code_bias) {
-    if (!code_bias) return;
-    this->code_bias = code_bias;
+void OcbSatellite::add_correction(SSR_CodeBiasSatElement_r15* new_code_bias) {
+    if (!new_code_bias) return;
+    code_bias = new_code_bias;
 }
 
-void OcbSatellite::add_correction(SSR_PhaseBiasSatElement_r16* phase_bias) {
-    if (!phase_bias) return;
-    this->phase_bias = phase_bias;
+void OcbSatellite::add_correction(SSR_PhaseBiasSatElement_r16* new_phase_bias) {
+    if (!new_phase_bias) return;
+    phase_bias = new_phase_bias;
 }
 
-void OcbSatellite::add_correction(SSR_URA_SatElement_r16* ura) {
-    if (!ura) return;
-    this->ura = ura;
+void OcbSatellite::add_correction(SSR_URA_SatElement_r16* new_ura) {
+    if (!new_ura) return;
+    ura = new_ura;
 }
 
 std::vector<OcbSatellite> OcbCorrections::satellites() const {
@@ -143,12 +148,12 @@ std::vector<OcbSatellite> OcbCorrections::satellites() const {
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15* orbit) {
     if (!orbit) return;
-    auto  iod = orbit->iod_ssr_r15;
+    auto  iod = static_cast<uint16_t>(orbit->iod_ssr_r15);
     auto& ocb = mOcbData[iod];
 
     // TODO(ewasjon): [low-priority] Filter based on satellite reference datum.
     auto epoch_time = spartn_time_from(orbit->epochTime_r15);
-    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -159,11 +164,11 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15*
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15* clock) {
     if (!clock) return;
-    auto  iod = clock->iod_ssr_r15;
+    auto  iod = static_cast<uint16_t>(clock->iod_ssr_r15);
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(clock->epochTime_r15);
-    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -174,11 +179,11 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15*
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bias) {
     if (!code_bias) return;
-    auto  iod = code_bias->iod_ssr_r15;
+    auto  iod = static_cast<uint16_t>(code_bias->iod_ssr_r15);
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(code_bias->epochTime_r15);
-    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -189,11 +194,11 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bi
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_PhaseBias_r16* phase_bias) {
     if (!phase_bias) return;
-    auto  iod = phase_bias->iod_ssr_r16;
+    auto  iod = static_cast<uint16_t>(phase_bias->iod_ssr_r16);
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(phase_bias->epochTime_r16);
-    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = ocb.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -204,17 +209,18 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_PhaseBias_r16* phase_
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_URA_r16* ura) {
     if (!ura) return;
-    auto  iod = ura->iod_ssr_r16;
+    auto  iod = static_cast<uint16_t>(ura->iod_ssr_r16);
     auto& ocb = mOcbData[iod];
 
     auto epoch_time = spartn_time_from(ura->epochTime_r16);
-    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
     auto& corrections   = ocb.mKeyedCorrections[key];
     corrections.gnss_id = gnss_id;
-    corrections.iod     = iod;
-    // The URA timestamp is only relevant if the corrections are grouped by epoch time.
-    if (group_by_epoch_time) {
+    corrections.iod        = iod;
+    // URA epoch time may update slower and using it could override the epoch time for the other data in OCB. Therefore, we don't set the epoch time here, except if
+    // the corrections are grouped by epoch time.
+    if (mGroupByEpochTime) {
         corrections.epoch_time = epoch_time;
     }
     corrections.ura = ura;
@@ -681,7 +687,7 @@ static void generate_gal_bias_block(MessageBuilder&                    builder,
     }
 }
 
-void Generator::generate_ocb(long iod) {
+void Generator::generate_ocb(uint16_t iod) {
     auto ocb_data = mCorrectionData->ocb(iod);
     if (!ocb_data) return;
 
@@ -829,7 +835,8 @@ void Generator::generate_ocb(long iod) {
                 builder.sf020(dc);
 
                 if (mUraOverride >= 0) {
-                    builder.sf024_raw(mUraOverride > 7 ? 7 : mUraOverride);
+                    uint8_t ura_value = mUraOverride > 7 ? 7 : static_cast<uint8_t>(mUraOverride);
+                    builder.sf024_raw(ura_value);
                 } else if (satellite.ura) {
                     auto& ura   = *satellite.ura;
                     auto  value = decode::ssr_URA_r16(ura.ssr_URA_r16);

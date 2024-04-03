@@ -1,14 +1,21 @@
 #include "message.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <BIT_STRING.h>
+#include <GNSS-SSR-STEC-Correction-r16.h>
+#pragma GCC diagnostic pop
+
+#include <asn.1/bit_string.hpp>
+
 #define GNSS_ID_GPS 0
 #define GNSS_ID_GLO 4
 #define GNSS_ID_GAL 3
 #define GNSS_ID_BDS 5
 #define GNSS_ID_QZS 2
-
-#include <BIT_STRING.h>
-#include <GNSS-SSR-STEC-Correction-r16.h>
-#include <asn.1/bit_string.hpp>
 
 static uint16_t crc16_ccitt(uint8_t* data, size_t length) {
     // CRC 16 CCITT
@@ -49,7 +56,7 @@ static uint16_t crc16_ccitt(uint8_t* data, size_t length) {
     for (size_t i = 0; i < length; i++) {
         auto value = data[i];
         auto index = static_cast<uint16_t>(value) ^ (crc >> 8);
-        crc        = CRC16_LOOKUP[index] ^ (crc << 8);
+        crc        = CRC16_LOOKUP[index] ^ static_cast<uint16_t>(crc << 8);
     }
 
     return crc;

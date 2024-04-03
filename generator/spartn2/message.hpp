@@ -408,10 +408,10 @@ public:
     inline void sf053(double value) { mBuilder.double_to_bits(-0.508, 0.508, 0.004, value, 8); }
 
     // SF054 - Ionosphere equation type
-    inline void sf054(int type) { mBuilder.bits(type, 3); }
+    inline void sf054(int type) { mBuilder.signed_bits(type, 3); }
 
     // SF055 - Ionosphere quality
-    inline void sf055_raw(int value) { mBuilder.bits(value, 4); }
+    inline void sf055_raw(int value) { mBuilder.signed_bits(value, 4); }
     inline void sf055_invalid() { sf055_raw(0); }
     inline void sf055(double quality) {
         if (quality <= 0.03)

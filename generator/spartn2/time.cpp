@@ -1,21 +1,28 @@
 #include "time.hpp"
 
 #include <utility/time.h>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include "GNSS-SystemTime.h"
+#pragma GCC diagnostic pop
 
 static SPARTN_CONSTEXPR uint32_t SECONDS_IN_DAY        = 86400;
-static SPARTN_CONSTEXPR uint16_t DAY_BETWEEN_1970_1980 = 3657;   // Jan 6
-static SPARTN_CONSTEXPR uint16_t DAY_BETWEEN_1970_1996 = 9496;   // Jan 1
-static SPARTN_CONSTEXPR uint16_t DAY_BETWEEN_1970_1999 = 10825;  // Aug 2
-static SPARTN_CONSTEXPR uint16_t DAY_BETWEEN_1970_2006 = 13149;  // Jan 1
-static SPARTN_CONSTEXPR uint16_t DAY_BETWEEN_1970_2010 = 14610;  // Jan 1
+static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_1980 = 3657;   // Jan 6
+static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_1996 = 9496;   // Jan 1
+static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_1999 = 10825;  // Aug 2
+static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_2006 = 13149;  // Jan 1
+static SPARTN_CONSTEXPR uint64_t     DAY_BETWEEN_1970_2010 = 14610;  // Jan 1
 
 uint64_t standard_day_number(const long gnss_id, const long day_number) {
     switch (gnss_id) {
-    case GNSS_ID__gnss_id_gps: return day_number + DAY_BETWEEN_1970_1980;
-    case GNSS_ID__gnss_id_galileo: return day_number + DAY_BETWEEN_1970_1999;
-    case GNSS_ID__gnss_id_glonass: return day_number + DAY_BETWEEN_1970_1996;
-    case GNSS_ID__gnss_id_bds: return day_number + DAY_BETWEEN_1970_2006;
+    case GNSS_ID__gnss_id_gps: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1980;
+    case GNSS_ID__gnss_id_galileo: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1999;
+    case GNSS_ID__gnss_id_glonass: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1996;
+    case GNSS_ID__gnss_id_bds: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_2006;
     default: SPARTN_UNREACHABLE();
     }
 }

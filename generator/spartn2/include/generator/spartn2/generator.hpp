@@ -84,9 +84,9 @@ private:
     void find_ocb_corrections(const ProvideAssistanceData_r9_IEs* message);
     void find_hpac_corrections(const ProvideAssistanceData_r9_IEs* message);
 
-    void generate_gad(long iod, uint32_t epoch_time, long set_id);
-    void generate_ocb(long iod);
-    void generate_hpac(long iod);
+    void generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id);
+    void generate_ocb(uint16_t iod);
+    void generate_hpac(uint16_t iod);
 
     uint16_t next_area_id() {
         auto id     = mNextAreaId;
@@ -114,7 +114,7 @@ private:
     bool mGroupByEpochTime;
     bool mIodeShift;
     bool mIncreasingSiou;
-    int  mSiouIndex;
+    uint16_t  mSiouIndex;
 
     bool mGenerateGad;
     bool mGenerateOcb;

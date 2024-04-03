@@ -3,6 +3,11 @@
 #include "decode.hpp"
 #include "message.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
@@ -13,6 +18,7 @@
 #include <SSR-CodeBiasSignalElement-r15.h>
 #include <SSR-PhaseBiasSatElement-r16.h>
 #include <SSR-PhaseBiasSignalElement-r16.h>
+#pragma GCC diagnostic pop
 
 #include <map>
 #include <unordered_map>
@@ -72,7 +78,7 @@ std::vector<Message> Generator::generate(const LPP_Message* lpp_message) {
         }
 
         if (hpac && mGenerateGad) {
-            std::vector<long> set_ids;
+            std::vector<uint16_t> set_ids;
             hpac->set_ids(set_ids);
 
             SpartnTime gad_epoch_time{};
@@ -118,15 +124,15 @@ void Generator::find_correction_point_set(const ProvideAssistanceData_r9_IEs* me
     if (ssr.correctionPoints_r16.present ==
         GNSS_SSR_CorrectionPoints_r16__correctionPoints_r16_PR_arrayOfCorrectionPoints_r16) {
         auto& array = ssr.correctionPoints_r16.choice.arrayOfCorrectionPoints_r16;
-
-        if (mCorrectionPointSets.find(ssr.correctionPointSetID_r16) != mCorrectionPointSets.end()) {
+        auto correction_point_set_id = static_cast<uint16_t>(ssr.correctionPointSetID_r16);
+        if (mCorrectionPointSets.find(correction_point_set_id) != mCorrectionPointSets.end()) {
             // NOTE(ewasjon): We assume that the correction point set cannot be changed. From an
             // location server point-of-view, this should never happen. The correction point set is
             // only every sent on the first non-periodic message or when the UE changes cell.
             return;
         } else {
             CorrectionPointSet correction_point_set{};
-            correction_point_set.set_id  = ssr.correctionPointSetID_r16;
+            correction_point_set.set_id  = correction_point_set_id;
             correction_point_set.area_id = next_area_id();
             correction_point_set.grid_points =
                 (array.numberOfStepsLatitude_r16 + 1) * (array.numberOfStepsLongitude_r16 + 1);

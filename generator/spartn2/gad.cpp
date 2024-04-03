@@ -6,7 +6,7 @@
 namespace generator {
 namespace spartn {
 
-void Generator::generate_gad(long iod, uint32_t epoch_time, long set_id) {
+void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id) {
     auto cps_it = mCorrectionPointSets.find(set_id);
     if (cps_it == mCorrectionPointSets.end()) return;
     auto& correction_point_set = *(cps_it->second.get());
@@ -62,7 +62,8 @@ void Generator::generate_gad(long iod, uint32_t epoch_time, long set_id) {
     builder.sf030(1);
 
     {
-        builder.sf031(correction_point_set.area_id);
+        // TODO(ewasjon): Not sure why the area_id is a uint16_t, because the value is only 8 bits. 
+        builder.sf031(static_cast<uint8_t>(correction_point_set.area_id));
 
         auto reference_point_lat =
             decode::referencePointLatitude_r16(correction_point_set.referencePointLatitude_r16);
@@ -74,8 +75,8 @@ void Generator::generate_gad(long iod, uint32_t epoch_time, long set_id) {
         // NOTE(ewasjon): 3GPP LPP has the number of steps, not the number of points
         auto grid_count_lat = correction_point_set.numberOfStepsLatitude_r16 + 1;
         auto grid_count_lng = correction_point_set.numberOfStepsLongitude_r16 + 1;
-        builder.sf034(grid_count_lat);
-        builder.sf035(grid_count_lng);
+        builder.sf034(static_cast<uint8_t>(grid_count_lat));
+        builder.sf035(static_cast<uint8_t>(grid_count_lng));
 
         auto delta_lat = decode::stepOfLatitude_r16(correction_point_set.stepOfLatitude_r16);
         auto delta_lng = decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16);
