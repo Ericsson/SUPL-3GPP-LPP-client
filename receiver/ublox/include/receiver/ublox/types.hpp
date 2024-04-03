@@ -53,3 +53,6 @@ __attribute__((noreturn)) inline void ublox_unreachable() {
 #endif
 #endif
 
+#ifndef UBLOX_ASSERT
+#define UBLOX_ASSERT(cond, msg) assert((cond) && msg)
+#endif

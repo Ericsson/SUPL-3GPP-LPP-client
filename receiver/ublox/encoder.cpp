@@ -115,12 +115,16 @@ void Encoder::I8(int64_t value) UBLOX_NOEXCEPT {
 }
 
 void Encoder::R4(float value) UBLOX_NOEXCEPT {
-    auto unsigned_value = *reinterpret_cast<uint32_t*>(&value);
+    static_assert(sizeof(float) == sizeof(uint32_t), "float is not 32 bits");
+    uint32_t unsigned_value;
+    std::memcpy(&unsigned_value, &value, sizeof(float));
     X4(unsigned_value);
 }
 
 void Encoder::R8(double value) UBLOX_NOEXCEPT {
-    auto unsigned_value = *reinterpret_cast<uint64_t*>(&value);
+    static_assert(sizeof(double) == sizeof(uint64_t), "double is not 64 bits");
+    uint64_t unsigned_value;
+    std::memcpy(&unsigned_value, &value, sizeof(double));
     X8(unsigned_value);
 }
 

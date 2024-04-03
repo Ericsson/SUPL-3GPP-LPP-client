@@ -80,7 +80,10 @@ void CfgValue::serialize(Encoder& encoder) const UBLOX_NOEXCEPT {
     case Type::U2: encoder.U2(mValue.mU2); break;
     case Type::U4: encoder.U4(mValue.mU4); break;
     case Type::U8: encoder.U8(mValue.mU8); break;
-    case Type::UNKNOWN: UBLOX_UNREACHABLE(); break;
+    case Type::UNKNOWN: UBLOX_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+        break;
+#endif
     }
 }
 
@@ -122,8 +125,10 @@ CfgValue CfgValue::parse_from_key(CfgKey key, Decoder& decoder) UBLOX_NOEXCEPT {
     case 5: return parse_from_type(Type::U8, decoder);
     }
     UBLOX_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
     // TODO: this is unreachable, but GCC complains about it
     return CfgValue{};
+#endif
 }
 
 CfgValue CfgValue::parse_from_type(Type type, Decoder& decoder) UBLOX_NOEXCEPT {
@@ -133,11 +138,16 @@ CfgValue CfgValue::parse_from_type(Type type, Decoder& decoder) UBLOX_NOEXCEPT {
     case Type::U2: return CfgValue::from_u2(decoder.U2());
     case Type::U4: return CfgValue::from_u4(decoder.U4());
     case Type::U8: return CfgValue::from_u8(decoder.U8());
-    case Type::UNKNOWN: UBLOX_UNREACHABLE(); break;
+    case Type::UNKNOWN: UBLOX_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+        break;
+#endif
     }
     UBLOX_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
     // TODO: this is unreachable, but GCC complains about it
     return CfgValue{};
+#endif
 }
 
 }  // namespace ublox

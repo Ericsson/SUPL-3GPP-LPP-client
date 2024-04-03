@@ -416,7 +416,7 @@ void UbloxReceiver::process() {
         }
 
         // Ignore the return value, this should never fail if the parser buffer is >= 1024 bytes
-        mParser->append(buffer, length);
+        mParser->append(buffer, static_cast<uint16_t>(length));
     }
 }
 
