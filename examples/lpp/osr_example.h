@@ -4,7 +4,9 @@
 namespace osr_example {
 
 enum class Format {
+#ifdef INCLUDE_GENERATOR_RTCM
     RTCM,
+#endif
     XER,
 };
 

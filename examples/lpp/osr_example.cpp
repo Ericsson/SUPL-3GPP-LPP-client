@@ -1,5 +1,4 @@
 #include "osr_example.h"
-#include <generator/rtcm/generator.hpp>
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
 #include <modem.h>
@@ -9,13 +8,17 @@
 #include <stdexcept>
 #include "location_information.h"
 
+#ifdef INCLUDE_GENERATOR_RTCM
+#include <generator/rtcm/generator.hpp>
 using RtcmGenerator = std::unique_ptr<generator::rtcm::Generator>;
-using UReceiver     = receiver::ublox::ThreadedReceiver;
-using NReceiver     = receiver::nmea::ThreadedReceiver;
+static RtcmGenerator gGenerator;
+#endif
+
+using UReceiver = receiver::ublox::ThreadedReceiver;
+using NReceiver = receiver::nmea::ThreadedReceiver;
 
 static CellID                         gCell;
 static osr_example::Format            gFormat;
-static RtcmGenerator                  gGenerator;
 static generator::rtcm::MessageFilter gFilter;
 static Options                        gOptions;
 static bool                           gPrintRtcm;
@@ -73,6 +76,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         }
     }
 
+#ifdef INCLUDE_GENERATOR_RTCM
     // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
     gFilter                 = generator::rtcm::MessageFilter{};
     gFilter.systems.gps     = true;
@@ -112,6 +116,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         if (gFilter.msm.msm7) printf(" MSM7");
     }
     printf("\n");
+#endif
 
     for (auto& interface : output_options.interfaces) {
         interface->open();
@@ -147,8 +152,10 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         gNmeaReceiver->start();
     }
 
+#ifdef INCLUDE_GENERATOR_RTCM
     // Create RTCM generator for converting LPP messages to RTCM messages.
     gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
+#endif
 
     LPP_Client client{false /* enable experimental segmentation support */};
 
@@ -235,7 +242,22 @@ static void transmit(void const* buffer, size_t size) {
 }
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
-    if (gFormat == osr_example::Format::RTCM) {
+    if (gFormat == osr_example::Format::XER) {
+        std::stringstream buffer;
+        xer_encode(
+            &asn_DEF_LPP_Message, message, XER_F_BASIC,
+            [](void const* text_buffer, size_t text_size, void* app_key) -> int {
+                auto string_stream = static_cast<std::ostream*>(app_key);
+                string_stream->write(static_cast<const char*>(text_buffer),
+                                     static_cast<std::streamsize>(text_size));
+                return 0;
+            },
+            &buffer);
+        auto xer_message = buffer.str();
+        transmit(xer_message.data(), xer_message.size());
+    }
+#ifdef INCLUDE_GENERATOR_RTCM
+    else if (gFormat == osr_example::Format::RTCM) {
         auto messages = gGenerator->generate(message, gFilter);
 
         if (gPrintRtcm) {
@@ -276,20 +298,9 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
                 }
             }
         }
-    } else if (gFormat == osr_example::Format::XER) {
-        std::stringstream buffer;
-        xer_encode(
-            &asn_DEF_LPP_Message, message, XER_F_BASIC,
-            [](void const* text_buffer, size_t text_size, void* app_key) -> int {
-                auto string_stream = static_cast<std::ostream*>(app_key);
-                string_stream->write(static_cast<const char*>(text_buffer),
-                                     static_cast<std::streamsize>(text_size));
-                return 0;
-            },
-            &buffer);
-        auto xer_message = buffer.str();
-        transmit(xer_message.data(), xer_message.size());
-    } else {
+    }
+#endif
+    else {
         throw std::runtime_error("Unsupported format");
     }
 }
@@ -304,8 +315,13 @@ void OsrCommand::parse(args::Subparser& parser) {
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format", {'f', "format"},
                                                   args::Options::Single);
+#ifdef INCLUDE_GENERATOR_RTCM
     mFormatArg->HelpDefault("rtcm");
     mFormatArg->HelpChoices({"rtcm", "xer"});
+#else
+    mFormatArg->HelpDefault("xer");
+    mFormatArg->HelpChoices({"xer"});
+#endif
 
     mMsmTypeArg = new args::ValueFlag<std::string>(parser, "msm_type", "RTCM MSM type",
                                                    {'y', "msm_type"}, args::Options::Single);
@@ -318,19 +334,27 @@ void OsrCommand::parse(args::Subparser& parser) {
 }
 
 void OsrCommand::execute(Options options) {
-    auto format   = Format::RTCM;
-    auto msm_type = MsmType::ANY;
+#ifdef INCLUDE_GENERATOR_RTCM
+    auto format = Format::RTCM;
+#else
+    auto format = Format::XER;
+#endif
 
     if (*mFormatArg) {
-        if (mFormatArg->Get() == "rtcm") {
-            format = Format::RTCM;
-        } else if (mFormatArg->Get() == "xer") {
+        if (mFormatArg->Get() == "xer") {
             format = Format::XER;
-        } else {
+        }
+#ifdef INCLUDE_GENERATOR_RTCM
+        else if (mFormatArg->Get() == "rtcm") {
+            format = Format::RTCM;
+        }
+#endif
+        else {
             throw args::ValidationError("Invalid format");
         }
     }
 
+    auto msm_type = MsmType::ANY;
     if (*mMsmTypeArg) {
         if (mMsmTypeArg->Get() == "any") {
             msm_type = MsmType::ANY;
