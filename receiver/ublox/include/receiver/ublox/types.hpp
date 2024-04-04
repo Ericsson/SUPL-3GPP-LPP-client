@@ -63,4 +63,7 @@ __attribute__((noreturn)) inline void ublox_unreachable() {
 #define UBLOX_NORETURN [[noreturn]]
 #endif
 #endif
+#ifndef UBLOX_NORETURN
+#define UBLOX_NORETURN
+#endif
 #endif

@@ -11,10 +11,10 @@ struct Optional {
     bool valid;
 
     Optional() : value{}, valid{false} {}
-    Optional(T new_value) : value{new_value}, valid{true} {}
+    Optional(T new_value) : value(new_value), valid{true} {}
 
-    Optional(const Optional& other) : value{other.value}, valid{other.valid} {}
-    Optional(Optional&& other) : value{std::move(other.value)}, valid{other.valid} {}
+    Optional(const Optional& other) : value(other.value), valid{other.valid} {}
+    Optional(Optional&& other) : value(std::move(other.value)), valid{other.valid} {}
     Optional& operator=(const Optional& other) {
         value = other.value;
         valid = other.valid;
