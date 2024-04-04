@@ -1,7 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #ifndef IF_EXPLICIT
 #define IF_EXPLICIT explicit
@@ -39,4 +39,16 @@
 #endif
 #endif
 
-
+#ifndef IF_UNREACHABLE
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_unreachable)
+#define IF_UNREACHABLE() __builtin_unreachable()
+#endif
+#endif
+#ifndef IF_UNREACHABLE
+#define IF_UNREACHABLE() if_unreachable()
+__attribute__((noreturn)) inline void if_unreachable() {
+    assert(false);
+}
+#endif
+#endif

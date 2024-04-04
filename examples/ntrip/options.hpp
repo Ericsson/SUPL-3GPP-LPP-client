@@ -1,6 +1,6 @@
 #pragma once
-#include <memory>
 #include <interface/interface.hpp>
+#include <memory>
 #include <vector>
 
 /// Host options.

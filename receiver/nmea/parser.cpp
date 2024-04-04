@@ -97,7 +97,7 @@ std::unique_ptr<Message> Parser::try_parse() NMEA_NOEXCEPT {
     }
 
     auto length_with_clrf = length + 2;
-    auto prefix = parse_prefix(reinterpret_cast<const uint8_t*>(payload.data()), length_with_clrf);
+    auto prefix = parse_prefix(reinterpret_cast<uint8_t const*>(payload.data()), length_with_clrf);
     if (prefix.empty()) {
         // invalid prefix
         return nullptr;
@@ -187,7 +187,7 @@ void Parser::copy_to_buffer(uint8_t* data, uint32_t length) NMEA_NOEXCEPT {
     }
 }
 
-ChecksumResult Parser::checksum(const std::string& buffer) {
+ChecksumResult Parser::checksum(std::string const& buffer) {
     auto nmea_end = buffer.find_last_of('*');
     if (nmea_end == std::string::npos) {
         return ChecksumResult::INVALID_STRING_NOSTAR;
@@ -204,7 +204,7 @@ ChecksumResult Parser::checksum(const std::string& buffer) {
 
     auto calculated_checksum = 0ULL;
     for (auto nmea_char : nmea_string) {
-        calculated_checksum = calculated_checksum ^ static_cast<unsigned long>(nmea_char);
+        calculated_checksum = calculated_checksum ^ static_cast<unsigned long long>(nmea_char);
     }
 
     if (expected_checksum == calculated_checksum) {
@@ -214,7 +214,7 @@ ChecksumResult Parser::checksum(const std::string& buffer) {
     }
 }
 
-std::string Parser::parse_prefix(const uint8_t* data, uint32_t length) const NMEA_NOEXCEPT {
+std::string Parser::parse_prefix(uint8_t const* data, uint32_t length) const NMEA_NOEXCEPT {
     // parse '$XXXXX' until first ',' or '*'
     std::string prefix;
     for (uint32_t i = 0; i < length; i++) {
@@ -223,7 +223,7 @@ std::string Parser::parse_prefix(const uint8_t* data, uint32_t length) const NME
             break;
         }
 
-        prefix += c;
+        prefix += static_cast<char>(c);
     }
 
     if (prefix.size() != 6) {

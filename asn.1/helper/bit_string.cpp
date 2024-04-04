@@ -32,7 +32,6 @@ void BitString::initialize(size_t bits) {
     auto total_bits  = bytes * 8;
     auto unused_bits = total_bits - bits;
     size             = bytes;
-    assert(unused_bits >= 0);
     assert(unused_bits <= 7);
     bits_unused = unused_bits;
     buf         = reinterpret_cast<uint8_t*>(calloc(size, sizeof(uint8_t)));
@@ -49,9 +48,7 @@ BitString::Index BitString::bit_index(ssize_t index) const {
     auto byte_index = size - 1 - byte;
     auto local_bit  = (bit - byte * 8);
 
-    assert(byte_index >= 0);
     assert(byte_index < size);
-    assert(local_bit >= 0);
     assert(local_bit < 8);
     return {byte_index, local_bit};
 }
@@ -183,10 +180,10 @@ BIT_STRING_s* BitStringBuilder::into_bit_string(size_t bits, BIT_STRING_s* bit_s
     BIT_STRING_initialize(bit_string, bits);
 
     assert(bits <= 64);
-    for (int j = 0; j < 64; j++) {
+    for (size_t j = 0; j < 64; j++) {
         if (mBits & (1llu << j)) {
-            auto x = j / 8;
-            auto y = 7 - (j % 8);
+            size_t x = j / 8;
+            size_t y = 7 - (j % 8);
             assert(x < bit_string->size);
             if (x < bit_string->size) {
                 bit_string->buf[x] |= 1 << y;

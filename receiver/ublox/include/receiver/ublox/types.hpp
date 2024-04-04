@@ -1,7 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #ifndef UBLOX_EXPLICIT
 #define UBLOX_EXPLICIT explicit
@@ -53,3 +53,17 @@ __attribute__((noreturn)) inline void ublox_unreachable() {
 #endif
 #endif
 
+#ifndef UBLOX_ASSERT
+#define UBLOX_ASSERT(cond, msg) assert((cond) && msg)
+#endif
+
+#ifndef UBLOX_NORETURN
+#if defined(__has_cpp_attribute)
+#if __has_cpp_attribute(noreturn)
+#define UBLOX_NORETURN [[noreturn]]
+#endif
+#endif
+#ifndef UBLOX_NORETURN
+#define UBLOX_NORETURN
+#endif
+#endif

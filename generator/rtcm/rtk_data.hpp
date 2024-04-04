@@ -19,7 +19,7 @@ enum GenericGnssId {
 namespace std {
 template <>
 struct hash<GenericGnssId> {
-    auto operator()(const GenericGnssId& id) const -> size_t { return hash<int>{}(id); }
+    auto operator()(GenericGnssId const& id) const -> size_t { return hash<int>{}(id); }
 };
 }  // namespace std
 
@@ -27,6 +27,7 @@ namespace generator {
 namespace rtcm {
 
 struct CommonObservationInfo {
+    // TODO(ewasjon): Change type of reference_station_id to uint16_t
     uint32_t reference_station_id;
     long     clock_steering;
     long     external_clock;
@@ -35,6 +36,7 @@ struct CommonObservationInfo {
 };
 
 struct ReferenceStation {
+    // TODO(ewasjon): Change type of reference_station_id to uint16_t
     uint32_t      reference_station_id;
     double        x;
     double        y;
@@ -44,6 +46,7 @@ struct ReferenceStation {
 };
 
 struct PhysicalReferenceStation {
+    // TODO(ewasjon): Change type of reference_station_id to uint16_t
     uint32_t reference_station_id;
     double   x;
     double   y;

@@ -21,7 +21,7 @@ public:
     /// Message subtype
     uint8_t message_subtype() const { return mMessageSubtype; }
     /// Message data
-    const std::vector<uint8_t>& payload() const { return mPayload; }
+    std::vector<uint8_t> const& payload() const { return mPayload; }
 
     std::vector<uint8_t> build();
 
@@ -77,16 +77,16 @@ public:
     /// Generate SPARTN messages based on LPP SSR messages.
     /// @param[in] lpp_message The LPP SSR message.
     /// @return The generated SPARTN messages.
-    std::vector<Message> generate(const LPP_Message* lpp_message);
+    std::vector<Message> generate(LPP_Message const* lpp_message);
 
 private:
-    void find_correction_point_set(const ProvideAssistanceData_r9_IEs* message);
-    void find_ocb_corrections(const ProvideAssistanceData_r9_IEs* message);
-    void find_hpac_corrections(const ProvideAssistanceData_r9_IEs* message);
+    void find_correction_point_set(ProvideAssistanceData_r9_IEs const* message);
+    void find_ocb_corrections(ProvideAssistanceData_r9_IEs const* message);
+    void find_hpac_corrections(ProvideAssistanceData_r9_IEs const* message);
 
-    void generate_gad(long iod, uint32_t epoch_time, long set_id);
-    void generate_ocb(long iod);
-    void generate_hpac(long iod);
+    void generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id);
+    void generate_ocb(uint16_t iod);
+    void generate_hpac(uint16_t iod);
 
     uint16_t next_area_id() {
         auto id     = mNextAreaId;
@@ -110,11 +110,11 @@ private:
     int mIonosphereQualityOverride;  // <0 = no override
     int mIonosphereQualityDefault;
 
-    bool mComputeAverageZenithDelay;
-    bool mGroupByEpochTime;
-    bool mIodeShift;
-    bool mIncreasingSiou;
-    int  mSiouIndex;
+    bool     mComputeAverageZenithDelay;
+    bool     mGroupByEpochTime;
+    bool     mIodeShift;
+    bool     mIncreasingSiou;
+    uint16_t mSiouIndex;
 
     bool mGenerateGad;
     bool mGenerateOcb;

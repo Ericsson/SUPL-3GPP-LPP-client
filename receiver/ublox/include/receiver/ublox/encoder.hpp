@@ -32,7 +32,7 @@ public:
     void R8(double value) UBLOX_NOEXCEPT;
 
     void L(bool value) UBLOX_NOEXCEPT;
-    void CH(const std::string& value, uint32_t max_length) UBLOX_NOEXCEPT;
+    void CH(std::string const& value, uint32_t max_length) UBLOX_NOEXCEPT;
 
     void                     pad(uint32_t length) UBLOX_NOEXCEPT;
     UBLOX_NODISCARD uint32_t remaining() const UBLOX_NOEXCEPT;

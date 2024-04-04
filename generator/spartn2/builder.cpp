@@ -1,7 +1,8 @@
 #include "builder.hpp"
 
 #include <cmath>
-#include <stdio.h>
+#include <cstdio>
+#include <cstring>
 
 Builder::Builder(uint32_t capacity) : mData(capacity), mBitOffset(0) {}
 
@@ -28,12 +29,20 @@ void Builder::bits(uint64_t value, uint8_t bits) {
     for (uint8_t i = 0; i < bits; ++i) {
         auto value_bit_offset = bits - i - 1;
         auto value_bit        = static_cast<uint8_t>((value >> value_bit_offset) & 1);
-        auto byte_offset = mBitOffset / 8;
-        auto bit_offset  = 7 - (mBitOffset % 8);
-        auto bit         = value_bit << bit_offset;
+        auto byte_offset      = mBitOffset / 8;
+        auto bit_offset       = 7 - (mBitOffset % 8);
+        auto bit              = value_bit << bit_offset;
         mData[byte_offset] |= bit;
         mBitOffset++;
     }
+}
+
+void Builder::signed_bits(int64_t value, uint8_t bits) {
+    // Apperently interpreting the bits as unsigned is undefined behavior, so we need to do this
+    // instead... Not sure if the compiler can see through this.
+    uint64_t unsigned_value;
+    std::memcpy(&unsigned_value, &value, sizeof(unsigned_value));
+    this->bits(unsigned_value, bits);
 }
 
 void Builder::pad(uint8_t bits) {

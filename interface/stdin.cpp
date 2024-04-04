@@ -16,7 +16,7 @@ void StdinInterface::open() {
         return;
     }
 
-    auto stdin_fd  = STDIN_FILENO;
+    auto stdin_fd   = STDIN_FILENO;
     mFileDescriptor = FileDescriptor(stdin_fd);
 }
 
@@ -24,11 +24,11 @@ void StdinInterface::close() {
     mFileDescriptor.close();
 }
 
-size_t StdinInterface::read(void* data, const size_t size) {
+size_t StdinInterface::read(void* data, size_t const size) {
     return mFileDescriptor.read(data, size);
 }
 
-size_t StdinInterface::write(const void* data, const size_t size) {
+size_t StdinInterface::write(void const* data, size_t const size) {
     return mFileDescriptor.write(data, size);
 }
 

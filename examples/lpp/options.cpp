@@ -2,325 +2,329 @@
 #include <interface/interface.hpp>
 #include <receiver/ublox/receiver.hpp>
 
-#define VERSION "v3.3.1 (public)"
-
 using namespace interface;
 using namespace receiver::ublox;
 
-args::Group arguments{"Arguments:"};
+static args::Group arguments{"Arguments:"};
 
 //
 // Location Server
 //
-args::Group location_server{
+static args::Group location_server{
     "Location Server:",
     args::Group::Validators::All,
     args::Options::Global,
 };
 
-args::ValueFlag<std::string> location_server_host{location_server,
-                                                  "host",
-                                                  "Host",
-                                                  {'h', "host"},
-                                                  args::Options::Single | args::Options::Required};
-args::ValueFlag<int>         location_server_port{
+static args::ValueFlag<std::string> location_server_host{location_server,
+                                                         "host",
+                                                         "Host",
+                                                         {'h', "host"},
+                                                         args::Options::Single |
+                                                             args::Options::Required};
+static args::ValueFlag<uint16_t>    location_server_port{
     location_server, "port", "Port", {'p', "port"}, args::Options::Single};
-args::Flag location_server_ssl{location_server, "ssl", "TLS", {'s', "ssl"}, args::Options::Single};
+static args::Flag location_server_ssl{
+    location_server, "ssl", "TLS", {'s', "ssl"}, args::Options::Single};
 
 //
 // Identity
 //
-args::Group identity{
+static args::Group identity{
     "Identity:",
     args::Group::Validators::All,
     args::Options::Global,
 };
 
-args::ValueFlag<unsigned long long> msisdn{
+static args::ValueFlag<unsigned long long> msisdn{
     identity, "msisdn", "MSISDN", {"msisdn"}, args::Options::Single};
-args::ValueFlag<unsigned long long> imsi{identity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
-args::ValueFlag<std::string>        ipv4{identity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
-args::Flag                          use_supl_identity_fix{identity,
-                                 "supl-identity-fix",
-                                 "Use SUPL Identity Fix",
+static args::ValueFlag<unsigned long long> imsi{
+    identity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
+static args::ValueFlag<std::string> ipv4{identity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
+static args::Flag                   use_supl_identity_fix{identity,
+                                        "supl-identity-fix",
+                                        "Use SUPL Identity Fix",
                                                           {"supl-identity-fix"},
-                                 args::Options::Single};
+                                        args::Options::Single};
 
 //
 // Cell Information
 //
-args::Group cell_information{
+static args::Group cell_information{
     "Cell Information:",
     args::Group::Validators::All,
     args::Options::Global,
 };
 
-args::ValueFlag<int>                mcc{cell_information,
-                         "mcc",
-                         "Mobile Country Code",
-                                        {'c', "mcc"},
-                         args::Options::Single | args::Options::Required};
-args::ValueFlag<int>                mnc{cell_information,
-                         "mnc",
-                         "Mobile Network Code",
-                                        {'n', "mnc"},
-                         args::Options::Single | args::Options::Required};
-args::ValueFlag<int>                tac{cell_information,
-                         "tac",
-                         "Tracking Area Code",
-                                        {'t', "lac", "tac"},
-                         args::Options::Single | args::Options::Required};
-args::ValueFlag<unsigned long long> ci{cell_information,
-                                       "ci",
-                                       "Cell Identity",
-                                       {'i', "ci"},
-                                       args::Options::Single | args::Options::Required};
-args::Flag is_nr{cell_information, "nr", "The cell specified is a 5G NR cell", {"nr"}};
+static args::ValueFlag<int>                mcc{cell_information,
+                                "mcc",
+                                "Mobile Country Code",
+                                               {'c', "mcc"},
+                                args::Options::Single | args::Options::Required};
+static args::ValueFlag<int>                mnc{cell_information,
+                                "mnc",
+                                "Mobile Network Code",
+                                               {'n', "mnc"},
+                                args::Options::Single | args::Options::Required};
+static args::ValueFlag<int>                tac{cell_information,
+                                "tac",
+                                "Tracking Area Code",
+                                               {'t', "lac", "tac"},
+                                args::Options::Single | args::Options::Required};
+static args::ValueFlag<unsigned long long> ci{cell_information,
+                                              "ci",
+                                              "Cell Identity",
+                                              {'i', "ci"},
+                                              args::Options::Single | args::Options::Required};
+static args::Flag is_nr{cell_information, "nr", "The cell specified is a 5G NR cell", {"nr"}};
 
 //
 // Modem
 //
 
-args::Group modem{
+static args::Group modem{
     "Modem:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::ValueFlag<std::string> modem_device{
+static args::ValueFlag<std::string> modem_device{
     modem, "device", "Device", {"modem"}, args::Options::Single};
-args::ValueFlag<int> modem_baud_rate{
+static args::ValueFlag<int> modem_baud_rate{
     modem, "baud_rate", "Baud Rate", {"modem-baud"}, args::Options::Single};
 
 //
 // u-blox
 //
 
-args::Group ublox_receiver_group{
+static args::Group ublox_receiver_group{
     "u-blox Receiver:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::ValueFlag<std::string> ublox_receiver_port{
+static args::ValueFlag<std::string> ublox_receiver_port{
     ublox_receiver_group,
     "port",
     "The port used on the u-blox receiver, used by configuration.",
     {"ublox-port"},
     args::Options::Single};
 
-args::Group ublox_serial_group{
+static args::Group ublox_serial_group{
     ublox_receiver_group,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> ublox_serial_device{
+static args::ValueFlag<std::string> ublox_serial_device{
     ublox_serial_group, "device", "Device", {"ublox-serial"}, args::Options::Single};
-args::ValueFlag<int> ublox_serial_baud_rate{
+static args::ValueFlag<int> ublox_serial_baud_rate{
     ublox_serial_group, "baud_rate", "Baud Rate", {"ublox-serial-baud"}, args::Options::Single};
-args::ValueFlag<int> ublox_serial_data_bits{
+static args::ValueFlag<int> ublox_serial_data_bits{
     ublox_serial_group, "data_bits", "Data Bits", {"ublox-serial-data"}, args::Options::Single};
-args::ValueFlag<int> ublox_serial_stop_bits{
+static args::ValueFlag<int> ublox_serial_stop_bits{
     ublox_serial_group, "stop_bits", "Stop Bits", {"ublox-serial-stop"}, args::Options::Single};
-args::ValueFlag<std::string> ublox_serial_parity_bits{ublox_serial_group,
-                                                      "parity_bits",
-                                                      "Parity Bits",
-                                                      {"ublox-serial-parity"},
-                                                      args::Options::Single};
+static args::ValueFlag<std::string> ublox_serial_parity_bits{ublox_serial_group,
+                                                             "parity_bits",
+                                                             "Parity Bits",
+                                                             {"ublox-serial-parity"},
+                                                             args::Options::Single};
 
-args::Group ublox_i2c_group{
+static args::Group ublox_i2c_group{
     ublox_receiver_group,
     "I2C:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> ublox_i2c_device{
+static args::ValueFlag<std::string> ublox_i2c_device{
     ublox_i2c_group, "device", "Device", {"ublox-i2c"}, args::Options::Single};
-args::ValueFlag<uint8_t> ublox_i2c_address{
+static args::ValueFlag<uint8_t> ublox_i2c_address{
     ublox_i2c_group, "address", "Address", {"ublox-i2c-address"}, args::Options::Single};
 
-args::Group ublox_tcp_device{
+static args::Group ublox_tcp_device{
     ublox_receiver_group,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> ublox_tcp_ip_address{
+static args::ValueFlag<std::string> ublox_tcp_ip_address{
     ublox_tcp_device, "ip_address", "Host or IP Address", {"ublox-tcp"}, args::Options::Single};
-args::ValueFlag<int> ublox_tcp_port{
+static args::ValueFlag<uint16_t> ublox_tcp_port{
     ublox_tcp_device, "port", "Port", {"ublox-tcp-port"}, args::Options::Single};
 
-args::Group ublox_udp_device{
+static args::Group ublox_udp_device{
     ublox_receiver_group,
     "UDP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> ublox_udp_ip_address{
+static args::ValueFlag<std::string> ublox_udp_ip_address{
     ublox_udp_device, "ip_address", "Host or IP Address", {"ublox-udp"}, args::Options::Single};
-args::ValueFlag<int> ublox_udp_port{
+static args::ValueFlag<uint16_t> ublox_udp_port{
     ublox_udp_device, "port", "Port", {"ublox-udp-port"}, args::Options::Single};
 
 //
 // NMEA
 //
 
-args::Group nmea_receiver_group{
+static args::Group nmea_receiver_group{
     "NMEA Receiver:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Group nmea_serial_group{
+static args::Group nmea_serial_group{
     nmea_receiver_group,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> nmea_serial_device{
+static args::ValueFlag<std::string> nmea_serial_device{
     nmea_receiver_group, "device", "Device", {"nmea-serial"}, args::Options::Single};
-args::ValueFlag<int> nmea_serial_baud_rate{
+static args::ValueFlag<int> nmea_serial_baud_rate{
     nmea_receiver_group, "baud_rate", "Baud Rate", {"nmea-serial-baud"}, args::Options::Single};
-args::ValueFlag<int> nmea_serial_data_bits{
+static args::ValueFlag<int> nmea_serial_data_bits{
     nmea_receiver_group, "data_bits", "Data Bits", {"nmea-serial-data"}, args::Options::Single};
-args::ValueFlag<int> nmea_serial_stop_bits{
+static args::ValueFlag<int> nmea_serial_stop_bits{
     nmea_receiver_group, "stop_bits", "Stop Bits", {"nmea-serial-stop"}, args::Options::Single};
-args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
-                                                     "parity_bits",
-                                                     "Parity Bits",
-                                                     {"nmea-serial-parity"},
-                                                     args::Options::Single};
+static args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
+                                                            "parity_bits",
+                                                            "Parity Bits",
+                                                            {"nmea-serial-parity"},
+                                                            args::Options::Single};
 // export nmea to unix socket
-args::ValueFlag<std::string> nmea_export_un{nmea_receiver_group,
-                                            "unix socket",
-                                            "Export NMEA to unix socket",
-                                            {"nmea-export-un"},
-                                            args::Options::Single};
-args::ValueFlag<std::string> nmea_export_tcp{
+static args::ValueFlag<std::string> nmea_export_un{nmea_receiver_group,
+                                                   "unix socket",
+                                                   "Export NMEA to unix socket",
+                                                   {"nmea-export-un"},
+                                                   args::Options::Single};
+static args::ValueFlag<std::string> nmea_export_tcp{
     nmea_receiver_group, "ip", "Export NMEA to TCP", {"nmea-export-tcp"}, args::Options::Single};
-args::ValueFlag<int> nmea_export_tcp_port{nmea_receiver_group,
-                                          "port",
-                                          "Export NMEA to TCP Port",
-                                          {"nmea-export-tcp-port"},
-                                          args::Options::Single};
+static args::ValueFlag<uint16_t> nmea_export_tcp_port{nmea_receiver_group,
+                                                      "port",
+                                                      "Export NMEA to TCP Port",
+                                                      {"nmea-export-tcp-port"},
+                                                      args::Options::Single};
 
 //
 // Output
 //
 
-args::Group other_receiver_group{
+static args::Group other_receiver_group{
     "Other Receiver Options:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Flag print_messages{other_receiver_group,
-                          "print-receiver-messages",
-                          "Print Receiver Messages",
-                          {"print-receiver-messages", "prm"},
-                          args::Options::Single};
+static args::Flag print_messages{other_receiver_group,
+                                 "print-receiver-messages",
+                                 "Print Receiver Messages",
+                                 {"print-receiver-messages", "prm"},
+                                 args::Options::Single};
 
 //
 // Output
 //
 
-args::Group output{
+static args::Group output{
     "Output:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Group file_output{
+static args::Group file_output{
     output,
     "File:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> file_path{
+static args::ValueFlag<std::string> file_path{
     file_output, "file_path", "Path", {"file"}, args::Options::Single};
 
-args::Group serial_output{
+static args::Group serial_output{
     output,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> serial_device{
+static args::ValueFlag<std::string> serial_device{
     serial_output, "device", "Device", {"serial"}, args::Options::Single};
-args::ValueFlag<int> serial_baud_rate{
+static args::ValueFlag<int> serial_baud_rate{
     serial_output, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
-args::ValueFlag<int> serial_data_bits{
+static args::ValueFlag<int> serial_data_bits{
     serial_output, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
-args::ValueFlag<int> serial_stop_bits{
+static args::ValueFlag<int> serial_stop_bits{
     serial_output, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
-args::ValueFlag<std::string> serial_parity_bits{
+static args::ValueFlag<std::string> serial_parity_bits{
     serial_output, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
 
-args::Group i2c_output{
+static args::Group i2c_output{
     output,
     "I2C:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> i2c_device{
+static args::ValueFlag<std::string> i2c_device{
     i2c_output, "device", "Device", {"i2c"}, args::Options::Single};
-args::ValueFlag<uint8_t> i2c_address{
+static args::ValueFlag<uint8_t> i2c_address{
     i2c_output, "address", "Address", {"i2c-address"}, args::Options::Single};
 
-args::Group tcp_output{
+static args::Group tcp_output{
     output,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> tcp_ip_address{
+static args::ValueFlag<std::string> tcp_ip_address{
     tcp_output, "ip_address", "Host or IP Address", {"tcp"}, args::Options::Single};
-args::ValueFlag<int> tcp_port{tcp_output, "port", "Port", {"tcp-port"}, args::Options::Single};
+static args::ValueFlag<uint16_t> tcp_port{
+    tcp_output, "port", "Port", {"tcp-port"}, args::Options::Single};
 
-args::Group udp_output{
+static args::Group udp_output{
     output,
     "UDP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> udp_ip_address{
+static args::ValueFlag<std::string> udp_ip_address{
     udp_output, "ip_address", "Host or IP Address", {"udp"}, args::Options::Single};
-args::ValueFlag<int> udp_port{udp_output, "port", "Port", {"udp-port"}, args::Options::Single};
+static args::ValueFlag<uint16_t> udp_port{
+    udp_output, "port", "Port", {"udp-port"}, args::Options::Single};
 
-args::Group stdout_output{
+static args::Group stdout_output{
     output,
     "Stdout:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::Flag stdout_output_flag{stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
+static args::Flag stdout_output_flag{
+    stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
 
 //
 // Location Information
 //
 
-args::Group location_infomation{
+static args::Group location_infomation{
     "Location Infomation:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Flag li_enable{
+static args::Flag li_enable{
     location_infomation,
     "location-info",
     "Enable sending fake location information. Configure with '--fake-*' options.",
     {"fake-location-info", "fli"},
     args::Options::Single,
 };
-args::Flag li_force{
+static args::Flag li_force{
     location_infomation,
     "force-location-info",
     "Force Location Information (always send even if not requested)",
     {"force-location-info"},
     args::Options::Single,
 };
-args::Flag li_unlocked{
+static args::Flag li_unlocked{
     location_infomation,
     "unlocked",
     "Send location reports without locking the update rate. By default, the update rate is locked "
@@ -328,27 +332,27 @@ args::Flag li_unlocked{
     {"location-report-unlocked"},
     args::Options::Single,
 };
-args::ValueFlag<double> li_latitude{location_infomation,
-                                    "latitude",
-                                    "Fake Latitude",
-                                    {"fake-latitude", "flat"},
-                                    args::Options::Single};
-args::ValueFlag<double> li_longitude{location_infomation,
-                                     "longitude",
-                                     "Fake Longitude",
-                                     {"fake-longitude", "flon"},
-                                     args::Options::Single};
-args::ValueFlag<double> li_altitude{location_infomation,
-                                    "altitude",
-                                    "Fake Altitude",
-                                    {"fake-altitude", "falt"},
-                                    args::Options::Single};
-args::Flag              li_conf95to39{location_infomation,
-                         "confidence-95to39",
-                         "Convert 95p confidence to 39p confidence",
-                                      {"confidence-95to39"},
-                         args::Options::Single};
-args::ValueFlag<double> li_override_horizontal_confidence{
+static args::ValueFlag<double> li_latitude{location_infomation,
+                                           "latitude",
+                                           "Fake Latitude",
+                                           {"fake-latitude", "flat"},
+                                           args::Options::Single};
+static args::ValueFlag<double> li_longitude{location_infomation,
+                                            "longitude",
+                                            "Fake Longitude",
+                                            {"fake-longitude", "flon"},
+                                            args::Options::Single};
+static args::ValueFlag<double> li_altitude{location_infomation,
+                                           "altitude",
+                                           "Fake Altitude",
+                                           {"fake-altitude", "falt"},
+                                           args::Options::Single};
+static args::Flag              li_conf95to39{location_infomation,
+                                "confidence-95to39",
+                                "Convert 95p confidence to 39p confidence",
+                                             {"confidence-95to39"},
+                                args::Options::Single};
+static args::ValueFlag<double> li_override_horizontal_confidence{
     location_infomation,
     "override-horizontal-confidence",
     "Override horizontal confidence [0.0-1.0]",
@@ -360,143 +364,143 @@ args::ValueFlag<double> li_override_horizontal_confidence{
 // Control Options
 //
 
-args::Group control_options{
+static args::Group control_options{
     "Control Options:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Group control_interface{
+static args::Group control_interface{
     control_options,
     "Interface:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
 
-args::Group ctrl_serial_output{
+static args::Group ctrl_serial_output{
     control_interface,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> ctrl_serial_device{
+static args::ValueFlag<std::string> ctrl_serial_device{
     ctrl_serial_output, "device", "Device", {"ctrl-serial"}, args::Options::Single};
-args::ValueFlag<int> ctrl_serial_baud_rate{
+static args::ValueFlag<int> ctrl_serial_baud_rate{
     ctrl_serial_output, "baud_rate", "Baud Rate", {"ctrl-serial-baud"}, args::Options::Single};
-args::ValueFlag<int> ctrl_serial_data_bits{
+static args::ValueFlag<int> ctrl_serial_data_bits{
     ctrl_serial_output, "data_bits", "Data Bits", {"ctrl-serial-data"}, args::Options::Single};
-args::ValueFlag<int> ctrl_serial_stop_bits{
+static args::ValueFlag<int> ctrl_serial_stop_bits{
     ctrl_serial_output, "stop_bits", "Stop Bits", {"ctrl-serial-stop"}, args::Options::Single};
-args::ValueFlag<std::string> ctrl_serial_parity_bits{ctrl_serial_output,
-                                                     "parity_bits",
-                                                     "Parity Bits",
-                                                     {"ctrl-serial-parity"},
-                                                     args::Options::Single};
+static args::ValueFlag<std::string> ctrl_serial_parity_bits{ctrl_serial_output,
+                                                            "parity_bits",
+                                                            "Parity Bits",
+                                                            {"ctrl-serial-parity"},
+                                                            args::Options::Single};
 
-args::Group ctrl_tcp_output{
+static args::Group ctrl_tcp_output{
     control_interface,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> ctrl_tcp_ip_address{
+static args::ValueFlag<std::string> ctrl_tcp_ip_address{
     ctrl_tcp_output, "ip_address", "Host or IP Address", {"ctrl-tcp"}, args::Options::Single};
-args::ValueFlag<int> ctrl_tcp_port{
+static args::ValueFlag<uint16_t> ctrl_tcp_port{
     ctrl_tcp_output, "port", "Port", {"ctrl-tcp-port"}, args::Options::Single};
 
-args::Group ctrl_udp_output{
+static args::Group ctrl_udp_output{
     control_interface,
     "UDP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> ctrl_udp_ip_address{
+static args::ValueFlag<std::string> ctrl_udp_ip_address{
     ctrl_udp_output, "ip_address", "Host or IP Address", {"ctrl-udp"}, args::Options::Single};
-args::ValueFlag<int> ctrl_udp_port{
+static args::ValueFlag<uint16_t> ctrl_udp_port{
     ctrl_udp_output, "port", "Port", {"ctrl-udp-port"}, args::Options::Single};
 
-args::Group ctrl_stdin_output{
+static args::Group ctrl_stdin_output{
     control_interface,
     "Stdin:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::Flag ctrl_stdin_output_flag{
+static args::Flag ctrl_stdin_output_flag{
     ctrl_stdin_output, "stdin", "Stdin", {"ctrl-stdin"}, args::Options::Single};
 
-args::Group ctrl_un_output{
+static args::Group ctrl_un_output{
     control_interface,
     "Unix Socket:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
 
-args::ValueFlag<std::string> ctrl_un_output_path{
+static args::ValueFlag<std::string> ctrl_un_output_path{
     ctrl_un_output, "path", "Path", {"ctrl-un"}, args::Options::Single};
 
 //
 // Options
 //
 
-LocationServerOptions parse_location_server_options() {
-    LocationServerOptions location_server{
-        .host = location_server_host.Get(),
-        .port = 5431,
-        .ssl  = false,
-    };
+static LocationServerOptions parse_location_server_options() {
+    LocationServerOptions location_server_options{};
+    location_server_options.host = location_server_host.Get();
+    location_server_options.port = 5431;
+    location_server_options.ssl  = false;
 
     if (location_server_port) {
-        location_server.port = location_server_port.Get();
+        location_server_options.port = location_server_port.Get();
     }
 
     if (location_server_ssl) {
-        location_server.ssl = location_server_ssl.Get();
+        location_server_options.ssl = location_server_ssl.Get();
     }
 
-    return location_server;
+    return location_server_options;
 }
 
-IdentityOptions parse_identity_options() {
-    IdentityOptions identity{};
-    identity.use_supl_identity_fix = false;
+static IdentityOptions parse_identity_options() {
+    IdentityOptions identity_options{};
+    identity_options.use_supl_identity_fix = false;
 
     if (msisdn) {
-        identity.msisdn = std::unique_ptr<unsigned long long>{new unsigned long long{msisdn.Get()}};
+        identity_options.msisdn =
+            std::unique_ptr<unsigned long long>{new unsigned long long{msisdn.Get()}};
     }
 
     if (imsi) {
-        identity.imsi = std::unique_ptr<unsigned long long>{new unsigned long long{imsi.Get()}};
+        identity_options.imsi =
+            std::unique_ptr<unsigned long long>{new unsigned long long{imsi.Get()}};
     }
 
     if (ipv4) {
-        identity.ipv4 = std::unique_ptr<std::string>{new std::string{ipv4.Get()}};
+        identity_options.ipv4 = std::unique_ptr<std::string>{new std::string{ipv4.Get()}};
     }
 
-    if (!identity.msisdn && !identity.imsi && !identity.ipv4) {
-        identity.imsi = std::unique_ptr<unsigned long long>{new unsigned long long{2460813579lu}};
+    if (!identity_options.msisdn && !identity_options.imsi && !identity_options.ipv4) {
+        identity_options.imsi =
+            std::unique_ptr<unsigned long long>{new unsigned long long{2460813579lu}};
     }
 
     if (use_supl_identity_fix) {
-        identity.use_supl_identity_fix = true;
+        identity_options.use_supl_identity_fix = true;
     }
 
-    return identity;
+    return identity_options;
 }
 
-CellOptions parse_cell_options() {
-    CellOptions cell_information{
-        .mcc   = mcc.Get(),
-        .mnc   = mnc.Get(),
-        .tac   = tac.Get(),
-        .cid   = ci.Get(),
-        .is_nr = is_nr ? is_nr.Get() : false,
-    };
-
-    return cell_information;
+static CellOptions parse_cell_options() {
+    CellOptions cell_options{};
+    cell_options.mcc   = mcc.Get();
+    cell_options.mnc   = mnc.Get();
+    cell_options.tac   = tac.Get();
+    cell_options.cid   = ci.Get();
+    cell_options.is_nr = is_nr ? is_nr.Get() : false;
+    return cell_options;
 }
 
-ModemOptions parse_modem_options() {
-    ModemOptions modem{};
+static ModemOptions parse_modem_options() {
+    ModemOptions modem_options{};
 
     if (modem_device || modem_baud_rate) {
         if (!modem_device) {
@@ -507,21 +511,19 @@ ModemOptions parse_modem_options() {
             throw args::RequiredError("modem_device");
         }
 
-        modem.device = std::unique_ptr<ModemDevice>{new ModemDevice{
-            .device    = modem_device.Get(),
-            .baud_rate = modem_baud_rate.Get(),
-        }};
+        modem_options.device = std::unique_ptr<ModemDevice>{
+            new ModemDevice{modem_device.Get(), modem_baud_rate.Get()}};
     }
 
-    return modem;
+    return modem_options;
 }
 
-OutputOptions parse_output_options() {
-    OutputOptions output{};
+static OutputOptions parse_output_options() {
+    OutputOptions output_options{};
 
     if (file_path) {
         auto interface = interface::Interface::file(file_path.Get(), true);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (serial_device || serial_baud_rate) {
@@ -573,7 +575,7 @@ OutputOptions parse_output_options() {
 
         auto interface = interface::Interface::serial(serial_device.Get(), baud_rate, data_bits,
                                                       stop_bits, parity_bit);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (i2c_device || i2c_address) {
@@ -586,7 +588,7 @@ OutputOptions parse_output_options() {
         }
 
         auto interface = interface::Interface::i2c(i2c_device.Get(), i2c_address.Get());
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (tcp_ip_address || tcp_port) {
@@ -600,7 +602,7 @@ OutputOptions parse_output_options() {
 
         auto interface =
             interface::Interface::tcp(tcp_ip_address.Get(), tcp_port.Get(), true /* reconnect */);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (udp_ip_address || udp_port) {
@@ -614,19 +616,19 @@ OutputOptions parse_output_options() {
 
         auto interface =
             interface::Interface::udp(udp_ip_address.Get(), udp_port.Get(), true /* reconnect */);
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
     if (stdout_output_flag) {
         auto interface = interface::Interface::stdout();
-        output.interfaces.emplace_back(interface);
+        output_options.interfaces.emplace_back(interface);
     }
 
-    for (auto& interface : output.interfaces) {
+    for (auto& interface : output_options.interfaces) {
         interface->open();
     }
 
-    return output;
+    return output_options;
 }
 
 //
@@ -685,7 +687,7 @@ static std::unique_ptr<Interface> ublox_parse_serial() {
 static std::unique_ptr<Interface> ublox_parse_i2c() {
     assert(ublox_i2c_device);
 
-    auto address = 66;
+    uint8_t address = 66;
     if (ublox_i2c_address) {
         address = ublox_i2c_address.Get();
     }
@@ -763,10 +765,10 @@ static bool print_receiver_options_parse() {
 
 static UbloxOptions ublox_parse_options() {
     if (ublox_serial_device || ublox_i2c_device || ublox_tcp_ip_address || ublox_udp_ip_address) {
-        auto port           = ublox_parse_port();
-        auto interface      = ublox_parse_interface();
-        auto print_messages = print_receiver_options_parse();
-        return UbloxOptions{port, std::move(interface), print_messages};
+        auto port      = ublox_parse_port();
+        auto interface = ublox_parse_interface();
+        auto prm       = print_receiver_options_parse();
+        return UbloxOptions{port, std::move(interface), prm};
     } else {
         return UbloxOptions{};
     }
@@ -832,10 +834,10 @@ static NmeaOptions nmea_parse_options() {
             nmea_export_interfaces.emplace_back(interface);
         }
 
-        auto interface      = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
-                                                           data_bits, stop_bits, parity_bit);
-        auto print_messages = print_receiver_options_parse();
-        return NmeaOptions{std::unique_ptr<Interface>(interface), print_messages,
+        auto interface = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
+                                                      data_bits, stop_bits, parity_bit);
+        auto prm       = print_receiver_options_parse();
+        return NmeaOptions{std::unique_ptr<Interface>(interface), prm,
                            std::move(nmea_export_interfaces)};
     } else {
         return NmeaOptions{};
@@ -1039,9 +1041,9 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
         auto command_ptr = command.get();
         args_commands.emplace_back(new args::Command(
             commands, command->name(), command->description(),
-            [command_ptr](args::Subparser& parser) {
-                command_ptr->parse(parser);
-                parser.Parse();
+            [command_ptr](args::Subparser& subparser) {
+                command_ptr->parse(subparser);
+                subparser.Parse();
 
                 Options options{};
                 options.location_server_options      = parse_location_server_options();
@@ -1145,18 +1147,18 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
         }
 
         return 0;
-    } catch (const args::ValidationError& e) {
+    } catch (args::ValidationError const& e) {
         std::cerr << e.what() << std::endl;
         parser.Help(std::cerr);
         return 1;
-    } catch (const args::Help&) {
+    } catch (args::Help const&) {
         std::cout << parser;
         return 0;
-    } catch (const args::ParseError& e) {
+    } catch (args::ParseError const& e) {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
         return 1;
-    } catch (const std::exception& e) {
+    } catch (std::exception const& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         return 1;
     }

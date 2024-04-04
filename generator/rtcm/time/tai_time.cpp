@@ -12,11 +12,11 @@ static Timestamp tai_2_utc(Timestamp timestamp) {
     return timestamp;
 }
 
-TAI_Time::TAI_Time(const GPS_Time& time) : TAI_Time(UTC_Time(time)) {}
-TAI_Time::TAI_Time(const GLO_Time& time) : TAI_Time(UTC_Time(time)) {}
-TAI_Time::TAI_Time(const GST_Time& time) : TAI_Time(UTC_Time(time)) {}
-TAI_Time::TAI_Time(const BDT_Time& time) : TAI_Time(UTC_Time(time)) {}
-TAI_Time::TAI_Time(const UTC_Time& time) : tm(utc_2_tai(time.timestamp())) {}
+TAI_Time::TAI_Time(GPS_Time const& time) : TAI_Time(UTC_Time(time)) {}
+TAI_Time::TAI_Time(GLO_Time const& time) : TAI_Time(UTC_Time(time)) {}
+TAI_Time::TAI_Time(GST_Time const& time) : TAI_Time(UTC_Time(time)) {}
+TAI_Time::TAI_Time(BDT_Time const& time) : TAI_Time(UTC_Time(time)) {}
+TAI_Time::TAI_Time(UTC_Time const& time) : tm(utc_2_tai(time.timestamp())) {}
 
 std::string TAI_Time::rtklib_time_string() const {
     return UTC_Time{*this}.rtklib_time_string();

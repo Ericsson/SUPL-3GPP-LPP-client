@@ -1,8 +1,18 @@
 #include "options.hpp"
-#include <args.hpp>
 
-args::Group                       arguments{"Arguments:"};
-args::PositionalList<std::string> commands{arguments, "commands", "List of commands"};
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#include <args.hpp>
+#pragma GCC diagnostic pop
+
+static args::Group                       arguments{"Arguments:"};
+static args::PositionalList<std::string> commands{arguments, "commands", "List of commands"};
 
 Config parse_configuration(int argc, char** argv) {
     args::ArgumentParser parser(
@@ -27,18 +37,18 @@ Config parse_configuration(int argc, char** argv) {
         Config config{};
         config.commands = commands.Get();
         return config;
-    } catch (const args::ValidationError& e) {
+    } catch (args::ValidationError const& e) {
         std::cerr << e.what() << std::endl;
         parser.Help(std::cerr);
         exit(1);
-    } catch (const args::Help&) {
+    } catch (args::Help const&) {
         std::cout << parser;
         exit(0);
-    } catch (const args::ParseError& e) {
+    } catch (args::ParseError const& e) {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
         exit(1);
-    } catch (const std::exception& e) {
+    } catch (std::exception const& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         exit(1);
     }

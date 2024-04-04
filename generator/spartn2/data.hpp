@@ -7,44 +7,49 @@
 #include <unordered_set>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-ID.h>
+#pragma GCC diagnostic pop
 
 struct OcbKey {
     long     gnss_id;
     uint32_t epoch_time;
+
+    bool operator==(OcbKey const& other) const {
+        return gnss_id == other.gnss_id && epoch_time == other.epoch_time;
+    }
 };
 
 struct HpacKey {
-    long     set_id;
+    uint16_t set_id;
     long     gnss_id;
     uint32_t epoch_time;
+
+    bool operator==(HpacKey const& other) const {
+        return gnss_id == other.gnss_id && set_id == other.set_id && epoch_time == other.epoch_time;
+    }
 };
 
 namespace std {
 template <>
 struct hash<OcbKey> {
-    size_t operator()(const OcbKey& iod_gnss) const {
+    size_t operator()(OcbKey const& iod_gnss) const {
         return hash<long>()(iod_gnss.gnss_id) ^ hash<uint32_t>()(iod_gnss.epoch_time);
     }
 };
 
 template <>
 struct hash<HpacKey> {
-    size_t operator()(const HpacKey& iod_gnss_set) const {
-        return hash<long>()(iod_gnss_set.gnss_id) ^ hash<long>()(iod_gnss_set.set_id) ^
+    size_t operator()(HpacKey const& iod_gnss_set) const {
+        return hash<long>()(iod_gnss_set.gnss_id) ^ hash<uint16_t>()(iod_gnss_set.set_id) ^
                hash<uint32_t>()(iod_gnss_set.epoch_time);
     }
 };
 }  // namespace std
-
-static bool operator==(const OcbKey& lhs, const OcbKey& rhs) {
-    return lhs.gnss_id == rhs.gnss_id && lhs.epoch_time == rhs.epoch_time;
-}
-
-static bool operator==(const HpacKey& lhs, const HpacKey& rhs) {
-    return lhs.gnss_id == rhs.gnss_id && lhs.set_id == rhs.set_id &&
-           lhs.epoch_time == rhs.epoch_time;
-}
 
 struct GNSS_SSR_OrbitCorrections_r15;
 struct GNSS_SSR_ClockCorrections_r15;
@@ -68,7 +73,7 @@ namespace generator {
 namespace spartn {
 
 struct CorrectionPointSet {
-    long     set_id;
+    uint16_t set_id;
     uint16_t area_id;
     long     grid_points;
     long     referencePointLatitude_r16;
@@ -82,7 +87,7 @@ struct CorrectionPointSet {
 
 struct OcbSatellite {
     long                                     id;
-    long                                     iod;
+    uint16_t                                 iod;
     SSR_OrbitCorrectionSatelliteElement_r15* orbit;
     SSR_ClockCorrectionSatelliteElement_r15* clock;
     SSR_CodeBiasSatElement_r15*              code_bias;
@@ -100,7 +105,7 @@ struct OcbSatellite {
 
 struct OcbCorrections {
     long       gnss_id;
-    long       iod;
+    uint16_t   iod;
     SpartnTime epoch_time;
 
     GNSS_SSR_OrbitCorrections_r15* orbit;
@@ -121,7 +126,7 @@ struct OcbData {
 
 struct HpacSatellite {
     long                                                   id;
-    long                                                   iod;
+    uint16_t                                               iod;
     STEC_SatElement_r16*                                   stec;
     std::unordered_map<long, STEC_ResidualSatElement_r16*> residuals;
 
@@ -134,8 +139,8 @@ struct HpacSatellite {
 
 struct HpacCorrections {
     long       gnss_id;
-    long       iod;
-    long       set_id;
+    uint16_t   iod;
+    uint16_t   set_id;
     SpartnTime epoch_time;
 
     GNSS_SSR_GriddedCorrection_r16* gridded;
@@ -150,32 +155,32 @@ struct HpacCorrections {
 struct HpacData {
     std::unordered_map<HpacKey, HpacCorrections> mKeyedCorrections;
 
-    void set_ids(std::vector<long>& ids) const;
+    void set_ids(std::vector<uint16_t>& ids) const;
 };
 
 struct CorrectionData {
-    bool                               group_by_epoch_time;
-    std::unordered_map<long, OcbData>  mOcbData;
-    std::unordered_map<long, HpacData> mHpacData;
+    bool                                   mGroupByEpochTime;
+    std::unordered_map<uint16_t, OcbData>  mOcbData;
+    std::unordered_map<uint16_t, HpacData> mHpacData;
 
-    CorrectionData(bool group_by_epoch_time) : group_by_epoch_time(group_by_epoch_time) {}
+    CorrectionData(bool group_by_epoch_time) : mGroupByEpochTime(group_by_epoch_time) {}
 
-    std::vector<long> iods() const;
-    std::vector<long> set_ids() const;
+    std::vector<uint16_t> iods() const;
+    std::vector<uint16_t> set_ids() const;
 
-    OcbData* ocb(long iod) {
+    OcbData* ocb(uint16_t iod) {
         auto it = mOcbData.find(iod);
         if (it == mOcbData.end()) return nullptr;
         return &it->second;
     }
 
-    HpacData* hpac(long iod) {
+    HpacData* hpac(uint16_t iod) {
         auto it = mHpacData.find(iod);
         if (it == mHpacData.end()) return nullptr;
         return &it->second;
     }
 
-    bool find_gad_epoch_time(long iod, SpartnTime* epoch_time) const;
+    bool find_gad_epoch_time(uint16_t iod, SpartnTime* epoch_time) const;
 
     void add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15* orbit);
     void add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15* clock);

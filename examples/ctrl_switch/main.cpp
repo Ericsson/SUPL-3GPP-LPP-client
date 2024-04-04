@@ -4,7 +4,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-static void loop(Config& config) {
+[[noreturn]] static void loop(Config& config) {
     printf("[ctrl-switch]\n");
 
     // Open TCP server
@@ -19,7 +19,10 @@ static void loop(Config& config) {
     addr.sin_family      = AF_INET;
     addr.sin_port        = htons(13226);
     addr.sin_addr.s_addr = INADDR_ANY;
-    if (::bind(socket, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+
+    auto socket_addr = reinterpret_cast<struct sockaddr*>(&addr);
+    auto socket_size = static_cast<socklen_t>(sizeof(addr));
+    if (::bind(socket, socket_addr, socket_size) < 0) {
         perror("bind");
         exit(1);
     }
@@ -50,7 +53,7 @@ static void loop(Config& config) {
 
                 char buffer[1024];
                 auto length = snprintf(buffer, sizeof(buffer), "%s\r\n", command.c_str());
-                auto result = ::send(client, buffer, length, MSG_NOSIGNAL);
+                auto result = ::send(client, buffer, static_cast<size_t>(length), MSG_NOSIGNAL);
                 if (result < 0) {
                     printf("write failed\n");
                     connected = false;
@@ -70,5 +73,7 @@ static void loop(Config& config) {
 int main(int argc, char** argv) {
     auto config = parse_configuration(argc, argv);
     loop(config);
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
     return 0;
+#endif
 }

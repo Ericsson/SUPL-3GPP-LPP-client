@@ -3,8 +3,8 @@
 #include "rtk_data.hpp"
 
 extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
-                                             const generator::rtcm::CommonObservationInfo& common,
-                                             const generator::rtcm::Observations& observations);
+                                             generator::rtcm::CommonObservationInfo const& common,
+                                             generator::rtcm::Observations const& observations);
 
 RTCM_CONSTEXPR static int      mlt_size                  = 22;
 RTCM_CONSTEXPR static uint64_t mlt_coefficient[mlt_size] = {
@@ -35,7 +35,8 @@ inline double from_msm_lock_ex(long input_value) {
         auto start = mlt_base[i];
         auto end   = mlt_base[i + 1];
         if (value >= start && value < end) {
-            return (mlt_coefficient[i] * value - mlt_offset[i]) / 1000.0;
+            auto calculated_value = mlt_coefficient[i] * value - mlt_offset[i];
+            return static_cast<double>(calculated_value) / 1000.0;
         }
     }
 
@@ -49,7 +50,8 @@ RTCM_CONSTEXPR static uint64_t mlt2_table[16] = {
 inline double from_msm_lock(long value) {
     if (value < 0) return 0;
     if (value > 15) return mlt2_table[15] / 1000.0;
-    return mlt2_table[value] / 1000.0;
+    // TODO(ewasjon): We should probably do the cast and divide in the table
+    return static_cast<double>(mlt2_table[value]) / 1000.0;
 }
 
 inline long to_msm_lock_ex(double lock) {

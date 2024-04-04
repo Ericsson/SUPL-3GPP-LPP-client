@@ -5,7 +5,7 @@ namespace receiver {
 namespace nmea {
 
 // parse UTC time of day from string "hhmmss.sss"
-static bool parse_utc(const std::string& utc, TAI_Time& time_of_day) {
+static bool parse_utc(std::string const& utc, TAI_Time& time_of_day) {
     try {
         auto tokens = split(utc, '.');
         if (tokens.size() != 2) {
@@ -29,7 +29,7 @@ static bool parse_utc(const std::string& utc, TAI_Time& time_of_day) {
 }
 
 // parse latitude from string "ddmm.mmmm*"
-static bool parse_latitude(const std::string& latitude, const std::string& nw_indicator,
+static bool parse_latitude(std::string const& latitude, std::string const& nw_indicator,
                            double& lat) {
     try {
         auto degrees = std::stod(latitude.substr(0, 2));
@@ -51,7 +51,7 @@ static bool parse_latitude(const std::string& latitude, const std::string& nw_in
 }
 
 // parse longitude from string "dddmm.mmmm*"
-static bool parse_longitude(const std::string& longitude, const std::string& ew_indicator,
+static bool parse_longitude(std::string const& longitude, std::string const& ew_indicator,
                             double& lon) {
     try {
         auto degrees = std::stod(longitude.substr(0, 3));
@@ -72,7 +72,7 @@ static bool parse_longitude(const std::string& longitude, const std::string& ew_
     }
 }
 
-static bool parse_fix_quality(const std::string& fix_quality, GgaFixQuality& quality) {
+static bool parse_fix_quality(std::string const& fix_quality, GgaFixQuality& quality) {
     try {
         auto value = std::stoi(fix_quality);
         switch (value) {
@@ -92,7 +92,7 @@ static bool parse_fix_quality(const std::string& fix_quality, GgaFixQuality& qua
     }
 }
 
-static bool parse_satellites_in_view(const std::string& satellites_in_view, int& satellites) {
+static bool parse_satellites_in_view(std::string const& satellites_in_view, int& satellites) {
     try {
         satellites = std::stoi(satellites_in_view);
         return true;
@@ -101,7 +101,7 @@ static bool parse_satellites_in_view(const std::string& satellites_in_view, int&
     }
 }
 
-static bool parse_hdop(const std::string& hdop, double& value) {
+static bool parse_hdop(std::string const& hdop, double& value) {
     try {
         value = std::stod(hdop);
         return true;
@@ -110,7 +110,7 @@ static bool parse_hdop(const std::string& hdop, double& value) {
     }
 }
 
-static bool parse_altitude(const std::string& altitude, const std::string& units, double& value) {
+static bool parse_altitude(std::string const& altitude, std::string const& units, double& value) {
     try {
         value = std::stod(altitude);
         if (units == "M") {
@@ -152,7 +152,7 @@ void GgaMessage::print() const NMEA_NOEXCEPT {
     printf("  altitude:    %.2f\n", altitude());
 }
 
-std::unique_ptr<Message> GgaMessage::parse(std::string prefix, const std::string& payload,
+std::unique_ptr<Message> GgaMessage::parse(std::string prefix, std::string const& payload,
                                            std::string checksum) {
     // split payload by ','
     auto tokens = split(payload, ',');

@@ -200,7 +200,7 @@ SUPL_Message SUPL_Client::process() {
     }
 
     auto pdu           = (ULP_PDU*)nullptr;
-    long expected_size = 0;
+    size_t expected_size = 0;
 
     // NOTE: Some SUPL messages are very big, e.g. supl.google.com SUPLPOS with
     // ephemeris. This means that sometimes the 'buffer' will not contain the
@@ -213,8 +213,8 @@ SUPL_Message SUPL_Client::process() {
         mReceiveLength = 0;
         return nullptr;
     } else if (result.code == RC_WMORE) {
-        expected_size = pdu->length;
-        if (expected_size > sizeof(mReceiveBuffer)) {
+        expected_size = static_cast<size_t>(pdu->length);
+        if (expected_size > SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
             // Unable to handle such big messages
             mReceiveLength = 0;
             return nullptr;
@@ -306,8 +306,8 @@ SUPL_Message SUPL_Client::receive(int milliseconds) {
         return nullptr;
     }
 
-    auto expected_size = pdu->length;
-    if (expected_size > sizeof(mReceiveBuffer)) {
+    auto expected_size = static_cast<int>(pdu->length);
+    if (expected_size > SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
         return nullptr;
     }
 
@@ -331,7 +331,7 @@ SUPL_Message SUPL_Client::receive(int milliseconds) {
     return ASN_Unique<ULP_PDU>(pdu, {});
 }
 
-static int encode_to_length_cb(const void* buffer, size_t size, void* key) {
+static int encode_to_length_cb(const void*, size_t, void*) {
     return 0;
 }
 
@@ -392,7 +392,7 @@ bool SUPL_Client::send(SUPL_Message& message) {
     }
 
     auto bytes = mTCP->send(encoded_message->buf, encoded_message->size);
-    if (bytes != encoded_message->size) {
+    if (bytes != static_cast<int>(encoded_message->size)) {
         printf("ERROR: Failed to send message\n");
         return false;
     }

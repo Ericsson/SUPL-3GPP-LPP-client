@@ -1,4 +1,6 @@
 #include "serial.hpp"
+#include "interface/types.hpp"
+
 #include <cstring>
 #include <fcntl.h>
 #include <stdexcept>
@@ -114,51 +116,62 @@ void SerialInterface::open() {
     // set raw mode
     cfmakeraw(&tty);
 
-    tty.c_cflag |= (CLOCAL | CREAD);  // ignore modem controls,
-                                      // enable receiver
-    tty.c_cflag &= ~CRTSCTS;          // enable RTS/CTS (hardware) flow control.
-
-    tty.c_cflag &= ~CSIZE;              // mask the character size bits
-    tty.c_cflag &= ~CSTOPB;             // mask the stop bits
-    tty.c_cflag &= ~(PARENB | PARODD);  // mask parity bits
+    auto cflag = static_cast<int>(tty.c_cflag);
+    cflag |= (CLOCAL | CREAD);    // ignore modem controls,
+                                  // enable receiver
+    cflag &= ~CRTSCTS;            // enable RTS/CTS (hardware) flow control.
+    cflag &= ~CSIZE;              // mask the character size bits
+    cflag &= ~CSTOPB;             // mask the stop bits
+    cflag &= ~(PARENB | PARODD);  // mask parity bits
 
     switch (mDataBits) {
-    case DataBits::FIVE: tty.c_cflag |= CS5; break;
-    case DataBits::SIX: tty.c_cflag |= CS6; break;
-    case DataBits::SEVEN: tty.c_cflag |= CS7; break;
-    case DataBits::EIGHT: tty.c_cflag |= CS8; break;
-    default: throw std::runtime_error("Invalid data bits");
+    case DataBits::FIVE: cflag |= CS5; break;
+    case DataBits::SIX: cflag |= CS6; break;
+    case DataBits::SEVEN: cflag |= CS7; break;
+    case DataBits::EIGHT: cflag |= CS8; break;
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+    default: IF_UNREACHABLE(); break;
+#endif
     }
 
     switch (mStopBits) {
-    case StopBits::ONE: tty.c_cflag &= ~CSTOPB; break;
-    case StopBits::TWO: tty.c_cflag |= CSTOPB; break;
-    default: throw std::runtime_error("Invalid stop bits");
+    case StopBits::ONE: cflag &= ~CSTOPB; break;
+    case StopBits::TWO: cflag |= CSTOPB; break;
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+    default: IF_UNREACHABLE(); break;
+#endif
     }
 
     switch (mParityBit) {
-    case ParityBit::NONE: tty.c_cflag &= ~PARENB; break;
+    case ParityBit::NONE: cflag &= ~PARENB; break;
     case ParityBit::ODD:
-        tty.c_cflag |= PARENB;
-        tty.c_cflag |= PARODD;
+        cflag |= PARENB;
+        cflag |= PARODD;
         break;
     case ParityBit::EVEN:
-        tty.c_cflag |= PARENB;
-        tty.c_cflag &= ~PARODD;
+        cflag |= PARENB;
+        cflag &= ~PARODD;
         break;
-    default: throw std::runtime_error("Invalid parity bit");
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+    default: IF_UNREACHABLE(); break;
+#endif
     }
+
+    tty.c_cflag = static_cast<tcflag_t>(cflag);
 
     // set baud rate
     if (cfsetospeed(&tty, mBaudRateConstant) != 0) {
+        // TODO(ewasjon): We should report an warning here and not throw an exception
         throw std::runtime_error("Failed to set serial output baud rate");
     }
 
     if (cfsetispeed(&tty, mBaudRateConstant) != 0) {
+        // TODO(ewasjon): We should report an warning here and not throw an exception
         throw std::runtime_error("Failed to set serial input baud rate");
     }
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0) {
+        // TODO(ewasjon): We should report an warning here and not throw an exception
         throw std::runtime_error("Could not set serial device attributes");
     }
 
@@ -173,7 +186,7 @@ size_t SerialInterface::read(void* data, size_t size) {
     return mFileDescriptor.read(data, size);
 }
 
-size_t SerialInterface::write(const void* data, size_t size) {
+size_t SerialInterface::write(void const* data, size_t size) {
     return mFileDescriptor.write(data, size);
 }
 

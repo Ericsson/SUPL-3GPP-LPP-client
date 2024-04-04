@@ -7,7 +7,7 @@
 #include "options.hpp"
 
 // resolve sockaddr from hostname
-static sockaddr_in resolve(const std::string& hostname, uint16_t port) {
+static sockaddr_in resolve(std::string const& hostname, uint16_t port) {
     sockaddr_in addr{};
     addr.sin_family = AF_INET;
     addr.sin_port   = htons(port);
@@ -15,21 +15,21 @@ static sockaddr_in resolve(const std::string& hostname, uint16_t port) {
     auto host = gethostbyname(hostname.c_str());
     if (!host) throw std::runtime_error("Failed to resolve hostname");
 
-    memcpy(&addr.sin_addr, host->h_addr_list[0], host->h_length);
+    memcpy(&addr.sin_addr, host->h_addr_list[0], static_cast<size_t>(host->h_length));
     return addr;
 }
 
 static std::string base64_encode(uint8_t* data, size_t size) {
-    static const char* table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    static char const* table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     std::string encoded;
     encoded.reserve((size + 2) / 3 * 4);
 
     for (size_t i = 0; i < size; i += 3) {
         uint32_t temp = 0;
-        temp |= data[i + 0] << 16;
-        if (i + 1 < size) temp |= data[i + 1] << 8;
-        if (i + 2 < size) temp |= data[i + 2] << 0;
+        temp |= static_cast<uint32_t>(data[i + 0] << 16);
+        if (i + 1 < size) temp |= static_cast<uint32_t>(data[i + 1] << 8);
+        if (i + 2 < size) temp |= static_cast<uint32_t>(data[i + 2] << 0);
 
         encoded += table[(temp >> 18) & 0x3f];
         encoded += table[(temp >> 12) & 0x3f];
@@ -49,10 +49,10 @@ static std::string base64_encode(uint8_t* data, size_t size) {
 }
 
 // username:password -> base64
-static std::string authorization_basic(const std::string& username, const std::string& password) {
+static std::string authorization_basic(std::string const& username, std::string const& password) {
     auto data = username + ":" + password;
     auto size = data.size();
-    auto temp = (uint8_t*)malloc(size);
+    auto temp = reinterpret_cast<uint8_t*>(malloc(size));
     memcpy(temp, data.c_str(), size);
     auto encoded = base64_encode(temp, size);
     free(temp);
@@ -60,8 +60,8 @@ static std::string authorization_basic(const std::string& username, const std::s
 }
 
 // hexdump with ascii
-static void hexdump(const void* data, size_t size) {
-    auto bytes = (const uint8_t*)data;
+static void hexdump(void const* data, size_t size) {
+    auto bytes = reinterpret_cast<uint8_t const*>(data);
     for (size_t i = 0; i < size; i += 16) {
         printf("%08lx: ", i);
 
@@ -99,7 +99,9 @@ public:
         mSocket = socket(AF_INET, SOCK_STREAM, 0);
         if (mSocket < 0) throw std::runtime_error("Failed to create socket");
 
-        if (connect(mSocket, (sockaddr*)&addr, sizeof(addr)) < 0) {
+        auto socket_addr = reinterpret_cast<sockaddr*>(&addr);
+        auto socket_len  = static_cast<socklen_t>(sizeof(addr));
+        if (connect(mSocket, socket_addr, socket_len) < 0) {
             throw std::runtime_error("Failed to connect to host");
         }
     }
@@ -111,7 +113,7 @@ public:
         mPassword = password;
     }
 
-    void request(const std::string& mountpoint) {
+    void request(std::string const& mountpoint) {
         std::string request = "GET /" + mountpoint + " HTTP/1.0\r\n";
         request += "User-Agent: NTRIP 2.0/SUPL-3GPP-LPP-client\r\n";
         request += "Accept: */*\r\n";
@@ -126,7 +128,7 @@ public:
         }
     }
 
-    void nmea_update(const std::string& nmea) {
+    void nmea_update(std::string const& nmea) {
         std::string request = nmea + "\r\n";
         if (send(mSocket, request.c_str(), request.size(), 0) < 0) {
             throw std::runtime_error("Failed to send request");
@@ -172,10 +174,11 @@ int main(int argc, char** argv) {
             break;
         }
 
-        hexdump(temp, bytes);
+        auto length = static_cast<size_t>(bytes);
+        hexdump(temp, length);
 
         for (auto& interface : output.interfaces) {
-            interface->write(temp, bytes);
+            interface->write(temp, length);
         }
     }
 

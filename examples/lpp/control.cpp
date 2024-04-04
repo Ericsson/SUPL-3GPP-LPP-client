@@ -4,7 +4,7 @@
 #include <sstream>
 #include <vector>
 
-static std::vector<std::string> split(const std::string& str, char delimiter) {
+static std::vector<std::string> split(std::string const& str, char delimiter) {
     std::vector<std::string> tokens;
     std::string              token;
     std::istringstream       token_stream(str);
@@ -31,14 +31,14 @@ void ControlParser::parse(std::unique_ptr<interface::Interface>& interface) {
         mLength += length;
     }
 
-    auto lookahead_index = 0;
+    size_t lookahead_index = 0;
     while (mLength - lookahead_index > 3) {
         if (mBuffer[lookahead_index] != '/') {
             lookahead_index++;
             continue;
         }
 
-        auto message_length = 0;
+        size_t message_length = 0;
         for (auto i = lookahead_index + 1; i < mLength; i++) {
             if (mBuffer[i] == '\r' && i + 1 < mLength && mBuffer[i + 1] == '\n') {
                 message_length = i - lookahead_index + 2;
@@ -56,10 +56,10 @@ void ControlParser::parse(std::unique_ptr<interface::Interface>& interface) {
             if (tokens[0] == "CID") {
                 if (tokens.size() == 6) {
                     CellID cid;
-                    cid.mcc   = std::stoi(tokens[2]);
-                    cid.mnc   = std::stoi(tokens[3]);
-                    cid.tac   = std::stoi(tokens[4]);
-                    cid.cell  = std::stoi(tokens[5]);
+                    cid.mcc   = std::stol(tokens[2]);
+                    cid.mnc   = std::stol(tokens[3]);
+                    cid.tac   = std::stol(tokens[4]);
+                    cid.cell  = std::stoull(tokens[5]);
                     cid.is_nr = tokens[1] == "N";
                     if (on_cid) {
                         on_cid(cid);

@@ -1,7 +1,7 @@
 #pragma once
-#include <cstdint>
-#include <cstddef>
 #include <cassert>
+#include <cstddef>
+#include <cstdint>
 
 #ifndef NMEA_EXPLICIT
 #define NMEA_EXPLICIT explicit
@@ -52,4 +52,3 @@ __attribute__((noreturn)) inline void nmea_unreachable() {
 }
 #endif
 #endif
-

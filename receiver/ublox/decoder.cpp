@@ -1,4 +1,6 @@
 #include "decoder.hpp"
+
+#include <cstring>
 #include <endian.h>
 
 #if __BYTE_ORDER == __LITTLE_ENDIAN
@@ -31,7 +33,7 @@ uint16_t Decoder::X2() UBLOX_NOEXCEPT {
         mError = true;
         return 0;
     } else {
-        auto value = (static_cast<uint16_t>(mPayload[1]) << 8) | static_cast<uint16_t>(mPayload[0]);
+        auto value = static_cast<uint16_t>((mPayload[1] << 8) | mPayload[0]);
         mPayload += 2;
         mPayloadLength -= 2;
         return value;
@@ -119,13 +121,19 @@ int64_t Decoder::I8() UBLOX_NOEXCEPT {
 }
 
 float Decoder::R4() UBLOX_NOEXCEPT {
-    auto value = X4();
-    return *reinterpret_cast<float*>(&value);
+    auto  value = X4();
+    float result;
+    static_assert(sizeof(float) == sizeof(uint32_t), "float is not 32 bits");
+    std::memcpy(&result, &value, sizeof(float));
+    return result;
 }
 
 double Decoder::R8() UBLOX_NOEXCEPT {
-    auto value = X8();
-    return *reinterpret_cast<double*>(&value);
+    auto   value = X8();
+    double result;
+    static_assert(sizeof(double) == sizeof(uint64_t), "double is not 64 bits");
+    std::memcpy(&result, &value, sizeof(double));
+    return result;
 }
 
 bool Decoder::L() UBLOX_NOEXCEPT {

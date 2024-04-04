@@ -26,7 +26,7 @@ void UbxCfgValget::print() const UBLOX_NOEXCEPT {
     }
     printf("[.....]    position: %u\n", mPayload.position);
     printf("[.....]    data:\n");
-    for (const auto& kvp : mPayload.values) {
+    for (auto const& kvp : mPayload.values) {
         auto  key   = kvp.first;
         auto& value = kvp.second;
         printf("[.....]        %08X: ", key);
@@ -86,9 +86,13 @@ std::unique_ptr<Message> UbxCfgValget::parse(Decoder& decoder) UBLOX_NOEXCEPT {
 }
 
 uint32_t UbxCfgValget::poll(Encoder& encoder, CfgLayer layer, uint16_t position,
-                            const std::vector<CfgKey>& keys) UBLOX_NOEXCEPT {
-    auto begin        = encoder.ptr();
-    auto payload_size = 4 + 4 * keys.size();
+                            std::vector<CfgKey> const& keys) UBLOX_NOEXCEPT {
+    UBLOX_ASSERT(keys.size() <= 0xFF, "Too many keys to poll (max 255)");
+
+    auto begin = encoder.ptr();
+
+    uint16_t payload_size = 4;                               // 4 bytes for header
+    payload_size += 4 * static_cast<uint16_t>(keys.size());  // 4 bytes per key
 
     encoder.U1(0xB5);
     encoder.U1(0x62);
@@ -111,13 +115,13 @@ uint32_t UbxCfgValget::poll(Encoder& encoder, CfgLayer layer, uint16_t position,
     }
     encoder.U2(position);
 
-    for (auto key : keys) {
+    for (auto& key : keys) {
         encoder.U4(key);
     }
 
-    auto checksum_end = encoder.ptr();
-    auto checksum =
-        Parser::checksum(checksum_begin, static_cast<uint32_t>(checksum_end - checksum_begin));
+    auto checksum_end    = encoder.ptr();
+    auto checksum_length = static_cast<uint32_t>(checksum_end - checksum_begin);
+    auto checksum        = Parser::checksum(checksum_begin, checksum_length);
     encoder.U2(checksum);
 
     auto end = encoder.ptr();

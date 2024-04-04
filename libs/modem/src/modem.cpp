@@ -27,7 +27,7 @@ static constexpr const char* at_commands[] = {
     "AT#CSURV?", "AT+CSQ",    "AT$QCRSRP?", "AT$QCRSRQ?",
 };
 
-Modem_AT::Modem_AT(const std::string& path, unsigned int baud_rate, CellID cell_id)
+Modem_AT::Modem_AT(const std::string& path, int baud_rate, CellID cell_id)
     : path(path), baud_rate(baud_rate), cell_update_count(0), cell_id(cell_id),
       first_cell_id(cell_id), fd(-1) {
     neighbors.reserve(16);

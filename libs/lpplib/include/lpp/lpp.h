@@ -6,7 +6,7 @@
 #include "asnlib.h"
 #include "location_information.h"
 
-#define AD_REQUEST_INVALID ((LPP_Client::AD_Request)(0))
+#define AD_REQUEST_INVALID (static_cast<LPP_Client::AD_Request>(0))
 
 struct LPP_Transaction {
     long id;

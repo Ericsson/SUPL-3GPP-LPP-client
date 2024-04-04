@@ -27,11 +27,8 @@ target_link_libraries(lpplib PRIVATE OpenSSL::SSL)
 target_compile_definitions(lpplib PRIVATE "USE_OPENSSL=1")
 endif (USE_OPENSSL)
 
-if (USE_ASAN)
-target_compile_options(lpplib PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(lpplib PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
-
 if (DEBUG_LPP_LIB)
 target_compile_definitions(lpplib PRIVATE "DEBUG_LPP_LIB=1")
 endif (DEBUG_LPP_LIB)
+
+setup_target(lpplib)

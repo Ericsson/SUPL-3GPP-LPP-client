@@ -1,9 +1,24 @@
-#include <LPP-Message.h>
+#include "options.hpp"
+
+#include <sstream>
+#include <unistd.h>
+
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
 #include <generator/spartn/generator.h>
 #include <generator/spartn/transmitter.h>
+#endif
+
+#ifdef INCLUDE_GENERATOR_SPARTN
 #include <generator/spartn2/generator.hpp>
-#include <unistd.h>
-#include "options.hpp"
+#endif
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <LPP-Message.h>
+#pragma GCC diagnostic pop
 
 struct StdinStream {
     StdinStream() {
@@ -23,7 +38,7 @@ struct StdinStream {
             FD_ZERO(&readfds);
             FD_SET(fd, &readfds);
             timeval timeout{0, 0};
-            auto    ret = select(fd + 1, &readfds, NULL, NULL, &timeout);
+            auto    ret = select(fd + 1, &readfds, nullptr, nullptr, &timeout);
             if (ret < 0) {
                 throw std::runtime_error("Failed to read from stdin");
             } else if (ret == 0) {
@@ -47,23 +62,26 @@ struct StdinStream {
         return bytes_read > 0;
     }
 
-    void clear(size_t bytes) { buffer.erase(buffer.begin(), buffer.begin() + bytes); }
+    void clear(size_t bytes) {
+        buffer.erase(buffer.begin(), buffer.begin() + static_cast<long>(bytes));
+    }
 
     int                  fd;
     std::vector<uint8_t> buffer;
 };
 
-#define ALLOC_ZERO(T) ((T*)calloc(1, sizeof(T)))
+#define ALLOC_ZERO(T) (reinterpret_cast<T*>(calloc(1, sizeof(T))))
 LPP_Message* lpp_decode(StdinStream& stream) {
     asn_codec_ctx_t stack_ctx{};
     stack_ctx.max_stack_size = 1024 * 1024 * 4;
 
-    LPP_Message*   lpp  = ALLOC_ZERO(LPP_Message);
-    asn_dec_rval_t rval = uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, (void**)&lpp,
-                                               stream.buffer.data(), stream.buffer.size());
+    LPP_Message*   lpp = ALLOC_ZERO(LPP_Message);
+    asn_dec_rval_t rval =
+        uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, reinterpret_cast<void**>(&lpp),
+                             stream.buffer.data(), stream.buffer.size());
     if (rval.code != RC_OK) {
         free(lpp);
-        return NULL;
+        return nullptr;
     }
 
     stream.clear(rval.consumed);
@@ -72,16 +90,16 @@ LPP_Message* lpp_decode(StdinStream& stream) {
 
 LPP_Message* next_message(StdinStream& stream) {
     if (stream.buffer.empty()) {
-        if (!stream.read()) return NULL;
+        if (!stream.read()) return nullptr;
     }
 
     if (stream.buffer.size() > 0) {
         auto message = lpp_decode(stream);
         if (message) return message;
-        if (!stream.read()) return NULL;
+        if (!stream.read()) return nullptr;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 int main(int argc, char** argv) {
@@ -89,8 +107,11 @@ int main(int argc, char** argv) {
     auto& output  = options.output;
     auto& spartn  = options.spartn;
 
-    StdinStream      stream{};
+    StdinStream stream{};
+
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
     SPARTN_Generator old_generator{};
+#endif
 
     auto gUraOverride          = 2;
     auto gUBloxClockCorrection = true;
@@ -114,7 +135,24 @@ int main(int argc, char** argv) {
         auto message = next_message(stream);
         if (!message) break;
 
-        if (options.format == Format::SPARTN_NEW) {
+        if (options.format == Format::XER) {
+            std::stringstream buffer;
+            xer_encode(
+                &asn_DEF_LPP_Message, message, XER_F_BASIC,
+                [](void const* text_buffer, size_t text_size, void* app_key) -> int {
+                    auto string_stream = static_cast<std::ostream*>(app_key);
+                    string_stream->write(static_cast<char const*>(text_buffer),
+                                         static_cast<std::streamsize>(text_size));
+                    return 0;
+                },
+                &buffer);
+            auto xer_message = buffer.str();
+            for (auto& interface : output.interfaces) {
+                interface->write(xer_message.data(), xer_message.size());
+            }
+        }
+#ifdef INCLUDE_GENERATOR_SPARTN
+        else if (options.format == Format::SPARTN_NEW) {
             auto messages2 = new_generator.generate(message);
             for (auto& msg : messages2) {
                 auto data = msg.build();
@@ -122,7 +160,10 @@ int main(int argc, char** argv) {
                     interface->write(data.data(), data.size());
                 }
             }
-        } else if (options.format == Format::SPARTN_OLD) {
+        }
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
+        else if (options.format == Format::SPARTN_OLD) {
             auto messages = old_generator.generate(message, gUraOverride, gUBloxClockCorrection,
                                                    gForceIodeContinuity);
 
@@ -188,6 +229,7 @@ int main(int argc, char** argv) {
                 }
             }
         }
+#endif
 
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, message);
     }

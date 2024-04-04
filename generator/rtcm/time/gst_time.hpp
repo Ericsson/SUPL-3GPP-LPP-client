@@ -11,8 +11,8 @@ public:
     GST_Time() = default;
     RTCM_EXPLICIT GST_Time(TsInt day, TsFloat tod);
     RTCM_EXPLICIT GST_Time(TsInt week, TsInt tow, TsFloat fractions);
-    RTCM_EXPLICIT GST_Time(const TAI_Time& time);
-    RTCM_EXPLICIT GST_Time(const UTC_Time& time);
+    RTCM_EXPLICIT GST_Time(TAI_Time const& time);
+    RTCM_EXPLICIT GST_Time(UTC_Time const& time);
 
     RTCM_NODISCARD TsInt     days() const;
     RTCM_NODISCARD TsInt     week() const;

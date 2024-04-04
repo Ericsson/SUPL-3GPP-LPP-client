@@ -32,7 +32,7 @@ void Encoder::u64(size_t bits, uint64_t value) {
     assert(bits > 0 && bits <= 64);
     for (size_t i = 0; i < bits; i++) {
         auto bit = (value >> (bits - i - 1)) & 1;
-        append_bit(bit);
+        append_bit(static_cast<uint8_t>(bit));
     }
 }
 

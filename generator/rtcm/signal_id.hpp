@@ -25,11 +25,11 @@ public:
     RTCM_NODISCARD long        lpp_id() const;
     RTCM_NODISCARD std::string to_string() const;
 
-    inline bool operator==(const SignalId& other) const {
+    inline bool operator==(SignalId const& other) const {
         return mGnss == other.mGnss && mLppId == other.mLppId;
     }
 
-    inline bool operator!=(const SignalId& other) const { return !(*this == other); }
+    inline bool operator!=(SignalId const& other) const { return !(*this == other); }
 
 private:
     explicit SignalId(Gnss gnss, int32_t lpp_id) : mGnss(gnss), mLppId(lpp_id) {}

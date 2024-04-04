@@ -3,23 +3,30 @@
 #include "generator.hpp"
 #include "message.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-ID.h>
 #include <GNSS-SSR-GriddedCorrection-r16.h>
 #include <GNSS-SSR-STEC-Correction-r16.h>
+#pragma GCC diagnostic pop
 
 #include <algorithm>
+#include <cmath>
 
 namespace generator {
 namespace spartn {
 
 uint32_t HpacSatellite::prn() const {
     // NOTE(ewasjon): 3GPP LPP defines PRN starting at 0 instead of 1.
-    return id + 1;
+    return static_cast<uint32_t>(id + 1);
 }
 
-void HpacSatellite::add_correction(STEC_SatElement_r16* stec) {
-    if (!stec) return;
-    this->stec = stec;
+void HpacSatellite::add_correction(STEC_SatElement_r16* new_stec) {
+    if (!new_stec) return;
+    stec = new_stec;
 }
 
 void HpacSatellite::add_correction(long grid_id, STEC_ResidualSatElement_r16* residual) {
@@ -76,14 +83,14 @@ std::vector<HpacSatellite> HpacCorrections::satellites() const {
     }
 
     // Sort by satellite id
-    std::sort(result.begin(), result.end(), [](const HpacSatellite& a, const HpacSatellite& b) {
+    std::sort(result.begin(), result.end(), [](HpacSatellite const& a, HpacSatellite const& b) {
         return a.id < b.id;
     });
 
     return result;
 }
 
-void HpacData::set_ids(std::vector<long>& ids) const {
+void HpacData::set_ids(std::vector<uint16_t>& ids) const {
     for (auto& kvp : mKeyedCorrections) {
         auto set_id = kvp.first.set_id;
         if (std::find(ids.begin(), ids.end(), set_id) == ids.end()) {
@@ -92,9 +99,8 @@ void HpacData::set_ids(std::vector<long>& ids) const {
     }
 }
 
-std::vector<long> CorrectionData::set_ids() const {
-    std::vector<long> set_ids;
-
+std::vector<uint16_t> CorrectionData::set_ids() const {
+    std::vector<uint16_t> set_ids;
     for (auto& kvp : mHpacData) {
         kvp.second.set_ids(set_ids);
     }
@@ -102,9 +108,8 @@ std::vector<long> CorrectionData::set_ids() const {
     return set_ids;
 }
 
-std::vector<long> CorrectionData::iods() const {
-    std::vector<long> iods;
-
+std::vector<uint16_t> CorrectionData::iods() const {
+    std::vector<uint16_t> iods;
     for (auto& kvp : mOcbData) {
         auto iod = kvp.first;
         if (std::find(iods.begin(), iods.end(), iod) == iods.end()) {
@@ -123,7 +128,7 @@ std::vector<long> CorrectionData::iods() const {
     return iods;
 }
 
-bool CorrectionData::find_gad_epoch_time(long iod, SpartnTime* epoch_time) const {
+bool CorrectionData::find_gad_epoch_time(uint16_t iod, SpartnTime* epoch_time) const {
     SpartnTime time{};
     bool       found = false;
 
@@ -151,12 +156,12 @@ bool CorrectionData::find_gad_epoch_time(long iod, SpartnTime* epoch_time) const
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16* gridded) {
     if (!gridded) return;
-    auto  iod  = gridded->iod_ssr_r16;
+    auto  iod  = static_cast<uint16_t>(gridded->iod_ssr_r16);
     auto& hpac = mHpacData[iod];
 
     auto epoch_time = spartn_time_from(gridded->epochTime_r16);
-    auto set_id     = gridded->correctionPointSetID_r16;
-    auto key = HpacKey{set_id, gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
+    auto set_id     = static_cast<uint16_t>(gridded->correctionPointSetID_r16);
+    auto key        = HpacKey{set_id, gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = hpac.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -168,12 +173,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16* stec) {
     if (!stec) return;
-    auto  iod  = stec->iod_ssr_r16;
+    auto  iod  = static_cast<uint16_t>(stec->iod_ssr_r16);
     auto& hpac = mHpacData[iod];
 
-    auto set_id     = stec->correctionPointSetID_r16;
     auto epoch_time = spartn_time_from(stec->epochTime_r16);
-    auto key = HpacKey{set_id, gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
+    auto set_id     = static_cast<uint16_t>(stec->correctionPointSetID_r16);
+    auto key        = HpacKey{set_id, gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
     auto& corrections      = hpac.mKeyedCorrections[key];
     corrections.gnss_id    = gnss_id;
@@ -189,7 +194,7 @@ static bool within_range(double min, double max, double value) {
     return true;
 }
 
-static uint8_t compute_troposphere_block_type(const GNSS_SSR_GriddedCorrection_r16* ptr) {
+static uint8_t compute_troposphere_block_type(GNSS_SSR_GriddedCorrection_r16 const* ptr) {
     // If we're missing the troposphere correction, return 0=none
     if (!ptr) return 0;
 
@@ -218,8 +223,8 @@ static uint8_t compute_troposphere_block_type(const GNSS_SSR_GriddedCorrection_r
     return 2;
 }
 
-static uint8_t compute_ionosphere_block_type(const GNSS_SSR_STEC_Correction_r16*   stec,
-                                             const GNSS_SSR_GriddedCorrection_r16* gridded) {
+static uint8_t compute_ionosphere_block_type(GNSS_SSR_STEC_Correction_r16 const*   stec,
+                                             GNSS_SSR_GriddedCorrection_r16 const* gridded) {
     // If we're missing the ionosphere correction, return 0=none
     if (!stec) return 0;
 
@@ -233,7 +238,7 @@ static uint8_t compute_ionosphere_block_type(const GNSS_SSR_STEC_Correction_r16*
     return 1;
 }
 
-static double compute_average_zentith_delay(const GNSS_SSR_GriddedCorrection_r16& data) {
+static double compute_average_zentith_delay(GNSS_SSR_GriddedCorrection_r16 const& data) {
     double total_zenith_delay = 0.0;
     double count              = 0.0;
 
@@ -253,14 +258,15 @@ static double compute_average_zentith_delay(const GNSS_SSR_GriddedCorrection_r16
 }
 
 static void troposphere_data_block(MessageBuilder&                       builder,
-                                   const GNSS_SSR_GriddedCorrection_r16& data, int ura_override,
+                                   GNSS_SSR_GriddedCorrection_r16 const& data, int ura_override,
                                    bool use_average_zenith_delay) {
     // NOTE(ewasjon): Use a polynomial of degree 0, as we don't have a polynomial in 3GPP
     // LPP. This will result in a constant value for the troposphere correction.
     builder.sf041(0 /* T_00 */);
 
     if (ura_override >= 0) {
-        builder.sf042_raw(ura_override);
+        uint8_t value = ura_override > 7 ? 7 : static_cast<uint8_t>(ura_override);
+        builder.sf042_raw(value);
     } else if (data.troposphericDelayQualityIndicator_r16) {
         // TODO(ewasjon): Refactor as function in decode namespace
         auto& quality = *data.troposphericDelayQualityIndicator_r16;
@@ -369,7 +375,7 @@ static int compute_equation_type(std::vector<HpacSatellite>& satellites) {
     return final_equation_type;
 }
 
-static bool compute_coefficient_size_indicator(const STEC_SatElement_r16& satellite,
+static bool compute_coefficient_size_indicator(STEC_SatElement_r16 const& satellite,
                                                int                        equation_type) {
     auto small_coefficient_size = true;
 
@@ -403,7 +409,7 @@ static bool compute_coefficient_size_indicator(const STEC_SatElement_r16& satell
     return !small_coefficient_size;
 }
 
-static void ionosphere_data_block_1(MessageBuilder& builder, const HpacSatellite& satellite,
+static void ionosphere_data_block_1(MessageBuilder& builder, HpacSatellite const& satellite,
                                     int equation_type, int sf055_override, int sf055_default) {
     auto element = satellite.stec;
 
@@ -440,21 +446,20 @@ static void ionosphere_data_block_1(MessageBuilder& builder, const HpacSatellite
     }
 }
 
-static int compute_residual_field_size(const HpacSatellite& satellite) {
-    int residual_field_size = 0;
-
+static uint8_t compute_residual_field_size(HpacSatellite const& satellite) {
+    uint8_t residual_field_size = 0;
     for (auto& kvp : satellite.residuals) {
         auto& element  = *kvp.second;
         auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
 
         if (within_range(-0.28, 0.28, residual))
-            residual_field_size = std::max(residual_field_size, 0);
+            residual_field_size = std::max<uint8_t>(residual_field_size, 0U);
         else if (within_range(-2.52, 2.52, residual))
-            residual_field_size = std::max(residual_field_size, 1);
+            residual_field_size = std::max<uint8_t>(residual_field_size, 1U);
         else if (within_range(-20.44, 20.44, residual))
-            residual_field_size = std::max(residual_field_size, 2);
+            residual_field_size = std::max<uint8_t>(residual_field_size, 2U);
         else
-            residual_field_size = std::max(residual_field_size, 3);
+            residual_field_size = std::max<uint8_t>(residual_field_size, 3U);
     }
 
     return residual_field_size;
@@ -495,6 +500,7 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
 
     {
         // NOTE(ewasjon): Remove all satellites that does not have STEC corrections.
+        // TODO(ewasjon): [low-priority] Add _WHY_ we're removing satellites without STEC
         auto it = satellites.begin();
         for (; it != satellites.end(); it++) {
             if (!it->stec) {
@@ -518,7 +524,7 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
     }
 }
 
-void Generator::generate_hpac(long iod) {
+void Generator::generate_hpac(uint16_t iod) {
     auto hpac_data = mCorrectionData->hpac(iod);
     if (!hpac_data) return;
 
@@ -533,7 +539,7 @@ void Generator::generate_hpac(long iod) {
     }
 
     std::sort(messages.begin(), messages.end(),
-              [](const HpacCorrections* a, const HpacCorrections* b) {
+              [](HpacCorrections const* a, HpacCorrections const* b) {
                   return subtype_from_gnss_id(a->gnss_id) < subtype_from_gnss_id(b->gnss_id);
               });
 
@@ -573,8 +579,8 @@ void Generator::generate_hpac(long iod) {
         {
             // Area data block
             {
-                builder.sf031(correction_point_set.area_id);
-                builder.sf039(correction_point_set.grid_points);
+                builder.sf031(static_cast<uint8_t>(correction_point_set.area_id));
+                builder.sf039(static_cast<uint8_t>(correction_point_set.grid_points));
                 builder.sf040(troposphere_block_type);
                 builder.sf040(ionosphere_block_type);
             }

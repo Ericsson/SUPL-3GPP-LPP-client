@@ -8,16 +8,22 @@
 #include "rtk_data.hpp"
 #include "satellite_id.hpp"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
+#pragma GCC diagnostic pop
 
 using namespace generator::rtcm;
 
-static void extract_common_assist_data(RtkData& data, const GNSS_CommonAssistData& src_common) {
+static void extract_common_assist_data(RtkData& data, GNSS_CommonAssistData const& src_common) {
     if (src_common.ext1) {
         auto& ext1 = *src_common.ext1;
         if (ext1.gnss_RTK_CommonObservationInfo_r15) {
@@ -31,7 +37,7 @@ static void extract_common_assist_data(RtkData& data, const GNSS_CommonAssistDat
 }
 
 static void extract_generic_element_data(RtkData&                             data,
-                                         const GNSS_GenericAssistDataElement& src_generic) {
+                                         GNSS_GenericAssistDataElement const& src_generic) {
     auto gnss_id = GenericGnssId::GPS;
     switch (src_generic.gnss_ID.gnss_id) {
     case GNSS_ID__gnss_id_gps: gnss_id = GenericGnssId::GPS; break;
@@ -64,7 +70,7 @@ static void extract_generic_element_data(RtkData&                             da
     }
 }
 
-static void extract_generic_assist_data(RtkData& data, const GNSS_GenericAssistData& src_generic) {
+static void extract_generic_assist_data(RtkData& data, GNSS_GenericAssistData const& src_generic) {
     auto& list = src_generic.list;
     for (auto i = 0; i < list.count; i++) {
         if (!list.array[i]) continue;
@@ -72,7 +78,7 @@ static void extract_generic_assist_data(RtkData& data, const GNSS_GenericAssistD
     }
 }
 
-static std::unique_ptr<RtkData> extract_rtk_data(const LPP_Message& lpp_message) {
+static std::unique_ptr<RtkData> extract_rtk_data(LPP_Message const& lpp_message) {
     if (!lpp_message.lpp_MessageBody) return nullptr;
 
     auto& body = *lpp_message.lpp_MessageBody;
@@ -121,8 +127,8 @@ Generator::Generator()
 
 Generator::~Generator() = default;
 
-std::vector<Message> Generator::generate(const LPP_Message*   lpp_message,
-                                         const MessageFilter& filter) {
+std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
+                                         MessageFilter const& filter) {
     std::vector<Message> messages;
     if (!lpp_message) return messages;
 
@@ -193,8 +199,7 @@ std::vector<Message> Generator::generate(const LPP_Message*   lpp_message,
     if (should_include_reference_station) {
         auto reference_station_ptr          = mReferenceStation.get();
         auto physical_reference_station_ptr = mPhysicalReferenceStation.get();
-        if (rtk_data->reference_station)
-            reference_station_ptr = rtk_data->reference_station.get();
+        if (rtk_data->reference_station) reference_station_ptr = rtk_data->reference_station.get();
         if (rtk_data->physical_reference_station)
             physical_reference_station_ptr = rtk_data->physical_reference_station.get();
 
@@ -227,7 +232,7 @@ std::vector<Message> Generator::generate(const LPP_Message*   lpp_message,
         auto& common = *rtk_data->common_observation_info.get();
 
         GenericGnssId       gnss[4];
-        const Observations* observations[4] = {nullptr, nullptr, nullptr, nullptr};
+        Observations const* observations[4] = {nullptr, nullptr, nullptr, nullptr};
         auto                count           = 0;
         for (auto i = 0; i < 4; i++) {
             auto it = rtk_data->observations.find(MSM_GNSS_MESSAGE_ORDER[i]);

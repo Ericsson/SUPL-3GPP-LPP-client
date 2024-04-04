@@ -11,9 +11,9 @@ public:
     GPS_Time() = default;
     RTCM_EXPLICIT GPS_Time(TsInt day, TsFloat tod);
     RTCM_EXPLICIT GPS_Time(TsInt week, TsInt tow, TsFloat fractions);
-    RTCM_EXPLICIT GPS_Time(const Timestamp& timestamp) : tm(timestamp) {}
-    RTCM_EXPLICIT GPS_Time(const TAI_Time& time);
-    RTCM_EXPLICIT GPS_Time(const UTC_Time& time);
+    RTCM_EXPLICIT GPS_Time(Timestamp const& timestamp) : tm(timestamp) {}
+    RTCM_EXPLICIT GPS_Time(TAI_Time const& time);
+    RTCM_EXPLICIT GPS_Time(UTC_Time const& time);
 
     RTCM_NODISCARD TsInt     days() const;
     RTCM_NODISCARD TsInt     week() const;

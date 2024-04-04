@@ -2,8 +2,8 @@
 #include <utility/time.h>
 
 std::vector<std::unique_ptr<SPARTN_Message>>
-SPARTN_Generator::generate(const LPP_Message* const lpp_message, const int8_t qualityoveride,
-                           const bool ublox_clock_correction, const bool force_continuity) {
+SPARTN_Generator::generate(LPP_Message const* const lpp_message, int8_t const qualityoveride,
+                           bool const ublox_clock_correction, bool const force_continuity) {
     if (!lpp_message->lpp_MessageBody) {
         std::cout << "[INFO] no message body!" << std::endl;
         return {};
@@ -68,33 +68,33 @@ SPARTN_Generator::generate(const LPP_Message* const lpp_message, const int8_t qu
 void SPARTN_Generator::intersect_svs() {
     std::map<uint16_t, std::set<uint16_t>> ocb_svs      = {};
     std::set<uint16_t>                     ocb_gnss_ids = {};
-    for (const auto& ocb_corr : this->ocb_corrections_) {
-        const uint16_t gnss_id = ocb_corr.gnss_id.gnss_id;
+    for (auto const& ocb_corr : this->ocb_corrections_) {
+        uint16_t const gnss_id = ocb_corr.gnss_id.gnss_id;
         ocb_gnss_ids.insert(gnss_id);
         if (ocb_svs.find(gnss_id) == ocb_svs.end()) {
             ocb_svs[gnss_id] = {};
         }
 
         if (ocb_corr.orbit_corrs) {
-            const auto& orb_corrs = ocb_corr.orbit_corrs->ssr_OrbitCorrectionList_r15.list;
+            auto const& orb_corrs = ocb_corr.orbit_corrs->ssr_OrbitCorrectionList_r15.list;
             for (int i = 0; i < orb_corrs.count; i++) {
                 ocb_svs[gnss_id].insert(orb_corrs.array[i]->svID_r15.satellite_id);
             }
         }
         if (ocb_corr.clock_corrs) {
-            const auto& clock_corrs = ocb_corr.clock_corrs->ssr_ClockCorrectionList_r15.list;
+            auto const& clock_corrs = ocb_corr.clock_corrs->ssr_ClockCorrectionList_r15.list;
             for (int i = 0; i < clock_corrs.count; i++) {
                 ocb_svs[gnss_id].insert(clock_corrs.array[i]->svID_r15.satellite_id);
             }
         }
         if (ocb_corr.code_bias_corrs) {
-            const auto& code_bias_corrs = ocb_corr.code_bias_corrs->ssr_CodeBiasSatList_r15.list;
+            auto const& code_bias_corrs = ocb_corr.code_bias_corrs->ssr_CodeBiasSatList_r15.list;
             for (int i = 0; i < code_bias_corrs.count; i++) {
                 ocb_svs[gnss_id].insert(code_bias_corrs.array[i]->svID_r15.satellite_id);
             }
         }
         if (ocb_corr.phase_bias_corrs) {
-            const auto& phase_bias_corrs = ocb_corr.phase_bias_corrs->ssr_PhaseBiasSatList_r16.list;
+            auto const& phase_bias_corrs = ocb_corr.phase_bias_corrs->ssr_PhaseBiasSatList_r16.list;
             for (int i = 0; i < phase_bias_corrs.count; i++) {
                 ocb_svs[gnss_id].insert(phase_bias_corrs.array[i]->svID_r16.satellite_id);
             }
@@ -103,15 +103,15 @@ void SPARTN_Generator::intersect_svs() {
 
     std::map<uint16_t, std::set<uint16_t>> hpac_svs      = {};
     std::set<uint16_t>                     hpac_gnss_ids = {};
-    for (const auto& hpac_corr : this->hpac_corrections_) {
-        const uint16_t gnss_id = hpac_corr.gnss_id.gnss_id;
+    for (auto const& hpac_corr : this->hpac_corrections_) {
+        uint16_t const gnss_id = hpac_corr.gnss_id.gnss_id;
         hpac_gnss_ids.insert(gnss_id);
         if (hpac_svs.find(gnss_id) == hpac_svs.end()) {
             hpac_svs[gnss_id] = {};
         }
 
         if (hpac_corr.stec_corrections) {
-            const auto& stec_corrs = hpac_corr.stec_corrections->stec_SatList_r16.list;
+            auto const& stec_corrs = hpac_corr.stec_corrections->stec_SatList_r16.list;
 
             for (int i = 0; i < stec_corrs.count; i++) {
                 hpac_svs[gnss_id].insert(stec_corrs.array[i]->svID_r16.satellite_id);
@@ -123,9 +123,9 @@ void SPARTN_Generator::intersect_svs() {
     std::set_intersection(ocb_gnss_ids.begin(), ocb_gnss_ids.end(), hpac_gnss_ids.begin(),
                           hpac_gnss_ids.end(), std::back_inserter(common_gnss));
 
-    for (const auto& gnss_id : common_gnss) {
-        const auto& ocb  = ocb_svs[gnss_id];
-        const auto& hpac = hpac_svs[gnss_id];
+    for (auto const& gnss_id : common_gnss) {
+        auto const& ocb  = ocb_svs[gnss_id];
+        auto const& hpac = hpac_svs[gnss_id];
 
         this->sv_intersections_[gnss_id] = {};
         auto& inter                      = this->sv_intersections_[gnss_id];
@@ -142,39 +142,39 @@ void SPARTN_Generator::generate_ocb_message(
         return;
     }
 
-    const auto& gen_ass =
+    auto const& gen_ass =
         this->prov_ass_data_->a_gnss_ProvideAssistanceData->gnss_GenericAssistData;
 
-    const auto set_size = this->ocb_corrections_.size();
+    auto const set_size = this->ocb_corrections_.size();
     size_t     set_num  = 0;
-    for (const auto& this_assist_data : this->ocb_corrections_) {
+    for (auto const& this_assist_data : this->ocb_corrections_) {
         std::unique_ptr<SPARTN_Message>        this_message(new SPARTN_Message);
         std::unique_ptr<SPARTN_Message_Header> this_header(new SPARTN_Message_Header);
         auto&                                  satellite_blocks = this_message->data;
 
-        const auto        gnss_id         = (GNSS_ID__gnss_id)this_assist_data.gnss_id.gnss_id;
-        const std::time_t generation_time = std::time(nullptr);
+        auto const        gnss_id         = (GNSS_ID__gnss_id)this_assist_data.gnss_id.gnss_id;
+        std::time_t const generation_time = std::time(nullptr);
 
         std::cout << std::endl << "===== NEW OCB MESSAGE [";
         std::cout << Constants::constellation_names.at(gnss_id);
         std::cout << "] =====" << std::endl;
 
-        const auto& orb_corrs = this_assist_data.orbit_corrs;
+        auto const& orb_corrs = this_assist_data.orbit_corrs;
 
-        const auto& clk_corrs = this_assist_data.clock_corrs;
+        auto const& clk_corrs = this_assist_data.clock_corrs;
 
-        const auto& code_corrs = this_assist_data.code_bias_corrs;
+        auto const& code_corrs = this_assist_data.code_bias_corrs;
 
-        const auto& phase_corrs = this_assist_data.phase_bias_corrs;
+        auto const& phase_corrs = this_assist_data.phase_bias_corrs;
 
-        const std::map<uint16_t, OCBSatCorrection> all_sv_ocbs =
+        std::map<uint16_t, OCBSatCorrection> const all_sv_ocbs =
             SPARTN_Generator::get_ocb_for_svs(orb_corrs, clk_corrs, code_corrs, phase_corrs);
 
         // NOTE: remove "unallowed" satellites, if we don't do this then the
         // bitmask will be incorrect.
         std::map<uint16_t, OCBSatCorrection> sv_ocbs     = {};
-        const auto&                          allowed_svs = this->sv_intersections_.at(gnss_id);
-        for (const auto& sv_ocb : all_sv_ocbs) {
+        auto const&                          allowed_svs = this->sv_intersections_.at(gnss_id);
+        for (auto const& sv_ocb : all_sv_ocbs) {
             if (std::count(allowed_svs.begin(), allowed_svs.end(), sv_ocb.first) != 0) {
                 sv_ocbs[sv_ocb.first] = sv_ocb.second;
             } else {
@@ -182,14 +182,14 @@ void SPARTN_Generator::generate_ocb_message(
             }
         }
 
-        const GNSS_SystemTime* const gnss_time =
+        GNSS_SystemTime const* const gnss_time =
             SPARTN_Generator::get_gnss_systemtime(this_assist_data);
 
         SPARTN_Generator::add_time_to_message(this_message, gnss_time, gnss_id);
 
         this_message->message_type = 0;
 
-        const int8_t subtype = Constants::constellation_subtypes.at(gnss_id);
+        int8_t const subtype = Constants::constellation_subtypes.at(gnss_id);
         if (subtype == -1) {
             std::cout << "[ERR] unsupported GNSS: " << gnss_id << std::endl;
             continue;
@@ -213,13 +213,13 @@ void SPARTN_Generator::generate_ocb_message(
                 continue;
             }
 
-            const uint8_t ephm_id            = Constants::ephemeris_id.at(gnss_id);
-            const uint8_t ephm_bit_count     = Constants::ephemeris_bit_count.at(gnss_id);
-            const uint8_t ephm_bits          = Constants::ephemeris_bits.at(gnss_id);
-            const uint8_t sat_mask_id        = Constants::satellite_mask_ids.at(gnss_id);
-            const uint8_t sat_mask_bit_count = Constants::satellite_mask_sizes.at(gnss_id);
+            uint8_t const ephm_id            = Constants::ephemeris_id.at(gnss_id);
+            uint8_t const ephm_bit_count     = Constants::ephemeris_bit_count.at(gnss_id);
+            uint8_t const ephm_bits          = Constants::ephemeris_bits.at(gnss_id);
+            uint8_t const sat_mask_id        = Constants::satellite_mask_ids.at(gnss_id);
+            uint8_t const sat_mask_bit_count = Constants::satellite_mask_sizes.at(gnss_id);
 
-            const auto sat_mask_bits =
+            auto const sat_mask_bits =
                 SPARTN_Generator::get_satellite_mask_from_ocbs(sv_ocbs, sat_mask_bit_count, 2);
 
             SPARTN_Generator::add_field_to_header(this_header, ephm_id, ephm_bit_count, ephm_bits);
@@ -230,12 +230,12 @@ void SPARTN_Generator::generate_ocb_message(
 
         this_message->message_header = std::move(this_header);
 
-        for (const auto& sv_ocb : sv_ocbs) {
-            const auto svid = sv_ocb.first;
+        for (auto const& sv_ocb : sv_ocbs) {
+            auto const svid = sv_ocb.first;
 
             std::unique_ptr<SPARTN_Block> this_sat_block(new SPARTN_Block);
             std::unique_ptr<SPARTN_Block> this_sat_block_pre(new SPARTN_Block);
-            const auto&                   ocb_corr = sv_ocb.second;
+            auto const&                   ocb_corr = sv_ocb.second;
             uint8_t                       ocb_mask = 0;
 
             if (orb_corrs && this->generate_orbit_block(this_sat_block_pre, std::get<0>(ocb_corr),
@@ -272,7 +272,7 @@ void SPARTN_Generator::generate_ocb_message(
                 this->last_generation_time_.at(gnss_id)[svid] = generation_time;
             }
 
-            const auto since_last_generation =
+            auto const since_last_generation =
                 generation_time - this->last_generation_time_.at(gnss_id).at(svid);
             uint8_t spartn_continuity = 7;
 
@@ -316,19 +316,19 @@ void SPARTN_Generator::generate_ocb_message(
 }
 
 bool SPARTN_Generator::generate_orbit_block(
-    const std::unique_ptr<SPARTN_Block>&                 sat_block,
-    const SSR_OrbitCorrectionSatelliteElement_r15* const orbit_correction,
-    const GNSS_ID__gnss_id gnss_id, const std::time_t generation_time) {
+    std::unique_ptr<SPARTN_Block> const&                 sat_block,
+    SSR_OrbitCorrectionSatelliteElement_r15 const* const orbit_correction,
+    GNSS_ID__gnss_id const gnss_id, std::time_t const generation_time) {
     if (!orbit_correction) {
         return false;
     }
 
     std::unique_ptr<SPARTN_Block> orbit_block(new SPARTN_Block);
 
-    const uint8_t iod_id       = Constants::iode_ids.at(gnss_id);
-    const uint8_t iod_bit_size = Constants::iode_bit_size.at(gnss_id);
+    uint8_t const iod_id       = Constants::iode_ids.at(gnss_id);
+    uint8_t const iod_bit_size = Constants::iode_bit_size.at(gnss_id);
 
-    const auto& iod_bit_string = orbit_correction->iod_r15;
+    auto const& iod_bit_string = orbit_correction->iod_r15;
     long        iod_dec        = 0;
     for (size_t i = 0; i < iod_bit_string.size; i++) {
         iod_dec <<= 8;
@@ -337,7 +337,7 @@ bool SPARTN_Generator::generate_orbit_block(
     iod_dec >>= iod_bit_string.bits_unused;
     iod_dec >>= 3;  // TODO: is this right?
 
-    const auto svid = orbit_correction->svID_r15.satellite_id;
+    auto const svid = orbit_correction->svID_r15.satellite_id;
     if (this->iods_.find(gnss_id) == this->iods_.end()) {
         this->iods_[gnss_id] = {};
     }
@@ -399,22 +399,22 @@ bool SPARTN_Generator::generate_orbit_block(
 }
 
 bool SPARTN_Generator::generate_clock_block(
-    const std::unique_ptr<SPARTN_Block>&                 sat_block,
-    const SSR_ClockCorrectionSatelliteElement_r15* const clock_correction,
-    const GNSS_SSR_URA_r16* const URA, const GNSS_ID__gnss_id gnss_id,
-    const std::time_t generation_time, const GNSS_SystemTime* const gnss_systemtime,
-    const long update_interval, const uint8_t iode) {
+    std::unique_ptr<SPARTN_Block> const&                 sat_block,
+    SSR_ClockCorrectionSatelliteElement_r15 const* const clock_correction,
+    GNSS_SSR_URA_r16 const* const URA, GNSS_ID__gnss_id const gnss_id,
+    std::time_t const generation_time, GNSS_SystemTime const* const gnss_systemtime,
+    long const update_interval, uint8_t const iode) {
     if (!clock_correction) {
         return false;
     }
 
     std::unique_ptr<SPARTN_Block> clock_block(new SPARTN_Block);
 
-    const auto                             svid = clock_correction->svID_r15.satellite_id;
-    const std::pair<int32_t, std::time_t>& iod_time =
+    auto const                             svid = clock_correction->svID_r15.satellite_id;
+    std::pair<int32_t, std::time_t> const& iod_time =
         this->iods_.find(gnss_id)->second.find(svid)->second;
 
-    const auto since_last_iod_change = generation_time - iod_time.second;
+    auto const since_last_iod_change = generation_time - iod_time.second;
     uint8_t    spartn_iode           = 7;
 
     for (uint8_t i = 1; i < Constants::spartn_continuity_num; i++) {
@@ -450,7 +450,7 @@ bool SPARTN_Generator::generate_clock_block(
      *  +---------------------------------------------------------------------+
      */
 
-    const double c0 = SPARTN_Generator::decode_value_lpp(clock_correction->delta_Clock_C0_r15,
+    double const c0 = SPARTN_Generator::decode_value_lpp(clock_correction->delta_Clock_C0_r15,
                                                          Constants::clock_c0_lpp_res);
     double       c1 = 0;
     double       c2 = 0;
@@ -470,7 +470,7 @@ bool SPARTN_Generator::generate_clock_block(
     }
 
     // TODO: Why are we rounding TimeOfDayFrac_msec?
-    const long tod = gnss_systemtime->gnss_TimeOfDay +
+    long const tod = gnss_systemtime->gnss_TimeOfDay +
                      (gnss_systemtime->gnss_TimeOfDayFrac_msec ?
                           *gnss_systemtime->gnss_TimeOfDayFrac_msec >= 500 ? 1 : 0 :
                           0);
@@ -506,16 +506,16 @@ bool SPARTN_Generator::generate_clock_block(
                                                                          this->qualityoveride_);
     } else {
         std::cout << "[INFO] URA present" << std::endl;
-        const auto& sats = URA->ssr_URA_SatList_r16.list;
+        auto const& sats = URA->ssr_URA_SatList_r16.list;
 
         for (int i = 0; i < sats.count; i++) {
-            const SSR_URA_SatElement_r16* const this_sat = sats.array[i];
+            SSR_URA_SatElement_r16 const* const this_sat = sats.array[i];
 
             if (this_sat->svID_r16.satellite_id == clock_correction->svID_r15.satellite_id) {
-                const auto ura_bits  = (*this_sat->ssr_URA_r16.buf) >> this_sat->ssr_URA_r16.size;
-                const auto ura_class = ura_bits >> 3;
-                const auto ura_value = ura_bits & 3;
-                const auto q = ((pow(3, ura_class)) * ((1 + ((double)ura_value))) - 1) / 100;
+                auto const ura_bits  = (*this_sat->ssr_URA_r16.buf) >> this_sat->ssr_URA_r16.size;
+                auto const ura_class = ura_bits >> 3;
+                auto const ura_value = ura_bits & 3;
+                auto const q = ((pow(3, ura_class)) * ((1 + ((double)ura_value))) - 1) / 100;
 
                 for (size_t ura_idx = 0; ura_idx < Constants::ura_values.size(); ura_idx++) {
                     if (q <= Constants::ura_values[ura_idx]) {
@@ -536,12 +536,12 @@ bool SPARTN_Generator::generate_clock_block(
 }
 
 bool SPARTN_Generator::generate_bias_block(
-    const std::unique_ptr<SPARTN_Block>&     sat_block,
-    const SSR_CodeBiasSatElement_r15* const  sat_code_biases,
-    const SSR_PhaseBiasSatElement_r16* const sat_phase_biases, const GNSS_ID__gnss_id gnss_id) {
+    std::unique_ptr<SPARTN_Block> const&     sat_block,
+    SSR_CodeBiasSatElement_r15 const* const  sat_code_biases,
+    SSR_PhaseBiasSatElement_r16 const* const sat_phase_biases, GNSS_ID__gnss_id const gnss_id) {
     std::unique_ptr<SPARTN_Block> bias_block(new SPARTN_Block);
 
-    const SSR_CodeBiasSignalList_r15* code_biases =
+    SSR_CodeBiasSignalList_r15 const* code_biases =
         sat_code_biases ? &sat_code_biases->ssr_CodeBiasSignalList_r15 : nullptr;
 
     std::map<long, uint8_t>  lpp_to_spartn_bias = {};
@@ -589,10 +589,10 @@ bool SPARTN_Generator::generate_bias_block(
 }
 
 void SPARTN_Generator::generate_phase_bias_block(
-    const std::unique_ptr<SPARTN_Block>&     bias_block,
-    const SSR_PhaseBiasSatElement_r16* const phase_biases,
-    std::map<long, uint8_t> lpp_to_spartn_bias, const Constants::bias_ids_size bis,
-    const GNSS_ID__gnss_id gnss_id) {
+    std::unique_ptr<SPARTN_Block> const&     bias_block,
+    SSR_PhaseBiasSatElement_r16 const* const phase_biases,
+    std::map<long, uint8_t> lpp_to_spartn_bias, Constants::bias_ids_size const bis,
+    GNSS_ID__gnss_id const gnss_id) {
     if (phase_biases == nullptr) {
         std::cout << "[INFO] no phase bias for SV" << std::endl;
 
@@ -601,13 +601,13 @@ void SPARTN_Generator::generate_phase_bias_block(
         return;
     }
 
-    const auto phase_list = phase_biases->ssr_PhaseBiasSignalList_r16.list;
+    auto const phase_list = phase_biases->ssr_PhaseBiasSignalList_r16.list;
     std::vector<std::pair<long, SSR_PhaseBiasSignalElement_r16 const*>> sig_corrs = {};
 
     for (int i = 0; i < phase_list.count; i++) {
-        const SSR_PhaseBiasSignalElement_r16* const this_phase_bias = phase_list.array[i];
+        SSR_PhaseBiasSignalElement_r16 const* const this_phase_bias = phase_list.array[i];
 
-        const uint8_t lpp_code_bias_type =
+        uint8_t const lpp_code_bias_type =
             SPARTN_Generator::get_signalid(this_phase_bias->signal_and_tracking_mode_ID_r16);
 
         if (lpp_to_spartn_bias.find(lpp_code_bias_type) == lpp_to_spartn_bias.end()) {
@@ -616,7 +616,7 @@ void SPARTN_Generator::generate_phase_bias_block(
             continue;
         }
 
-        const long code_type = lpp_to_spartn_bias.at(lpp_code_bias_type);
+        long const code_type = lpp_to_spartn_bias.at(lpp_code_bias_type);
 
         sig_corrs.emplace_back(std::make_pair(code_type, this_phase_bias));
     }
@@ -625,16 +625,16 @@ void SPARTN_Generator::generate_phase_bias_block(
 
     std::queue<std::unique_ptr<SPARTN_Block>> phase_bias_blocks = {};
 
-    const auto svid = phase_biases->svID_r16.satellite_id;
+    auto const svid = phase_biases->svID_r16.satellite_id;
 
     static constexpr std::bitset<Constants::max_bias_mask_bit_count> new_sig = 1;
-    const uint8_t mask_length                                                = bis.bit_count - 1;
-    for (const std::pair<long, SSR_PhaseBiasSignalElement_r16 const*>& this_sig_corr : sig_corrs) {
-        const auto* const this_phase_bias = this_sig_corr.second;
+    uint8_t const mask_length                                                = bis.bit_count - 1;
+    for (std::pair<long, SSR_PhaseBiasSignalElement_r16 const*> const& this_sig_corr : sig_corrs) {
+        auto const* const this_phase_bias = this_sig_corr.second;
 
         bool fix_flag = false;
 
-        const auto* const integer_indicator = this_phase_bias->phaseBiasIntegerIndicator_r16;
+        auto const* const integer_indicator = this_phase_bias->phaseBiasIntegerIndicator_r16;
 
         if (integer_indicator) {
             switch (*integer_indicator) {
@@ -685,7 +685,7 @@ void SPARTN_Generator::generate_phase_bias_block(
                               std::time(nullptr)};
         }
 
-        const auto since_last_disc = std::time(nullptr) - this_last_disc.update_time;
+        auto const since_last_disc = std::time(nullptr) - this_last_disc.update_time;
 
         uint8_t spartn_continuity = 7;
 
@@ -706,7 +706,7 @@ void SPARTN_Generator::generate_phase_bias_block(
             this->discontinuities_.at(gnss_id).at(svid)[this_sig_corr.first] = {-1, 0};
         }
 
-        const double val_dec = SPARTN_Generator::decode_value_lpp(
+        double const val_dec = SPARTN_Generator::decode_value_lpp(
             this_sig_corr.second->phaseBias_r16, Constants::phase_bias_lpp_res);
 
         if (SPARTN_Generator::check_within_range(val_dec, Constants::phase_bias_spartn_rng_min)) {
@@ -731,20 +731,20 @@ void SPARTN_Generator::generate_phase_bias_block(
     }
 }
 
-bool SPARTN_Generator::generate_code_bias_block(const std::unique_ptr<SPARTN_Block>&    bias_block,
-                                                const SSR_CodeBiasSignalList_r15* const code_biases,
+bool SPARTN_Generator::generate_code_bias_block(std::unique_ptr<SPARTN_Block> const&    bias_block,
+                                                SSR_CodeBiasSignalList_r15 const* const code_biases,
                                                 std::map<long, uint8_t>        lpp_to_spartn_bias,
-                                                const Constants::bias_ids_size bis) {
+                                                Constants::bias_ids_size const bis) {
     if (!code_biases) {
         return false;
     }
 
     std::vector<std::pair<uint8_t, double>> signal_corrs = {};
     for (int i = 0; i < code_biases->list.count; i++) {
-        const SSR_CodeBiasSignalElement_r15* const this_code_bias = code_biases->list.array[i];
+        SSR_CodeBiasSignalElement_r15 const* const this_code_bias = code_biases->list.array[i];
         uint8_t                                    spartn_signal_id;
 
-        const uint8_t lpp_code_bias_type =
+        uint8_t const lpp_code_bias_type =
             SPARTN_Generator::get_signalid(this_code_bias->signal_and_tracking_mode_ID_r15);
 
         if (lpp_to_spartn_bias.find(lpp_code_bias_type) == lpp_to_spartn_bias.end()) {
@@ -753,8 +753,8 @@ bool SPARTN_Generator::generate_code_bias_block(const std::unique_ptr<SPARTN_Blo
             continue;
         }
 
-        const uint8_t code_type  = lpp_to_spartn_bias.at(lpp_code_bias_type);
-        const auto    correction = SPARTN_Generator::decode_value_lpp(this_code_bias->codeBias_r15,
+        uint8_t const code_type  = lpp_to_spartn_bias.at(lpp_code_bias_type);
+        auto const    correction = SPARTN_Generator::decode_value_lpp(this_code_bias->codeBias_r15,
                                                                       Constants::bias_lpp_res);
 
         signal_corrs.emplace_back(std::make_pair(code_type, correction));
@@ -763,9 +763,9 @@ bool SPARTN_Generator::generate_code_bias_block(const std::unique_ptr<SPARTN_Blo
     std::bitset<Constants::max_bias_mask_bit_count>                  code_bias_mask = 0;
     std::vector<long>                                                encoded_values = {};
     static constexpr std::bitset<Constants::max_bias_mask_bit_count> new_sig        = 1;
-    const uint8_t mask_length = bis.bit_count - 1;
+    uint8_t const mask_length = bis.bit_count - 1;
 
-    for (const auto& type_corr : signal_corrs) {
+    for (auto const& type_corr : signal_corrs) {
         if (SPARTN_Generator::check_within_range(type_corr.second,
                                                  Constants::code_bias_spartn_rng_min)) {
             code_bias_mask |= new_sig << (mask_length - type_corr.first - 1);
@@ -778,7 +778,7 @@ bool SPARTN_Generator::generate_code_bias_block(const std::unique_ptr<SPARTN_Blo
     SPARTN_Generator::add_field_to_block(bias_block, bis.code_id, bis.bit_count,
                                          (int64_t)code_bias_mask.to_ullong());
 
-    for (const long& v : encoded_values) {
+    for (long const& v : encoded_values) {
         SPARTN_Generator::add_field_to_block(bias_block, 29, 11, v);
     }
 
@@ -792,16 +792,16 @@ void SPARTN_Generator::generate_hpac_messages(
         return;
     }
 
-    const auto& gen_ass =
+    auto const& gen_ass =
         this->prov_ass_data_->a_gnss_ProvideAssistanceData->gnss_GenericAssistData;
-    for (const auto& this_assist_data : this->hpac_corrections_) {
-        const auto gnss_id = this_assist_data.gnss_id.gnss_id;
+    for (auto const& this_assist_data : this->hpac_corrections_) {
+        auto const gnss_id = this_assist_data.gnss_id.gnss_id;
 
         std::unique_ptr<SPARTN_Message> this_message(new SPARTN_Message);
         this_message->message_type     = 1;
         this_message->message_sub_type = Constants::gnss_id_to_hpac_subtype.at(gnss_id);
 
-        const GNSS_SystemTime* const gnss_time =
+        GNSS_SystemTime const* const gnss_time =
             SPARTN_Generator::get_gnss_systemtime(this_assist_data);
 
         SPARTN_Generator::add_time_to_message(this_message, gnss_time, (GNSS_ID__gnss_id)gnss_id);
@@ -850,11 +850,11 @@ void SPARTN_Generator::generate_hpac_messages(
     }
 }
 
-bool SPARTN_Generator::generate_area_data(const std::unique_ptr<SPARTN_Block>& atmo_block,
-                                          const HPACCorrection&                hpac_corr) {
+bool SPARTN_Generator::generate_area_data(std::unique_ptr<SPARTN_Block> const& atmo_block,
+                                          HPACCorrection const&                hpac_corr) {
     std::unique_ptr<SPARTN_Block> area_data_block(new SPARTN_Block);
 
-    const CorrectionPoint& corr_points = *hpac_corr.correction_points;
+    CorrectionPoint const& corr_points = *hpac_corr.correction_points;
 
     SPARTN_Generator::add_field_to_block(area_data_block, 31, 8, corr_points.id);
 
@@ -873,7 +873,7 @@ bool SPARTN_Generator::generate_area_data(const std::unique_ptr<SPARTN_Block>& a
      * so on.
      */
     uint8_t    tropo_block_indicator = 2;
-    const auto grid_list             = hpac_corr.gridded_corrections->gridList_r16.list;
+    auto const grid_list             = hpac_corr.gridded_corrections->gridList_r16.list;
 
     for (int i = 0; i < grid_list.count; i++) {
         if (!grid_list.array[i]->tropospericDelayCorrection_r16) {
@@ -901,8 +901,8 @@ bool SPARTN_Generator::generate_area_data(const std::unique_ptr<SPARTN_Block>& a
 }
 
 void SPARTN_Generator::generate_tropo_data(
-    const std::unique_ptr<SPARTN_Block>&        atmo_block,
-    const GNSS_SSR_GriddedCorrection_r16* const gridded_corrections) const {
+    std::unique_ptr<SPARTN_Block> const&        atmo_block,
+    GNSS_SSR_GriddedCorrection_r16 const* const gridded_corrections) const {
     if (!gridded_corrections) {
         std::cout << "[INFO] no tropo data" << std::endl;
         return;
@@ -919,11 +919,11 @@ void SPARTN_Generator::generate_tropo_data(
 }
 
 bool SPARTN_Generator::generate_tropo_coef(
-    const std::unique_ptr<SPARTN_Block>&        tropo_data_block,
-    const GNSS_SSR_GriddedCorrection_r16* const gridded_corrections) const {
+    std::unique_ptr<SPARTN_Block> const&        tropo_data_block,
+    GNSS_SSR_GriddedCorrection_r16 const* const gridded_corrections) const {
     std::unique_ptr<SPARTN_Block> tropo_coef_block(new SPARTN_Block);
 
-    const auto grid_list = gridded_corrections->gridList_r16.list;
+    auto const grid_list = gridded_corrections->gridList_r16.list;
 
     /*
      * LPP gives no coefficients for the troposphere but SPARTN requires at
@@ -931,9 +931,9 @@ bool SPARTN_Generator::generate_tropo_coef(
      */
     SPARTN_Generator::add_field_to_block(tropo_coef_block, 41, 3, 0 /* just T00 */);
 
-    const auto* const qual_indi  = gridded_corrections->troposphericDelayQualityIndicator_r16;
-    const uint8_t     qual_class = qual_indi ? *qual_indi->buf >> 3 : 0;
-    const uint8_t     qual_value = qual_indi ? *qual_indi->buf & 3 : 0;
+    auto const* const qual_indi  = gridded_corrections->troposphericDelayQualityIndicator_r16;
+    uint8_t const     qual_class = qual_indi ? *qual_indi->buf >> 3 : 0;
+    uint8_t const     qual_value = qual_indi ? *qual_indi->buf & 3 : 0;
 
     uint8_t tropo_qual = 7;
 
@@ -942,7 +942,7 @@ bool SPARTN_Generator::generate_tropo_coef(
                      7 < this->qualityoveride_ ? 7 :
                                                  this->qualityoveride_;
     } else if (qual_class <= 1 && qual_value < 1) {
-        const double q       = (pow(3, qual_class)) * (1 + ((double)qual_value / 4)) - 1;
+        double const q       = (pow(3, qual_class)) * (1 + ((double)qual_value / 4)) - 1;
         auto         q_meter = q / 1000.0;
 
         for (uint64_t i = 0; i < Constants::spartn_tropo_qual_num; i++) {
@@ -969,10 +969,10 @@ bool SPARTN_Generator::generate_tropo_coef(
             return false;
         }
 
-        const long this_delay =
+        long const this_delay =
             grid_list.array[i]->tropospericDelayCorrection_r16->tropoHydroStaticVerticalDelay_r16;
 
-        const auto val_dec =
+        auto const val_dec =
             SPARTN_Generator::decode_value_lpp(this_delay, Constants::tropo_dry_res);
 
         if (SPARTN_Generator::check_within_range(val_dec, Constants::tropo_dry_spartn_rng_min)) {
@@ -1008,19 +1008,19 @@ bool SPARTN_Generator::generate_tropo_coef(
 }
 
 void SPARTN_Generator::generate_tropo_grid(
-    const std::unique_ptr<SPARTN_Block>&        tropo_data_block,
-    const GNSS_SSR_GriddedCorrection_r16* const gridded_corrections) {
+    std::unique_ptr<SPARTN_Block> const&        tropo_data_block,
+    GNSS_SSR_GriddedCorrection_r16 const* const gridded_corrections) {
     std::unique_ptr<SPARTN_Block> grid_block(new SPARTN_Block);
 
     SPARTN_Generator::add_field_to_block(grid_block, 51, 1, 1);
 
-    const auto gridlist = gridded_corrections->gridList_r16.list;
+    auto const gridlist = gridded_corrections->gridList_r16.list;
 
     for (int i = 0; i < gridlist.count; i++) {
-        const long wetdelay =
+        long const wetdelay =
             gridlist.array[i]->tropospericDelayCorrection_r16->tropoWetVerticalDelay_r16;
 
-        const double val_dec =
+        double const val_dec =
             SPARTN_Generator::decode_value_lpp(wetdelay, Constants::wetdelay_res);
 
         // scale and res are the same between LPP and SPARTN so no need to
@@ -1034,8 +1034,8 @@ void SPARTN_Generator::generate_tropo_grid(
     SPARTN_Generator::add_block_to_block(tropo_data_block, grid_block);
 }
 
-void SPARTN_Generator::generate_iono_data(const std::unique_ptr<SPARTN_Block>& atmo_block,
-                                          const HPACCorrection&                hpac_corr) const {
+void SPARTN_Generator::generate_iono_data(std::unique_ptr<SPARTN_Block> const& atmo_block,
+                                          HPACCorrection const&                hpac_corr) const {
     std::unique_ptr<SPARTN_Block> iono_data_block(new SPARTN_Block);
     /*
      * When mergeing the STEC_Corrections and GriddedCorrections, it is
@@ -1045,14 +1045,14 @@ void SPARTN_Generator::generate_iono_data(const std::unique_ptr<SPARTN_Block>& a
      */
     std::vector<IonosphereSatelliteData> satellite_data = {};
 
-    const auto& sat_list            = hpac_corr.stec_corrections->stec_SatList_r16.list;
-    const auto& gridded_corrections = hpac_corr.gridded_corrections->gridList_r16.list;
-    const auto  gnss_id             = hpac_corr.gnss_id;
-    const auto& allowed_svs         = this->sv_intersections_.at(gnss_id.gnss_id);
+    auto const& sat_list            = hpac_corr.stec_corrections->stec_SatList_r16.list;
+    auto const& gridded_corrections = hpac_corr.gridded_corrections->gridList_r16.list;
+    auto const  gnss_id             = hpac_corr.gnss_id;
+    auto const& allowed_svs         = this->sv_intersections_.at(gnss_id.gnss_id);
 
     for (int i = 0; i < sat_list.count; i++) {
-        const STEC_SatElement_r16* const this_sat = sat_list.array[i];
-        const auto                       svid     = this_sat->svID_r16.satellite_id;
+        STEC_SatElement_r16 const* const this_sat = sat_list.array[i];
+        auto const                       svid     = this_sat->svID_r16.satellite_id;
 
         if (std::count(allowed_svs.begin(), allowed_svs.end(), svid) == 0) {
             if (std::count(allowed_svs.begin(), allowed_svs.end(), svid) == 0) {
@@ -1066,16 +1066,16 @@ void SPARTN_Generator::generate_iono_data(const std::unique_ptr<SPARTN_Block>& a
     }
 
     for (int i = 0; i < gridded_corrections.count; i++) {
-        const GridElement_r16* const this_grid_elm = gridded_corrections.array[i];
+        GridElement_r16 const* const this_grid_elm = gridded_corrections.array[i];
 
         if (!this_grid_elm->stec_ResidualSatList_r16) {
             continue;
         }
 
-        const auto reslist = this_grid_elm->stec_ResidualSatList_r16->list;
+        auto const reslist = this_grid_elm->stec_ResidualSatList_r16->list;
 
         for (int j = 0; j < reslist.count; j++) {
-            const long this_sv = reslist.array[j]->svID_r16.satellite_id;
+            long const this_sv = reslist.array[j]->svID_r16.satellite_id;
 
             for (IonosphereSatelliteData& iono_data : satellite_data) {
                 if (iono_data.SVID == static_cast<uint64_t>(this_sv)) {
@@ -1088,17 +1088,17 @@ void SPARTN_Generator::generate_iono_data(const std::unique_ptr<SPARTN_Block>& a
 
     std::unique_ptr<SPARTN_Block> iono_block(new SPARTN_Block);
 
-    const uint8_t sat_mask_bit_count = Constants::satellite_mask_sizes.at(gnss_id.gnss_id);
-    const uint8_t field_id           = Constants::satellite_mask_ids.at(gnss_id.gnss_id);
+    uint8_t const sat_mask_bit_count = Constants::satellite_mask_sizes.at(gnss_id.gnss_id);
+    uint8_t const field_id           = Constants::satellite_mask_ids.at(gnss_id.gnss_id);
 
     uint8_t                                      min_coefs_found = 3;
     std::bitset<Constants::max_spartn_bit_count> sat_mask_bitset = 2;
     sat_mask_bitset <<= sat_mask_bit_count - 2;
 
-    const uint16_t sat_mask_length                                       = sat_mask_bit_count - 3;
+    uint16_t const sat_mask_length                                       = sat_mask_bit_count - 3;
     static constexpr std::bitset<Constants::max_spartn_bit_count> new_sv = 1;
 
-    for (const IonosphereSatelliteData& this_sat : satellite_data) {
+    for (IonosphereSatelliteData const& this_sat : satellite_data) {
         uint8_t coefs_found = 0;
         if (this_sat.sat_elm->stec_C01_r16) {
             coefs_found++;
@@ -1125,7 +1125,7 @@ void SPARTN_Generator::generate_iono_data(const std::unique_ptr<SPARTN_Block>& a
 
     SPARTN_Generator::add_block_to_block(iono_data_block, iono_block);
 
-    for (const IonosphereSatelliteData& this_sat : satellite_data) {
+    for (IonosphereSatelliteData const& this_sat : satellite_data) {
         std::unique_ptr<SPARTN_Block> iono_sat_block(new SPARTN_Block);
 
         std::pair<std::unique_ptr<SPARTN_Block>, bool> coefs_res_size =
@@ -1140,9 +1140,9 @@ void SPARTN_Generator::generate_iono_data(const std::unique_ptr<SPARTN_Block>& a
     SPARTN_Generator::add_block_to_block(atmo_block, iono_data_block);
 }
 
-void SPARTN_Generator::generate_iono_sat_block(const std::unique_ptr<SPARTN_Block>& iono_data_block,
-                                               const STEC_SatElement_r16* const&    sat_elm,
-                                               const bool residual_size) const {
+void SPARTN_Generator::generate_iono_sat_block(std::unique_ptr<SPARTN_Block> const& iono_data_block,
+                                               STEC_SatElement_r16 const* const&    sat_elm,
+                                               bool const residual_size) const {
     std::unique_ptr<SPARTN_Block> iono_poly_block(new SPARTN_Block);
 
     uint8_t spartn_iono_quality = 0;
@@ -1153,7 +1153,7 @@ void SPARTN_Generator::generate_iono_sat_block(const std::unique_ptr<SPARTN_Bloc
     stec_class = ((stec_class & 1) << 2) | ((stec_class & 2) << 0) | ((stec_class & 4) >> 2);
     uint8_t stec_value = stec_buf >> 3;
     stec_value = ((stec_value & 1) << 2) | ((stec_value & 2) << 0) | ((stec_value & 4) >> 2);
-    const uint8_t index = (8 * stec_class) + stec_value;
+    uint8_t const index = (8 * stec_class) + stec_value;
 
     if (index == 64) {
         spartn_iono_quality = 15;
@@ -1162,10 +1162,10 @@ void SPARTN_Generator::generate_iono_sat_block(const std::unique_ptr<SPARTN_Bloc
                               15 < this->qualityoveride_ ? 15 :
                                                            this->qualityoveride_;
     } else {
-        const double lpp_stec_qual = Constants::lpp_stec_qualities_maxiumums.at(64 - index);
+        double const lpp_stec_qual = Constants::lpp_stec_qualities_maxiumums.at(64 - index);
 
         for (uint64_t i = 0; i < Constants::spartn_stec_qual_num; i++) {
-            const double this_max = Constants::spartn_stec_qualities_maximums.at(i);
+            double const this_max = Constants::spartn_stec_qualities_maximums.at(i);
 
             if (this_max > lpp_stec_qual) {
                 spartn_iono_quality = i + 1;
@@ -1185,8 +1185,8 @@ void SPARTN_Generator::generate_iono_sat_block(const std::unique_ptr<SPARTN_Bloc
 }
 
 std::pair<std::unique_ptr<SPARTN_Block>, bool>
-SPARTN_Generator::generate_iono_coef_block(const STEC_SatElement_r16* const& sat_elm,
-                                           const uint8_t                     equ_type) {
+SPARTN_Generator::generate_iono_coef_block(STEC_SatElement_r16 const* const& sat_elm,
+                                           uint8_t const                     equ_type) {
     std::unique_ptr<SPARTN_Block> iono_coef_block(new SPARTN_Block);
 
     bool use_small_coef = true;
@@ -1261,8 +1261,8 @@ SPARTN_Generator::generate_iono_coef_block(const STEC_SatElement_r16* const& sat
         }
     }
 
-    const uint8_t base_bit_count = use_small_coef ? 12 : 14;
-    const uint8_t base_id        = use_small_coef ? 57 : 60;
+    uint8_t const base_bit_count = use_small_coef ? 12 : 14;
+    uint8_t const base_id        = use_small_coef ? 57 : 60;
 
     if (c00_dec != -1) {
         SPARTN_Generator::add_field_to_block(
@@ -1310,20 +1310,20 @@ SPARTN_Generator::generate_iono_coef_block(const STEC_SatElement_r16* const& sat
 }
 
 void SPARTN_Generator::generate_iono_grid_block(
-    const std::unique_ptr<SPARTN_Block>&               iono_data_block,
-    const std::vector<STEC_ResidualSatElement_r16_t*>& residuals) {
+    std::unique_ptr<SPARTN_Block> const&               iono_data_block,
+    std::vector<STEC_ResidualSatElement_r16_t*> const& residuals) {
     std::unique_ptr<SPARTN_Block> grid_block(new SPARTN_Block);
 
     // small = 0, medium = 1, large = 2, extra large = 3
     uint8_t             residual_size     = 0;
     std::vector<double> decoded_residuals = {};
-    for (const STEC_ResidualSatElement_r16* const residual_sat : residuals) {
-        const long this_res = SPARTN_Generator::get_residual(residual_sat);
+    for (STEC_ResidualSatElement_r16 const* const residual_sat : residuals) {
+        long const this_res = SPARTN_Generator::get_residual(residual_sat);
         if (this_res == 99999) {
             throw std::invalid_argument("[ERR] unset residual, grid invliad. unrecoverable state.");
         }
 
-        const double val_dec =
+        double const val_dec =
             SPARTN_Generator::decode_value_lpp(this_res, Constants::residual_res);
 
         uint8_t this_residual_size = 0;
@@ -1370,7 +1370,7 @@ void SPARTN_Generator::generate_iono_grid_block(
 
     SPARTN_Generator::add_field_to_block(grid_block, 63, 2, residual_size);
 
-    for (const double& residual : decoded_residuals) {
+    for (double const& residual : decoded_residuals) {
         SPARTN_Generator::add_field_to_block(
             grid_block, field_id, field_size,
             SPARTN_Generator::encode_value_spartn(residual, res_rng_min, Constants::residual_res));
@@ -1409,7 +1409,7 @@ void SPARTN_Generator::generate_gad_message(
 
     this_message->message_header = std::move(this_header);
 
-    const uint32_t area_id = this->last_correction_point_->id;
+    uint32_t const area_id = this->last_correction_point_->id;
 
     SPARTN_Generator::generate_gad_message_array(this_message, *this->last_correction_point_,
                                                  area_id);
@@ -1419,8 +1419,8 @@ void SPARTN_Generator::generate_gad_message(
 
 // NOTE(ewasjon): This function may not be correct.
 void SPARTN_Generator::generate_gad_message_list(
-    const std::unique_ptr<SPARTN_Message>&     gad_message,
-    const GNSS_SSR_ListOfCorrectionPoints_r16& corrpoints, const uint32_t area_id) {
+    std::unique_ptr<SPARTN_Message> const&     gad_message,
+    GNSS_SSR_ListOfCorrectionPoints_r16 const& corrpoints, uint32_t const area_id) {
     std::unique_ptr<SPARTN_Block> area_def(new SPARTN_Block);
 
     SPARTN_Generator::add_field_to_block(area_def, 31, 8, area_id);
@@ -1435,9 +1435,9 @@ void SPARTN_Generator::generate_gad_message_list(
     SPARTN_Generator::add_field_to_block(area_def, 35, 3,
                                          corrpoints.relativeLocationsList_r16.list.count);
 
-    const uint16_t curr_delta_lat =
+    uint16_t const curr_delta_lat =
         corrpoints.relativeLocationsList_r16.list.array[0]->deltaLatitude_r16;
-    const uint16_t curr_delta_lng =
+    uint16_t const curr_delta_lng =
         corrpoints.relativeLocationsList_r16.list.array[0]->deltaLongitude_r16;
 
     // LPP spec allows delta to be -ve & 0, SPARTN does not. we check max after
@@ -1454,7 +1454,7 @@ void SPARTN_Generator::generate_gad_message_list(
 
     /* sanity check */
     for (int i = 1; i < corrpoints.relativeLocationsList_r16.list.count; i++) {
-        const RelativeLocation* const this_elm = corrpoints.relativeLocationsList_r16.list.array[i];
+        RelativeLocation const* const this_elm = corrpoints.relativeLocationsList_r16.list.array[i];
 
         if (this_elm->deltaLatitude_r16 != curr_delta_lat) {
             std::cout << "[INFO] got different delta lat from list, aborting" << std::endl;
@@ -1466,9 +1466,9 @@ void SPARTN_Generator::generate_gad_message_list(
         }
     }
 
-    const auto dec_delta_lat =
+    auto const dec_delta_lat =
         SPARTN_Generator::decode_value_lpp(curr_delta_lat, Constants::delta_lpp_res);
-    const auto dec_delta_lng =
+    auto const dec_delta_lng =
         SPARTN_Generator::decode_value_lpp(curr_delta_lng, Constants::delta_lpp_res);
 
     if (dec_delta_lat > Constants::delta_spartn_rng_max) {
@@ -1494,8 +1494,8 @@ void SPARTN_Generator::generate_gad_message_list(
 }
 
 void SPARTN_Generator::generate_gad_message_array(
-    const std::unique_ptr<SPARTN_Message>& gad_message, const CorrectionPoint& corrpoints,
-    const uint32_t area_id) {
+    std::unique_ptr<SPARTN_Message> const& gad_message, CorrectionPoint const& corrpoints,
+    uint32_t const area_id) {
     std::unique_ptr<SPARTN_Block> area_def(new SPARTN_Block);
 
     SPARTN_Generator::add_field_to_block(area_def, 31, 8, area_id);
@@ -1565,7 +1565,7 @@ void SPARTN_Generator::generate_gad_message_array(
 
 template <class T>
 void SPARTN_Generator::add_ocb_correction(std::vector<OCBCorrection>& ocb_corrections,
-                                          const T* const corrs, const GNSS_SSR_URA_r16* ura,
+                                          T const* const corrs, GNSS_SSR_URA_r16 const* ura,
                                           const GNSS_ID gnss_id) {
     if (!corrs) {
         return;
@@ -1594,22 +1594,22 @@ void SPARTN_Generator::add_ocb_correction(std::vector<OCBCorrection>& ocb_correc
 }
 
 std::vector<OCBCorrection>
-SPARTN_Generator::group_ocb_corrections(const GNSS_GenericAssistData* const gen_ass) {
+SPARTN_Generator::group_ocb_corrections(GNSS_GenericAssistData const* const gen_ass) {
     std::vector<OCBCorrection> ocb_corrections = {};
     for (int i = 0; gen_ass && i < gen_ass->list.count; i++) {
-        const GNSS_GenericAssistDataElement* const this_assist_data = gen_ass->list.array[i];
+        GNSS_GenericAssistDataElement const* const this_assist_data = gen_ass->list.array[i];
 
-        const auto& gnss_id = this_assist_data->gnss_ID;
+        auto const& gnss_id = this_assist_data->gnss_ID;
 
-        const GNSS_SSR_OrbitCorrections_r15* orb_corrs   = nullptr;
-        const GNSS_SSR_ClockCorrections_r15* clk_corrs   = nullptr;
-        const GNSS_SSR_CodeBias_r15*         code_corrs  = nullptr;
-        const GNSS_SSR_PhaseBias_r16*        phase_corrs = nullptr;
+        GNSS_SSR_OrbitCorrections_r15 const* orb_corrs   = nullptr;
+        GNSS_SSR_ClockCorrections_r15 const* clk_corrs   = nullptr;
+        GNSS_SSR_CodeBias_r15 const*         code_corrs  = nullptr;
+        GNSS_SSR_PhaseBias_r16 const*        phase_corrs = nullptr;
 
-        const GNSS_SSR_URA_r16* ura = nullptr;
+        GNSS_SSR_URA_r16 const* ura = nullptr;
 
         if (this_assist_data->ext2) {
-            const auto& ext2 = this_assist_data->ext2;
+            auto const& ext2 = this_assist_data->ext2;
 
             orb_corrs =
                 ext2->gnss_SSR_OrbitCorrections_r15 ? ext2->gnss_SSR_OrbitCorrections_r15 : nullptr;
@@ -1621,7 +1621,7 @@ SPARTN_Generator::group_ocb_corrections(const GNSS_GenericAssistData* const gen_
         }
 
         if (this_assist_data->ext3) {
-            const auto& ext3 = this_assist_data->ext3;
+            auto const& ext3 = this_assist_data->ext3;
 
             phase_corrs = ext3->gnss_SSR_PhaseBias_r16 ? ext3->gnss_SSR_PhaseBias_r16 : nullptr;
 
@@ -1638,11 +1638,11 @@ SPARTN_Generator::group_ocb_corrections(const GNSS_GenericAssistData* const gen_
 }
 
 std::vector<HPACCorrection>
-SPARTN_Generator::group_hpac_corrections(const GNSS_GenericAssistData* const gen_ass,
-                                         const GNSS_CommonAssistData* const  com_ass) {
+SPARTN_Generator::group_hpac_corrections(GNSS_GenericAssistData const* const gen_ass,
+                                         GNSS_CommonAssistData const* const  com_ass) {
     std::vector<HPACCorrection> hpac_corrections = {};
 
-    const GNSS_SSR_CorrectionPoints_r16* correction_points =
+    GNSS_SSR_CorrectionPoints_r16 const* correction_points =
         (com_ass && com_ass->ext2) ? com_ass->ext2->gnss_SSR_CorrectionPoints_r16 ?
                                      com_ass->ext2->gnss_SSR_CorrectionPoints_r16 :
                                      nullptr :
@@ -1662,7 +1662,7 @@ SPARTN_Generator::group_hpac_corrections(const GNSS_GenericAssistData* const gen
             break;
         }
         case GNSS_SSR_CorrectionPoints_r16__correctionPoints_r16_PR_arrayOfCorrectionPoints_r16: {
-            const auto& array =
+            auto const& array =
                 correction_points->correctionPoints_r16.choice.arrayOfCorrectionPoints_r16;
             this->last_correction_point_->num_of_grid_points =
                 (array.numberOfStepsLatitude_r16 + 1) * (array.numberOfStepsLongitude_r16 + 1);
@@ -1688,15 +1688,15 @@ SPARTN_Generator::group_hpac_corrections(const GNSS_GenericAssistData* const gen
     }
 
     for (int i = 0; gen_ass && i < gen_ass->list.count; i++) {
-        const auto& this_assist_data = gen_ass->list.array[i];
+        auto const& this_assist_data = gen_ass->list.array[i];
 
-        const auto& gnss_id = this_assist_data->gnss_ID;
+        auto const& gnss_id = this_assist_data->gnss_ID;
 
-        const GNSS_SSR_GriddedCorrection_r16* gridded_corrections = nullptr;
-        const GNSS_SSR_STEC_Correction_r16*   stec_corrections    = nullptr;
+        GNSS_SSR_GriddedCorrection_r16 const* gridded_corrections = nullptr;
+        GNSS_SSR_STEC_Correction_r16 const*   stec_corrections    = nullptr;
 
         if (this_assist_data->ext3) {
-            const auto& ext3 = this_assist_data->ext3;
+            auto const& ext3 = this_assist_data->ext3;
 
             gridded_corrections = ext3->gnss_SSR_GriddedCorrection_r16 ?
                                       ext3->gnss_SSR_GriddedCorrection_r16 :
@@ -1733,7 +1733,7 @@ SPARTN_Generator::group_hpac_corrections(const GNSS_GenericAssistData* const gen
     return hpac_corrections;
 }
 
-static TAI_Time time_from_epoch_time(const GNSS_SystemTime* time) {
+static TAI_Time time_from_epoch_time(GNSS_SystemTime const* time) {
     auto day_number  = time->gnss_DayNumber;
     auto time_of_day = time->gnss_TimeOfDay;
     auto msec        = time->gnss_TimeOfDayFrac_msec ? *time->gnss_TimeOfDayFrac_msec / 1000.0 : 0;
@@ -1763,10 +1763,10 @@ static TAI_Time time_from_epoch_time(const GNSS_SystemTime* time) {
     }
 }
 
-void SPARTN_Generator::add_time_to_message(const std::unique_ptr<SPARTN_Message>& message,
-                                           const GNSS_SystemTime*                 epoch_time,
-                                           const GNSS_ID__gnss_id                 gnss_id) {
-    const long tod =
+void SPARTN_Generator::add_time_to_message(std::unique_ptr<SPARTN_Message> const& message,
+                                           GNSS_SystemTime const*                 epoch_time,
+                                           GNSS_ID__gnss_id const                 gnss_id) {
+    long const tod =
         epoch_time->gnss_TimeOfDay + (epoch_time->gnss_TimeOfDayFrac_msec ?
                                           *epoch_time->gnss_TimeOfDayFrac_msec >= 500 ? 1 : 0 :
                                           0);
@@ -1779,10 +1779,10 @@ void SPARTN_Generator::add_time_to_message(const std::unique_ptr<SPARTN_Message>
 
 template <class T>
 void SPARTN_Generator::add_ocb_for_svs(std::map<uint16_t, OCBSatCorrection>& ocb_for_svs, T corr) {
-    const auto corr_list = corr.list;
+    auto const corr_list = corr.list;
 
     for (int i = 0; i < corr_list.count; i++) {
-        const auto svid = SPARTN_Generator::get_svid(corr_list.array[i],
+        auto const svid = SPARTN_Generator::get_svid(corr_list.array[i],
                                                      has_svid_r16<decltype(corr_list.array[i])>{});
 
         if (ocb_for_svs.find(svid) == ocb_for_svs.end()) {
@@ -1795,10 +1795,10 @@ void SPARTN_Generator::add_ocb_for_svs(std::map<uint16_t, OCBSatCorrection>& ocb
 }
 
 std::map<uint16_t, OCBSatCorrection>
-SPARTN_Generator::get_ocb_for_svs(const GNSS_SSR_OrbitCorrections_r15* const orbit_corrs,
-                                  const GNSS_SSR_ClockCorrections_r15* const clock_corrs,
-                                  const GNSS_SSR_CodeBias_r15* const         code_bias_corrs,
-                                  const GNSS_SSR_PhaseBias_r16* const        phase_bias_corrs) {
+SPARTN_Generator::get_ocb_for_svs(GNSS_SSR_OrbitCorrections_r15 const* const orbit_corrs,
+                                  GNSS_SSR_ClockCorrections_r15 const* const clock_corrs,
+                                  GNSS_SSR_CodeBias_r15 const* const         code_bias_corrs,
+                                  GNSS_SSR_PhaseBias_r16 const* const        phase_bias_corrs) {
     std::map<uint16_t, OCBSatCorrection> ocb_for_svs = {};
 
     if (orbit_corrs) {

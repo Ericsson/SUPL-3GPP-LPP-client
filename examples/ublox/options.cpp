@@ -1,23 +1,33 @@
-#include <args.hpp>
 #include <interface/interface.hpp>
 #include <receiver/ublox/receiver.hpp>
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#include <args.hpp>
+#pragma GCC diagnostic pop
 
 using namespace interface;
 using namespace receiver::ublox;
 
-args::Group arguments{"Arguments:"};
+static args::Group arguments{"Arguments:"};
 
 //
 // Configuration
 //
 
-args::Group configuration_group{
+static args::Group configuration_group{
     "Configuration:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Flag disable_config{
+static args::Flag disable_config{
     configuration_group,
     "disable",
     "Disable loading and storing of configuration. Without this UBX-NAV-PVT will _not_ be enabled.",
@@ -30,13 +40,13 @@ args::Flag disable_config{
 // Receiver
 //
 
-args::Group receiver_group{
+static args::Group receiver_group{
     "Receiver:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::ValueFlag<std::string> receiver_port{
+static args::ValueFlag<std::string> receiver_port{
     receiver_group,
     "port",
     "The port used on the u-blox receiver, used by configuration.",
@@ -47,38 +57,38 @@ args::ValueFlag<std::string> receiver_port{
 // Interface
 //
 
-args::Group interface_group{
+static args::Group interface_group{
     "Interface:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-args::Group serial_group{
+static args::Group serial_group{
     interface_group,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> serial_device{
+static args::ValueFlag<std::string> serial_device{
     serial_group, "device", "Device", {"serial"}, args::Options::Single};
-args::ValueFlag<int> serial_baud_rate{
+static args::ValueFlag<int> serial_baud_rate{
     serial_group, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
-args::ValueFlag<int> serial_data_bits{
+static args::ValueFlag<int> serial_data_bits{
     serial_group, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
-args::ValueFlag<int> serial_stop_bits{
+static args::ValueFlag<int> serial_stop_bits{
     serial_group, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
-args::ValueFlag<std::string> serial_parity_bits{
+static args::ValueFlag<std::string> serial_parity_bits{
     serial_group, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
 
-args::Group i2c_group{
+static args::Group i2c_group{
     interface_group,
     "I2C:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-args::ValueFlag<std::string> i2c_device{
+static args::ValueFlag<std::string> i2c_device{
     i2c_group, "device", "Device", {"i2c"}, args::Options::Single};
-args::ValueFlag<uint8_t> i2c_address{
+static args::ValueFlag<uint8_t> i2c_address{
     i2c_group, "address", "Address", {"i2c-address"}, args::Options::Single};
 
 //
@@ -88,9 +98,13 @@ args::ValueFlag<uint8_t> i2c_address{
 static std::unique_ptr<Interface> parse_serial() {
     assert(serial_device);
 
-    auto baud_rate = 115200;
+    uint32_t baud_rate = 115200;
     if (serial_baud_rate) {
-        baud_rate = serial_baud_rate.Get();
+        if (serial_baud_rate.Get() < 0) {
+            throw args::ValidationError("serial_baud_rate must be positive");
+        }
+
+        baud_rate = static_cast<uint32_t>(serial_baud_rate.Get());
     }
 
     auto data_bits = DataBits::EIGHT;
@@ -156,7 +170,7 @@ static std::unique_ptr<Interface> parse_serial() {
 static std::unique_ptr<Interface> parse_i2c() {
     assert(i2c_device);
 
-    auto address = 66;
+    uint8_t address = 66;
     if (i2c_address) {
         address = i2c_address.Get();
     }
@@ -265,18 +279,18 @@ std::unique_ptr<UbloxReceiver> parse_configuration(int argc, char** argv) {
     try {
         parser.ParseCLI(argc, argv);
         return create_receiver();
-    } catch (const args::ValidationError& e) {
+    } catch (args::ValidationError const& e) {
         std::cerr << e.what() << std::endl;
         parser.Help(std::cerr);
         exit(1);
-    } catch (const args::Help&) {
+    } catch (args::Help const&) {
         std::cout << parser;
         exit(0);
-    } catch (const args::ParseError& e) {
+    } catch (args::ParseError const& e) {
         std::cerr << e.what() << std::endl;
         std::cerr << parser;
         exit(1);
-    } catch (const std::exception& e) {
+    } catch (std::exception const& e) {
         std::cerr << "Error: " << e.what() << std::endl;
         exit(1);
     }

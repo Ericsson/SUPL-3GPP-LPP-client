@@ -15,36 +15,8 @@ target_include_directories(generator_spartn2 PUBLIC "include/")
 target_link_libraries(generator_spartn2 PRIVATE asn1::generated asn1::helper)
 target_link_libraries(generator_spartn2 PRIVATE utility)
 
-if (USE_ASAN)
-target_compile_options(generator_spartn2 PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(generator_spartn2 PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
-
 if (SPARTN_DEBUG_PRINT)
 target_compile_definitions(generator_spartn2 PRIVATE SPARTN_DEBUG_PRINT)
 endif (SPARTN_DEBUG_PRINT)
 
-target_compile_options(generator_spartn2 PRIVATE
-    "-Wall"
-    "-Wextra"
-    "-Wpedantic"
-    "-Wnon-virtual-dtor"
-    "-Wold-style-cast"
-    "-Wcast-align"
-    "-Woverloaded-virtual"
-    "-Wsign-conversion"
-    "-Wno-conversion"
-    "-Wno-old-style-cast"
-)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(generator_spartn2 PRIVATE
-        "-Wmisleading-indentation"
-    )
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(generator_spartn2 PRIVATE
-        "-Wno-missing-field-initializers"
-    )
-endif()
+setup_target(generator_spartn2)

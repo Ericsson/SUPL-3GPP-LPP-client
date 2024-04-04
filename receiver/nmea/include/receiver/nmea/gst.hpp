@@ -13,14 +13,14 @@ class GstMessage final : public Message {
 public:
     ~GstMessage() override = default;
 
-    GstMessage(const GstMessage& other)
+    GstMessage(GstMessage const& other)
         : Message(other), mRmsValue(other.mRmsValue), mSemiMajorError(other.mSemiMajorError),
           mSemiMinorError(other.mSemiMinorError),
           mOrientationOfSemiMajorError(other.mOrientationOfSemiMajorError),
           mLatitudeError(other.mLatitudeError), mLongitudeError(other.mLongitudeError),
           mAltitudeError(other.mAltitudeError) {}
     GstMessage(GstMessage&&)                 = delete;
-    GstMessage& operator=(const GstMessage&) = delete;
+    GstMessage& operator=(GstMessage const&) = delete;
     GstMessage& operator=(GstMessage&&)      = delete;
 
     void print() const NMEA_NOEXCEPT override;
@@ -38,15 +38,13 @@ public:
     NMEA_NODISCARD double semi_minor() const NMEA_NOEXCEPT { return mSemiMinorError; }
 
     /// Get the orientation of the semi-major axis.
-    NMEA_NODISCARD double orientation() const NMEA_NOEXCEPT {
-        return mOrientationOfSemiMajorError;
-    }
+    NMEA_NODISCARD double orientation() const NMEA_NOEXCEPT { return mOrientationOfSemiMajorError; }
 
     /// Get the vertical position error.
     NMEA_NODISCARD double vertical_position_error() const NMEA_NOEXCEPT { return mAltitudeError; }
 
     NMEA_NODISCARD static std::unique_ptr<Message>
-    parse(std::string prefix, const std::string& payload, std::string checksum);
+    parse(std::string prefix, std::string const& payload, std::string checksum);
 
 private:
     NMEA_EXPLICIT GstMessage(std::string prefix, std::string payload,

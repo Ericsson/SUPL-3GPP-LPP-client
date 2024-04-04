@@ -4,7 +4,7 @@
 namespace receiver {
 namespace nmea {
 
-static bool parse_double(const std::string& token, double& value) {
+static bool parse_double(std::string const& token, double& value) {
     try {
         value = std::stod(token);
         return true;
@@ -16,7 +16,7 @@ static bool parse_double(const std::string& token, double& value) {
     }
 }
 
-static bool parse_double_opt(const std::string& token, double& value) {
+static bool parse_double_opt(std::string const& token, double& value) {
     try {
         value = std::stod(token);
         return true;
@@ -26,7 +26,7 @@ static bool parse_double_opt(const std::string& token, double& value) {
     }
 }
 
-static bool parse_mode_indicator(const std::string& token, ModeIndicator& mode_indicator) {
+static bool parse_mode_indicator(std::string const& token, ModeIndicator& mode_indicator) {
     if (token.size() != 1) {
 #if RECEIVER_NMEA_DEBUG
         printf("[--VTG] invalid mode indicator: \"%s\"\n", token.c_str());
@@ -60,11 +60,10 @@ void VtgMessage::print() const NMEA_NOEXCEPT {
     case ModeIndicator::Unknown: printf("unknown\n"); break;
     case ModeIndicator::Autonomous: printf("autonomous\n"); break;
     case ModeIndicator::Differential: printf("differential\n"); break;
-    default: printf("invalid\n"); break;
     }
 }
 
-std::unique_ptr<Message> VtgMessage::parse(std::string prefix, const std::string& payload,
+std::unique_ptr<Message> VtgMessage::parse(std::string prefix, std::string const& payload,
                                            std::string checksum) {
     // split payload by ','
     auto tokens = split(payload, ',');

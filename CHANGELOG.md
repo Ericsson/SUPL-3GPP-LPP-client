@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.*]
+- You can optionally include/exclude which generators to build by using the CMake options `-DINCLUDE_GENERATOR_*`. By default, RTCM and SPARTN generators are included and the old SPARTN generator is excluded.
+
 ## [3.4.5] 2024-04-02
 - SPARTN generator will not use provided URA epoch-time. This caused issues where only the URA timestamp would be used and because it isn't update vary frequently the corrections data would not be used.
 - SPARTN is now "officially" supported. It has been tested with multiple data feed providers and is working as expected.

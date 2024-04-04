@@ -1,7 +1,4 @@
 #include "ssr_example.h"
-#include <generator/spartn/generator.h>
-#include <generator/spartn/transmitter.h>
-#include <generator/spartn2/generator.hpp>
 #include <iostream>
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
@@ -14,22 +11,37 @@
 #include "control.hpp"
 #include "location_information.h"
 
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
+#include <generator/spartn/generator.h>
+#include <generator/spartn/transmitter.h>
+#endif
+
+#ifdef INCLUDE_GENERATOR_SPARTN
+#include <generator/spartn2/generator.hpp>
+#endif
+
 using UReceiver = receiver::ublox::ThreadedReceiver;
 using NReceiver = receiver::nmea::ThreadedReceiver;
 
-static CellID                       gCell;
-static ssr_example::Format          gFormat;
-static int                          gUraOverride;
-static bool                         gUBloxClockCorrection;
-static bool                         gForceIodeContinuity;
-static bool                         gAverageZenithDelay;
-static bool                         gEnableIodeShift;
-static int                          gSf055Override;
-static bool                         gIncreasingSiou;
-static Options                      gOptions;
-static SPARTN_Generator             gSpartnGeneratorOld;
+static CellID              gCell;
+static ssr_example::Format gFormat;
+static int                 gUraOverride;
+static bool                gUBloxClockCorrection;
+static bool                gForceIodeContinuity;
+static bool                gAverageZenithDelay;
+static bool                gEnableIodeShift;
+static int                 gSf055Override;
+static bool                gIncreasingSiou;
+static Options             gOptions;
+static ControlParser       gControlParser;
+
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
+static SPARTN_Generator gSpartnGeneratorOld;
+#endif
+
+#ifdef INCLUDE_GENERATOR_SPARTN
 static generator::spartn::Generator gSpartnGeneratorNew;
-static ControlParser                gControlParser;
+#endif
 
 static std::unique_ptr<Modem_AT>  gModem;
 static std::unique_ptr<UReceiver> gUbloxReceiver;
@@ -37,9 +49,10 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-void execute(Options options, ssr_example::Format format, int ura_override,
-             bool ublox_clock_correction, bool force_continuity, bool average_zenith_delay,
-             bool enable_iode_shift, int sf055_override, bool increasing_siou) {
+[[noreturn]] void execute(Options options, ssr_example::Format format, int ura_override,
+                          bool ublox_clock_correction, bool force_continuity,
+                          bool average_zenith_delay, bool enable_iode_shift, int sf055_override,
+                          bool increasing_siou) {
     gOptions              = std::move(options);
     gFormat               = format;
     gUraOverride          = ura_override;
@@ -63,12 +76,11 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
-    gCell = CellID{
-        .mcc  = cell_options.mcc,
-        .mnc  = cell_options.mnc,
-        .tac  = cell_options.tac,
-        .cell = cell_options.cid,
-    };
+    gCell.mcc   = cell_options.mcc;
+    gCell.mnc   = cell_options.mnc;
+    gCell.tac   = cell_options.tac;
+    gCell.cell  = cell_options.cid;
+    gCell.is_nr = cell_options.is_nr;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -127,6 +139,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         gNmeaReceiver->start();
     }
 
+#ifdef INCLUDE_GENERATOR_SPARTN
     gSpartnGeneratorNew.set_ura_override(gUraOverride);
     gSpartnGeneratorNew.set_ublox_clock_correction(gUBloxClockCorrection);
     if (gForceIodeContinuity) {
@@ -146,6 +159,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
     if (gIncreasingSiou) {
         gSpartnGeneratorNew.set_increasing_siou(true);
     }
+#endif
 
     LPP_Client client{false /* experimental segmentation support */};
 
@@ -203,7 +217,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         throw std::runtime_error("Unable to connect to location server");
     }
 
-    auto request = client.request_assistance_data_ssr(gCell, NULL, assistance_data_callback);
+    auto request = client.request_assistance_data_ssr(gCell, nullptr, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");
     }
@@ -224,7 +238,7 @@ void execute(Options options, ssr_example::Format format, int ura_override,
         struct timespec timeout;
         timeout.tv_sec  = 0;
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
-        nanosleep(&timeout, NULL);
+        nanosleep(&timeout, nullptr);
 
         if (control_options.interface) {
             gControlParser.parse(control_options.interface);
@@ -240,7 +254,33 @@ void execute(Options options, ssr_example::Format format, int ura_override,
 
 static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message,
                                      void*) {
-    if (gFormat == ssr_example::Format::SPARTN_OLD) {
+    if (gFormat == ssr_example::Format::XER) {
+        std::stringstream buffer;
+        xer_encode(
+            &asn_DEF_LPP_Message, message, XER_F_BASIC,
+            [](void const* text_buffer, size_t text_size, void* app_key) -> int {
+                auto string_stream = static_cast<std::ostream*>(app_key);
+                string_stream->write(static_cast<const char*>(text_buffer),
+                                     static_cast<std::streamsize>(text_size));
+                return 0;
+            },
+            &buffer);
+        auto xer_message = buffer.str();
+        for (auto& interface : gOptions.output_options.interfaces) {
+            interface->write(xer_message.c_str(), xer_message.size());
+        }
+    } else if (gFormat == ssr_example::Format::ASN1_UPER) {
+        auto octet = client->encode(message);
+        if (octet) {
+            for (auto& interface : gOptions.output_options.interfaces) {
+                interface->write(octet->buf, octet->size);
+            }
+
+            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
+        }
+    }
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
+    else if (gFormat == ssr_example::Format::SPARTN_OLD) {
         auto messages = gSpartnGeneratorOld.generate(message, gUraOverride, gUBloxClockCorrection,
                                                      gForceIodeContinuity);
         for (auto& msg : messages) {
@@ -261,7 +301,10 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                 }
             }
         }
-    } else if (gFormat == ssr_example::Format::SPARTN_NEW) {
+    }
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
+    else if (gFormat == ssr_example::Format::SPARTN_NEW) {
         auto messages = gSpartnGeneratorNew.generate(message);
         for (auto& msg : messages) {
             auto data = msg.build();
@@ -286,30 +329,9 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                 }
             }
         }
-    } else if (gFormat == ssr_example::Format::XER) {
-        std::stringstream buffer;
-        xer_encode(
-            &asn_DEF_LPP_Message, message, XER_F_BASIC,
-            [](const void* buffer, size_t size, void* app_key) -> int {
-                auto stream = static_cast<std::ostream*>(app_key);
-                stream->write(static_cast<const char*>(buffer), size);
-                return 0;
-            },
-            &buffer);
-        auto message = buffer.str();
-        for (auto& interface : gOptions.output_options.interfaces) {
-            interface->write(message.c_str(), message.size());
-        }
-    } else if (gFormat == ssr_example::Format::ASN1_UPER) {
-        auto octet = client->encode(message);
-        if (octet) {
-            for (auto& interface : gOptions.output_options.interfaces) {
-                interface->write(octet->buf, octet->size);
-            }
-
-            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
-        }
-    } else {
+    }
+#endif
+    else {
         throw std::runtime_error("Unsupported format");
     }
 }
@@ -330,7 +352,16 @@ void SsrCommand::parse(args::Subparser& parser) {
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
     mFormatArg->HelpDefault("xer");
-    mFormatArg->HelpChoices({"xer", "spartn", "spartn-old", "asn1-uper"});
+    mFormatArg->HelpChoices({
+        "xer",
+        "asn1-uper",
+#ifdef INCLUDE_GENERATOR_SPARTN
+        "spartn",
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
+        "spartn-old",
+#endif
+    });
 
     mUraOverrideArg = new args::ValueFlag<int>(
         parser, "ura",
@@ -370,13 +401,20 @@ void SsrCommand::execute(Options options) {
     if (*mFormatArg) {
         if (mFormatArg->Get() == "xer") {
             format = ssr_example::Format::XER;
-        } else if (mFormatArg->Get() == "spartn") {
-            format = ssr_example::Format::SPARTN_NEW;
-        } else if (mFormatArg->Get() == "spartn-old") {
-            format = ssr_example::Format::SPARTN_OLD;
         } else if (mFormatArg->Get() == "asn1-uper") {
             format = ssr_example::Format::ASN1_UPER;
-        } else {
+        }
+#ifdef INCLUDE_GENERATOR_SPARTN
+        else if (mFormatArg->Get() == "spartn") {
+            format = ssr_example::Format::SPARTN_NEW;
+        }
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
+        else if (mFormatArg->Get() == "spartn-old") {
+            format = ssr_example::Format::SPARTN_OLD;
+        }
+#endif
+        else {
             throw args::ValidationError("Invalid format");
         }
     }

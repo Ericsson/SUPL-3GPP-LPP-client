@@ -18,13 +18,13 @@ class VtgMessage final : public Message {
 public:
     ~VtgMessage() override = default;
 
-    VtgMessage(const VtgMessage& other)
+    VtgMessage(VtgMessage const& other)
         : Message(other), mTrueCourseOverGround(other.mTrueCourseOverGround),
           mMagneticCourseOverGround(other.mMagneticCourseOverGround),
           mSpeedOverGroundKnots(other.mSpeedOverGroundKnots),
           mSpeedOverGroundKmh(other.mSpeedOverGroundKmh), mModeIndicator(other.mModeIndicator) {}
     VtgMessage(VtgMessage&&)                 = delete;
-    VtgMessage& operator=(const VtgMessage&) = delete;
+    VtgMessage& operator=(VtgMessage const&) = delete;
     VtgMessage& operator=(VtgMessage&&)      = delete;
 
     void print() const NMEA_NOEXCEPT override;
@@ -40,7 +40,7 @@ public:
     }
 
     NMEA_NODISCARD static std::unique_ptr<Message>
-    parse(std::string prefix, const std::string& payload, std::string checksum);
+    parse(std::string prefix, std::string const& payload, std::string checksum);
 
 private:
     NMEA_EXPLICIT VtgMessage(std::string prefix, std::string payload,

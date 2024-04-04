@@ -18,8 +18,8 @@ public:
     UBLOX_NODISCARD uint32_t                 buffer_length() const UBLOX_NOEXCEPT;
 
     UBLOX_NODISCARD static uint16_t checksum_message(uint8_t* message_data,
-                                                     uint16_t message_length);
-    UBLOX_NODISCARD static uint16_t checksum(uint8_t* payload, uint16_t length);
+                                                     uint32_t message_length);
+    UBLOX_NODISCARD static uint16_t checksum(uint8_t* payload, uint32_t length);
 
 protected:
     UBLOX_NODISCARD bool is_frame_boundary() const UBLOX_NOEXCEPT;

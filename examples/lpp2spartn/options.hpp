@@ -5,10 +5,16 @@
 
 /// Format options.
 enum class Format {
+    /// XER format.
+    XER,
+#ifdef INCLUDE_GENERATOR_SPARTN_OLD
     /// SPARTN format, using the old SPARTN generator.
     SPARTN_OLD,
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
     /// SPARTN format, using the new SPARTN generator.
     SPARTN_NEW,
+#endif
 };
 
 /// SPARTN options.

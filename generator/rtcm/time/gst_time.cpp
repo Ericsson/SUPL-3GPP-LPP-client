@@ -54,9 +54,9 @@ GST_Time::GST_Time(TsInt week, TsInt tow, TsFloat fractions) : tm{} {
     tm.add(fractions);
 }
 
-GST_Time::GST_Time(const TAI_Time& time) : GST_Time(UTC_Time(time)) {}
+GST_Time::GST_Time(TAI_Time const& time) : GST_Time(UTC_Time(time)) {}
 
-GST_Time::GST_Time(const UTC_Time& time) {
+GST_Time::GST_Time(UTC_Time const& time) {
     tm = utc_2_gst(time.timestamp());
 }
 

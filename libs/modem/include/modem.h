@@ -32,7 +32,7 @@ enum ATCommand {
 
 class Modem_AT {
 public:
-    explicit Modem_AT(const std::string& path, unsigned int baud_rate, CellID cell_id);
+    explicit Modem_AT(std::string const& path, int baud_rate, CellID cell_id);
     virtual ~Modem_AT();
 
     bool                      initialize();
@@ -56,16 +56,16 @@ protected:
     static void* query_routine_callback(void* userdata);
 
 private:
-    const std::string& path;
-    unsigned int       baud_rate;
+    std::string const& path;
+    int                baud_rate;
 
     std::atomic<long long> cell_update_count;
     CellID                 cell_id;
     CellID                 first_cell_id;
 
-    int                       fd;
-    termios                   newtio, oldtio;
-    volatile bool             running;
+    int     fd;
+    termios newtio, oldtio;
+    bool volatile running;
     bool                      initialized;
     pthread_t                 thread;
     pthread_mutex_t           lock;

@@ -1,7 +1,7 @@
 #pragma once
 #include <generator/rtcm/types.hpp>
-#include <vector>
 #include <memory>
+#include <vector>
 
 struct LPP_Message;
 
@@ -100,11 +100,11 @@ public:
     /// @param[in] lpp_message The LPP RTK message.
     /// @param[in] filter The filter to apply to the LPP RTK message.
     /// @return The generated RTCM messages.
-    std::vector<Message> generate(const LPP_Message* lpp_message, const MessageFilter& filter);
+    std::vector<Message> generate(LPP_Message const* lpp_message, MessageFilter const& filter);
 
 private:
-    uint32_t mGenerationIndex;
-    std::unique_ptr<ReferenceStation> mReferenceStation;
+    uint32_t                                  mGenerationIndex;
+    std::unique_ptr<ReferenceStation>         mReferenceStation;
     std::unique_ptr<PhysicalReferenceStation> mPhysicalReferenceStation;
 };
 

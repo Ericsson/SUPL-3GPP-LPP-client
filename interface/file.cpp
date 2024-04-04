@@ -41,7 +41,7 @@ size_t FileInterface::read(void* data, size_t length) {
     return mFileDescriptor.read(data, length);
 }
 
-size_t FileInterface::write(const void* data, const size_t size) {
+size_t FileInterface::write(void const* data, size_t const size) {
     return mFileDescriptor.write(data, size);
 }
 

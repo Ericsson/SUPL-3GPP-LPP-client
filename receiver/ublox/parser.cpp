@@ -168,18 +168,20 @@ void Parser::copy_to_buffer(uint8_t* data, uint32_t length) UBLOX_NOEXCEPT {
     }
 }
 
-uint16_t Parser::checksum_message(uint8_t* message_data, uint16_t message_length) {
+uint16_t Parser::checksum_message(uint8_t* message_data, uint32_t message_length) {
     return checksum(message_data + 2, message_length - 4);
 }
 
-uint16_t Parser::checksum(uint8_t* payload, uint16_t length) {
+uint16_t Parser::checksum(uint8_t* payload, uint32_t length) {
+    UBLOX_ASSERT(length <= 0xFFFF, "length must be less than 0xFFFF");
+
     uint8_t CK_A = 0, CK_B = 0;
-    for (uint16_t I = 0; I < length; I++) {
+    for (uint16_t I = 0; I < static_cast<uint16_t>(length); I++) {
         CK_A = CK_A + payload[I];
         CK_B = CK_B + CK_A;
     }
 
-    return (static_cast<uint16_t>(CK_B) << 8U) | static_cast<uint16_t>(CK_A);
+    return static_cast<uint16_t>((CK_B << 8U) | CK_A);
 }
 
 }  // namespace ublox

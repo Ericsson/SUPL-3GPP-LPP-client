@@ -44,8 +44,8 @@ BDT_Time::BDT_Time(TsInt week, TsInt tow, TsFloat fractions) : tm{} {
     tm.add(fractions);
 }
 
-BDT_Time::BDT_Time(const TAI_Time& time) : BDT_Time(UTC_Time(time)) {}
-BDT_Time::BDT_Time(const UTC_Time& time) : tm(utc_2_bdt(time.timestamp())) {}
+BDT_Time::BDT_Time(TAI_Time const& time) : BDT_Time(UTC_Time(time)) {}
+BDT_Time::BDT_Time(UTC_Time const& time) : tm(utc_2_bdt(time.timestamp())) {}
 
 TsInt BDT_Time::days() const {
     return tm.seconds() / DAY_IN_SECONDS;

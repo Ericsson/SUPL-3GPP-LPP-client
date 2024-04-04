@@ -113,10 +113,11 @@ size_t Socket::read(void* data, size_t length) IF_NOEXCEPT {
         return 0;
     }
 
-    return bytes_read;
+    // TODO(ewasjon): Maybe we should return ssize_t instead of size_t?
+    return static_cast<size_t>(bytes_read);
 }
 
-size_t Socket::write(const void* data, size_t length) IF_NOEXCEPT {
+size_t Socket::write(void const* data, size_t length) IF_NOEXCEPT {
     if (!is_open()) {
         SOCKET_DEBUG("[socket/%6d] send(%zu bytes) = 0 (socket not open)\n", mSocket, length);
         return 0;
@@ -130,7 +131,8 @@ size_t Socket::write(const void* data, size_t length) IF_NOEXCEPT {
         return 0;
     }
 
-    return bytes_written;
+    // TODO(ewasjon): Maybe we should return ssize_t instead of size_t?
+    return static_cast<size_t>(bytes_written);
 }
 
 Socket::Error Socket::error() const IF_NOEXCEPT {

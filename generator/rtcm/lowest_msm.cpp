@@ -5,7 +5,7 @@
 namespace generator {
 namespace rtcm {
 
-static bool can_be_encoded_as_msm(const Signal& signal, uint32_t msm_version) {
+static bool can_be_encoded_as_msm(Signal const& signal, uint32_t msm_version) {
     // RTCM cannot encode DF402 as missing
     if (!signal.lock_time.valid) return false;
 
@@ -25,18 +25,18 @@ static bool can_be_encoded_as_msm(const Signal& signal, uint32_t msm_version) {
 
     // fine pseudo range: DF405 vs DF400
     auto df400_encoded = ROUND(signal.fine_pseudo_range.value / RTCM_N2_24);
-    auto df400_decoded = df400_encoded * RTCM_N2_24;
+    auto df400_decoded = static_cast<double>(df400_encoded) * RTCM_N2_24;
     auto df405_encoded = ROUND(signal.fine_pseudo_range.value / RTCM_N2_29);
-    auto df405_decoded = df405_encoded * RTCM_N2_29;
+    auto df405_decoded = static_cast<double>(df405_encoded) * RTCM_N2_29;
     if (fabs(df400_decoded - df405_decoded) > 0.0 && uses_df400) {
         return false;
     }
 
     // fine phase range: DF406 vs DF401
     auto df401_encoded = ROUND(signal.fine_phase_range.value / RTCM_N2_29);
-    auto df401_decoded = df401_encoded * RTCM_N2_29;
+    auto df401_decoded = static_cast<double>(df401_encoded) * RTCM_N2_29;
     auto df406_encoded = ROUND(signal.fine_phase_range.value / RTCM_N2_31);
-    auto df406_decoded = df406_encoded * RTCM_N2_31;
+    auto df406_decoded = static_cast<double>(df406_encoded) * RTCM_N2_31;
     if (fabs(df401_decoded - df406_decoded) > 0.0 && uses_df401) {
         return false;
     }
@@ -44,17 +44,17 @@ static bool can_be_encoded_as_msm(const Signal& signal, uint32_t msm_version) {
     // lock time indiciator: DF407 vs DF402
     auto df402_encoded = to_msm_lock(signal.lock_time.value);
     auto df402_decoded = from_msm_lock(df402_encoded);
-    if (df402_decoded != signal.lock_time.value && uses_df402) {
+    if (fabs(df402_decoded - signal.lock_time.value) > 0.0001 && uses_df402) {
         return false;
     }
 
     if (signal.carrier_to_noise_ratio.valid) {
         // carrier to noise ratio: DF408 vs DF403
         auto df403_encoded = ROUND(signal.carrier_to_noise_ratio.value);
-        auto df403_decoded = df403_encoded;
+        auto df403_decoded = static_cast<double>(df403_encoded);
         auto df408_encoded = ROUND(signal.carrier_to_noise_ratio.value / 0.0625);
-        auto df408_decoded = df408_encoded * 0.0625;
-        if (fabs(df403_decoded - df408_decoded) > 0.0 && uses_df403) {
+        auto df408_decoded = static_cast<double>(df408_encoded) * 0.0625;
+        if (fabs(df403_decoded - df408_decoded) > 0.0001 && uses_df403) {
             return false;
         }
     }
@@ -72,7 +72,7 @@ uint32_t Signal::lowest_msm_version() const {
     return 0;
 }
 
-static bool can_be_encoded_as_msm(const Satellite& satellite, uint32_t msm_version) {
+static bool can_be_encoded_as_msm(Satellite const& satellite, uint32_t msm_version) {
     // RTCM cannot encode DF398 as missing
     if (!satellite.rough_range.valid) return false;
 

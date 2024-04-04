@@ -2,8 +2,8 @@
 #include <interface/interface.hpp>
 #include <lpp/cell_id.h>
 
-#include <memory>
 #include <functional>
+#include <memory>
 
 class ControlParser {
 public:

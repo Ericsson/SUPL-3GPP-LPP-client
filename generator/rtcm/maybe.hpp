@@ -7,5 +7,5 @@ struct Maybe {
     bool valid;
 
     Maybe() : valid(false) {}
-    Maybe(const T& value) : value(value), valid(true) {}
+    Maybe(T const& new_value) : value(new_value), valid(true) {}
 };

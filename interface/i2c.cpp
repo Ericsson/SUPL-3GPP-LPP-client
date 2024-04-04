@@ -38,11 +38,11 @@ void I2CInterface::close() {
     mFileDescriptor.close();
 }
 
-size_t I2CInterface::read(void* data, const size_t size) {
+size_t I2CInterface::read(void* data, size_t const size) {
     return mFileDescriptor.read(data, size);
 }
 
-size_t I2CInterface::write(const void* data, const size_t size) {
+size_t I2CInterface::write(void const* data, size_t const size) {
     return mFileDescriptor.write(data, size);
 }
 

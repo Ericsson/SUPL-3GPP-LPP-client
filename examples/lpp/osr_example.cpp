@@ -1,5 +1,4 @@
 #include "osr_example.h"
-#include <generator/rtcm/generator.hpp>
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
 #include <modem.h>
@@ -9,13 +8,17 @@
 #include <stdexcept>
 #include "location_information.h"
 
+#ifdef INCLUDE_GENERATOR_RTCM
+#include <generator/rtcm/generator.hpp>
 using RtcmGenerator = std::unique_ptr<generator::rtcm::Generator>;
-using UReceiver     = receiver::ublox::ThreadedReceiver;
-using NReceiver     = receiver::nmea::ThreadedReceiver;
+static RtcmGenerator gGenerator;
+#endif
+
+using UReceiver = receiver::ublox::ThreadedReceiver;
+using NReceiver = receiver::nmea::ThreadedReceiver;
 
 static CellID                         gCell;
 static osr_example::Format            gFormat;
-static RtcmGenerator                  gGenerator;
 static generator::rtcm::MessageFilter gFilter;
 static Options                        gOptions;
 static bool                           gPrintRtcm;
@@ -26,8 +29,8 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-void execute(Options options, osr_example::Format format, osr_example::MsmType msm_type,
-             bool print_rtcm) {
+[[noreturn]] void execute(Options options, osr_example::Format format,
+                          osr_example::MsmType msm_type, bool print_rtcm) {
     gOptions   = std::move(options);
     gFormat    = format;
     gPrintRtcm = print_rtcm;
@@ -44,13 +47,11 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
-    gCell = CellID{
-        .mcc   = cell_options.mcc,
-        .mnc   = cell_options.mnc,
-        .tac   = cell_options.tac,
-        .cell  = cell_options.cid,
-        .is_nr = cell_options.is_nr,
-    };
+    gCell.mcc   = cell_options.mcc;
+    gCell.mnc   = cell_options.mnc;
+    gCell.tac   = cell_options.tac;
+    gCell.cell  = cell_options.cid;
+    gCell.is_nr = cell_options.is_nr;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -75,6 +76,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         }
     }
 
+#ifdef INCLUDE_GENERATOR_RTCM
     // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
     gFilter                 = generator::rtcm::MessageFilter{};
     gFilter.systems.gps     = true;
@@ -114,6 +116,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         if (gFilter.msm.msm7) printf(" MSM7");
     }
     printf("\n");
+#endif
 
     for (auto& interface : output_options.interfaces) {
         interface->open();
@@ -149,8 +152,10 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         gNmeaReceiver->start();
     }
 
+#ifdef INCLUDE_GENERATOR_RTCM
     // Create RTCM generator for converting LPP messages to RTCM messages.
     gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
+#endif
 
     LPP_Client client{false /* enable experimental segmentation support */};
 
@@ -211,7 +216,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     // Request OSR assistance data from location server for the 'cell' and register a callback
     // that will be called when we receive assistance data.
     LPP_Client::AD_Request request =
-        client.request_assistance_data(gCell, NULL, assistance_data_callback);
+        client.request_assistance_data(gCell, nullptr, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");
     }
@@ -220,7 +225,7 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
         struct timespec timeout;
         timeout.tv_sec  = 0;
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
-        nanosleep(&timeout, NULL);
+        nanosleep(&timeout, nullptr);
 
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.
@@ -230,67 +235,72 @@ void execute(Options options, osr_example::Format format, osr_example::MsmType m
     }
 }
 
-static void transmit(const void* buffer, size_t size) {
+static void transmit(void const* buffer, size_t size) {
     for (auto& interface : gOptions.output_options.interfaces) {
         interface->write(buffer, size);
     }
 }
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
-    if (gFormat == osr_example::Format::RTCM) {
+    if (gFormat == osr_example::Format::XER) {
+        std::stringstream buffer;
+        xer_encode(
+            &asn_DEF_LPP_Message, message, XER_F_BASIC,
+            [](void const* text_buffer, size_t text_size, void* app_key) -> int {
+                auto string_stream = static_cast<std::ostream*>(app_key);
+                string_stream->write(static_cast<const char*>(text_buffer),
+                                     static_cast<std::streamsize>(text_size));
+                return 0;
+            },
+            &buffer);
+        auto xer_message = buffer.str();
+        transmit(xer_message.data(), xer_message.size());
+    }
+#ifdef INCLUDE_GENERATOR_RTCM
+    else if (gFormat == osr_example::Format::RTCM) {
         auto messages = gGenerator->generate(message, gFilter);
 
         if (gPrintRtcm) {
             size_t length = 0;
-            for (auto& message : messages) {
-                length += message.data().size();
+            for (auto& submessage : messages) {
+                length += submessage.data().size();
             }
 
             printf("RTCM: %4zu bytes | ", length);
-            for (auto& message : messages) {
-                printf("%4i ", message.id());
+            for (auto& submessage : messages) {
+                printf("%4i ", submessage.id());
             }
             printf("\n");
         }
 
-        for (auto& message : messages) {
-            auto buffer = message.data().data();
-            auto size   = message.data().size();
+        for (auto& submessage : messages) {
+            auto buffer = submessage.data().data();
+            auto size   = submessage.data().size();
             transmit(buffer, size);
         }
 
         if (gUbloxReceiver) {
             auto interface = gUbloxReceiver->interface();
             if (interface) {
-                for (auto& message : messages) {
-                    auto buffer = message.data().data();
-                    auto size   = message.data().size();
+                for (auto& submessage : messages) {
+                    auto buffer = submessage.data().data();
+                    auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
             }
         } else if (gNmeaReceiver) {
             auto interface = gNmeaReceiver->interface();
             if (interface) {
-                for (auto& message : messages) {
-                    auto buffer = message.data().data();
-                    auto size   = message.data().size();
+                for (auto& submessage : messages) {
+                    auto buffer = submessage.data().data();
+                    auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
             }
         }
-    } else if (gFormat == osr_example::Format::XER) {
-        std::stringstream buffer;
-        xer_encode(
-            &asn_DEF_LPP_Message, message, XER_F_BASIC,
-            [](const void* buffer, size_t size, void* app_key) -> int {
-                auto stream = static_cast<std::ostream*>(app_key);
-                stream->write(static_cast<const char*>(buffer), size);
-                return 0;
-            },
-            &buffer);
-        auto message = buffer.str();
-        transmit(message.data(), message.size());
-    } else {
+    }
+#endif
+    else {
         throw std::runtime_error("Unsupported format");
     }
 }
@@ -305,8 +315,13 @@ void OsrCommand::parse(args::Subparser& parser) {
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format", {'f', "format"},
                                                   args::Options::Single);
+#ifdef INCLUDE_GENERATOR_RTCM
     mFormatArg->HelpDefault("rtcm");
     mFormatArg->HelpChoices({"rtcm", "xer"});
+#else
+    mFormatArg->HelpDefault("xer");
+    mFormatArg->HelpChoices({"xer"});
+#endif
 
     mMsmTypeArg = new args::ValueFlag<std::string>(parser, "msm_type", "RTCM MSM type",
                                                    {'y', "msm_type"}, args::Options::Single);
@@ -319,19 +334,27 @@ void OsrCommand::parse(args::Subparser& parser) {
 }
 
 void OsrCommand::execute(Options options) {
-    auto format   = Format::RTCM;
-    auto msm_type = MsmType::ANY;
+#ifdef INCLUDE_GENERATOR_RTCM
+    auto format = Format::RTCM;
+#else
+    auto format = Format::XER;
+#endif
 
     if (*mFormatArg) {
-        if (mFormatArg->Get() == "rtcm") {
-            format = Format::RTCM;
-        } else if (mFormatArg->Get() == "xer") {
+        if (mFormatArg->Get() == "xer") {
             format = Format::XER;
-        } else {
+        }
+#ifdef INCLUDE_GENERATOR_RTCM
+        else if (mFormatArg->Get() == "rtcm") {
+            format = Format::RTCM;
+        }
+#endif
+        else {
             throw args::ValidationError("Invalid format");
         }
     }
 
+    auto msm_type = MsmType::ANY;
     if (*mMsmTypeArg) {
         if (mMsmTypeArg->Get() == "any") {
             msm_type = MsmType::ANY;
