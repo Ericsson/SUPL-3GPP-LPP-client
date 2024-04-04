@@ -100,7 +100,14 @@ public:
     /// @param[in] lpp_message The LPP RTK message.
     /// @param[in] filter The filter to apply to the LPP RTK message.
     /// @return The generated RTCM messages.
-    std::vector<Message> generate(LPP_Message const* lpp_message, MessageFilter const& filter);
+    RTCM_NODISCARD std::vector<Message> generate(LPP_Message const* lpp_message, MessageFilter const& filter);
+
+    /// Generate RTCM messages that acts as framing for the LPP encoded data. One LPP message may be
+    /// split into multiple RTCM messages.
+    /// @param[in] lpp_data The LPP encoded data.
+    /// @param[in] lpp_data_size The size of the LPP encoded data.
+    /// @return The generated RTCM messages.
+    static RTCM_NODISCARD std::vector<Message> generate_framing(void const* lpp_data, size_t lpp_data_size) RTCM_NOEXCEPT;
 
 private:
     uint32_t                                  mGenerationIndex;

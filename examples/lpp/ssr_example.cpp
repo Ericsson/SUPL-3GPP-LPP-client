@@ -20,6 +20,10 @@
 #include <generator/spartn2/generator.hpp>
 #endif
 
+#ifdef INCLUDE_GENERATOR_RTCM
+#include <generator/rtcm/generator.hpp>
+#endif
+
 using UReceiver = receiver::ublox::ThreadedReceiver;
 using NReceiver = receiver::nmea::ThreadedReceiver;
 
@@ -32,6 +36,7 @@ static bool                gAverageZenithDelay;
 static bool                gEnableIodeShift;
 static int                 gSf055Override;
 static bool                gIncreasingSiou;
+static bool                gPrintRtcm;
 static Options             gOptions;
 static ControlParser       gControlParser;
 
@@ -52,7 +57,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 [[noreturn]] void execute(Options options, ssr_example::Format format, int ura_override,
                           bool ublox_clock_correction, bool force_continuity,
                           bool average_zenith_delay, bool enable_iode_shift, int sf055_override,
-                          bool increasing_siou) {
+                          bool increasing_siou, bool print_rtcm) {
     gOptions              = std::move(options);
     gFormat               = format;
     gUraOverride          = ura_override;
@@ -62,6 +67,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gEnableIodeShift      = enable_iode_shift;
     gSf055Override        = sf055_override;
     gIncreasingSiou       = increasing_siou;
+    gPrintRtcm            = print_rtcm;
 
     auto& cell_options                 = gOptions.cell_options;
     auto& location_server_options      = gOptions.location_server_options;
@@ -331,6 +337,58 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
         }
     }
 #endif
+#ifdef INCLUDE_GENERATOR_RTCM
+    else if (gFormat == ssr_example::Format::LRF_UPER) {
+        auto octet = client->encode(message);
+        if (octet) {
+            auto submessages =
+                generator::rtcm::Generator::generate_framing(octet->buf, octet->size);
+
+            if (gPrintRtcm) {
+                size_t length = 0;
+                for (auto& submessage : submessages) {
+                    length += submessage.data().size();
+                }
+
+                printf("LRF: %4zu bytes | ", length);
+                for (auto& submessage : submessages) {
+                    printf("%4i ", submessage.id());
+                }
+                printf("\n");
+            }
+
+            for (auto& submessage : submessages) {
+                auto buffer = submessage.data().data();
+                auto size   = submessage.data().size();
+                for (auto& interface : gOptions.output_options.interfaces) {
+                    interface->write(buffer, size);
+                }
+            }
+
+            if (gUbloxReceiver) {
+                auto interface = gUbloxReceiver->interface();
+                if (interface) {
+                    for (auto& submessage : submessages) {
+                        auto buffer = submessage.data().data();
+                        auto size   = submessage.data().size();
+                        interface->write(buffer, size);
+                    }
+                }
+            } else if (gNmeaReceiver) {
+                auto interface = gNmeaReceiver->interface();
+                if (interface) {
+                    for (auto& submessage : submessages) {
+                        auto buffer = submessage.data().data();
+                        auto size   = submessage.data().size();
+                        interface->write(buffer, size);
+                    }
+                }
+            }
+
+            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
+        }
+    }
+#endif
     else {
         throw std::runtime_error("Unsupported format");
     }
@@ -348,6 +406,7 @@ void SsrCommand::parse(args::Subparser& parser) {
     delete mEnableIodeShift;
     delete mSf055Override;
     delete mIncreasingSiou;
+    delete mPrintRTCMArg;
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
@@ -360,6 +419,9 @@ void SsrCommand::parse(args::Subparser& parser) {
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
         "spartn-old",
+#endif
+#ifdef INCLUDE_GENERATOR_RTCM
+        "lrf-uper",
 #endif
     });
 
@@ -394,6 +456,10 @@ void SsrCommand::parse(args::Subparser& parser) {
     mIncreasingSiou =
         new args::Flag(parser, "increasing-siou", "Enable the increasing SIoU feature for SPARTN",
                        {"increasing-siou"});
+
+    mPrintRTCMArg =
+        new args::Flag(parser, "print_rtcm", "Print RTCM messages info (only used for LRF-UPER)",
+                       {"rtcm-print"}, args::Options::Single);
 }
 
 void SsrCommand::execute(Options options) {
@@ -412,6 +478,11 @@ void SsrCommand::execute(Options options) {
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
         else if (mFormatArg->Get() == "spartn-old") {
             format = ssr_example::Format::SPARTN_OLD;
+        }
+#endif
+#ifdef INCLUDE_GENERATOR_RTCM
+        else if (mFormatArg->Get() == "lrf-uper") {
+            format = ssr_example::Format::LRF_UPER;
         }
 #endif
         else {
@@ -456,8 +527,13 @@ void SsrCommand::execute(Options options) {
         increasing_siou = mIncreasingSiou->Get();
     }
 
+    auto print_rtcm = false;
+    if (*mPrintRTCMArg) {
+        print_rtcm = true;
+    }
+
     ::execute(std::move(options), format, ura_override, ublox_clock_correction, force_continuity,
-              average_zenith_delay, iode_shift, sf055_override, increasing_siou);
+              average_zenith_delay, iode_shift, sf055_override, increasing_siou, print_rtcm);
 }
 
 }  // namespace ssr_example

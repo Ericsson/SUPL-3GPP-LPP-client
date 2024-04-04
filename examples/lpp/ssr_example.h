@@ -12,6 +12,9 @@ enum class Format {
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
     SPARTN_OLD,
 #endif
+#ifdef INCLUDE_GENERATOR_RTCM
+    LRF_UPER,
+#endif
 };
 
 class SsrCommand final : public Command {
@@ -20,7 +23,7 @@ public:
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
           mFormatArg(nullptr), mUraOverrideArg(nullptr), mUbloxClockCorrectionArg(nullptr),
           mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr),
-          mSf055Override(nullptr), mIncreasingSiou(nullptr) {}
+          mSf055Override(nullptr), mIncreasingSiou(nullptr), mPrintRTCMArg(nullptr) {}
 
     ~SsrCommand() override {
         delete mFormatArg;
@@ -31,6 +34,7 @@ public:
         delete mEnableIodeShift;
         delete mSf055Override;
         delete mIncreasingSiou;
+        delete mPrintRTCMArg;
     }
 
     void parse(args::Subparser& parser) override;
@@ -45,6 +49,7 @@ private:
     args::Flag*                   mEnableIodeShift;
     args::ValueFlag<int>*         mSf055Override;
     args::Flag*                   mIncreasingSiou;
+    args::Flag*                   mPrintRTCMArg;
 };
 
 }  // namespace ssr_example

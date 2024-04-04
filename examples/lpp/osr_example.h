@@ -6,8 +6,10 @@ namespace osr_example {
 enum class Format {
 #ifdef INCLUDE_GENERATOR_RTCM
     RTCM,
+    LRF_UPER,
 #endif
     XER,
+    ASN1_UPER,
 };
 
 enum class MsmType {

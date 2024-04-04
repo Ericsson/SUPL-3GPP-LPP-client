@@ -67,6 +67,11 @@ void Encoder::copy(std::vector<uint8_t> buffer) {
     mBitIndex = 0;
 }
 
+void Encoder::copy(const uint8_t* buffer, size_t size) {
+    mBuffer.insert(mBuffer.end(), buffer, buffer + size);
+    mBitIndex = 0;
+}
+
 void Encoder::checksum() {
     auto crc = crc24q_hash(mBuffer.data(), mBuffer.size());
     u32(24, crc);
