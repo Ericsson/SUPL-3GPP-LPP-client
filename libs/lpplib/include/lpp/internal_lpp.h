@@ -5,6 +5,10 @@
 #include "cell_id.h"
 #include "lpp.h"
 
+#include <LocationInformationType.h>
+#include <CommonIEsRequestLocationInformation.h>
+#include <PeriodicalReportingCriteria.h>
+
 #define LPP_MSG_MAX_COUNT 10
 
 bool lpp_harvest_transaction(LPP_Transaction* transaction, LPP_Message* lpp);

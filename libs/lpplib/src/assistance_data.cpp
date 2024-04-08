@@ -1,6 +1,37 @@
 #include "internal_lpp.h"
 #include "lpp.h"
 
+#include <GNSS-ID.h>
+#include <GNSS-ReferenceTimeReq.h>
+#include <GNSS-IonosphericModelReq.h>
+#include <GNSS-TimeModelListReq.h>
+#include <GNSS-TimeModelElementReq.h>
+#include <GNSS-NavigationModelReq.h>
+#include <GNSS-RTK-ReferenceStationInfoReq-r15.h>
+#include <GNSS-AuxiliaryInformationReq.h>
+#include <GNSS-RTK-ObservationsReq-r15.h>
+#include <GNSS-SSR-OrbitCorrectionsReq-r15.h>
+#include <GNSS-SSR-ClockCorrectionsReq-r15.h>
+#include <GNSS-SSR-CodeBiasReq-r15.h>
+#include <GNSS-SSR-PhaseBiasReq-r16.h>
+#include <GNSS-SSR-GriddedCorrectionReq-r16.h>
+#include <GNSS-SSR-STEC-CorrectionReq-r16.h>
+#include <GNSS-SSR-URA-Req-r16.h>
+#include <GNSS-GenericAssistDataReqElement.h>
+#include <GNSS-PeriodicControlParam-r15.h>
+#include <GNSS-RTK-ResidualsReq-r15.h>
+#include <GLO-RTK-BiasInformationReq-r15.h>
+#include <GNSS-RealTimeIntegrityReq.h>
+#include <GNSS-AlmanacReq.h>
+#include <GNSS-UTC-ModelReq.h>
+#include <PeriodicAssistanceDataControlParameters-r15.h>
+#include <CommonIEsRequestAssistanceData.h>
+#include <GNSS-CommonAssistDataReq.h>
+#include <GNSS-GenericAssistDataReq.h>
+#include <A-GNSS-RequestAssistanceData.h>
+#include <GNSS-PeriodicAssistDataReq-r15.h>
+#include <GNSS-SSR-CorrectionPointsReq-r16.h>
+
 static GNSS_ReferenceTimeReq_t* request_reference_time(long gnss_id) {
     auto element = ALLOC_ZERO(GNSS_ReferenceTimeReq_t);
     asn_sequence_empty(&element->gnss_TimeReqPrefList.list);

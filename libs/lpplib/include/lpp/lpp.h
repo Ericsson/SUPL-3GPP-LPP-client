@@ -2,9 +2,12 @@
 #include <chrono>
 #include <lpp/cell_id.h>
 #include <vector>
+
 #include "asn_helper.h"
 #include "asnlib.h"
 #include "location_information.h"
+
+#include <LocationInformationType.h>
 
 #define AD_REQUEST_INVALID (static_cast<LPP_Client::AD_Request>(0))
 

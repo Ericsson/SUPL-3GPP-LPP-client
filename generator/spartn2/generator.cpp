@@ -18,6 +18,7 @@
 #include <SSR-CodeBiasSignalElement-r15.h>
 #include <SSR-PhaseBiasSatElement-r16.h>
 #include <SSR-PhaseBiasSignalElement-r16.h>
+#include <GNSS-SSR-CorrectionPoints-r16.h>
 #pragma GCC diagnostic pop
 
 #include <map>

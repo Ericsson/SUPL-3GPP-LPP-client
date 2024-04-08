@@ -11,6 +11,12 @@
 #include <GNSS-ID.h>
 #include <GNSS-SSR-GriddedCorrection-r16.h>
 #include <GNSS-SSR-STEC-Correction-r16.h>
+#include <GridElement-r16.h>
+#include <STEC-SatList-r16.h>
+#include <STEC-SatElement-r16.h>
+#include <STEC-ResidualSatList-r16.h>
+#include <STEC-ResidualSatElement-r16.h>
+#include <TropospericDelayCorrection-r16.h>
 #pragma GCC diagnostic pop
 
 #include <algorithm>

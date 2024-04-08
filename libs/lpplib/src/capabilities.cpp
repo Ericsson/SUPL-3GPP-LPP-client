@@ -1,6 +1,22 @@
 #include "internal_lpp.h"
 #include "lpp.h"
 
+#include <GNSS-SupportElement.h>
+#include <GNSS-SupportList.h>
+#include <AssistanceDataSupportList.h>
+#include <GNSS-RTK-ReferenceStationInfoSupport-r15.h>
+#include <GNSS-RTK-AuxiliaryStationDataSupport-r15.h>
+#include <GNSS-GenericAssistDataSupportElement.h>
+#include <GNSS-AcquisitionAssistanceSupport.h>
+#include <GNSS-RTK-ObservationsSupport-r15.h>
+#include <GNSS-RTK-ResidualsSupport-r15.h>
+#include <GNSS-Link-CombinationsList-r15.h>
+#include <GNSS-Link-Combinations-r15.h>
+#include <A-GNSS-ProvideCapabilities.h>
+#include <GLO-RTK-BiasInformationSupport-r15.h>
+#include <ECID-ProvideCapabilities.h>
+#include <CommonIEsProvideCapabilities.h>
+
 static GNSS_SupportElement* build_support_element(long gnss_id) {
     auto element                        = ALLOC_ZERO(GNSS_SupportElement);
     element->gnss_ID.gnss_id            = gnss_id;

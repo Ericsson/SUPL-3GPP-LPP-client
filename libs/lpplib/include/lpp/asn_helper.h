@@ -58,7 +58,7 @@ MCC*   supl_create_mcc(int mcc_value);
 void   supl_fill_mcc(MCC* mcc, int mcc_value);
 void   supl_fill_mnc(MNC* mnc, int mnc_value);
 ECGI*  ecgi_create(long mcc, long mnc, unsigned long long id);
-NCGI_r15* ncgi_create(long mcc, long mnc, unsigned long long id);
+struct NCGI_r15* ncgi_create(long mcc, long mnc, unsigned long long id);
 double long_pointer2scaled_double(long* ptr, double def, double arg);
 double long_pointer(long* ptr, long def);
 long   gnss2long(GNSS_SignalID_t gnss_id);

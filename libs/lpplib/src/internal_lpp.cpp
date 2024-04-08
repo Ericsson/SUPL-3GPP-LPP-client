@@ -6,6 +6,21 @@
 #include <math.h>
 #include <time.h>
 #include <utility/time.h>
+#include <CommonIEsAbort.h>
+#include <CommonIEsProvideAssistanceData.h>
+#include <GNSS-SystemTime.h>
+#include <LocationCoordinates.h>
+#include <PeriodicAssistanceDataControlParameters-r15.h>
+#include <Velocity.h>
+#include <CommonIEsProvideLocationInformation.h>
+#include <GNSS-LocationInformation.h>
+#include <ECID-ProvideLocationInformation.h>
+#include <ECID-SignalMeasurementInformation.h>
+#include <ECID-Error.h>
+#include <MeasuredResultsList.h>
+#include <MeasuredResultsElement.h>
+#include <CellGlobalIdEUTRA-AndUTRA.h>
+#include <LocationError.h>
 
 bool lpp_harvest_transaction(LPP_Transaction* transaction, LPP_Message* lpp) {
     if (!lpp) return false;
@@ -406,7 +421,7 @@ static CommonIEsProvideLocationInformation_t* lpp_PLI_CommonIEsProvideLocationIn
 
         CIE_PLI->ext2 = lpp_PLI_CIE_ext2(location);
     } else {
-        auto LE                  = ALLOC_ZERO(LocationError_t);
+        auto LE                  = ALLOC_ZERO(LocationError);
         LE->locationfailurecause = LocationFailureCause_periodicLocationMeasurementsNotAvailable;
         CIE_PLI->locationError   = LE;
     }

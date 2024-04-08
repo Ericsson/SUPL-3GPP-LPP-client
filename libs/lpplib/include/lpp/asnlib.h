@@ -20,6 +20,7 @@
 #include <TrackingAreaCode.h>
 #include <ULP-PDU.h>
 #include <Ver2-SUPL-START-extension.h>
+#include <LPP-TransactionID.h>
 #pragma GCC diagnostic pop
 
 typedef BIT_STRING_t   BIT_STRING;

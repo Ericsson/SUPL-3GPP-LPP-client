@@ -17,7 +17,9 @@ public:
     void set_integer(size_t, size_t, size_t);
 
     int64_t     as_int64() const;
+#if 0
     std::string as_string() const;
+#endif
 
     static BitString* allocate(size_t bits) {
         auto data = asn1_allocate<BIT_STRING_s>();

@@ -2,6 +2,10 @@
 
 #include <utility/cpp.h>
 
+#include <SessionID.h>
+#include <SetSessionID.h>
+#include <SlpSessionID.h>
+
 template <>
 void ASN_Deleter<ULP_PDU>::operator()(ULP_PDU* ptr) {
     if (ptr) {

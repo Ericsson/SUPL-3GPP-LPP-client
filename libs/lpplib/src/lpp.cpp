@@ -4,6 +4,9 @@
 
 #include <OCTET_STRING.h>
 #include <utility/cpp.h>
+#include <PosProtocolVersion3GPP.h>
+#include <Ver2-PosProtocol-extension.h>
+#include <GNSS-ID.h>
 
 LPP_Client::LPP_Client(bool segmentation) {
     connected                 = false;
