@@ -6,6 +6,7 @@
 #include "ubx_cfg_valget.hpp"
 #include "ubx_mon_ver.hpp"
 #include "ubx_nav_pvt.hpp"
+#include "ubx_rxm_rtcm.hpp"
 
 namespace receiver {
 namespace ublox {
@@ -115,6 +116,7 @@ std::unique_ptr<Message> Parser::try_parse() UBLOX_NOEXCEPT {
     case 0x068B: return UbxCfgValget::parse(decoder);
     case 0x0501: return UbxAckAck::parse(decoder);
     case 0x0500: return UbxAckNak::parse(decoder);
+    case 0x0232: return UbxRxmRtcm::parse(decoder);
     default: return std::unique_ptr<Message>{new UnsupportedMessage(message_class, message_id)};
     }
 }
