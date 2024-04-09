@@ -5,6 +5,7 @@
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
 #pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <GNSS-RTK-Residuals-r15.h>
 #include <RTK-Residuals-Element-r15.h>
 #pragma GCC diagnostic pop
