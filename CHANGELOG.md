@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.5.*]
+## [3.4.*]
 - Added parsing of UBX-RXM-RTCM messages.
 
 ## [3.4.6] 2024-04-04
