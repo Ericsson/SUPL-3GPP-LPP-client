@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.5.*]
+- Added parsing of UBX-RXM-RTCM messages.
+
 ## [3.4.6] 2024-04-04
 - You can optionally include/exclude which generators to build by using the CMake options `-DINCLUDE_GENERATOR_*`. By default, RTCM and SPARTN generators are included and the old SPARTN generator is excluded.
 - Added support for control commands in the `example-lpp` when using `osr`, this was previously only available in when using `ssr`.
