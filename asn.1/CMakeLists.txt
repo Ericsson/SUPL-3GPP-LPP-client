@@ -1,4 +1,3 @@
-file(GLOB_RECURSE ASN1_SOURCE "generated/*.c")
 
 set(ASN1_XER_SUPPORT ON CACHE BOOL "Enable XER support")
 set(ASN1_JER_SUPPORT ON CACHE BOOL "Enable JER support")
@@ -8,6 +7,59 @@ set(ASN1_APER_SUPPORT OFF CACHE BOOL "Enable APER support")
 set(ASN1_BER_SUPPORT OFF CACHE BOOL "Enable BER support")
 set(ASN1_RFILL_SUPPORT OFF CACHE BOOL "Enable RFILL support")
 set(ASN1_PRINT_SUPPORT OFF CACHE BOOL "Enable PRINT support")
+
+function(asn1_target_setup target)
+    if(NOT ${ASN1_XER_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_XER_SUPPORT=1")
+    endif()
+
+    if(NOT ${ASN1_JER_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_JER_SUPPORT=1")
+    endif()
+
+    if(NOT ${ASN1_OER_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_OER_SUPPORT=1")
+    endif()
+
+    if(NOT ${ASN1_UPER_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_UPER_SUPPORT=1")
+    endif()
+
+    if(NOT ${ASN1_APER_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_APER_SUPPORT=1")
+    endif()
+
+    if(NOT ${ASN1_BER_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_BER_SUPPORT=1")
+    endif()
+
+    if(NOT ${ASN1_RFILL_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_RFILL_SUPPORT=1")
+    endif()
+
+    if(NOT ${ASN1_PRINT_SUPPORT})
+        target_compile_definitions(${target} PUBLIC "ASN_DISABLE_PRINT_SUPPORT=1")
+    endif()
+
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        target_compile_options(${target} PRIVATE
+            "-Wno-parentheses-equality" 
+            "-Wno-unused-but-set-variable"
+        )
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+
+    endif()
+
+    # TODO(ewasjon): I don't think the ASN.1 generated code should be compiled with ASAN.
+    if (${USE_ASAN})
+        target_compile_options(${target} PRIVATE -fsanitize=address,undefined,leak)
+        target_link_libraries(${target} PRIVATE -fsanitize=address,undefined,leak)
+    endif ()
+endfunction()
+
+#
+# Skeleton ASN.1
+#
 
 set(ASN1_SKELETON_SOURCE "")
 
@@ -54,14 +106,6 @@ if (ASN1_UPER_SUPPORT)
     file(GLOB_RECURSE ASN1_UPER_SOURCE "skeleton/*_uper.c")
     list(APPEND ASN1_SKELETON_SOURCE ${ASN1_UPER_SOURCE})
     list(APPEND ASN1_SKELETON_SOURCE 
-        "skeleton/per_decoder.c"
-        "skeleton/per_decoder.h"
-        "skeleton/per_encoder.c"
-        "skeleton/per_encoder.h"
-        "skeleton/per_opentype.c"
-        "skeleton/per_opentype.h"
-        "skeleton/per_support.c"
-        "skeleton/per_support.h"
         "skeleton/uper_decoder.c"
         "skeleton/uper_decoder.h"
         "skeleton/uper_encoder.c"
@@ -77,14 +121,6 @@ if (ASN1_APER_SUPPORT)
     file(GLOB_RECURSE ASN1_APER_SOURCE "skeleton/*_aper.c")
     list(APPEND ASN1_SKELETON_SOURCE ${ASN1_APER_SOURCE})
     list(APPEND ASN1_SKELETON_SOURCE
-        "skeleton/per_decoder.c"
-        "skeleton/per_decoder.h"
-        "skeleton/per_encoder.c"
-        "skeleton/per_encoder.h"
-        "skeleton/per_opentype.c"
-        "skeleton/per_opentype.h"
-        "skeleton/per_support.c"
-        "skeleton/per_support.h"
         "skeleton/aper_decoder.c"
         "skeleton/aper_decoder.h"
         "skeleton/aper_encoder.c"
@@ -93,6 +129,20 @@ if (ASN1_APER_SUPPORT)
         "skeleton/aper_opentype.h"
         "skeleton/aper_support.c"
         "skeleton/aper_support.h"
+    )
+endif()
+
+# UPER OR APER
+if (ASN1_UPER_SUPPORT OR ASN1_APER_SUPPORT)
+    list(APPEND ASN1_SKELETON_SOURCE 
+        "skeleton/per_decoder.c"
+        "skeleton/per_decoder.h"
+        "skeleton/per_encoder.c"
+        "skeleton/per_encoder.h"
+        "skeleton/per_opentype.c"
+        "skeleton/per_opentype.h"
+        "skeleton/per_support.c"
+        "skeleton/per_support.h"
     )
 endif()
 
@@ -219,30 +269,42 @@ list(APPEND ASN1_SKELETON_SOURCE
     "skeleton/constraints.h"
 )
 
-add_library(asn1_generated STATIC ${ASN1_SOURCE} ${ASN1_SKELETON_SOURCE})
-add_library(asn1::generated ALIAS asn1_generated)
+add_library(asn1_skeleton STATIC ${ASN1_SKELETON_SOURCE})
+add_library(asn1::skeleton ALIAS asn1_skeleton)
 
-# TODO(ewasjon): These are already defined in the generated code. Remove them.
-target_compile_definitions(asn1_generated PUBLIC "ASN_DISABLE_OER_SUPPORT=1")
-target_compile_definitions(asn1_generated PUBLIC "ASN_DISABLE_APER_SUPPORT=1")
-target_compile_definitions(asn1_generated PUBLIC "ASN_DISABLE_BER_SUPPORT=1")
-target_compile_definitions(asn1_generated PUBLIC "ASN_DISABLE_RFILL_SUPPORT=1")
-target_compile_definitions(asn1_generated PUBLIC "ASN_DISABLE_PRINT_SUPPORT=1")
-target_include_directories(asn1_generated PUBLIC "generated")
-target_include_directories(asn1_generated PUBLIC "skeleton")
+asn1_target_setup(asn1_skeleton)
+target_include_directories(asn1_skeleton PUBLIC "skeleton")
 
-if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    target_compile_options(asn1_generated PRIVATE
-        "-Wno-parentheses-equality" 
-        "-Wno-unused-but-set-variable"
-    )
-elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+#
+# SUPL ASN.1
+#
 
-endif()
+file(GLOB_RECURSE ASN1_SUPL_SOURCE "supl_generated/*.c")
+file(GLOB_RECURSE ASN1_SUPL_HEADER "supl_generated/*.h")
 
-if (USE_ASAN)
-target_compile_options(asn1_generated PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(asn1_generated PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
+add_library(asn1_supl_generated STATIC ${ASN1_SUPL_SOURCE} ${ASN1_SUPL_HEADER})
+add_library(asn1::generated::supl ALIAS asn1_supl_generated)
+
+asn1_target_setup(asn1_supl_generated)
+target_link_libraries(asn1_supl_generated PUBLIC asn1::skeleton)
+target_include_directories(asn1_supl_generated PUBLIC "supl_generated")
+
+#
+# 3GPP LPP ASN.1
+#
+
+file(GLOB_RECURSE ASN1_LPP_SOURCE "lpp_generated/*.c")
+file(GLOB_RECURSE ASN1_LPP_HEADER "lpp_generated/*.h")
+
+add_library(asn1_lpp_generated STATIC ${ASN1_LPP_SOURCE} ${ASN1_LPP_HEADER})
+add_library(asn1::generated::lpp ALIAS asn1_lpp_generated)
+
+asn1_target_setup(asn1_lpp_generated)
+target_link_libraries(asn1_lpp_generated PUBLIC asn1::skeleton)
+target_include_directories(asn1_lpp_generated PUBLIC "lpp_generated")
+
+#
+# Helper
+#
 
 add_subdirectory(helper)

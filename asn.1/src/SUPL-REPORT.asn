@@ -1,0 +1,81 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.14 SUPL REPORT
+--
+SUPL-REPORT DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     Ver2-SUPLREPORT;
+
+IMPORTS
+     SETCapabilities
+          FROM SUPL-START
+     Position, PosMethod, SessionID, Ver
+          FROM ULP-Components
+     MultipleLocationIds, GNSSPosTechnology, GANSSSignals
+          FROM Ver2-ULP-Components
+     maxGANSS
+          FROM ULP-Version-2-parameter-extensions;
+
+Ver2-SUPLREPORT ::= SEQUENCE {
+    sessionList    SessionList OPTIONAL,
+    sETCapabilities SETCapabilities OPTIONAL,
+    reportDataList ReportDataList OPTIONAL,
+    ver            Ver OPTIONAL,
+    moreComponents NULL OPTIONAL,
+    ...
+}
+
+SessionList ::= SEQUENCE SIZE (1..maxnumSessions) OF SessionInformation
+
+SessionInformation ::= SEQUENCE {
+    sessionID      SessionID,
+    ...
+}
+
+maxnumSessions INTEGER ::= 64
+
+ReportDataList ::= SEQUENCE SIZE (1..1024) OF ReportData
+
+ReportData ::= SEQUENCE {
+    positionData   SUPL-PositionData OPTIONAL,
+    multipleLocationIds MultipleLocationIds OPTIONAL,
+    resultCode     ResultCode OPTIONAL,
+    timestamp      TimeStamp OPTIONAL,
+    ...
+}
+
+SUPL-PositionData ::= SEQUENCE {
+    position       Position,
+    posMethod      PosMethod OPTIONAL,
+    gnssPosTechnology GNSSPosTechnology OPTIONAL,
+    ganssSignalsInfo GANSSsignalsInfo OPTIONAL,
+    ...
+}
+
+GANSSsignalsInfo ::= SEQUENCE SIZE (1..maxGANSS) OF GANSSSignalsDescription
+
+GANSSSignalsDescription ::= SEQUENCE {
+    ganssId        INTEGER (0..15), -- coding according to parameter definition in section 10.10
+    gANSSSignals   GANSSSignals,
+    ...
+}
+
+ResultCode ::= ENUMERATED {
+                   outofradiocoverage (1),
+                   noposition (2),
+                   nomeasurement (3),
+                   nopositionnomeasurement (4),
+                   outofmemory (5),
+                   outofmemoryintermediatereporting (6),
+                   other (7),
+                   ...
+               }
+
+TimeStamp ::= CHOICE {
+    absoluteTime   UTCTime,
+    relativeTime   INTEGER (0..31536000)
+} -- relative time to when the SUPL REPORT message is sent in units of 1 sec, where 0 signifies "now" and n signifies n seconds in the past
+
+END

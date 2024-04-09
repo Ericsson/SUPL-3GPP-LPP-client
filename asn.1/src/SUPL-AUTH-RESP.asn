@@ -1,0 +1,22 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.8 SUPL AUTH RESP
+--
+SUPL-AUTH-RESP DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     SUPLAUTHRESP;
+
+IMPORTS
+     SPCSETKey, SPCTID, SPCSETKeylifetime
+          FROM Ver2-ULP-Components;
+
+SUPLAUTHRESP ::= SEQUENCE {
+    sPCSETKey      SPCSETKey,
+    sPCTID         SPCTID,
+    sPCSETKeylifetime SPCSETKeylifetime OPTIONAL,
+    ...
+}
+
+END

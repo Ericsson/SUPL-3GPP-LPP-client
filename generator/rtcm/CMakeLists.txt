@@ -27,6 +27,6 @@ add_library(generator::rtcm ALIAS generator_rtcm)
 
 target_include_directories(generator_rtcm PRIVATE "./" "include/generator/rtcm/")
 target_include_directories(generator_rtcm PUBLIC "include/")
-target_link_libraries(generator_rtcm PRIVATE asn1::generated asn1::helper)
+target_link_libraries(generator_rtcm PRIVATE asn1::generated::lpp asn1::helper)
 
 setup_target(generator_rtcm)

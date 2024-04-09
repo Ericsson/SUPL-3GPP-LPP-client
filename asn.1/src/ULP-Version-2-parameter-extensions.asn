@@ -1,0 +1,237 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.4 Parameter Extensions (SUPL Version 2)
+--
+ULP-Version-2-parameter-extensions DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     maxGANSS, Ver2-Notification-extension, Ver2-SETCapabilities-extension, Ver2-PosProtocol-extension, Ver2-PosTechnology-extension, Ver2-RequestedAssistData-extension, Ver2-PosPayLoad-extension;
+
+IMPORTS
+     GANSSSignals, ReportingCap
+          FROM Ver2-ULP-Components
+     maxNumGeoArea, maxAreaId, maxAreaIdList
+          FROM SUPL-TRIGGERED-START;
+
+Ver2-Notification-extension ::= SEQUENCE {
+    emergencyCallLocation NULL OPTIONAL,
+    ...
+}
+
+Ver2-SETCapabilities-extension ::= SEQUENCE {
+    serviceCapabilities ServiceCapabilities OPTIONAL,
+    ...,
+    supportedBearers SupportedBearers OPTIONAL
+}
+
+ServiceCapabilities ::= SEQUENCE {
+    servicesSupported ServicesSupported,
+    reportingCapabilities ReportingCap OPTIONAL,
+    eventTriggerCapabilities EventTriggerCapabilities OPTIONAL,
+    sessionCapabilities SessionCapabilities,
+    ...
+}
+
+ServicesSupported ::= SEQUENCE {
+    periodicTrigger BOOLEAN,
+    areaEventTrigger BOOLEAN,
+    ...
+}
+
+EventTriggerCapabilities ::= SEQUENCE {
+    geoAreaShapesSupported GeoAreaShapesSupported,
+    maxNumGeoAreaSupported INTEGER (0..maxNumGeoArea) OPTIONAL,
+    maxAreaIdListSupported INTEGER (0..maxAreaIdList) OPTIONAL,
+    maxAreaIdSupportedPerList INTEGER (0..maxAreaId) OPTIONAL,
+    ...
+}
+
+GeoAreaShapesSupported ::= SEQUENCE {
+    ellipticalArea BOOLEAN,
+    polygonArea    BOOLEAN,
+    ...
+}
+
+SessionCapabilities ::= SEQUENCE {
+    maxNumberTotalSessions INTEGER (1..128),
+    maxNumberPeriodicSessions INTEGER (1..32),
+    maxNumberTriggeredSessions INTEGER (1..32),
+    ...
+}
+
+SupportedBearers ::= SEQUENCE {
+    gsm            BOOLEAN,
+    wcdma          BOOLEAN,
+    lte            BOOLEAN,
+    cdma           BOOLEAN,
+    hprd           BOOLEAN,
+    umb            BOOLEAN,
+    wlan           BOOLEAN,
+    wiMAX          BOOLEAN,
+    ...
+}
+
+Ver2-PosProtocol-extension ::= SEQUENCE {
+    lpp            BOOLEAN,
+    posProtocolVersionRRLP PosProtocolVersion3GPP OPTIONAL,
+    posProtocolVersionRRC PosProtocolVersion3GPP OPTIONAL,
+    posProtocolVersionTIA801 PosProtocolVersion3GPP2 OPTIONAL,
+    posProtocolVersionLPP PosProtocolVersion3GPP OPTIONAL,
+    ...
+}
+
+PosProtocolVersion3GPP ::= SEQUENCE {
+    majorVersionField INTEGER (0..255),
+    technicalVersionField INTEGER (0..255),
+    editorialVersionField INTEGER (0..255),
+    ...
+}
+
+PosProtocolVersion3GPP2 ::= SEQUENCE (SIZE (1..8)) OF Supported3GPP2PosProtocolVersion
+
+Supported3GPP2PosProtocolVersion ::= SEQUENCE {
+    revisionNumber BIT STRING (SIZE (6)), -- the location standard revision number the SET supports coded according to 3GPP2 C.S0022
+    pointReleaseNumber INTEGER (0..255),
+    internalEditLevel INTEGER (0..255),
+    ...
+}
+
+Ver2-PosTechnology-extension ::= SEQUENCE {
+    gANSSPositionMethods GANSSPositionMethods OPTIONAL,
+    ...
+}
+
+GANSSPositionMethods ::= SEQUENCE (SIZE (1..16)) OF GANSSPositionMethod
+
+GANSSPositionMethod ::= SEQUENCE {
+    ganssId        INTEGER (0..15), -- coding according to parameter definition in section 10.10
+    ganssSBASid    BIT STRING (SIZE (3)) OPTIONAL, -- coding according to parameter definition in section 10.10
+    gANSSPositioningMethodTypes GANSSPositioningMethodTypes,
+    gANSSSignals   GANSSSignals,
+    ...
+}
+
+GANSSPositioningMethodTypes ::= SEQUENCE {
+    setAssisted    BOOLEAN,
+    setBased       BOOLEAN,
+    autonomous     BOOLEAN,
+    ...
+}
+
+Ver2-RequestedAssistData-extension ::= SEQUENCE {
+    ganssRequestedCommonAssistanceDataList GanssRequestedCommonAssistanceDataList OPTIONAL,
+    ganssRequestedGenericAssistanceDataList GanssRequestedGenericAssistanceDataList OPTIONAL,
+    extendedEphemeris ExtendedEphemeris OPTIONAL,
+    extendedEphemerisCheck ExtendedEphCheck OPTIONAL,
+    ...
+}
+
+GanssRequestedCommonAssistanceDataList ::= SEQUENCE {
+    ganssReferenceTime BOOLEAN,
+    ganssIonosphericModel BOOLEAN,
+    ganssAdditionalIonosphericModelForDataID00 BOOLEAN,
+    ganssAdditionalIonosphericModelForDataID11 BOOLEAN,
+    ganssEarthOrientationParameters BOOLEAN,
+    ...
+}
+
+GanssRequestedGenericAssistanceDataList ::= SEQUENCE (SIZE (1..maxGANSS)) OF GanssReqGenericData
+
+GanssReqGenericData ::= SEQUENCE {
+    ganssId        INTEGER (0..15), -- coding according to parameter definition in section 10.10
+    ganssSBASid    BIT STRING (SIZE (3)) OPTIONAL, -- coding according to parameter definition in section 10.10
+    ganssRealTimeIntegrity BOOLEAN,
+    ganssDifferentialCorrection DGANSS-Sig-Id-Req OPTIONAL,
+    ganssAlmanac   BOOLEAN,
+    ganssNavigationModelData GanssNavigationModelData OPTIONAL,
+    ganssTimeModels BIT STRING (SIZE (16)) OPTIONAL,
+    ganssReferenceMeasurementInfo BOOLEAN,
+    ganssDataBits  GanssDataBits OPTIONAL,
+    ganssUTCModel  BOOLEAN,
+    ganssAdditionalDataChoices GanssAdditionalDataChoices OPTIONAL,
+    ganssAuxiliaryInformation BOOLEAN,
+    ganssExtendedEphemeris ExtendedEphemeris OPTIONAL,
+    ganssExtendedEphemerisCheck GanssExtendedEphCheck OPTIONAL,
+    ...
+}
+
+DGANSS-Sig-Id-Req ::= BIT STRING (SIZE (8)) -- coding according to parameter definition in section 10.9
+
+GanssNavigationModelData ::= SEQUENCE {
+    ganssWeek      INTEGER (0..4095),
+    ganssToe       INTEGER (0..167),
+    t-toeLimit     INTEGER (0..15),
+    satellitesListRelatedDataList SatellitesListRelatedDataList OPTIONAL,
+    ...
+}
+
+SatellitesListRelatedDataList ::= SEQUENCE (SIZE (0..maxGANSSSat)) OF SatellitesListRelatedData
+
+SatellitesListRelatedData ::= SEQUENCE {
+    satId          INTEGER (0..63),
+    iod            INTEGER (0..1023),
+    ...
+}
+
+maxGANSS       INTEGER ::= 16
+
+maxGANSSSat    INTEGER ::= 32
+
+GanssDataBits ::= SEQUENCE {
+    ganssTODmin    INTEGER (0..59),
+    reqDataBitAssistanceList ReqDataBitAssistanceList,
+    ...
+}
+
+ReqDataBitAssistanceList ::= SEQUENCE {
+    gnssSignals    GANSSSignals,
+    ganssDataBitInterval INTEGER (0..15),
+    ganssDataBitSatList SEQUENCE (SIZE (1..maxGANSSSat)) OF INTEGER (0..63) OPTIONAL,
+    ...
+}
+
+GanssAdditionalDataChoices ::= SEQUENCE {
+    orbitModelID   INTEGER (0..7) OPTIONAL,
+    clockModelID   INTEGER (0..7) OPTIONAL,
+    utcModelID     INTEGER (0..7) OPTIONAL,
+    almanacModelID INTEGER (0..7) OPTIONAL,
+    ...
+}
+
+ExtendedEphemeris ::= SEQUENCE {
+    validity       INTEGER (1..256), -- Requested validity in 4 hour steps
+    ...
+}
+
+ExtendedEphCheck ::= SEQUENCE {
+    beginTime      SUPL-GPSTime, -- Begin time of ephemeris extension held by SET
+    endTime        SUPL-GPSTime, -- End time of ephemeris extension held by SET
+    ...
+}
+
+GanssExtendedEphCheck ::= SEQUENCE {
+    beginTime      GANSSextEphTime, -- Begin time of ephemeris extension held by SET
+    endTime        GANSSextEphTime, -- End time of ephemeris extension held by SET
+    ...
+}
+
+SUPL-GPSTime ::= SEQUENCE {
+    gPSWeek        INTEGER (0..1023),
+    gPSTOWhour     INTEGER (0..167),
+    ...
+}
+
+GANSSextEphTime ::= SEQUENCE {
+    gANSSday       INTEGER (0..8191),
+    gANSSTODhour   INTEGER (0..23),
+    ...
+}
+
+Ver2-PosPayLoad-extension ::= SEQUENCE {
+    lPPPayload     SEQUENCE (SIZE (1..3)) OF OCTET STRING (SIZE (1..60000)) OPTIONAL,
+    tIA801Payload  SEQUENCE (SIZE (1..3)) OF OCTET STRING (SIZE (1..60000)) OPTIONAL,
+    ...
+}
+
+END

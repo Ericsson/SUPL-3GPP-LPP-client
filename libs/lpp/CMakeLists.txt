@@ -12,7 +12,7 @@ add_library(lpp
 )
 target_include_directories(lpp PUBLIC "include/")
 target_link_libraries(lpp PRIVATE Threads::Threads atomic)
-target_link_libraries(lpp PRIVATE asn1::generated asn1::helper)
+target_link_libraries(lpp PRIVATE asn1::generated::lpp asn1::helper)
 target_link_libraries(lpp PRIVATE loglet supl scheduler)
 
 target_compile_options(lpp PUBLIC "-Wno-unused-private-field")

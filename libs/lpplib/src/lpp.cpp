@@ -59,8 +59,8 @@ bool LPP_Client::supl_start(CellID cell) {
     {
         // LPP Version
         auto lpp_pos_protocol                   = ALLOC_ZERO(PosProtocolVersion3GPP_t);
-        lpp_pos_protocol->majorVersionField     = 16;
-        lpp_pos_protocol->technicalVersionField = 4;
+        lpp_pos_protocol->majorVersionField     = 18;
+        lpp_pos_protocol->technicalVersionField = 1;
         lpp_pos_protocol->editorialVersionField = 0;
 
         auto pos_protocol_ext                   = ALLOC_ZERO(Ver2_PosProtocol_extension);
@@ -143,8 +143,8 @@ bool LPP_Client::supl_send_posinit(CellID cell) {
     {
         // LPP Version
         auto lpp_pos_protocol                   = ALLOC_ZERO(PosProtocolVersion3GPP_t);
-        lpp_pos_protocol->majorVersionField     = 16;
-        lpp_pos_protocol->technicalVersionField = 4;
+        lpp_pos_protocol->majorVersionField     = 18;
+        lpp_pos_protocol->technicalVersionField = 1;
         lpp_pos_protocol->editorialVersionField = 0;
 
         auto pos_protocol_ext                   = ALLOC_ZERO(Ver2_PosProtocol_extension);

@@ -8,7 +8,7 @@ add_library(generator::spartn ALIAS generator_spartn)
 
 target_include_directories(generator_spartn PRIVATE "./" "include/generator/spartn/")
 target_include_directories(generator_spartn PUBLIC "include/")
-target_link_libraries(generator_spartn PRIVATE asn1::generated asn1::helper)
+target_link_libraries(generator_spartn PRIVATE asn1::generated::lpp asn1::helper)
 target_link_libraries(generator_spartn PRIVATE utility)
 
 if (USE_ASAN)

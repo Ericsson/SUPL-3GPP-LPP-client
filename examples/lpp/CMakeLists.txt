@@ -17,7 +17,7 @@ target_link_libraries(example_lpp PRIVATE args)
 target_link_libraries(example_lpp PRIVATE dependency::interface)
 target_link_libraries(example_lpp PRIVATE receiver::ublox)
 target_link_libraries(example_lpp PRIVATE receiver::nmea)
-target_link_libraries(example_lpp PRIVATE asn1::generated asn1::helper)
+target_link_libraries(example_lpp PRIVATE asn1::generated::lpp asn1::helper)
 
 if(${INCLUDE_GENERATOR_RTCM})
     target_compile_definitions(example_lpp PRIVATE "INCLUDE_GENERATOR_RTCM=1")

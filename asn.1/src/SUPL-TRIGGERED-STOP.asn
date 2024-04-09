@@ -1,0 +1,20 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.15 SUPL TRIGGERED STOP
+--
+SUPL-TRIGGERED-STOP DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     Ver2-SUPLTRIGGEREDSTOP;
+
+IMPORTS
+     StatusCode
+          FROM ULP-Components;
+
+Ver2-SUPLTRIGGEREDSTOP ::= SEQUENCE {
+    statusCode     StatusCode OPTIONAL,
+    ...
+}
+
+END

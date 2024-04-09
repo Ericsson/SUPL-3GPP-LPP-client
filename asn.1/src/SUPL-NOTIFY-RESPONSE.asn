@@ -1,0 +1,22 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.10 SUPL NOTIFY RESPONSE
+--
+SUPL-NOTIFY-RESPONSE DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     Ver2-SUPLNOTIFYRESPONSE;
+
+Ver2-SUPLNOTIFYRESPONSE ::= SEQUENCE {
+    notificationResponse NotificationResponse OPTIONAL,
+    ...
+}
+
+NotificationResponse ::= ENUMERATED {
+                   allowed (0),
+                   notAllowed (1),
+                   ...
+               }
+
+END

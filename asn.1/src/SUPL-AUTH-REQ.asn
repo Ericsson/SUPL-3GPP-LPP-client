@@ -1,0 +1,23 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.7 SUPL AUTH REQ
+--
+SUPL-AUTH-REQ DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     SUPLAUTHREQ;
+
+IMPORTS
+     Ver
+          FROM ULP-Components
+     SETCapabilities
+          FROM SUPL-START;
+
+SUPLAUTHREQ ::= SEQUENCE {
+    ver            Ver OPTIONAL,
+    sETCapabilities SETCapabilities OPTIONAL,
+    ...
+}
+
+END

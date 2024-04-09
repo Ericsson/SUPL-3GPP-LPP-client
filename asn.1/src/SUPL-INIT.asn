@@ -1,0 +1,84 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.1 SUPL INIT
+--
+SUPL-INIT DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     SUPLINIT, Notification;
+
+IMPORTS
+     SLPAddress, QoP, PosMethod
+          FROM ULP-Components
+     Ver2-SUPL-INIT-extension
+          FROM ULP-Version-2-message-extensions
+     Ver2-Notification-extension
+          FROM ULP-Version-2-parameter-extensions;
+
+SUPLINIT ::= SEQUENCE {
+    posMethod      PosMethod,
+    notification   Notification OPTIONAL,
+    sLPAddress     SLPAddress OPTIONAL,
+    qoP            QoP OPTIONAL,
+    sLPMode        SLPMode,
+    mAC            MAC OPTIONAL, -- included for backwards compatibility
+    keyIdentity    KeyIdentity OPTIONAL, -- included for backwards compatibility
+    ...,
+    -- version 2 extension element
+    ver2-SUPL-INIT-extension Ver2-SUPL-INIT-extension OPTIONAL
+}
+
+Notification ::= SEQUENCE {
+    notificationType NotificationType,
+    encodingType   EncodingType OPTIONAL,
+    requestorId    OCTET STRING (SIZE (1..maxReqLength)) OPTIONAL,
+    requestorIdType FormatIndicator OPTIONAL,
+    clientName     OCTET STRING (SIZE (1..maxClientLength)) OPTIONAL,
+    clientNameType FormatIndicator OPTIONAL,
+    ...,
+    ver2-Notification-extension Ver2-Notification-extension OPTIONAL
+}
+
+NotificationType ::= ENUMERATED {
+                   noNotificationNoVerification (0),
+                   notificationOnly (1),
+                   notificationAndVerficationAllowedNA (2),
+                   notificationAndVerficationDeniedNA (3),
+                   privacyOverride (4),
+                   ...
+               }
+
+EncodingType ::= ENUMERATED {
+                   ucs2 (0),
+                   gsmDefault (1),
+                   utf8 (2),
+                   ...
+               }
+
+maxReqLength   INTEGER ::= 50
+
+maxClientLength INTEGER ::= 50
+
+FormatIndicator ::= ENUMERATED {
+                   logicalName (0),
+                   e-mailAddress (1),
+                   msisdn (2),
+                   url (3),
+                   sipUrl (4),
+                   min (5),
+                   mdn (6),
+                   iMSPublicidentity (7),
+                   ...
+               }
+
+SLPMode ::= ENUMERATED {
+                   proxy (0),
+                   nonProxy (1)
+               }
+
+MAC ::= BIT STRING (SIZE (64)) -- empty placeholder required for SUPL 1.0 backwards compatibility
+
+KeyIdentity ::= BIT STRING (SIZE (128)) -- empty placeholder required for SUPL 1.0 backwards compatibility
+
+END
