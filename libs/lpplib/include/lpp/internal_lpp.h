@@ -5,8 +5,8 @@
 #include "cell_id.h"
 #include "lpp.h"
 
-#include <LocationInformationType.h>
 #include <CommonIEsRequestLocationInformation.h>
+#include <LocationInformationType.h>
 #include <PeriodicalReportingCriteria.h>
 
 #define LPP_MSG_MAX_COUNT 10
@@ -91,7 +91,7 @@ inline int lpp_get_request_location_interval(LPP_Message* lpp) {
 
 LPP_Message* lpp_PLI_location_estimate(LPP_Transaction*                           transaction,
                                        location_information::LocationInformation* li,
-                                       bool                                       has_information);
+                                       location_information::HaGnssMetrics*       metrics);
 LPP_Message* lpp_PLI_location_measurements(LPP_Transaction*                       transaction,
                                            location_information::ECIDInformation* li,
                                            bool                                   has_information);

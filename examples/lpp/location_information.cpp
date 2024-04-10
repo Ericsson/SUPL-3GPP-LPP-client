@@ -15,7 +15,7 @@ double gOverrideHorizontalConfidence = -1;
 
 using namespace location_information;
 
-bool provide_location_information_callback(UNUSED LocationInformation& location,
+PLI_Result provide_location_information_callback(UNUSED LocationInformation& location,
                                            UNUSED HaGnssMetrics& metrics, UNUSED void* userdata) {
 #if 0
     // Example implementation
@@ -37,24 +37,24 @@ bool provide_location_information_callback(UNUSED LocationInformation& location,
     metrics.age = 0;
     metrics.hdop = 0;
     metrics.vdop = 0;
-    return true;
+    return PLI_Result::LI_AND_METRICS;
 #else
-    return false;
+    return PLI_Result::NOT_AVAILABLE;
 #endif
 }
 
-bool provide_location_information_callback_ublox(UNUSED LocationInformation& location,
+PLI_Result provide_location_information_callback_ublox(UNUSED LocationInformation& location,
                                                  UNUSED HaGnssMetrics& metrics, void* userdata) {
     auto receiver = reinterpret_cast<receiver::ublox::ThreadedReceiver*>(userdata);
-    if (!receiver) return false;
+    if (!receiver) return PLI_Result::NOT_AVAILABLE;
 
     auto nav_pvt = receiver->nav_pvt();
-    if (!nav_pvt) return false;
+    if (!nav_pvt) return PLI_Result::NOT_AVAILABLE;
 
     // TODO(ewasjon): Should we use the system time if the UTC time from u-blox is invalid?
     if (!nav_pvt->valid_time()) {
         printf("u-blox time is invalid\n");
-        return false;
+        return PLI_Result::NOT_AVAILABLE;
     }
 
     auto semi_major = nav_pvt->h_acc();
@@ -99,13 +99,13 @@ bool provide_location_information_callback_ublox(UNUSED LocationInformation& loc
 
     metrics.number_of_satellites = nav_pvt->num_sv();
     metrics.pdop                 = nav_pvt->p_dop();
-    return true;
+    return PLI_Result::LI_AND_METRICS;
 }
 
-bool provide_location_information_callback_nmea(LocationInformation& location,
+PLI_Result provide_location_information_callback_nmea(LocationInformation& location,
                                                 HaGnssMetrics& metrics, void* userdata) {
     auto receiver = reinterpret_cast<receiver::nmea::ThreadedReceiver*>(userdata);
-    if (!receiver) return false;
+    if (!receiver) return PLI_Result::NOT_AVAILABLE;
 
     // NOTE(ewasjon): We require GGA, VTG, and GST message to produce a valid location information,
     // if either is missing we will skip sending a provider location information message.
@@ -113,7 +113,7 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
     auto vtg = receiver->vtg();
     auto gst = receiver->gst();
     if (!gga || !vtg || !gst) {
-        return false;
+        return PLI_Result::NOT_AVAILABLE;
     }
 
     auto semi_major = gst->semi_major();
@@ -155,13 +155,13 @@ bool provide_location_information_callback_nmea(LocationInformation& location,
         break;
     }
 
-    return true;
+    return PLI_Result::LI_AND_METRICS;
 }
 
-bool provide_location_information_callback_fake(LocationInformation&  location,
+PLI_Result provide_location_information_callback_fake(LocationInformation&  location,
                                                 UNUSED HaGnssMetrics& metrics, void* userdata) {
     auto options = reinterpret_cast<LocationInformationOptions*>(userdata);
-    if (!options) return false;
+    if (!options) return PLI_Result::NOT_AVAILABLE;
 
     location.time     = TAI_Time::now();
     location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
@@ -169,7 +169,9 @@ bool provide_location_information_callback_fake(LocationInformation&  location,
         HorizontalAccuracy::from_ellipse(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
 
     metrics.fix_quality = FixQuality::STANDALONE;
-    return true;
+    metrics.age_of_corrections = 0;
+    metrics.number_of_satellites = 1;
+    return PLI_Result::LI_AND_METRICS;
 }
 
 bool provide_ecid_callback(ECIDInformation& ecid, void* userdata) {

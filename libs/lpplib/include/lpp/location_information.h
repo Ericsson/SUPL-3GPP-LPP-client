@@ -5,6 +5,12 @@
 
 namespace location_information {
 
+enum class PLI_Result {
+    NOT_AVAILABLE,
+    LI,
+    LI_AND_METRICS,
+};
+
 template <typename T>
 struct Optional {
     T    value;
