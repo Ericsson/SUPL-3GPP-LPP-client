@@ -1,4 +1,5 @@
 #include "generator.hpp"
+#include "encoder.hpp"
 #include "extract/extract.hpp"
 #include "maybe.hpp"
 #include "messages/1230.hpp"
@@ -7,7 +8,6 @@
 #include "messages/residuals.hpp"
 #include "rtk_data.hpp"
 #include "satellite_id.hpp"
-#include "encoder.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
@@ -280,10 +280,12 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
     return messages;
 }
 
-static RTCM_CONSTEXPR uint16_t LRF_MESSAGE_ID = 83;
+// We are using a undocument RTCM message id (100-1000). Taking 355 as that is the ending of the
+// 3GPP LPP specification 37.355.
+static RTCM_CONSTEXPR uint16_t LRF_MESSAGE_ID = 355;
 
 static Message generate_framing_message(bool multiple_message_bit, uint8_t const* lpp_data,
-                                size_t lpp_data_size) {
+                                        size_t lpp_data_size) {
     auto encoder = Encoder();
     encoder.u16(12, LRF_MESSAGE_ID);
     encoder.u8(4, 0 /* subtype */);
