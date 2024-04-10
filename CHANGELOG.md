@@ -1,7 +1,8 @@
 # Changelog
 
 ## [3.4.*]
-- Added parsing of UBX-RXM-RTCM messages.
+- Added support for UBX-RXM-RTCM messages.
+- Added support for UBX-RXM-SPARTN messages.
 - Added new format option `lrf-uper` to output RTCM framed UPER encoded 3GPP LPP messages.
 
 ## [3.4.6] 2024-04-04

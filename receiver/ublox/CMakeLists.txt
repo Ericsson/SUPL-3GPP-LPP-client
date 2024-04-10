@@ -14,6 +14,7 @@ add_library(receiver_ublox STATIC
     "ubx_ack_ack.cpp"
     "ubx_ack_nak.cpp"
     "ubx_rxm_rtcm.cpp"
+    "ubx_rxm_spartn.cpp"
 )
 add_library(receiver::ublox ALIAS receiver_ublox)
 
