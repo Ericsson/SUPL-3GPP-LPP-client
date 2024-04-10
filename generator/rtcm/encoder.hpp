@@ -21,6 +21,7 @@ public:
     void b(bool value) { u8(1, value ? 1 : 0); }
     void reserve(size_t bits) { u64(bits, 0); }
     void copy(std::vector<uint8_t> buffer);
+    void copy(const uint8_t* buffer, size_t size);
     void checksum();
 
     std::vector<uint8_t> buffer();

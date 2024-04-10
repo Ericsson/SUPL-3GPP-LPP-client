@@ -2,6 +2,7 @@
 
 ## [3.4.*]
 - Added parsing of UBX-RXM-RTCM messages.
+- Added new format option `lrf-uper` to output RTCM framed UPER encoded 3GPP LPP messages.
 
 ## [3.4.6] 2024-04-04
 - You can optionally include/exclude which generators to build by using the CMake options `-DINCLUDE_GENERATOR_*`. By default, RTCM and SPARTN generators are included and the old SPARTN generator is excluded.

@@ -261,7 +261,8 @@ static void transmit(void const* buffer, size_t size) {
     }
 }
 
-static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
+static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message,
+                                     void*) {
     if (gFormat == osr_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
@@ -275,9 +276,63 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
             &buffer);
         auto xer_message = buffer.str();
         transmit(xer_message.data(), xer_message.size());
+    } else if (gFormat == osr_example::Format::ASN1_UPER) {
+        auto octet = client->encode(message);
+        if (octet) {
+            transmit(octet->buf, octet->size);
+
+            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
+        }
     }
 #ifdef INCLUDE_GENERATOR_RTCM
-    else if (gFormat == osr_example::Format::RTCM) {
+    else if (gFormat == osr_example::Format::LRF_UPER) {
+        auto octet = client->encode(message);
+        if (octet) {
+            auto submessages =
+                generator::rtcm::Generator::generate_framing(octet->buf, octet->size);
+
+            if (gPrintRtcm) {
+                size_t length = 0;
+                for (auto& submessage : submessages) {
+                    length += submessage.data().size();
+                }
+
+                printf("LRF: %4zu bytes | ", length);
+                for (auto& submessage : submessages) {
+                    printf("%4i ", submessage.id());
+                }
+                printf("\n");
+            }
+
+            for (auto& submessage : submessages) {
+                auto buffer = submessage.data().data();
+                auto size   = submessage.data().size();
+                transmit(buffer, size);
+            }
+
+            if (gUbloxReceiver) {
+                auto interface = gUbloxReceiver->interface();
+                if (interface) {
+                    for (auto& submessage : submessages) {
+                        auto buffer = submessage.data().data();
+                        auto size   = submessage.data().size();
+                        interface->write(buffer, size);
+                    }
+                }
+            } else if (gNmeaReceiver) {
+                auto interface = gNmeaReceiver->interface();
+                if (interface) {
+                    for (auto& submessage : submessages) {
+                        auto buffer = submessage.data().data();
+                        auto size   = submessage.data().size();
+                        interface->write(buffer, size);
+                    }
+                }
+            }
+
+            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
+        }
+    } else if (gFormat == osr_example::Format::RTCM) {
         auto messages = gGenerator->generate(message, gFilter);
 
         if (gPrintRtcm) {
@@ -337,11 +392,17 @@ void OsrCommand::parse(args::Subparser& parser) {
                                                   args::Options::Single);
 #ifdef INCLUDE_GENERATOR_RTCM
     mFormatArg->HelpDefault("rtcm");
-    mFormatArg->HelpChoices({"rtcm", "xer"});
 #else
     mFormatArg->HelpDefault("xer");
-    mFormatArg->HelpChoices({"xer"});
 #endif
+    mFormatArg->HelpChoices({
+        "xer",
+        "asn1-uper",
+#ifdef INCLUDE_GENERATOR_RTCM
+        "rtcm",
+        "lrf-uper",
+#endif
+    });
 
     mMsmTypeArg = new args::ValueFlag<std::string>(parser, "msm_type", "RTCM MSM type",
                                                    {'y', "msm_type"}, args::Options::Single);
@@ -363,10 +424,14 @@ void OsrCommand::execute(Options options) {
     if (*mFormatArg) {
         if (mFormatArg->Get() == "xer") {
             format = Format::XER;
+        } else if (mFormatArg->Get() == "asn1-uper") {
+            format = Format::ASN1_UPER;
         }
 #ifdef INCLUDE_GENERATOR_RTCM
         else if (mFormatArg->Get() == "rtcm") {
             format = Format::RTCM;
+        } else if (mFormatArg->Get() == "lrf-uper") {
+            format = Format::LRF_UPER;
         }
 #endif
         else {
