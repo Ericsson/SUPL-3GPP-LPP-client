@@ -629,7 +629,9 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
     }
 
     assert(message);
-    if (!supl_send(message)) {
+    auto result = supl_send(message);
+    lpp_destroy(message);
+    if (!result) {
         printf("ERROR: Failed to send LPP message\n");
         return false;
     }

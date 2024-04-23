@@ -16,7 +16,8 @@ double gOverrideHorizontalConfidence = -1;
 using namespace location_information;
 
 PLI_Result provide_location_information_callback(UNUSED LocationInformation& location,
-                                           UNUSED HaGnssMetrics& metrics, UNUSED void* userdata) {
+                                                 UNUSED HaGnssMetrics&       metrics,
+                                                 UNUSED void*                userdata) {
 #if 0
     // Example implementation
     location.tai_time      = TAI_Time::now();
@@ -32,11 +33,11 @@ PLI_Result provide_location_information_callback(UNUSED LocationInformation& loc
     location.vertical_speed_accuracy = 3;
     location.vertical_velocity_direction = VerticalDirection::UP;
 
-    metrics.fixq = FixQuality::MANUAL_INPUT;
-    metrics.sats = 5;
-    metrics.age = 0;
-    metrics.hdop = 0;
-    metrics.vdop = 0;
+    metrics.fixq = FixQuality::RTK_FIX;
+    metrics.sats = 30;
+    metrics.age = 5;
+    metrics.hdop = 10;
+    metrics.vdop = 15;
     return PLI_Result::LI_AND_METRICS;
 #else
     return PLI_Result::NOT_AVAILABLE;
@@ -44,7 +45,8 @@ PLI_Result provide_location_information_callback(UNUSED LocationInformation& loc
 }
 
 PLI_Result provide_location_information_callback_ublox(UNUSED LocationInformation& location,
-                                                 UNUSED HaGnssMetrics& metrics, void* userdata) {
+                                                       UNUSED HaGnssMetrics&       metrics,
+                                                       void*                       userdata) {
     auto receiver = reinterpret_cast<receiver::ublox::ThreadedReceiver*>(userdata);
     if (!receiver) return PLI_Result::NOT_AVAILABLE;
 
@@ -103,7 +105,7 @@ PLI_Result provide_location_information_callback_ublox(UNUSED LocationInformatio
 }
 
 PLI_Result provide_location_information_callback_nmea(LocationInformation& location,
-                                                HaGnssMetrics& metrics, void* userdata) {
+                                                      HaGnssMetrics& metrics, void* userdata) {
     auto receiver = reinterpret_cast<receiver::nmea::ThreadedReceiver*>(userdata);
     if (!receiver) return PLI_Result::NOT_AVAILABLE;
 
@@ -159,7 +161,8 @@ PLI_Result provide_location_information_callback_nmea(LocationInformation& locat
 }
 
 PLI_Result provide_location_information_callback_fake(LocationInformation&  location,
-                                                UNUSED HaGnssMetrics& metrics, void* userdata) {
+                                                      UNUSED HaGnssMetrics& metrics,
+                                                      void*                 userdata) {
     auto options = reinterpret_cast<LocationInformationOptions*>(userdata);
     if (!options) return PLI_Result::NOT_AVAILABLE;
 
@@ -168,9 +171,18 @@ PLI_Result provide_location_information_callback_fake(LocationInformation&  loca
         options->latitude, options->longitude, options->altitude,
         HorizontalAccuracy::from_ellipse(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
 
-    metrics.fix_quality = FixQuality::STANDALONE;
-    metrics.age_of_corrections = 0;
+    location.velocity = VelocityShape::horizontal_vertical_with_uncertainty(10, 0.5, 90, 1, 0.5,
+                                                                            VerticalDirection::Up);
+
+    if(rand() % 2 == 0) {
+        metrics.fix_quality          = FixQuality::RTK_FIX;
+    } else {
+        metrics.fix_quality          = FixQuality::RTK_FLOAT;
+    }
+    metrics.age_of_corrections   = 5;
     metrics.number_of_satellites = 1;
+    metrics.hdop                 = 10;
+    metrics.pdop                 = 15;
     return PLI_Result::LI_AND_METRICS;
 }
 
