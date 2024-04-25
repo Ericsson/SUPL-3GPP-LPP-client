@@ -36,8 +36,8 @@ find_package(OpenSSL REQUIRED)
 endif (USE_OPENSSL)
 
 add_definitions(-D_POSIX_C_SOURCE=200809L)
-add_definitions(-DCLIENT_VERSION="3.4.6")
-add_definitions(-DCLIENT_VERSION_INT=0x030406)
+add_definitions(-DCLIENT_VERSION="3.4.7")
+add_definitions(-DCLIENT_VERSION_INT=0x030407)
 
 if("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
    add_definitions(-DCOMPILER_CANNOT_DEDUCE_UNREACHABLE=1)
