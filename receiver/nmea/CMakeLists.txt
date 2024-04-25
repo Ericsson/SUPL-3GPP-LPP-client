@@ -17,14 +17,10 @@ target_link_libraries(receiver_nmea PRIVATE utility)
 
 if(${RECEIVER_NMEA_THREADED})
 target_compile_definitions(receiver_nmea PUBLIC RECEIVER_NMEA_THREADED=1)
-else()
-target_compile_definitions(receiver_nmea PUBLIC RECEIVER_NMEA_THREADED=0)
 endif()
 
 if(${RECEIVER_NMEA_DEBUG})
 target_compile_definitions(receiver_nmea PUBLIC RECEIVER_NMEA_DEBUG=1)
-else()
-target_compile_definitions(receiver_nmea PUBLIC RECEIVER_NMEA_DEBUG=0)
 endif()
 
 setup_target(receiver_nmea)

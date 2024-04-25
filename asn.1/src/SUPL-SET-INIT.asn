@@ -1,0 +1,24 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.11 SUPL SET INIT
+--
+SUPL-SET-INIT DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     Ver2-SUPLSETINIT;
+
+IMPORTS
+     SETId, QoP
+          FROM ULP-Components
+     ApplicationID
+          FROM Ver2-ULP-Components;
+
+Ver2-SUPLSETINIT ::= SEQUENCE {
+    targetSETID    SETId,  -- Target SETid identifies the target SET to be located
+    qoP            QoP OPTIONAL,
+    applicationID  ApplicationID OPTIONAL,
+    ...
+}
+
+END

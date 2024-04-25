@@ -2,9 +2,12 @@
 #include <chrono>
 #include <lpp/cell_id.h>
 #include <vector>
+
 #include "asn_helper.h"
 #include "asnlib.h"
 #include "location_information.h"
+
+#include <LocationInformationType.h>
 
 #define AD_REQUEST_INVALID (static_cast<LPP_Client::AD_Request>(0))
 
@@ -19,8 +22,8 @@ class LPP_Client {
 public:
     typedef int32_t AD_Request;
     typedef void (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
-    typedef bool (*PLI_Callback)(location_information::LocationInformation&,
-                                 location_information::HaGnssMetrics&, void*);
+    typedef location_information::PLI_Result (*PLI_Callback)(
+        location_information::LocationInformation&, location_information::HaGnssMetrics&, void*);
     typedef bool (*PECID_Callback)(location_information::ECIDInformation&, void*);
 
     struct ProvideLI {
@@ -37,12 +40,12 @@ public:
 
     void set_identity_msisdn(unsigned long long msisdn);
     void set_identity_imsi(unsigned long long imsi);
-    void set_identity_ipv4(const std::string& ipv4);
+    void set_identity_ipv4(std::string const& ipv4);
 
     // Open connection to location server.
     // The 'cell' arguments is required for backwards compatibility and SHOULD
     // match the cell-id used in the first request_assistance_data call.
-    bool connect(const std::string& host, int port, bool use_ssl, CellID cell);
+    bool connect(std::string const& host, int port, bool use_ssl, CellID cell);
     bool disconnect();
 
     // Run process loop of receive/send LPP messages.
@@ -88,7 +91,7 @@ private:
     bool supl_send_posinit(CellID cell);
     bool supl_receive(std::vector<LPP_Message*>& messages, int timeout_ms, bool blocking);
     bool supl_send(LPP_Message* message);
-    bool supl_send(const std::vector<LPP_Message*>& messages);
+    bool supl_send(std::vector<LPP_Message*> const& messages);
 
     LPP_Transaction new_transaction();
 

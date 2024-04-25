@@ -1,9 +1,12 @@
 # Changelog
 
-## [3.4.*]
+## [3.4.7] 2024-04-25
 - Added support for UBX-RXM-RTCM messages.
 - Added support for UBX-RXM-SPARTN messages.
 - Added new format option `lrf-uper` to output RTCM framed UPER encoded 3GPP LPP messages.
+- Updated 3GPP LPP version from Release 16.4.0 to Release 18.1.0.
+- HA-GNSS-Metrics data is now included in the `ProvideLocationInformation` message.
+- Fix memory leak from ProvideLocationInformation.
 
 ## [3.4.6] 2024-04-04
 - You can optionally include/exclude which generators to build by using the CMake options `-DINCLUDE_GENERATOR_*`. By default, RTCM and SPARTN generators are included and the old SPARTN generator is excluded.
@@ -17,7 +20,7 @@
 - Building with OpenSSL support is now off by default. To enable it, use `-DUSE_OPENSSL=ON` when building with CMake.
 - Experimental changes can now be toggled with `-DEXPERIMENTAL=ON` when building with CMake.
 
-## [3.4.4] 2024-03-06
+## [3.4.4] 2024-03-06   
 - Fixed message nullptr exception.
 - IMSI and MSISDN used `unsigned long` which doesn't have enough bits to store all possible values. Changed to `unsigned long long`.
 - Added support to use 5G NR cells in addition to LTE cells.

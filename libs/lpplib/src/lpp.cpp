@@ -2,7 +2,10 @@
 #include "internal_lpp.h"
 #include "supl.h"
 
+#include <GNSS-ID.h>
 #include <OCTET_STRING.h>
+#include <PosProtocolVersion3GPP.h>
+#include <Ver2-PosProtocol-extension.h>
 #include <utility/cpp.h>
 
 LPP_Client::LPP_Client(bool segmentation) {
@@ -39,7 +42,7 @@ void LPP_Client::set_identity_imsi(unsigned long long imsi) {
     mSUPL->set_session(SUPL_Session::imsi(0, imsi, mSuplIdentityFix));
 }
 
-void LPP_Client::set_identity_ipv4(const std::string& ipv4) {
+void LPP_Client::set_identity_ipv4(std::string const& ipv4) {
     if (connected) return;
     mSUPL->set_session(SUPL_Session::ip_address(0, ipv4));
 }
@@ -56,8 +59,8 @@ bool LPP_Client::supl_start(CellID cell) {
     {
         // LPP Version
         auto lpp_pos_protocol                   = ALLOC_ZERO(PosProtocolVersion3GPP_t);
-        lpp_pos_protocol->majorVersionField     = 16;
-        lpp_pos_protocol->technicalVersionField = 4;
+        lpp_pos_protocol->majorVersionField     = 18;
+        lpp_pos_protocol->technicalVersionField = 1;
         lpp_pos_protocol->editorialVersionField = 0;
 
         auto pos_protocol_ext                   = ALLOC_ZERO(Ver2_PosProtocol_extension);
@@ -108,7 +111,6 @@ bool LPP_Client::supl_start(CellID cell) {
         lte_cell->rsrpResult          = OPTIONAL_MISSING;
         lte_cell->rsrqResult          = OPTIONAL_MISSING;
         lte_cell->measResultListEUTRA = OPTIONAL_MISSING;
-    
     }
 
     return mSUPL->send(message);
@@ -140,8 +142,8 @@ bool LPP_Client::supl_send_posinit(CellID cell) {
     {
         // LPP Version
         auto lpp_pos_protocol                   = ALLOC_ZERO(PosProtocolVersion3GPP_t);
-        lpp_pos_protocol->majorVersionField     = 16;
-        lpp_pos_protocol->technicalVersionField = 4;
+        lpp_pos_protocol->majorVersionField     = 18;
+        lpp_pos_protocol->technicalVersionField = 1;
         lpp_pos_protocol->editorialVersionField = 0;
 
         auto pos_protocol_ext                   = ALLOC_ZERO(Ver2_PosProtocol_extension);
@@ -214,7 +216,7 @@ bool LPP_Client::supl_send(LPP_Message* message) {
     return supl_send(messages);
 }
 
-bool LPP_Client::supl_send(const std::vector<LPP_Message*>& messages) {
+bool LPP_Client::supl_send(std::vector<LPP_Message*> const& messages) {
     auto message = mSUPL->create_message(UlpMessage_PR_msSUPLPOS);
 
     {
@@ -248,7 +250,7 @@ LPP_Message* LPP_Client::decode(OCTET_STRING* data) {
     return lpp_decode(data);
 }
 
-bool LPP_Client::connect(const std::string& host, int port, bool use_ssl, CellID supl_cell) {
+bool LPP_Client::connect(std::string const& host, int port, bool use_ssl, CellID supl_cell) {
 #if DEBUG_LPP_LIB
     printf("DEBUG: Connecting to SUPL server %s:%d\n", host.c_str(), port);
 #endif
@@ -363,7 +365,8 @@ bool LPP_Client::process() {
 
         std::chrono::seconds update_interval{};
         if (mLocationUpdateUnlocked) {
-            update_interval = duration_cast<seconds>(std::chrono::milliseconds(provide_li.interval));
+            update_interval =
+                duration_cast<seconds>(std::chrono::milliseconds(provide_li.interval));
         } else {
             update_interval = std::chrono::seconds(1);
         }
@@ -599,12 +602,20 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
     if (pli->type == LocationInformationType_locationEstimateRequired) {
         LocationInformation li{};
         HaGnssMetrics       metrics{};
-        bool                has_information = false;
-        if (pli_callback && pli_callback(li, metrics, pli_userdata)) {
-            has_information = true;
+
+        LocationInformation* li_ptr      = nullptr;
+        HaGnssMetrics*       metrics_ptr = nullptr;
+        if (pli_callback) {
+            auto result = pli_callback(li, metrics, pli_userdata);
+            if (result == PLI_Result::LI) {
+                li_ptr = &li;
+            } else if (result == PLI_Result::LI_AND_METRICS) {
+                li_ptr      = &li;
+                metrics_ptr = &metrics;
+            }
         }
 
-        message = lpp_PLI_location_estimate(&pli->transaction, &li, has_information);
+        message = lpp_PLI_location_estimate(&pli->transaction, li_ptr, metrics_ptr);
     } else if (pli->type == LocationInformationType_locationMeasurementsRequired) {
         ECIDInformation ecid{};
         bool            has_information = false;
@@ -618,7 +629,9 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
     }
 
     assert(message);
-    if (!supl_send(message)) {
+    auto result = supl_send(message);
+    lpp_destroy(message);
+    if (!result) {
         printf("ERROR: Failed to send LPP message\n");
         return false;
     }

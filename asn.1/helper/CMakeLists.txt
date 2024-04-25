@@ -6,7 +6,7 @@ add_library(asn1::helper ALIAS asn1_helper)
 
 target_include_directories(asn1_helper PRIVATE "./" "include/asn.1")
 target_include_directories(asn1_helper PUBLIC "include/")
-target_link_libraries(asn1_helper PRIVATE asn1::generated)
+target_link_libraries(asn1_helper PUBLIC asn1::generated::lpp asn1::generated::supl asn1::skeleton)
 
 if (USE_ASAN)
 target_compile_options(asn1_helper PRIVATE -fsanitize=address,undefined,leak)

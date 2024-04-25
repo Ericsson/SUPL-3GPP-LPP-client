@@ -14,8 +14,20 @@
 #include <GNSS-SSR-OrbitCorrections-r15.h>
 #include <GNSS-SSR-PhaseBias-r16.h>
 #include <GNSS-SSR-URA-r16.h>
+#include <SSR-ClockCorrectionList-r15.h>
+#include <SSR-ClockCorrectionSatelliteElement-r15.h>
+#include <SSR-CodeBiasSatElement-r15.h>
+#include <SSR-CodeBiasSatList-r15.h>
+#include <SSR-CodeBiasSignalElement-r15.h>
+#include <SSR-CodeBiasSignalList-r15.h>
 #include <SSR-OrbitCorrectionList-r15.h>
 #include <SSR-OrbitCorrectionSatelliteElement-r15.h>
+#include <SSR-PhaseBiasSatElement-r16.h>
+#include <SSR-PhaseBiasSatList-r16.h>
+#include <SSR-PhaseBiasSignalElement-r16.h>
+#include <SSR-PhaseBiasSignalList-r16.h>
+#include <SSR-URA-SatElement-r16.h>
+#include <SSR-URA-SatList-r16.h>
 #pragma GCC diagnostic pop
 
 #include <algorithm>

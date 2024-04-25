@@ -1,0 +1,121 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.3 Messsage Extensions (SUPL Version 2)
+--
+ULP-Version-2-message-extensions DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     Ver2-SUPL-INIT-extension, Ver2-SUPL-START-extension, Ver2-SUPL-RESPONSE-extension, Ver2-SUPL-POS-INIT-extension, Ver2-SUPL-POS-extension, Ver2-SUPL-END-extension;
+
+IMPORTS
+     SLPAddress, Position, Ver
+          FROM ULP-Components
+     SETCapabilities
+          FROM SUPL-START
+     SupportedNetworkInformation, GNSSPosTechnology, MultipleLocationIds, UTRAN-GPSReferenceTimeResult, UTRAN-GANSSReferenceTimeResult, UTRAN-GPSReferenceTimeAssistance, UTRAN-GANSSReferenceTimeAssistance, SPCSETKey, SPCTID, SPCSETKeylifetime, ThirdParty, ApplicationID
+          FROM Ver2-ULP-Components
+     TriggerType
+          FROM SUPL-TRIGGERED-START;
+
+Ver2-SUPL-INIT-extension ::= SEQUENCE {
+    notificationMode NotificationMode OPTIONAL,
+    supportedNetworkInformation SupportedNetworkInformation OPTIONAL,
+    triggerType    TriggerType OPTIONAL,
+    e-SLPAddress   SLPAddress OPTIONAL,
+    historicReporting HistoricReporting OPTIONAL,
+    protectionLevel ProtectionLevel OPTIONAL,
+    gnssPosTechnology GNSSPosTechnology OPTIONAL,
+    minimumMajorVersion INTEGER (0..255) OPTIONAL,
+    ...
+}
+
+NotificationMode ::= ENUMERATED {
+                   normal (0),
+                   basedOnLocation (1),
+                   ...
+               }
+
+HistoricReporting ::= SEQUENCE {
+    allowedReportingType AllowedReportingType,
+    reportingCriteria ReportingCriteria OPTIONAL,
+    ...
+}
+
+AllowedReportingType ::= ENUMERATED {
+                   positionsOnly (0),
+                   measurementsOnly (1),
+                   positionsAndMeasurements (2),
+                   ...
+               }
+
+ReportingCriteria ::= SEQUENCE {
+    timeWindow     TimeWindow OPTIONAL,
+    maxNumberofReports INTEGER (1..65536) OPTIONAL,
+    minTimeInterval INTEGER (1..86400) OPTIONAL,
+    ...
+}
+
+TimeWindow ::= SEQUENCE {
+    startTime      INTEGER (-525600..-1), -- Time in minutes
+    stopTime       INTEGER (-525599..0)
+} -- Time in minutes
+
+ProtectionLevel ::= SEQUENCE {
+    protlevel      ProtLevel,
+    basicProtectionParams BasicProtectionParams OPTIONAL,
+    ...
+}
+
+ProtLevel ::= ENUMERATED {
+                   nullProtection (0),
+                   basicProtection (1),
+                   ...
+               }
+
+BasicProtectionParams ::= SEQUENCE {
+    keyIdentifier  OCTET STRING (SIZE (8)),
+    basicReplayCounter INTEGER (0..65535),
+    basicMAC       BIT STRING (SIZE (32)),
+    ...
+}
+
+Ver2-SUPL-START-extension ::= SEQUENCE {
+    multipleLocationIds MultipleLocationIds OPTIONAL,
+    thirdParty     ThirdParty OPTIONAL,
+    applicationID  ApplicationID OPTIONAL,
+    position       Position OPTIONAL,
+    ...
+}
+
+Ver2-SUPL-RESPONSE-extension ::= SEQUENCE {
+    supportedNetworkInformation SupportedNetworkInformation OPTIONAL,
+    sPCSETKey      SPCSETKey OPTIONAL,
+    sPCTID         SPCTID OPTIONAL,
+    sPCSETKeylifetime SPCSETKeylifetime OPTIONAL,
+    initialApproximateposition Position OPTIONAL,
+    gnssPosTechnology GNSSPosTechnology OPTIONAL,
+    ...
+}
+
+Ver2-SUPL-POS-INIT-extension ::= SEQUENCE {
+    multipleLocationIds MultipleLocationIds OPTIONAL,
+    utran-GPSReferenceTimeResult UTRAN-GPSReferenceTimeResult OPTIONAL,
+    utran-GANSSReferenceTimeResult UTRAN-GANSSReferenceTimeResult OPTIONAL,
+    ...
+}
+
+Ver2-SUPL-POS-extension ::= SEQUENCE {
+    utran-GPSReferenceTimeAssistance UTRAN-GPSReferenceTimeAssistance OPTIONAL,
+    utran-GPSReferenceTimeResult UTRAN-GPSReferenceTimeResult OPTIONAL,
+    utran-GANSSReferenceTimeAssistance UTRAN-GANSSReferenceTimeAssistance OPTIONAL,
+    utran-GANSSReferenceTimeResult UTRAN-GANSSReferenceTimeResult OPTIONAL,
+    ...
+}
+
+Ver2-SUPL-END-extension ::= SEQUENCE {
+    sETCapabilities SETCapabilities OPTIONAL,
+    ...
+}
+
+END

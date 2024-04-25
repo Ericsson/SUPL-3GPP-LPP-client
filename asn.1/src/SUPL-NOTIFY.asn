@@ -1,0 +1,20 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.9 SUPL NOTIFY
+--
+SUPL-NOTIFY DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     Ver2-SUPLNOTIFY;
+
+IMPORTS
+     Notification
+          FROM SUPL-INIT;
+
+Ver2-SUPLNOTIFY ::= SEQUENCE {
+    notification   Notification,
+    ...
+}
+
+END

@@ -4,6 +4,8 @@
 #include <iostream>
 #include <sstream>
 
+#include <NCGI-r15.h>
+
 static void BIT_STRING_initialize(BIT_STRING_s* bit_string, size_t bits) {
     BIT_STRING_free(&asn_DEF_BIT_STRING, bit_string, ASFM_FREE_UNDERLYING_AND_RESET);
 

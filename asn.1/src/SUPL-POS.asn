@@ -1,0 +1,35 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.5 SUPL POS
+--
+SUPL-POS DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     SUPLPOS;
+
+IMPORTS
+     ULP-Velocity
+          FROM ULP-Components
+     Ver2-SUPL-POS-extension
+          FROM ULP-Version-2-message-extensions
+     Ver2-PosPayLoad-extension
+          FROM ULP-Version-2-parameter-extensions;
+
+SUPLPOS ::= SEQUENCE {
+    posPayLoad     PosPayLoad,
+    velocity       ULP-Velocity OPTIONAL,
+    ...,
+    -- version 2 extension element
+    ver2-SUPL-POS-extension Ver2-SUPL-POS-extension OPTIONAL
+}
+
+PosPayLoad ::= CHOICE {
+    tia801payload  OCTET STRING (SIZE (1..8192)),
+    rrcPayload     OCTET STRING (SIZE (1..8192)),
+    rrlpPayload    OCTET STRING (SIZE (1..8192)),
+    ...,
+    ver2-PosPayLoad-extension Ver2-PosPayLoad-extension
+}
+
+END

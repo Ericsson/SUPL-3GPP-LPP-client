@@ -1,0 +1,35 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.3 SUPL RESPONSE
+--
+SUPL-RESPONSE DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     SUPLRESPONSE;
+
+IMPORTS
+     PosMethod, SLPAddress
+          FROM ULP-Components
+     Ver2-SUPL-RESPONSE-extension
+          FROM ULP-Version-2-message-extensions;
+
+SUPLRESPONSE ::= SEQUENCE {
+    posMethod      PosMethod,
+    sLPAddress     SLPAddress OPTIONAL,
+    sETAuthKey     SETAuthKey OPTIONAL, -- included for backwards compatibility
+    keyIdentity4   KeyIdentity4 OPTIONAL, -- included for backwards compatibility
+    ...,
+    -- version 2 extension element
+    ver2-SUPL-RESPONSE-extension Ver2-SUPL-RESPONSE-extension OPTIONAL
+}
+
+SETAuthKey ::= CHOICE {
+    shortKey       BIT STRING (SIZE (128)),
+    longKey        BIT STRING (SIZE (256)),
+    ...
+}
+
+KeyIdentity4 ::= BIT STRING (SIZE (128))
+
+END

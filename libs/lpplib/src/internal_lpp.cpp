@@ -3,6 +3,22 @@
 #include "lpp.h"
 
 #include <A-GNSS-ProvideLocationInformation.h>
+#include <CellGlobalIdEUTRA-AndUTRA.h>
+#include <CommonIEsAbort.h>
+#include <CommonIEsProvideAssistanceData.h>
+#include <CommonIEsProvideLocationInformation.h>
+#include <ECID-Error.h>
+#include <ECID-ProvideLocationInformation.h>
+#include <ECID-SignalMeasurementInformation.h>
+#include <GNSS-LocationInformation.h>
+#include <GNSS-SystemTime.h>
+#include <HA-GNSS-Metrics-r17.h>
+#include <LocationCoordinates.h>
+#include <LocationError.h>
+#include <MeasuredResultsElement.h>
+#include <MeasuredResultsList.h>
+#include <PeriodicAssistanceDataControlParameters-r15.h>
+#include <Velocity.h>
 #include <math.h>
 #include <time.h>
 #include <utility/time.h>
@@ -219,7 +235,7 @@ static long encode_confidence(double confidence) {
     return value;
 }
 
-static LocationCoordinates_t* encode_haepue(const location_information::LocationShape& shape) {
+static LocationCoordinates_t* encode_haepue(location_information::LocationShape const& shape) {
     auto location_coordinates = ALLOC_ZERO(LocationCoordinates_t);
     location_coordinates->present =
         LocationCoordinates_PR_highAccuracyEllipsoidPointWithUncertaintyEllipse_v1510;
@@ -238,7 +254,7 @@ static LocationCoordinates_t* encode_haepue(const location_information::Location
     return location_coordinates;
 }
 
-static LocationCoordinates_t* encode_haepaue(const location_information::LocationShape& shape) {
+static LocationCoordinates_t* encode_haepaue(location_information::LocationShape const& shape) {
     auto location_coordinates = ALLOC_ZERO(LocationCoordinates_t);
     location_coordinates->present =
         LocationCoordinates_PR_highAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_v1510;
@@ -264,7 +280,7 @@ static LocationCoordinates_t* encode_haepaue(const location_information::Locatio
 }
 
 static LocationCoordinates_t*
-lpp_LocationCoordinates(const location_information::LocationShape& shape) {
+lpp_LocationCoordinates(location_information::LocationShape const& shape) {
     using namespace location_information;
 
     switch (shape.kind) {
@@ -300,7 +316,7 @@ static long encode_bearing(double bearing) {
     return value;
 }
 
-static Velocity_t* lpp_HorizontalVelocity(const location_information::VelocityShape& shape) {
+static Velocity_t* lpp_HorizontalVelocity(location_information::VelocityShape const& shape) {
     auto element     = ALLOC_ZERO(Velocity_t);
     element->present = Velocity_PR_horizontalVelocity;
 
@@ -311,7 +327,7 @@ static Velocity_t* lpp_HorizontalVelocity(const location_information::VelocitySh
 }
 
 static Velocity_t*
-lpp_HorizontalVelocityWithUncertainty(const location_information::VelocityShape& shape) {
+lpp_HorizontalVelocityWithUncertainty(location_information::VelocityShape const& shape) {
     auto element     = ALLOC_ZERO(Velocity_t);
     element->present = Velocity_PR_horizontalVelocityWithUncertainty;
 
@@ -323,7 +339,7 @@ lpp_HorizontalVelocityWithUncertainty(const location_information::VelocityShape&
 }
 
 static Velocity_t*
-lpp_HorizontalWithVerticalVelocity(const location_information::VelocityShape& shape) {
+lpp_HorizontalWithVerticalVelocity(location_information::VelocityShape const& shape) {
     using namespace location_information;
 
     auto element     = ALLOC_ZERO(Velocity_t);
@@ -340,7 +356,7 @@ lpp_HorizontalWithVerticalVelocity(const location_information::VelocityShape& sh
 }
 
 static Velocity_t*
-lpp_HorizontalWithVerticalVelocityAndUncertainty(const location_information::VelocityShape& shape) {
+lpp_HorizontalWithVerticalVelocityAndUncertainty(location_information::VelocityShape const& shape) {
     using namespace location_information;
 
     auto element     = ALLOC_ZERO(Velocity_t);
@@ -359,7 +375,7 @@ lpp_HorizontalWithVerticalVelocityAndUncertainty(const location_information::Vel
     return element;
 }
 
-static Velocity_t* lpp_Velocity(const location_information::VelocityShape& shape) {
+static Velocity_t* lpp_Velocity(location_information::VelocityShape const& shape) {
     using namespace location_information;
 
     switch (shape.kind) {
@@ -375,7 +391,7 @@ static Velocity_t* lpp_Velocity(const location_information::VelocityShape& shape
 }
 
 static CommonIEsProvideLocationInformation_t::CommonIEsProvideLocationInformation__ext2*
-lpp_PLI_CIE_ext2(const location_information::LocationInformation& location) {
+lpp_PLI_CIE_ext2(location_information::LocationInformation const& location) {
     auto ext2 = ALLOC_ZERO(
         CommonIEsProvideLocationInformation_t::CommonIEsProvideLocationInformation__ext2);
     ext2->locationSource_r13 =
@@ -392,21 +408,23 @@ lpp_PLI_CIE_ext2(const location_information::LocationInformation& location) {
 }
 
 static CommonIEsProvideLocationInformation_t* lpp_PLI_CommonIEsProvideLocationInformation(
-    const location_information::LocationInformation& location, bool has_information) {
+    location_information::LocationInformation const* location,
+    location_information::HaGnssMetrics const*       metrics
+) {
     auto CIE_PLI = ALLOC_ZERO(CommonIEsProvideLocationInformation_t);
 
-    if (has_information) {
-        if (location.location.has_value()) {
-            CIE_PLI->locationEstimate = lpp_LocationCoordinates(location.location.const_value());
+    if (location) {
+        if (location->location.has_value()) {
+            CIE_PLI->locationEstimate = lpp_LocationCoordinates(location->location.const_value());
         }
 
-        if (location.velocity.has_value()) {
-            CIE_PLI->velocityEstimate = lpp_Velocity(location.velocity.const_value());
+        if (location->velocity.has_value()) {
+            CIE_PLI->velocityEstimate = lpp_Velocity(location->velocity.const_value());
         }
 
-        CIE_PLI->ext2 = lpp_PLI_CIE_ext2(location);
+        CIE_PLI->ext2 = lpp_PLI_CIE_ext2(*location);
     } else {
-        auto LE                  = ALLOC_ZERO(LocationError_t);
+        auto LE                  = ALLOC_ZERO(LocationError);
         LE->locationfailurecause = LocationFailureCause_periodicLocationMeasurementsNotAvailable;
         CIE_PLI->locationError   = LE;
     }
@@ -414,8 +432,47 @@ static CommonIEsProvideLocationInformation_t* lpp_PLI_CommonIEsProvideLocationIn
     return CIE_PLI;
 }
 
+static HA_GNSS_Metrics_r17*
+lpp_ha_GNSS_Metrics_r17(location_information::HaGnssMetrics const& metrics) {
+    auto element                    = ALLOC_ZERO(HA_GNSS_Metrics_r17);
+    element->nrOfUsedSatellites_r17 = metrics.number_of_satellites;
+
+    switch (metrics.fix_quality) {
+    case location_information::FixQuality::RTK_FIX: {
+        element->fixType_r17  = ALLOC_ZERO(long);
+        *element->fixType_r17 = HA_GNSS_Metrics_r17__fixType_r17_carrier_phase_fix;
+    } break;
+    case location_information::FixQuality::RTK_FLOAT: {
+        element->fixType_r17  = ALLOC_ZERO(long);
+        *element->fixType_r17 = HA_GNSS_Metrics_r17__fixType_r17_carrier_phase_float;
+    } break;
+    default: break;
+    }
+
+    if (metrics.age_of_corrections.has_value() && metrics.age_of_corrections.const_value() >= 0 &&
+        metrics.age_of_corrections.const_value() < 1000.0) {
+        element->age_r17  = ALLOC_ZERO(long);
+        *element->age_r17 = static_cast<long>(metrics.age_of_corrections.const_value() / 0.1);
+    }
+
+    if (metrics.hdop.has_value() && metrics.hdop.const_value() >= 0.1 &&
+        metrics.hdop.const_value() < 2560) {
+        element->hdopi_r17  = ALLOC_ZERO(long);
+        *element->hdopi_r17 = static_cast<long>(metrics.hdop.const_value() / 0.1);
+    }
+
+    if (metrics.pdop.has_value() && metrics.pdop.const_value() >= 0.1 &&
+        metrics.pdop.const_value() < 2560) {
+        element->pdopi_r17  = ALLOC_ZERO(long);
+        *element->pdopi_r17 = static_cast<long>(metrics.pdop.const_value() / 0.1);
+    }
+
+    return element;
+}
+
 static GNSS_LocationInformation*
-lpp_LocationInformation(const location_information::LocationInformation& location) {
+lpp_LocationInformation(location_information::LocationInformation const& location,
+                        location_information::HaGnssMetrics const*       metrics) {
     auto  location_information = ALLOC_ZERO(GNSS_LocationInformation);
     auto& mrt                  = location_information->measurementReferenceTime;
 
@@ -438,23 +495,32 @@ lpp_LocationInformation(const location_information::LocationInformation& locatio
         .set(GNSS_ID_Bitmap__gnss_ids_galileo)
         .into_bit_string(6, &location_information->agnss_List.gnss_ids);
 
+    if (metrics) {
+        auto ha_GNSS_Metrics_r17 = lpp_ha_GNSS_Metrics_r17(*metrics);
+        if (ha_GNSS_Metrics_r17) {
+            auto ext1 = ALLOC_ZERO(GNSS_LocationInformation::GNSS_LocationInformation__ext1);
+            ext1->ha_GNSS_Metrics_r17  = ha_GNSS_Metrics_r17;
+            location_information->ext1 = ext1;
+        }
+    }
+
     return location_information;
 }
 
 static A_GNSS_ProvideLocationInformation*
-lpp_PLI_A_GNSS_ProvideLocationInformation(const location_information::LocationInformation& location,
-                                          bool has_information) {
-    if (!has_information) return nullptr;
+lpp_PLI_A_GNSS_ProvideLocationInformation(location_information::LocationInformation const* location,
+                                          location_information::HaGnssMetrics const* metrics) {
+    if (!location) return nullptr;
 
     auto provide_location_information = ALLOC_ZERO(A_GNSS_ProvideLocationInformation);
-    provide_location_information->gnss_LocationInformation = lpp_LocationInformation(location);
-
+    provide_location_information->gnss_LocationInformation =
+        lpp_LocationInformation(*location, metrics);
     return provide_location_information;
 }
 
 LPP_Message* lpp_PLI_location_estimate(LPP_Transaction*                           transaction,
                                        location_information::LocationInformation* li,
-                                       bool                                       has_information) {
+                                       location_information::HaGnssMetrics*       metrics) {
     //
     // Init body
     //
@@ -468,10 +534,9 @@ LPP_Message* lpp_PLI_location_estimate(LPP_Transaction*                         
         &body->choice.c1.choice.provideLocationInformation.criticalExtensions.choice.c1.choice
              .provideLocationInformation_r9;
 
-    auto CIE_PLI = lpp_PLI_CommonIEsProvideLocationInformation(*li, has_information);
+    auto CIE_PLI = lpp_PLI_CommonIEsProvideLocationInformation(li, metrics);
     PLI->commonIEsProvideLocationInformation = CIE_PLI;
-    PLI->a_gnss_ProvideLocationInformation =
-        lpp_PLI_A_GNSS_ProvideLocationInformation(*li, has_information);
+    PLI->a_gnss_ProvideLocationInformation = lpp_PLI_A_GNSS_ProvideLocationInformation(li, metrics);
 
     return lpp;
 }

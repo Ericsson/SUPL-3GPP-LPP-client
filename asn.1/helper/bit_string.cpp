@@ -86,6 +86,7 @@ int64_t BitString::as_int64() const {
     return *reinterpret_cast<int64_t*>(&value);
 }
 
+#if 0
 std::string BitString::as_string() const {
     std::stringstream stream;
 
@@ -159,7 +160,7 @@ std::string BitString::as_string() const {
     delete[] data;
     return stream.str();
 }
-
+#endif
 #endif
 
 static void BIT_STRING_initialize(BIT_STRING_s* bit_string, size_t bits) {

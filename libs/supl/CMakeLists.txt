@@ -8,7 +8,7 @@ add_library(supl
 )
 target_include_directories(supl PUBLIC "include/")
 target_link_libraries(supl PRIVATE Threads::Threads atomic)
-target_link_libraries(supl PRIVATE asn1::generated asn1::helper)
+target_link_libraries(supl PRIVATE asn1::generated::supl asn1::helper)
 target_link_libraries(supl PRIVATE loglet)
 
 target_compile_options(supl PUBLIC "-Wno-unused-private-field")

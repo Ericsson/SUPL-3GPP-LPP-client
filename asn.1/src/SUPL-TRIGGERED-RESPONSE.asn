@@ -1,0 +1,61 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.13 SUPL TRIGGERED RESPONSE
+--
+SUPL-TRIGGERED-RESPONSE DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     Ver2-SUPLTRIGGEREDRESPONSE;
+
+IMPORTS
+     PosMethod, SLPAddress
+          FROM ULP-Components
+     SupportedNetworkInformation, SPCSETKey, SPCTID, SPCSETKeylifetime, GNSSPosTechnology
+          FROM Ver2-ULP-Components
+     TriggerParams
+          FROM SUPL-TRIGGERED-START;
+
+Ver2-SUPLTRIGGEREDRESPONSE ::= SEQUENCE {
+    posMethod      PosMethod,
+    triggerParams  TriggerParams OPTIONAL,
+    sLPAddress     SLPAddress OPTIONAL,
+    supportedNetworkInformation SupportedNetworkInformation OPTIONAL,
+    reportingMode  ReportingMode OPTIONAL,
+    sPCSETKey      SPCSETKey OPTIONAL,
+    sPCTID         SPCTID OPTIONAL,
+    sPCSETKeylifetime SPCSETKeylifetime OPTIONAL,
+    gnssPosTechnology GNSSPosTechnology OPTIONAL,
+    ...
+}
+
+ReportingMode ::= SEQUENCE {
+    repMode        RepMode,
+    batchRepConditions BatchRepConditions OPTIONAL, -- only used for batch reporting
+    batchRepType   BatchRepType OPTIONAL, -- only used for batch reporting
+    ...
+}
+
+RepMode ::= ENUMERATED {
+                   realtime (1),
+                   quasirealtime (2),
+                   batch (3),
+                   ...
+               }
+
+BatchRepConditions ::= CHOICE {
+    num-interval   INTEGER (1..1024), -- number of periodic fixes/measurements after which the batch report is sent to the SLP
+    num-minutes    INTEGER (1..2048), -- number of minutes after which the batch report is sent to the SLP
+    endofsession   NULL, -- if selected batch report is to be sent at the end of the session
+    ...
+}
+
+BatchRepType ::= SEQUENCE {
+    reportPosition BOOLEAN, -- set to "true" if reporting of position is allowed
+    reportMeasurements BOOLEAN, -- set to "true" if reporting of measurements is allowed
+    intermediateReports BOOLEAN, -- set to "true" if the SET is allowed to send intermediate reports if it runs out of memory
+    discardOldest  BOOLEAN OPTIONAL, -- set to "true" if the SET should discard the oldest positions or measurements of the batch report in order to save memory, set to "false" the SET should discard the latest positions or measurements
+    ...
+}
+
+END

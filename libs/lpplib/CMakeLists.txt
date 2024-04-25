@@ -20,7 +20,7 @@ add_library(lpplib ${LPP_SOURCES})
 target_include_directories(lpplib PUBLIC "include/")
 target_include_directories(lpplib PRIVATE "include/lpp/")
 target_link_libraries(lpplib PRIVATE utility Threads::Threads)
-target_link_libraries(lpplib PRIVATE asn1::generated asn1::helper)
+target_link_libraries(lpplib PRIVATE asn1::skeleton asn1::generated::lpp asn1::helper)
 
 if (USE_OPENSSL)
 target_link_libraries(lpplib PRIVATE OpenSSL::SSL)
@@ -30,5 +30,8 @@ endif (USE_OPENSSL)
 if (DEBUG_LPP_LIB)
 target_compile_definitions(lpplib PRIVATE "DEBUG_LPP_LIB=1")
 endif (DEBUG_LPP_LIB)
+
+# TODO(ewasjon): Remove later when we have fixed all warnings
+target_compile_options(lpplib PUBLIC "-Wno-unused-function")
 
 setup_target(lpplib)

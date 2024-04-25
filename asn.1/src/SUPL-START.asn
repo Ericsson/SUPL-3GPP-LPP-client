@@ -1,0 +1,64 @@
+-- From OMA UserPlane Location Protocol Candidate Version 2.0 06 Aug 2010
+-- OMA-TS-ULP-V2_0-20100806-D
+--
+-- 11.2.2 SUPL START
+--
+SUPL-START DEFINITIONS AUTOMATIC TAGS ::= BEGIN
+
+EXPORTS
+     SUPLSTART, SETCapabilities;
+
+IMPORTS
+     LocationId, QoP
+          FROM ULP-Components
+     Ver2-SUPL-START-extension
+          FROM ULP-Version-2-message-extensions
+     Ver2-SETCapabilities-extension, Ver2-PosProtocol-extension, Ver2-PosTechnology-extension
+          FROM ULP-Version-2-parameter-extensions;
+
+SUPLSTART ::= SEQUENCE {
+    sETCapabilities SETCapabilities,
+    locationId     LocationId,
+    qoP            QoP OPTIONAL,
+    ...,
+    -- version 2 extension element
+    ver2-SUPL-START-extension Ver2-SUPL-START-extension OPTIONAL
+}
+
+SETCapabilities ::= SEQUENCE {
+    posTechnology  PosTechnology,
+    prefMethod     PrefMethod,
+    posProtocol    PosProtocol,
+    ...,
+    ver2-SETCapabilities-extension Ver2-SETCapabilities-extension OPTIONAL
+}
+
+PosTechnology ::= SEQUENCE {
+    agpsSETassisted BOOLEAN,
+    agpsSETBased   BOOLEAN,
+    autonomousGPS  BOOLEAN,
+    aFLT           BOOLEAN,
+    eCID           BOOLEAN,
+    eOTD           BOOLEAN,
+    oTDOA          BOOLEAN,
+    ...,
+    ver2-PosTechnology-extension Ver2-PosTechnology-extension OPTIONAL
+}
+
+PrefMethod ::= ENUMERATED {
+                   agpsSETassistedPreferred,
+                   agpsSETBasedPreferred,
+                   noPreference
+               }
+
+-- To achieve compatibility  with ULP V1.0 the names of the enumerations are
+-- kept the same as in ULP V1.0. agps shall be interpreted as agnss.
+PosProtocol ::= SEQUENCE {
+    tia801         BOOLEAN,
+    rrlp           BOOLEAN,
+    rrc            BOOLEAN,
+    ...,
+    ver2-PosProtocol-extension Ver2-PosProtocol-extension OPTIONAL
+}
+
+END

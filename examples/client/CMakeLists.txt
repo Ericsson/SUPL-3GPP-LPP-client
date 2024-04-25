@@ -14,7 +14,7 @@ target_link_libraries(example_client PRIVATE generator::spartn2)
 target_link_libraries(example_client PRIVATE dependency::interface)
 target_link_libraries(example_client PRIVATE receiver::ublox)
 target_link_libraries(example_client PRIVATE receiver::nmea)
-target_link_libraries(example_client PRIVATE asn1::generated asn1::helper)
+target_link_libraries(example_client PRIVATE asn1::generated::lpp asn1::helper)
 target_link_libraries(example_client PRIVATE scheduler supl lpp loglet)
 
 set_target_properties(example_client PROPERTIES OUTPUT_NAME "example-client")

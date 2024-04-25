@@ -6,7 +6,7 @@ add_executable(examples::lpp2spartn ALIAS example_lpp2spartn)
 
 target_include_directories(example_lpp2spartn PRIVATE "./")
 target_link_libraries(example_lpp2spartn PRIVATE args)
-target_link_libraries(example_lpp2spartn PRIVATE asn1::generated asn1::helper)
+target_link_libraries(example_lpp2spartn PRIVATE asn1::generated::lpp asn1::helper)
 target_link_libraries(example_lpp2spartn PRIVATE dependency::interface)
 
 if(${INCLUDE_GENERATOR_SPARTN})

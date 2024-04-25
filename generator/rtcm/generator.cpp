@@ -14,6 +14,7 @@
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
 #pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
@@ -47,7 +48,7 @@ static void extract_generic_element_data(RtkData&                             da
     case GNSS_ID__gnss_id_bds: gnss_id = GenericGnssId::BEIDOU; break;
     case GNSS_ID__gnss_id_sbas:
     case GNSS_ID__gnss_id_qzss:
-    case GNSS_ID__gnss_id_navic_v16xy: return;
+    case GNSS_ID__gnss_id_navic_v1610: return;
     }
 
     if (src_generic.gnss_AuxiliaryInformation) {
