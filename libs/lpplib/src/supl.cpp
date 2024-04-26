@@ -215,15 +215,18 @@ SUPL_Message SUPL_Client::process() {
         uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, mReceiveLength);
     if (result.code == RC_FAIL) {
         mReceiveLength = 0;
+        ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
         return nullptr;
     } else if (result.code == RC_WMORE) {
         expected_size = static_cast<size_t>(pdu->length);
         if (expected_size > SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
             // Unable to handle such big messages
             mReceiveLength = 0;
+            ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         } else if (expected_size > mReceiveLength) {
             // Not enough data
+            ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         }
 
@@ -231,6 +234,7 @@ SUPL_Message SUPL_Client::process() {
             uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, expected_size);
         if (result.code != RC_OK) {
             mReceiveLength = 0;
+            ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         }
     } else {

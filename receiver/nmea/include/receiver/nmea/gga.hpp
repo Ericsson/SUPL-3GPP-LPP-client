@@ -26,7 +26,7 @@ public:
         : Message(other), mTimeOfDay(other.mTimeOfDay), mLatitude(other.mLatitude),
           mLongitude(other.mLongitude), mFixQuality(other.mFixQuality),
           mSatellitesInView(other.mSatellitesInView), mHdop(other.mHdop), mMsl(other.mMsl),
-          mGeoidSeparation(other.mGeoidSeparation) {}
+          mGeoidSeparation(other.mGeoidSeparation), mAgeOfDifferentialCorrections(other.mAgeOfDifferentialCorrections) {}
     GgaMessage(GgaMessage&&)                 = delete;
     GgaMessage& operator=(GgaMessage const&) = delete;
     GgaMessage& operator=(GgaMessage&&)      = delete;
@@ -54,6 +54,11 @@ public:
     /// Get the altitude in meters.
     NMEA_NODISCARD double altitude() const NMEA_NOEXCEPT { return mMsl + mGeoidSeparation; }
 
+    /// Get the age of differential corrections.
+    NMEA_NODISCARD double age_of_differential_corrections() const NMEA_NOEXCEPT {
+        return mAgeOfDifferentialCorrections;
+    }
+
     NMEA_NODISCARD static std::unique_ptr<Message>
     parse(std::string prefix, std::string const& payload, std::string checksum);
 
@@ -69,6 +74,7 @@ private:
     double        mHdop;
     double        mMsl;
     double        mGeoidSeparation;
+    double        mAgeOfDifferentialCorrections;
 };
 
 }  // namespace nmea

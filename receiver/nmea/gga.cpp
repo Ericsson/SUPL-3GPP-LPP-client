@@ -123,13 +123,28 @@ static bool parse_altitude(std::string const& altitude, std::string const& units
     }
 }
 
+static bool
+parse_age_of_differential_corrections(std::string const& age_of_differential_corrections,
+                                      double&            value) {
+    try {
+        value = std::stod(age_of_differential_corrections);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+
 GgaMessage::GgaMessage(std::string prefix, std::string payload, std::string checksum) NMEA_NOEXCEPT
     : Message{prefix, payload, checksum},
       mTimeOfDay{TAI_Time::now()},
       mLatitude{0.0},
       mLongitude{0.0},
       mFixQuality{GgaFixQuality::Invalid},
-      mSatellitesInView{0} {}
+      mSatellitesInView{0},
+      mHdop{0.0},
+      mMsl{0.0},
+      mGeoidSeparation{0.0},
+      mAgeOfDifferentialCorrections{0} {}
 
 void GgaMessage::print() const NMEA_NOEXCEPT {
     printf("[%5s]\n", prefix().c_str());
@@ -150,6 +165,7 @@ void GgaMessage::print() const NMEA_NOEXCEPT {
     printf("  satellites:  %d\n", satellites_in_view());
     printf("  hdop:        %.4f\n", h_dop());
     printf("  altitude:    %.2f\n", altitude());
+    printf("  age:         %.2f\n", age_of_differential_corrections());
 }
 
 std::unique_ptr<Message> GgaMessage::parse(std::string prefix, std::string const& payload,
@@ -173,6 +189,13 @@ std::unique_ptr<Message> GgaMessage::parse(std::string prefix, std::string const
     success &= parse_hdop(tokens[7], message->mHdop);
     success &= parse_altitude(tokens[8], tokens[9], message->mMsl);
     success &= parse_altitude(tokens[10], tokens[11], message->mGeoidSeparation);
+
+    if (tokens.size() > 12) {
+        success &= parse_age_of_differential_corrections(tokens[12],
+                                                         message->mAgeOfDifferentialCorrections);
+    } else {
+        message->mAgeOfDifferentialCorrections = 0;
+    }
 
     if (success) {
         return std::unique_ptr<GgaMessage>(message);

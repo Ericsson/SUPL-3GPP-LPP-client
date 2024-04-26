@@ -142,6 +142,7 @@ PLI_Result provide_location_information_callback_nmea(LocationInformation& locat
     metrics.fix_quality          = FixQuality::INVALID;
     metrics.number_of_satellites = gga->satellites_in_view();
     metrics.hdop                 = gga->h_dop();
+    metrics.age_of_corrections   = gga->age_of_differential_corrections();
 
     switch (gga->fix_quality()) {
     case receiver::nmea::GgaFixQuality::Invalid: metrics.fix_quality = FixQuality::INVALID; break;
@@ -174,10 +175,10 @@ PLI_Result provide_location_information_callback_fake(LocationInformation&  loca
     location.velocity = VelocityShape::horizontal_vertical_with_uncertainty(10, 0.5, 90, 1, 0.5,
                                                                             VerticalDirection::Up);
 
-    if(rand() % 2 == 0) {
-        metrics.fix_quality          = FixQuality::RTK_FIX;
+    if (rand() % 2 == 0) {
+        metrics.fix_quality = FixQuality::RTK_FIX;
     } else {
-        metrics.fix_quality          = FixQuality::RTK_FLOAT;
+        metrics.fix_quality = FixQuality::RTK_FLOAT;
     }
     metrics.age_of_corrections   = 5;
     metrics.number_of_satellites = 1;
