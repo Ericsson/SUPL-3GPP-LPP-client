@@ -326,7 +326,7 @@ struct HaGnssMetrics {
     FixQuality fix_quality;
     // Number of satellites used in the navigation solution [0, 64].
     long number_of_satellites;
-    // Age of the most recently used assistance data in seconds [0, 99].
+    // Age of the most recently used assistance data in seconds [0, 9.9].
     Optional<double> age_of_corrections;
     // Horizontal dilution of precision in range [0.1, 25.6].
     Optional<double> hdop;

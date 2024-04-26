@@ -449,20 +449,26 @@ lpp_ha_GNSS_Metrics_r17(location_information::HaGnssMetrics const& metrics) {
     default: break;
     }
 
-    if (metrics.age_of_corrections.has_value() && metrics.age_of_corrections.const_value() >= 0 &&
-        metrics.age_of_corrections.const_value() < 1000.0) {
+    if (metrics.age_of_corrections.has_value()) {
+        auto age = metrics.age_of_corrections.const_value() / 0.1;
+        if (age < 0) age = 0;
+        if (age > 99) age = 99;
         element->age_r17  = ALLOC_ZERO(long);
-        *element->age_r17 = static_cast<long>(metrics.age_of_corrections.const_value() / 0.1);
+        *element->age_r17 = static_cast<long>(age);
     }
 
-    if (metrics.hdop.has_value() && metrics.hdop.const_value() >= 0.1 &&
-        metrics.hdop.const_value() < 2560) {
+    if (metrics.hdop.has_value()) {
+        auto hdop = metrics.hdop.const_value() / 0.1;
+        if (hdop < 1) hdop = 1;
+        if (hdop > 256) hdop = 256;
         element->hdopi_r17  = ALLOC_ZERO(long);
-        *element->hdopi_r17 = static_cast<long>(metrics.hdop.const_value() / 0.1);
+        *element->hdopi_r17 = static_cast<long>(hdop);
     }
 
-    if (metrics.pdop.has_value() && metrics.pdop.const_value() >= 0.1 &&
-        metrics.pdop.const_value() < 2560) {
+    if (metrics.pdop.has_value()) {
+        auto pdop = metrics.pdop.const_value() / 0.1;
+        if (pdop < 1) pdop = 1;
+        if (pdop > 256) pdop = 256;
         element->pdopi_r17  = ALLOC_ZERO(long);
         *element->pdopi_r17 = static_cast<long>(metrics.pdop.const_value() / 0.1);
     }

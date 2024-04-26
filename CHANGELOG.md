@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.8] 2024-04-26
+- Added support for age of correction when using NMEA.
+
 ## [3.4.7] 2024-04-25
 - Added support for UBX-RXM-RTCM messages.
 - Added support for UBX-RXM-SPARTN messages.
