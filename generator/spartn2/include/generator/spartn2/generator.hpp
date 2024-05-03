@@ -59,11 +59,15 @@ public:
     }
 
     void set_iode_shift(bool iode_shift) { mIodeShift = iode_shift; }
-    void set_ionosphere_quality_override(int ionosphere_quality_override) {
-        mIonosphereQualityOverride = ionosphere_quality_override;
-    }
+    void set_sf055_override(int sf055_override) { mSf055Override = sf055_override; }
+    void set_sf055_default(int sf055_default) { mSf055Default = sf055_default; }
+
+    void set_sf042_override(int sf042_override) { mSf042Override = sf042_override; }
+    void set_sf042_default(int sf042_default) { mSf042Default = sf042_default; }
 
     void set_increasing_siou(bool increasing_siou) { mIncreasingSiou = increasing_siou; }
+    void set_filter_by_ocb(bool filter_by_ocb) { mFilterByOcb = filter_by_ocb; }
+    void set_ignore_l2l(bool ignore_l2l) { mIgnoreL2L = ignore_l2l; }
 
     void set_generate_ocb(bool generate_ocb) { mGenerateOcb = generate_ocb; }
     void set_generate_hpac(bool generate_hpac) { mGenerateHpac = generate_hpac; }
@@ -106,15 +110,19 @@ private:
     double mContinuityIndicator;  // <0 = no override
     bool   mUBloxClockCorrection;
 
-    // SF055:
-    int mIonosphereQualityOverride;  // <0 = no override
-    int mIonosphereQualityDefault;
+    int mSf055Override;  // <0 = no override
+    int mSf055Default;
+    int mSf042Override;  // <0 = no override
+    int mSf042Default;
 
     bool     mComputeAverageZenithDelay;
     bool     mGroupByEpochTime;
     bool     mIodeShift;
     bool     mIncreasingSiou;
     uint16_t mSiouIndex;
+
+    bool mFilterByOcb;
+    bool mIgnoreL2L;
 
     bool mGenerateGad;
     bool mGenerateOcb;

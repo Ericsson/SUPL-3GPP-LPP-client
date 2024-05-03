@@ -12,10 +12,10 @@
 #include <GNSS-SSR-GriddedCorrection-r16.h>
 #include <GNSS-SSR-STEC-Correction-r16.h>
 #include <GridElement-r16.h>
-#include <STEC-SatList-r16.h>
-#include <STEC-SatElement-r16.h>
-#include <STEC-ResidualSatList-r16.h>
 #include <STEC-ResidualSatElement-r16.h>
+#include <STEC-ResidualSatList-r16.h>
+#include <STEC-SatElement-r16.h>
+#include <STEC-SatList-r16.h>
 #include <TropospericDelayCorrection-r16.h>
 #pragma GCC diagnostic pop
 
@@ -264,14 +264,14 @@ static double compute_average_zentith_delay(GNSS_SSR_GriddedCorrection_r16 const
 }
 
 static void troposphere_data_block(MessageBuilder&                       builder,
-                                   GNSS_SSR_GriddedCorrection_r16 const& data, int ura_override,
-                                   bool use_average_zenith_delay) {
+                                   GNSS_SSR_GriddedCorrection_r16 const& data, int sf042_override,
+                                   int sf042_default, bool use_average_zenith_delay, bool calculate_sf051) {
     // NOTE(ewasjon): Use a polynomial of degree 0, as we don't have a polynomial in 3GPP
     // LPP. This will result in a constant value for the troposphere correction.
     builder.sf041(0 /* T_00 */);
 
-    if (ura_override >= 0) {
-        uint8_t value = ura_override > 7 ? 7 : static_cast<uint8_t>(ura_override);
+    if (sf042_override >= 0) {
+        uint8_t value = sf042_override > 7 ? 7 : static_cast<uint8_t>(sf042_override);
         builder.sf042_raw(value);
     } else if (data.troposphericDelayQualityIndicator_r16) {
         // TODO(ewasjon): Refactor as function in decode namespace
@@ -282,7 +282,7 @@ static void troposphere_data_block(MessageBuilder&                       builder
         auto  q_meter = q / 1000.0;
         builder.sf042(q_meter);
     } else {
-        builder.sf042_raw(7);  // TODO(ewasjon): Add a comment about why we are using 7
+        builder.sf042_raw(sf042_default);
     }
 
     // NOTE(ewasjon): SPARTN have an average hydrostatic delay for all grid points. 3GPP LPP only
@@ -320,11 +320,11 @@ static void troposphere_data_block(MessageBuilder&                       builder
     }
 
     if (within_range(-0.252, 0.252, average_zenith_delay)) {
-        builder.sf044(0);                     // Small coefficient block
-        builder.sf045(average_zenith_delay);  // T_00
+        builder.sf044(0);                                            // Small coefficient block
+        average_zenith_delay = builder.sf045(average_zenith_delay);  // T_00
     } else if (within_range(-1.020, 1.020, average_zenith_delay)) {
-        builder.sf044(1);                     // Small coefficient block
-        builder.sf048(average_zenith_delay);  // T_00
+        builder.sf044(1);                                            // Small coefficient block
+        average_zenith_delay = builder.sf048(average_zenith_delay);  // T_00
     } else {
         builder.sf044(0);    // Small coefficient block
         builder.sf045(0.0);  // T_0
@@ -335,8 +335,28 @@ static void troposphere_data_block(MessageBuilder&                       builder
     printf("  average_zenith_delay: %f\n", average_zenith_delay);
 #endif
 
-    // TODO(ewasjon): [low-priority] Compute the minimum residual field size for all grid points.
-    builder.sf051(1);  // Large residuals
+    // Compute the residual field size for all grid points
+    auto residual_field_size = 0;
+    if (calculate_sf051) {
+        for (int i = 0; i < list.count; i++) {
+            auto element = list.array[i];
+            if (!element) continue;
+            if (!element->tropospericDelayCorrection_r16) continue;
+
+            auto& grid_point = *element->tropospericDelayCorrection_r16;
+            auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
+            auto total_residual = residual - average_zenith_delay;
+            if (within_range(-0.124, 0.124, total_residual))
+                residual_field_size = std::max<uint8_t>(residual_field_size, 0U);
+            else
+                residual_field_size = std::max<uint8_t>(residual_field_size, 1U);
+        }
+    } else {
+        // If we're not calculating the residual field size, always use the largest size
+        residual_field_size = 1;
+    }
+
+    builder.sf051(residual_field_size);
 
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
@@ -345,13 +365,20 @@ static void troposphere_data_block(MessageBuilder&                       builder
 #ifdef SPARTN_DEBUG_PRINT
             printf("    grid[%2d] = invalid\n", i);
 #endif
-            builder.sf053_invalid();
+            if (residual_field_size == 0)
+                builder.sf052_invalid();
+            else
+                builder.sf053_invalid();
         } else {
             auto& grid_point = *element->tropospericDelayCorrection_r16;
             auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
-            builder.sf053(residual - average_zenith_delay);
+            auto total_residual = residual - average_zenith_delay;
+            if (residual_field_size == 0)
+                builder.sf052(total_residual);
+            else
+                builder.sf053(total_residual);
 #ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2d] = %f\n", i, residual - average_zenith_delay);
+            printf("    grid[%2d] = %f\n", i, total_residual);
 #endif
         }
     }
@@ -421,11 +448,20 @@ static void ionosphere_data_block_1(MessageBuilder& builder, HpacSatellite const
 
     if (sf055_override >= 0) {
         builder.sf055_raw(sf055_override);
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  sf055: %d [override]\n", sf055_override);
+#endif
     } else {
         auto q = decode::stecQualityIndicator_r16(element->stecQualityIndicator_r16);
         if (q.invalid) {
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  sf055: %d [default]\n", sf055_default);
+#endif
             builder.sf055_raw(sf055_default);
         } else {
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  sf055: %f\n", q.value);
+#endif
             builder.sf055(q.value);
         }
     }
@@ -499,7 +535,7 @@ static void ionosphere_data_block_2(MessageBuilder& builder, long grid_points,
 }
 
 static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& correction_point_set,
-                                  HpacCorrections& corrections, long gnss_id,
+                                  HpacCorrections& corrections, long gnss_id, OcbCorrections* ocb,
                                   int ionosphere_block_type, int sf055_override,
                                   int sf055_default) {
     auto satellites = corrections.satellites();
@@ -508,9 +544,19 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
         // NOTE(ewasjon): Remove all satellites that does not have STEC corrections.
         // TODO(ewasjon): [low-priority] Add _WHY_ we're removing satellites without STEC
         auto it = satellites.begin();
-        for (; it != satellites.end(); it++) {
+        for (; it != satellites.end();) {
             if (!it->stec) {
+#ifdef SPARTN_DEBUG_PRINT
+                printf("  removed satellite=%u [stec]\n", it->prn());
+#endif
                 it = satellites.erase(it);
+            } else if (ocb && !ocb->has_satellite(it->id)) {
+#ifdef SPARTN_DEBUG_PRINT
+                printf("  removed satellite=%u [ocb]\n", it->prn());
+#endif
+                it = satellites.erase(it);
+            } else {
+                it++;
             }
         }
     }
@@ -521,6 +567,10 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
 
     for (auto& satellite : satellites) {
         if (!satellite.stec) continue;
+
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  satellite=%u\n", satellite.prn());
+#endif
 
         ionosphere_data_block_1(builder, satellite, equation_type, sf055_override, sf055_default);
 
@@ -533,6 +583,8 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
 void Generator::generate_hpac(uint16_t iod) {
     auto hpac_data = mCorrectionData->hpac(iod);
     if (!hpac_data) return;
+
+    auto ocb_data = mCorrectionData->ocb(iod);
 
     std::vector<HpacCorrections*> messages;
     for (auto& kvp : hpac_data->mKeyedCorrections) {
@@ -559,8 +611,20 @@ void Generator::generate_hpac(uint16_t iod) {
         if (cps_it == mCorrectionPointSets.end()) continue;
         auto& correction_point_set = *(cps_it->second.get());
 
+        OcbCorrections* ocb_corrections = nullptr;
+        if (ocb_data && mFilterByOcb) {
+            auto ocb_key = OcbKey{gnss_id, epoch_time};
+            if (!mGroupByEpochTime) {
+                ocb_key.epoch_time = 0;
+            }
+            auto ocb_it = ocb_data->mKeyedCorrections.find(ocb_key);
+            if (ocb_it != ocb_data->mKeyedCorrections.end()) {
+                ocb_corrections = &ocb_it->second;
+            }
+        }
+
 #ifdef SPARTN_DEBUG_PRINT
-        printf("HPAC: time=%u, set=%ld, gnss=%ld, iod=%ld\n", epoch_time, set_id, gnss_id, iod);
+        printf("HPAC: time=%u, set=%hu, gnss=%ld, iod=%hu\n", epoch_time, set_id, gnss_id, iod);
         printf("  area_id=%u\n", correction_point_set.area_id);
 #endif
 
@@ -593,15 +657,17 @@ void Generator::generate_hpac(uint16_t iod) {
 
             // Troposphere data block
             if (troposphere_block_type != 0) {
-                troposphere_data_block(builder, *corrections.gridded, mUraOverride,
-                                       mComputeAverageZenithDelay);
+                // TODO(ewasjon): [low-priority] Expose this as a option
+                auto calculate_sf051 = mComputeAverageZenithDelay;
+                troposphere_data_block(builder, *corrections.gridded, mSf042Override, mSf042Default,
+                                       mComputeAverageZenithDelay, calculate_sf051);
             }
 
             // Ionosphere data block
             if (ionosphere_block_type != 0) {
                 ionosphere_data_block(builder, correction_point_set, corrections, gnss_id,
-                                      ionosphere_block_type, mIonosphereQualityOverride,
-                                      mIonosphereQualityDefault);
+                                      ocb_corrections, ionosphere_block_type, mSf055Override,
+                                      mSf055Default);
             }
         }
 

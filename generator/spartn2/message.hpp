@@ -379,22 +379,22 @@ public:
     inline void sf044(uint8_t size) { mBuilder.bits(size, 1); }
 
     // SF045 - Small troposphere coefficient T_00
-    inline void sf045(double value) { mBuilder.double_to_bits(-0.252, 0.252, 0.004, value, 7); }
+    inline double sf045(double value) { return mBuilder.double_to_bits(-0.252, 0.252, 0.004, value, 7); }
 
     // SF046 - Troposphere polynomial coefficient T_10/T_01
-    inline void sf046(double value) { mBuilder.double_to_bits(-0.063, 0.063, 0.001, value, 7); }
+    inline double sf046(double value) { return mBuilder.double_to_bits(-0.063, 0.063, 0.001, value, 7); }
 
     // SF047 - Small troposphere coefficient T_11
-    inline void sf047(double value) { mBuilder.double_to_bits(-0.051, 0.051, 0.0002, value, 9); }
+    inline double sf047(double value) { return mBuilder.double_to_bits(-0.051, 0.051, 0.0002, value, 9); }
 
     // SF048 - Large troposphere coefficient T_00
-    inline void sf048(double value) { mBuilder.double_to_bits(-1.020, 1.020, 0.004, value, 9); }
+    inline double sf048(double value) { return mBuilder.double_to_bits(-1.020, 1.020, 0.004, value, 9); }
 
     // SF049 - Large troposphere coefficient T_10/T_01
-    inline void sf049(double value) { mBuilder.double_to_bits(-0.255, 0.255, 0.001, value, 9); }
+    inline double sf049(double value) { return mBuilder.double_to_bits(-0.255, 0.255, 0.001, value, 9); }
 
     // SF050 - Large troposphere coefficient T_11
-    inline void sf050(double value) { mBuilder.double_to_bits(-0.2046, 0.2046, 0.0002, value, 11); }
+    inline double sf050(double value) { return mBuilder.double_to_bits(-0.2046, 0.2046, 0.0002, value, 11); }
 
     // SF051 - Troposphere residual field size
     inline void sf051(uint8_t size) { mBuilder.bits(size, 1); }

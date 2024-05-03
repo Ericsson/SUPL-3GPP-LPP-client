@@ -16,7 +16,7 @@ target_link_libraries(generator_spartn2 PRIVATE asn1::generated::lpp asn1::helpe
 target_link_libraries(generator_spartn2 PRIVATE utility)
 
 if (SPARTN_DEBUG_PRINT)
-target_compile_definitions(generator_spartn2 PRIVATE SPARTN_DEBUG_PRINT)
+target_compile_definitions(generator_spartn2 PRIVATE SPARTN_DEBUG_PRINT=2)
 endif (SPARTN_DEBUG_PRINT)
 
 setup_target(generator_spartn2)

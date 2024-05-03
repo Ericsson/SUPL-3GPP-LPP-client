@@ -12,13 +12,13 @@
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
+#include <GNSS-SSR-CorrectionPoints-r16.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
 #include <SSR-CodeBiasSatElement-r15.h>
 #include <SSR-CodeBiasSignalElement-r15.h>
 #include <SSR-PhaseBiasSatElement-r16.h>
 #include <SSR-PhaseBiasSignalElement-r16.h>
-#include <GNSS-SSR-CorrectionPoints-r16.h>
 #pragma GCC diagnostic pop
 
 #include <map>
@@ -28,10 +28,11 @@ namespace generator {
 namespace spartn {
 
 Generator::Generator()
-    : mGenerationIndex(0), mNextAreaId(1), mUraOverride(-1), mContinuityIndicator(-1),
-      mUBloxClockCorrection(false), mIonosphereQualityOverride(-1),
-      mIonosphereQualityDefault(0 /* SF055(0) = invalid */), mComputeAverageZenithDelay(false),
-      mGroupByEpochTime(false), mIodeShift(true), mIncreasingSiou(false), mSiouIndex(1),
+    : mGenerationIndex(0), mNextAreaId(0), mUraOverride(-1), mContinuityIndicator(-1),
+      mUBloxClockCorrection(false), mSf055Override(-1), mSf055Default(0 /* SF055(0) = invalid */),
+      mSf042Override(-1), mSf042Default(7 /* SF042(7) = >0.320m */),
+      mComputeAverageZenithDelay(false), mGroupByEpochTime(false), mIodeShift(true),
+      mIncreasingSiou(false), mSiouIndex(1), mFilterByOcb(false), mIgnoreL2L(false),
       mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
       mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false) {}
 
@@ -64,7 +65,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     auto iods = mCorrectionData->iods();
     for (auto iod : iods) {
 #ifdef SPARTN_DEBUG_PRINT
-        printf("-- iod=%ld\n", iod);
+        printf("-- iod=%hu\n", iod);
 #endif
 
         auto ocb  = mCorrectionData->ocb(iod);
@@ -86,7 +87,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
             if (mCorrectionData->find_gad_epoch_time(iod, &gad_epoch_time)) {
                 for (auto set_id : set_ids) {
 #ifdef SPARTN_DEBUG_PRINT
-                    printf("GAD: set=%ld, iod=%ld, time=%u\n", set_id, iod,
+                    printf("GAD: set=%hu, iod=%hu, time=%u\n", set_id, iod,
                            gad_epoch_time.rounded_seconds);
 #endif
 
@@ -94,7 +95,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
                 }
             } else {
 #ifdef SPARTN_DEBUG_PRINT
-                printf("GAD: no epoch time for iod=%ld\n", iod);
+                printf("GAD: no epoch time for iod=%hu\n", iod);
 #endif
             }
         }

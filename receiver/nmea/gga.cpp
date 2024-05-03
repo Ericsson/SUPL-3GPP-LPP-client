@@ -191,8 +191,10 @@ std::unique_ptr<Message> GgaMessage::parse(std::string prefix, std::string const
     success &= parse_altitude(tokens[10], tokens[11], message->mGeoidSeparation);
 
     if (tokens.size() > 12) {
-        success &= parse_age_of_differential_corrections(tokens[12],
-                                                         message->mAgeOfDifferentialCorrections);
+        if (!parse_age_of_differential_corrections(tokens[12],
+                                                   message->mAgeOfDifferentialCorrections)) {
+            message->mAgeOfDifferentialCorrections = 0;
+        }
     } else {
         message->mAgeOfDifferentialCorrections = 0;
     }

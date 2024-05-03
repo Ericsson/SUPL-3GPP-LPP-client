@@ -118,6 +118,9 @@ struct OcbCorrections {
     // this is the union of all satellite ids that have at least
     // one correction type.
     std::vector<OcbSatellite> satellites() const;
+
+    // Check if there is _any_ correction for the given satellite.
+    bool has_satellite(long id) const;
 };
 
 struct OcbData {

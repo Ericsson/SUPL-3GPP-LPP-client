@@ -1,5 +1,14 @@
 # Changelog
 
+## [3.4.9] 2024-05-03
+- Added a few options to controll how SPARTN messages are generated:
+    - `--sf055-default` to set the default value for the ionospheric quality if not available.
+    - `--sf042-override` to force the tropospheric quality to a specific value (previous `--ura-override` was also used for this).
+    - `--sf042-default` to set the default value for the tropospheric quality if not available.
+    - `--filter-by-ocb` to filter out ionopsheric residuals for satellites not in the OCB.
+    - `--ignore-l2l` to ignore L2L biases. 
+- Fixed a bug where parsing NMEA GGA would fail if age of corrections was not provided.
+
 ## [3.4.8] 2024-04-26
 - Added support for age of correction when using NMEA.
 
@@ -9,7 +18,7 @@
 - Added new format option `lrf-uper` to output RTCM framed UPER encoded 3GPP LPP messages.
 - Updated 3GPP LPP version from Release 16.4.0 to Release 18.1.0.
 - HA-GNSS-Metrics data is now included in the `ProvideLocationInformation` message.
-- Fix memory leak from ProvideLocationInformation.
+- Fixed memory leak from ProvideLocationInformation.
 
 ## [3.4.6] 2024-04-04
 - You can optionally include/exclude which generators to build by using the CMake options `-DINCLUDE_GENERATOR_*`. By default, RTCM and SPARTN generators are included and the old SPARTN generator is excluded.

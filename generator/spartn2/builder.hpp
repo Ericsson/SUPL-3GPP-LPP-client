@@ -20,7 +20,7 @@ public:
 
     inline void b(bool value) { bits(static_cast<uint64_t>(value), 1); }
 
-    void double_to_bits(double min_range, double max_range, double resolution, double value,
+    double double_to_bits(double min_range, double max_range, double resolution, double value,
                         uint8_t bits);
 
     // TODO: float, double

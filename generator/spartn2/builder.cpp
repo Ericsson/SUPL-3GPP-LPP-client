@@ -6,13 +6,14 @@
 
 Builder::Builder(uint32_t capacity) : mData(capacity), mBitOffset(0) {}
 
-void Builder::double_to_bits(double min_range, double max_range, double resolution, double value,
+double Builder::double_to_bits(double min_range, double max_range, double resolution, double value,
                              uint8_t bits) {
     auto clamped_value  = std::max(min_range, std::min(max_range, value));
     auto scaled_value   = (clamped_value - min_range) / resolution;
     auto rounded_value  = std::lround(scaled_value);
     auto unsigned_value = static_cast<uint64_t>(rounded_value);
     this->bits(unsigned_value, bits);
+    return rounded_value * resolution + min_range;
 }
 
 void Builder::reserve(uint32_t bits) {

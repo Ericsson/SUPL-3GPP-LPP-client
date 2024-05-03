@@ -23,7 +23,9 @@ public:
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
           mFormatArg(nullptr), mUraOverrideArg(nullptr), mUbloxClockCorrectionArg(nullptr),
           mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr),
-          mSf055Override(nullptr), mIncreasingSiou(nullptr), mPrintRTCMArg(nullptr) {}
+          mSf055Override(nullptr), mSf055Default(nullptr), mSf042Override(nullptr),
+          mSf042Default(nullptr), mIncreasingSiou(nullptr), mFilterByOcb(nullptr),
+          mIgnoreL2L(nullptr), mPrintRTCMArg(nullptr) {}
 
     ~SsrCommand() override {
         delete mFormatArg;
@@ -33,7 +35,12 @@ public:
         delete mAverageZenithDelayArg;
         delete mEnableIodeShift;
         delete mSf055Override;
+        delete mSf055Default;
+        delete mSf042Override;
+        delete mSf042Default;
         delete mIncreasingSiou;
+        delete mFilterByOcb;
+        delete mIgnoreL2L;
         delete mPrintRTCMArg;
     }
 
@@ -48,7 +55,12 @@ private:
     args::Flag*                   mAverageZenithDelayArg;
     args::Flag*                   mEnableIodeShift;
     args::ValueFlag<int>*         mSf055Override;
+    args::ValueFlag<int>*         mSf055Default;
+    args::ValueFlag<int>*         mSf042Override;
+    args::ValueFlag<int>*         mSf042Default;
     args::Flag*                   mIncreasingSiou;
+    args::Flag*                   mFilterByOcb;
+    args::Flag*                   mIgnoreL2L;
     args::Flag*                   mPrintRTCMArg;
 };
 
