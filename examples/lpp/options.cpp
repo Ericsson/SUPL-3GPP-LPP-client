@@ -2,6 +2,8 @@
 #include <interface/interface.hpp>
 #include <receiver/ublox/receiver.hpp>
 
+#include <math.h>
+
 using namespace interface;
 using namespace receiver::ublox;
 
@@ -16,16 +18,22 @@ static args::Group location_server{
     args::Options::Global,
 };
 
-static args::ValueFlag<std::string> location_server_host{location_server,
-                                                         "host",
-                                                         "Host",
-                                                         {'h', "host"},
-                                                         args::Options::Single |
-                                                             args::Options::Required};
-static args::ValueFlag<uint16_t>    location_server_port{
+static args::ValueFlag<std::string> location_server_host{
+    location_server, "host", "Host", {'h', "host"}, args::Options::Single};
+static args::ValueFlag<uint16_t> location_server_port{
     location_server, "port", "Port", {'p', "port"}, args::Options::Single};
 static args::Flag location_server_ssl{
     location_server, "ssl", "TLS", {'s', "ssl"}, args::Options::Single};
+static args::Flag location_server_slp_host_cell{location_server,
+                                                "slp-host-cell",
+                                                "Use Cell ID as SLP Host",
+                                                {"slp-host-cell"},
+                                                args::Options::Single};
+static args::Flag location_server_slp_host_imsi{location_server,
+                                                "slp-host-imsi",
+                                                "Use IMSI as SLP Host",
+                                                {"slp-host-imsi"},
+                                                args::Options::Single};
 
 //
 // Identity
@@ -433,11 +441,43 @@ static args::ValueFlag<std::string> ctrl_un_output_path{
 // Options
 //
 
-static LocationServerOptions parse_location_server_options() {
+static LocationServerOptions parse_location_server_options(Options& options) {
     LocationServerOptions location_server_options{};
     location_server_options.host = location_server_host.Get();
     location_server_options.port = 5431;
     location_server_options.ssl  = false;
+
+    if (location_server_host) {
+        location_server_options.host = location_server_host.Get();
+    } else if (location_server_slp_host_imsi) {
+        if (!options.identity_options.imsi) {
+            throw args::RequiredError("`imsi` is required to use `slp-host-imsi`");
+        } else if(options.identity_options.wait_for_identity) {
+            throw args::ValidationError("`slp-host-imsi` cannot be used with `wait-for-identity`");
+        }
+
+        auto imsi   = *options.identity_options.imsi;
+        auto digits = std::to_string(imsi).size();
+        if (digits < 6) {
+            throw args::ValidationError("`imsi` must be at least 6 digits long");
+        }
+
+        auto mcc = (imsi / (unsigned long long)std::pow(10, digits - 3)) % 1000;
+        auto mnc = (imsi / (unsigned long long)std::pow(10, digits - 6)) % 1000;
+        char buffer[256];
+        snprintf(buffer, sizeof(buffer), "h-slp.%03llu.%03llu.pub.3gppnetwork.org", mnc, mcc);
+        auto h_slp                   = std::string{buffer};
+        location_server_options.host = h_slp;
+    } else if (location_server_slp_host_cell) {
+        auto mcc = options.cell_options.mcc;
+        auto mnc = options.cell_options.mnc;
+        char buffer[256];
+        snprintf(buffer, sizeof(buffer), "h-slp.%03d.%03d.pub.3gppnetwork.org", mnc, mcc);
+        auto h_slp                   = std::string{buffer};
+        location_server_options.host = h_slp;
+    } else {
+        throw args::RequiredError("`host` or `slp-host-cell` or `slp-host-imsi` is required");
+    }
 
     if (location_server_port) {
         location_server_options.port = location_server_port.Get();
@@ -1024,9 +1064,10 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 subparser.Parse();
 
                 Options options{};
-                options.location_server_options      = parse_location_server_options();
-                options.identity_options             = parse_identity_options();
                 options.cell_options                 = parse_cell_options();
+                options.identity_options             = parse_identity_options();
+                options.location_server_options      = parse_location_server_options(options);
+                options.modem_options                = parse_modem_options();
                 options.output_options               = parse_output_options();
                 options.ublox_options                = ublox_parse_options();
                 options.nmea_options                 = nmea_parse_options();
