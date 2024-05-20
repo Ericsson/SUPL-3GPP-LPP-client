@@ -67,6 +67,22 @@ void ControlParser::parse(std::unique_ptr<interface::Interface>& interface) {
                 } else {
                     printf("invalid CID message: %s\n", message.c_str());
                 }
+            } else if(tokens[0] == "IDENTITY") {
+                if(tokens.size() > 1) {
+                    if(tokens[1] == "IMSI") {
+                        if(tokens.size() == 3) {
+                            if(on_identity_imsi) {
+                                on_identity_imsi(std::stoull(tokens[2]));
+                            }
+                        } else {
+                            printf("invalid IMSI message: %s\n", message.c_str());
+                        }
+                    } else {
+                        printf("unknown identity: %s\n", message.c_str());
+                    }
+                } else {
+                    printf("invalid identity message: %s\n", message.c_str());
+                }
             } else {
                 printf("unknown command: %s\n", message.c_str());
             }

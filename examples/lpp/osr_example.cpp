@@ -1,7 +1,6 @@
 #include "osr_example.h"
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
-#include <modem.h>
 #include <receiver/nmea/threaded_receiver.hpp>
 #include <receiver/ublox/threaded_receiver.hpp>
 #include <sstream>
@@ -26,7 +25,6 @@ static Options                        gOptions;
 static bool                           gPrintRtcm;
 static ControlParser                  gControlParser;
 
-static std::unique_ptr<Modem_AT>  gModem;
 static std::unique_ptr<UReceiver> gUbloxReceiver;
 static std::unique_ptr<NReceiver> gNmeaReceiver;
 
@@ -41,7 +39,6 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     auto& cell_options                 = gOptions.cell_options;
     auto& location_server_options      = gOptions.location_server_options;
     auto& identity_options             = gOptions.identity_options;
-    auto& modem_options                = gOptions.modem_options;
     auto& output_options               = gOptions.output_options;
     auto& ublox_options                = gOptions.ublox_options;
     auto& nmea_options                 = gOptions.nmea_options;
@@ -71,14 +68,6 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("none\n");
     printf("  cell information:   %s %ld:%ld:%ld:%llu (mcc:mnc:tac:id)\n",
            cell_options.is_nr ? "[nr]" : "[lte]", gCell.mcc, gCell.mnc, gCell.tac, gCell.cell);
-
-    if (modem_options.device) {
-        gModem = std::unique_ptr<Modem_AT>(
-            new Modem_AT(modem_options.device->device, modem_options.device->baud_rate, gCell));
-        if (!gModem->initialize()) {
-            throw std::runtime_error("Unable to initialize modem");
-        }
-    }
 
 #ifdef INCLUDE_GENERATOR_RTCM
     // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
@@ -161,13 +150,59 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
 #endif
 
-    LPP_Client client{false /* enable experimental segmentation support */};
+    LPP_Client::AD_Request request;
+    LPP_Client             client{false /* enable experimental segmentation support */};
+    bool                   client_initialized  = false;
+    bool                   client_got_identity = false;
 
     if (!identity_options.use_supl_identity_fix) {
         client.use_incorrect_supl_identity();
     }
 
-    if (identity_options.imsi) {
+    if (control_options.interface) {
+        printf("[control]\n");
+        control_options.interface->open();
+        control_options.interface->print_info();
+
+        gControlParser.on_cid = [&](CellID cell) {
+            if (!client_initialized) return;
+            if (gCell != cell) {
+                printf("[control] cell: %ld:%ld:%ld:%llu\n", cell.mcc, cell.mnc, cell.tac,
+                       cell.cell);
+                gCell = cell;
+                client.update_assistance_data(request, gCell);
+            } else {
+                printf("[control] cell: %ld:%ld:%ld:%llu (unchanged)\n", cell.mcc, cell.mnc,
+                       cell.tac, cell.cell);
+            }
+        };
+
+        gControlParser.on_identity_imsi = [&](unsigned long long imsi) {
+            printf("[control] identity: imsi: %llu\n", imsi);
+            if (client_got_identity) return;
+            client.set_identity_imsi(imsi);
+            client_got_identity = true;
+        };
+    }
+
+    if (identity_options.wait_for_identity) {
+        if (!control_options.interface) {
+            throw std::runtime_error("No control interface provided");
+        }
+
+        printf("  waiting for identity\n");
+        if (identity_options.imsi || identity_options.msisdn || identity_options.ipv4) {
+            printf("  (imsi, msisdn, or ipv4 identity ignored)\n");
+        }
+        while (!client_got_identity) {
+            struct timespec timeout;
+            timeout.tv_sec  = 0;
+            timeout.tv_nsec = 1000000 * 100;  // 100 ms
+            nanosleep(&timeout, nullptr);
+
+            gControlParser.parse(control_options.interface);
+        }
+    } else if (identity_options.imsi) {
         client.set_identity_imsi(*identity_options.imsi);
     } else if (identity_options.msisdn) {
         client.set_identity_msisdn(*identity_options.msisdn);
@@ -210,8 +245,6 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("  unlock update rate: false\n");
     }
 
-    client.provide_ecid_callback(gModem.get(), provide_ecid_callback);
-
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
                         location_server_options.ssl, gCell)) {
         throw std::runtime_error("Unable to connect to location server");
@@ -219,23 +252,12 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
     // Request OSR assistance data from location server for the 'cell' and register a callback
     // that will be called when we receive assistance data.
-    LPP_Client::AD_Request request =
-        client.request_assistance_data(gCell, nullptr, assistance_data_callback);
+    request = client.request_assistance_data(gCell, nullptr, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");
     }
 
-    if (control_options.interface) {
-        printf("[control]\n");
-        control_options.interface->open();
-        control_options.interface->print_info();
-
-        gControlParser.on_cid = [&](CellID cell) {
-            printf("[control] cell: %ld:%ld:%ld:%llu\n", cell.mcc, cell.mnc, cell.tac, cell.cell);
-            gCell = cell;
-            client.update_assistance_data(request, gCell);
-        };
-    }
+    client_initialized = true;
 
     for (;;) {
         struct timespec timeout;
@@ -269,7 +291,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
             [](void const* text_buffer, size_t text_size, void* app_key) -> int {
                 auto string_stream = static_cast<std::ostream*>(app_key);
-                string_stream->write(static_cast<const char*>(text_buffer),
+                string_stream->write(static_cast<char const*>(text_buffer),
                                      static_cast<std::streamsize>(text_size));
                 return 0;
             },

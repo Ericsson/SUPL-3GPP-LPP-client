@@ -1,6 +1,5 @@
 #include "location_information.h"
 #include <cmath>
-#include <modem.h>
 #include <receiver/nmea/gga.hpp>
 #include <receiver/nmea/threaded_receiver.hpp>
 #include <receiver/ublox/message.hpp>
@@ -187,26 +186,7 @@ PLI_Result provide_location_information_callback_fake(LocationInformation&  loca
     return PLI_Result::LI_AND_METRICS;
 }
 
-bool provide_ecid_callback(ECIDInformation& ecid, void* userdata) {
-    auto modem = reinterpret_cast<Modem_AT*>(userdata);
-    if (!modem) return false;
-
-    auto neighbors = modem->neighbor_cells();
-    auto cell      = modem->cell();
-    if (!cell.initialized()) return false;
-
-    ecid.cell           = cell.value();
-    ecid.neighbor_count = 0;
-
-    for (auto& neighbor_cell : neighbors) {
-        if (ecid.neighbor_count < 16) {
-            auto& neighbor  = ecid.neighbors[ecid.neighbor_count++];
-            neighbor.id     = neighbor_cell.id;
-            neighbor.earfcn = neighbor_cell.EARFCN;
-            neighbor.rsrp   = neighbor_cell.rsrp;
-            neighbor.rsrq   = neighbor_cell.rsrq;
-        }
-    }
-
-    return true;
+bool provide_ecid_callback(UNUSED ECIDInformation& ecid, UNUSED void* userdata) {
+    // TODO(ewasjon): Implement using information from the control interface
+    return false;
 }

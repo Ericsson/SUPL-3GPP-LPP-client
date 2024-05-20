@@ -356,7 +356,9 @@ static std::map<uint8_t, Bias> phase_biases(SystemMapping const*               m
                                             BiasToSignal* bias_to_signal, bool ignore_l2l) {
     std::map<uint8_t, Bias> biases_by_type;
 
+#if defined(SPARTN_DEBUG_PRINT)
     printf("  PHASE BIAS:\n");
+#endif
     auto& list = satellite.ssr_PhaseBiasSignalList_r16.list;
 
     for (int i = 0; i < list.count; i++) {
@@ -422,8 +424,9 @@ static std::map<uint8_t, Bias> code_biases(SystemMapping const*              map
                                            BiasToSignal* bias_to_signal, bool ignore_l2l) {
     std::map<uint8_t, Bias> biases_by_type;
 
+#if defined(SPARTN_DEBUG_PRINT)
     printf("  CODE BIAS:\n");
-
+#endif
     auto& list = satellite.ssr_CodeBiasSignalList_r15.list;
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];

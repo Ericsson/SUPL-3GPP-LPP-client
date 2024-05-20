@@ -46,6 +46,12 @@ static args::Flag                   use_supl_identity_fix{identity,
                                         "Use SUPL Identity Fix",
                                                           {"supl-identity-fix"},
                                         args::Options::Single};
+static args::Flag                   wait_for_identity{
+    identity,
+    "wait-for-identity",
+    "Wait for the identity to be provided via the control interface",
+                      {"wait-for-identity"},
+    args::Options::Single};
 
 //
 // Cell Information
@@ -77,21 +83,6 @@ static args::ValueFlag<unsigned long long> ci{cell_information,
                                               {'i', "ci"},
                                               args::Options::Single | args::Options::Required};
 static args::Flag is_nr{cell_information, "nr", "The cell specified is a 5G NR cell", {"nr"}};
-
-//
-// Modem
-//
-
-static args::Group modem{
-    "Modem:",
-    args::Group::Validators::AllChildGroups,
-    args::Options::Global,
-};
-
-static args::ValueFlag<std::string> modem_device{
-    modem, "device", "Device", {"modem"}, args::Options::Single};
-static args::ValueFlag<int> modem_baud_rate{
-    modem, "baud_rate", "Baud Rate", {"modem-baud"}, args::Options::Single};
 
 //
 // u-blox
@@ -462,6 +453,7 @@ static LocationServerOptions parse_location_server_options() {
 static IdentityOptions parse_identity_options() {
     IdentityOptions identity_options{};
     identity_options.use_supl_identity_fix = false;
+    identity_options.wait_for_identity     = false;
 
     if (msisdn) {
         identity_options.msisdn =
@@ -477,7 +469,12 @@ static IdentityOptions parse_identity_options() {
         identity_options.ipv4 = std::unique_ptr<std::string>{new std::string{ipv4.Get()}};
     }
 
-    if (!identity_options.msisdn && !identity_options.imsi && !identity_options.ipv4) {
+    if (wait_for_identity) {
+        identity_options.wait_for_identity = true;
+    }
+
+    if (!identity_options.wait_for_identity && !identity_options.msisdn && !identity_options.imsi &&
+        !identity_options.ipv4) {
         identity_options.imsi =
             std::unique_ptr<unsigned long long>{new unsigned long long{2460813579lu}};
     }
@@ -497,25 +494,6 @@ static CellOptions parse_cell_options() {
     cell_options.cid   = ci.Get();
     cell_options.is_nr = is_nr ? is_nr.Get() : false;
     return cell_options;
-}
-
-static ModemOptions parse_modem_options() {
-    ModemOptions modem_options{};
-
-    if (modem_device || modem_baud_rate) {
-        if (!modem_device) {
-            throw args::RequiredError("modem_device");
-        }
-
-        if (!modem_baud_rate) {
-            throw args::RequiredError("modem_device");
-        }
-
-        modem_options.device = std::unique_ptr<ModemDevice>{
-            new ModemDevice{modem_device.Get(), modem_baud_rate.Get()}};
-    }
-
-    return modem_options;
 }
 
 static OutputOptions parse_output_options() {
@@ -1049,7 +1027,6 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 options.location_server_options      = parse_location_server_options();
                 options.identity_options             = parse_identity_options();
                 options.cell_options                 = parse_cell_options();
-                options.modem_options                = parse_modem_options();
                 options.output_options               = parse_output_options();
                 options.ublox_options                = ublox_parse_options();
                 options.nmea_options                 = nmea_parse_options();
@@ -1130,7 +1107,6 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     args::GlobalOptions location_server_globals{parser, location_server};
     args::GlobalOptions identity_globals{parser, identity};
     args::GlobalOptions cell_information_globals{parser, cell_information};
-    args::GlobalOptions modem_globals{parser, modem};
     args::GlobalOptions ublox_receiver_globals{parser, ublox_receiver_group};
     args::GlobalOptions nmea_receiver_globals{parser, nmea_receiver_group};
     args::GlobalOptions other_receiver_globals{parser, other_receiver_group};
