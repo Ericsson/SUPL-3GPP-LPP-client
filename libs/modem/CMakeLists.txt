@@ -1,5 +1,4 @@
 list(APPEND modem_SOURCES 
-    "include/modem.h"
     "src/modem.cpp"
 )
 

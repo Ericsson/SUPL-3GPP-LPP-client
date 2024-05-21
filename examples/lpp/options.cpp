@@ -1067,7 +1067,6 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 options.cell_options                 = parse_cell_options();
                 options.identity_options             = parse_identity_options();
                 options.location_server_options      = parse_location_server_options(options);
-                options.modem_options                = parse_modem_options();
                 options.output_options               = parse_output_options();
                 options.ublox_options                = ublox_parse_options();
                 options.nmea_options                 = nmea_parse_options();
