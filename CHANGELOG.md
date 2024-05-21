@@ -1,11 +1,11 @@
 # Changelog
 
 ## [3.4.*]
-- Added new control command `IDENTITY` to provide the client with the IMSI, MSISDN, or IP address. See `CONTROL.md` for more information. 
+- Added new control command `/IDENTITY` to provide the client with the IMSI, MSISDN, or IP address. See `CONTROL.md` for more information. 
 - Added new option `--wait-for-identity` to have the client wait for an identity before sending any assistance data requests.
 - Added new example `example-modem-ctrl` to demonstrate how to send control commands of cell IDs and IMSI to the client using the control interface.
 - Fixed a bug where `/CID` (or any update assistance data request) would leak memory if the client couldn't encode the message.
-- Updated modem library and removed it from `example-lpp`. Use control commands to update cell IDs and IMSI instead.
+- Updated modem library and `example-lpp` is no longer using it. Use control commands to update cell IDs and IMSI instead.
 - Added options to use the SLP address instead of providing `--host`.
     - `--slp-host-imsi` to use the IMSI to generate the SLP address.
     - `--slp-host-cell` to use the cell information to generate the SLP address.
