@@ -6,11 +6,29 @@ Control commands can be used to configure/instruct the client to perform certain
 
 Here are the available commands:
 * [CID](#cid)
+* [IDENTITY](#identity)
 
 ### CID
 
 Notify the client that the cell ID has changed. The client will then request (update) the assistance data for the new cell ID.
 
-Usage: `/CID,L,MNC,MCC,TAC,CID`
+Usage: `/CID,<ACT>,<MNC>,<MCC>,<TAC>,<CID>`
+* `<ACT>` - Access Technology (L: LTE, N: NR)
+* `<MNC>` - Mobile Network Code
+* `<MCC>` - Mobile Country Code
+* `<TAC>` - Location Area Code (TAC) or Tracking Area Code (TAC)
+* `<CID>` - Cell ID
 
 Example: `/CID,L,240,01,0,3`
+
+### IDENTITY
+
+Provide the client with the IMSI, MSISDN, or IP address. 
+
+Usage: `/IDENTITY,<TYPE>,<VALUE>`
+* `<TYPE>` - Type of identity (IMSI, MSISDN, IP)
+* `<VALUE>` - Identity value
+
+Example: `/IDENTITY,IMSI,240010000000000`
+
+

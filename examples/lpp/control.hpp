@@ -8,6 +8,7 @@
 class ControlParser {
 public:
     std::function<void(CellID)> on_cid;
+    std::function<void(unsigned long long)> on_identity_imsi;
 
     void parse(std::unique_ptr<interface::Interface>& interface);
 

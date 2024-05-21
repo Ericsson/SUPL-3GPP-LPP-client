@@ -239,7 +239,14 @@ bool LPP_Client::supl_send(std::vector<LPP_Message*> const& messages) {
         supl_pos->posPayLoad.choice.ver2_PosPayLoad_extension.lPPPayload = payload;
     }
 
-    return mSUPL->send(message);
+    if (mSUPL->send(message)) {
+        for (auto& data : messages) {
+            lpp_destroy(data);
+        }
+        return true;
+    } else {
+        return false;
+    }
 }
 
 OCTET_STRING* LPP_Client::encode(LPP_Message* message) {
@@ -343,8 +350,7 @@ bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transact
             disconnect();
             return false;
         }
-
-        lpp_destroy(message);
+        return true;
     } else if (lpp_is_request_location_information(message)) {
         return handle_request_location_information(message, transaction);
     }
@@ -455,8 +461,6 @@ LPP_Client::AD_Request LPP_Client::request_assistance_data(CellID cell, void* us
         return AD_REQUEST_INVALID;
     }
 
-    lpp_destroy(message);
-
     main_request             = (AD_Request)periodic_id;
     main_request_callback    = callback;
     main_request_userdata    = userdata;
@@ -481,8 +485,6 @@ LPP_Client::AD_Request LPP_Client::request_assistance_data_ssr(CellID cell, void
         disconnect();
         return AD_REQUEST_INVALID;
     }
-
-    lpp_destroy(message);
 
     main_request             = (AD_Request)periodic_id;
     main_request_callback    = callback;
@@ -510,10 +512,8 @@ bool LPP_Client::request_agnss(CellID cell, void* userdata, AD_Callback callback
         agnss_request_userdata    = userdata;
         agnss_request_transaction = transaction;
         if (!wait_for_assistance_data_response(&transaction)) {
-            lpp_destroy(message);
             return false;
         } else {
-            lpp_destroy(message);
             return true;
         }
     };
@@ -534,7 +534,7 @@ bool LPP_Client::update_assistance_data(AD_Request id, CellID cell) {
     auto transaction = new_transaction();
     auto message     = lpp_request_assistance_data(&transaction, cell, (long)id, 1);
     if (!supl_send(message)) {
-        disconnect();
+        lpp_destroy(message);
         return false;
     }
 
@@ -630,8 +630,8 @@ bool LPP_Client::handle_provide_location_information(LPP_Client::ProvideLI* pli)
 
     assert(message);
     auto result = supl_send(message);
-    lpp_destroy(message);
     if (!result) {
+        lpp_destroy(message);
         printf("ERROR: Failed to send LPP message\n");
         return false;
     }

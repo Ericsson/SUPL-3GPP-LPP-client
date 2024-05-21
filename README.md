@@ -7,7 +7,7 @@ This project is a set of libraries, examples and tools to facilitate the develop
 
 ## Libraries
 * 3GPP LPP client - A library that can be used to communicate with a SUPL server and request assistance data.
-* RTCM converter - Converts RTCM messages to 3GPP LPP messages
+* RTCM converter - Converts 3GPP LPP messages to RTCM messages
 * SPARTN converter - Converts 3GPP LPP messages to SPARTN messages
 * Interface - A set of interfaces that can be read or written to, e.g. a device, a file, a socket, etc.
 * u-Blox Receiver - A library that can be used to communicate with a u-Blox receiver.

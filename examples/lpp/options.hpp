@@ -29,6 +29,8 @@ struct LocationServerOptions {
 
 /// Identity options.
 struct IdentityOptions {
+    /// Wait for the identity to be provided via the control interface.
+    bool wait_for_identity;
     /// Identify the device with MSISDN.
     std::unique_ptr<unsigned long long> msisdn;
     /// Identify the device with IMSI.
@@ -52,16 +54,6 @@ struct CellOptions {
     unsigned long long cid;
     /// Is NR cell.
     bool is_nr;
-};
-
-struct ModemDevice {
-    std::string device;
-    int         baud_rate;
-};
-
-/// Modem options.
-struct ModemOptions {
-    std::unique_ptr<ModemDevice> device;
 };
 
 /// Output options.
@@ -121,7 +113,6 @@ struct Options {
     LocationServerOptions      location_server_options;
     IdentityOptions            identity_options;
     CellOptions                cell_options;
-    ModemOptions               modem_options;
     OutputOptions              output_options;
     UbloxOptions               ublox_options;
     NmeaOptions                nmea_options;
