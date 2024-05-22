@@ -21,15 +21,17 @@ class SsrCommand final : public Command {
 public:
     SsrCommand()
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
-          mFormatArg(nullptr), mUraOverrideArg(nullptr), mUbloxClockCorrectionArg(nullptr),
-          mForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr),
-          mSf055Override(nullptr), mSf055Default(nullptr), mSf042Override(nullptr),
-          mSf042Default(nullptr), mIncreasingSiou(nullptr), mFilterByOcb(nullptr),
-          mIgnoreL2L(nullptr), mPrintRTCMArg(nullptr) {}
+          mFormatArg(nullptr), mUraOverrideArg(nullptr), mUraDefaultArg(nullptr),
+          mUbloxClockCorrectionArg(nullptr), mForceContinuityArg(nullptr),
+          mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr), mSf055Override(nullptr),
+          mSf055Default(nullptr), mSf042Override(nullptr), mSf042Default(nullptr),
+          mIncreasingSiou(nullptr), mFilterByOcb(nullptr), mIgnoreL2L(nullptr),
+          mPrintRTCMArg(nullptr) {}
 
     ~SsrCommand() override {
         delete mFormatArg;
         delete mUraOverrideArg;
+        delete mUraDefaultArg;
         delete mUbloxClockCorrectionArg;
         delete mForceContinuityArg;
         delete mAverageZenithDelayArg;
@@ -50,6 +52,7 @@ public:
 private:
     args::ValueFlag<std::string>* mFormatArg;
     args::ValueFlag<int>*         mUraOverrideArg;
+    args::ValueFlag<int>*         mUraDefaultArg;
     args::Flag*                   mUbloxClockCorrectionArg;
     args::Flag*                   mForceContinuityArg;
     args::Flag*                   mAverageZenithDelayArg;
