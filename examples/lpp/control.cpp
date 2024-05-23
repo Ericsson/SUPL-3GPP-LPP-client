@@ -15,10 +15,19 @@ static std::vector<std::string> split(std::string const& str, char delimiter) {
 }
 
 void ControlParser::parse(std::unique_ptr<interface::Interface>& interface) {
+    if(!interface->is_open()) {
+        interface->open();
+    }
+
+    if(!interface->is_open()) {
+        return;
+    }
+
     while (interface->can_read()) {
         char   buffer[128];
         size_t length = interface->read(buffer, sizeof(buffer));
         if (length <= 0) {
+            interface->close();
             break;
         }
 

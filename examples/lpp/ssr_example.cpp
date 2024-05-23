@@ -289,14 +289,14 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
         nanosleep(&timeout, nullptr);
 
-        if (control_options.interface) {
-            gControlParser.parse(control_options.interface);
-        }
-
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.
         if (!client.process()) {
             throw std::runtime_error("Unable to process LPP client (probably disconnected)");
+        }
+
+        if (control_options.interface) {
+            gControlParser.parse(control_options.interface);
         }
     }
 }

@@ -732,7 +732,8 @@ void Generator::generate_ocb(uint16_t iod) {
 #ifdef SPARTN_DEBUG_PRINT
                     printf("    sf024: %u [default]\n", mUraDefault);
 #endif
-                    builder.sf024_raw(mUraDefault);
+                    uint8_t ura_value = mUraDefault < 0 ? 0 : (mUraDefault > 7 ? 7 : mUraDefault);
+                    builder.sf024_raw(ura_value);
                 }
             }
 

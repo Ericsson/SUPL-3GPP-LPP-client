@@ -292,6 +292,8 @@ static void troposphere_data_block(MessageBuilder&                       builder
 #ifdef SPARTN_DEBUG_PRINT
         printf("  sf042: %d [default]\n", sf042_default);
 #endif
+        uint8_t value =
+            sf042_default < 0 ? 0 : (sf042_default > 7 ? 7 : static_cast<uint8_t>(sf042_default));
         builder.sf042_raw(sf042_default);
     }
 
@@ -467,7 +469,10 @@ static void ionosphere_data_block_1(MessageBuilder& builder, HpacSatellite const
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf055: %d [default]\n", sf055_default);
 #endif
-            builder.sf055_raw(sf055_default);
+            uint8_t value = sf055_default < 0 ?
+                                0 :
+                                (sf055_default > 15 ? 15 : static_cast<uint8_t>(sf055_default));
+            builder.sf055_raw(value);
         } else {
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf055: %f\n", q.value);

@@ -1,9 +1,9 @@
 #include "options.hpp"
 
+#include <inttypes.h>
 #include <netinet/in.h>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <inttypes.h>
 
 #include <interface/interface.hpp>
 #include <modem/modem.hpp>
@@ -70,9 +70,10 @@ static int start_server(int port) {
         auto length = snprintf(buffer, sizeof(buffer), "%s\r\n", command);
         auto result = ::send(client, buffer, static_cast<size_t>(length), MSG_NOSIGNAL);
         if (result < 0) {
-            printf("write failed\n");
-            exit(1);
+            return false;
         }
+
+        return true;
     };
 
     for (;;) {
@@ -80,14 +81,17 @@ static int start_server(int port) {
         auto client = ::accept(socket, nullptr, nullptr);
         if (client < 0) {
             printf("accept failed\n");
-            exit(1);
+            continue;
         }
 
         device.get_cgmi();
         auto cimi = device.get_cimi();
         char send_buffer[1024];
         snprintf(send_buffer, sizeof(send_buffer), "/IDENTITY,IMSI,%" PRIu64, cimi.imsi);
-        send_command(client, send_buffer);
+        if (!send_command(client, send_buffer)) {
+            ::close(client);
+            continue;
+        }
 
         auto connected = true;
         while (connected) {
@@ -113,9 +117,12 @@ static int start_server(int port) {
                     snprintf(send_buffer, sizeof(send_buffer), "/CID,L,%d,%d,%d,%d", cops.mcc,
                              cops.mnc, reg.lac, reg.ci);
                 }
-                send_command(client, send_buffer);
+                if (!send_command(client, send_buffer)) {
+                    ::close(client);
+                    continue;
+                }
             }
-            
+
             sleep(config.update_interval);
         }
 
