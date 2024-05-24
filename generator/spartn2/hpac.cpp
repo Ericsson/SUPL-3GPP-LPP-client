@@ -265,13 +265,17 @@ static double compute_average_zentith_delay(GNSS_SSR_GriddedCorrection_r16 const
 
 static void troposphere_data_block(MessageBuilder&                       builder,
                                    GNSS_SSR_GriddedCorrection_r16 const& data, int sf042_override,
-                                   int sf042_default, bool use_average_zenith_delay, bool calculate_sf051) {
+                                   int sf042_default, bool use_average_zenith_delay,
+                                   bool calculate_sf051) {
     // NOTE(ewasjon): Use a polynomial of degree 0, as we don't have a polynomial in 3GPP
     // LPP. This will result in a constant value for the troposphere correction.
     builder.sf041(0 /* T_00 */);
 
     if (sf042_override >= 0) {
         uint8_t value = sf042_override > 7 ? 7 : static_cast<uint8_t>(sf042_override);
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  sf042: %d [override]\n", value);
+#endif
         builder.sf042_raw(value);
     } else if (data.troposphericDelayQualityIndicator_r16) {
         // TODO(ewasjon): Refactor as function in decode namespace
@@ -280,8 +284,16 @@ static void troposphere_data_block(MessageBuilder&                       builder
         auto  val     = quality.buf[0] & 0x7;
         auto  q       = pow(3, cls) * (1 + static_cast<double>(val) / 4.0) - 1;
         auto  q_meter = q / 1000.0;
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  sf042: %f\n", q_meter);
+#endif
         builder.sf042(q_meter);
     } else {
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  sf042: %d [default]\n", sf042_default);
+#endif
+        uint8_t value =
+            sf042_default < 0 ? 0 : (sf042_default > 7 ? 7 : static_cast<uint8_t>(sf042_default));
         builder.sf042_raw(sf042_default);
     }
 
@@ -457,7 +469,10 @@ static void ionosphere_data_block_1(MessageBuilder& builder, HpacSatellite const
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf055: %d [default]\n", sf055_default);
 #endif
-            builder.sf055_raw(sf055_default);
+            uint8_t value = sf055_default < 0 ?
+                                0 :
+                                (sf055_default > 15 ? 15 : static_cast<uint8_t>(sf055_default));
+            builder.sf055_raw(value);
         } else {
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf055: %f\n", q.value);

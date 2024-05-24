@@ -28,7 +28,8 @@ namespace generator {
 namespace spartn {
 
 Generator::Generator()
-    : mGenerationIndex(0), mNextAreaId(0), mUraOverride(-1), mContinuityIndicator(-1),
+    : mGenerationIndex(0), mNextAreaId(0), mUraOverride(-1),
+      mUraDefault(0 /* SF024(0) = unknown */), mContinuityIndicator(-1),
       mUBloxClockCorrection(false), mSf055Override(-1), mSf055Default(0 /* SF055(0) = invalid */),
       mSf042Override(-1), mSf042Default(7 /* SF042(7) = >0.320m */),
       mComputeAverageZenithDelay(false), mGroupByEpochTime(false), mIodeShift(true),

@@ -61,6 +61,11 @@ bool FileDescriptor::can_write() IF_NOEXCEPT {
     return select(false, true, false, &tv);
 }
 
+bool FileDescriptor::can_except() IF_NOEXCEPT {
+    struct timeval tv = {0, 0};
+    return select(false, false, true, &tv);
+}
+
 bool FileDescriptor::wait_for_read() IF_NOEXCEPT {
     return select(true, false, false, nullptr);
 }

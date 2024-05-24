@@ -6,6 +6,13 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#ifdef INTERFACE_SOCKET_DEBUG
+#include <cstdio>
+#define SOCKET_DEBUG(...) printf(__VA_ARGS__)
+#else
+#define SOCKET_DEBUG(...)
+#endif
+
 namespace interface {
 
 TcpInterface::TcpInterface(std::string host, uint16_t port, bool reconnect) IF_NOEXCEPT
@@ -32,7 +39,8 @@ void TcpInterface::open() {
     struct addrinfo* result;
     auto             error = getaddrinfo(mHost.c_str(), service.c_str(), &hints, &result);
     if (error != 0) {
-        throw std::runtime_error("Failed to get address info");
+        SOCKET_DEBUG("TCP: failed to getaddrinfo %s:%u\n", mHost.c_str(), mPort);
+        return;
     }
 
     for (auto* rp = result; rp != nullptr; rp = rp->ai_next) {
@@ -45,7 +53,7 @@ void TcpInterface::open() {
     }
 
     freeaddrinfo(result);
-    throw std::runtime_error("Failed to connect to host");
+    SOCKET_DEBUG("TCP: failed to connect %s:%u\n", mHost.c_str(), mPort);
 }
 
 void TcpInterface::close() {

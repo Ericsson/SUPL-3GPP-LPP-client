@@ -539,9 +539,8 @@ bool LPP_Client::update_assistance_data(AD_Request id, CellID cell) {
     }
 
     main_request_transaction = transaction;
-    if (!wait_for_assistance_data_response(&transaction)) {
-        return false;
-    }
+    // NOTE(julgodis): We don't wait for a response here because the PoC server does not send back
+    // a non-periodic response if the new cell is not found. This should be fixed in the future.
 
     return true;
 }

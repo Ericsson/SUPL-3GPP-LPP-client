@@ -718,12 +718,22 @@ void Generator::generate_ocb(uint16_t iod) {
                 if (mUraOverride >= 0) {
                     uint8_t ura_value = mUraOverride > 7 ? 7 : static_cast<uint8_t>(mUraOverride);
                     builder.sf024_raw(ura_value);
+#ifdef SPARTN_DEBUG_PRINT
+                    printf("    sf024: %u [override]\n", ura_value);
+#endif
                 } else if (satellite.ura) {
                     auto& ura   = *satellite.ura;
                     auto  value = decode::ssr_URA_r16(ura.ssr_URA_r16);
+#ifdef SPARTN_DEBUG_PRINT
+                    printf("    sf024: %f\n", value);
+#endif
                     builder.sf024(value);
                 } else {
-                    builder.sf024_raw(0);
+#ifdef SPARTN_DEBUG_PRINT
+                    printf("    sf024: %u [default]\n", mUraDefault);
+#endif
+                    uint8_t ura_value = mUraDefault < 0 ? 0 : (mUraDefault > 7 ? 7 : mUraDefault);
+                    builder.sf024_raw(ura_value);
                 }
             }
 

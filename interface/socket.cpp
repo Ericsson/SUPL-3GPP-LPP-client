@@ -48,6 +48,7 @@ Socket& Socket::operator=(Socket&& other) IF_NOEXCEPT {
 void Socket::close() IF_NOEXCEPT {
     SOCKET_DEBUG("[socket/%6d] closed\n", mSocket);
     if (mSocket >= 0) {
+        ::shutdown(mSocket, SHUT_RDWR);
         ::close(mSocket);
         mSocket = -1;
     }
@@ -55,20 +56,20 @@ void Socket::close() IF_NOEXCEPT {
 
 bool Socket::can_read() IF_NOEXCEPT {
     struct timeval tv = {0, 0};
-    return select(true, false, false, &tv);
+    return select(true, false, true, &tv);
 }
 
 bool Socket::can_write() IF_NOEXCEPT {
     struct timeval tv = {0, 0};
-    return select(false, true, false, &tv);
+    return select(false, true, true, &tv);
 }
 
 bool Socket::wait_for_read() IF_NOEXCEPT {
-    return select(true, false, false, nullptr);
+    return select(true, false, true, nullptr);
 }
 
 bool Socket::wait_for_write() IF_NOEXCEPT {
-    return select(false, true, false, nullptr);
+    return select(false, true, true, nullptr);
 }
 
 bool Socket::select(bool read, bool write, bool except, timeval* tv) IF_NOEXCEPT {

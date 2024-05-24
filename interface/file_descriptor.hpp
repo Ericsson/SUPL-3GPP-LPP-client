@@ -19,6 +19,7 @@ public:
 
     IF_NODISCARD bool can_read() IF_NOEXCEPT;
     IF_NODISCARD bool can_write() IF_NOEXCEPT;
+    IF_NODISCARD bool can_except() IF_NOEXCEPT;
 
     bool wait_for_read() IF_NOEXCEPT;
     bool wait_for_write() IF_NOEXCEPT;

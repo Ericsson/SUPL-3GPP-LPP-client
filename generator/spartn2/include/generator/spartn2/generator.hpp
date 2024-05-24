@@ -45,6 +45,7 @@ public:
     ~Generator();
 
     void set_ura_override(int ura_override) { mUraOverride = ura_override; }
+    void set_ura_default(int ura_default) { mUraDefault = ura_default; }
 
     void set_continuity_indicator(double continuity_indicator) {
         mContinuityIndicator = continuity_indicator;
@@ -106,7 +107,8 @@ private:
     std::unique_ptr<CorrectionData>                                   mCorrectionData;
     std::vector<Message>                                              mMessages;
 
-    int    mUraOverride;          // <0 = no override
+    int    mUraOverride;  // <0 = no override
+    int    mUraDefault;
     double mContinuityIndicator;  // <0 = no override
     bool   mUBloxClockCorrection;
 

@@ -29,6 +29,7 @@ using NReceiver = receiver::nmea::ThreadedReceiver;
 static CellID              gCell;
 static ssr_example::Format gFormat;
 static int                 gUraOverride;
+static int                 gUraDefault;
 static bool                gUBloxClockCorrection;
 static bool                gForceIodeContinuity;
 static bool                gAverageZenithDelay;
@@ -58,7 +59,7 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
 [[noreturn]] void execute(Options options, ssr_example::Format format, int ura_override,
-                          bool ublox_clock_correction, bool force_continuity,
+                          int ura_default, bool ublox_clock_correction, bool force_continuity,
                           bool average_zenith_delay, bool enable_iode_shift, int sf055_override,
                           int sf055_default, int sf042_override, int sf042_default,
                           bool increasing_siou, bool filter_by_ocb, bool ignore_l2l,
@@ -66,6 +67,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gOptions              = std::move(options);
     gFormat               = format;
     gUraOverride          = ura_override;
+    gUraDefault           = ura_default;
     gUBloxClockCorrection = ublox_clock_correction;
     gForceIodeContinuity  = force_continuity;
     gAverageZenithDelay   = average_zenith_delay;
@@ -150,6 +152,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
 #ifdef INCLUDE_GENERATOR_SPARTN
     gSpartnGeneratorNew.set_ura_override(gUraOverride);
+    gSpartnGeneratorNew.set_ura_default(gUraDefault);
     gSpartnGeneratorNew.set_ublox_clock_correction(gUBloxClockCorrection);
     if (gForceIodeContinuity) {
         gSpartnGeneratorNew.set_continuity_indicator(320.0);
@@ -174,9 +177,9 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 #endif
 
     LPP_Client::AD_Request request;
-    LPP_Client client{false /* experimental segmentation support */};
-    bool client_initialized = false;
-    bool client_got_identity = false;
+    LPP_Client             client{false /* experimental segmentation support */};
+    bool                   client_initialized  = false;
+    bool                   client_got_identity = false;
 
     if (!identity_options.use_supl_identity_fix) {
         client.use_incorrect_supl_identity();
@@ -188,7 +191,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         control_options.interface->print_info();
 
         gControlParser.on_cid = [&](CellID cell) {
-            if(!client_initialized) return;
+            if (!client_initialized) return;
             if (gCell != cell) {
                 printf("[control] cell: %ld:%ld:%ld:%llu\n", cell.mcc, cell.mnc, cell.tac,
                        cell.cell);
@@ -202,22 +205,22 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
         gControlParser.on_identity_imsi = [&](unsigned long long imsi) {
             printf("[control] identity: imsi: %llu\n", imsi);
-            if(client_got_identity) return;
+            if (client_got_identity) return;
             client.set_identity_imsi(imsi);
             client_got_identity = true;
         };
     }
 
-    if(identity_options.wait_for_identity) {
-        if(!control_options.interface) {
+    if (identity_options.wait_for_identity) {
+        if (!control_options.interface) {
             throw std::runtime_error("No control interface provided");
         }
 
         printf("  waiting for identity\n");
-        if(identity_options.imsi || identity_options.msisdn || identity_options.ipv4) {
+        if (identity_options.imsi || identity_options.msisdn || identity_options.ipv4) {
             printf("  (imsi, msisdn, or ipv4 identity ignored)\n");
         }
-        while(!client_got_identity) {
+        while (!client_got_identity) {
             struct timespec timeout;
             timeout.tv_sec  = 0;
             timeout.tv_nsec = 1000000 * 100;  // 100 ms
@@ -286,14 +289,14 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         timeout.tv_nsec = 1000000 * 100;  // 100 ms
         nanosleep(&timeout, nullptr);
 
-        if (control_options.interface) {
-            gControlParser.parse(control_options.interface);
-        }
-
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.
         if (!client.process()) {
             throw std::runtime_error("Unable to process LPP client (probably disconnected)");
+        }
+
+        if (control_options.interface) {
+            gControlParser.parse(control_options.interface);
         }
     }
 }
@@ -440,6 +443,7 @@ void SsrCommand::parse(args::Subparser& parser) {
     // NOTE: parse may be called multiple times
     delete mFormatArg;
     delete mUraOverrideArg;
+    delete mUraDefaultArg;
     delete mUbloxClockCorrectionArg;
     delete mForceContinuityArg;
     delete mAverageZenithDelayArg;
@@ -471,11 +475,15 @@ void SsrCommand::parse(args::Subparser& parser) {
     });
 
     mUraOverrideArg = new args::ValueFlag<int>(
-        parser, "ura",
-        "A hacky fix to set a nominal value for the URA if the LPP message does not include it"
-        ", value will be clamped between 0-7.",
+        parser, "ura-override",
+        "Override the URA (SF024) value, value will be clamped between 0-7. "
+        "Where 0 indicates that the value is unknown.",
         {"ura-override"}, args::Options::Single);
-    mUraOverrideArg->HelpDefault("0");
+    mUraDefaultArg = new args::ValueFlag<int>(
+        parser, "ura-default",
+        "Set the default URA (SF024) value, value will be clamped between 0-7. "
+        "Where 0 indicates that the value is unknown.",
+        {"ura-default"}, args::Options::Single);
 
     mUbloxClockCorrectionArg =
         new args::Flag(parser, "ublox-clock-correction", "Change the sign of the clock correction",
@@ -552,9 +560,14 @@ void SsrCommand::execute(Options options) {
         }
     }
 
-    auto ura_override = 0;
+    auto ura_override = -1;
     if (*mUraOverrideArg) {
         ura_override = mUraOverrideArg->Get();
+    }
+
+    auto ura_default = -1;
+    if (*mUraDefaultArg) {
+        ura_default = mUraDefaultArg->Get();
     }
 
     auto ublox_clock_correction = false;
@@ -625,9 +638,10 @@ void SsrCommand::execute(Options options) {
         print_rtcm = true;
     }
 
-    ::execute(std::move(options), format, ura_override, ublox_clock_correction, force_continuity,
-              average_zenith_delay, iode_shift, sf055_override, sf055_default, sf042_override,
-              sf042_default, increasing_siou, filter_by_ocb, ignore_l2l, print_rtcm);
+    ::execute(std::move(options), format, ura_override, ura_default, ublox_clock_correction,
+              force_continuity, average_zenith_delay, iode_shift, sf055_override, sf055_default,
+              sf042_override, sf042_default, increasing_siou, filter_by_ocb, ignore_l2l,
+              print_rtcm);
 }
 
 }  // namespace ssr_example
