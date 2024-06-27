@@ -19,24 +19,19 @@ PLI_Result provide_location_information_callback(UNUSED LocationInformation& loc
                                                  UNUSED void*                userdata) {
 #if 0
     // Example implementation
-    location.tai_time      = TAI_Time::now();
-    location.latitude  = 20;
-    location.longitude = 25;
-    location.altitude = 30;
-    location.bearing = 132;
-    location.horizontal_accuracy = 1;
-    location.horizontal_speed = 2;
-    location.horizontal_speed_accuracy = 3;
-    location.vertical_accuracy = 1;
-    location.vertical_speed = 2;
-    location.vertical_speed_accuracy = 3;
-    location.vertical_velocity_direction = VerticalDirection::UP;
+    location.time     = TAI_Time::now();
+    location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
+        20, 25, 30, HorizontalAccuracy::from_ellipse(0.5, 0.5, 0),
+        VerticalAccuracy::from_1sigma(0.5));
 
-    metrics.fixq = FixQuality::RTK_FIX;
-    metrics.sats = 30;
-    metrics.age = 5;
-    metrics.hdop = 10;
-    metrics.vdop = 15;
+    location.velocity = VelocityShape::horizontal_vertical_with_uncertainty(10, 0.5, 90, 1, 0.5,
+                                                                            VerticalDirection::Up);
+
+    metrics.fix_quality          = FixQuality::RTK_FIX;
+    metrics.number_of_satellites = 30;
+    metrics.age_of_corrections   = 5;
+    metrics.hdop                 = 10;
+    metrics.pdop                 = 15;
     return PLI_Result::LI_AND_METRICS;
 #else
     return PLI_Result::NOT_AVAILABLE;
