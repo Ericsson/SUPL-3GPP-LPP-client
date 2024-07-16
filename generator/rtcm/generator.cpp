@@ -285,10 +285,14 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
 // 3GPP LPP specification 37.355.
 static RTCM_CONSTEXPR uint16_t LRF_MESSAGE_ID = 355;
 
-static Message generate_framing_message(bool multiple_message_bit, uint8_t const* lpp_data,
+static Message generate_framing_message(int message_id, bool multiple_message_bit, uint8_t const* lpp_data,
                                         size_t lpp_data_size) {
+    if (message_id < 0 || message_id > 4095) {
+        message_id = LRF_MESSAGE_ID;
+    }
+
     auto encoder = Encoder();
-    encoder.u16(12, LRF_MESSAGE_ID);
+    encoder.u16(12, static_cast<uint16_t>(message_id));
     encoder.u8(4, 0 /* subtype */);
     encoder.u8(1, multiple_message_bit ? 1 : 0);
     encoder.u8(7, 0 /* reserved */);
@@ -306,8 +310,8 @@ static Message generate_framing_message(bool multiple_message_bit, uint8_t const
     return generator::rtcm::Message(LRF_MESSAGE_ID, frame_encoder.buffer());
 }
 
-std::vector<Message> Generator::generate_framing(void const* lpp_data,
-                                                 size_t      lpp_data_size) RTCM_NOEXCEPT {
+std::vector<Message> Generator::generate_framing(int message_id, void const* lpp_data,
+                                                 size_t lpp_data_size) RTCM_NOEXCEPT {
     std::vector<Message> messages;
 
     auto ptr  = reinterpret_cast<uint8_t const*>(lpp_data);
@@ -315,7 +319,7 @@ std::vector<Message> Generator::generate_framing(void const* lpp_data,
     while (size > 0) {
         auto length = std::min(size, static_cast<size_t>(1020 /* 1023 - 3 byte (header) */));
         auto multiple_message_bit = size > length;
-        auto message              = generate_framing_message(multiple_message_bit, ptr, length);
+        auto message = generate_framing_message(message_id, multiple_message_bit, ptr, length);
         messages.emplace_back(std::move(message));
         ptr += length;
         size -= length;

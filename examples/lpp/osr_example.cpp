@@ -20,6 +20,7 @@ using NReceiver = receiver::nmea::ThreadedReceiver;
 
 static CellID                         gCell;
 static osr_example::Format            gFormat;
+static int                            gLrfRtcmId;
 static generator::rtcm::MessageFilter gFilter;
 static Options                        gOptions;
 static bool                           gPrintRtcm;
@@ -30,10 +31,11 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-[[noreturn]] void execute(Options options, osr_example::Format format,
+[[noreturn]] void execute(Options options, osr_example::Format format, int lrf_rtcm_id,
                           osr_example::MsmType msm_type, bool print_rtcm) {
     gOptions   = std::move(options);
     gFormat    = format;
+    gLrfRtcmId = lrf_rtcm_id;
     gPrintRtcm = print_rtcm;
 
     auto& cell_options                 = gOptions.cell_options;
@@ -311,7 +313,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
         auto octet = client->encode(message);
         if (octet) {
             auto submessages =
-                generator::rtcm::Generator::generate_framing(octet->buf, octet->size);
+                generator::rtcm::Generator::generate_framing(gLrfRtcmId, octet->buf, octet->size);
 
             if (gPrintRtcm) {
                 size_t length = 0;
@@ -407,6 +409,7 @@ namespace osr_example {
 void OsrCommand::parse(args::Subparser& parser) {
     // NOTE: parse may be called multiple times
     delete mFormatArg;
+    delete mLRFMessageIdArg;
     delete mMsmTypeArg;
     delete mPrintRTCMArg;
 
@@ -425,6 +428,11 @@ void OsrCommand::parse(args::Subparser& parser) {
         "lrf-uper",
 #endif
     });
+
+    mLRFMessageIdArg =
+        new args::ValueFlag<int>(parser, "lrf-message-id", "RTCM message ID for LRF-UPER format",
+                                 {"lrf-message-id"}, args::Options::Single);
+    mLRFMessageIdArg->HelpDefault("355");
 
     mMsmTypeArg = new args::ValueFlag<std::string>(parser, "msm_type", "RTCM MSM type",
                                                    {'y', "msm_type"}, args::Options::Single);
@@ -461,6 +469,11 @@ void OsrCommand::execute(Options options) {
         }
     }
 
+    auto lrf_rtcm_id = 355;
+    if (*mLRFMessageIdArg) {
+        lrf_rtcm_id = mLRFMessageIdArg->Get();
+    }
+
     auto msm_type = MsmType::ANY;
     if (*mMsmTypeArg) {
         if (mMsmTypeArg->Get() == "any") {
@@ -483,7 +496,7 @@ void OsrCommand::execute(Options options) {
         print_rtcm = false;
     }
 
-    ::execute(std::move(options), format, msm_type, print_rtcm);
+    ::execute(std::move(options), format, lrf_rtcm_id, msm_type, print_rtcm);
 }
 
 }  // namespace osr_example

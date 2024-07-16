@@ -104,10 +104,11 @@ public:
 
     /// Generate RTCM messages that acts as framing for the LPP encoded data. One LPP message may be
     /// split into multiple RTCM messages. The RTCM message id of these message are 355.
+    /// @param[in] message_id The message id of the RTCM messages.
     /// @param[in] lpp_data The LPP encoded data.
     /// @param[in] lpp_data_size The size of the LPP encoded data.
     /// @return The generated RTCM messages.
-    static RTCM_NODISCARD std::vector<Message> generate_framing(void const* lpp_data, size_t lpp_data_size) RTCM_NOEXCEPT;
+    static RTCM_NODISCARD std::vector<Message> generate_framing(int message_id, void const* lpp_data, size_t lpp_data_size) RTCM_NOEXCEPT;
 
 private:
     uint32_t                                  mGenerationIndex;

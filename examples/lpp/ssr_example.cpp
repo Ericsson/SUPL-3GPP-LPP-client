@@ -28,6 +28,7 @@ using NReceiver = receiver::nmea::ThreadedReceiver;
 
 static CellID              gCell;
 static ssr_example::Format gFormat;
+static int                 gLrfRtcmId;
 static int                 gUraOverride;
 static int                 gUraDefault;
 static bool                gUBloxClockCorrection;
@@ -58,14 +59,15 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-[[noreturn]] void execute(Options options, ssr_example::Format format, int ura_override,
-                          int ura_default, bool ublox_clock_correction, bool force_continuity,
-                          bool average_zenith_delay, bool enable_iode_shift, int sf055_override,
-                          int sf055_default, int sf042_override, int sf042_default,
-                          bool increasing_siou, bool filter_by_ocb, bool ignore_l2l,
-                          bool print_rtcm) {
+[[noreturn]] void execute(Options options, ssr_example::Format format, int lrf_rtcm_id,
+                          int ura_override, int ura_default, bool ublox_clock_correction,
+                          bool force_continuity, bool average_zenith_delay, bool enable_iode_shift,
+                          int sf055_override, int sf055_default, int sf042_override,
+                          int sf042_default, bool increasing_siou, bool filter_by_ocb,
+                          bool ignore_l2l, bool print_rtcm) {
     gOptions              = std::move(options);
     gFormat               = format;
+    gLrfRtcmId            = lrf_rtcm_id;
     gUraOverride          = ura_override;
     gUraDefault           = ura_default;
     gUBloxClockCorrection = ublox_clock_correction;
@@ -385,7 +387,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
         auto octet = client->encode(message);
         if (octet) {
             auto submessages =
-                generator::rtcm::Generator::generate_framing(octet->buf, octet->size);
+                generator::rtcm::Generator::generate_framing(gLrfRtcmId, octet->buf, octet->size);
 
             if (gPrintRtcm) {
                 size_t length = 0;
@@ -442,6 +444,7 @@ namespace ssr_example {
 void SsrCommand::parse(args::Subparser& parser) {
     // NOTE: parse may be called multiple times
     delete mFormatArg;
+    delete mLRFMessageIdArg;
     delete mUraOverrideArg;
     delete mUraDefaultArg;
     delete mUbloxClockCorrectionArg;
@@ -473,6 +476,11 @@ void SsrCommand::parse(args::Subparser& parser) {
         "lrf-uper",
 #endif
     });
+
+    mLRFMessageIdArg =
+        new args::ValueFlag<int>(parser, "lrf-message-id", "RTCM message ID for LRF-UPER format",
+                                 {"lrf-message-id"}, args::Options::Single);
+    mLRFMessageIdArg->HelpDefault("355");
 
     mUraOverrideArg = new args::ValueFlag<int>(
         parser, "ura-override",
@@ -560,6 +568,11 @@ void SsrCommand::execute(Options options) {
         }
     }
 
+    auto lrf_rtcm_id = 355;
+    if (*mLRFMessageIdArg) {
+        lrf_rtcm_id = mLRFMessageIdArg->Get();
+    }
+
     auto ura_override = -1;
     if (*mUraOverrideArg) {
         ura_override = mUraOverrideArg->Get();
@@ -638,10 +651,10 @@ void SsrCommand::execute(Options options) {
         print_rtcm = true;
     }
 
-    ::execute(std::move(options), format, ura_override, ura_default, ublox_clock_correction,
-              force_continuity, average_zenith_delay, iode_shift, sf055_override, sf055_default,
-              sf042_override, sf042_default, increasing_siou, filter_by_ocb, ignore_l2l,
-              print_rtcm);
+    ::execute(std::move(options), format, lrf_rtcm_id, ura_override, ura_default,
+              ublox_clock_correction, force_continuity, average_zenith_delay, iode_shift,
+              sf055_override, sf055_default, sf042_override, sf042_default, increasing_siou,
+              filter_by_ocb, ignore_l2l, print_rtcm);
 }
 
 }  // namespace ssr_example

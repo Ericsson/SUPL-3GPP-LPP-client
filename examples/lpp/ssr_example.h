@@ -21,7 +21,7 @@ class SsrCommand final : public Command {
 public:
     SsrCommand()
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
-          mFormatArg(nullptr), mUraOverrideArg(nullptr), mUraDefaultArg(nullptr),
+          mFormatArg(nullptr), mLRFMessageIdArg(nullptr), mUraOverrideArg(nullptr), mUraDefaultArg(nullptr),
           mUbloxClockCorrectionArg(nullptr), mForceContinuityArg(nullptr),
           mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr), mSf055Override(nullptr),
           mSf055Default(nullptr), mSf042Override(nullptr), mSf042Default(nullptr),
@@ -30,6 +30,7 @@ public:
 
     ~SsrCommand() override {
         delete mFormatArg;
+        delete mLRFMessageIdArg;
         delete mUraOverrideArg;
         delete mUraDefaultArg;
         delete mUbloxClockCorrectionArg;
@@ -51,6 +52,7 @@ public:
 
 private:
     args::ValueFlag<std::string>* mFormatArg;
+    args::ValueFlag<int>*         mLRFMessageIdArg;
     args::ValueFlag<int>*         mUraOverrideArg;
     args::ValueFlag<int>*         mUraDefaultArg;
     args::Flag*                   mUbloxClockCorrectionArg;

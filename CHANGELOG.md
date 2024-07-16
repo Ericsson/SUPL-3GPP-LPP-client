@@ -10,6 +10,8 @@
     - `--slp-host-imsi` to use the IMSI to generate the SLP address.
     - `--slp-host-cell` to use the cell information to generate the SLP address.
 - Fixed a bug where the default `ura-override` value was initialized to 0 causing the SPARTN generator to always include it as "unknown".
+- Updated example location implementation in the LPP example to match the new version of the LocationInformation struct (#28 by Phillezi)
+- Added option `--lrf-message-id` to specify the RTCM message type to be used with `--format lrf-uper`.
 
 ## [3.4.9] 2024-05-03
 - Added a few options to controll how SPARTN messages are generated:

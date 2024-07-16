@@ -24,10 +24,11 @@ class OsrCommand final : public Command {
 public:
     OsrCommand()
         : Command("osr", "Request observation data from a location server"), mFormatArg(nullptr),
-          mMsmTypeArg(nullptr), mPrintRTCMArg(nullptr) {}
+          mLRFMessageIdArg(nullptr), mMsmTypeArg(nullptr), mPrintRTCMArg(nullptr) {}
 
     ~OsrCommand() override {
         delete mFormatArg;
+        delete mLRFMessageIdArg;
         delete mMsmTypeArg;
         delete mPrintRTCMArg;
     }
@@ -37,6 +38,7 @@ public:
 
 private:
     args::ValueFlag<std::string>* mFormatArg;
+    args::ValueFlag<int>*         mLRFMessageIdArg;
     args::ValueFlag<std::string>* mMsmTypeArg;
     args::Flag*                   mPrintRTCMArg;
 };
