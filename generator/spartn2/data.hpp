@@ -68,6 +68,7 @@ struct SSR_URA_SatElement_r16;
 
 struct STEC_SatElement_r16;
 struct STEC_ResidualSatElement_r16;
+struct GridElement_r16;
 
 namespace generator {
 namespace spartn {
@@ -75,7 +76,7 @@ namespace spartn {
 struct CorrectionPointSet {
     uint16_t set_id;
     uint16_t area_id;
-    long     grid_points;
+    long     grid_point_count;
     long     referencePointLatitude_r16;
     long     referencePointLongitude_r16;
     long     numberOfStepsLatitude_r16;
@@ -83,6 +84,25 @@ struct CorrectionPointSet {
     long     stepOfLatitude_r16;
     long     stepOfLongitude_r16;
     uint64_t bitmask;
+
+    double reference_point_latitude;
+    double reference_point_longitude;
+    double latitude_delta;
+    double longitude_delta;
+
+    inline bool has_grid_point(long grid_point) const {
+        auto index = 64 - 1 - grid_point;
+        return (bitmask & (1ULL << index)) != 0;
+    }
+
+    inline double latitude_grid_spacing() const {
+        return latitude_delta * numberOfStepsLatitude_r16;
+    }
+    inline double longitude_grid_spacing() const {
+        return longitude_delta * numberOfStepsLongitude_r16;
+    }
+
+    std::vector<long> grid_points() const;
 };
 
 struct OcbSatellite {
@@ -153,6 +173,9 @@ struct HpacCorrections {
     // this is the union of all satellite ids that have at least
     // one correction type.
     std::vector<HpacSatellite> satellites() const;
+    
+    // Find GridElement_r16 for the given grid_id
+    GridElement_r16* find_grid_point(long grid_id) const;
 };
 
 struct HpacData {

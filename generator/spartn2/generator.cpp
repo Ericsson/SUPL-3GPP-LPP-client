@@ -137,7 +137,7 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
             CorrectionPointSet correction_point_set{};
             correction_point_set.set_id  = correction_point_set_id;
             correction_point_set.area_id = next_area_id();
-            correction_point_set.grid_points =
+            correction_point_set.grid_point_count =
                 (array.numberOfStepsLatitude_r16 + 1) * (array.numberOfStepsLongitude_r16 + 1);
             correction_point_set.referencePointLatitude_r16  = array.referencePointLatitude_r16;
             correction_point_set.referencePointLongitude_r16 = array.referencePointLongitude_r16;
@@ -145,6 +145,15 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
             correction_point_set.numberOfStepsLongitude_r16  = array.numberOfStepsLongitude_r16;
             correction_point_set.stepOfLatitude_r16          = array.stepOfLatitude_r16;
             correction_point_set.stepOfLongitude_r16         = array.stepOfLongitude_r16;
+
+            correction_point_set.reference_point_latitude =
+                decode::referencePointLatitude_r16(correction_point_set.referencePointLatitude_r16);
+            correction_point_set.reference_point_longitude = decode::referencePointLongitude_r16(
+                correction_point_set.referencePointLongitude_r16);
+            correction_point_set.latitude_delta =
+                decode::stepOfLatitude_r16(correction_point_set.stepOfLatitude_r16);
+            correction_point_set.longitude_delta =
+                decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16);
 
             uint64_t bitmask = 0;
             if (array.bitmaskOfGrids_r16) {
@@ -160,6 +169,17 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
             } else {
                 bitmask = 0xFFFFFFFFFFFFFFFF;
             }
+
+            if (mFlipGridBitmask) {
+                uint64_t new_bitmask = 0;
+                for (int i = 0; i < 64; i++) {
+                    new_bitmask <<= 1;
+                    new_bitmask |= bitmask & 1;
+                    bitmask >>= 1;
+                }
+                bitmask = new_bitmask;
+            }
+
             correction_point_set.bitmask = bitmask;
 
             auto correction_point_set_ptr =
