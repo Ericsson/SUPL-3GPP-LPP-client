@@ -21,14 +21,20 @@ class SsrCommand final : public Command {
 public:
     SsrCommand()
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
-          mFormatArg(nullptr), mLRFMessageIdArg(nullptr), mUraOverrideArg(nullptr), mUraDefaultArg(nullptr),
-          mUbloxClockCorrectionArg(nullptr), mForceContinuityArg(nullptr),
+          mFormatArg(nullptr), mLRFMessageIdArg(nullptr), mUraOverrideArg(nullptr),
+          mUraDefaultArg(nullptr), mUbloxClockCorrectionArg(nullptr), mForceContinuityArg(nullptr),
           mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr), mSf055Override(nullptr),
           mSf055Default(nullptr), mSf042Override(nullptr), mSf042Default(nullptr),
           mIncreasingSiou(nullptr), mFilterByOcb(nullptr), mIgnoreL2L(nullptr),
-          mPrintRTCMArg(nullptr) {}
+          mPrintRTCMArg(nullptr), mCodeBiasNoTranslateArg(nullptr),
+          mCodeBiasNoCorrectionShiftArg(nullptr), mPhaseBiasNoTranslateArg(nullptr),
+          mPhaseBiasNoCorrectionShiftArg(nullptr), mHydrostaticInZenithArg(nullptr),
+          mNoGPS(nullptr), mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr),
+          mFlipGridBitmask(nullptr) {}
 
-    ~SsrCommand() override {
+    ~SsrCommand() override { cleanup(); }
+
+    void cleanup() {
         delete mFormatArg;
         delete mLRFMessageIdArg;
         delete mUraOverrideArg;
@@ -45,6 +51,16 @@ public:
         delete mFilterByOcb;
         delete mIgnoreL2L;
         delete mPrintRTCMArg;
+        delete mCodeBiasNoTranslateArg;
+        delete mCodeBiasNoCorrectionShiftArg;
+        delete mPhaseBiasNoTranslateArg;
+        delete mPhaseBiasNoCorrectionShiftArg;
+        delete mHydrostaticInZenithArg;
+        delete mNoGPS;
+        delete mNoGLONASS;
+        delete mNoGalileo;
+        delete mBeiDou;
+        delete mFlipGridBitmask;
     }
 
     void parse(args::Subparser& parser) override;
@@ -67,6 +83,16 @@ private:
     args::Flag*                   mFilterByOcb;
     args::Flag*                   mIgnoreL2L;
     args::Flag*                   mPrintRTCMArg;
+    args::Flag*                   mCodeBiasNoTranslateArg;
+    args::Flag*                   mCodeBiasNoCorrectionShiftArg;
+    args::Flag*                   mPhaseBiasNoTranslateArg;
+    args::Flag*                   mPhaseBiasNoCorrectionShiftArg;
+    args::Flag*                   mHydrostaticInZenithArg;
+    args::Flag*                   mNoGPS;
+    args::Flag*                   mNoGLONASS;
+    args::Flag*                   mNoGalileo;
+    args::Flag*                   mBeiDou;
+    args::Flag*                   mFlipGridBitmask;
 };
 
 }  // namespace ssr_example

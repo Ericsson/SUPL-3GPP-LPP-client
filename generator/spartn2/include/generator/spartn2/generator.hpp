@@ -79,6 +79,13 @@ public:
     void set_galileo_supported(bool galileo_supported) { mGalileoSupported = galileo_supported; }
     void set_beidou_supported(bool beidou_supported) { mBeidouSupported = beidou_supported; }
 
+    void set_code_bias_translate(bool value) { mCodeBiasTranslate = value; }
+    void set_code_bias_correction_shift(bool value) { mCodeBiasCorrectionShift = value; }
+    void set_phase_bias_translate(bool value) { mPhaseBiasTranslate = value; }
+    void set_phase_bias_correction_shift(bool value) { mPhaseBiasCorrectionShift = value; }
+    void set_hydrostatic_in_zenith(bool value) { mHydrostaticResidualInZenith = value; }
+    void set_flip_grid_bitmask(bool flip_grid_bitmask) { mFlipGridBitmask = flip_grid_bitmask; }
+
     /// Generate SPARTN messages based on LPP SSR messages.
     /// @param[in] lpp_message The LPP SSR message.
     /// @return The generated SPARTN messages.
@@ -122,6 +129,12 @@ private:
     bool     mIodeShift;
     bool     mIncreasingSiou;
     uint16_t mSiouIndex;
+    bool     mCodeBiasTranslate;
+    bool     mCodeBiasCorrectionShift;
+    bool     mPhaseBiasTranslate;
+    bool     mPhaseBiasCorrectionShift;
+    bool     mHydrostaticResidualInZenith;
+    bool     mFlipGridBitmask;
 
     bool mFilterByOcb;
     bool mIgnoreL2L;

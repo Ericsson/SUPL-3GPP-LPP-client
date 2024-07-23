@@ -23,6 +23,17 @@
     - `--nmea-tcp-port` to specify the TCP port to connect to.
 - The encoding of ha-uncertainty has been changed to the closed value and will never be encoded as 0.0m.
 - Fixed bug where std::stoull would throw an exception and crash the client
+- Added more options for SPARTN generation:
+    - `--no-code-bias-translate` to never translate between signal biases.
+    - `--no-code-bias-correction-shift` to never apply correction shift to code biases.
+    - `--no-phase-bias-translate` to never translate between signal biases.
+    - `--no-phase-bias-correction-shift` to never apply correction shift to phase biases.
+    - `--hydrostatic-in-zenith` to include hydrostatic delay residuals in the zenith residuals.
+    - `--no-gps` to skip generating GPS SPARTN messages.
+    - `--no-glonass` to skip generating GLONASS SPARTN messages.
+    - `--no-galileo` to skip generating Galileo SPARTN messages.
+    - `--beidou` to skip generating BeiDou SPARTN messages.
+    - `--flip-grid-bitmask` to flip incoming LPP grid bitmask.
 
 ## [3.4.9] 2024-05-03
 - Added a few options to controll how SPARTN messages are generated:

@@ -26,25 +26,40 @@
 using UReceiver = receiver::ublox::ThreadedReceiver;
 using NReceiver = receiver::nmea::ThreadedReceiver;
 
-static CellID              gCell;
-static ssr_example::Format gFormat;
-static int                 gLrfRtcmId;
-static int                 gUraOverride;
-static int                 gUraDefault;
-static bool                gUBloxClockCorrection;
-static bool                gForceIodeContinuity;
-static bool                gAverageZenithDelay;
-static bool                gEnableIodeShift;
-static int                 gSf055Override;
-static int                 gSf055Default;
-static int                 gSf042Override;
-static int                 gSf042Default;
-static bool                gIncreasingSiou;
-static bool                gFilterByOcb;
-static bool                gIgnoreL2L;
-static bool                gPrintRtcm;
-static Options             gOptions;
-static ControlParser       gControlParser;
+struct SsrGlobals {
+    Options             options;
+    ControlParser       control_parser;
+    CellID              cell;
+    ssr_example::Format format;
+    int                 lrf_rtcm_id;
+    int                 ura_override;
+    int                 ura_default;
+    bool                ublox_clock_correction;
+    bool                force_continuity;
+    bool                average_zenith_delay;
+    bool                iode_shift;
+    int                 sf055_override;
+    int                 sf055_default;
+    int                 sf042_override;
+    int                 sf042_default;
+    bool                increasing_siou;
+    bool                filter_by_ocb;
+    bool                ignore_l2l;
+    bool                print_rtcm;
+    bool                hydrostatic_in_zenith;
+    bool                code_bias_translate;
+    bool                code_bias_correction_shift;
+    bool                phase_bias_translate;
+    bool                phase_bias_correction_shift;
+    bool                generate_gps;
+    bool                generate_glonass;
+    bool                generate_galileo;
+    bool                generate_beidou;
+    bool                generate_gad;
+    bool                generate_ocb;
+    bool                generate_hpac;
+    bool                flip_grid_bitmask;
+};
 
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
 static SPARTN_Generator gSpartnGeneratorOld;
@@ -56,50 +71,22 @@ static generator::spartn::Generator gSpartnGeneratorNew;
 
 static std::unique_ptr<UReceiver> gUbloxReceiver;
 static std::unique_ptr<NReceiver> gNmeaReceiver;
+static SsrGlobals                 gGlobals;
 
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
-[[noreturn]] void execute(Options options, ssr_example::Format format, int lrf_rtcm_id,
-                          int ura_override, int ura_default, bool ublox_clock_correction,
-                          bool force_continuity, bool average_zenith_delay, bool enable_iode_shift,
-                          int sf055_override, int sf055_default, int sf042_override,
-                          int sf042_default, bool increasing_siou, bool filter_by_ocb,
-                          bool ignore_l2l, bool print_rtcm) {
-    gOptions              = std::move(options);
-    gFormat               = format;
-    gLrfRtcmId            = lrf_rtcm_id;
-    gUraOverride          = ura_override;
-    gUraDefault           = ura_default;
-    gUBloxClockCorrection = ublox_clock_correction;
-    gForceIodeContinuity  = force_continuity;
-    gAverageZenithDelay   = average_zenith_delay;
-    gEnableIodeShift      = enable_iode_shift;
-    gSf055Override        = sf055_override;
-    gSf055Default         = sf055_default;
-    gSf042Override        = sf042_override;
-    gSf042Default         = sf042_default;
-    gIncreasingSiou       = increasing_siou;
-    gFilterByOcb          = filter_by_ocb;
-    gIgnoreL2L            = ignore_l2l;
-    gPrintRtcm            = print_rtcm;
-
-    auto& cell_options                 = gOptions.cell_options;
-    auto& location_server_options      = gOptions.location_server_options;
-    auto& identity_options             = gOptions.identity_options;
-    auto& output_options               = gOptions.output_options;
-    auto& ublox_options                = gOptions.ublox_options;
-    auto& nmea_options                 = gOptions.nmea_options;
-    auto& location_information_options = gOptions.location_information_options;
-    auto& control_options              = gOptions.control_options;
+[[noreturn]] void execute() {
+    auto& cell_options                 = gGlobals.options.cell_options;
+    auto& location_server_options      = gGlobals.options.location_server_options;
+    auto& identity_options             = gGlobals.options.identity_options;
+    auto& output_options               = gGlobals.options.output_options;
+    auto& ublox_options                = gGlobals.options.ublox_options;
+    auto& nmea_options                 = gGlobals.options.nmea_options;
+    auto& location_information_options = gGlobals.options.location_information_options;
+    auto& control_options              = gGlobals.options.control_options;
 
     gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
-
-    gCell.mcc   = cell_options.mcc;
-    gCell.mnc   = cell_options.mnc;
-    gCell.tac   = cell_options.tac;
-    gCell.cell  = cell_options.cid;
-    gCell.is_nr = cell_options.is_nr;
 
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
@@ -116,7 +103,8 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     else
         printf("none\n");
     printf("  cell information:   %s %ld:%ld:%ld:%llu (mcc:mnc:tac:id)\n",
-           cell_options.is_nr ? "[nr]" : "[lte]", gCell.mcc, gCell.mnc, gCell.tac, gCell.cell);
+           cell_options.is_nr ? "[nr]" : "[lte]", gGlobals.cell.mcc, gGlobals.cell.mnc,
+           gGlobals.cell.tac, gGlobals.cell.cell);
 
     for (auto& interface : output_options.interfaces) {
         interface->open();
@@ -153,29 +141,42 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     }
 
 #ifdef INCLUDE_GENERATOR_SPARTN
-    gSpartnGeneratorNew.set_ura_override(gUraOverride);
-    gSpartnGeneratorNew.set_ura_default(gUraDefault);
-    gSpartnGeneratorNew.set_ublox_clock_correction(gUBloxClockCorrection);
-    if (gForceIodeContinuity) {
+    gSpartnGeneratorNew.set_ura_override(gGlobals.ura_override);
+    gSpartnGeneratorNew.set_ura_default(gGlobals.ura_default);
+    gSpartnGeneratorNew.set_ublox_clock_correction(gGlobals.ublox_clock_correction);
+    if (gGlobals.force_continuity) {
         gSpartnGeneratorNew.set_continuity_indicator(320.0);
     }
-    if (gAverageZenithDelay) {
-        gSpartnGeneratorNew.set_compute_average_zenith_delay(true);
-    }
-    if (gEnableIodeShift) {
-        gSpartnGeneratorNew.set_iode_shift(true);
-    } else {
-        gSpartnGeneratorNew.set_iode_shift(false);
-    }
-    if (gSf055Override >= 0) gSpartnGeneratorNew.set_sf055_override(gSf055Override);
-    if (gSf055Default >= 0) gSpartnGeneratorNew.set_sf055_default(gSf055Default);
-    if (gSf042Override >= 0) gSpartnGeneratorNew.set_sf042_override(gSf042Override);
-    if (gSf042Default >= 0) gSpartnGeneratorNew.set_sf042_default(gSf042Default);
+    gSpartnGeneratorNew.set_compute_average_zenith_delay(gGlobals.average_zenith_delay);
+    gSpartnGeneratorNew.set_iode_shift(gGlobals.iode_shift);
 
-    if (gIncreasingSiou) gSpartnGeneratorNew.set_increasing_siou(true);
-    if (gFilterByOcb) gSpartnGeneratorNew.set_filter_by_ocb(true);
-    if (gIgnoreL2L) gSpartnGeneratorNew.set_ignore_l2l(true);
+    if (gGlobals.sf055_override >= 0)
+        gSpartnGeneratorNew.set_sf055_override(gGlobals.sf055_override);
+    if (gGlobals.sf055_default >= 0) gSpartnGeneratorNew.set_sf055_default(gGlobals.sf055_default);
+    if (gGlobals.sf042_override >= 0)
+        gSpartnGeneratorNew.set_sf042_override(gGlobals.sf042_override);
+    if (gGlobals.sf042_default >= 0) gSpartnGeneratorNew.set_sf042_default(gGlobals.sf042_default);
 
+    gSpartnGeneratorNew.set_increasing_siou(gGlobals.increasing_siou);
+    gSpartnGeneratorNew.set_filter_by_ocb(gGlobals.filter_by_ocb);
+    gSpartnGeneratorNew.set_ignore_l2l(gGlobals.ignore_l2l);
+
+    gSpartnGeneratorNew.set_code_bias_translate(gGlobals.code_bias_translate);
+    gSpartnGeneratorNew.set_code_bias_correction_shift(gGlobals.code_bias_correction_shift);
+    gSpartnGeneratorNew.set_phase_bias_translate(gGlobals.phase_bias_translate);
+    gSpartnGeneratorNew.set_phase_bias_correction_shift(gGlobals.phase_bias_correction_shift);
+
+    gSpartnGeneratorNew.set_hydrostatic_in_zenith(gGlobals.hydrostatic_in_zenith);
+    gSpartnGeneratorNew.set_gps_supported(gGlobals.generate_gps);
+    gSpartnGeneratorNew.set_glonass_supported(gGlobals.generate_glonass);
+    gSpartnGeneratorNew.set_galileo_supported(gGlobals.generate_galileo);
+    gSpartnGeneratorNew.set_beidou_supported(gGlobals.generate_beidou);
+
+    gSpartnGeneratorNew.set_flip_grid_bitmask(gGlobals.flip_grid_bitmask);
+
+    gSpartnGeneratorNew.set_generate_gad(gGlobals.generate_gad);
+    gSpartnGeneratorNew.set_generate_ocb(gGlobals.generate_ocb);
+    gSpartnGeneratorNew.set_generate_hpac(gGlobals.generate_hpac);
 #endif
 
     LPP_Client::AD_Request request;
@@ -192,20 +193,20 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         control_options.interface->open();
         control_options.interface->print_info();
 
-        gControlParser.on_cid = [&](CellID cell) {
+        gGlobals.control_parser.on_cid = [&](CellID cell) {
             if (!client_initialized) return;
-            if (gCell != cell) {
+            if (gGlobals.cell != cell) {
                 printf("[control] cell: %ld:%ld:%ld:%llu\n", cell.mcc, cell.mnc, cell.tac,
                        cell.cell);
-                gCell = cell;
-                client.update_assistance_data(request, gCell);
+                gGlobals.cell = cell;
+                client.update_assistance_data(request, gGlobals.cell);
             } else {
                 printf("[control] cell: %ld:%ld:%ld:%llu (unchanged)\n", cell.mcc, cell.mnc,
                        cell.tac, cell.cell);
             }
         };
 
-        gControlParser.on_identity_imsi = [&](unsigned long long imsi) {
+        gGlobals.control_parser.on_identity_imsi = [&](unsigned long long imsi) {
             printf("[control] identity: imsi: %llu\n", imsi);
             if (client_got_identity) return;
             client.set_identity_imsi(imsi);
@@ -228,7 +229,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
             timeout.tv_nsec = 1000000 * 100;  // 100 ms
             nanosleep(&timeout, nullptr);
 
-            gControlParser.parse(control_options.interface);
+            gGlobals.control_parser.parse(control_options.interface);
         }
     } else if (identity_options.imsi) {
         client.set_identity_imsi(*identity_options.imsi);
@@ -274,11 +275,11 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     }
 
     if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
-                        location_server_options.ssl, gCell)) {
+                        location_server_options.ssl, gGlobals.cell)) {
         throw std::runtime_error("Unable to connect to location server");
     }
 
-    request = client.request_assistance_data_ssr(gCell, nullptr, assistance_data_callback);
+    request = client.request_assistance_data_ssr(gGlobals.cell, nullptr, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");
     }
@@ -298,14 +299,14 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         }
 
         if (control_options.interface) {
-            gControlParser.parse(control_options.interface);
+            gGlobals.control_parser.parse(control_options.interface);
         }
     }
 }
 
 static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message,
                                      void*) {
-    if (gFormat == ssr_example::Format::XER) {
+    if (gGlobals.format == ssr_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
@@ -317,13 +318,13 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
             },
             &buffer);
         auto xer_message = buffer.str();
-        for (auto& interface : gOptions.output_options.interfaces) {
+        for (auto& interface : gGlobals.options.output_options.interfaces) {
             interface->write(xer_message.c_str(), xer_message.size());
         }
-    } else if (gFormat == ssr_example::Format::ASN1_UPER) {
+    } else if (gGlobals.format == ssr_example::Format::ASN1_UPER) {
         auto octet = client->encode(message);
         if (octet) {
-            for (auto& interface : gOptions.output_options.interfaces) {
+            for (auto& interface : gGlobals.options.output_options.interfaces) {
                 interface->write(octet->buf, octet->size);
             }
 
@@ -331,12 +332,13 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
         }
     }
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
-    else if (gFormat == ssr_example::Format::SPARTN_OLD) {
-        auto messages = gSpartnGeneratorOld.generate(message, gUraOverride, gUBloxClockCorrection,
-                                                     gForceIodeContinuity);
+    else if (gGlobals.format == ssr_example::Format::SPARTN_OLD) {
+        auto messages = gSpartnGeneratorOld.generate(message, gGlobals.ura_override,
+                                                     gGlobals.ublox_clock_correction,
+                                                     gGlobals.force_continuity);
         for (auto& msg : messages) {
             auto bytes = SPARTN_Transmitter::build(msg);
-            for (auto& interface : gOptions.output_options.interfaces) {
+            for (auto& interface : gGlobals.options.output_options.interfaces) {
                 interface->write(bytes.data(), bytes.size());
             }
 
@@ -355,7 +357,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
     }
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
-    else if (gFormat == ssr_example::Format::SPARTN_NEW) {
+    else if (gGlobals.format == ssr_example::Format::SPARTN_NEW) {
         auto messages = gSpartnGeneratorNew.generate(message);
         for (auto& msg : messages) {
             auto data = msg.build();
@@ -364,7 +366,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                 continue;
             }
 
-            for (auto& interface : gOptions.output_options.interfaces) {
+            for (auto& interface : gGlobals.options.output_options.interfaces) {
                 interface->write(data.data(), data.size());
             }
 
@@ -383,13 +385,13 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
     }
 #endif
 #ifdef INCLUDE_GENERATOR_RTCM
-    else if (gFormat == ssr_example::Format::LRF_UPER) {
+    else if (gGlobals.format == ssr_example::Format::LRF_UPER) {
         auto octet = client->encode(message);
         if (octet) {
-            auto submessages =
-                generator::rtcm::Generator::generate_framing(gLrfRtcmId, octet->buf, octet->size);
+            auto submessages = generator::rtcm::Generator::generate_framing(
+                gGlobals.lrf_rtcm_id, octet->buf, octet->size);
 
-            if (gPrintRtcm) {
+            if (gGlobals.print_rtcm) {
                 size_t length = 0;
                 for (auto& submessage : submessages) {
                     length += submessage.data().size();
@@ -405,7 +407,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
             for (auto& submessage : submessages) {
                 auto buffer = submessage.data().data();
                 auto size   = submessage.data().size();
-                for (auto& interface : gOptions.output_options.interfaces) {
+                for (auto& interface : gGlobals.options.output_options.interfaces) {
                     interface->write(buffer, size);
                 }
             }
@@ -443,22 +445,7 @@ namespace ssr_example {
 
 void SsrCommand::parse(args::Subparser& parser) {
     // NOTE: parse may be called multiple times
-    delete mFormatArg;
-    delete mLRFMessageIdArg;
-    delete mUraOverrideArg;
-    delete mUraDefaultArg;
-    delete mUbloxClockCorrectionArg;
-    delete mForceContinuityArg;
-    delete mAverageZenithDelayArg;
-    delete mEnableIodeShift;
-    delete mSf055Override;
-    delete mSf055Default;
-    delete mSf042Override;
-    delete mSf042Default;
-    delete mIncreasingSiou;
-    delete mFilterByOcb;
-    delete mIgnoreL2L;
-    delete mPrintRTCMArg;
+    cleanup();
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format of the output",
                                                   {"format"}, args::Options::Single);
@@ -538,29 +525,91 @@ void SsrCommand::parse(args::Subparser& parser) {
     mPrintRTCMArg =
         new args::Flag(parser, "print_rtcm", "Print RTCM messages info (only used for LRF-UPER)",
                        {"rtcm-print"}, args::Options::Single);
+
+    mCodeBiasNoTranslateArg =
+        new args::Flag(parser, "no-code-bias-translate", "Do not translate between code biases",
+                       {"no-code-bias-translate"}, args::Options::Single);
+    mCodeBiasNoCorrectionShiftArg =
+        new args::Flag(parser, "no-code-bias-correction-shift",
+                       "Do not apply correction shift to code biases when translating",
+                       {"no-code-bias-correction-shift"}, args::Options::Single);
+    mPhaseBiasNoTranslateArg =
+        new args::Flag(parser, "no-phase-bias-translate", "Do not translate between phase biases",
+                       {"no-phase-bias-translate"}, args::Options::Single);
+    mPhaseBiasNoCorrectionShiftArg =
+        new args::Flag(parser, "no-phase-bias-correction-shift",
+                       "Do not apply correction shift to phase biases when translating",
+                       {"no-phase-bias-correction-shift"}, args::Options::Single);
+    mHydrostaticInZenithArg = new args::Flag(
+        parser, "hydrostatic-in-zenith",
+        "Use the remaning hydrostatic delay residual in the per grid-point zenith residual",
+        {"hydrostatic-in-zenith"}, args::Options::Single);
+
+    mNoGPS = new args::Flag(parser, "no-gps", "Skip generating GPS SPARTN messages", {"no-gps"});
+    mNoGLONASS = new args::Flag(parser, "no-glonass", "Skip generating GLONASS SPARTN messages",
+                                {"no-glonass"});
+    mNoGalileo = new args::Flag(parser, "no-galileo", "Skip generating Galileo SPARTN messages",
+                                {"no-galileo"});
+    mBeiDou    = new args::Flag(parser, "beidou", "Generate BeiDou SPARTN messages", {"beidou"});
+
+    mFlipGridBitmask =
+        new args::Flag(parser, "flip-grid-bitmask",
+                       "Flip the grid bitmask for incoming LPP messages", {"flip-grid-bitmask"});
 }
 
 void SsrCommand::execute(Options options) {
-    auto format = ssr_example::Format::XER;
+    gGlobals.options                     = std::move(options);
+    gGlobals.control_parser              = {};
+    gGlobals.cell                        = {};
+    gGlobals.format                      = ssr_example::Format::XER;
+    gGlobals.lrf_rtcm_id                 = 355;
+    gGlobals.ura_override                = -1;
+    gGlobals.ura_default                 = -1;
+    gGlobals.ublox_clock_correction      = false;
+    gGlobals.force_continuity            = false;
+    gGlobals.average_zenith_delay        = false;
+    gGlobals.iode_shift                  = false;
+    gGlobals.sf055_override              = -1;
+    gGlobals.sf055_default               = -1;
+    gGlobals.sf042_override              = -1;
+    gGlobals.sf042_default               = -1;
+    gGlobals.increasing_siou             = false;
+    gGlobals.filter_by_ocb               = false;
+    gGlobals.ignore_l2l                  = false;
+    gGlobals.print_rtcm                  = false;
+    gGlobals.hydrostatic_in_zenith       = false;
+    gGlobals.code_bias_translate         = true;
+    gGlobals.code_bias_correction_shift  = true;
+    gGlobals.phase_bias_translate        = true;
+    gGlobals.phase_bias_correction_shift = true;
+    gGlobals.generate_gps                = true;
+    gGlobals.generate_glonass            = true;
+    gGlobals.generate_galileo            = true;
+    gGlobals.generate_beidou             = false;
+    gGlobals.generate_gad                = true;
+    gGlobals.generate_ocb                = true;
+    gGlobals.generate_hpac               = true;
+    gGlobals.flip_grid_bitmask           = false;
+
     if (*mFormatArg) {
         if (mFormatArg->Get() == "xer") {
-            format = ssr_example::Format::XER;
+            gGlobals.format = ssr_example::Format::XER;
         } else if (mFormatArg->Get() == "asn1-uper") {
-            format = ssr_example::Format::ASN1_UPER;
+            gGlobals.format = ssr_example::Format::ASN1_UPER;
         }
 #ifdef INCLUDE_GENERATOR_SPARTN
         else if (mFormatArg->Get() == "spartn") {
-            format = ssr_example::Format::SPARTN_NEW;
+            gGlobals.format = ssr_example::Format::SPARTN_NEW;
         }
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
         else if (mFormatArg->Get() == "spartn-old") {
-            format = ssr_example::Format::SPARTN_OLD;
+            gGlobals.format = ssr_example::Format::SPARTN_OLD;
         }
 #endif
 #ifdef INCLUDE_GENERATOR_RTCM
         else if (mFormatArg->Get() == "lrf-uper") {
-            format = ssr_example::Format::LRF_UPER;
+            gGlobals.format = ssr_example::Format::LRF_UPER;
         }
 #endif
         else {
@@ -568,93 +617,122 @@ void SsrCommand::execute(Options options) {
         }
     }
 
-    auto lrf_rtcm_id = 355;
     if (*mLRFMessageIdArg) {
-        lrf_rtcm_id = mLRFMessageIdArg->Get();
+        gGlobals.lrf_rtcm_id = mLRFMessageIdArg->Get();
     }
 
-    auto ura_override = -1;
     if (*mUraOverrideArg) {
-        ura_override = mUraOverrideArg->Get();
+        gGlobals.ura_override = mUraOverrideArg->Get();
     }
 
-    auto ura_default = -1;
     if (*mUraDefaultArg) {
-        ura_default = mUraDefaultArg->Get();
+        gGlobals.ura_default = mUraDefaultArg->Get();
     }
 
-    auto ublox_clock_correction = false;
     if (*mUbloxClockCorrectionArg) {
-        ublox_clock_correction = mUbloxClockCorrectionArg->Get();
+        gGlobals.ublox_clock_correction = mUbloxClockCorrectionArg->Get();
     }
 
-    auto force_continuity = false;
     if (*mForceContinuityArg) {
-        force_continuity = mForceContinuityArg->Get();
+        gGlobals.force_continuity = mForceContinuityArg->Get();
     }
 
-    auto average_zenith_delay = false;
     if (*mAverageZenithDelayArg) {
-        average_zenith_delay = mAverageZenithDelayArg->Get();
+        gGlobals.average_zenith_delay = mAverageZenithDelayArg->Get();
     }
 
-    auto iode_shift = false;
     if (*mEnableIodeShift) {
-        iode_shift = mEnableIodeShift->Get();
+        gGlobals.iode_shift = mEnableIodeShift->Get();
     }
 
-    auto sf055_override = -1;
     if (*mSf055Override) {
-        sf055_override = mSf055Override->Get();
-        if (sf055_override < 0) sf055_override = 0;
-        if (sf055_override > 15) sf055_override = 15;
+        gGlobals.sf055_override = mSf055Override->Get();
+        if (gGlobals.sf055_override < 0) gGlobals.sf055_override = 0;
+        if (gGlobals.sf055_override > 15) gGlobals.sf055_override = 15;
     }
 
-    auto sf055_default = -1;
     if (*mSf055Default) {
-        sf055_default = mSf055Default->Get();
-        if (sf055_default < 0) sf055_default = 0;
-        if (sf055_default > 15) sf055_default = 15;
+        gGlobals.sf055_default = mSf055Default->Get();
+        if (gGlobals.sf055_default < 0) gGlobals.sf055_default = 0;
+        if (gGlobals.sf055_default > 15) gGlobals.sf055_default = 15;
     }
 
-    auto sf042_override = -1;
     if (*mSf042Override) {
-        sf042_override = mSf042Override->Get();
-        if (sf042_override < 0) sf042_override = 0;
-        if (sf042_override > 7) sf042_override = 7;
+        gGlobals.sf042_override = mSf042Override->Get();
+        if (gGlobals.sf042_override < 0) gGlobals.sf042_override = 0;
+        if (gGlobals.sf042_override > 7) gGlobals.sf042_override = 7;
     }
 
-    auto sf042_default = -1;
     if (*mSf042Default) {
-        sf042_default = mSf042Default->Get();
-        if (sf042_default < 0) sf042_default = 0;
-        if (sf042_default > 7) sf042_default = 7;
+        gGlobals.sf042_default = mSf042Default->Get();
+        if (gGlobals.sf042_default < 0) gGlobals.sf042_default = 0;
+        if (gGlobals.sf042_default > 7) gGlobals.sf042_default = 7;
     }
 
-    auto increasing_siou = false;
     if (*mIncreasingSiou) {
-        increasing_siou = mIncreasingSiou->Get();
+        gGlobals.increasing_siou = mIncreasingSiou->Get();
     }
 
-    auto filter_by_ocb = false;
     if (*mFilterByOcb) {
-        filter_by_ocb = mFilterByOcb->Get();
+        gGlobals.filter_by_ocb = mFilterByOcb->Get();
     }
 
-    auto ignore_l2l = false;
     if (*mIgnoreL2L) {
-        ignore_l2l = mIgnoreL2L->Get();
+        gGlobals.ignore_l2l = mIgnoreL2L->Get();
     }
 
-    auto print_rtcm = false;
     if (*mPrintRTCMArg) {
-        print_rtcm = true;
+        gGlobals.print_rtcm = true;
     }
 
-    ::execute(std::move(options), format, lrf_rtcm_id, ura_override, ura_default,
-              ublox_clock_correction, force_continuity, average_zenith_delay, iode_shift,
-              sf055_override, sf055_default, sf042_override, sf042_default, increasing_siou,
-              filter_by_ocb, ignore_l2l, print_rtcm);
+    if (*mCodeBiasNoTranslateArg) {
+        gGlobals.code_bias_translate = false;
+    }
+
+    if (*mCodeBiasNoCorrectionShiftArg) {
+        gGlobals.code_bias_correction_shift = false;
+    }
+
+    if (*mPhaseBiasNoTranslateArg) {
+        gGlobals.phase_bias_translate = false;
+    }
+
+    if (*mPhaseBiasNoCorrectionShiftArg) {
+        gGlobals.phase_bias_correction_shift = false;
+    }
+
+    if (*mHydrostaticInZenithArg) {
+        gGlobals.hydrostatic_in_zenith = true;
+    }
+
+    if (*mNoGPS) {
+        gGlobals.generate_gps = false;
+    }
+
+    if (*mNoGLONASS) {
+        gGlobals.generate_glonass = false;
+    }
+
+    if (*mNoGalileo) {
+        gGlobals.generate_galileo = false;
+    }
+
+    if (*mBeiDou) {
+        gGlobals.generate_beidou = true;
+    }
+
+    if (*mFlipGridBitmask) {
+        gGlobals.flip_grid_bitmask = true;
+    }
+
+    auto& cell_options  = gGlobals.options.cell_options;
+    gGlobals.cell.mcc   = cell_options.mcc;
+    gGlobals.cell.mnc   = cell_options.mnc;
+    gGlobals.cell.tac   = cell_options.tac;
+    gGlobals.cell.cell  = cell_options.cid;
+    gGlobals.cell.is_nr = cell_options.is_nr;
+
+    ::execute();
 }
 
 }  // namespace ssr_example
