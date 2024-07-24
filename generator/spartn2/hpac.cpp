@@ -313,30 +313,34 @@ static StecParameters compute_stec_parameters(CorrectionPointSet const&  correct
         c01_prime = c01 + c11 * hy;
         c10_prime = c10 - c11 * hx;
         c11_prime = c11;
-    }
 
 #if SPARTN_DEBUG_PRINT
-    printf("stec polynomial:\n");
-    printf("  C00: %f -> %f\n", c00, c00_prime);
-    printf("  C01: %f -> %f\n", c01, c01_prime);
-    printf("  C10: %f -> %f\n", c10, c10_prime);
-    printf("  C11: %f -> %f\n", c11, c11_prime);
+        printf("stec polynomial:\n");
+        printf("  C00: %f -> %f\n", c00, c00_prime);
+        printf("  C01: %f -> %f\n", c01, c01_prime);
+        printf("  C10: %f -> %f\n", c10, c10_prime);
+        printf("  C11: %f -> %f\n", c11, c11_prime);
 
-    for (long ix = 0; ix < correction_point_set.numberOfStepsLatitude_r16 + 1; ix++) {
-        for (long iy = 0; iy < correction_point_set.numberOfStepsLongitude_r16 + 1; iy++) {
-            auto i         = ix * (correction_point_set.numberOfStepsLongitude_r16 + 1) + iy;
-            auto latitude  = x0 - correction_point_set.latitude_delta * ix;
-            auto longitude = y0 + correction_point_set.longitude_delta * iy;
+        for (long ix = 0; ix < correction_point_set.numberOfStepsLatitude_r16 + 1; ix++) {
+            for (long iy = 0; iy < correction_point_set.numberOfStepsLongitude_r16 + 1; iy++) {
+                auto i         = ix * (correction_point_set.numberOfStepsLongitude_r16 + 1) + iy;
+                auto latitude  = x0 - correction_point_set.latitude_delta * ix;
+                auto longitude = y0 + correction_point_set.longitude_delta * iy;
 
-            auto before_r = compute_residual(latitude, longitude, c00, c01, c10, c11, x0, y0);
-            auto after_r =
-                compute_residual(latitude, longitude, c00_prime, c01_prime, c10_prime, c11_prime, mx, my);
-            printf("  grid[%2ld] = %.6f -> %.6f (%.6f)\n", i, before_r, after_r, before_r - after_r);
+                auto before_r = compute_residual(latitude, longitude, c00, c01, c10, c11, x0, y0);
+                auto after_r  = compute_residual(latitude, longitude, c00_prime, c01_prime,
+                                                 c10_prime, c11_prime, mx, my);
+                auto before_incorrect_r =
+                    compute_residual(latitude, longitude, c00, c01, c10, c11, mx, my);
+                printf("  grid[%2ld] = %.6f -> %.6f (%.6f), without %.6f (%.6f)\n", i, before_r,
+                       after_r, before_r - after_r, before_incorrect_r,
+                       before_incorrect_r - before_r);
+            }
         }
-    }
 #endif
+    }
 
-    return StecParameters{equation_type, c00, c01, c10, c11};
+    return StecParameters{equation_type, c00_prime, c01_prime, c10_prime, c11_prime};
 }
 
 static uint8_t compute_troposphere_block_type(CorrectionPointSet const& correction_point_set,
@@ -351,7 +355,24 @@ static uint8_t compute_troposphere_block_type(CorrectionPointSet const& correcti
     //
     // Because 3GPP LPP doesn't have a polynomial, only values for each grid point, we can only
     // support type 0 and 2.
-    return 2;
+
+    // The tropospheric parameters can be shared between GNSS systems, which can mean that there
+    // are cases where the tropospheric parameters are not available. Thus, only include it if we
+    // at least have one grid point with tropospheric parameters.
+    auto tropospheric_count = 0;
+    auto grid_points        = correction_point_set.grid_points();
+    for (auto i : grid_points) {
+        auto element = corrections.find_grid_point(i);
+        if (element && element->tropospericDelayCorrection_r16) {
+            tropospheric_count++;
+        }
+    }
+
+    if (tropospheric_count == 0) {
+        return 0;
+    } else {
+        return 2;
+    }
 }
 
 static uint8_t compute_ionosphere_block_type(GNSS_SSR_STEC_Correction_r16 const*   stec,
@@ -386,7 +407,12 @@ static double compute_average_zentith_delay(CorrectionPointSet& correction_point
         }
     }
 
-    return total_zenith_delay / count;
+    if (count > 0.0) {
+        auto average_zentith_delay = total_zenith_delay / count;
+        return average_zentith_delay;
+    } else {
+        return 0.0;
+    }
 }
 
 static double compute_average_hydrostatic_delay(CorrectionPointSet& correction_point_set,
@@ -407,8 +433,12 @@ static double compute_average_hydrostatic_delay(CorrectionPointSet& correction_p
         }
     }
 
-    auto average_hydrostatic_delay = total_hydrostatic_delay / count;
-    return average_hydrostatic_delay;
+    if (count > 0.0) {
+        auto average_hydrostatic_delay = total_hydrostatic_delay / count;
+        return average_hydrostatic_delay;
+    } else {
+        return 0.0;
+    }
 }
 
 struct TroposphereResidual {
@@ -423,15 +453,14 @@ compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
                               bool   add_hydrostatic_residual_to_wet_residual) {
     std::vector<TroposphereResidual> result;
 
+#ifdef SPARTN_DEBUG_PRINT
+    printf("  troposphere residuals:\n");
+#endif
+
     auto grid_points = correction_point_set.grid_points();
     for (auto i : grid_points) {
         auto element = corrections.find_grid_point(i);
-        if (!element || !element->tropospericDelayCorrection_r16) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = invalid\n", i);
-#endif
-            result.push_back({0.0, true});
-        } else {
+        if (element && element->tropospericDelayCorrection_r16) {
             auto& grid_point = *element->tropospericDelayCorrection_r16;
 
             auto hydrostatic_delay = decode::tropoHydroStaticVerticalDelay_r16(
@@ -452,6 +481,11 @@ compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
             printf("    grid[%2ld] = %f\n", i, total_residual);
 #endif
             result.push_back({total_residual, false});
+        } else {
+#ifdef SPARTN_DEBUG_PRINT
+            printf("    grid[%2ld] = invalid\n", i);
+#endif
+            result.push_back({0.0, true});
         }
     }
 
@@ -499,15 +533,11 @@ static void troposphere_data_block(MessageBuilder&     builder,
             builder.sf042_raw(value);
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf042: %d (%u) [default/invalid]\n", sf042_default, value);
-            printf("RSF42,%ld,%u,,%u\n", corrections.gnss_id,
-                   corrections.epoch_time.rounded_seconds, value);
 #endif
         } else {
             auto value = builder.sf042(quality.value);
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf042: %f (%u)\n", quality.value, value);
-            printf("RSF42,%ld,%u,%f,%u\n", corrections.gnss_id,
-                   corrections.epoch_time.rounded_seconds, quality.value, value);
 #endif
         }
     } else {
@@ -516,8 +546,6 @@ static void troposphere_data_block(MessageBuilder&     builder,
         builder.sf042_raw(value);
 #ifdef SPARTN_DEBUG_PRINT
         printf("  sf042: %d (%u) [default/missing]\n", sf042_default, value);
-        printf("RSF42,%ld,%u,,%u\n", corrections.gnss_id, corrections.epoch_time.rounded_seconds,
-               value);
 #endif
     }
 
@@ -633,15 +661,11 @@ static void ionosphere_data_block_1(MessageBuilder&     builder,
             builder.sf055_raw(value);
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf055: %d (%u) [default/invalid]\n", sf055_default, value);
-            printf("RSF55,%ld,%u,%u,,%u\n", corrections.gnss_id,
-                   corrections.epoch_time.rounded_seconds, satellite.prn(), value);
 #endif
         } else {
             auto value = builder.sf055(q.value);
 #ifdef SPARTN_DEBUG_PRINT
             printf("  sf055: %f (%u)\n", q.value, value);
-            printf("RSF55,%ld,%u,%u,%f,%u\n", corrections.gnss_id,
-                   corrections.epoch_time.rounded_seconds, satellite.prn(), q.value, value);
 #endif
         }
     }
@@ -857,4 +881,3 @@ void Generator::generate_hpac(uint16_t iod) {
 
 }  // namespace spartn
 }  // namespace generator
-

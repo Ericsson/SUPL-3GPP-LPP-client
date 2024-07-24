@@ -30,7 +30,8 @@ public:
           mCodeBiasNoCorrectionShiftArg(nullptr), mPhaseBiasNoTranslateArg(nullptr),
           mPhaseBiasNoCorrectionShiftArg(nullptr), mHydrostaticInZenithArg(nullptr),
           mNoGPS(nullptr), mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr),
-          mFlipGridBitmask(nullptr) {}
+          mFlipGridBitmask(nullptr), mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr),
+          mNoGenerateHPAC(nullptr) {}
 
     ~SsrCommand() override { cleanup(); }
 
@@ -61,6 +62,9 @@ public:
         delete mNoGalileo;
         delete mBeiDou;
         delete mFlipGridBitmask;
+        delete mNoGenerateGAD;
+        delete mNoGenerateOCB;
+        delete mNoGenerateHPAC;
     }
 
     void parse(args::Subparser& parser) override;
@@ -93,6 +97,9 @@ private:
     args::Flag*                   mNoGalileo;
     args::Flag*                   mBeiDou;
     args::Flag*                   mFlipGridBitmask;
+    args::Flag*                   mNoGenerateGAD;
+    args::Flag*                   mNoGenerateOCB;
+    args::Flag*                   mNoGenerateHPAC;
 };
 
 }  // namespace ssr_example

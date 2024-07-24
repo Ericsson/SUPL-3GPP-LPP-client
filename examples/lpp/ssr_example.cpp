@@ -555,6 +555,13 @@ void SsrCommand::parse(args::Subparser& parser) {
     mFlipGridBitmask =
         new args::Flag(parser, "flip-grid-bitmask",
                        "Flip the grid bitmask for incoming LPP messages", {"flip-grid-bitmask"});
+
+    mNoGenerateGAD  = new args::Flag(parser, "no-generate-gad", "Skip generating GAD messages",
+                                     {"no-generate-gad"});
+    mNoGenerateOCB  = new args::Flag(parser, "no-generate-ocb", "Skip generating OCB messages",
+                                     {"no-generate-ocb"});
+    mNoGenerateHPAC = new args::Flag(parser, "no-generate-hpac", "Skip generating HPAC messages",
+                                     {"no-generate-hpac"});
 }
 
 void SsrCommand::execute(Options options) {
@@ -586,10 +593,10 @@ void SsrCommand::execute(Options options) {
     gGlobals.generate_glonass            = true;
     gGlobals.generate_galileo            = true;
     gGlobals.generate_beidou             = false;
+    gGlobals.flip_grid_bitmask           = false;
     gGlobals.generate_gad                = true;
     gGlobals.generate_ocb                = true;
     gGlobals.generate_hpac               = true;
-    gGlobals.flip_grid_bitmask           = false;
 
     if (*mFormatArg) {
         if (mFormatArg->Get() == "xer") {
@@ -723,6 +730,18 @@ void SsrCommand::execute(Options options) {
 
     if (*mFlipGridBitmask) {
         gGlobals.flip_grid_bitmask = true;
+    }
+
+    if (*mNoGenerateGAD) {
+        gGlobals.generate_gad = false;
+    }
+
+    if (*mNoGenerateOCB) {
+        gGlobals.generate_ocb = false;
+    }
+
+    if (*mNoGenerateHPAC) {
+        gGlobals.generate_hpac = false;
     }
 
     auto& cell_options  = gGlobals.options.cell_options;

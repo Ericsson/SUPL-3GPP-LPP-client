@@ -28,14 +28,17 @@ namespace generator {
 namespace spartn {
 
 Generator::Generator()
-    : mGenerationIndex(0), mNextAreaId(0), mUraOverride(-1),
+    : mGenerationIndex(0), mNextAreaId(1), mUraOverride(-1),
       mUraDefault(0 /* SF024(0) = unknown */), mContinuityIndicator(-1),
       mUBloxClockCorrection(false), mSf055Override(-1), mSf055Default(0 /* SF055(0) = invalid */),
-      mSf042Override(-1), mSf042Default(7 /* SF042(7) = >0.320m */),
+      mSf042Override(-1), mSf042Default(0 /* SF042(0) = invalid */),
       mComputeAverageZenithDelay(false), mGroupByEpochTime(false), mIodeShift(true),
-      mIncreasingSiou(false), mSiouIndex(1), mFilterByOcb(false), mIgnoreL2L(false),
-      mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
-      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false) {}
+      mIncreasingSiou(false), mSiouIndex(1), mCodeBiasTranslate(true),
+      mCodeBiasCorrectionShift(true), mPhaseBiasTranslate(true), mPhaseBiasCorrectionShift(true),
+      mHydrostaticResidualInZenith(false), mFlipGridBitmask(false), mFilterByOcb(false),
+      mIgnoreL2L(false), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
+      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
+      mBeidouSupported(false) {}
 
 Generator::~Generator() = default;
 
