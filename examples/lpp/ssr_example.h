@@ -22,16 +22,17 @@ public:
     SsrCommand()
         : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
           mFormatArg(nullptr), mLRFMessageIdArg(nullptr), mUraOverrideArg(nullptr),
-          mUraDefaultArg(nullptr), mUbloxClockCorrectionArg(nullptr), mForceContinuityArg(nullptr),
-          mAverageZenithDelayArg(nullptr), mEnableIodeShift(nullptr), mSf055Override(nullptr),
-          mSf055Default(nullptr), mSf042Override(nullptr), mSf042Default(nullptr),
-          mIncreasingSiou(nullptr), mFilterByOcb(nullptr), mIgnoreL2L(nullptr),
-          mPrintRTCMArg(nullptr), mCodeBiasNoTranslateArg(nullptr),
-          mCodeBiasNoCorrectionShiftArg(nullptr), mPhaseBiasNoTranslateArg(nullptr),
-          mPhaseBiasNoCorrectionShiftArg(nullptr), mHydrostaticInZenithArg(nullptr),
-          mNoGPS(nullptr), mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr),
-          mFlipGridBitmask(nullptr), mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr),
-          mNoGenerateHPAC(nullptr) {}
+          mUraDefaultArg(nullptr), mUbloxClockCorrectionArg(nullptr),
+          mNoUbloxClockCorrectionArg(nullptr), mForceContinuityArg(nullptr),
+          mNoForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr),
+          mNoAverageZenithDelayArg(nullptr), mSf055Override(nullptr), mSf055Default(nullptr),
+          mSf042Override(nullptr), mSf042Default(nullptr), mIncreasingSiou(nullptr),
+          mFilterByOcb(nullptr), mIgnoreL2L(nullptr), mPrintRTCMArg(nullptr),
+          mCodeBiasNoTranslateArg(nullptr), mCodeBiasNoCorrectionShiftArg(nullptr),
+          mPhaseBiasNoTranslateArg(nullptr), mPhaseBiasNoCorrectionShiftArg(nullptr),
+          mHydrostaticInZenithArg(nullptr), mNoGPS(nullptr), mNoGLONASS(nullptr),
+          mNoGalileo(nullptr), mBeiDou(nullptr), mFlipGridBitmask(nullptr), mNoGenerateGAD(nullptr),
+          mNoGenerateOCB(nullptr), mNoGenerateHPAC(nullptr) {}
 
     ~SsrCommand() override { cleanup(); }
 
@@ -41,9 +42,11 @@ public:
         delete mUraOverrideArg;
         delete mUraDefaultArg;
         delete mUbloxClockCorrectionArg;
+        delete mNoUbloxClockCorrectionArg;
         delete mForceContinuityArg;
+        delete mNoForceContinuityArg;
         delete mAverageZenithDelayArg;
-        delete mEnableIodeShift;
+        delete mNoAverageZenithDelayArg;
         delete mSf055Override;
         delete mSf055Default;
         delete mSf042Override;
@@ -76,9 +79,11 @@ private:
     args::ValueFlag<int>*         mUraOverrideArg;
     args::ValueFlag<int>*         mUraDefaultArg;
     args::Flag*                   mUbloxClockCorrectionArg;
+    args::Flag*                   mNoUbloxClockCorrectionArg;
     args::Flag*                   mForceContinuityArg;
+    args::Flag*                   mNoForceContinuityArg;
     args::Flag*                   mAverageZenithDelayArg;
-    args::Flag*                   mEnableIodeShift;
+    args::Flag*                   mNoAverageZenithDelayArg;
     args::ValueFlag<int>*         mSf055Override;
     args::ValueFlag<int>*         mSf055Default;
     args::ValueFlag<int>*         mSf042Override;

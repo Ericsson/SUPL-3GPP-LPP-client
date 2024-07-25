@@ -34,6 +34,11 @@
     - `--no-galileo` to skip generating Galileo SPARTN messages.
     - `--beidou` to skip generating BeiDou SPARTN messages.
     - `--flip-grid-bitmask` to flip incoming LPP grid bitmask.
+- Deprecated the following options:
+    - `--iode-shift` removed as it was not used.
+    - `--ublox-clock-correction` is now the default behavior, use `--no-ublox-clock-correction` to disable it.
+    - `--force-continuity` is now the default behavior, use `--no-force-continuity` to disable it.
+    - `--average-zenith-delay` is now the default behavior, use `--no-average-zenith-delay` to disable it.
 
 ## [3.4.9] 2024-05-03
 - Added a few options to controll how SPARTN messages are generated:

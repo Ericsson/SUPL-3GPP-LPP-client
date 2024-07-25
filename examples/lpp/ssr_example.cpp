@@ -481,19 +481,27 @@ void SsrCommand::parse(args::Subparser& parser) {
         {"ura-default"}, args::Options::Single);
 
     mUbloxClockCorrectionArg =
-        new args::Flag(parser, "ublox-clock-correction", "Change the sign of the clock correction",
+        new args::Flag(parser, "ublox-clock-correction", "DEPRECATED: Flip the clock correction sign",
                        {"ublox-clock-correction"});
+    mNoUbloxClockCorrectionArg =
+        new args::Flag(parser, "no-ublox-clock-correction", "Flip the clock correction sign",
+                       {"no-ublox-clock-correction"});
+
     mForceContinuityArg =
-        new args::Flag(parser, "force-continuity", "Force SF022 (IODE Continuity) to be 320 secs",
+        new args::Flag(parser, "force-continuity", "DEPRECATED: Force SF022 (IODE Continuity) to 320s",
                        {"force-continuity"});
+    mNoForceContinuityArg =
+        new args::Flag(parser, "no-force-continuity", "Do not force SF022 (IODE Continuity) to 320s",
+                       {"no-force-continuity"});
 
     mAverageZenithDelayArg =
         new args::Flag(parser, "average-zenith-delay",
-                       "Compute the average zenith delay and differential for residuals",
+                       "DEPRECATED: Compute T00 constant as the average zenith delay",
                        {"average-zenith-delay"});
-
-    mEnableIodeShift = new args::Flag(
-        parser, "iode-shift", "Enable the IODE shift to fix data stream issues", {"iode-shift"});
+    mNoAverageZenithDelayArg =
+        new args::Flag(parser, "no-average-zenith-delay",
+                       "Do not compute T00 constant as the average zenith delay",
+                       {"no-average-zenith-delay"});
 
     mSf055Override =
         new args::ValueFlag<int>(parser, "sf055-override",
@@ -572,9 +580,9 @@ void SsrCommand::execute(Options options) {
     gGlobals.lrf_rtcm_id                 = 355;
     gGlobals.ura_override                = -1;
     gGlobals.ura_default                 = -1;
-    gGlobals.ublox_clock_correction      = false;
-    gGlobals.force_continuity            = false;
-    gGlobals.average_zenith_delay        = false;
+    gGlobals.ublox_clock_correction      = true;
+    gGlobals.force_continuity            = true;
+    gGlobals.average_zenith_delay        = true;
     gGlobals.iode_shift                  = false;
     gGlobals.sf055_override              = -1;
     gGlobals.sf055_default               = -1;
@@ -637,19 +645,30 @@ void SsrCommand::execute(Options options) {
     }
 
     if (*mUbloxClockCorrectionArg) {
-        gGlobals.ublox_clock_correction = mUbloxClockCorrectionArg->Get();
+        printf("[DEPRECATED] ublox-clock-correction is deprecated, it is now true by default. Use "
+               "no-ublox-clock-correction to disable\n");
+    }
+
+    if (*mNoUbloxClockCorrectionArg && mNoUbloxClockCorrectionArg->Get()) {
+        gGlobals.ublox_clock_correction = false;
     }
 
     if (*mForceContinuityArg) {
-        gGlobals.force_continuity = mForceContinuityArg->Get();
+        printf("[DEPRECATED] force-continuity is deprecated, it is now true by default. Use "
+               "no-force-continuity to disable\n");
+    }
+
+    if (*mNoForceContinuityArg && mNoForceContinuityArg->Get()) {
+        gGlobals.force_continuity = false;
     }
 
     if (*mAverageZenithDelayArg) {
-        gGlobals.average_zenith_delay = mAverageZenithDelayArg->Get();
+        printf("[DEPRECATED] average-zenith-delay is deprecated, it is now true by default. Use "
+               "no-average-zenith-delay to disable\n");
     }
 
-    if (*mEnableIodeShift) {
-        gGlobals.iode_shift = mEnableIodeShift->Get();
+    if (*mNoAverageZenithDelayArg && mNoAverageZenithDelayArg->Get()) {
+        gGlobals.average_zenith_delay = false;
     }
 
     if (*mSf055Override) {
