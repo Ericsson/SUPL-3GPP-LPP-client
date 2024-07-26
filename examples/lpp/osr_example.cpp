@@ -47,7 +47,8 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     auto& location_information_options = gOptions.location_information_options;
     auto& control_options              = gOptions.control_options;
 
-    gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
+    gConvertConfidence95To68      = location_information_options.convert_confidence_95_to_68;
+    gOutputEllipse68              = location_information_options.output_ellipse_68;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
     gCell.mcc   = cell_options.mcc;

@@ -9,8 +9,9 @@
 #include "options.hpp"
 #include "utility/types.h"
 
-bool   gConvertConfidence95To39      = false;
+bool   gConvertConfidence95To68      = false;
 double gOverrideHorizontalConfidence = -1;
+bool   gOutputEllipse68              = false;
 
 using namespace location_information;
 
@@ -21,7 +22,7 @@ PLI_Result provide_location_information_callback(UNUSED LocationInformation& loc
     // Example implementation
     location.time     = TAI_Time::now();
     location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
-        20, 25, 30, HorizontalAccuracy::from_ellipse(0.5, 0.5, 0),
+        20, 25, 30, HorizontalAccuracy::to_ellipse_39(0.5, 0.5, 0),
         VerticalAccuracy::from_1sigma(0.5));
 
     location.velocity = VelocityShape::horizontal_vertical_with_uncertainty(10, 0.5, 90, 1, 0.5,
@@ -53,14 +54,26 @@ PLI_Result provide_location_information_callback_ublox(UNUSED LocationInformatio
         return PLI_Result::NOT_AVAILABLE;
     }
 
-    auto semi_major = nav_pvt->h_acc();
-    auto semi_minor = nav_pvt->h_acc();
-    if (gConvertConfidence95To39) {
+    // NOTE(ewasjon): We need to divide the horizontal accuracy by sqrt(2) to get the semi-major and
+    // semi-minor axes. We assume that the semi-major and semi-minor axes are equal.
+    // h_acc = sqrt(semi_major^2 + semi_minor^2)
+    // h_acc = sqrt(2 * semi_major^2) => semi_major = h_acc / sqrt(2)
+    auto semi_major = nav_pvt->h_acc() / 1.4142135623730951;
+    auto semi_minor = nav_pvt->h_acc() / 1.4142135623730951;
+
+    // TODO(ewasjon): Is this really relavant for UBX-NAV-PVT?
+    if (gConvertConfidence95To68) {
+        // 95% confidence to 68% confidence
+        // TODO(ewasjon): should this not be 1.95996 (sqrt(3.84)) from 1-degree chi-squared
+        // distribution?
         semi_major = semi_major / 2.4477;
         semi_minor = semi_minor / 2.4477;
     }
 
-    auto horizontal_accuracy = HorizontalAccuracy::from_ellipse(semi_major, semi_minor, 0);
+    auto horizontal_accuracy = HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, 0);
+    if (gOutputEllipse68) {
+        horizontal_accuracy = HorizontalAccuracy::to_ellipse_68(semi_major, semi_minor, 0);
+    }
     if (gOverrideHorizontalConfidence >= 0.0) {
         horizontal_accuracy.confidence = gOverrideHorizontalConfidence;
     }
@@ -119,13 +132,20 @@ PLI_Result provide_location_information_callback_nmea(LocationInformation& locat
     auto vertical_position_error =
         gst ? gst->vertical_position_error() : epe->vertical_position_error();
 
-    if (gConvertConfidence95To39) {
+    if (gConvertConfidence95To68) {
+        // 95% confidence to 68% confidence
+        // TODO(ewasjon): should this not be 1.95996 (sqrt(3.84)) from 1-degree chi-squared
+        // distribution?
         semi_major = semi_major / 2.4477;
         semi_minor = semi_minor / 2.4477;
     }
 
     auto horizontal_accuracy =
-        HorizontalAccuracy::from_ellipse(semi_major, semi_minor, orientation);
+        HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, orientation);
+    if (gOutputEllipse68) {
+        horizontal_accuracy =
+            HorizontalAccuracy::to_ellipse_68(semi_major, semi_minor, orientation);
+    }
     if (gOverrideHorizontalConfidence >= 0.0) {
         horizontal_accuracy.confidence = gOverrideHorizontalConfidence;
     }
@@ -168,7 +188,7 @@ PLI_Result provide_location_information_callback_fake(LocationInformation&  loca
     location.time     = TAI_Time::now();
     location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
         options->latitude, options->longitude, options->altitude,
-        HorizontalAccuracy::from_ellipse(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
+        HorizontalAccuracy::to_ellipse_39(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
 
     location.velocity = VelocityShape::horizontal_vertical_with_uncertainty(10, 0.5, 90, 1, 0.5,
                                                                             VerticalDirection::Up);

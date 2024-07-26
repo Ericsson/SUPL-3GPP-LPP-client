@@ -369,11 +369,25 @@ static args::ValueFlag<double> li_altitude{location_infomation,
                                            "Fake Altitude",
                                            {"fake-altitude", "falt"},
                                            args::Options::Single};
-static args::Flag              li_conf95to39{location_infomation,
-                                "confidence-95to39",
-                                "Convert 95p confidence to 39p confidence",
-                                             {"confidence-95to39"},
-                                args::Options::Single};
+static args::Flag              li_conf95to39{
+    location_infomation,
+    "confidence-95to39",
+    "DEPRECATED: Convert 95p confidence to 39p confidence (use --confidence-95to68)",
+                 {"confidence-95to39"},
+    args::Options::Single};
+static args::Flag li_conf95to68{
+    location_infomation,
+    "confidence-95to68",
+    "Rescale incoming semi-major/semi-minor axes from 95p to 68p confidence",
+    {"confidence-95to68"},
+    args::Options::Single};
+static args::Flag li_output_ellipse_68{
+    location_infomation,
+    "output-ellipse-68",
+    "Output error ellipse with confidence 68p instead of 39p",
+    {"output-ellipse-68"},
+    args::Options::Single,
+};
 static args::ValueFlag<double> li_override_horizontal_confidence{
     location_infomation,
     "override-horizontal-confidence",
@@ -929,7 +943,8 @@ static LocationInformationOptions parse_location_information_options() {
     location_information.altitude                       = 0;
     location_information.force                          = false;
     location_information.unlock_update_rate             = false;
-    location_information.convert_confidence_95_to_39    = false;
+    location_information.convert_confidence_95_to_68    = false;
+    location_information.output_ellipse_68              = false;
     location_information.override_horizontal_confidence = -1.0;
 
     if (li_force) {
@@ -955,8 +970,12 @@ static LocationInformationOptions parse_location_information_options() {
         }
     }
 
-    if (li_conf95to39) {
-        location_information.convert_confidence_95_to_39 = true;
+    if (li_conf95to39 || li_conf95to68) {
+        location_information.convert_confidence_95_to_68 = true;
+    }
+
+    if (li_output_ellipse_68) {
+        location_information.output_ellipse_68 = true;
     }
 
     if (li_override_horizontal_confidence) {

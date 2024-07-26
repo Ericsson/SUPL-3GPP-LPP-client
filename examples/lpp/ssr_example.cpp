@@ -85,7 +85,8 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     auto& location_information_options = gGlobals.options.location_information_options;
     auto& control_options              = gGlobals.options.control_options;
 
-    gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
+    gConvertConfidence95To68      = location_information_options.convert_confidence_95_to_68;
+    gOutputEllipse68              = location_information_options.output_ellipse_68;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
     printf("[settings]\n");
@@ -481,27 +482,25 @@ void SsrCommand::parse(args::Subparser& parser) {
         {"ura-default"}, args::Options::Single);
 
     mUbloxClockCorrectionArg =
-        new args::Flag(parser, "ublox-clock-correction", "DEPRECATED: Flip the clock correction sign",
-                       {"ublox-clock-correction"});
+        new args::Flag(parser, "ublox-clock-correction",
+                       "DEPRECATED: Flip the clock correction sign", {"ublox-clock-correction"});
     mNoUbloxClockCorrectionArg =
         new args::Flag(parser, "no-ublox-clock-correction", "Flip the clock correction sign",
                        {"no-ublox-clock-correction"});
 
     mForceContinuityArg =
-        new args::Flag(parser, "force-continuity", "DEPRECATED: Force SF022 (IODE Continuity) to 320s",
-                       {"force-continuity"});
+        new args::Flag(parser, "force-continuity",
+                       "DEPRECATED: Force SF022 (IODE Continuity) to 320s", {"force-continuity"});
     mNoForceContinuityArg =
-        new args::Flag(parser, "no-force-continuity", "Do not force SF022 (IODE Continuity) to 320s",
-                       {"no-force-continuity"});
+        new args::Flag(parser, "no-force-continuity",
+                       "Do not force SF022 (IODE Continuity) to 320s", {"no-force-continuity"});
 
-    mAverageZenithDelayArg =
-        new args::Flag(parser, "average-zenith-delay",
-                       "DEPRECATED: Compute T00 constant as the average zenith delay",
-                       {"average-zenith-delay"});
-    mNoAverageZenithDelayArg =
-        new args::Flag(parser, "no-average-zenith-delay",
-                       "Do not compute T00 constant as the average zenith delay",
-                       {"no-average-zenith-delay"});
+    mAverageZenithDelayArg = new args::Flag(
+        parser, "average-zenith-delay",
+        "DEPRECATED: Compute T00 constant as the average zenith delay", {"average-zenith-delay"});
+    mNoAverageZenithDelayArg = new args::Flag(
+        parser, "no-average-zenith-delay",
+        "Do not compute T00 constant as the average zenith delay", {"no-average-zenith-delay"});
 
     mSf055Override =
         new args::ValueFlag<int>(parser, "sf055-override",
