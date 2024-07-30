@@ -12,6 +12,9 @@
 - Fixed a bug where the default `ura-override` value was initialized to 0 causing the SPARTN generator to always include it as "unknown".
 - Updated example location implementation in the LPP example to match the new version of the LocationInformation struct (#28 by Phillezi)
 - Added option `--lrf-message-id` to specify the RTCM message type to be used with `--format lrf-uper`.
+- Added TCP and UDP support when using the NMEA receiver.
+    - `--nmea-tcp` to specify the TCP ip address to connect to.
+    - `--nmea-tcp-port` to specify the TCP port to connect to.
 
 ## [3.4.9] 2024-05-03
 - Added a few options to controll how SPARTN messages are generated:
