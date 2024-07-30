@@ -191,6 +191,29 @@ static args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
                                                             "Parity Bits",
                                                             {"nmea-serial-parity"},
                                                             args::Options::Single};
+
+static args::Group nmea_tcp_group{
+    nmea_receiver_group,
+    "TCP:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+static args::ValueFlag<std::string> nmea_tcp_ip_address{
+    nmea_tcp_group, "ip_address", "Host or IP Address", {"nmea-tcp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> nmea_tcp_port{
+    nmea_tcp_group, "port", "Port", {"nmea-tcp-port"}, args::Options::Single};
+
+static args::Group nmea_udp_group{
+    nmea_receiver_group,
+    "UDP:",
+    args::Group::Validators::AllOrNone,
+    args::Options::Global,
+};
+static args::ValueFlag<std::string> nmea_udp_ip_address{
+    nmea_udp_group, "ip_address", "Host or IP Address", {"nmea-udp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> nmea_udp_port{
+    nmea_udp_group, "port", "Port", {"nmea-udp-port"}, args::Options::Single};
+
 // export nmea to unix socket
 static args::ValueFlag<std::string> nmea_export_un{nmea_receiver_group,
                                                    "unix socket",
@@ -452,7 +475,7 @@ static LocationServerOptions parse_location_server_options(Options& options) {
     } else if (location_server_slp_host_imsi) {
         if (!options.identity_options.imsi) {
             throw args::RequiredError("`imsi` is required to use `slp-host-imsi`");
-        } else if(options.identity_options.wait_for_identity) {
+        } else if (options.identity_options.wait_for_identity) {
             throw args::ValidationError("`slp-host-imsi` cannot be used with `wait-for-identity`");
         }
 
@@ -792,50 +815,89 @@ static UbloxOptions ublox_parse_options() {
     }
 }
 
-static NmeaOptions nmea_parse_options() {
+static std::unique_ptr<Interface> nmea_parse_serial() {
+    uint32_t baud_rate = 115200;
+    if (nmea_serial_baud_rate) {
+        if (nmea_serial_baud_rate.Get() < 0) {
+            throw args::ValidationError("nmea-serial-baud-rate must be positive");
+        }
+
+        baud_rate = static_cast<uint32_t>(nmea_serial_baud_rate.Get());
+    }
+
+    auto data_bits = DataBits::EIGHT;
+    if (nmea_serial_data_bits) {
+        switch (nmea_serial_data_bits.Get()) {
+        case 5: data_bits = DataBits::FIVE; break;
+        case 6: data_bits = DataBits::SIX; break;
+        case 7: data_bits = DataBits::SEVEN; break;
+        case 8: data_bits = DataBits::EIGHT; break;
+        default: throw args::ValidationError("Invalid data bits");
+        }
+    }
+
+    auto stop_bits = StopBits::ONE;
+    if (nmea_serial_stop_bits) {
+        switch (nmea_serial_stop_bits.Get()) {
+        case 1: stop_bits = StopBits::ONE; break;
+        case 2: stop_bits = StopBits::TWO; break;
+        default: throw args::ValidationError("Invalid stop bits");
+        }
+    }
+
+    auto parity_bit = ParityBit::NONE;
+    if (nmea_serial_parity_bits) {
+        if (nmea_serial_parity_bits.Get() == "none") {
+            parity_bit = ParityBit::NONE;
+        } else if (nmea_serial_parity_bits.Get() == "odd") {
+            parity_bit = ParityBit::ODD;
+        } else if (nmea_serial_parity_bits.Get() == "even") {
+            parity_bit = ParityBit::EVEN;
+        } else {
+            throw args::ValidationError("Invalid parity bits");
+        }
+    }
+
+    return std::unique_ptr<Interface>(interface::Interface::serial(
+        nmea_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+}
+
+static std::unique_ptr<Interface> nmea_parse_tcp() {
+    assert(nmea_tcp_ip_address);
+
+    if (!nmea_tcp_port) {
+        throw args::RequiredError("nmea-tcp-port");
+    }
+
+    return std::unique_ptr<Interface>(
+        Interface::tcp(nmea_tcp_ip_address.Get(), nmea_tcp_port.Get(), true /* reconnect */));
+}
+
+static std::unique_ptr<Interface> nmea_parse_udp() {
+    assert(nmea_udp_ip_address);
+
+    if (!nmea_udp_port) {
+        throw args::RequiredError("nmea-udp-port");
+    }
+
+    return std::unique_ptr<Interface>(
+        Interface::udp(nmea_udp_ip_address.Get(), nmea_udp_port.Get(), true /* reconnect */));
+}
+
+static std::unique_ptr<Interface> nmea_parse_interface() {
     if (nmea_serial_device) {
-        uint32_t baud_rate = 115200;
-        if (nmea_serial_baud_rate) {
-            if (nmea_serial_baud_rate.Get() < 0) {
-                throw args::ValidationError("nmea-serial-baud-rate must be positive");
-            }
+        return nmea_parse_serial();
+    } else if (nmea_tcp_ip_address) {
+        return nmea_parse_tcp();
+    } else if (nmea_udp_ip_address) {
+        return nmea_parse_udp();
+    } else {
+        throw args::RequiredError("No device/interface specified for NMEA receiver");
+    }
+}
 
-            baud_rate = static_cast<uint32_t>(nmea_serial_baud_rate.Get());
-        }
-
-        auto data_bits = DataBits::EIGHT;
-        if (nmea_serial_data_bits) {
-            switch (nmea_serial_data_bits.Get()) {
-            case 5: data_bits = DataBits::FIVE; break;
-            case 6: data_bits = DataBits::SIX; break;
-            case 7: data_bits = DataBits::SEVEN; break;
-            case 8: data_bits = DataBits::EIGHT; break;
-            default: throw args::ValidationError("Invalid data bits");
-            }
-        }
-
-        auto stop_bits = StopBits::ONE;
-        if (nmea_serial_stop_bits) {
-            switch (nmea_serial_stop_bits.Get()) {
-            case 1: stop_bits = StopBits::ONE; break;
-            case 2: stop_bits = StopBits::TWO; break;
-            default: throw args::ValidationError("Invalid stop bits");
-            }
-        }
-
-        auto parity_bit = ParityBit::NONE;
-        if (nmea_serial_parity_bits) {
-            if (nmea_serial_parity_bits.Get() == "none") {
-                parity_bit = ParityBit::NONE;
-            } else if (nmea_serial_parity_bits.Get() == "odd") {
-                parity_bit = ParityBit::ODD;
-            } else if (nmea_serial_parity_bits.Get() == "even") {
-                parity_bit = ParityBit::EVEN;
-            } else {
-                throw args::ValidationError("Invalid parity bits");
-            }
-        }
-
+static NmeaOptions nmea_parse_options() {
+    if (nmea_serial_device || nmea_tcp_ip_address || nmea_udp_ip_address) {
         std::vector<std::unique_ptr<interface::Interface>> nmea_export_interfaces;
         if (nmea_export_un) {
             auto interface = interface::Interface::unix_socket_stream(nmea_export_un.Get(), true);
@@ -852,11 +914,9 @@ static NmeaOptions nmea_parse_options() {
             nmea_export_interfaces.emplace_back(interface);
         }
 
-        auto interface = interface::Interface::serial(nmea_serial_device.Get(), baud_rate,
-                                                      data_bits, stop_bits, parity_bit);
+        auto interface = nmea_parse_interface();
         auto prm       = print_receiver_options_parse();
-        return NmeaOptions{std::unique_ptr<Interface>(interface), prm,
-                           std::move(nmea_export_interfaces)};
+        return NmeaOptions{std::move(interface), prm, std::move(nmea_export_interfaces)};
     } else {
         return NmeaOptions{};
     }
