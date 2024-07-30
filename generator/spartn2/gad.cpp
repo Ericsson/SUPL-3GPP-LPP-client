@@ -30,12 +30,12 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
            decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16));
 
     auto i = 0;
-    auto points = correction_point_set.grid_points();
-    for (auto point : points) {
-        if (point < 0) {
+    auto grid_points = correction_point_set.grid_points();
+    for (auto gp : grid_points) {
+        if (gp.id < 0) {
             printf("-- ");
         } else {
-            printf("%02ld ", point);
+            printf("%02ld ", gp.id);
         }
 
         if (++i % (correction_point_set.numberOfStepsLongitude_r16 + 1) == 0) {

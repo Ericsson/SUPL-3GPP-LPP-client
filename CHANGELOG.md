@@ -39,6 +39,9 @@
     - `--ublox-clock-correction` is now the default behavior, use `--no-ublox-clock-correction` to disable it.
     - `--force-continuity` is now the default behavior, use `--no-force-continuity` to disable it.
     - `--average-zenith-delay` is now the default behavior, use `--no-average-zenith-delay` to disable it.
+- Removed `from_ellipse` and replaced it with:
+    - `to_ellipse_39` to create a horizontal accuracy ellipse with 39% confidence, will not rescale the axes.
+    - `to_ellipse_68` to create a horizontal accuracy ellipse with 68% confidence, will rescale the axes.
 
 ## [3.4.9] 2024-05-03
 - Added a few options to controll how SPARTN messages are generated:

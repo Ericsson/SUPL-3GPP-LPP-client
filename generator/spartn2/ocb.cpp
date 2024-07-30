@@ -232,11 +232,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15*
     auto epoch_time = spartn_time_from(clock->epochTime_r15);
     auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
-    corrections.gnss_id    = gnss_id;
-    corrections.iod        = iod;
-    corrections.epoch_time = epoch_time;
-    corrections.clock      = clock;
+    auto& corrections                 = ocb.mKeyedCorrections[key];
+    corrections.gnss_id               = gnss_id;
+    corrections.iod                   = iod;
+    corrections.epoch_time            = epoch_time;
+    corrections.clock                 = clock;
+    corrections.clock_update_interval = decode::ssrUpdateInterval_r15(clock->ssrUpdateInterval_r15);
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bias) {
@@ -723,6 +724,12 @@ void Generator::generate_ocb(uint16_t iod) {
                 auto c1 = decode::delta_Clock_C1_r15(clock.delta_Clock_C1_r15);
                 auto c2 = decode::delta_Clock_C2_r15(clock.delta_Clock_C2_r15);
 
+#ifdef SPARTN_DEBUG_PRINT
+                printf("    C0: %f\n", c0);
+                printf("    C1: %f\n", c1);
+                printf("    C2: %f\n", c2);
+#endif
+
                 // t_0 = epochTime + (0.5 * ssrUpdateInterval)
                 // TODO(ewasjon): [low-priority] Include SSR update interval. This is fine not to
                 // include while we are using t=t0.
@@ -742,6 +749,10 @@ void Generator::generate_ocb(uint16_t iod) {
                 if (mUBloxClockCorrection) {
                     dc *= -1;
                 }
+
+#ifdef SPARTN_DEBUG_PRINT
+                printf("    clock: %f%s\n", dc, mUBloxClockCorrection ? " [u-blox]" : "");
+#endif
 
                 builder.sf020(dc);
 

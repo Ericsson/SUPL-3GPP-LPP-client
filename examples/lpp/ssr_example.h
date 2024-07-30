@@ -27,12 +27,14 @@ public:
           mNoForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr),
           mNoAverageZenithDelayArg(nullptr), mSf055Override(nullptr), mSf055Default(nullptr),
           mSf042Override(nullptr), mSf042Default(nullptr), mIncreasingSiou(nullptr),
-          mFilterByOcb(nullptr), mIgnoreL2L(nullptr), mPrintRTCMArg(nullptr),
-          mCodeBiasNoTranslateArg(nullptr), mCodeBiasNoCorrectionShiftArg(nullptr),
-          mPhaseBiasNoTranslateArg(nullptr), mPhaseBiasNoCorrectionShiftArg(nullptr),
-          mHydrostaticInZenithArg(nullptr), mNoGPS(nullptr), mNoGLONASS(nullptr),
-          mNoGalileo(nullptr), mBeiDou(nullptr), mFlipGridBitmask(nullptr), mNoGenerateGAD(nullptr),
-          mNoGenerateOCB(nullptr), mNoGenerateHPAC(nullptr) {}
+          mFilterByResiduals(nullptr), mFilterByOcb(nullptr), mIgnoreL2L(nullptr),
+          mPrintRTCMArg(nullptr), mCodeBiasNoTranslateArg(nullptr),
+          mCodeBiasNoCorrectionShiftArg(nullptr), mPhaseBiasNoTranslateArg(nullptr),
+          mPhaseBiasNoCorrectionShiftArg(nullptr), mHydrostaticInZenithArg(nullptr),
+          mStecMethod(nullptr), mNoStecTransform(nullptr), mStecInvalidToZero(nullptr),
+          mNoGPS(nullptr), mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr),
+          mFlipGridBitmask(nullptr), mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr),
+          mNoGenerateHPAC(nullptr) {}
 
     ~SsrCommand() override { cleanup(); }
 
@@ -52,6 +54,7 @@ public:
         delete mSf042Override;
         delete mSf042Default;
         delete mIncreasingSiou;
+        delete mFilterByResiduals;
         delete mFilterByOcb;
         delete mIgnoreL2L;
         delete mPrintRTCMArg;
@@ -60,6 +63,9 @@ public:
         delete mPhaseBiasNoTranslateArg;
         delete mPhaseBiasNoCorrectionShiftArg;
         delete mHydrostaticInZenithArg;
+        delete mStecMethod;
+        delete mNoStecTransform;
+        delete mStecInvalidToZero;
         delete mNoGPS;
         delete mNoGLONASS;
         delete mNoGalileo;
@@ -89,6 +95,7 @@ private:
     args::ValueFlag<int>*         mSf042Override;
     args::ValueFlag<int>*         mSf042Default;
     args::Flag*                   mIncreasingSiou;
+    args::Flag*                   mFilterByResiduals;
     args::Flag*                   mFilterByOcb;
     args::Flag*                   mIgnoreL2L;
     args::Flag*                   mPrintRTCMArg;
@@ -97,6 +104,9 @@ private:
     args::Flag*                   mPhaseBiasNoTranslateArg;
     args::Flag*                   mPhaseBiasNoCorrectionShiftArg;
     args::Flag*                   mHydrostaticInZenithArg;
+    args::ValueFlag<std::string>* mStecMethod;
+    args::Flag*                   mNoStecTransform;
+    args::Flag*                   mStecInvalidToZero;
     args::Flag*                   mNoGPS;
     args::Flag*                   mNoGLONASS;
     args::Flag*                   mNoGalileo;

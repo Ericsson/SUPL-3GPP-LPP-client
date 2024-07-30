@@ -13,6 +13,28 @@
 
 namespace decode {
 
+inline double ssrUpdateInterval_r15(long value) {
+    switch (value) {
+    case 0: return 1.0;
+    case 1: return 2.0;
+    case 2: return 5.0;
+    case 3: return 10.0;
+    case 4: return 15.0;
+    case 5: return 30.0;
+    case 6: return 60.0;
+    case 7: return 120.0;
+    case 8: return 240.0;
+    case 9: return 300.0;
+    case 10: return 600.0;
+    case 11: return 900.0;
+    case 12: return 1800.0;
+    case 13: return 3600.0;
+    case 14: return 7200.0;
+    case 15: return 10800.0;
+    default: return 10800.0;
+    }
+}
+
 static SPARTN_CONSTEXPR double ORBIT_RADIAL_RESOLUTION = 0.0001;
 static SPARTN_CONSTEXPR double ORBIT_ALONG_RESOLUTION  = 0.0004;
 static SPARTN_CONSTEXPR double ORBIT_CROSS_RESOLUTION  = 0.0004;

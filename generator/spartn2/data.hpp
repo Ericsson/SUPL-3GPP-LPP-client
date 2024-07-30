@@ -73,6 +73,12 @@ struct GridElement_r16;
 namespace generator {
 namespace spartn {
 
+struct GridPoint {
+    long   id;
+    double latitude;
+    double longitude;
+};
+
 struct CorrectionPointSet {
     uint16_t set_id;
     uint16_t area_id;
@@ -85,10 +91,13 @@ struct CorrectionPointSet {
     long     stepOfLongitude_r16;
     uint64_t bitmask;
 
-    double reference_point_latitude;
-    double reference_point_longitude;
-    double latitude_delta;
-    double longitude_delta;
+    double                 reference_point_latitude;
+    double                 reference_point_longitude;
+    double                 latitude_delta;
+    double                 longitude_delta;
+    std::vector<GridPoint> internal_grid_points;
+
+    void calculate_grid_points();
 
     inline bool has_grid_point(long grid_point) const {
         auto index = 64 - 1 - grid_point;
@@ -102,7 +111,7 @@ struct CorrectionPointSet {
         return longitude_delta * numberOfStepsLongitude_r16;
     }
 
-    std::vector<long> grid_points() const;
+    std::vector<GridPoint> const& grid_points() const;
 };
 
 struct OcbSatellite {
@@ -134,6 +143,8 @@ struct OcbCorrections {
     GNSS_SSR_PhaseBias_r16*        phase_bias;
     GNSS_SSR_URA_r16*              ura;
 
+    double clock_update_interval;
+
     // Generate a set of satellite ids for this correction
     // this is the union of all satellite ids that have at least
     // one correction type.
@@ -158,6 +169,7 @@ struct HpacSatellite {
 
     uint32_t prn() const;
     bool     has_full_data() const { return stec && residuals.size() > 0; }
+    bool     has_all_residuals(CorrectionPointSet const& cps) const;
 };
 
 struct HpacCorrections {
@@ -173,7 +185,7 @@ struct HpacCorrections {
     // this is the union of all satellite ids that have at least
     // one correction type.
     std::vector<HpacSatellite> satellites() const;
-    
+
     // Find GridElement_r16 for the given grid_id
     GridElement_r16* find_grid_point(long grid_id) const;
 };

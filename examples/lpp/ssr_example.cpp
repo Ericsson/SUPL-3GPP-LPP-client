@@ -27,38 +27,42 @@ using UReceiver = receiver::ublox::ThreadedReceiver;
 using NReceiver = receiver::nmea::ThreadedReceiver;
 
 struct SsrGlobals {
-    Options             options;
-    ControlParser       control_parser;
-    CellID              cell;
-    ssr_example::Format format;
-    int                 lrf_rtcm_id;
-    int                 ura_override;
-    int                 ura_default;
-    bool                ublox_clock_correction;
-    bool                force_continuity;
-    bool                average_zenith_delay;
-    bool                iode_shift;
-    int                 sf055_override;
-    int                 sf055_default;
-    int                 sf042_override;
-    int                 sf042_default;
-    bool                increasing_siou;
-    bool                filter_by_ocb;
-    bool                ignore_l2l;
-    bool                print_rtcm;
-    bool                hydrostatic_in_zenith;
-    bool                code_bias_translate;
-    bool                code_bias_correction_shift;
-    bool                phase_bias_translate;
-    bool                phase_bias_correction_shift;
-    bool                generate_gps;
-    bool                generate_glonass;
-    bool                generate_galileo;
-    bool                generate_beidou;
-    bool                generate_gad;
-    bool                generate_ocb;
-    bool                generate_hpac;
-    bool                flip_grid_bitmask;
+    Options                       options;
+    ControlParser                 control_parser;
+    CellID                        cell;
+    ssr_example::Format           format;
+    int                           lrf_rtcm_id;
+    int                           ura_override;
+    int                           ura_default;
+    bool                          ublox_clock_correction;
+    bool                          force_continuity;
+    bool                          average_zenith_delay;
+    bool                          iode_shift;
+    int                           sf055_override;
+    int                           sf055_default;
+    int                           sf042_override;
+    int                           sf042_default;
+    bool                          increasing_siou;
+    bool                          filter_by_residuals;
+    bool                          filter_by_ocb;
+    bool                          ignore_l2l;
+    bool                          print_rtcm;
+    bool                          hydrostatic_in_zenith;
+    generator::spartn::StecMethod stec_method;
+    bool                          stec_transform;
+    bool                          stec_invalid_to_zero;
+    bool                          code_bias_translate;
+    bool                          code_bias_correction_shift;
+    bool                          phase_bias_translate;
+    bool                          phase_bias_correction_shift;
+    bool                          generate_gps;
+    bool                          generate_glonass;
+    bool                          generate_galileo;
+    bool                          generate_beidou;
+    bool                          generate_gad;
+    bool                          generate_ocb;
+    bool                          generate_hpac;
+    bool                          flip_grid_bitmask;
 };
 
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
@@ -159,8 +163,10 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     if (gGlobals.sf042_default >= 0) gSpartnGeneratorNew.set_sf042_default(gGlobals.sf042_default);
 
     gSpartnGeneratorNew.set_increasing_siou(gGlobals.increasing_siou);
+    gSpartnGeneratorNew.set_filter_by_residuals(gGlobals.filter_by_residuals);
     gSpartnGeneratorNew.set_filter_by_ocb(gGlobals.filter_by_ocb);
     gSpartnGeneratorNew.set_ignore_l2l(gGlobals.ignore_l2l);
+    gSpartnGeneratorNew.set_stec_invalid_to_zero(gGlobals.stec_invalid_to_zero);
 
     gSpartnGeneratorNew.set_code_bias_translate(gGlobals.code_bias_translate);
     gSpartnGeneratorNew.set_code_bias_correction_shift(gGlobals.code_bias_correction_shift);
@@ -168,6 +174,9 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gSpartnGeneratorNew.set_phase_bias_correction_shift(gGlobals.phase_bias_correction_shift);
 
     gSpartnGeneratorNew.set_hydrostatic_in_zenith(gGlobals.hydrostatic_in_zenith);
+    gSpartnGeneratorNew.set_stec_method(gGlobals.stec_method);
+    gSpartnGeneratorNew.set_stec_transform(gGlobals.stec_transform);
+
     gSpartnGeneratorNew.set_gps_supported(gGlobals.generate_gps);
     gSpartnGeneratorNew.set_glonass_supported(gGlobals.generate_glonass);
     gSpartnGeneratorNew.set_galileo_supported(gGlobals.generate_galileo);
@@ -523,6 +532,10 @@ void SsrCommand::parse(args::Subparser& parser) {
     mIncreasingSiou =
         new args::Flag(parser, "increasing-siou", "Enable the increasing SIoU feature for SPARTN",
                        {"increasing-siou"});
+    mFilterByResiduals = new args::Flag(
+        parser, "filter-by-residuals",
+        "Only include ionospheric residual satellites that have residuals for all grid points",
+        {"filter-by-residuals"});
     mFilterByOcb = new args::Flag(
         parser, "filter-by-ocb",
         "Only include ionospheric residual satellites that also have OCB corrections",
@@ -551,6 +564,25 @@ void SsrCommand::parse(args::Subparser& parser) {
         parser, "hydrostatic-in-zenith",
         "Use the remaning hydrostatic delay residual in the per grid-point zenith residual",
         {"hydrostatic-in-zenith"}, args::Options::Single);
+
+    mStecMethod = new args::ValueFlag<std::string>(parser, "stec-method",
+                                                   "STEC method to use for the polynomial",
+                                                   {"stec-method"}, args::Options::Single);
+    mStecMethod->HelpChoices({
+        "default",
+        "discard",
+        "residual",
+    });
+    mStecMethod->HelpDefault("default");
+
+    mNoStecTransform =
+        new args::Flag(parser, "no-stec-transform", "Skip transforming the STEC from LPP to SPARTN",
+                       {"no-stec-transform"});
+
+    mStecInvalidToZero =
+        new args::Flag(parser, "stec-invalid-to-zero",
+                       "Set STEC values that would be invalid in SPARTN to zero instead",
+                       {"stec-invalid-to-zero"});
 
     mNoGPS = new args::Flag(parser, "no-gps", "Skip generating GPS SPARTN messages", {"no-gps"});
     mNoGLONASS = new args::Flag(parser, "no-glonass", "Skip generating GLONASS SPARTN messages",
@@ -588,10 +620,14 @@ void SsrCommand::execute(Options options) {
     gGlobals.sf042_override              = -1;
     gGlobals.sf042_default               = -1;
     gGlobals.increasing_siou             = false;
+    gGlobals.filter_by_residuals         = false;
     gGlobals.filter_by_ocb               = false;
     gGlobals.ignore_l2l                  = false;
     gGlobals.print_rtcm                  = false;
     gGlobals.hydrostatic_in_zenith       = false;
+    gGlobals.stec_method                 = generator::spartn::StecMethod::Default;
+    gGlobals.stec_transform              = true;
+    gGlobals.stec_invalid_to_zero        = false;
     gGlobals.code_bias_translate         = true;
     gGlobals.code_bias_correction_shift  = true;
     gGlobals.phase_bias_translate        = true;
@@ -698,6 +734,10 @@ void SsrCommand::execute(Options options) {
         gGlobals.increasing_siou = mIncreasingSiou->Get();
     }
 
+    if (*mFilterByResiduals) {
+        gGlobals.filter_by_residuals = mFilterByResiduals->Get();
+    }
+
     if (*mFilterByOcb) {
         gGlobals.filter_by_ocb = mFilterByOcb->Get();
     }
@@ -728,6 +768,26 @@ void SsrCommand::execute(Options options) {
 
     if (*mHydrostaticInZenithArg) {
         gGlobals.hydrostatic_in_zenith = true;
+    }
+
+    if (*mStecMethod) {
+        if (mStecMethod->Get() == "default") {
+            gGlobals.stec_method = generator::spartn::StecMethod::Default;
+        } else if (mStecMethod->Get() == "discard") {
+            gGlobals.stec_method = generator::spartn::StecMethod::DiscardC01C10C11;
+        } else if (mStecMethod->Get() == "residual") {
+            gGlobals.stec_method = generator::spartn::StecMethod::MoveToResiduals;
+        } else {
+            throw args::ValidationError("Invalid STEC method");
+        }
+    }
+
+    if (*mNoStecTransform) {
+        gGlobals.stec_transform = false;
+    }
+
+    if (*mStecInvalidToZero) {
+        gGlobals.stec_invalid_to_zero = true;
     }
 
     if (*mNoGPS) {

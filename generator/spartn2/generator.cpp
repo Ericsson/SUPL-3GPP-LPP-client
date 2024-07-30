@@ -35,8 +35,9 @@ Generator::Generator()
       mComputeAverageZenithDelay(false), mGroupByEpochTime(false), mIodeShift(true),
       mIncreasingSiou(false), mSiouIndex(1), mCodeBiasTranslate(true),
       mCodeBiasCorrectionShift(true), mPhaseBiasTranslate(true), mPhaseBiasCorrectionShift(true),
-      mHydrostaticResidualInZenith(false), mFlipGridBitmask(false), mFilterByOcb(false),
-      mIgnoreL2L(false), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
+      mHydrostaticResidualInZenith(false), mStecMethod(StecMethod::Default), mStecTranform(true),
+      mFlipGridBitmask(false), mFilterByResiduals(false), mFilterByOcb(false), mIgnoreL2L(false),
+      mStecInvalidToZero(false), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
       mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
       mBeidouSupported(false) {}
 
@@ -184,9 +185,10 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
             }
 
             correction_point_set.bitmask = bitmask;
+            correction_point_set.calculate_grid_points();
 
-            auto correction_point_set_ptr =
-                std::unique_ptr<CorrectionPointSet>(new CorrectionPointSet(correction_point_set));
+            auto correction_point_set_ptr = std::unique_ptr<CorrectionPointSet>(
+                new CorrectionPointSet(std::move(correction_point_set)));
             mCorrectionPointSets.insert(
                 std::make_pair(ssr.correctionPointSetID_r16, std::move(correction_point_set_ptr)));
         }
