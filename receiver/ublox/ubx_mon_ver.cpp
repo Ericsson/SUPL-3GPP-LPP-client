@@ -7,8 +7,9 @@
 namespace receiver {
 namespace ublox {
 
-UbxMonVer::UbxMonVer(raw::MonVer payload) UBLOX_NOEXCEPT : Message(CLASS_ID, MESSAGE_ID),
-                                                           mPayload(std::move(payload)) {}
+UbxMonVer::UbxMonVer(raw::MonVer payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT
+    : Message(CLASS_ID, MESSAGE_ID, std::move(data)),
+      mPayload(std::move(payload)) {}
 
 void UbxMonVer::print() const UBLOX_NOEXCEPT {
     printf("[%02X %02X] UBX-MON-VER:\n", message_class(), message_id());
@@ -20,7 +21,8 @@ void UbxMonVer::print() const UBLOX_NOEXCEPT {
     }
 }
 
-std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder) UBLOX_NOEXCEPT {
+std::unique_ptr<Message> UbxMonVer::parse(Decoder&               decoder,
+                                          std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT {
     if (decoder.remaining() < 40) {
         return nullptr;
     }
@@ -38,7 +40,7 @@ std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     if (decoder.error()) {
         return nullptr;
     } else {
-        return std::unique_ptr<Message>{new UbxMonVer(std::move(payload))};
+        return std::unique_ptr<Message>{new UbxMonVer(std::move(payload), std::move(raw_data))};
     }
 }
 

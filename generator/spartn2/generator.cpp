@@ -37,8 +37,9 @@ Generator::Generator()
       mCodeBiasCorrectionShift(true), mPhaseBiasTranslate(true), mPhaseBiasCorrectionShift(true),
       mHydrostaticResidualInZenith(false), mStecMethod(StecMethod::Default), mStecTranform(true),
       mFlipGridBitmask(false), mFilterByResiduals(false), mFilterByOcb(false), mIgnoreL2L(false),
-      mStecInvalidToZero(false), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
-      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
+      mStecInvalidToZero(false), mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false),
+      mSignFlipC11(false), mSignFlipStecResiduals(false), mGenerateGad(true), mGenerateOcb(true),
+      mGenerateHpac(true), mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
       mBeidouSupported(false) {}
 
 Generator::~Generator() = default;

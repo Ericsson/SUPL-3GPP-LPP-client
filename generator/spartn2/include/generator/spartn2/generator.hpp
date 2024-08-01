@@ -73,10 +73,21 @@ public:
     void set_sf042_default(int sf042_default) { mSf042Default = sf042_default; }
 
     void set_increasing_siou(bool increasing_siou) { mIncreasingSiou = increasing_siou; }
-    void set_filter_by_residuals(bool filter_by_residuals) { mFilterByResiduals = filter_by_residuals; }
+    void set_filter_by_residuals(bool filter_by_residuals) {
+        mFilterByResiduals = filter_by_residuals;
+    }
     void set_filter_by_ocb(bool filter_by_ocb) { mFilterByOcb = filter_by_ocb; }
     void set_ignore_l2l(bool ignore_l2l) { mIgnoreL2L = ignore_l2l; }
-    void set_stec_invalid_to_zero(bool stec_invalid_to_zero) { mStecInvalidToZero = stec_invalid_to_zero; }
+    void set_stec_invalid_to_zero(bool stec_invalid_to_zero) {
+        mStecInvalidToZero = stec_invalid_to_zero;
+    }
+    void set_sign_flip_c00(bool sign_flip_c00) { mSignFlipC00 = sign_flip_c00; }
+    void set_sign_flip_c01(bool sign_flip_c01) { mSignFlipC01 = sign_flip_c01; }
+    void set_sign_flip_c10(bool sign_flip_c10) { mSignFlipC10 = sign_flip_c10; }
+    void set_sign_flip_c11(bool sign_flip_c11) { mSignFlipC11 = sign_flip_c11; }
+    void set_sign_flip_stec_residuals(bool sign_flip_stec_residuals) {
+        mSignFlipStecResiduals = sign_flip_stec_residuals;
+    }
 
     void set_generate_ocb(bool generate_ocb) { mGenerateOcb = generate_ocb; }
     void set_generate_hpac(bool generate_hpac) { mGenerateHpac = generate_hpac; }
@@ -152,6 +163,11 @@ private:
     bool mFilterByOcb;
     bool mIgnoreL2L;
     bool mStecInvalidToZero;
+    bool mSignFlipC00;
+    bool mSignFlipC01;
+    bool mSignFlipC10;
+    bool mSignFlipC11;
+    bool mSignFlipStecResiduals;
 
     bool mGenerateGad;
     bool mGenerateOcb;

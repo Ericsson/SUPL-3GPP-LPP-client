@@ -32,9 +32,10 @@ public:
           mCodeBiasNoCorrectionShiftArg(nullptr), mPhaseBiasNoTranslateArg(nullptr),
           mPhaseBiasNoCorrectionShiftArg(nullptr), mHydrostaticInZenithArg(nullptr),
           mStecMethod(nullptr), mNoStecTransform(nullptr), mStecInvalidToZero(nullptr),
-          mNoGPS(nullptr), mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr),
-          mFlipGridBitmask(nullptr), mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr),
-          mNoGenerateHPAC(nullptr) {}
+          mSignFlipC00(nullptr), mSignFlipC01(nullptr), mSignFlipC10(nullptr),
+          mSignFlipC11(nullptr), mSignFlipStecResiduals(nullptr), mNoGPS(nullptr),
+          mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr), mFlipGridBitmask(nullptr),
+          mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr), mNoGenerateHPAC(nullptr) {}
 
     ~SsrCommand() override { cleanup(); }
 
@@ -66,6 +67,11 @@ public:
         delete mStecMethod;
         delete mNoStecTransform;
         delete mStecInvalidToZero;
+        delete mSignFlipC00;
+        delete mSignFlipC01;
+        delete mSignFlipC10;
+        delete mSignFlipC11;
+        delete mSignFlipStecResiduals;
         delete mNoGPS;
         delete mNoGLONASS;
         delete mNoGalileo;
@@ -107,6 +113,11 @@ private:
     args::ValueFlag<std::string>* mStecMethod;
     args::Flag*                   mNoStecTransform;
     args::Flag*                   mStecInvalidToZero;
+    args::Flag*                   mSignFlipC00;
+    args::Flag*                   mSignFlipC01;
+    args::Flag*                   mSignFlipC10;
+    args::Flag*                   mSignFlipC11;
+    args::Flag*                   mSignFlipStecResiduals;
     args::Flag*                   mNoGPS;
     args::Flag*                   mNoGLONASS;
     args::Flag*                   mNoGalileo;

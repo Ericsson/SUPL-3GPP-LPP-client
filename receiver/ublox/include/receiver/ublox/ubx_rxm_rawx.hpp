@@ -52,7 +52,8 @@ public:
     UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x15;
 
     UBLOX_EXPLICIT UbxRxmRawx(raw::RxmRawx                         payload,
-                              std::vector<raw::RxmRawxMeasurement> measurements) UBLOX_NOEXCEPT;
+                              std::vector<raw::RxmRawxMeasurement> measurements,
+                              std::vector<uint8_t>&&               data) UBLOX_NOEXCEPT;
     ~UbxRxmRawx() override = default;
 
     UbxRxmRawx(UbxRxmRawx const& other) : Message(other), mPayload(other.mPayload) {}

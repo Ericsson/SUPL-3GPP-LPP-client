@@ -162,6 +162,12 @@ static args::ValueFlag<std::string> ublox_udp_ip_address{
 static args::ValueFlag<uint16_t> ublox_udp_port{
     ublox_udp_device, "port", "Port", {"ublox-udp-port"}, args::Options::Single};
 
+static args::ValueFlag<std::string> ublox_export_file{ublox_receiver_group,
+                                                      "file",
+                                                      "Export UBX messages to file",
+                                                      {"ublox-export-file"},
+                                                      args::Options::Single};
+
 //
 // NMEA
 //
@@ -823,7 +829,14 @@ static UbloxOptions ublox_parse_options() {
         auto port      = ublox_parse_port();
         auto interface = ublox_parse_interface();
         auto prm       = print_receiver_options_parse();
-        return UbloxOptions{port, std::move(interface), prm};
+
+        std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
+        if (ublox_export_file) {
+            auto interface = interface::Interface::file(ublox_export_file.Get(), true);
+            export_interfaces.emplace_back(interface);
+        }
+
+        return UbloxOptions{port, std::move(interface), prm, std::move(export_interfaces)};
     } else {
         return UbloxOptions{};
     }

@@ -111,17 +111,21 @@ std::unique_ptr<Message> Parser::try_parse() UBLOX_NOEXCEPT {
 
     // parse payload
     Decoder decoder(buffer + 6, length);
+    auto    raw_data = std::vector<uint8_t>(buffer, buffer + 6 + length + 2);
 
     switch (type) {
-    case 0x0107: return UbxNavPvt::parse(decoder);
-    case 0x0A04: return UbxMonVer::parse(decoder);
-    case 0x068B: return UbxCfgValget::parse(decoder);
-    case 0x0501: return UbxAckAck::parse(decoder);
-    case 0x0500: return UbxAckNak::parse(decoder);
-    case 0x0215: return UbxRxmRawx::parse(decoder);
-    case 0x0232: return UbxRxmRtcm::parse(decoder);
-    case 0x0233: return UbxRxmSpartn::parse(decoder);
-    default: return std::unique_ptr<Message>{new UnsupportedMessage(message_class, message_id)};
+    case 0x0107: return UbxNavPvt::parse(decoder, std::move(raw_data));
+    case 0x0A04: return UbxMonVer::parse(decoder, std::move(raw_data));
+    case 0x068B: return UbxCfgValget::parse(decoder, std::move(raw_data));
+    case 0x0501: return UbxAckAck::parse(decoder, std::move(raw_data));
+    case 0x0500: return UbxAckNak::parse(decoder, std::move(raw_data));
+    case 0x0215: return UbxRxmRawx::parse(decoder, std::move(raw_data));
+    case 0x0232: return UbxRxmRtcm::parse(decoder, std::move(raw_data));
+    case 0x0233: return UbxRxmSpartn::parse(decoder, std::move(raw_data));
+    default: {
+        return std::unique_ptr<Message>{
+            new UnsupportedMessage(message_class, message_id, std::move(raw_data))};
+    }
     }
 }
 

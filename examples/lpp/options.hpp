@@ -70,6 +70,8 @@ struct UbloxOptions {
     std::unique_ptr<interface::Interface> interface;
     /// Whether to print messages.
     bool print_messages;
+    /// Export messages to other interfaces.
+    std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
 };
 
 /// Nmea options.

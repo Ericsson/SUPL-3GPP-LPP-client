@@ -9,9 +9,9 @@
 namespace receiver {
 namespace ublox {
 
-UbxRxmRawx::UbxRxmRawx(raw::RxmRawx                         payload,
-                       std::vector<raw::RxmRawxMeasurement> measurements) UBLOX_NOEXCEPT
-    : Message(CLASS_ID, MESSAGE_ID),
+UbxRxmRawx::UbxRxmRawx(raw::RxmRawx payload, std::vector<raw::RxmRawxMeasurement> measurements,
+                       std::vector<uint8_t>&& data) UBLOX_NOEXCEPT
+    : Message(CLASS_ID, MESSAGE_ID, std::move(data)),
       mPayload(std::move(payload)),
       mMeasurements(std::move(measurements)) {}
 

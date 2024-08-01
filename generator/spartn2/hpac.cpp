@@ -288,11 +288,18 @@ static bool compute_coefficient_size_indicator(StecParameters& parameters) {
 // that all terms (except C00) will be incorrect.
 static StecParameters compute_stec_parameters(CorrectionPointSet const&  correction_point_set,
                                               STEC_SatElement_r16 const& satellite,
-                                              int equation_type, bool stec_transform) {
+                                              int equation_type, bool stec_transform,
+                                              bool sign_flip_c00, bool sign_flip_c01,
+                                              bool sign_flip_c10, bool sign_flip_c11) {
     auto c00 = decode::stec_C00_r16(satellite.stec_C00_r16);
     auto c01 = decode::stec_C01_r16(satellite.stec_C01_r16);
     auto c10 = decode::stec_C10_r16(satellite.stec_C10_r16);
     auto c11 = decode::stec_C11_r16(satellite.stec_C11_r16);
+
+    if (sign_flip_c00) c00 = -c00;
+    if (sign_flip_c01) c01 = -c01;
+    if (sign_flip_c10) c10 = -c10;
+    if (sign_flip_c11) c11 = -c11;
 
     auto c00_prime = c00;
     auto c01_prime = c01;
@@ -345,13 +352,13 @@ static StecParameters compute_stec_parameters(CorrectionPointSet const&  correct
         ry_prime = my;
 #if SPARTN_DEBUG_PRINT
         printf("stec polynomial (%d):\n", equation_type);
-        printf("  C00: %f -> %f\n", c00, c00_prime);
+        printf("  C00: %+.6f -> %+.6f\n", c00, c00_prime);
         if (equation_type >= 1) {
-            printf("  C01: %f -> %f\n", c01, c01_prime);
-            printf("  C10: %f -> %f\n", c10, c10_prime);
+            printf("  C01: %+.6f -> %+.6f\n", c01, c01_prime);
+            printf("  C10: %+.6f -> %+.6f\n", c10, c10_prime);
         }
         if (equation_type >= 2) {
-            printf("  C11: %f -> %f\n", c11, c11_prime);
+            printf("  C11: %+.6f -> %+.6f\n", c11, c11_prime);
         }
 #endif
         if (equation_type == 1 || equation_type == 2) {
@@ -513,7 +520,7 @@ compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
             }
 
 #ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = %f\n", gp.id, total_residual);
+            printf("    grid[%2ld] = %+.6f\n", gp.id, total_residual);
 #endif
             result.push_back({total_residual, false});
         } else {
@@ -675,12 +682,12 @@ static int compute_equation_type(std::vector<HpacSatellite>& satellites) {
     return final_equation_type;
 }
 
-static StecParameters ionosphere_data_block_1(MessageBuilder&      builder,
-                                              CorrectionPointSet&  correction_point_set,
-                                              HpacCorrections&     corrections,
-                                              HpacSatellite const& satellite, int equation_type,
-                                              int sf055_override, int sf055_default,
-                                              bool stec_transform) {
+static StecParameters
+ionosphere_data_block_1(MessageBuilder& builder, CorrectionPointSet& correction_point_set,
+                        HpacCorrections& corrections, HpacSatellite const& satellite,
+                        int equation_type, int sf055_override, int sf055_default,
+                        bool stec_transform, bool sign_flip_c00, bool sign_flip_c01,
+                        bool sign_flip_c10, bool sign_flip_c11) {
     auto element = satellite.stec;
 
     if (sf055_override >= 0) {
@@ -708,7 +715,9 @@ static StecParameters ionosphere_data_block_1(MessageBuilder&      builder,
     }
 
     auto stec_parameters =
-        compute_stec_parameters(correction_point_set, *element, equation_type, stec_transform);
+        compute_stec_parameters(correction_point_set, *element, equation_type, stec_transform,
+                                sign_flip_c00, sign_flip_c01, sign_flip_c10, sign_flip_c11);
+
     auto coefficient_size_indicator = compute_coefficient_size_indicator(stec_parameters);
     builder.sf056(coefficient_size_indicator);
 
@@ -737,7 +746,8 @@ struct StecResidual {
 static std::vector<StecResidual> compute_stec_residuals(CorrectionPointSet& correction_point_set,
                                                         HpacSatellite&      satellite,
                                                         StecParameters&     stec_parameters,
-                                                        StecMethod          stec_method) {
+                                                        StecMethod          stec_method,
+                                                        bool sign_flip_stec_residuals) {
     std::vector<StecResidual> result;
 
     auto grid_points = correction_point_set.grid_points();
@@ -755,6 +765,7 @@ static std::vector<StecResidual> compute_stec_residuals(CorrectionPointSet& corr
         } else {
             auto& element  = *it->second;
             auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
+            if (sign_flip_stec_residuals) residual = -residual;
             result.push_back({gp.id, residual + remaining_polynomial_residual, false});
         }
     }
@@ -782,9 +793,10 @@ static uint8_t compute_residual_field_size(std::vector<StecResidual> const& resi
 static void ionosphere_data_block_2(MessageBuilder&     builder,
                                     CorrectionPointSet& correction_point_set,
                                     HpacSatellite& satellite, StecMethod stec_method,
-                                    StecParameters stec_parameters, bool stec_invalid_to_zero) {
-    auto residuals =
-        compute_stec_residuals(correction_point_set, satellite, stec_parameters, stec_method);
+                                    StecParameters stec_parameters, bool stec_invalid_to_zero,
+                                    bool sign_flip_stec_residuals) {
+    auto residuals = compute_stec_residuals(correction_point_set, satellite, stec_parameters,
+                                            stec_method, sign_flip_stec_residuals);
     auto residual_field_size = compute_residual_field_size(residuals);
     builder.sf063(residual_field_size);
 
@@ -805,8 +817,8 @@ static void ionosphere_data_block_2(MessageBuilder&     builder,
             auto residual         = r.residual;
             auto encoded_residual = builder.ionosphere_residual(residual_field_size, residual);
 #ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = %f (%f)\n", r.id, encoded_residual,
-                   residual - encoded_residual);
+            printf("    grid[%2ld] = %+.4f (%+.4f)%s\n", r.id, encoded_residual,
+                   residual - encoded_residual, r.invalid ? " [invalid]" : "");
 #endif
         }
     }
@@ -816,7 +828,9 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
                                   HpacCorrections& corrections, long gnss_id, OcbCorrections* ocb,
                                   int ionosphere_block_type, int sf055_override, int sf055_default,
                                   StecMethod stec_method, bool stec_transform,
-                                  bool filter_by_residuals, bool stec_invalid_to_zero) {
+                                  bool filter_by_residuals, bool stec_invalid_to_zero,
+                                  bool sign_flip_c00, bool sign_flip_c01, bool sign_flip_c10,
+                                  bool sign_flip_c11, bool sign_flip_stec_residuals) {
     auto satellites = corrections.satellites();
 
     {
@@ -863,11 +877,13 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
 
         auto stec_parameters =
             ionosphere_data_block_1(builder, correction_point_set, corrections, satellite,
-                                    equation_type, sf055_override, sf055_default, stec_transform);
+                                    equation_type, sf055_override, sf055_default, stec_transform,
+                                    sign_flip_c00, sign_flip_c01, sign_flip_c10, sign_flip_c11);
 
         if (ionosphere_block_type == 2) {
             ionosphere_data_block_2(builder, correction_point_set, satellite, stec_method,
-                                    stec_parameters, stec_invalid_to_zero);
+                                    stec_parameters, stec_invalid_to_zero,
+                                    sign_flip_stec_residuals);
         }
     }
 }
@@ -962,7 +978,8 @@ void Generator::generate_hpac(uint16_t iod) {
                 ionosphere_data_block(builder, correction_point_set, corrections, gnss_id,
                                       ocb_corrections, ionosphere_block_type, mSf055Override,
                                       mSf055Default, mStecMethod, mStecTranform, mFilterByResiduals,
-                                      mStecInvalidToZero);
+                                      mStecInvalidToZero, mSignFlipC00, mSignFlipC01, mSignFlipC10,
+                                      mSignFlipC11, mSignFlipStecResiduals);
             }
         }
 

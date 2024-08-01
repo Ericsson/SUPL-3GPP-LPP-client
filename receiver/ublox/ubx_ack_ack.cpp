@@ -6,8 +6,9 @@
 namespace receiver {
 namespace ublox {
 
-UbxAckAck::UbxAckAck(raw::AckAck payload) UBLOX_NOEXCEPT : Message(CLASS_ID, MESSAGE_ID),
-                                                           mPayload(std::move(payload)) {}
+UbxAckAck::UbxAckAck(raw::AckAck payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT
+    : Message(CLASS_ID, MESSAGE_ID, std::move(data)),
+      mPayload(std::move(payload)) {}
 
 void UbxAckAck::print() const UBLOX_NOEXCEPT {
     printf("[%02X %02X] UBX-ACK-ACK:\n", message_class(), message_id());
@@ -15,7 +16,8 @@ void UbxAckAck::print() const UBLOX_NOEXCEPT {
     printf("[.....]    msg_id: 0x%02X\n", mPayload.msg_id);
 }
 
-std::unique_ptr<Message> UbxAckAck::parse(Decoder& decoder) UBLOX_NOEXCEPT {
+std::unique_ptr<Message> UbxAckAck::parse(Decoder&               decoder,
+                                          std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT {
     if (decoder.remaining() < 2) {
         return nullptr;
     }
@@ -27,7 +29,7 @@ std::unique_ptr<Message> UbxAckAck::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     if (decoder.error()) {
         return nullptr;
     } else {
-        return std::unique_ptr<Message>{new UbxAckAck(std::move(payload))};
+        return std::unique_ptr<Message>{new UbxAckAck(std::move(payload), std::move(raw_data))};
     }
 }
 

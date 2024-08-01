@@ -51,6 +51,11 @@ struct SsrGlobals {
     generator::spartn::StecMethod stec_method;
     bool                          stec_transform;
     bool                          stec_invalid_to_zero;
+    bool                          sign_flip_c00;
+    bool                          sign_flip_c01;
+    bool                          sign_flip_c10;
+    bool                          sign_flip_c11;
+    bool                          sign_flip_stec_residuals;
     bool                          code_bias_translate;
     bool                          code_bias_correction_shift;
     bool                          phase_bias_translate;
@@ -121,8 +126,17 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         ublox_options.interface->open();
         ublox_options.interface->print_info();
 
+        if (!ublox_options.export_interfaces.empty()) {
+            printf("[ublox-export]\n");
+            for (auto& interface : ublox_options.export_interfaces) {
+                interface->open();
+                interface->print_info();
+            }
+        }
+
         gUbloxReceiver = std::unique_ptr<UReceiver>(new UReceiver(
-            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages));
+            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages,
+            std::move(ublox_options.export_interfaces)));
         gUbloxReceiver->start();
     }
 
@@ -176,6 +190,11 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gSpartnGeneratorNew.set_hydrostatic_in_zenith(gGlobals.hydrostatic_in_zenith);
     gSpartnGeneratorNew.set_stec_method(gGlobals.stec_method);
     gSpartnGeneratorNew.set_stec_transform(gGlobals.stec_transform);
+    gSpartnGeneratorNew.set_sign_flip_c00(gGlobals.sign_flip_c00);
+    gSpartnGeneratorNew.set_sign_flip_c01(gGlobals.sign_flip_c01);
+    gSpartnGeneratorNew.set_sign_flip_c10(gGlobals.sign_flip_c10);
+    gSpartnGeneratorNew.set_sign_flip_c11(gGlobals.sign_flip_c11);
+    gSpartnGeneratorNew.set_sign_flip_stec_residuals(gGlobals.sign_flip_stec_residuals);
 
     gSpartnGeneratorNew.set_gps_supported(gGlobals.generate_gps);
     gSpartnGeneratorNew.set_glonass_supported(gGlobals.generate_glonass);
@@ -584,6 +603,17 @@ void SsrCommand::parse(args::Subparser& parser) {
                        "Set STEC values that would be invalid in SPARTN to zero instead",
                        {"stec-invalid-to-zero"});
 
+    mSignFlipC00 =
+        new args::Flag(parser, "sf-c00", "Flip the sign of the C00 coefficient", {"sf-c00"});
+    mSignFlipC01 =
+        new args::Flag(parser, "sf-c01", "Flip the sign of the C01 coefficient", {"sf-c01"});
+    mSignFlipC10 =
+        new args::Flag(parser, "sf-c10", "Flip the sign of the C10 coefficient", {"sf-c10"});
+    mSignFlipC11 =
+        new args::Flag(parser, "sf-c11", "Flip the sign of the C11 coefficient", {"sf-c11"});
+    mSignFlipStecResiduals = new args::Flag(
+        parser, "sf-stec-residuals", "Flip the sign of the STEC residuals", {"sf-stec-residuals"});
+
     mNoGPS = new args::Flag(parser, "no-gps", "Skip generating GPS SPARTN messages", {"no-gps"});
     mNoGLONASS = new args::Flag(parser, "no-glonass", "Skip generating GLONASS SPARTN messages",
                                 {"no-glonass"});
@@ -628,6 +658,11 @@ void SsrCommand::execute(Options options) {
     gGlobals.stec_method                 = generator::spartn::StecMethod::Default;
     gGlobals.stec_transform              = true;
     gGlobals.stec_invalid_to_zero        = false;
+    gGlobals.sign_flip_c00               = false;
+    gGlobals.sign_flip_c01               = false;
+    gGlobals.sign_flip_c10               = false;
+    gGlobals.sign_flip_c11               = false;
+    gGlobals.sign_flip_stec_residuals    = false;
     gGlobals.code_bias_translate         = true;
     gGlobals.code_bias_correction_shift  = true;
     gGlobals.phase_bias_translate        = true;
@@ -788,6 +823,26 @@ void SsrCommand::execute(Options options) {
 
     if (*mStecInvalidToZero) {
         gGlobals.stec_invalid_to_zero = true;
+    }
+
+    if (*mSignFlipC00) {
+        gGlobals.sign_flip_c00 = true;
+    }
+
+    if (*mSignFlipC01) {
+        gGlobals.sign_flip_c01 = true;
+    }
+
+    if (*mSignFlipC10) {
+        gGlobals.sign_flip_c10 = true;
+    }
+
+    if (*mSignFlipC11) {
+        gGlobals.sign_flip_c11 = true;
+    }
+
+    if (*mSignFlipStecResiduals) {
+        gGlobals.sign_flip_stec_residuals = true;
     }
 
     if (*mNoGPS) {

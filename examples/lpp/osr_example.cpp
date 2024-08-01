@@ -124,8 +124,17 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         ublox_options.interface->open();
         ublox_options.interface->print_info();
 
+        if (!ublox_options.export_interfaces.empty()) {
+            printf("[ublox-export]\n");
+            for (auto& interface : ublox_options.export_interfaces) {
+                interface->open();
+                interface->print_info();
+            }
+        }
+
         gUbloxReceiver = std::unique_ptr<UReceiver>(new UReceiver(
-            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages));
+            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages,
+            std::move(ublox_options.export_interfaces)));
         gUbloxReceiver->start();
     }
 
