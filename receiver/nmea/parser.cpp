@@ -200,7 +200,12 @@ ChecksumResult Parser::checksum(std::string const& buffer) {
     auto nmea_string = buffer.substr(1, nmea_end - 1);
 
     auto expected_checksum_hex = buffer.substr(nmea_end + 1, nmea_end + 3);
-    auto expected_checksum     = std::stoull(std::string{expected_checksum_hex}, nullptr, 16);
+    auto expected_checksum     = 0LLU;
+    try {
+        expected_checksum = std::stoull(std::string{expected_checksum_hex}, nullptr, 16);
+    } catch (...) {
+        return ChecksumResult::INVALID_VALUE;
+    }
 
     auto calculated_checksum = 0ULL;
     for (auto nmea_char : nmea_string) {
