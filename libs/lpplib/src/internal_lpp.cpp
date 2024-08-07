@@ -204,14 +204,37 @@ static long encode_longitude(double lon) {
     return (long)value;
 }
 
+static long find_closest_k(long k, double r) {
+    auto C = 0.3;
+    auto x = 0.02;
+
+    auto k0 = k <= 0 ? 0 : (k - 1);
+    auto k1 = k;
+    auto k2 = k >= 255 ? 255 : (k + 1);
+
+    auto r0 = C * (pow(1 + x, k0) - 1);
+    auto r1 = C * (pow(1 + x, k1) - 1);
+    auto r2 = C * (pow(1 + x, k2) - 1);
+
+    auto d0 = abs(r - r0);
+    auto d1 = abs(r - r1);
+    auto d2 = abs(r - r2);
+
+    if (d0 < d1 && d0 < d2) return k0;
+    if (d1 < d0 && d1 < d2) return k1;
+    return k2;
+}
+
 static long encode_ha_uncertainity(double r) {
-    auto C     = 0.3;
-    auto x     = 0.02;
-    auto k     = log((r / C) + 1) / log(1 + x);
-    auto value = (long)k;
-    if (value <= 0) value = 0;
-    if (value >= 255) value = 255;
-    return value;
+    auto C = 0.3;
+    auto x = 0.02;
+    auto k = log((r / C) + 1) / log(1 + x);
+
+    auto best_k = find_closest_k((long)k, r);
+    // NOTE(ewasjon): reporting 0.0m accuracy is often more confusing than helpful, thus we
+    //                report the minimum accuracy instead if k == 0
+    if (best_k == 0) best_k = 1;
+    return best_k;
 }
 
 static long encode_ha_altitude(double a) {
@@ -409,8 +432,7 @@ lpp_PLI_CIE_ext2(location_information::LocationInformation const& location) {
 
 static CommonIEsProvideLocationInformation_t* lpp_PLI_CommonIEsProvideLocationInformation(
     location_information::LocationInformation const* location,
-    location_information::HaGnssMetrics const*       metrics
-) {
+    location_information::HaGnssMetrics const*       metrics) {
     auto CIE_PLI = ALLOC_ZERO(CommonIEsProvideLocationInformation_t);
 
     if (location) {
