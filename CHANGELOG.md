@@ -1,6 +1,9 @@
 # Changelog
 
 ## [3.4.*]
+
+
+## [3.4.10] 2024-08-07
 - Added new control command `/IDENTITY` to provide the client with the IMSI, MSISDN, or IP address. See `CONTROL.md` for more information. 
 - Added new option `--wait-for-identity` to have the client wait for an identity before sending any assistance data requests.
 - Added new example `example-modem-ctrl` to demonstrate how to send control commands of cell IDs and IMSI to the client using the control interface.
