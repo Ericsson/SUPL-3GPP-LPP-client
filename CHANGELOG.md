@@ -16,6 +16,7 @@
     - `--nmea-tcp` to specify the TCP ip address to connect to.
     - `--nmea-tcp-port` to specify the TCP port to connect to.
 - The encoding of ha-uncertainty has been changed to the closed value and will never be encoded as 0.0m.
+- Fixed bug where std::stoull would throw an exception and crash the client
 
 ## [3.4.9] 2024-05-03
 - Added a few options to controll how SPARTN messages are generated:

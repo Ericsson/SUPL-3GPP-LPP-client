@@ -15,11 +15,11 @@ static std::vector<std::string> split(std::string const& str, char delimiter) {
 }
 
 void ControlParser::parse(std::unique_ptr<interface::Interface>& interface) {
-    if(!interface->is_open()) {
+    if (!interface->is_open()) {
         interface->open();
     }
 
-    if(!interface->is_open()) {
+    if (!interface->is_open()) {
         return;
     }
 
@@ -64,24 +64,32 @@ void ControlParser::parse(std::unique_ptr<interface::Interface>& interface) {
         if (tokens.size() > 0) {
             if (tokens[0] == "CID") {
                 if (tokens.size() == 6) {
-                    CellID cid;
-                    cid.mcc   = std::stol(tokens[2]);
-                    cid.mnc   = std::stol(tokens[3]);
-                    cid.tac   = std::stol(tokens[4]);
-                    cid.cell  = std::stoull(tokens[5]);
-                    cid.is_nr = tokens[1] == "N";
-                    if (on_cid) {
-                        on_cid(cid);
+                    try {
+                        CellID cid;
+                        cid.mcc   = std::stol(tokens[2]);
+                        cid.mnc   = std::stol(tokens[3]);
+                        cid.tac   = std::stol(tokens[4]);
+                        cid.cell  = std::stoull(tokens[5]);
+                        cid.is_nr = tokens[1] == "N";
+                        if (on_cid) {
+                            on_cid(cid);
+                        }
+                    } catch (...) {
+                        printf("invalid CID message: %s\n", message.c_str());
                     }
                 } else {
                     printf("invalid CID message: %s\n", message.c_str());
                 }
-            } else if(tokens[0] == "IDENTITY") {
-                if(tokens.size() > 1) {
-                    if(tokens[1] == "IMSI") {
-                        if(tokens.size() == 3) {
-                            if(on_identity_imsi) {
-                                on_identity_imsi(std::stoull(tokens[2]));
+            } else if (tokens[0] == "IDENTITY") {
+                if (tokens.size() > 1) {
+                    if (tokens[1] == "IMSI") {
+                        if (tokens.size() == 3) {
+                            if (on_identity_imsi) {
+                                try {
+                                    on_identity_imsi(std::stoull(tokens[2]));
+                                } catch (...) {
+                                    printf("invalid IMSI message: %s\n", message.c_str());
+                                }
                             }
                         } else {
                             printf("invalid IMSI message: %s\n", message.c_str());

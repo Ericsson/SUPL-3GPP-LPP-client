@@ -54,7 +54,12 @@ Cimi Device::get_cimi() {
     Cimi cimi{};
     for (auto const& line : response.lines) {
         if (line.size() > 0) {
+            try {
             cimi.imsi = std::stoull(line);
+            } catch (std::exception const& e) {
+                MODEM_PRINT_ERROR("modem: failed to parse IMSI: %s\n", e.what());
+                return {};
+            }
         }
     }
 
