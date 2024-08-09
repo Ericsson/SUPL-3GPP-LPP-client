@@ -42,6 +42,7 @@
 - Removed `from_ellipse` and replaced it with:
     - `to_ellipse_39` to create a horizontal accuracy ellipse with 39% confidence, will not rescale the axes.
     - `to_ellipse_68` to create a horizontal accuracy ellipse with 68% confidence, will rescale the axes.
+- RTCM 1006 physical reference station indicator was incorrectly set to 0 for "virtual" stations and 1 for "physical" stations, instead of the other way around. 
 
 ## [3.4.9] 2024-05-03
 - Added a few options to controll how SPARTN messages are generated:

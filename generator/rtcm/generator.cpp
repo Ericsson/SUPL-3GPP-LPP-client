@@ -285,8 +285,8 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
 // 3GPP LPP specification 37.355.
 static RTCM_CONSTEXPR uint16_t LRF_MESSAGE_ID = 355;
 
-static Message generate_framing_message(int message_id, bool multiple_message_bit, uint8_t const* lpp_data,
-                                        size_t lpp_data_size) {
+static Message generate_framing_message(int message_id, bool multiple_message_bit,
+                                        uint8_t const* lpp_data, size_t lpp_data_size) {
     if (message_id < 0 || message_id > 4095) {
         message_id = LRF_MESSAGE_ID;
     }
