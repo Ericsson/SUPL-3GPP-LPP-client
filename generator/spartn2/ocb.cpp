@@ -217,11 +217,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15*
     auto epoch_time = spartn_time_from(orbit->epochTime_r15);
     auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
-    corrections.gnss_id    = gnss_id;
-    corrections.iod        = iod;
-    corrections.epoch_time = epoch_time;
-    corrections.orbit      = orbit;
+    auto& corrections                 = ocb.mKeyedCorrections[key];
+    corrections.gnss_id               = gnss_id;
+    corrections.iod                   = iod;
+    corrections.epoch_time            = epoch_time;
+    corrections.orbit                 = orbit;
+    corrections.orbit_update_interval = decode::ssrUpdateInterval_r15(orbit->ssrUpdateInterval_r15);
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15* clock) {
@@ -700,6 +701,20 @@ void Generator::generate_ocb(uint16_t iod) {
                 builder.sf020(radial);
                 builder.sf020(along);
                 builder.sf020(cross);
+
+#ifdef SPARTN_DEBUG_PRINT
+                printf("    ORBIT UPDATE INTERVAL: %f\n", corrections.orbit_update_interval);
+                printf("    RADIAL: %f\n", radial);
+                printf("    ALONG: %f\n", along);
+                printf("    CROSS: %f\n", cross);
+                if (orbit.dot_delta_radial_r15)
+                    printf("    DOT RADIAL: %ld\n", *orbit.dot_delta_radial_r15);
+                if (orbit.dot_delta_AlongTrack_r15)
+                    printf("    DOT ALONG: %ld\n", *orbit.dot_delta_AlongTrack_r15);
+                if (orbit.dot_delta_CrossTrack_r15)
+                    printf("    DOT CROSS: %ld\n", *orbit.dot_delta_CrossTrack_r15);
+#endif
+
                 if (yaw_angle_present) {
                     // NOTE(ewasjon): Yaw angle is assumed to be zero, 3GPP LPP inherits this
                     // assumption from CLAS specification.
@@ -725,6 +740,7 @@ void Generator::generate_ocb(uint16_t iod) {
                 auto c2 = decode::delta_Clock_C2_r15(clock.delta_Clock_C2_r15);
 
 #ifdef SPARTN_DEBUG_PRINT
+                printf("    CLOCK UPDATE INTERVAL: %f\n", corrections.clock_update_interval);
                 printf("    C0: %f\n", c0);
                 printf("    C1: %f\n", c1);
                 printf("    C2: %f\n", c2);

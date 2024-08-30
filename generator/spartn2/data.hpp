@@ -143,6 +143,7 @@ struct OcbCorrections {
     GNSS_SSR_PhaseBias_r16*        phase_bias;
     GNSS_SSR_URA_r16*              ura;
 
+    double orbit_update_interval;
     double clock_update_interval;
 
     // Generate a set of satellite ids for this correction
