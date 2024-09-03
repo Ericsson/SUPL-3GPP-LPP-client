@@ -1,7 +1,7 @@
 # Changelog
 
 ## [3.4.*]
-
+- Added support for UBX-RXM-RAWX messages.
 
 ## [3.4.10] 2024-08-07
 - Added new control command `/IDENTITY` to provide the client with the IMSI, MSISDN, or IP address. See `CONTROL.md` for more information. 
