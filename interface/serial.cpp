@@ -195,6 +195,9 @@ size_t SerialInterface::read(void* data, size_t size) {
 }
 
 size_t SerialInterface::write(void const* data, size_t size) {
+    if (mReadOnly) {
+        return 0;
+    }
     return mFileDescriptor.write(data, size);
 }
 
@@ -203,6 +206,9 @@ bool SerialInterface::can_read() IF_NOEXCEPT {
 }
 
 bool SerialInterface::can_write() IF_NOEXCEPT {
+    if (mReadOnly) {
+        return false;
+    }
     return mFileDescriptor.can_write();
 }
 
@@ -211,6 +217,9 @@ void SerialInterface::wait_for_read() IF_NOEXCEPT {
 }
 
 void SerialInterface::wait_for_write() IF_NOEXCEPT {
+    if (mReadOnly) {
+        return;
+    }
     mFileDescriptor.wait_for_write();
 }
 
@@ -222,6 +231,16 @@ void SerialInterface::print_info() IF_NOEXCEPT {
     printf("[interface]\n");
     printf("  type:       serial\n");
     printf("  device:     %s\n", mDevicePath.c_str());
+    if (is_open()) {
+        printf("  fd:         %d\n", mFileDescriptor.fd());
+    } else {
+        printf("  fd:         closed\n");
+    }
+    if (!mReadOnly) {
+        printf("  read/write: read/write\n");
+    } else {
+        printf("  read/write: read\n");
+    }
     printf("  [configured]\n");
     printf("    baud rate:  %d (0x%X,B%o)\n", mBaudRate, mBaudRate, mBaudRateConstant);
 
