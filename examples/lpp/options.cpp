@@ -837,6 +837,7 @@ static UbloxOptions ublox_parse_options() {
         auto port      = ublox_parse_port();
         auto interface = ublox_parse_interface();
         auto prm       = print_receiver_options_parse();
+        auto readonly = receiver_readonly ? true : false;
 
         std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
         if (ublox_export_file) {
@@ -844,7 +845,7 @@ static UbloxOptions ublox_parse_options() {
             export_interfaces.emplace_back(interface);
         }
 
-        return UbloxOptions{port, std::move(interface), prm, std::move(export_interfaces)};
+        return UbloxOptions{port, std::move(interface), prm, readonly, std::move(export_interfaces)};
     } else {
         return UbloxOptions{};
     }
@@ -956,7 +957,8 @@ static NmeaOptions nmea_parse_options() {
 
         auto interface = nmea_parse_interface();
         auto prm       = print_receiver_options_parse();
-        return NmeaOptions{std::move(interface), prm, std::move(nmea_export_interfaces)};
+        auto readonly  = receiver_readonly ? true : false;
+        return NmeaOptions{std::move(interface), prm, readonly, std::move(nmea_export_interfaces)};
     } else {
         return NmeaOptions{};
     }

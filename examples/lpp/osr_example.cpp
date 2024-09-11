@@ -25,6 +25,7 @@ static generator::rtcm::MessageFilter gFilter;
 static Options                        gOptions;
 static bool                           gPrintRtcm;
 static ControlParser                  gControlParser;
+static bool gReadOnly;
 
 static std::unique_ptr<UReceiver> gUbloxReceiver;
 static std::unique_ptr<NReceiver> gNmeaReceiver;
@@ -38,6 +39,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gFormat    = format;
     gLrfRtcmId = lrf_rtcm_id;
     gPrintRtcm = print_rtcm;
+    gReadOnly =false;
 
     auto& cell_options                 = gOptions.cell_options;
     auto& location_server_options      = gOptions.location_server_options;
@@ -124,6 +126,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("[ublox]\n");
         ublox_options.interface->open();
         ublox_options.interface->print_info();
+        gReadOnly = ublox_options.readonly;
 
         if (!ublox_options.export_interfaces.empty()) {
             printf("[ublox-export]\n");
@@ -143,6 +146,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("[nmea]\n");
         nmea_options.interface->open();
         nmea_options.interface->print_info();
+        gReadOnly = ublox_options.readonly;
 
         if (!nmea_options.export_interfaces.empty()) {
             printf("[nmea-export]\n");
@@ -346,7 +350,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                 transmit(buffer, size);
             }
 
-            if (gUbloxReceiver) {
+            if (gUbloxReceiver && !gReadOnly) {
                 auto interface = gUbloxReceiver->interface();
                 if (interface) {
                     for (auto& submessage : submessages) {
@@ -357,7 +361,9 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                 } else {
                     printf("*** ERROR: No u-blox interface\n");
                 }
-            } else if (gNmeaReceiver) {
+            }
+            
+            if (gNmeaReceiver && !gReadOnly) {
                 auto interface = gNmeaReceiver->interface();
                 if (interface) {
                     for (auto& submessage : submessages) {
@@ -394,7 +400,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
             transmit(buffer, size);
         }
 
-        if (gUbloxReceiver) {
+        if (gUbloxReceiver && !gReadOnly) {
             auto interface = gUbloxReceiver->interface();
             if (interface) {
                 for (auto& submessage : messages) {
@@ -405,7 +411,9 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
             } else {
                 printf("*** ERROR: No u-blox interface\n");
             }
-        } else if (gNmeaReceiver) {
+        }
+        
+        if (gNmeaReceiver && !gReadOnly) {
             auto interface = gNmeaReceiver->interface();
             if (interface) {
                 for (auto& submessage : messages) {
