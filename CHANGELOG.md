@@ -6,6 +6,11 @@
 - Added support for UBX-RXM-RAWX messages.
 - Added support for $PQTMEPE messages.
 - RTCM 1005 physical reference station indicator was incorrectly set to 0 for "virtual" stations and 1 for "physical" stations, instead of the other way around.
+- Added options for `example-lpp`:
+    - `--no-gps` to skip generating GPS RTCM messages.
+    - `--no-glonass` to skip generating GLONASS RTCM messages.
+    - `--no-galileo` to skip generating Galileo RTCM messages.
+    - `--no-beidou` to skip generating BeiDou RTCM messages.
 
 ## [3.4.10] 2024-08-07
 - Added new control command `/IDENTITY` to provide the client with the IMSI, MSISDN, or IP address. See `CONTROL.md` for more information. 
@@ -33,7 +38,7 @@
     - `--no-gps` to skip generating GPS SPARTN messages.
     - `--no-glonass` to skip generating GLONASS SPARTN messages.
     - `--no-galileo` to skip generating Galileo SPARTN messages.
-    - `--beidou` to skip generating BeiDou SPARTN messages.
+    - `--beidou` to include generating BeiDou SPARTN messages.
     - `--flip-grid-bitmask` to flip incoming LPP grid bitmask.
 - Deprecated the following options:
     - `--iode-shift` removed as it was not used.

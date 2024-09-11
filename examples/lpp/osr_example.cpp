@@ -32,7 +32,8 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
 [[noreturn]] void execute(Options options, osr_example::Format format, int lrf_rtcm_id,
-                          osr_example::MsmType msm_type, bool print_rtcm) {
+                          osr_example::MsmType msm_type, bool print_rtcm, bool gps, bool glonass,
+                          bool galileo, bool beidou) {
     gOptions   = std::move(options);
     gFormat    = format;
     gLrfRtcmId = lrf_rtcm_id;
@@ -75,10 +76,10 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 #ifdef INCLUDE_GENERATOR_RTCM
     // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
     gFilter                 = generator::rtcm::MessageFilter{};
-    gFilter.systems.gps     = true;
-    gFilter.systems.glonass = true;
-    gFilter.systems.galileo = true;
-    gFilter.systems.beidou  = true;
+    gFilter.systems.gps     = gps;
+    gFilter.systems.glonass = glonass;
+    gFilter.systems.galileo = galileo;
+    gFilter.systems.beidou  = beidou;
 
     printf("  gnss support:      ");
     if (gFilter.systems.gps) printf(" GPS");
@@ -422,6 +423,10 @@ void OsrCommand::parse(args::Subparser& parser) {
     delete mLRFMessageIdArg;
     delete mMsmTypeArg;
     delete mPrintRTCMArg;
+    delete mNoGPS;
+    delete mNoGLONASS;
+    delete mNoGalileo;
+    delete mNoBeiDou;
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format", {'f', "format"},
                                                   args::Options::Single);
@@ -452,6 +457,14 @@ void OsrCommand::parse(args::Subparser& parser) {
     // the default value is true, thus this is a negated flag
     mPrintRTCMArg = new args::Flag(parser, "print_rtcm", "Do not print RTCM messages info",
                                    {"rtcm-print"}, args::Options::Single);
+
+    mNoGPS     = new args::Flag(parser, "no-gps", "Skip generating GPS RTCM messages", {"no-gps"});
+    mNoGLONASS = new args::Flag(parser, "no-glonass", "Skip generating GLONASS RTCM messages",
+                                {"no-glonass"});
+    mNoGalileo = new args::Flag(parser, "no-galileo", "Skip generating Galileo RTCM messages",
+                                {"no-galileo"});
+    mNoBeiDou =
+        new args::Flag(parser, "no-beidou", "Skip generating BeiDou RTCM messages", {"no-beidou"});
 }
 
 void OsrCommand::execute(Options options) {
@@ -506,7 +519,25 @@ void OsrCommand::execute(Options options) {
         print_rtcm = false;
     }
 
-    ::execute(std::move(options), format, lrf_rtcm_id, msm_type, print_rtcm);
+    auto gps     = true;
+    auto glonass = true;
+    auto galileo = true;
+    auto beidou  = true;
+    if (*mNoGPS) {
+        gps = false;
+    }
+    if (*mNoGLONASS) {
+        glonass = false;
+    }
+    if (*mNoGalileo) {
+        galileo = false;
+    }
+    if (*mNoBeiDou) {
+        beidou = false;
+    }
+
+    ::execute(std::move(options), format, lrf_rtcm_id, msm_type, print_rtcm, gps, glonass, galileo,
+              beidou);
 }
 
 }  // namespace osr_example
