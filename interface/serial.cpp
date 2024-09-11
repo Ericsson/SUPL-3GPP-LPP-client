@@ -82,13 +82,14 @@ static uint32_t buad_rate_from_constant(speed_t constant) {
 namespace interface {
 
 SerialInterface::SerialInterface(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                                 StopBits stop_bits, ParityBit parity_bit) IF_NOEXCEPT
-    : mDevicePath(std::move(device_path)),
-      mBaudRate(baud_rate),
-      mDataBits(data_bits),
-      mStopBits(stop_bits),
-      mParityBit(parity_bit),
-      mFileDescriptor(-1) {
+                                 StopBits stop_bits, ParityBit parity_bit,
+                                 bool read_only) IF_NOEXCEPT : mDevicePath(std::move(device_path)),
+                                                               mBaudRate(baud_rate),
+                                                               mDataBits(data_bits),
+                                                               mStopBits(stop_bits),
+                                                               mParityBit(parity_bit),
+                                                               mReadOnly(read_only),
+                                                               mFileDescriptor(-1) {
     mBaudRateConstant = buad_rate_constant_from(baud_rate);
 }
 
@@ -99,7 +100,14 @@ void SerialInterface::open() {
         return;
     }
 
-    auto fd = ::open(mDevicePath.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+    auto flags = O_NOCTTY | O_SYNC;
+    if (mReadOnly) {
+        flags |= O_RDONLY;
+    } else {
+        flags |= O_RDWR;
+    }
+
+    auto fd = ::open(mDevicePath.c_str(), flags);
     if (fd < 0) {
         throw std::runtime_error("Could not open serial device");
     }
@@ -279,8 +287,9 @@ void SerialInterface::print_info() IF_NOEXCEPT {
 //
 
 Interface* Interface::serial(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                             StopBits stop_bits, ParityBit parity_bit) {
-    return new SerialInterface(std::move(device_path), baud_rate, data_bits, stop_bits, parity_bit);
+                             StopBits stop_bits, ParityBit parity_bit, bool read_only) {
+    return new SerialInterface(std::move(device_path), baud_rate, data_bits, stop_bits, parity_bit,
+                               read_only);
 }
 
 }  // namespace interface

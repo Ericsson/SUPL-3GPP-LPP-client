@@ -8,7 +8,7 @@ namespace interface {
 class SerialInterface final : public Interface {
 public:
     explicit SerialInterface(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                             StopBits stop_bits, ParityBit parity_bit) IF_NOEXCEPT;
+                             StopBits stop_bits, ParityBit parity_bit, bool read_only) IF_NOEXCEPT;
     ~SerialInterface() IF_NOEXCEPT override;
 
     void open() override;
@@ -33,6 +33,7 @@ private:
     DataBits       mDataBits;
     StopBits       mStopBits;
     ParityBit      mParityBit;
+    bool           mReadOnly;
     FileDescriptor mFileDescriptor;
 };
 

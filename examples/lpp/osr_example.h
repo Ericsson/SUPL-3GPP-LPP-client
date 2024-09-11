@@ -10,6 +10,7 @@ enum class Format {
 #endif
     XER,
     ASN1_UPER,
+    NONE,
 };
 
 enum class MsmType {

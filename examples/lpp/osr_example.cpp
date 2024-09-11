@@ -298,7 +298,8 @@ static void transmit(void const* buffer, size_t size) {
 
 static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message,
                                      void*) {
-    if (gFormat == osr_example::Format::XER) {
+    if (gFormat == osr_example::Format::NONE) {
+    } else if (gFormat == osr_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
@@ -442,6 +443,7 @@ void OsrCommand::parse(args::Subparser& parser) {
         "rtcm",
         "lrf-uper",
 #endif
+        "none",
     });
 
     mLRFMessageIdArg =
@@ -479,6 +481,8 @@ void OsrCommand::execute(Options options) {
             format = Format::XER;
         } else if (mFormatArg->Get() == "asn1-uper") {
             format = Format::ASN1_UPER;
+        } else if (mFormatArg->Get() == "none") {
+            format = Format::NONE;
         }
 #ifdef INCLUDE_GENERATOR_RTCM
         else if (mFormatArg->Get() == "rtcm") {

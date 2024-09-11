@@ -11,6 +11,7 @@
     - `--no-glonass` to skip generating GLONASS RTCM messages.
     - `--no-galileo` to skip generating Galileo RTCM messages.
     - `--no-beidou` to skip generating BeiDou RTCM messages.
+- Added receiver option `--readonly` to prevent opening receiver serial port in write mode.
 
 ## [3.4.10] 2024-08-07
 - Added new control command `/IDENTITY` to provide the client with the IMSI, MSISDN, or IP address. See `CONTROL.md` for more information. 

@@ -178,6 +178,9 @@ static args::Group nmea_receiver_group{
     args::Options::Global,
 };
 
+static args::Flag receiver_readonly{
+    nmea_receiver_group, "readonly", "Readonly Receiver", {"readonly"}, args::Options::Single};
+
 static args::Group nmea_serial_group{
     nmea_receiver_group,
     "Serial:",
@@ -635,7 +638,7 @@ static OutputOptions parse_output_options() {
         }
 
         auto interface = interface::Interface::serial(serial_device.Get(), baud_rate, data_bits,
-                                                      stop_bits, parity_bit);
+                                                      stop_bits, parity_bit, false);
         output_options.interfaces.emplace_back(interface);
     }
 
@@ -741,8 +744,13 @@ static std::unique_ptr<Interface> ublox_parse_serial() {
         }
     }
 
-    return std::unique_ptr<Interface>(
-        Interface::serial(ublox_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+    auto read_only = false;
+    if (receiver_readonly) {
+        read_only = true;
+    }
+
+    return std::unique_ptr<Interface>(Interface::serial(
+        ublox_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit, read_only));
 }
 
 static std::unique_ptr<Interface> ublox_parse_i2c() {
@@ -885,8 +893,13 @@ static std::unique_ptr<Interface> nmea_parse_serial() {
         }
     }
 
+    auto read_only = false;
+    if (receiver_readonly) {
+        read_only = true;
+    }
+
     return std::unique_ptr<Interface>(interface::Interface::serial(
-        nmea_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+        nmea_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit, read_only));
 }
 
 static std::unique_ptr<Interface> nmea_parse_tcp() {
@@ -1049,8 +1062,8 @@ static std::unique_ptr<Interface> control_parse_serial() {
         }
     }
 
-    return std::unique_ptr<Interface>(
-        Interface::serial(ctrl_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+    return std::unique_ptr<Interface>(Interface::serial(ctrl_serial_device.Get(), baud_rate,
+                                                        data_bits, stop_bits, parity_bit, false));
 }
 
 static std::unique_ptr<Interface> control_parse_tcp() {
