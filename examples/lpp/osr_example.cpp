@@ -354,6 +354,8 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                         auto size   = submessage.data().size();
                         interface->write(buffer, size);
                     }
+                } else {
+                    printf("*** ERROR: No u-blox interface\n");
                 }
             } else if (gNmeaReceiver) {
                 auto interface = gNmeaReceiver->interface();
@@ -363,6 +365,8 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                         auto size   = submessage.data().size();
                         interface->write(buffer, size);
                     }
+                } else {
+                    printf("*** ERROR: No NMEA interface\n");
                 }
             }
 
@@ -398,6 +402,8 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                     auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
+            } else {
+                printf("*** ERROR: No u-blox interface\n");
             }
         } else if (gNmeaReceiver) {
             auto interface = gNmeaReceiver->interface();
@@ -407,6 +413,8 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                     auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
+            } else {
+                printf("*** ERROR: No NMEA interface\n");
             }
         }
     }
