@@ -3,6 +3,7 @@
 #include "gst.hpp"
 #include "message.hpp"
 #include "vtg.hpp"
+#include "epe.hpp"
 
 #include <cstdio>
 
@@ -140,6 +141,14 @@ std::unique_ptr<Message> Parser::try_parse() NMEA_NOEXCEPT {
             return std::unique_ptr<ErrorMessage>(
                 new ErrorMessage(prefix, data_payload, data_checksum));
         }
+    } else if (prefix == "PQTMEPE") {
+        auto message = EpeMessage::parse(prefix, data_payload, data_checksum);
+        if (message) {
+            return message;
+        } else {
+            return std::unique_ptr<ErrorMessage>(
+                new ErrorMessage(prefix, data_payload, data_checksum));
+        }
     } else {
         return std::unique_ptr<UnsupportedMessage>(
             new UnsupportedMessage(prefix, data_payload, data_checksum));
@@ -231,7 +240,9 @@ std::string Parser::parse_prefix(uint8_t const* data, uint32_t length) const NME
         prefix += static_cast<char>(c);
     }
 
-    if (prefix.size() != 6) {
+    if (prefix.size() != 6 && prefix.size() != 8) {
+        // All NMEA messages have six characters in their prefix, eg $GPGST, except
+        // Quectel's EPE message, that has eight characters: $PQTMEPE.
         return "";
     }
 

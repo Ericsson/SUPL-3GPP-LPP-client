@@ -108,12 +108,20 @@ PLI_Result provide_location_information_callback_nmea(LocationInformation& locat
     auto gga = receiver->gga();
     auto vtg = receiver->vtg();
     auto gst = receiver->gst();
-    if (!gga || !vtg || !gst) {
+    auto epe = receiver->epe();
+    if (!gga || !vtg || !(gst || epe)) {
+        printf("Waiting for the following messages:");
+        if (!gga) printf(" gga");
+        if (!vtg) printf(" vtg");
+        if (!(gst || epe)) printf(" gst/epe");
+        printf("\n");
         return PLI_Result::NOT_AVAILABLE;
     }
 
-    auto semi_major = gst->semi_major();
-    auto semi_minor = gst->semi_minor();
+    auto semi_major                = gst ? gst->semi_major()                : epe->semi_major();
+    auto semi_minor                = gst ? gst->semi_minor()                : epe->semi_minor();
+    auto orientation               = gst ? gst->orientation()               : epe->orientation();
+    auto vertical_position_error   = gst ? gst->vertical_position_error()   : epe->vertical_position_error();
 
     if (gConvertConfidence95To39) {
         semi_major = semi_major / 2.4477;
@@ -121,7 +129,7 @@ PLI_Result provide_location_information_callback_nmea(LocationInformation& locat
     }
 
     auto horizontal_accuracy =
-        HorizontalAccuracy::from_ellipse(semi_major, semi_minor, gst->orientation());
+        HorizontalAccuracy::from_ellipse(semi_major, semi_minor, orientation);
     if (gOverrideHorizontalConfidence >= 0.0) {
         horizontal_accuracy.confidence = gOverrideHorizontalConfidence;
     }
@@ -129,7 +137,7 @@ PLI_Result provide_location_information_callback_nmea(LocationInformation& locat
     location.time     = gga->time_of_day();
     location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
         gga->latitude(), gga->longitude(), gga->altitude(), horizontal_accuracy,
-        VerticalAccuracy::from_1sigma(gst->vertical_position_error()));
+        VerticalAccuracy::from_1sigma(vertical_position_error));
     location.velocity =
         VelocityShape::horizontal(vtg->speed_over_ground(), vtg->true_course_over_ground());
 

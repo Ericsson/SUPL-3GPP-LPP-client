@@ -7,6 +7,7 @@ add_library(receiver_nmea STATIC
     "gga.cpp"
     "vtg.cpp"
     "gst.cpp"
+    "epe.cpp"
 )
 add_library(receiver::nmea ALIAS receiver_nmea)
 
