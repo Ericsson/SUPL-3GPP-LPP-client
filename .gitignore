@@ -5,3 +5,4 @@ build
 output.txt
 generated_files
 .vscode
+compile_commands.json
