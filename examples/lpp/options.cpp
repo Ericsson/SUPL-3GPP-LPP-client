@@ -237,6 +237,12 @@ static args::ValueFlag<uint16_t> nmea_export_tcp_port{nmea_receiver_group,
                                                       {"nmea-export-tcp-port"},
                                                       args::Options::Single};
 
+static args::ValueFlag<std::string> nmea_export_file{nmea_receiver_group,
+                                                    "file",
+                                                    "Export NMEA to file",
+                                                    {"nmea-export-file"},
+                                                    args::Options::Single};
+
 //
 // Output
 //
@@ -952,6 +958,11 @@ static NmeaOptions nmea_parse_options() {
 
             auto interface =
                 interface::Interface::tcp(nmea_export_tcp.Get(), nmea_export_tcp_port.Get(), true);
+            nmea_export_interfaces.emplace_back(interface);
+        }
+
+        if(nmea_export_file) {
+            auto interface = interface::Interface::file(nmea_export_file.Get(), true);
             nmea_export_interfaces.emplace_back(interface);
         }
 
