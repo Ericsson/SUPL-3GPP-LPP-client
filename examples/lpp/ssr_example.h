@@ -35,7 +35,8 @@ public:
           mSignFlipC00(nullptr), mSignFlipC01(nullptr), mSignFlipC10(nullptr),
           mSignFlipC11(nullptr), mSignFlipStecResiduals(nullptr), mNoGPS(nullptr),
           mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr), mFlipGridBitmask(nullptr),
-          mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr), mNoGenerateHPAC(nullptr) {}
+          mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr), mNoGenerateHPAC(nullptr),
+          mFlipOrbitCorrection(nullptr) {}
 
     ~SsrCommand() override { cleanup(); }
 
@@ -80,6 +81,7 @@ public:
         delete mNoGenerateGAD;
         delete mNoGenerateOCB;
         delete mNoGenerateHPAC;
+        delete mFlipOrbitCorrection;
     }
 
     void parse(args::Subparser& parser) override;
@@ -126,6 +128,7 @@ private:
     args::Flag*                   mNoGenerateGAD;
     args::Flag*                   mNoGenerateOCB;
     args::Flag*                   mNoGenerateHPAC;
+    args::Flag*                   mFlipOrbitCorrection;
 };
 
 }  // namespace ssr_example

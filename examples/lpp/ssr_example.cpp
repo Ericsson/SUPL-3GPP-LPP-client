@@ -68,6 +68,7 @@ struct SsrGlobals {
     bool                          generate_ocb;
     bool                          generate_hpac;
     bool                          flip_grid_bitmask;
+    bool                          flip_orbit_correction;
 };
 
 #ifdef INCLUDE_GENERATOR_SPARTN_OLD
@@ -202,6 +203,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gSpartnGeneratorNew.set_beidou_supported(gGlobals.generate_beidou);
 
     gSpartnGeneratorNew.set_flip_grid_bitmask(gGlobals.flip_grid_bitmask);
+    gSpartnGeneratorNew.set_flip_orbit_correction(gGlobals.flip_orbit_correction);
 
     gSpartnGeneratorNew.set_generate_gad(gGlobals.generate_gad);
     gSpartnGeneratorNew.set_generate_ocb(gGlobals.generate_ocb);
@@ -631,6 +633,10 @@ void SsrCommand::parse(args::Subparser& parser) {
                                      {"no-generate-ocb"});
     mNoGenerateHPAC = new args::Flag(parser, "no-generate-hpac", "Skip generating HPAC messages",
                                      {"no-generate-hpac"});
+
+    mFlipOrbitCorrection =
+        new args::Flag(parser, "flip-orbit-correction", "Flip the sign of the orbit correction",
+                       {"flip-orbit-correction"});
 }
 
 void SsrCommand::execute(Options options) {
@@ -675,6 +681,7 @@ void SsrCommand::execute(Options options) {
     gGlobals.generate_gad                = true;
     gGlobals.generate_ocb                = true;
     gGlobals.generate_hpac               = true;
+    gGlobals.flip_orbit_correction       = false;
 
     if (*mFormatArg) {
         if (mFormatArg->Get() == "xer") {
@@ -875,6 +882,10 @@ void SsrCommand::execute(Options options) {
 
     if (*mNoGenerateHPAC) {
         gGlobals.generate_hpac = false;
+    }
+
+    if (*mFlipOrbitCorrection) {
+        gGlobals.flip_orbit_correction = true;
     }
 
     auto& cell_options  = gGlobals.options.cell_options;

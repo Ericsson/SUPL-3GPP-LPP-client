@@ -106,6 +106,9 @@ public:
     void set_stec_method(StecMethod method) { mStecMethod = method; }
     void set_stec_transform(bool value) { mStecTranform = value; }
     void set_flip_grid_bitmask(bool flip_grid_bitmask) { mFlipGridBitmask = flip_grid_bitmask; }
+    void set_flip_orbit_correction(bool flip_orbit_correction) {
+        mFlipOrbitCorrection = flip_orbit_correction;
+    }
 
     /// Generate SPARTN messages based on LPP SSR messages.
     /// @param[in] lpp_message The LPP SSR message.
@@ -168,6 +171,7 @@ private:
     bool mSignFlipC10;
     bool mSignFlipC11;
     bool mSignFlipStecResiduals;
+    bool mFlipOrbitCorrection;
 
     bool mGenerateGad;
     bool mGenerateOcb;

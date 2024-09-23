@@ -698,6 +698,12 @@ void Generator::generate_ocb(uint16_t iod) {
                 auto radial = decode::delta_radial_r15(orbit.delta_radial_r15);
                 auto along  = decode::delta_AlongTrack_r15(orbit.delta_AlongTrack_r15);
                 auto cross  = decode::delta_CrossTrack_r15(orbit.delta_CrossTrack_r15);
+
+                if(mFlipOrbitCorrection) {
+                    radial *= -1;
+                    cross *= -1;
+                }
+
                 builder.sf020(radial);
                 builder.sf020(along);
                 builder.sf020(cross);
