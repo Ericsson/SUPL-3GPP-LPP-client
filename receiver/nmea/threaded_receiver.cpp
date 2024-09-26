@@ -22,7 +22,8 @@ ThreadedReceiver::ThreadedReceiver(
       mExportInterfaces(std::move(export_interfaces)),
       mGga(nullptr),
       mVtg(nullptr),
-      mGst(nullptr) {
+      mGst(nullptr),
+      mEpe(nullptr) {
     RNT_DEBUG("[rnt] created\n");
 }
 
@@ -95,6 +96,9 @@ void ThreadedReceiver::run() {
                         } else if (dynamic_cast<GstMessage*>(message.get())) {
                             mGst = std::unique_ptr<GstMessage>(
                                 static_cast<GstMessage*>(message.release()));
+                        } else if (dynamic_cast<EpeMessage*>(message.get())) {
+                            mEpe = std::unique_ptr<EpeMessage>(
+                                static_cast<EpeMessage*>(message.release()));
                         }
                     } else {
                         break;
@@ -154,6 +158,17 @@ std::unique_ptr<GstMessage> ThreadedReceiver::gst() NMEA_NOEXCEPT {
     auto gst = std::unique_ptr<GstMessage>(new GstMessage{*mGst.get()});
     RNT_DEBUG("[rnt] unlock (gst)\n");
     return gst;
+}
+
+std::unique_ptr<EpeMessage> ThreadedReceiver::epe() NMEA_NOEXCEPT {
+    if (!mReceiver) return nullptr;
+    RNT_DEBUG("[rnt] lock (epe)\n");
+    std::lock_guard<std::mutex> lock(mMutex);
+
+    if (!mEpe) return nullptr;
+    auto epe = std::unique_ptr<EpeMessage>(new EpeMessage{*mEpe.get()});
+    RNT_DEBUG("[rnt] unlock (epe)\n");
+    return epe;
 }
 
 }  // namespace nmea

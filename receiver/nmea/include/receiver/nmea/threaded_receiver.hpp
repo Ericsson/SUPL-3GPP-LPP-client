@@ -1,6 +1,7 @@
 #pragma once
 #include <receiver/nmea/gga.hpp>
 #include <receiver/nmea/gst.hpp>
+#include <receiver/nmea/epe.hpp>
 #include <receiver/nmea/receiver.hpp>
 #include <receiver/nmea/types.hpp>
 #include <receiver/nmea/vtg.hpp>
@@ -43,6 +44,10 @@ public:
     /// @return A unique pointer to the message, or nullptr if no message has been received.
     NMEA_NODISCARD std::unique_ptr<GstMessage> gst() NMEA_NOEXCEPT;
 
+    /// Get the last received EPE message.
+    /// @return A unique pointer to the message, or nullptr if no message has been received.
+    NMEA_NODISCARD std::unique_ptr<EpeMessage> epe() NMEA_NOEXCEPT;
+
 protected:
     /// This function is called at the start of the receiver thread. It handles the blocking
     /// communication with the receiver.
@@ -60,6 +65,7 @@ private:
     std::unique_ptr<GgaMessage> mGga;
     std::unique_ptr<VtgMessage> mVtg;
     std::unique_ptr<GstMessage> mGst;
+    std::unique_ptr<EpeMessage> mEpe;
 };
 
 }  // namespace nmea
