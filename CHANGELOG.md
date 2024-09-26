@@ -1,6 +1,7 @@
 # Changelog
 
 ## [3.4.*]
+- You can now set the provide location information update rate with `--update-rate`. 
 
 ## [3.4.11] 2024-09-26
 - Added support for UBX-RXM-RAWX messages.

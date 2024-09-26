@@ -298,6 +298,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("  force: false\n");
     }
 
+    client.set_update_rate(location_information_options.update_rate);
     if (location_information_options.unlock_update_rate) {
         client.unlock_update_rate();
         printf("  unlock update rate: true\n");
@@ -320,7 +321,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     for (;;) {
         struct timespec timeout;
         timeout.tv_sec  = 0;
-        timeout.tv_nsec = 1000000 * 100;  // 100 ms
+        timeout.tv_nsec = 1000000 * location_information_options.update_rate;
         nanosleep(&timeout, nullptr);
 
         // client.process() MUST be called at least once every second, otherwise

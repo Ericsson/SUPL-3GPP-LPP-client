@@ -106,6 +106,8 @@ struct LocationInformationOptions {
     bool output_ellipse_68;
     /// Override horizontal confidence.
     double override_horizontal_confidence;
+    /// Update rate in milliseconds.
+    int update_rate;
 };
 
 /// Control options.

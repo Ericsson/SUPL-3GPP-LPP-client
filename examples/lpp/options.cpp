@@ -238,10 +238,10 @@ static args::ValueFlag<uint16_t> nmea_export_tcp_port{nmea_receiver_group,
                                                       args::Options::Single};
 
 static args::ValueFlag<std::string> nmea_export_file{nmea_receiver_group,
-                                                    "file",
-                                                    "Export NMEA to file",
-                                                    {"nmea-export-file"},
-                                                    args::Options::Single};
+                                                     "file",
+                                                     "Export NMEA to file",
+                                                     {"nmea-export-file"},
+                                                     args::Options::Single};
 
 //
 // Output
@@ -369,6 +369,12 @@ static args::Flag li_unlocked{
     {"location-report-unlocked"},
     args::Options::Single,
 };
+static args::ValueFlag<int> li_update_rate{
+    location_infomation,
+    "update-rate",
+    "Update rate in milliseconds",
+    {"update-rate"},
+    args::Options::Single};
 static args::ValueFlag<double> li_latitude{location_infomation,
                                            "latitude",
                                            "Fake Latitude",
@@ -843,7 +849,7 @@ static UbloxOptions ublox_parse_options() {
         auto port      = ublox_parse_port();
         auto interface = ublox_parse_interface();
         auto prm       = print_receiver_options_parse();
-        auto readonly = receiver_readonly ? true : false;
+        auto readonly  = receiver_readonly ? true : false;
 
         std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
         if (ublox_export_file) {
@@ -851,7 +857,8 @@ static UbloxOptions ublox_parse_options() {
             export_interfaces.emplace_back(interface);
         }
 
-        return UbloxOptions{port, std::move(interface), prm, readonly, std::move(export_interfaces)};
+        return UbloxOptions{port, std::move(interface), prm, readonly,
+                            std::move(export_interfaces)};
     } else {
         return UbloxOptions{};
     }
@@ -961,7 +968,7 @@ static NmeaOptions nmea_parse_options() {
             nmea_export_interfaces.emplace_back(interface);
         }
 
-        if(nmea_export_file) {
+        if (nmea_export_file) {
             auto interface = interface::Interface::file(nmea_export_file.Get(), true);
             nmea_export_interfaces.emplace_back(interface);
         }
@@ -982,6 +989,7 @@ static LocationInformationOptions parse_location_information_options() {
     location_information.altitude                       = 0;
     location_information.force                          = false;
     location_information.unlock_update_rate             = false;
+    location_information.update_rate                    = 1000;
     location_information.convert_confidence_95_to_68    = false;
     location_information.output_ellipse_68              = false;
     location_information.override_horizontal_confidence = -1.0;
@@ -992,6 +1000,13 @@ static LocationInformationOptions parse_location_information_options() {
 
     if (li_unlocked) {
         location_information.unlock_update_rate = true;
+    }
+
+    if(li_update_rate) {
+        location_information.update_rate = li_update_rate.Get();
+        if(location_information.update_rate < 10) {
+            throw args::ValidationError("Update rate cannot be less than 10 milliseconds");
+        }
     }
 
     if (li_enable) {
