@@ -110,18 +110,14 @@ PLI_Result provide_location_information_callback_nmea(LocationInformation& locat
     auto gst = receiver->gst();
     auto epe = receiver->epe();
     if (!gga || !vtg || !(gst || epe)) {
-        printf("Waiting for the following messages:");
-        if (!gga) printf(" gga");
-        if (!vtg) printf(" vtg");
-        if (!(gst || epe)) printf(" gst/epe");
-        printf("\n");
         return PLI_Result::NOT_AVAILABLE;
     }
 
-    auto semi_major                = gst ? gst->semi_major()                : epe->semi_major();
-    auto semi_minor                = gst ? gst->semi_minor()                : epe->semi_minor();
-    auto orientation               = gst ? gst->orientation()               : epe->orientation();
-    auto vertical_position_error   = gst ? gst->vertical_position_error()   : epe->vertical_position_error();
+    auto semi_major  = gst ? gst->semi_major() : epe->semi_major();
+    auto semi_minor  = gst ? gst->semi_minor() : epe->semi_minor();
+    auto orientation = gst ? gst->orientation() : epe->orientation();
+    auto vertical_position_error =
+        gst ? gst->vertical_position_error() : epe->vertical_position_error();
 
     if (gConvertConfidence95To39) {
         semi_major = semi_major / 2.4477;

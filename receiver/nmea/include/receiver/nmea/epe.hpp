@@ -11,14 +11,13 @@ namespace nmea {
 
 // Message specification
 // $PQTMEPE,<MsgVer>,<EPE_North>,<EPE_East>,<EPE_Down>,<EPE_2D>,<EPE_3D>*<Checksum>
-
 class EpeMessage final : public Message {
 public:
-    ~EpeMessage () override = default;
+    ~EpeMessage() override = default;
 
     EpeMessage(EpeMessage const& other)
-        : Message(other), mMsgVer(other.mMsgVer), mNorth(other.mNorth),
-          mEast(other.mEast), mDown(other.mDown), m2D(other.m2D), m3D(other.m3D) {}
+        : Message(other), mMsgVer(other.mMsgVer), mNorth(other.mNorth), mEast(other.mEast),
+          mDown(other.mDown), m2D(other.m2D), m3D(other.m3D) {}
     EpeMessage(EpeMessage&&)                 = delete;
     EpeMessage& operator=(EpeMessage const&) = delete;
     EpeMessage& operator=(EpeMessage&&)      = delete;
@@ -32,7 +31,7 @@ public:
 
     /// Get the estimated east error
     NMEA_NODISCARD double east() const NMEA_NOEXCEPT { return mEast; }
-    
+
     /// Get the estimated down error
     NMEA_NODISCARD double down() const NMEA_NOEXCEPT { return mDown; }
 
@@ -48,20 +47,20 @@ public:
     NMEA_NODISCARD double horizontal_position_error() const NMEA_NOEXCEPT { return m2D; }
 
     /// Get semi-major axis.
-    NMEA_NODISCARD double semi_major() const NMEA_NOEXCEPT { return m2D/sqrt(2); }
+    NMEA_NODISCARD double semi_major() const NMEA_NOEXCEPT { return m2D / sqrt(2); }
 
     /// Get semi-minor axis.
-    NMEA_NODISCARD double semi_minor() const NMEA_NOEXCEPT { return m2D/sqrt(2); }
+    NMEA_NODISCARD double semi_minor() const NMEA_NOEXCEPT { return m2D / sqrt(2); }
 
     /// Get the orientation of the semi-major axis.
     NMEA_NODISCARD double orientation() const NMEA_NOEXCEPT { return 0; }
 
     /// Get the vertical position error.
     NMEA_NODISCARD double vertical_position_error() const NMEA_NOEXCEPT {
-        return sqrt((m3D * m3D) - (m2D * m2D)); 
+        return sqrt((m3D * m3D) - (m2D * m2D));
     }
 
-    // TODO(ehedpon) Implement conversion from north, east and down error to latitude and longitude. 
+    // TODO(ehedpon) Implement conversion from north, east and down error to latitude and longitude.
     // Also unclear if vertical error is sigma_v or if it needs to be converted from down
 
     NMEA_NODISCARD static std::unique_ptr<Message>
@@ -77,14 +76,6 @@ private:
     double mDown;
     double m2D;
     double m3D;
-
-    // double mRmsValue;
-    // double mSemiMajorError;
-    // double mSemiMinorError;
-    // double mOrientationOfSemiMajorError;
-    // double mLatitudeError;
-    // double mLongitudeError;
-    // double mAltitudeError;
 };
 
 }  // namespace nmea
