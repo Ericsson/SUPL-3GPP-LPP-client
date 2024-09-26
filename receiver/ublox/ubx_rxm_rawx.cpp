@@ -20,7 +20,8 @@ void UbxRxmRawx::print() const UBLOX_NOEXCEPT {
            message_id(), mPayload.rcv_tow, mPayload.week, mPayload.num_meas);
 }
 
-std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder) UBLOX_NOEXCEPT {
+std::unique_ptr<Message> UbxRxmRawx::parse(Decoder&             decoder,
+                                           std::vector<uint8_t> data) UBLOX_NOEXCEPT {
     if (decoder.remaining() < 16) {
         return nullptr;
     }
@@ -91,7 +92,7 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder) UBLOX_NOEXCEPT {
         return nullptr;
     } else {
         return std::unique_ptr<Message>{
-            new UbxRxmRawx(std::move(payload), std::move(measurements))};
+            new UbxRxmRawx(std::move(payload), std::move(measurements), std::move(data))};
     }
 }
 

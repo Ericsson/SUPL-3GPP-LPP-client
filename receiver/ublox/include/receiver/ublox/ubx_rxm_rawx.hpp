@@ -82,7 +82,8 @@ public:
 
     void print() const UBLOX_NOEXCEPT override;
 
-    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder&             decoder,
+                                                          std::vector<uint8_t> data) UBLOX_NOEXCEPT;
 
 private:
     raw::RxmRawx                         mPayload;
