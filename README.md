@@ -1,6 +1,6 @@
 # SUPL 3GPP LPP client
 
-![version](https://img.shields.io/badge/version-3.4.9-green)
+![version](https://img.shields.io/badge/version-3.4.11-green)
 ![license](https://img.shields.io/badge/license-MXM-blue)
 
 This project is a set of libraries, examples and tools to facilitate the development of 3GPP LPP clients. 
