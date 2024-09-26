@@ -1,7 +1,10 @@
 # Changelog
 
 ## [3.4.*]
+
+## [3.4.11] 2024-09-26
 - Added support for UBX-RXM-RAWX messages.
+- Added support for $PQTMEPE messages.
 
 ## [3.4.10] 2024-08-07
 - Added new control command `/IDENTITY` to provide the client with the IMSI, MSISDN, or IP address. See `CONTROL.md` for more information. 
