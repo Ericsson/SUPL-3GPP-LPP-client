@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
 static bool OpenSSL_initialized = false;
 
 static void OpenSSL_init() {
@@ -34,13 +34,13 @@ static void OpenSSL_cleanup() {
 #endif
 
 void network_initialize() {
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     OpenSSL_init();
 #endif
 }
 
 void network_cleanup() {
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     OpenSSL_cleanup();
 #endif
 }
@@ -50,7 +50,7 @@ void network_cleanup() {
 //
 
 TCP_Client::TCP_Client() : mSocket(-1) {
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     mSSLMethod  = nullptr;
     mSSLContext = nullptr;
     mSSL        = nullptr;
@@ -83,7 +83,7 @@ bool TCP_Client::initialize_socket() {
     for (aip = ailist; aip; aip = aip->ai_next) {
         char host[256];
         err = getnameinfo(aip->ai_addr, aip->ai_addrlen, host, sizeof(host),
-                          NULL, 0, NI_NUMERICHOST);
+                          nullptr, 0, NI_NUMERICHOST);
         if (err != 0) {
             return false;
         }
@@ -115,7 +115,7 @@ bool TCP_Client::connect(const std::string& host, int port, bool use_ssl) {
     mPort   = port;
     mUseSSL = use_ssl;
 
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     if (mUseSSL) {
         mSSLMethod =
 #if (OPENSSL_VERSION_NUMBER < 0x10100000L)
@@ -139,7 +139,7 @@ bool TCP_Client::connect(const std::string& host, int port, bool use_ssl) {
         return false;
     }
 
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     if (mUseSSL) {
         SSL_set_fd(mSSL, mSocket);
         if (SSL_connect(mSSL) == -1) {
@@ -156,7 +156,7 @@ bool TCP_Client::disconnect() {
         return true;
     }
 
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     if (mUseSSL) {
         SSL_shutdown(mSSL);
         SSL_free(mSSL);
@@ -188,7 +188,7 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
         FD_ZERO(&sock);
         FD_SET(mSocket, &sock);
 
-        auto status = select(mSocket + 1, &sock, NULL, NULL, timeout_ptr);
+        auto status = select(mSocket + 1, &sock, nullptr, nullptr, timeout_ptr);
         if (status < 0) {
             disconnect();
             return -1;
@@ -199,30 +199,30 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
         }
     }
 
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     if (mUseSSL)
         return SSL_read(mSSL, buffer, size);
     else
         return read(mSocket, buffer, size);
 #else
 
-    auto read = ::read(mSocket, buffer, size);
+    auto read = ::read(mSocket, buffer, static_cast<size_t>(size));
     if(read <= 0) {
         disconnect();
         return -1;
     }
 
-    return read;
+    return static_cast<int>(read);
 #endif
 }
 
 int TCP_Client::send(void* buffer, int size) {
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
     if (mUseSSL)
         return SSL_write(mSSL, buffer, size);
     else
         return write(mSocket, buffer, size);
 #else
-    return write(mSocket, buffer, size);
+    return static_cast<int>(write(mSocket, buffer, static_cast<size_t>(size)));
 #endif
 }

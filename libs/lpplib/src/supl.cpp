@@ -1,7 +1,5 @@
 #include "supl.h"
 
-#include <utility/cpp.h>
-
 #include <SessionID.h>
 #include <SetSessionID.h>
 #include <SlpSessionID.h>
@@ -95,7 +93,7 @@ std::unique_ptr<SUPL_Session> SUPL_Session::imsi(long id, unsigned long long ims
     return std::unique_ptr<SUPL_Session>(new SUPL_Session(set, nullptr));
 }
 
-std::unique_ptr<SUPL_Session> SUPL_Session::ip_address(long id, const std::string& addr_str) {
+std::unique_ptr<SUPL_Session> SUPL_Session::ip_address(long id, std::string const& addr_str) {
     int  b[4];
     auto result = sscanf(addr_str.c_str(), "%d.%d.%d.%d", b, b + 1, b + 2, b + 3);
     assert(result == 4);
@@ -118,19 +116,19 @@ std::unique_ptr<SUPL_Session> SUPL_Session::ip_address(long id, uint32_t addr) {
 }
 
 template <typename T>
-static T* deepcopy_asn1_object(const asn_TYPE_descriptor_s* descriptor, T* value) {
+static T* deepcopy_asn1_object(asn_TYPE_descriptor_s const* descriptor, T* value) {
     if (!value) {
         return nullptr;
     }
 
     // Deep copy achieved by encoding and decoding the structure.
-    auto buffer = (void*)nullptr;
-    auto length = uper_encode_to_new_buffer(descriptor, NULL, value, &buffer);
+    void* buffer = nullptr;
+    auto  length = uper_encode_to_new_buffer(descriptor, NULL, value, &buffer);
     if (length <= 0) {
         return nullptr;
     }
 
-    auto copy = (T*)nullptr;
+    T*   copy = nullptr;
     auto result =
         uper_decode_complete(0, descriptor, reinterpret_cast<void**>(&copy), buffer, length);
     if (result.code != RC_OK) {
@@ -173,7 +171,7 @@ SUPL_Session::~SUPL_Session() {
 //
 
 SUPL_Client::SUPL_Client()
-    : mTCP(std::make_unique<TCP_Client>()), mSession(nullptr), mReceiveLength(0) {}
+    : mTCP(std::unique_ptr<TCP_Client>(new TCP_Client())), mSession(nullptr), mReceiveLength(0) {}
 
 SUPL_Client::~SUPL_Client() {}
 
@@ -181,7 +179,7 @@ void SUPL_Client::set_session(std::unique_ptr<SUPL_Session> session) {
     mSession = std::move(session);
 }
 
-bool SUPL_Client::connect(const std::string& host, int port, bool use_ssl) {
+bool SUPL_Client::connect(std::string const& host, int port, bool use_ssl) {
     if (!mSession) {
         printf("ERROR: Missing SUPL session\n");
         return false;
@@ -203,16 +201,16 @@ SUPL_Message SUPL_Client::process() {
         return nullptr;
     }
 
-    auto pdu           = (ULP_PDU*)nullptr;
-    size_t expected_size = 0;
+    ULP_PDU* pdu           = nullptr;
+    size_t   expected_size = 0;
 
     // NOTE: Some SUPL messages are very big, e.g. supl.google.com SUPLPOS with
     // ephemeris. This means that sometimes the 'buffer' will not contain the
     // whole message but only apart of it. This means we need to wait for the
     // rest of the data. Try to decode the message and if it failed with
     // RC_WMORE wait for more data and try again.
-    auto result =
-        uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, mReceiveLength);
+    auto result = uper_decode_complete(0, &asn_DEF_ULP_PDU, reinterpret_cast<void**>(&pdu),
+                                       mReceiveBuffer, mReceiveLength);
     if (result.code == RC_FAIL) {
         mReceiveLength = 0;
         ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
@@ -230,15 +228,15 @@ SUPL_Message SUPL_Client::process() {
             return nullptr;
         }
 
-        result =
-            uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, expected_size);
+        result = uper_decode_complete(0, &asn_DEF_ULP_PDU, reinterpret_cast<void**>(&pdu),
+                                      mReceiveBuffer, expected_size);
         if (result.code != RC_OK) {
             mReceiveLength = 0;
             ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         }
     } else {
-        expected_size = pdu->length;
+        expected_size = static_cast<size_t>(pdu->length);
     }
 
     // Remove the message from the buffer
@@ -270,13 +268,14 @@ SUPL_Message SUPL_Client::receive2() {
     }
 
     // Receive more data
-    auto bytes = mTCP->receive(mReceiveBuffer + mReceiveLength,
-                               SUPL_CLIENT_RECEIVER_BUFFER_SIZE - mReceiveLength, 0);
+    auto bytes =
+        mTCP->receive(mReceiveBuffer + mReceiveLength,
+                      static_cast<int>(SUPL_CLIENT_RECEIVER_BUFFER_SIZE - mReceiveLength), 0);
     if (bytes <= 0) {
         return nullptr;
     }
 
-    mReceiveLength += bytes;
+    mReceiveLength += static_cast<size_t>(bytes);
     if (mReceiveLength >= SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
         mReceiveLength = 0;
         return nullptr;
@@ -301,15 +300,16 @@ SUPL_Message SUPL_Client::receive(int milliseconds) {
         return nullptr;
     }
 
-    auto pdu  = (ULP_PDU*)nullptr;
-    auto size = bytes;
+    ULP_PDU* pdu  = nullptr;
+    auto     size = bytes;
 
     // NOTE: Some SUPL messages are very big, e.g. supl.google.com SUPLPOS with
     // ephemeris. This means that sometimes the 'buffer' will not contain the
     // whole message but only apart of it. This means we need to wait for the
     // rest of the data. Try to decode the message and if it failed with
     // RC_WMORE wait for more data and try again.
-    auto result = uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, bytes);
+    auto result = uper_decode_complete(0, &asn_DEF_ULP_PDU, reinterpret_cast<void**>(&pdu),
+                                       mReceiveBuffer, bytes);
     if (result.code == RC_FAIL) {
         return nullptr;
     }
@@ -329,7 +329,8 @@ SUPL_Message SUPL_Client::receive(int milliseconds) {
             size += bytes;
         }
 
-        result = uper_decode_complete(0, &asn_DEF_ULP_PDU, (void**)&pdu, mReceiveBuffer, size);
+        result = uper_decode_complete(0, &asn_DEF_ULP_PDU, reinterpret_cast<void**>(&pdu),
+                                      mReceiveBuffer, size);
         if (result.code != RC_OK) {
             return nullptr;
         }
@@ -339,13 +340,13 @@ SUPL_Message SUPL_Client::receive(int milliseconds) {
     return ASN_Unique<ULP_PDU>(pdu, {});
 }
 
-static int encode_to_length_cb(const void*, size_t, void*) {
+static int encode_to_length_cb(void const*, size_t, void*) {
     return 0;
 }
 
-static asn_enc_rval_t uper_encode_to_length(const asn_TYPE_descriptor_t* td,
-                                            const asn_per_constraints_t* constraints,
-                                            const void*                  sptr) {
+static asn_enc_rval_t uper_encode_to_length(asn_TYPE_descriptor_t const* td,
+                                            asn_per_constraints_t const* constraints,
+                                            void const*                  sptr) {
     return uper_encode(td, constraints, sptr, encode_to_length_cb, NULL);
 }
 

@@ -1,6 +1,11 @@
 #include "internal_lpp.h"
 #include "lpp.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-ID.h>
 #include <GNSS-ReferenceTimeReq.h>
 #include <GNSS-IonosphericModelReq.h>
@@ -31,6 +36,7 @@
 #include <A-GNSS-RequestAssistanceData.h>
 #include <GNSS-PeriodicAssistDataReq-r15.h>
 #include <GNSS-SSR-CorrectionPointsReq-r16.h>
+#pragma GCC diagnostic pop
 
 static GNSS_ReferenceTimeReq_t* request_reference_time(long gnss_id) {
     auto element = ALLOC_ZERO(GNSS_ReferenceTimeReq_t);

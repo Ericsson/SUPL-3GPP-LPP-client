@@ -4,7 +4,7 @@
 #include <netdb.h>
 #include <unistd.h>
 
-#if USE_OPENSSL
+#if defined(USE_OPENSSL)
 #include <openssl/crypto.h>
 #include <openssl/err.h>
 #include <openssl/pem.h>

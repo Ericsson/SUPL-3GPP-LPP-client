@@ -2,6 +2,11 @@
 #include "location_information.h"
 #include "lpp.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <A-GNSS-ProvideLocationInformation.h>
 #include <CellGlobalIdEUTRA-AndUTRA.h>
 #include <CommonIEsAbort.h>
@@ -19,16 +24,20 @@
 #include <MeasuredResultsList.h>
 #include <PeriodicAssistanceDataControlParameters-r15.h>
 #include <Velocity.h>
+#pragma GCC diagnostic pop
+
 #include <math.h>
 #include <time.h>
-#include <utility/time.h>
+
+#include <time/gps.hpp>
+#include <time/utc.hpp>
 
 bool lpp_harvest_transaction(LPP_Transaction* transaction, LPP_Message* lpp) {
     if (!lpp) return false;
     if (!lpp->transactionID) return false;
 
     transaction->id        = lpp->transactionID->transactionNumber;
-    transaction->end       = lpp->endTransaction;
+    transaction->end       = lpp->endTransaction == 1 ? 1 : 0;
     transaction->initiator = lpp->transactionID->initiator == Initiator_targetDevice ? 0 : 1;
     return true;
 }
@@ -42,7 +51,7 @@ LPP_Message* lpp_decode(OCTET_STRING* data) {
         uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, (void**)&lpp, data->buf, data->size);
     if (rval.code != RC_OK) {
         free(lpp);
-        return NULL;
+        return nullptr;
     }
 
     return lpp;
@@ -51,11 +60,11 @@ LPP_Message* lpp_decode(OCTET_STRING* data) {
 OCTET_STRING* lpp_encode(LPP_Message* lpp) {
     char           buffer[1 << 16];
     asn_enc_rval_t ret =
-        uper_encode_to_buffer(&asn_DEF_LPP_Message, NULL, lpp, buffer, sizeof(buffer));
+        uper_encode_to_buffer(&asn_DEF_LPP_Message, nullptr, lpp, buffer, sizeof(buffer));
     if (ret.encoded == -1) {
         printf("ERROR: Encoding failed: %s\n",
                ret.failed_type ? ret.failed_type->name : "<unknown>");
-        return NULL;
+        return nullptr;
     }
 
     int pdu_len = (ret.encoded + 7) >> 3;
@@ -75,7 +84,7 @@ LPP_Message* lpp_create(LPP_Transaction* transaction, LPP_MessageBody__c1_PR pr)
             transaction->initiator == 0 ? Initiator_targetDevice : Initiator_locationServer;
         tid->transactionNumber = transaction->id;
         lpp->transactionID     = tid;
-        lpp->endTransaction    = transaction->end;
+        lpp->endTransaction    = transaction->end == 1 ? 1 : 0;
     }
 
     LPP_MessageBody_t* body = ALLOC_ZERO(LPP_MessageBody_t);
@@ -184,7 +193,7 @@ long gnss_system_time_tow(GNSS_SystemTime_t system_time) {
                              // divide by 0.08 tow/sec * 1000 ms = 80
 
         return tow;
-    } break;
+    } 
     }
 
     return 0;
@@ -194,65 +203,42 @@ static long encode_latitude(double lat) {
     auto value = (lat / 90.0) * pow(2, 31);
     if (value <= -2147483648) value = -2147483648;
     if (value >= 2147483647) value = 2147483647;
-    return (long)value;
+    return static_cast<long>(value);
 }
 
 static long encode_longitude(double lon) {
     auto value = (lon / 180) * pow(2, 31);
     if (value <= -2147483648) value = -2147483648;
     if (value >= 2147483647) value = 2147483647;
-    return (long)value;
-}
-
-static long find_closest_k(long k, double r) {
-    auto C = 0.3;
-    auto x = 0.02;
-
-    auto k0 = k <= 0 ? 0 : (k - 1);
-    auto k1 = k;
-    auto k2 = k >= 255 ? 255 : (k + 1);
-
-    auto r0 = C * (pow(1 + x, k0) - 1);
-    auto r1 = C * (pow(1 + x, k1) - 1);
-    auto r2 = C * (pow(1 + x, k2) - 1);
-
-    auto d0 = abs(r - r0);
-    auto d1 = abs(r - r1);
-    auto d2 = abs(r - r2);
-
-    if (d0 < d1 && d0 < d2) return k0;
-    if (d1 < d0 && d1 < d2) return k1;
-    return k2;
+    return static_cast<long>(value);
 }
 
 static long encode_ha_uncertainity(double r) {
-    auto C = 0.3;
-    auto x = 0.02;
-    auto k = log((r / C) + 1) / log(1 + x);
-
-    auto best_k = find_closest_k((long)k, r);
-    // NOTE(ewasjon): reporting 0.0m accuracy is often more confusing than helpful, thus we
-    //                report the minimum accuracy instead if k == 0
-    if (best_k == 0) best_k = 1;
-    return best_k;
+    auto C     = 0.3;
+    auto x     = 0.02;
+    auto k     = log((r / C) + 1) / log(1 + x);
+    auto value = static_cast<long>(k);
+    if (value <= 0) value = 0;
+    if (value >= 255) value = 255;
+    return value;
 }
 
 static long encode_ha_altitude(double a) {
-    long res = (long)(a * 128.0);
+    long res = static_cast<long>(a * 128.0);
     if (res < -64000) return -64000;
     if (res > 1280000) return 1280000;
     return res;
 }
 
 static long encode_orientation(double orientation) {
-    auto value = (long)orientation;
+    auto value = static_cast<long>(orientation);
     if (value < 0) value = 0;
     if (value > 179) value = 179;
     return value;
 }
 
 static long encode_confidence(double confidence) {
-    auto value = (long)(confidence * 100.0);
+    auto value = static_cast<long>(confidence * 100.0);
     if (value < 0) value = 0;
     if (value > 100) value = 100;
     return value;
@@ -311,7 +297,6 @@ lpp_LocationCoordinates(location_information::LocationShape const& shape) {
         return encode_haepue(shape);
     case LocationShape::Kind::HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid:
         return encode_haepaue(shape);
-    default: return nullptr;
     }
 }
 
@@ -320,10 +305,10 @@ static long encode_velocity(double vel, long max) {
     vel = abs(vel) * 3.6;
     if (vel < 0.5) {
         N = 0;
-    } else if (vel >= max + 0.5) {
+    } else if (vel >= static_cast<double>(max) + 0.5) {
         N = max;
     } else {
-        N = round(vel);
+        N = static_cast<long>(round(vel));
     }
     return N;
 }
@@ -333,7 +318,7 @@ static long encode_bearing(double bearing) {
         bearing += 360.0;
     while (bearing >= 360.0)
         bearing -= 360.0;
-    auto value = (long)bearing;
+    auto value = static_cast<long>(bearing);
     if (value < 0) value = 0;
     if (value > 359) value = 359;
     return value;
@@ -409,7 +394,6 @@ static Velocity_t* lpp_Velocity(location_information::VelocityShape const& shape
         return lpp_HorizontalWithVerticalVelocity(shape);
     case VelocityShape::Kind::HorizontalWithVerticalVelocityAndUncertainty:
         return lpp_HorizontalWithVerticalVelocityAndUncertainty(shape);
-    default: return nullptr;
     }
 }
 
@@ -421,7 +405,7 @@ lpp_PLI_CIE_ext2(location_information::LocationInformation const& location) {
         BitStringBuilder{}.set(LocationSource_r13_ha_gnss_v1510).to_bit_string(6);
 
     struct tm tm {};
-    auto      seconds      = UTC_Time{location.time}.timestamp().seconds();
+    auto      seconds      = ts::Utc{location.time}.timestamp().seconds();
     auto      current_time = static_cast<time_t>(seconds);
     auto      ptm          = gmtime_r(&current_time, &tm);
 
@@ -432,7 +416,7 @@ lpp_PLI_CIE_ext2(location_information::LocationInformation const& location) {
 
 static CommonIEsProvideLocationInformation_t* lpp_PLI_CommonIEsProvideLocationInformation(
     location_information::LocationInformation const* location,
-    location_information::HaGnssMetrics const*       metrics) {
+    location_information::HaGnssMetrics const*) {
     auto CIE_PLI = ALLOC_ZERO(CommonIEsProvideLocationInformation_t);
 
     if (location) {
@@ -504,7 +488,7 @@ lpp_LocationInformation(location_information::LocationInformation const& locatio
     auto  location_information = ALLOC_ZERO(GNSS_LocationInformation);
     auto& mrt                  = location_information->measurementReferenceTime;
 
-    auto time = GPS_Time{location.time};
+    auto time = ts::Gps{location.time};
     auto tod  = time.time_of_day();
     // time of day in milliseconds
     auto msec = static_cast<long>(tod.full_seconds() * 1000);

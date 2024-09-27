@@ -1,6 +1,11 @@
 #include "internal_lpp.h"
 #include "lpp.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-SupportElement.h>
 #include <GNSS-SupportList.h>
 #include <AssistanceDataSupportList.h>
@@ -16,6 +21,7 @@
 #include <GLO-RTK-BiasInformationSupport-r15.h>
 #include <ECID-ProvideCapabilities.h>
 #include <CommonIEsProvideCapabilities.h>
+#pragma GCC diagnostic pop
 
 static GNSS_SupportElement* build_support_element(long gnss_id) {
     auto element                        = ALLOC_ZERO(GNSS_SupportElement);

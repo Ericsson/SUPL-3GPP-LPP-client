@@ -2,11 +2,16 @@
 #include "internal_lpp.h"
 #include "supl.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <GNSS-ID.h>
 #include <OCTET_STRING.h>
 #include <PosProtocolVersion3GPP.h>
 #include <Ver2-PosProtocol-extension.h>
-#include <utility/cpp.h>
+#pragma GCC diagnostic pop
 
 LPP_Client::LPP_Client(bool segmentation) {
     connected                 = false;
@@ -16,10 +21,9 @@ LPP_Client::LPP_Client(bool segmentation) {
     client_id                 = 0xC0DEC0DE;
     mEnableSegmentation       = segmentation;
     mForceLocationInformation = false;
-    mSUPL                     = std::make_unique<SUPL_Client>();
+    mSUPL                     = std::unique_ptr<SUPL_Client>(new SUPL_Client());
     mSuplIdentityFix          = true;
     mLocationUpdateUnlocked   = false;
-    mLocationUpdateRate       = 1000;
 
     main_request_callback  = nullptr;
     main_request_userdata  = nullptr;
@@ -332,31 +336,38 @@ bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transact
         if ((periodic_id == main_request || transaction->id == main_request_transaction.id) &&
             main_request >= 0) {
             if (main_request_callback) {
-                main_request_callback(this, transaction, message, main_request_userdata);
+                if (!main_request_callback(this, transaction, message, main_request_userdata)) {
+                    lpp_destroy(message);
+                }
             }
         }
         if (agnss_request_callback && transaction->id == agnss_request_transaction.id) {
-            agnss_request_callback(this, transaction, message, agnss_request_userdata);
+            if (!agnss_request_callback(this, transaction, message, agnss_request_userdata)) {
+                lpp_destroy(message);
+            }
         }
         return true;
     } else if (lpp_is_request_capabilities(message)) {
         transaction->end = true;
+        lpp_destroy(message);
 
-        auto message = lpp_provide_capabilities(transaction, mEnableSegmentation);
-        if (!supl_send(message)) {
+        auto response_message = lpp_provide_capabilities(transaction, mEnableSegmentation);
+        if (!supl_send(response_message)) {
 #if DEBUG_LPP_LIB
             printf("ERROR: Failed to send LPP Provide Capabilities\n");
 #endif
-            lpp_destroy(message);
+            lpp_destroy(response_message);
             disconnect();
             return false;
         }
+
         return true;
     } else if (lpp_is_request_location_information(message)) {
         return handle_request_location_information(message, transaction);
+    } else {
+        lpp_destroy(message);
+        return false;
     }
-
-    return false;
 }
 
 bool LPP_Client::process() {
@@ -375,8 +386,7 @@ bool LPP_Client::process() {
             update_interval =
                 duration_cast<seconds>(std::chrono::milliseconds(provide_li.interval));
         } else {
-            update_interval =
-                duration_cast<seconds>(std::chrono::milliseconds(mLocationUpdateRate));
+            update_interval = std::chrono::seconds(1);
         }
 
         if (duration > update_interval) {
@@ -404,7 +414,6 @@ bool LPP_Client::process() {
         }
 
         process_message(message, &transaction);
-        lpp_destroy(message);
     }
 
     return true;
@@ -428,8 +437,6 @@ bool LPP_Client::wait_for_assistance_data_response(LPP_Transaction* transaction)
                 continue;
             }
 
-            process_message(message, &message_transaction);
-
             // NOTE: message_transaction.initiator == transaction->initiator
             // cannot be use as old server didn't correctly handle initiator
             if (message_transaction.id == transaction->id) {
@@ -443,7 +450,7 @@ bool LPP_Client::wait_for_assistance_data_response(LPP_Transaction* transaction)
                 }
             }
 
-            lpp_destroy(message);
+            process_message(message, &message_transaction);
         }
     }
 
@@ -566,7 +573,10 @@ void LPP_Client::provide_ecid_callback(void* userdata, LPP_Client::PECID_Callbac
 bool LPP_Client::handle_request_location_information(LPP_Message*     message,
                                                      LPP_Transaction* transaction) {
     auto interval_ms = lpp_get_request_location_interval(message);
-    switch (lpp_get_request_location_information_type(message)) {
+    auto type        = lpp_get_request_location_information_type(message);
+    lpp_destroy(message);
+
+    switch (type) {
     case LocationInformationType_locationEstimateRequired:
         provide_li.type        = LocationInformationType_locationEstimateRequired;
         provide_li.last        = std::chrono::system_clock::now();
@@ -652,8 +662,4 @@ void LPP_Client::force_location_information() {
 
 void LPP_Client::unlock_update_rate() {
     mLocationUpdateUnlocked = true;
-}
-
-void LPP_Client::set_update_rate(int rate) {
-    mLocationUpdateRate = rate;
 }

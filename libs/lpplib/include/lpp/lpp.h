@@ -7,7 +7,13 @@
 #include "asnlib.h"
 #include "location_information.h"
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
 #include <LocationInformationType.h>
+#pragma GCC diagnostic pop
 
 #define AD_REQUEST_INVALID (static_cast<LPP_Client::AD_Request>(0))
 
@@ -21,7 +27,7 @@ class SUPL_Client;
 class LPP_Client {
 public:
     typedef int32_t AD_Request;
-    typedef void (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+    typedef bool (*AD_Callback)(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
     typedef location_information::PLI_Result (*PLI_Callback)(
         location_information::LocationInformation&, location_information::HaGnssMetrics&, void*);
     typedef bool (*PECID_Callback)(location_information::ECIDInformation&, void*);
@@ -76,7 +82,6 @@ public:
 
     /// Unlock ProvideLocationInformation update rate.
     void unlock_update_rate();
-    void set_update_rate(int rate);
 
     OCTET_STRING* encode(LPP_Message* message);
     LPP_Message*  decode(OCTET_STRING* data);
@@ -124,8 +129,9 @@ private:
     bool mEnableSegmentation;
     bool mSuplIdentityFix;
     bool mLocationUpdateUnlocked;
-    int mLocationUpdateRate;
 };
 
 void network_initialize();
 void network_cleanup();
+
+OCTET_STRING* lpp_encode(LPP_Message* lpp);

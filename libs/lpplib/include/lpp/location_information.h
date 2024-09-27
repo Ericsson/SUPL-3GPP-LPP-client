@@ -1,7 +1,9 @@
 #pragma once
+
 #include <ctime>
+
 #include <lpp/cell_id.h>
-#include <utility/time.h>
+#include <time/tai.hpp>
 
 namespace location_information {
 
@@ -51,37 +53,21 @@ struct HorizontalAccuracy {
     // indicates a 1-sigma confidence level.
     double confidence;
 
-    // Create a HorizontalAccuracy object from 1-sigma semi-major and semi-minor axes in meters
+    // Create a HorizontalAccuracy object from the 1-sigma semi-major and semi-minor axes in meters
     // and the orientation in degrees from true north. This calculates the correct confidence level
     // for two degrees of freedom.
-    static HorizontalAccuracy to_ellipse_39(double semi_major, double semi_minor,
-                                              double orientation) {
-        // Using chi-squared cumulative distribution function and finding a scaling factor of 1 (we
-        // don't want to rescale the axis) the confidence is 39.3469%.
-        auto confidence = 0.393469;
+    static HorizontalAccuracy from_ellipse(double semi_major, double semi_minor,
+                                           double orientation) {
+        // Although, the semi-major and semi-minor axes are 1-sigma values, the confidence level is
+        // is not 0.68 (1-sigma). This is because the confidence level says if the true position is
+        // within the error ellipse. A value of 0.39 indicates 1-sigma semi-major and semi-minor,
+        // from the two degrees of freedom cumulative Chi-Squared distribution,
+#define SQRT_2 1.4142135623730951
+        auto semi_major_rescaled = semi_major / SQRT_2;
+        auto semi_minor_rescaled = semi_minor / SQRT_2;
+#undef SQRT_2
+        auto confidence = 0.39;
 
-        // Normalize the orientation to the range [0, 180).
-        while (orientation < 0)
-            orientation += 180;
-        while (orientation >= 180)
-            orientation -= 180;
-
-        return HorizontalAccuracy{semi_major, semi_minor, orientation, confidence};
-    }
-
-    // Create a HorizontalAccuracy with a confidence level of 68.27%. This takes 1-sigma semi-major
-    // and semi-minor axes in meters and the orientation in degrees from true north. It will rescale
-    // the axes to meet the 68.27% confidence level.
-    static HorizontalAccuracy to_ellipse_68(double semi_major, double semi_minor,
-                                              double orientation) {
-        // Using chi-squared cumulative distribution function we can find the scaling factor for the
-        // confidence level of 68.27%, which is s = 2.4477. We divide the semi-major and semi-minor
-        // by the square root of s to rescale the axes.
-        auto confidence          = 0.6827;
-        auto semi_major_rescaled = semi_major * 1.5152;
-        auto semi_minor_rescaled = semi_minor * 1.5152;
-
-        // Normalize the orientation to the range [0, 180).
         while (orientation < 0)
             orientation += 180;
         while (orientation >= 180)
@@ -305,7 +291,7 @@ struct VelocityShape {
 
 struct LocationInformation {
     // Time of the location estimate.
-    TAI_Time time;
+    ts::Tai time;
 
     // Shape of the location estimate.
     Optional<LocationShape> location;

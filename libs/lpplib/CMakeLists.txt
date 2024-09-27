@@ -19,8 +19,8 @@ list(APPEND LPP_SOURCES
 add_library(lpplib ${LPP_SOURCES})
 target_include_directories(lpplib PUBLIC "include/")
 target_include_directories(lpplib PRIVATE "include/lpp/")
-target_link_libraries(lpplib PRIVATE utility Threads::Threads)
 target_link_libraries(lpplib PRIVATE asn1::skeleton asn1::generated::lpp asn1::helper)
+target_link_libraries(lpplib PRIVATE dependency::time)
 
 if (USE_OPENSSL)
 target_link_libraries(lpplib PRIVATE OpenSSL::SSL)
