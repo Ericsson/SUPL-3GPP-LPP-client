@@ -13,12 +13,14 @@
 namespace receiver {
 namespace ublox {
 
-ThreadedReceiver::ThreadedReceiver(Port port, std::unique_ptr<interface::Interface> interface,
-                                   bool print_messages) UBLOX_NOEXCEPT
+ThreadedReceiver::ThreadedReceiver(
+    Port port, std::unique_ptr<interface::Interface> interface, bool print_messages,
+    std::vector<std::unique_ptr<interface::Interface>> export_interfaces) UBLOX_NOEXCEPT
     : mPort(port),
       mInterface(std::move(interface)),
       mRunning(false),
-      mPrintMessages(print_messages) {
+      mPrintMessages(print_messages),
+      mExportInterfaces(std::move(export_interfaces)) {
     RUT_DEBUG("[rut] created\n");
 }
 
@@ -72,6 +74,14 @@ void ThreadedReceiver::run() {
                         if (mPrintMessages) {
                             message->print();
                         }
+
+                        if (!mExportInterfaces.empty()) {
+                            auto& data = message->data();
+                            for (auto& export_interface : mExportInterfaces) {
+                                export_interface->write(data.data(), data.size());
+                            }
+                        }
+
                         if (message->message_class() == UbxNavPvt::CLASS_ID &&
                             message->message_id() == UbxNavPvt::MESSAGE_ID) {
                             RUT_DEBUG("[rut] save navpvt\n");

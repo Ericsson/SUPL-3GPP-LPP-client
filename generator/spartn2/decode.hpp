@@ -13,6 +13,28 @@
 
 namespace decode {
 
+inline double ssrUpdateInterval_r15(long value) {
+    switch (value) {
+    case 0: return 1.0;
+    case 1: return 2.0;
+    case 2: return 5.0;
+    case 3: return 10.0;
+    case 4: return 15.0;
+    case 5: return 30.0;
+    case 6: return 60.0;
+    case 7: return 120.0;
+    case 8: return 240.0;
+    case 9: return 300.0;
+    case 10: return 600.0;
+    case 11: return 900.0;
+    case 12: return 1800.0;
+    case 13: return 3600.0;
+    case 14: return 7200.0;
+    case 15: return 10800.0;
+    default: return 10800.0;
+    }
+}
+
 static SPARTN_CONSTEXPR double ORBIT_RADIAL_RESOLUTION = 0.0001;
 static SPARTN_CONSTEXPR double ORBIT_ALONG_RESOLUTION  = 0.0004;
 static SPARTN_CONSTEXPR double ORBIT_CROSS_RESOLUTION  = 0.0004;
@@ -64,15 +86,32 @@ inline double codeBias_r15(long value) {
     return static_cast<double>(value) * CODE_BIAS_RESOLUTION;
 }
 
-inline double ssr_URA_r16(BIT_STRING_s ura) {
-    auto bits = ura.buf[0];
-    auto cls  = (bits >> 3) & 0x7;
-    auto val  = bits & 0x7;
+struct QualityIndicator {
+    bool   invalid;
+    double value;
+};
 
-    auto cls_value = pow(3, cls);
-    auto val_value = static_cast<double>(val);
-    auto q         = (cls_value * (1 + val_value) - 1) / 100.0;
-    return q;
+inline QualityIndicator quality_indicator(BIT_STRING_s& bit_string) {
+#if SPARTN_DEBUG_PRINT
+    printf("---------- QUALITY INDICATOR %02X %d %d (%d %d)\n", bit_string.buf[0],
+           bit_string.buf[0] >> 3, bit_string.buf[0] & 0x7, (bit_string.buf[0] >> 5) & 0x7,
+           (bit_string.buf[0] >> 2) & 0x7);
+#endif
+    // auto cls     = (bit_string.buf[0] >> 3) & 0x7;
+    // auto val     = bit_string.buf[0] & 0x7;
+    auto cls     = (bit_string.buf[0] >> 5) & 0x7;
+    auto val     = (bit_string.buf[0] >> 2) & 0x7;
+    auto q       = pow(3, cls) * (1 + static_cast<double>(val) / 4.0) - 1;
+    auto q_meter = q / 1000.0;
+    return QualityIndicator{cls == 0 && val == 0, q_meter};
+}
+
+inline QualityIndicator ssr_URA_r16(BIT_STRING_s ura) {
+    return quality_indicator(ura);
+}
+
+inline QualityIndicator troposphericDelayQualityIndicator_r16(BIT_STRING_s& bit_string) {
+    return quality_indicator(bit_string);
 }
 
 static SPARTN_CONSTEXPR double REFERENCE_POINT_LATITUDE_DEG        = 90.0;

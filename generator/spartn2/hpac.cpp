@@ -25,6 +25,31 @@
 namespace generator {
 namespace spartn {
 
+void CorrectionPointSet::calculate_grid_points() {
+    internal_grid_points.clear();
+
+    long relative_id = 0;
+    for (long x = 0; x < numberOfStepsLatitude_r16 + 1; x++) {
+        for (long y = 0; y < numberOfStepsLongitude_r16 + 1; y++) {
+            auto      i = x * (numberOfStepsLongitude_r16 + 1) + y;
+            GridPoint grid_point{};
+            grid_point.id        = relative_id;
+            grid_point.latitude  = reference_point_latitude - latitude_delta * x;
+            grid_point.longitude = reference_point_longitude + longitude_delta * y;
+            if (has_grid_point(i)) {
+                relative_id++;
+            } else {
+                grid_point.id = -1;
+            }
+            internal_grid_points.push_back(grid_point);
+        }
+    }
+}
+
+std::vector<GridPoint> const& CorrectionPointSet::grid_points() const {
+    return internal_grid_points;
+}
+
 uint32_t HpacSatellite::prn() const {
     // NOTE(ewasjon): 3GPP LPP defines PRN starting at 0 instead of 1.
     return static_cast<uint32_t>(id + 1);
@@ -38,6 +63,16 @@ void HpacSatellite::add_correction(STEC_SatElement_r16* new_stec) {
 void HpacSatellite::add_correction(long grid_id, STEC_ResidualSatElement_r16* residual) {
     if (!residual) return;
     residuals[grid_id] = residual;
+}
+
+bool HpacSatellite::has_all_residuals(CorrectionPointSet const& cps) const {
+    for (auto gp : cps.grid_points()) {
+        if (residuals.find(gp.id) == residuals.end()) {
+            return false;
+        }
+    }
+
+    return true;
 }
 
 std::vector<HpacSatellite> HpacCorrections::satellites() const {
@@ -94,6 +129,13 @@ std::vector<HpacSatellite> HpacCorrections::satellites() const {
     });
 
     return result;
+}
+
+GridElement_r16* HpacCorrections::find_grid_point(long grid_id) const {
+    if (!gridded) return nullptr;
+    auto& list = gridded->gridList_r16.list;
+    if (grid_id < 0 || grid_id >= list.count) return nullptr;
+    return list.array[grid_id];
 }
 
 void HpacData::set_ids(std::vector<uint16_t>& ids) const {
@@ -200,9 +242,153 @@ static bool within_range(double min, double max, double value) {
     return true;
 }
 
-static uint8_t compute_troposphere_block_type(GNSS_SSR_GriddedCorrection_r16 const* ptr) {
+struct StecParameters {
+    int    equation_type;
+    double c00;
+    double c01;
+    double c10;
+    double c11;
+
+    double reference_x;
+    double reference_y;
+
+    static double compute_residual(double x, double y, double c00, double c01, double c10,
+                                   double c11, double rx, double ry) {
+        return c00 + c01 * (x - rx) + c10 * (y - ry) + c11 * (x - rx) * (y - ry);
+    }
+
+    inline double evaluate_at_point(double x, double y) {
+        return compute_residual(x, y, c00, c01, c10, c11, reference_x, reference_y);
+    }
+};
+
+static bool compute_coefficient_size_indicator(StecParameters& parameters) {
+    auto small_coefficient_size = true;
+
+    // NOTE(ewasjon): There is no resolution difference between the small and large coefficent
+    // blocks. Thus, we only need to check that we're inside the given intervals.
+    if (parameters.equation_type >= 0) {
+        if (!within_range(-81.88, 81.88, parameters.c00)) small_coefficient_size = false;
+    }
+
+    if (parameters.equation_type >= 1) {
+        if (!within_range(-16.376, 16.376, parameters.c01)) small_coefficient_size = false;
+        if (!within_range(-16.376, 16.376, parameters.c10)) small_coefficient_size = false;
+    }
+
+    if (parameters.equation_type >= 2) {
+        if (!within_range(-8.190, 8.190, parameters.c11)) small_coefficient_size = false;
+    }
+
+    return !small_coefficient_size;
+}
+
+// LPP uses the first (north-west) grid point as the reference point for the ionosphereic delay
+// polynomial. However, SPARTN uses the mid-point of the grid as the reference point. This means
+// that all terms (except C00) will be incorrect.
+static StecParameters compute_stec_parameters(CorrectionPointSet const&  correction_point_set,
+                                              STEC_SatElement_r16 const& satellite,
+                                              int equation_type, bool stec_transform,
+                                              bool sign_flip_c00, bool sign_flip_c01,
+                                              bool sign_flip_c10, bool sign_flip_c11) {
+    auto c00 = decode::stec_C00_r16(satellite.stec_C00_r16);
+    auto c01 = decode::stec_C01_r16(satellite.stec_C01_r16);
+    auto c10 = decode::stec_C10_r16(satellite.stec_C10_r16);
+    auto c11 = decode::stec_C11_r16(satellite.stec_C11_r16);
+
+    if (sign_flip_c00) c00 = -c00;
+    if (sign_flip_c01) c01 = -c01;
+    if (sign_flip_c10) c10 = -c10;
+    if (sign_flip_c11) c11 = -c11;
+
+    auto c00_prime = c00;
+    auto c01_prime = c01;
+    auto c10_prime = c10;
+    auto c11_prime = c11;
+
+    auto x0 = correction_point_set.reference_point_latitude;
+    auto y0 = correction_point_set.reference_point_longitude;
+    auto dx = correction_point_set.latitude_grid_spacing();
+    auto dy = correction_point_set.longitude_grid_spacing();
+    auto hx = dx / 2;
+    auto hy = dy / 2;
+    auto mx = x0 - hx;
+    auto my = y0 + hy;
+
+    auto rx_prime = x0;
+    auto ry_prime = y0;
+
+    if (stec_transform) {
+        // r = C00 + C01 * (x - x0) +
+        //           C10 * (y - y0) +
+        //           C11 * (x - x0) * (y - y0)
+        // r = C00 + C01 * (x - mx - hx) +
+        //           C10 * (y - my + hy) +
+        //           C11 * (x - mx - hx) * (y - my + hy)
+        // r = C00 + C01 * (-hx) +
+        //           C01 * (x - mx) +
+        //           C10 * (hy) +
+        //           C10 * (y - my) +
+        //           C11 * (x - mx) * (y - my + hy) +
+        //           C11 * (-hx)  * (y - my + hy)
+        // r = C00 + C01 * (-hx) + C10 * (hy) +
+        //           C01 * (x - mx) +
+        //           C10 * (y - my) +
+        //           C11 * (x - mx) * (y - my) +
+        //           C11 * (x - mx) * hy +
+        //           C11 * (-hx) * (y - my) +
+        //           C11 * (-hx) * (hy)
+        // C00' = C00 + C01 * (-hx) + C10 * (hy) + C11 * (-hx) * (hy)
+        // C01' = C01 + C11 * hy
+        // C10' = C10 + C11 * hx
+        // C11' = C11
+
+        c00_prime = c00 - c01 * hx + c10 * hy - c11 * hx * hy;
+        c01_prime = c01 + c11 * hy;
+        c10_prime = c10 - c11 * hx;
+        c11_prime = c11;
+
+        rx_prime = mx;
+        ry_prime = my;
+#if SPARTN_DEBUG_PRINT
+        printf("stec polynomial (%d):\n", equation_type);
+        printf("  C00: %+.6f -> %+.6f\n", c00, c00_prime);
+        if (equation_type >= 1) {
+            printf("  C01: %+.6f -> %+.6f\n", c01, c01_prime);
+            printf("  C10: %+.6f -> %+.6f\n", c10, c10_prime);
+        }
+        if (equation_type >= 2) {
+            printf("  C11: %+.6f -> %+.6f\n", c11, c11_prime);
+        }
+#endif
+        if (equation_type == 1 || equation_type == 2) {
+#if SPARTN_DEBUG_PRINT
+            for (auto gp : correction_point_set.grid_points()) {
+                auto latitude  = gp.latitude;
+                auto longitude = gp.longitude;
+                auto lpp_r    = StecParameters::compute_residual(latitude, longitude, c00, c01, c10,
+                                                                 c11, x0, y0);
+                auto spartn_r = StecParameters::compute_residual(
+                    latitude, longitude, c00_prime, c01_prime, c10_prime, c11_prime, mx, my);
+                auto incorrect_r = StecParameters::compute_residual(latitude, longitude, c00, c01,
+                                                                    c10, c11, mx, my);
+                printf("    stec[%2ld] = lpp: %+9.6f, spartn: %+9.6f (%+9.6f), incorrect: %+9.6f "
+                       "(%+9.6f)  (%.4f, %.4f)\n",
+                       gp.id, lpp_r, spartn_r, lpp_r - spartn_r, incorrect_r, incorrect_r - lpp_r,
+                       latitude, longitude);
+            }
+#endif
+        }
+    }
+
+    return StecParameters{equation_type, c00_prime, c01_prime, c10_prime,
+                          c11_prime,     rx_prime,  ry_prime};
+}
+
+static uint8_t compute_troposphere_block_type(CorrectionPointSet const& correction_point_set,
+                                              HpacCorrections const&    corrections) {
     // If we're missing the troposphere correction, return 0=none
-    if (!ptr) return 0;
+    if (!corrections.gridded) return 0;
 
     // NOTE(ewasjon): SPARTN supports three types of troposphere corrections:
     // 0 = none
@@ -210,23 +396,25 @@ static uint8_t compute_troposphere_block_type(GNSS_SSR_GriddedCorrection_r16 con
     // 2 = polynomial + grid
     //
     // Because 3GPP LPP doesn't have a polynomial, only values for each grid point, we can only
-    // support type 0 and 2. Another problem is 3GPP LPP has greater controller over the grid
-    // point values. Where some values can be missing, this doesn't work with SPARTN.
+    // support type 0 and 2.
 
-    // TODO(ewasjon): [low-priority] Are we losing potential corrections by filtering them out due
-    // to missing troposphere correction for a grid point? This should be investigated.
-    auto& list = ptr->gridList_r16.list;
-    for (int i = 0; i < list.count; i++) {
-        auto element = list.array[i];
-        if (!element) continue;
-        if (element->tropospericDelayCorrection_r16) continue;
-
-        // Missing troposphere correction for grid point,
-        // as we can't handle this, return 0=none
-        return 0;
+    // The tropospheric parameters can be shared between GNSS systems, which can mean that there
+    // are cases where the tropospheric parameters are not available. Thus, only include it if we
+    // at least have one grid point with tropospheric parameters.
+    auto tropospheric_count = 0;
+    auto grid_points        = correction_point_set.grid_points();
+    for (auto gp : grid_points) {
+        auto element = corrections.find_grid_point(gp.id);
+        if (element && element->tropospericDelayCorrection_r16) {
+            tropospheric_count++;
+        }
     }
 
-    return 2;
+    if (tropospheric_count == 0) {
+        return 0;
+    } else {
+        return 2;
+    }
 }
 
 static uint8_t compute_ionosphere_block_type(GNSS_SSR_STEC_Correction_r16 const*   stec,
@@ -244,29 +432,129 @@ static uint8_t compute_ionosphere_block_type(GNSS_SSR_STEC_Correction_r16 const*
     return 1;
 }
 
-static double compute_average_zentith_delay(GNSS_SSR_GriddedCorrection_r16 const& data) {
+static double compute_average_zentith_delay(CorrectionPointSet& correction_point_set,
+                                            HpacCorrections&    corrections) {
     double total_zenith_delay = 0.0;
     double count              = 0.0;
 
-    auto& list = data.gridList_r16.list;
-    for (int i = 0; i < list.count; i++) {
-        auto element = list.array[i];
-        if (!element) continue;
-        if (!element->tropospericDelayCorrection_r16) continue;
-
-        auto& grid_point = *element->tropospericDelayCorrection_r16;
-        auto  residual   = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
-        total_zenith_delay += residual;
-        count++;
+    // TODO(ewasjon): This can be done better by calculate the error based on rounding up or down.
+    auto grid_points = correction_point_set.grid_points();
+    for (auto gp : grid_points) {
+        auto element = corrections.find_grid_point(gp.id);
+        if (element && element->tropospericDelayCorrection_r16) {
+            auto& grid_point = *element->tropospericDelayCorrection_r16;
+            auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
+            total_zenith_delay += residual;
+            count++;
+        }
     }
 
-    return total_zenith_delay / count;
+    if (count > 0.0) {
+        auto average_zentith_delay = total_zenith_delay / count;
+        return average_zentith_delay;
+    } else {
+        return 0.0;
+    }
 }
 
-static void troposphere_data_block(MessageBuilder&                       builder,
-                                   GNSS_SSR_GriddedCorrection_r16 const& data, int sf042_override,
+static double compute_average_hydrostatic_delay(CorrectionPointSet& correction_point_set,
+                                                HpacCorrections&    corrections) {
+    double total_hydrostatic_delay = 0.0;
+    double count                   = 0.0;
+
+    // TODO(ewasjon): This can be done better by calculate the error based on rounding up or down.
+    auto grid_points = correction_point_set.grid_points();
+    for (auto gp : grid_points) {
+        auto element = corrections.find_grid_point(gp.id);
+        if (element && element->tropospericDelayCorrection_r16) {
+            auto& grid_point        = *element->tropospericDelayCorrection_r16;
+            auto  hydrostatic_delay = decode::tropoHydroStaticVerticalDelay_r16(
+                grid_point.tropoHydroStaticVerticalDelay_r16);
+            total_hydrostatic_delay += hydrostatic_delay;
+            count++;
+        }
+    }
+
+    if (count > 0.0) {
+        auto average_hydrostatic_delay = total_hydrostatic_delay / count;
+        return average_hydrostatic_delay;
+    } else {
+        return 0.0;
+    }
+}
+
+struct TroposphereResidual {
+    double residual;
+    bool   invalid;
+};
+
+static std::vector<TroposphereResidual>
+compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
+                              HpacCorrections& corrections, double average_zenith_delay,
+                              double hydrostatic_delay_avg,
+                              bool   add_hydrostatic_residual_to_wet_residual) {
+    std::vector<TroposphereResidual> result;
+
+#ifdef SPARTN_DEBUG_PRINT
+    printf("  troposphere residuals:\n");
+#endif
+
+    auto grid_points = correction_point_set.grid_points();
+    for (auto gp : grid_points) {
+        auto element = corrections.find_grid_point(gp.id);
+        if (element && element->tropospericDelayCorrection_r16) {
+            auto& grid_point = *element->tropospericDelayCorrection_r16;
+
+            auto hydrostatic_delay = decode::tropoHydroStaticVerticalDelay_r16(
+                grid_point.tropoHydroStaticVerticalDelay_r16);
+            auto hydrostatic_residual = hydrostatic_delay - hydrostatic_delay_avg;
+            auto wet_delay =
+                decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
+            auto wet_residual = wet_delay - average_zenith_delay;
+
+            double total_residual = 0;
+            if (add_hydrostatic_residual_to_wet_residual) {
+                total_residual = hydrostatic_residual + wet_residual;
+            } else {
+                total_residual = wet_residual;
+            }
+
+#ifdef SPARTN_DEBUG_PRINT
+            printf("    grid[%2ld] = %+.6f\n", gp.id, total_residual);
+#endif
+            result.push_back({total_residual, false});
+        } else {
+#ifdef SPARTN_DEBUG_PRINT
+            printf("    grid[%2ld] = invalid\n", gp.id);
+#endif
+            result.push_back({0.0, true});
+        }
+    }
+
+    return result;
+}
+
+static int
+compute_troposphere_residual_field_size(std::vector<TroposphereResidual> const& residuals) {
+    int residual_field_size = 0;
+    for (auto tr : residuals) {
+        if (tr.invalid) continue;
+        if (within_range(-0.124, 0.124, tr.residual))
+            residual_field_size = std::max<uint8_t>(residual_field_size, 0U);
+        else
+            residual_field_size = std::max<uint8_t>(residual_field_size, 1U);
+    }
+    return residual_field_size;
+}
+
+static void troposphere_data_block(MessageBuilder&     builder,
+                                   CorrectionPointSet& correction_point_set,
+                                   HpacCorrections& corrections, int sf042_override,
                                    int sf042_default, bool use_average_zenith_delay,
-                                   bool calculate_sf051) {
+                                   bool calculate_sf051,
+                                   bool add_hydrostatic_residual_to_wet_residual) {
+    auto& data = *corrections.gridded;
+
     // NOTE(ewasjon): Use a polynomial of degree 0, as we don't have a polynomial in 3GPP
     // LPP. This will result in a constant value for the troposphere correction.
     builder.sf041(0 /* T_00 */);
@@ -278,44 +566,36 @@ static void troposphere_data_block(MessageBuilder&                       builder
 #endif
         builder.sf042_raw(value);
     } else if (data.troposphericDelayQualityIndicator_r16) {
-        // TODO(ewasjon): Refactor as function in decode namespace
-        auto& quality = *data.troposphericDelayQualityIndicator_r16;
-        auto  cls     = (quality.buf[0] >> 3) & 0x7;
-        auto  val     = quality.buf[0] & 0x7;
-        auto  q       = pow(3, cls) * (1 + static_cast<double>(val) / 4.0) - 1;
-        auto  q_meter = q / 1000.0;
+        auto quality = decode::troposphericDelayQualityIndicator_r16(
+            *data.troposphericDelayQualityIndicator_r16);
+        if (quality.invalid) {
+            uint8_t value = sf042_default < 0 ?
+                                0 :
+                                (sf042_default > 7 ? 7 : static_cast<uint8_t>(sf042_default));
+            builder.sf042_raw(value);
 #ifdef SPARTN_DEBUG_PRINT
-        printf("  sf042: %f\n", q_meter);
+            printf("  sf042: %d (%u) [default/invalid]\n", sf042_default, value);
 #endif
-        builder.sf042(q_meter);
+        } else {
+            auto value = builder.sf042(quality.value);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  sf042: %f (%u)\n", quality.value, value);
+#endif
+        }
     } else {
-#ifdef SPARTN_DEBUG_PRINT
-        printf("  sf042: %d [default]\n", sf042_default);
-#endif
         uint8_t value =
             sf042_default < 0 ? 0 : (sf042_default > 7 ? 7 : static_cast<uint8_t>(sf042_default));
-        builder.sf042_raw(sf042_default);
+        builder.sf042_raw(value);
+#ifdef SPARTN_DEBUG_PRINT
+        printf("  sf042: %d (%u) [default/missing]\n", sf042_default, value);
+#endif
     }
 
     // NOTE(ewasjon): SPARTN have an average hydrostatic delay for all grid points. 3GPP LPP only
     // have hydrostatic delay per grid point. Thus, we need to compute the average.
-    auto&  list                  = data.gridList_r16.list;
-    double hydrostatic_delay_sum = 0;
-    double grid_count            = 0;
-    for (int i = 0; i < list.count; i++) {
-        auto element = list.array[i];
-        if (!element) continue;
-        if (!element->tropospericDelayCorrection_r16) continue;
-
-        auto& grid_point = *element->tropospericDelayCorrection_r16;
-        auto  hydrostatic_delay =
-            decode::tropoHydroStaticVerticalDelay_r16(grid_point.tropoHydroStaticVerticalDelay_r16);
-        hydrostatic_delay_sum += hydrostatic_delay;
-        grid_count++;
-    }
-
-    auto hydrostatic_delay_avg = hydrostatic_delay_sum / grid_count;
-    builder.sf043(hydrostatic_delay_avg);
+    auto hydrostatic_delay_avg =
+        compute_average_hydrostatic_delay(correction_point_set, corrections);
+    hydrostatic_delay_avg = builder.sf043(hydrostatic_delay_avg);
 
 #ifdef SPARTN_DEBUG_PRINT
     printf("  hydrostatic_delay_avg: %f\n", hydrostatic_delay_avg);
@@ -328,7 +608,7 @@ static void troposphere_data_block(MessageBuilder&                       builder
 
     double average_zenith_delay = 0.0;
     if (use_average_zenith_delay) {
-        average_zenith_delay = compute_average_zentith_delay(data);
+        average_zenith_delay = compute_average_zentith_delay(correction_point_set, corrections);
     }
 
     if (within_range(-0.252, 0.252, average_zenith_delay)) {
@@ -347,22 +627,15 @@ static void troposphere_data_block(MessageBuilder&                       builder
     printf("  average_zenith_delay: %f\n", average_zenith_delay);
 #endif
 
+    // Compute the residuals
+    auto residuals = compute_troposphere_residuals(correction_point_set, corrections,
+                                                   average_zenith_delay, hydrostatic_delay_avg,
+                                                   add_hydrostatic_residual_to_wet_residual);
+
     // Compute the residual field size for all grid points
     auto residual_field_size = 0;
     if (calculate_sf051) {
-        for (int i = 0; i < list.count; i++) {
-            auto element = list.array[i];
-            if (!element) continue;
-            if (!element->tropospericDelayCorrection_r16) continue;
-
-            auto& grid_point = *element->tropospericDelayCorrection_r16;
-            auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
-            auto total_residual = residual - average_zenith_delay;
-            if (within_range(-0.124, 0.124, total_residual))
-                residual_field_size = std::max<uint8_t>(residual_field_size, 0U);
-            else
-                residual_field_size = std::max<uint8_t>(residual_field_size, 1U);
-        }
+        residual_field_size = compute_troposphere_residual_field_size(residuals);
     } else {
         // If we're not calculating the residual field size, always use the largest size
         residual_field_size = 1;
@@ -370,28 +643,17 @@ static void troposphere_data_block(MessageBuilder&                       builder
 
     builder.sf051(residual_field_size);
 
-    for (int i = 0; i < list.count; i++) {
-        auto element = list.array[i];
-        if (!element) continue;
-        if (!element->tropospericDelayCorrection_r16) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2d] = invalid\n", i);
-#endif
+    for (auto tr : residuals) {
+        if (tr.invalid) {
             if (residual_field_size == 0)
                 builder.sf052_invalid();
             else
                 builder.sf053_invalid();
         } else {
-            auto& grid_point = *element->tropospericDelayCorrection_r16;
-            auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
-            auto total_residual = residual - average_zenith_delay;
             if (residual_field_size == 0)
-                builder.sf052(total_residual);
+                builder.sf052(tr.residual);
             else
-                builder.sf053(total_residual);
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2d] = %f\n", i, total_residual);
-#endif
+                builder.sf053(tr.residual);
         }
     }
 }
@@ -420,95 +682,101 @@ static int compute_equation_type(std::vector<HpacSatellite>& satellites) {
     return final_equation_type;
 }
 
-static bool compute_coefficient_size_indicator(STEC_SatElement_r16 const& satellite,
-                                               int                        equation_type) {
-    auto small_coefficient_size = true;
-
-    // NOTE(ewasjon): There is no resolution difference between the small and large coefficent
-    // blocks. Thus, we only need to check that we're inside the given intervals.
-
-    if (equation_type >= 0) {
-        auto c_00 = decode::stec_C00_r16(satellite.stec_C00_r16);
-        if (!within_range(-81.88, 81.88, c_00)) small_coefficient_size = true;
-    }
-
-    if (equation_type >= 1) {
-        if (satellite.stec_C01_r16) {
-            auto c_01 = decode::stec_C01_r16(satellite.stec_C01_r16);
-            if (!within_range(-16.376, 16.376, c_01)) small_coefficient_size = true;
-        }
-
-        if (satellite.stec_C01_r16) {
-            auto c_10 = decode::stec_C10_r16(satellite.stec_C10_r16);
-            if (!within_range(-16.376, 16.376, c_10)) small_coefficient_size = true;
-        }
-    }
-
-    if (equation_type >= 2) {
-        if (satellite.stec_C11_r16) {
-            auto c_11 = decode::stec_C11_r16(satellite.stec_C11_r16);
-            if (!within_range(-8.190, 8.190, c_11)) small_coefficient_size = true;
-        }
-    }
-
-    return !small_coefficient_size;
-}
-
-static void ionosphere_data_block_1(MessageBuilder& builder, HpacSatellite const& satellite,
-                                    int equation_type, int sf055_override, int sf055_default) {
+static StecParameters
+ionosphere_data_block_1(MessageBuilder& builder, CorrectionPointSet& correction_point_set,
+                        HpacCorrections& corrections, HpacSatellite const& satellite,
+                        int equation_type, int sf055_override, int sf055_default,
+                        bool stec_transform, bool sign_flip_c00, bool sign_flip_c01,
+                        bool sign_flip_c10, bool sign_flip_c11) {
     auto element = satellite.stec;
 
     if (sf055_override >= 0) {
-        builder.sf055_raw(sf055_override);
+        uint8_t value = sf055_override > 15 ? 15 : static_cast<uint8_t>(sf055_override);
+        builder.sf055_raw(value);
 #ifdef SPARTN_DEBUG_PRINT
-        printf("  sf055: %d [override]\n", sf055_override);
+        printf("  sf055: %d (%u) [override]\n", sf055_override, value);
 #endif
     } else {
         auto q = decode::stecQualityIndicator_r16(element->stecQualityIndicator_r16);
         if (q.invalid) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("  sf055: %d [default]\n", sf055_default);
-#endif
             uint8_t value = sf055_default < 0 ?
                                 0 :
                                 (sf055_default > 15 ? 15 : static_cast<uint8_t>(sf055_default));
             builder.sf055_raw(value);
-        } else {
 #ifdef SPARTN_DEBUG_PRINT
-            printf("  sf055: %f\n", q.value);
+            printf("  sf055: %d (%u) [default/invalid]\n", sf055_default, value);
 #endif
-            builder.sf055(q.value);
+        } else {
+            auto value = builder.sf055(q.value);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("  sf055: %f (%u)\n", q.value, value);
+#endif
         }
     }
 
-    auto coefficient_size_indicator = compute_coefficient_size_indicator(*element, equation_type);
+    auto stec_parameters =
+        compute_stec_parameters(correction_point_set, *element, equation_type, stec_transform,
+                                sign_flip_c00, sign_flip_c01, sign_flip_c10, sign_flip_c11);
+
+    auto coefficient_size_indicator = compute_coefficient_size_indicator(stec_parameters);
     builder.sf056(coefficient_size_indicator);
 
-    auto c00 = decode::stec_C00_r16(element->stec_C00_r16);
-    auto c01 = decode::stec_C01_r16(element->stec_C01_r16);
-    auto c10 = decode::stec_C10_r16(element->stec_C10_r16);
-    auto c11 = decode::stec_C11_r16(element->stec_C11_r16);
-
     if (equation_type >= 0) {
-        builder.ionosphere_coefficient_c00(coefficient_size_indicator, c00);
+        builder.ionosphere_coefficient_c00(coefficient_size_indicator, stec_parameters.c00);
     }
 
     if (equation_type >= 1) {
-        builder.ionosphere_coefficient_c10_c01(coefficient_size_indicator, c01);
-        builder.ionosphere_coefficient_c10_c01(coefficient_size_indicator, c10);
+        builder.ionosphere_coefficient_c10_c01(coefficient_size_indicator, stec_parameters.c01);
+        builder.ionosphere_coefficient_c10_c01(coefficient_size_indicator, stec_parameters.c10);
     }
 
     if (equation_type >= 2) {
-        builder.ionosphere_coefficient_c11(coefficient_size_indicator, c11);
+        builder.ionosphere_coefficient_c11(coefficient_size_indicator, stec_parameters.c11);
     }
+
+    return stec_parameters;
 }
 
-static uint8_t compute_residual_field_size(HpacSatellite const& satellite) {
-    uint8_t residual_field_size = 0;
-    for (auto& kvp : satellite.residuals) {
-        auto& element  = *kvp.second;
-        auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
+struct StecResidual {
+    long   id;
+    double residual;
+    bool   invalid;
+};
 
+static std::vector<StecResidual> compute_stec_residuals(CorrectionPointSet& correction_point_set,
+                                                        HpacSatellite&      satellite,
+                                                        StecParameters&     stec_parameters,
+                                                        StecMethod          stec_method,
+                                                        bool sign_flip_stec_residuals) {
+    std::vector<StecResidual> result;
+
+    auto grid_points = correction_point_set.grid_points();
+    for (auto gp : grid_points) {
+        auto remaining_polynomial_residual = 0.0;
+        if (stec_method == StecMethod::MoveToResiduals) {
+            auto polynomial_residual = stec_parameters.evaluate_at_point(gp.latitude, gp.longitude);
+            auto constant_residual   = stec_parameters.c00;
+            remaining_polynomial_residual += (polynomial_residual - constant_residual);
+        }
+
+        auto it = satellite.residuals.find(gp.id);
+        if (it == satellite.residuals.end()) {
+            result.push_back({gp.id, remaining_polynomial_residual, true});
+        } else {
+            auto& element  = *it->second;
+            auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
+            if (sign_flip_stec_residuals) residual = -residual;
+            result.push_back({gp.id, residual + remaining_polynomial_residual, false});
+        }
+    }
+
+    return result;
+}
+
+static uint8_t compute_residual_field_size(std::vector<StecResidual> const& residuals) {
+    uint8_t residual_field_size = 0;
+    for (auto& r : residuals) {
+        auto residual = r.residual;
         if (within_range(-0.28, 0.28, residual))
             residual_field_size = std::max<uint8_t>(residual_field_size, 0U);
         else if (within_range(-2.52, 2.52, residual))
@@ -522,37 +790,47 @@ static uint8_t compute_residual_field_size(HpacSatellite const& satellite) {
     return residual_field_size;
 }
 
-static void ionosphere_data_block_2(MessageBuilder& builder, long grid_points,
-                                    HpacSatellite& satellite) {
-    auto residual_field_size = compute_residual_field_size(satellite);
+static void ionosphere_data_block_2(MessageBuilder&     builder,
+                                    CorrectionPointSet& correction_point_set,
+                                    HpacSatellite& satellite, StecMethod stec_method,
+                                    StecParameters stec_parameters, bool stec_invalid_to_zero,
+                                    bool sign_flip_stec_residuals) {
+    auto residuals = compute_stec_residuals(correction_point_set, satellite, stec_parameters,
+                                            stec_method, sign_flip_stec_residuals);
+    auto residual_field_size = compute_residual_field_size(residuals);
     builder.sf063(residual_field_size);
 
 #ifdef SPARTN_DEBUG_PRINT
     printf("  residual_field_size=%d\n", residual_field_size);
 #endif
 
-    for (long i = 0; i < grid_points; i++) {
-        auto it = satellite.residuals.find(i);
-        if (it == satellite.residuals.end()) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = invalid\n", i);
-#endif
+    for (auto r : residuals) {
+        // NOTE(ewasjon): If the residual is invalid and stec_invalid_to_zero is true, we want to
+        // set the residual to 0.0. But if stec_method == StecMethod::MoveToResiduals, we want to
+        // keep the polynomial residual, thus we use the r.residual value even if it's invalid.
+        if (r.invalid && !stec_invalid_to_zero) {
             builder.ionosphere_residual_invalid(residual_field_size);
-        } else {
-            auto& element  = *it->second;
-            auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
 #ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = %f\n", i, residual);
+            printf("    grid[%2ld] = invalid\n", r.id);
 #endif
-            builder.ionosphere_residual(residual_field_size, residual);
+        } else {
+            auto residual         = r.residual;
+            auto encoded_residual = builder.ionosphere_residual(residual_field_size, residual);
+#ifdef SPARTN_DEBUG_PRINT
+            printf("    grid[%2ld] = %+.4f (%+.4f)%s\n", r.id, encoded_residual,
+                   residual - encoded_residual, r.invalid ? " [invalid]" : "");
+#endif
         }
     }
 }
 
 static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& correction_point_set,
                                   HpacCorrections& corrections, long gnss_id, OcbCorrections* ocb,
-                                  int ionosphere_block_type, int sf055_override,
-                                  int sf055_default) {
+                                  int ionosphere_block_type, int sf055_override, int sf055_default,
+                                  StecMethod stec_method, bool stec_transform,
+                                  bool filter_by_residuals, bool stec_invalid_to_zero,
+                                  bool sign_flip_c00, bool sign_flip_c01, bool sign_flip_c10,
+                                  bool sign_flip_c11, bool sign_flip_stec_residuals) {
     auto satellites = corrections.satellites();
 
     {
@@ -570,6 +848,11 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
                 printf("  removed satellite=%u [ocb]\n", it->prn());
 #endif
                 it = satellites.erase(it);
+            } else if (filter_by_residuals && !it->has_all_residuals(correction_point_set)) {
+#ifdef SPARTN_DEBUG_PRINT
+                printf("  removed satellite=%u [residuals]\n", it->prn());
+#endif
+                it = satellites.erase(it);
             } else {
                 it++;
             }
@@ -577,20 +860,30 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
     }
 
     auto equation_type = compute_equation_type(satellites);
+    switch (stec_method) {
+    case StecMethod::Default: break;
+    case StecMethod::DiscardC01C10C11:
+    case StecMethod::MoveToResiduals: equation_type = 0; break;
+    }
+
     builder.sf054(equation_type);
     builder.satellite_mask(gnss_id, satellites);
 
     for (auto& satellite : satellites) {
-        if (!satellite.stec) continue;
-
 #ifdef SPARTN_DEBUG_PRINT
+        assert(satellite.stec);
         printf("  satellite=%u\n", satellite.prn());
 #endif
 
-        ionosphere_data_block_1(builder, satellite, equation_type, sf055_override, sf055_default);
+        auto stec_parameters =
+            ionosphere_data_block_1(builder, correction_point_set, corrections, satellite,
+                                    equation_type, sf055_override, sf055_default, stec_transform,
+                                    sign_flip_c00, sign_flip_c01, sign_flip_c10, sign_flip_c11);
 
         if (ionosphere_block_type == 2) {
-            ionosphere_data_block_2(builder, correction_point_set.grid_points, satellite);
+            ionosphere_data_block_2(builder, correction_point_set, satellite, stec_method,
+                                    stec_parameters, stec_invalid_to_zero,
+                                    sign_flip_stec_residuals);
         }
     }
 }
@@ -643,8 +936,9 @@ void Generator::generate_hpac(uint16_t iod) {
         printf("  area_id=%u\n", correction_point_set.area_id);
 #endif
 
-        auto subtype                = subtype_from_gnss_id(gnss_id);
-        auto troposphere_block_type = compute_troposphere_block_type(corrections.gridded);
+        auto subtype = subtype_from_gnss_id(gnss_id);
+        auto troposphere_block_type =
+            compute_troposphere_block_type(correction_point_set, corrections);
         auto ionosphere_block_type =
             compute_ionosphere_block_type(corrections.stec, corrections.gridded);
 
@@ -655,8 +949,8 @@ void Generator::generate_hpac(uint16_t iod) {
 
         MessageBuilder builder{1 /* HPAC */, subtype, epoch_time};
         builder.sf005(siou);
-        builder.sf068(0);  // TODO(ewasjon): [low-priority] We could include AIOU in the correction
-                           // point set, to handle overflow
+        builder.sf068(0);  // TODO(ewasjon): [low-priority] We could include AIOU in the
+                           // correction point set, to handle overflow
         builder.sf069();
         builder.sf030(1);
 
@@ -665,7 +959,7 @@ void Generator::generate_hpac(uint16_t iod) {
             // Area data block
             {
                 builder.sf031(static_cast<uint8_t>(correction_point_set.area_id));
-                builder.sf039(static_cast<uint8_t>(correction_point_set.grid_points));
+                builder.sf039(static_cast<uint8_t>(correction_point_set.grid_point_count));
                 builder.sf040(troposphere_block_type);
                 builder.sf040(ionosphere_block_type);
             }
@@ -674,15 +968,18 @@ void Generator::generate_hpac(uint16_t iod) {
             if (troposphere_block_type != 0) {
                 // TODO(ewasjon): [low-priority] Expose this as a option
                 auto calculate_sf051 = mComputeAverageZenithDelay;
-                troposphere_data_block(builder, *corrections.gridded, mSf042Override, mSf042Default,
-                                       mComputeAverageZenithDelay, calculate_sf051);
+                troposphere_data_block(builder, correction_point_set, corrections, mSf042Override,
+                                       mSf042Default, mComputeAverageZenithDelay, calculate_sf051,
+                                       mHydrostaticResidualInZenith);
             }
 
             // Ionosphere data block
             if (ionosphere_block_type != 0) {
                 ionosphere_data_block(builder, correction_point_set, corrections, gnss_id,
                                       ocb_corrections, ionosphere_block_type, mSf055Override,
-                                      mSf055Default);
+                                      mSf055Default, mStecMethod, mStecTranform, mFilterByResiduals,
+                                      mStecInvalidToZero, mSignFlipC00, mSignFlipC01, mSignFlipC10,
+                                      mSignFlipC11, mSignFlipStecResiduals);
             }
         }
 

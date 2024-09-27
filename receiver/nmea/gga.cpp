@@ -15,10 +15,22 @@ static bool parse_utc(std::string const& utc, TAI_Time& time_of_day) {
         auto hours        = std::stoi(tokens[0].substr(0, 2));
         auto minutes      = std::stoi(tokens[0].substr(2, 2));
         auto seconds      = std::stoi(tokens[0].substr(4, 2));
-        auto milliseconds = std::stoi(tokens[1]);
+        auto milliseconds = static_cast<double>(std::stoi(tokens[1]));
+
+        if(tokens[1].size() == 1) {
+            milliseconds *= 0.1;
+        } else if(tokens[1].size() == 2) {
+            milliseconds *= 0.01;
+        } else if(tokens[1].size() == 3) {
+            milliseconds *= 0.001;
+        } else if(tokens[1].size() == 4) {
+            milliseconds *= 0.0001;
+        } else {
+            return false;
+        }
 
         auto tod =
-            hours * HOUR_IN_SECONDS + minutes * MINUTE_IN_SECONDS + seconds + milliseconds * 1e-3;
+            hours * HOUR_IN_SECONDS + minutes * MINUTE_IN_SECONDS + seconds + milliseconds;
         auto utc_now  = UTC_Time::now();
         auto utc_then = UTC_Time{utc_now.days(), tod};
         time_of_day   = TAI_Time{utc_then};

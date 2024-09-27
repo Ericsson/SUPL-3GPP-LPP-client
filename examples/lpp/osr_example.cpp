@@ -25,6 +25,7 @@ static generator::rtcm::MessageFilter gFilter;
 static Options                        gOptions;
 static bool                           gPrintRtcm;
 static ControlParser                  gControlParser;
+static bool gReadOnly;
 
 static std::unique_ptr<UReceiver> gUbloxReceiver;
 static std::unique_ptr<NReceiver> gNmeaReceiver;
@@ -32,11 +33,13 @@ static std::unique_ptr<NReceiver> gNmeaReceiver;
 static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
 [[noreturn]] void execute(Options options, osr_example::Format format, int lrf_rtcm_id,
-                          osr_example::MsmType msm_type, bool print_rtcm) {
+                          osr_example::MsmType msm_type, bool print_rtcm, bool gps, bool glonass,
+                          bool galileo, bool beidou) {
     gOptions   = std::move(options);
     gFormat    = format;
     gLrfRtcmId = lrf_rtcm_id;
     gPrintRtcm = print_rtcm;
+    gReadOnly =false;
 
     auto& cell_options                 = gOptions.cell_options;
     auto& location_server_options      = gOptions.location_server_options;
@@ -47,7 +50,8 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     auto& location_information_options = gOptions.location_information_options;
     auto& control_options              = gOptions.control_options;
 
-    gConvertConfidence95To39      = location_information_options.convert_confidence_95_to_39;
+    gConvertConfidence95To68      = location_information_options.convert_confidence_95_to_68;
+    gOutputEllipse68              = location_information_options.output_ellipse_68;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
     gCell.mcc   = cell_options.mcc;
@@ -74,10 +78,10 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 #ifdef INCLUDE_GENERATOR_RTCM
     // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
     gFilter                 = generator::rtcm::MessageFilter{};
-    gFilter.systems.gps     = true;
-    gFilter.systems.glonass = true;
-    gFilter.systems.galileo = true;
-    gFilter.systems.beidou  = true;
+    gFilter.systems.gps     = gps;
+    gFilter.systems.glonass = glonass;
+    gFilter.systems.galileo = galileo;
+    gFilter.systems.beidou  = beidou;
 
     printf("  gnss support:      ");
     if (gFilter.systems.gps) printf(" GPS");
@@ -122,9 +126,19 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("[ublox]\n");
         ublox_options.interface->open();
         ublox_options.interface->print_info();
+        gReadOnly = ublox_options.readonly;
+
+        if (!ublox_options.export_interfaces.empty()) {
+            printf("[ublox-export]\n");
+            for (auto& interface : ublox_options.export_interfaces) {
+                interface->open();
+                interface->print_info();
+            }
+        }
 
         gUbloxReceiver = std::unique_ptr<UReceiver>(new UReceiver(
-            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages));
+            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages,
+            std::move(ublox_options.export_interfaces)));
         gUbloxReceiver->start();
     }
 
@@ -132,6 +146,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         printf("[nmea]\n");
         nmea_options.interface->open();
         nmea_options.interface->print_info();
+        gReadOnly = ublox_options.readonly;
 
         if (!nmea_options.export_interfaces.empty()) {
             printf("[nmea-export]\n");
@@ -287,7 +302,8 @@ static void transmit(void const* buffer, size_t size) {
 
 static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message,
                                      void*) {
-    if (gFormat == osr_example::Format::XER) {
+    if (gFormat == osr_example::Format::NONE) {
+    } else if (gFormat == osr_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
             &asn_DEF_LPP_Message, message, XER_F_BASIC,
@@ -334,7 +350,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                 transmit(buffer, size);
             }
 
-            if (gUbloxReceiver) {
+            if (gUbloxReceiver && !gReadOnly) {
                 auto interface = gUbloxReceiver->interface();
                 if (interface) {
                     for (auto& submessage : submessages) {
@@ -342,8 +358,12 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                         auto size   = submessage.data().size();
                         interface->write(buffer, size);
                     }
+                } else {
+                    printf("*** ERROR: No u-blox interface\n");
                 }
-            } else if (gNmeaReceiver) {
+            }
+            
+            if (gNmeaReceiver && !gReadOnly) {
                 auto interface = gNmeaReceiver->interface();
                 if (interface) {
                     for (auto& submessage : submessages) {
@@ -351,6 +371,8 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                         auto size   = submessage.data().size();
                         interface->write(buffer, size);
                     }
+                } else {
+                    printf("*** ERROR: No NMEA interface\n");
                 }
             }
 
@@ -378,7 +400,7 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
             transmit(buffer, size);
         }
 
-        if (gUbloxReceiver) {
+        if (gUbloxReceiver && !gReadOnly) {
             auto interface = gUbloxReceiver->interface();
             if (interface) {
                 for (auto& submessage : messages) {
@@ -386,8 +408,12 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                     auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
+            } else {
+                printf("*** ERROR: No u-blox interface\n");
             }
-        } else if (gNmeaReceiver) {
+        }
+        
+        if (gNmeaReceiver && !gReadOnly) {
             auto interface = gNmeaReceiver->interface();
             if (interface) {
                 for (auto& submessage : messages) {
@@ -395,6 +421,8 @@ static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_M
                     auto size   = submessage.data().size();
                     interface->write(buffer, size);
                 }
+            } else {
+                printf("*** ERROR: No NMEA interface\n");
             }
         }
     }
@@ -412,6 +440,10 @@ void OsrCommand::parse(args::Subparser& parser) {
     delete mLRFMessageIdArg;
     delete mMsmTypeArg;
     delete mPrintRTCMArg;
+    delete mNoGPS;
+    delete mNoGLONASS;
+    delete mNoGalileo;
+    delete mNoBeiDou;
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format", {'f', "format"},
                                                   args::Options::Single);
@@ -427,6 +459,7 @@ void OsrCommand::parse(args::Subparser& parser) {
         "rtcm",
         "lrf-uper",
 #endif
+        "none",
     });
 
     mLRFMessageIdArg =
@@ -442,6 +475,14 @@ void OsrCommand::parse(args::Subparser& parser) {
     // the default value is true, thus this is a negated flag
     mPrintRTCMArg = new args::Flag(parser, "print_rtcm", "Do not print RTCM messages info",
                                    {"rtcm-print"}, args::Options::Single);
+
+    mNoGPS     = new args::Flag(parser, "no-gps", "Skip generating GPS RTCM messages", {"no-gps"});
+    mNoGLONASS = new args::Flag(parser, "no-glonass", "Skip generating GLONASS RTCM messages",
+                                {"no-glonass"});
+    mNoGalileo = new args::Flag(parser, "no-galileo", "Skip generating Galileo RTCM messages",
+                                {"no-galileo"});
+    mNoBeiDou =
+        new args::Flag(parser, "no-beidou", "Skip generating BeiDou RTCM messages", {"no-beidou"});
 }
 
 void OsrCommand::execute(Options options) {
@@ -456,6 +497,8 @@ void OsrCommand::execute(Options options) {
             format = Format::XER;
         } else if (mFormatArg->Get() == "asn1-uper") {
             format = Format::ASN1_UPER;
+        } else if (mFormatArg->Get() == "none") {
+            format = Format::NONE;
         }
 #ifdef INCLUDE_GENERATOR_RTCM
         else if (mFormatArg->Get() == "rtcm") {
@@ -496,7 +539,25 @@ void OsrCommand::execute(Options options) {
         print_rtcm = false;
     }
 
-    ::execute(std::move(options), format, lrf_rtcm_id, msm_type, print_rtcm);
+    auto gps     = true;
+    auto glonass = true;
+    auto galileo = true;
+    auto beidou  = true;
+    if (*mNoGPS) {
+        gps = false;
+    }
+    if (*mNoGLONASS) {
+        glonass = false;
+    }
+    if (*mNoGalileo) {
+        galileo = false;
+    }
+    if (*mNoBeiDou) {
+        beidou = false;
+    }
+
+    ::execute(std::move(options), format, lrf_rtcm_id, msm_type, print_rtcm, gps, glonass, galileo,
+              beidou);
 }
 
 }  // namespace osr_example

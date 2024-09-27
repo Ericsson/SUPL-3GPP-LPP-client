@@ -20,7 +20,7 @@ public:
     UBLOX_CONSTEXPR static uint8_t CLASS_ID   = 0x05;
     UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x00;
 
-    UBLOX_EXPLICIT UbxAckNak(raw::AckNak payload) UBLOX_NOEXCEPT;
+    UBLOX_EXPLICIT UbxAckNak(raw::AckNak payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT;
     ~UbxAckNak() override = default;
 
     UbxAckNak(UbxAckNak const& other) : Message(other), mPayload(other.mPayload) {}
@@ -35,7 +35,8 @@ public:
 
     void print() const UBLOX_NOEXCEPT override;
 
-    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static std::unique_ptr<Message>
+    parse(Decoder& decoder, std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT;
 
 private:
     raw::AckNak mPayload;

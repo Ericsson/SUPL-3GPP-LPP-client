@@ -68,7 +68,7 @@ public:
     UBLOX_CONSTEXPR static uint8_t CLASS_ID   = 0x01;
     UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x07;
 
-    UBLOX_EXPLICIT UbxNavPvt(raw::NavPvt payload) UBLOX_NOEXCEPT;
+    UBLOX_EXPLICIT UbxNavPvt(raw::NavPvt payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT;
     ~UbxNavPvt() override = default;
 
     UbxNavPvt(UbxNavPvt const& other) : Message(other), mPayload(other.mPayload) {}
@@ -121,7 +121,8 @@ public:
 
     void print() const UBLOX_NOEXCEPT override;
 
-    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static std::unique_ptr<Message>
+    parse(Decoder& decoder, std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT;
 
 private:
     raw::NavPvt mPayload;

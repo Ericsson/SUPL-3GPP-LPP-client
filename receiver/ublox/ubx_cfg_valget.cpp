@@ -8,8 +8,9 @@
 namespace receiver {
 namespace ublox {
 
-UbxCfgValget::UbxCfgValget(raw::CfgValget payload) UBLOX_NOEXCEPT : Message(CLASS_ID, MESSAGE_ID),
-                                                                    mPayload(std::move(payload)) {}
+UbxCfgValget::UbxCfgValget(raw::CfgValget payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT
+    : Message(CLASS_ID, MESSAGE_ID, std::move(data)),
+      mPayload(std::move(payload)) {}
 
 void UbxCfgValget::print() const UBLOX_NOEXCEPT {
     printf("[%02X %02X] UBX-CFG-VALGET:\n", message_class(), message_id());
@@ -61,7 +62,8 @@ CfgValue UbxCfgValget::get(CfgKey key) const UBLOX_NOEXCEPT {
     }
 }
 
-std::unique_ptr<Message> UbxCfgValget::parse(Decoder& decoder) UBLOX_NOEXCEPT {
+std::unique_ptr<Message> UbxCfgValget::parse(Decoder&               decoder,
+                                             std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT {
     if (decoder.remaining() < 4) {
         return nullptr;
     }
@@ -81,7 +83,7 @@ std::unique_ptr<Message> UbxCfgValget::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     if (decoder.error()) {
         return nullptr;
     } else {
-        return std::unique_ptr<Message>{new UbxCfgValget(std::move(payload))};
+        return std::unique_ptr<Message>{new UbxCfgValget(std::move(payload), std::move(raw_data))};
     }
 }
 

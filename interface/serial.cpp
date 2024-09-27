@@ -82,13 +82,14 @@ static uint32_t buad_rate_from_constant(speed_t constant) {
 namespace interface {
 
 SerialInterface::SerialInterface(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                                 StopBits stop_bits, ParityBit parity_bit) IF_NOEXCEPT
-    : mDevicePath(std::move(device_path)),
-      mBaudRate(baud_rate),
-      mDataBits(data_bits),
-      mStopBits(stop_bits),
-      mParityBit(parity_bit),
-      mFileDescriptor(-1) {
+                                 StopBits stop_bits, ParityBit parity_bit,
+                                 bool read_only) IF_NOEXCEPT : mDevicePath(std::move(device_path)),
+                                                               mBaudRate(baud_rate),
+                                                               mDataBits(data_bits),
+                                                               mStopBits(stop_bits),
+                                                               mParityBit(parity_bit),
+                                                               mReadOnly(read_only),
+                                                               mFileDescriptor(-1) {
     mBaudRateConstant = buad_rate_constant_from(baud_rate);
 }
 
@@ -99,7 +100,14 @@ void SerialInterface::open() {
         return;
     }
 
-    auto fd = ::open(mDevicePath.c_str(), O_RDWR | O_NOCTTY | O_SYNC);
+    auto flags = O_NOCTTY | O_SYNC;
+    if (mReadOnly) {
+        flags |= O_RDONLY;
+    } else {
+        flags |= O_RDWR;
+    }
+
+    auto fd = ::open(mDevicePath.c_str(), flags);
     if (fd < 0) {
         throw std::runtime_error("Could not open serial device");
     }
@@ -187,6 +195,9 @@ size_t SerialInterface::read(void* data, size_t size) {
 }
 
 size_t SerialInterface::write(void const* data, size_t size) {
+    if (mReadOnly) {
+        return 0;
+    }
     return mFileDescriptor.write(data, size);
 }
 
@@ -195,6 +206,9 @@ bool SerialInterface::can_read() IF_NOEXCEPT {
 }
 
 bool SerialInterface::can_write() IF_NOEXCEPT {
+    if (mReadOnly) {
+        return false;
+    }
     return mFileDescriptor.can_write();
 }
 
@@ -203,6 +217,9 @@ void SerialInterface::wait_for_read() IF_NOEXCEPT {
 }
 
 void SerialInterface::wait_for_write() IF_NOEXCEPT {
+    if (mReadOnly) {
+        return;
+    }
     mFileDescriptor.wait_for_write();
 }
 
@@ -214,6 +231,16 @@ void SerialInterface::print_info() IF_NOEXCEPT {
     printf("[interface]\n");
     printf("  type:       serial\n");
     printf("  device:     %s\n", mDevicePath.c_str());
+    if (is_open()) {
+        printf("  fd:         %d\n", mFileDescriptor.fd());
+    } else {
+        printf("  fd:         closed\n");
+    }
+    if (!mReadOnly) {
+        printf("  read/write: read/write\n");
+    } else {
+        printf("  read/write: read\n");
+    }
     printf("  [configured]\n");
     printf("    baud rate:  %d (0x%X,B%o)\n", mBaudRate, mBaudRate, mBaudRateConstant);
 
@@ -279,8 +306,9 @@ void SerialInterface::print_info() IF_NOEXCEPT {
 //
 
 Interface* Interface::serial(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                             StopBits stop_bits, ParityBit parity_bit) {
-    return new SerialInterface(std::move(device_path), baud_rate, data_bits, stop_bits, parity_bit);
+                             StopBits stop_bits, ParityBit parity_bit, bool read_only) {
+    return new SerialInterface(std::move(device_path), baud_rate, data_bits, stop_bits, parity_bit,
+                               read_only);
 }
 
 }  // namespace interface

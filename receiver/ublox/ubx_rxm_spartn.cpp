@@ -9,8 +9,9 @@
 namespace receiver {
 namespace ublox {
 
-UbxRxmSpartn::UbxRxmSpartn(raw::RxmSpartn payload) UBLOX_NOEXCEPT : Message(CLASS_ID, MESSAGE_ID),
-                                                                    mPayload(std::move(payload)) {}
+UbxRxmSpartn::UbxRxmSpartn(raw::RxmSpartn payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT
+    : Message(CLASS_ID, MESSAGE_ID, std::move(data)),
+      mPayload(std::move(payload)) {}
 
 static char const* msg_used_str(uint8_t msg_used) UBLOX_NOEXCEPT {
     switch (msg_used) {
@@ -33,7 +34,8 @@ void UbxRxmSpartn::print() const UBLOX_NOEXCEPT {
     }
 }
 
-std::unique_ptr<Message> UbxRxmSpartn::parse(Decoder& decoder) UBLOX_NOEXCEPT {
+std::unique_ptr<Message> UbxRxmSpartn::parse(Decoder&               decoder,
+                                             std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT {
     if (decoder.remaining() < 2) {
         return nullptr;
     }
@@ -61,7 +63,7 @@ std::unique_ptr<Message> UbxRxmSpartn::parse(Decoder& decoder) UBLOX_NOEXCEPT {
     if (decoder.error()) {
         return nullptr;
     } else {
-        return std::unique_ptr<Message>{new UbxRxmSpartn(std::move(payload))};
+        return std::unique_ptr<Message>{new UbxRxmSpartn(std::move(payload), std::move(raw_data))};
     }
 }
 

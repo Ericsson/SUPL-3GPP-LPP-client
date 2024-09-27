@@ -70,6 +70,9 @@ struct UbloxOptions {
     std::unique_ptr<interface::Interface> interface;
     /// Whether to print messages.
     bool print_messages;
+    bool readonly;
+    /// Export messages to other interfaces.
+    std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
 };
 
 /// Nmea options.
@@ -78,6 +81,7 @@ struct NmeaOptions {
     std::unique_ptr<interface::Interface> interface;
     /// Whether to print messages.
     bool print_messages;
+    bool readonly;
     /// Export messages to other interfaces.
     std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
 };
@@ -96,10 +100,14 @@ struct LocationInformationOptions {
     double altitude;
     /// Unlock update rate.
     bool unlock_update_rate;
-    /// Convert confidence 95% to 39%.
-    bool convert_confidence_95_to_39;
+    /// Convert incoming semi-major/semi-minor axes from 95% to 68% confidence.
+    bool convert_confidence_95_to_68;
+    /// Output error ellipse with confidence 68% instead of 39%.
+    bool output_ellipse_68;
     /// Override horizontal confidence.
     double override_horizontal_confidence;
+    /// Update rate in milliseconds.
+    int update_rate;
 };
 
 /// Control options.

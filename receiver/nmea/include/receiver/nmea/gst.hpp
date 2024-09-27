@@ -31,6 +31,12 @@ public:
         return sqrt(mSemiMajorError * mSemiMajorError + mSemiMinorError * mSemiMinorError);
     }
 
+    /// Get the horizontal position error from the latitude and longitude errors.
+    NMEA_NODISCARD double horizontal_position_error_from_lat_lon() const NMEA_NOEXCEPT {
+        // HPE = sqrt(latitudeError^2 + longitudeError^2)
+        return sqrt(mLatitudeError * mLatitudeError + mLongitudeError * mLongitudeError);
+    }
+
     /// Get semi-major axis.
     NMEA_NODISCARD double semi_major() const NMEA_NOEXCEPT { return mSemiMajorError; }
 

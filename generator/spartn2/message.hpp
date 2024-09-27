@@ -130,6 +130,25 @@ public:
 
     generator::spartn::Message build();
 
+    template <typename I, typename V>
+    inline I find_closest(V min, V max, V* values, I count, V value) {
+        if (count == 0) return 0;
+        if (value < min) return 0;
+        if (value > max) return count - 1;
+
+        I index = 0;
+        V diff  = max * 2;
+        for (I i = 0; i < count; ++i) {
+            V new_diff = values[i] - value;
+            if (new_diff < 0) new_diff = -new_diff;
+            if (new_diff < diff) {
+                diff  = new_diff;
+                index = i;
+            }
+        }
+        return index;
+    }
+
     // SF005 - Solution issue of update (SIOU)
     inline void sf005(uint16_t siou) { mBuilder.bits(siou, 9); }
 
@@ -215,24 +234,15 @@ public:
     inline void sf023(bool fix_or_float) { mBuilder.b(fix_or_float); }
 
     // SF024 - User range error (URE)
-    inline void sf024_raw(uint8_t ure) { mBuilder.bits(ure, 3); }
-    inline void sf024(double ure) {
-        if (ure <= 0.00)
-            sf024_raw(0);
-        else if (ure <= 0.01)
-            sf024_raw(1);
-        else if (ure <= 0.02)
-            sf024_raw(2);
-        else if (ure <= 0.05)
-            sf024_raw(3);
-        else if (ure <= 0.10)
-            sf024_raw(4);
-        else if (ure <= 0.30)
-            sf024_raw(5);
-        else if (ure <= 1.00)
-            sf024_raw(6);
-        else
-            sf024_raw(7);
+    inline uint8_t sf024_raw(uint8_t ure) {
+        mBuilder.bits(ure, 3);
+        return ure;
+    }
+    inline uint8_t sf024(double ure) {
+        if (ure < 0.0) return sf024_raw(0);
+        double  values[] = {0.01, 0.02, 0.05, 0.1, 0.3, 1.0, 2.0};
+        uint8_t index    = find_closest(0.0, 2.0, values, 7, ure);
+        return sf024_raw(index + 1);
     }
 
     // SFXXX - General bias mask
@@ -354,47 +364,54 @@ public:
     inline void sf041(uint8_t type) { mBuilder.bits(type, 3); }
 
     // SF042 - Troposphere quality
-    inline void sf042_raw(uint8_t quality) { mBuilder.bits(quality, 3); }
-    inline void sf042(double quality) {
-        if (quality <= 0.010)
-            sf042_raw(1);
-        else if (quality <= 0.020)
-            sf042_raw(2);
-        else if (quality <= 0.040)
-            sf042_raw(3);
-        else if (quality <= 0.080)
-            sf042_raw(4);
-        else if (quality <= 0.160)
-            sf042_raw(5);
-        else if (quality <= 0.320)
-            sf042_raw(6);
-        else
-            sf042_raw(7);
+    inline uint8_t sf042_raw(uint8_t quality) {
+        mBuilder.bits(quality, 3);
+        return quality;
+    }
+    inline uint8_t sf042(double quality) {
+        if (quality < 0.0) return sf042_raw(0);
+        double  values[] = {0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64};
+        uint8_t index    = find_closest(0.0, 0.64, values, 7, quality);
+        return sf042_raw(index + 1);
     }
 
     // SF043 - Area average vertical hydrostatic delay
-    inline void sf043(double delay) { mBuilder.double_to_bits(-0.508, 0.505, 0.004, delay, 8); }
+    inline double sf043(double delay) {
+        return mBuilder.double_to_bits(-0.508, 0.505, 0.004, delay, 8);
+    }
 
     // SF044 - Troposphere polynomial coefficient size indicator
     inline void sf044(uint8_t size) { mBuilder.bits(size, 1); }
 
     // SF045 - Small troposphere coefficient T_00
-    inline double sf045(double value) { return mBuilder.double_to_bits(-0.252, 0.252, 0.004, value, 7); }
+    inline double sf045(double value) {
+        return mBuilder.double_to_bits(-0.252, 0.252, 0.004, value, 7);
+    }
 
     // SF046 - Troposphere polynomial coefficient T_10/T_01
-    inline double sf046(double value) { return mBuilder.double_to_bits(-0.063, 0.063, 0.001, value, 7); }
+    inline double sf046(double value) {
+        return mBuilder.double_to_bits(-0.063, 0.063, 0.001, value, 7);
+    }
 
     // SF047 - Small troposphere coefficient T_11
-    inline double sf047(double value) { return mBuilder.double_to_bits(-0.051, 0.051, 0.0002, value, 9); }
+    inline double sf047(double value) {
+        return mBuilder.double_to_bits(-0.051, 0.051, 0.0002, value, 9);
+    }
 
     // SF048 - Large troposphere coefficient T_00
-    inline double sf048(double value) { return mBuilder.double_to_bits(-1.020, 1.020, 0.004, value, 9); }
+    inline double sf048(double value) {
+        return mBuilder.double_to_bits(-1.020, 1.020, 0.004, value, 9);
+    }
 
     // SF049 - Large troposphere coefficient T_10/T_01
-    inline double sf049(double value) { return mBuilder.double_to_bits(-0.255, 0.255, 0.001, value, 9); }
+    inline double sf049(double value) {
+        return mBuilder.double_to_bits(-0.255, 0.255, 0.001, value, 9);
+    }
 
     // SF050 - Large troposphere coefficient T_11
-    inline double sf050(double value) { return mBuilder.double_to_bits(-0.2046, 0.2046, 0.0002, value, 11); }
+    inline double sf050(double value) {
+        return mBuilder.double_to_bits(-0.2046, 0.2046, 0.0002, value, 11);
+    }
 
     // SF051 - Troposphere residual field size
     inline void sf051(uint8_t size) { mBuilder.bits(size, 1); }
@@ -411,39 +428,17 @@ public:
     inline void sf054(int type) { mBuilder.signed_bits(type, 3); }
 
     // SF055 - Ionosphere quality
-    inline void sf055_raw(int value) { mBuilder.signed_bits(value, 4); }
-    inline void sf055_invalid() { sf055_raw(0); }
-    inline void sf055(double quality) {
-        if (quality <= 0.03)
-            sf055_raw(1);
-        else if (quality <= 0.05)
-            sf055_raw(2);
-        else if (quality <= 0.07)
-            sf055_raw(3);
-        else if (quality <= 0.14)
-            sf055_raw(4);
-        else if (quality <= 0.28)
-            sf055_raw(5);
-        else if (quality <= 0.56)
-            sf055_raw(6);
-        else if (quality <= 1.12)
-            sf055_raw(7);
-        else if (quality <= 2.24)
-            sf055_raw(8);
-        else if (quality <= 4.48)
-            sf055_raw(9);
-        else if (quality <= 8.96)
-            sf055_raw(10);
-        else if (quality <= 17.92)
-            sf055_raw(11);
-        else if (quality <= 35.84)
-            sf055_raw(12);
-        else if (quality <= 71.68)
-            sf055_raw(13);
-        else if (quality <= 143.36)
-            sf055_raw(14);
-        else
-            sf055_raw(15);
+    inline uint8_t sf055_raw(int value) {
+        mBuilder.signed_bits(value, 4);
+        return static_cast<uint8_t>(value);
+    }
+    inline uint8_t sf055_invalid() { return sf055_raw(0); }
+    inline uint8_t sf055(double quality) {
+        if (quality < 0.0) return sf055_raw(0);
+        double  values[] = {0.03, 0.05, 0.07,  0.14,  0.28,  0.56,   1.12,  2.24,
+                            4.48, 8.96, 17.92, 35.84, 71.68, 143.36, 287.52};
+        uint8_t index    = find_closest(0.0, 287.52, values, 15, quality);
+        return sf055_raw(index + 1);
     }
 
     // SF056 - Ionosphere polynomial coefficient size indicator
@@ -495,28 +490,36 @@ public:
     inline void sf063(uint8_t size) { mBuilder.bits(size, 2); }
 
     // SF064 - Small ionosphere residual slant delay
-    inline void sf064_invalid() { mBuilder.bits(0xF, 4); }
-    inline void sf064(double value) { mBuilder.double_to_bits(-0.28, 0.28, 0.04, value, 4); }
+    inline void   sf064_invalid() { mBuilder.bits(0xF, 4); }
+    inline double sf064(double value) {
+        return mBuilder.double_to_bits(-0.28, 0.28, 0.04, value, 4);
+    }
 
     // SF065 - Medium ionosphere residual slant delay
-    inline void sf065_invalid() { mBuilder.bits(0x7F, 7); }
-    inline void sf065(double value) { mBuilder.double_to_bits(-2.52, 2.52, 0.04, value, 7); }
+    inline void   sf065_invalid() { mBuilder.bits(0x7F, 7); }
+    inline double sf065(double value) {
+        return mBuilder.double_to_bits(-2.52, 2.52, 0.04, value, 7);
+    }
 
     // SF066 - Large ionosphere residual slant delay
-    inline void sf066_invalid() { mBuilder.bits(0x3FF, 10); }
-    inline void sf066(double value) { mBuilder.double_to_bits(-20.44, 20.44, 0.04, value, 10); }
+    inline void   sf066_invalid() { mBuilder.bits(0x3FF, 10); }
+    inline double sf066(double value) {
+        return mBuilder.double_to_bits(-20.44, 20.44, 0.04, value, 10);
+    }
 
     // SF067 - Extra-large ionosphere residual slant delay
-    inline void sf067_invalid() { mBuilder.bits(0x3FFF, 14); }
-    inline void sf067(double value) { mBuilder.double_to_bits(-327.64, 327.64, 0.04, value, 14); }
+    inline void   sf067_invalid() { mBuilder.bits(0x3FFF, 14); }
+    inline double sf067(double value) {
+        return mBuilder.double_to_bits(-327.64, 327.64, 0.04, value, 14);
+    }
 
     // SF0XX - Ionosphere residual slant delay
-    inline void ionosphere_residual(uint8_t size, double value) {
+    inline double ionosphere_residual(uint8_t size, double value) {
         switch (size) {
-        case 0: sf064(value); break;
-        case 1: sf065(value); break;
-        case 2: sf066(value); break;
-        case 3: sf067(value); break;
+        case 0: return sf064(value); break;
+        case 1: return sf065(value); break;
+        case 2: return sf066(value); break;
+        case 3: return sf067(value); break;
         default: SPARTN_UNREACHABLE();
         }
     }

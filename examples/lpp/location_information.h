@@ -26,5 +26,6 @@ location_information::PLI_Result
                                                 void*                                      userdata);
 bool provide_ecid_callback(location_information::ECIDInformation& ecid, void* userdata);
 
-extern bool   gConvertConfidence95To39;
+extern bool   gConvertConfidence95To68;
 extern double gOverrideHorizontalConfidence;
+extern bool   gOutputEllipse68;

@@ -97,7 +97,7 @@ static std::unique_ptr<interface::Interface> parse_serial() {
     }
 
     return std::unique_ptr<interface::Interface>(interface::Interface::serial(
-        serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+        serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit, false));
 }
 
 Config parse_configuration(int argc, char** argv) {

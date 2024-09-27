@@ -31,7 +31,7 @@ public:
     UBLOX_CONSTEXPR static uint8_t CLASS_ID   = 0x02;
     UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x33;
 
-    UBLOX_EXPLICIT UbxRxmSpartn(raw::RxmSpartn payload) UBLOX_NOEXCEPT;
+    UBLOX_EXPLICIT UbxRxmSpartn(raw::RxmSpartn payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT;
     ~UbxRxmSpartn() override = default;
 
     UbxRxmSpartn(UbxRxmSpartn const& other) : Message(other), mPayload(other.mPayload) {}
@@ -73,7 +73,8 @@ public:
 
     void print() const UBLOX_NOEXCEPT override;
 
-    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static std::unique_ptr<Message>
+    parse(Decoder& decoder, std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT;
 
 private:
     raw::RxmSpartn mPayload;

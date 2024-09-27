@@ -25,7 +25,7 @@ public:
     UBLOX_CONSTEXPR static uint8_t CLASS_ID   = 0x06;
     UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x8B;
 
-    UBLOX_EXPLICIT UbxCfgValget(raw::CfgValget payload) UBLOX_NOEXCEPT;
+    UBLOX_EXPLICIT UbxCfgValget(raw::CfgValget payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT;
     ~UbxCfgValget() override = default;
 
     UbxCfgValget(UbxCfgValget const& other) : Message(other), mPayload(other.mPayload) {}
@@ -39,7 +39,8 @@ public:
     /// a default-constructed CfgValue will be returned, i.e., of type CfgValue::UNKNOWN.
     CfgValue get(CfgKey key) const UBLOX_NOEXCEPT;
 
-    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static std::unique_ptr<Message>
+    parse(Decoder& decoder, std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT;
     UBLOX_NODISCARD static uint32_t poll(Encoder& encoder, CfgLayer layer, uint16_t position,
                                          std::vector<CfgKey> const& keys) UBLOX_NOEXCEPT;
 

@@ -164,7 +164,7 @@ static std::unique_ptr<Interface> parse_serial() {
     }
 
     return std::unique_ptr<Interface>(
-        Interface::serial(serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+        Interface::serial(serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit, false));
 }
 
 static std::unique_ptr<Interface> parse_i2c() {

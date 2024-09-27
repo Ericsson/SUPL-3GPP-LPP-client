@@ -217,11 +217,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15*
     auto epoch_time = spartn_time_from(orbit->epochTime_r15);
     auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
-    corrections.gnss_id    = gnss_id;
-    corrections.iod        = iod;
-    corrections.epoch_time = epoch_time;
-    corrections.orbit      = orbit;
+    auto& corrections                 = ocb.mKeyedCorrections[key];
+    corrections.gnss_id               = gnss_id;
+    corrections.iod                   = iod;
+    corrections.epoch_time            = epoch_time;
+    corrections.orbit                 = orbit;
+    corrections.orbit_update_interval = decode::ssrUpdateInterval_r15(orbit->ssrUpdateInterval_r15);
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15* clock) {
@@ -232,11 +233,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15*
     auto epoch_time = spartn_time_from(clock->epochTime_r15);
     auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
-    corrections.gnss_id    = gnss_id;
-    corrections.iod        = iod;
-    corrections.epoch_time = epoch_time;
-    corrections.clock      = clock;
+    auto& corrections                 = ocb.mKeyedCorrections[key];
+    corrections.gnss_id               = gnss_id;
+    corrections.iod                   = iod;
+    corrections.epoch_time            = epoch_time;
+    corrections.clock                 = clock;
+    corrections.clock_update_interval = decode::ssrUpdateInterval_r15(clock->ssrUpdateInterval_r15);
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bias) {
@@ -301,13 +303,18 @@ struct Bias {
 };
 
 static Bias bias_from_signal(SystemMapping const* mapping, bool is_phase, long from_id,
-                             double correction, double continuity_indicator, bool fix_flag) {
+                             double correction, double continuity_indicator, bool fix_flag,
+                             bool translate, bool correction_shift) {
     if (from_id >= mapping->signal_count) {
         return Bias::invalid();
     }
 
     auto type = mapping->to_spartn[from_id];
     if (type == INVALID_MAPPING) {
+        if (!translate) {
+            return Bias::invalid();
+        }
+
         auto to_id = mapping->mapping[from_id];
         if (to_id == INVALID_MAPPING) {
             return Bias::invalid();
@@ -319,6 +326,10 @@ static Bias bias_from_signal(SystemMapping const* mapping, bool is_phase, long f
         auto to_freq            = mapping->freq[to_id];
         auto scale              = from_freq / to_freq;
         auto shifted_correction = correction * scale;
+        if (!correction_shift) {
+            shifted_correction = correction;
+        }
+
 #ifdef SPARTN_DEBUG_PRINT
         printf("        from: %2ld '%-16s' %7.2f\n", from_id, mapping->signal_name(from_id),
                correction);
@@ -326,8 +337,9 @@ static Bias bias_from_signal(SystemMapping const* mapping, bool is_phase, long f
                shifted_correction);
 #endif
 
-        auto new_bias   = bias_from_signal(mapping, is_phase, to_id, shifted_correction,
-                                           continuity_indicator, fix_flag);
+        auto new_bias =
+            bias_from_signal(mapping, is_phase, to_id, shifted_correction, continuity_indicator,
+                             fix_flag, translate, correction_shift);
         new_bias.mapped = true;
         return new_bias;
     }
@@ -335,14 +347,8 @@ static Bias bias_from_signal(SystemMapping const* mapping, bool is_phase, long f
     return Bias{from_id, correction, continuity_indicator, fix_flag, type, false};
 }
 
-static bool phase_bias_fix_flag(SSR_PhaseBiasSignalElement_r16 const& signal) {
-    if (!signal.phaseBiasIntegerIndicator_r16) {
-        // TODO(ewasjon): What should we do here if the fix flag information is missing? The
-        // original SPARTN implementation used a default value of 'true'.
-        return true;
-    }
-
-    switch (*signal.phaseBiasIntegerIndicator_r16) {
+static bool phase_bias_fix_flag_from_value(long value) {
+    switch (value) {
     case 0: return true;
     case 1: return true;
     case 2: return false;
@@ -350,10 +356,21 @@ static bool phase_bias_fix_flag(SSR_PhaseBiasSignalElement_r16 const& signal) {
     }
 }
 
+static bool phase_bias_fix_flag(SSR_PhaseBiasSignalElement_r16 const& signal) {
+    // NOTE(ewasjon): If the phaseBiasIntegerIndicator field is not present then it is
+    // interpreted as having Value 0 (Undifferenced Integer).
+    long value = 0;
+    if (signal.phaseBiasIntegerIndicator_r16) {
+        value = *signal.phaseBiasIntegerIndicator_r16;
+    }
+
+    return phase_bias_fix_flag_from_value(value);
+}
+
 template <typename BiasToSignal>
-static std::map<uint8_t, Bias> phase_biases(SystemMapping const*               mapping,
-                                            SSR_PhaseBiasSatElement_r16 const& satellite,
-                                            BiasToSignal* bias_to_signal, bool ignore_l2l) {
+static std::map<uint8_t, Bias>
+phase_biases(SystemMapping const* mapping, SSR_PhaseBiasSatElement_r16 const& satellite,
+             BiasToSignal* bias_to_signal, bool ignore_l2l, bool translate, bool correction_shift) {
     std::map<uint8_t, Bias> biases_by_type;
 
 #if defined(SPARTN_DEBUG_PRINT)
@@ -371,46 +388,50 @@ static std::map<uint8_t, Bias> phase_biases(SystemMapping const*               m
             320.0;  // TODO(ewasjon): [low-priority] Compute the continuity indicator.
         auto fix_flag = phase_bias_fix_flag(*element);
 
-        auto bias =
-            (*bias_to_signal)(mapping, true, signal_id, correction, continuity_indicator, fix_flag);
+        auto bias = (*bias_to_signal)(mapping, true, signal_id, correction, continuity_indicator,
+                                      fix_flag, translate, correction_shift);
         if (bias.signal_id == -1) {
 #if defined(SPARTN_DEBUG_PRINT) && SPARTN_DEBUG_PRINT > 1
-            printf("    ?         %2ld '%-16s' %7.2f\n", signal_id, mapping->signal_name(signal_id),
-                   correction);
+            printf("    ?         %2ld '%-16s' %7.2f%s\n", signal_id,
+                   mapping->signal_name(signal_id), correction, fix_flag ? " (fix)" : " (unfixed)");
 #endif
             continue;
         }
 
         if (mapping->gnss_id == GNSS_ID__gnss_id_gps && bias.type == 2 && ignore_l2l) {
 #ifdef SPARTN_DEBUG_PRINT
-            printf("    -%s (%u)  %2ld '%-16s' %7.2f\n",
+            printf("    -%s (%u)  %2ld '%-16s' %7.2f%s\n",
                    bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
+                   mapping->signal_name(bias.signal_id), bias.correction,
+                   fix_flag ? " (fix)" : " (unfixed)");
 #endif
             continue;
         }
 
         if (biases_by_type.count(bias.type) == 0) {
 #ifdef SPARTN_DEBUG_PRINT
-            printf("    +%s (%u)  %2ld '%-16s' %7.2f\n",
+            printf("    +%s (%u)  %2ld '%-16s' %7.2f%s\n",
                    bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
+                   mapping->signal_name(bias.signal_id), bias.correction,
+                   fix_flag ? " (fix)" : " (unfixed)");
 #endif
             biases_by_type[bias.type] = bias;
         } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
 #ifdef SPARTN_DEBUG_PRINT
             // If the bias is mapped and the new bias is not mapped, then we want to prioritize
             // the "original" bias.
-            printf("    =%s (%u)  %2ld '%-16s' %7.2f\n",
+            printf("    =%s (%u)  %2ld '%-16s' %7.2f%s\n",
                    bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
+                   mapping->signal_name(bias.signal_id), bias.correction,
+                   fix_flag ? " (fix)" : " (unfixed)");
 #endif
             biases_by_type[bias.type] = bias;
         } else {
 #ifdef SPARTN_DEBUG_PRINT
-            printf("    !%s (%u)  %2ld '%-16s' %7.2f\n",
+            printf("    !%s (%u)  %2ld '%-16s' %7.2f%s\n",
                    bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
+                   mapping->signal_name(bias.signal_id), bias.correction,
+                   fix_flag ? " (fix)" : " (unfixed)");
 #endif
         }
     }
@@ -419,9 +440,9 @@ static std::map<uint8_t, Bias> phase_biases(SystemMapping const*               m
 }
 
 template <typename BiasToSignal>
-static std::map<uint8_t, Bias> code_biases(SystemMapping const*              mapping,
-                                           SSR_CodeBiasSatElement_r15 const& satellite,
-                                           BiasToSignal* bias_to_signal, bool ignore_l2l) {
+static std::map<uint8_t, Bias>
+code_biases(SystemMapping const* mapping, SSR_CodeBiasSatElement_r15 const& satellite,
+            BiasToSignal* bias_to_signal, bool ignore_l2l, bool translate, bool correction_shift) {
     std::map<uint8_t, Bias> biases_by_type;
 
 #if defined(SPARTN_DEBUG_PRINT)
@@ -435,7 +456,8 @@ static std::map<uint8_t, Bias> code_biases(SystemMapping const*              map
         auto signal_id  = decode::signal_id(element->signal_and_tracking_mode_ID_r15);
         auto correction = decode::codeBias_r15(element->codeBias_r15);
 
-        auto bias = (*bias_to_signal)(mapping, false, signal_id, correction, 0.0, false);
+        auto bias = (*bias_to_signal)(mapping, false, signal_id, correction, 0.0, false, translate,
+                                      correction_shift);
         if (bias.signal_id == -1) {
 #if defined(SPARTN_DEBUG_PRINT) && SPARTN_DEBUG_PRINT > 1
             printf("    ?         %2ld '%-16s' %7.2f\n", signal_id, mapping->signal_name(signal_id),
@@ -483,12 +505,15 @@ static std::map<uint8_t, Bias> code_biases(SystemMapping const*              map
 
 static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
-                                    SSR_PhaseBiasSatElement_r16 const* phase_bias,
-                                    bool                               ignore_l2l) {
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
+                                    bool code_bias_translate, bool code_bias_no_correction_shift,
+                                    bool phase_bias_translate,
+                                    bool phase_bias_no_correction_shift) {
     if (!phase_bias) {
         builder.sf025_raw(false, 0);
     } else {
-        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l);
+        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
+                                            phase_bias_translate, phase_bias_no_correction_shift);
 
         builder.sf025(&types_of_biases);
         for (auto& kvp : types_of_biases) {
@@ -501,7 +526,8 @@ static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const
     if (!code_bias) {
         builder.sf027_raw(false, 0);
     } else {
-        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l);
+        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
+                                           code_bias_translate, code_bias_no_correction_shift);
 
         builder.sf027(&types_of_biases);
         for (auto& kvp : types_of_biases) {
@@ -512,12 +538,14 @@ static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const
 
 static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
-                                    SSR_PhaseBiasSatElement_r16 const* phase_bias,
-                                    bool                               ignore_l2l) {
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
+                                    bool code_bias_translate, bool code_bias_correction_shift,
+                                    bool phase_bias_translate, bool phase_bias_correction_shift) {
     if (!phase_bias) {
         builder.sf026_raw(false, 0);
     } else {
-        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l);
+        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
+                                            phase_bias_translate, phase_bias_correction_shift);
 
         builder.sf026(&types_of_biases);
         for (auto& kvp : types_of_biases) {
@@ -530,7 +558,8 @@ static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const
     if (!code_bias) {
         builder.sf028_raw(false, 0);
     } else {
-        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l);
+        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
+                                           code_bias_translate, code_bias_correction_shift);
 
         builder.sf028(&types_of_biases);
         for (auto& kvp : types_of_biases) {
@@ -541,12 +570,14 @@ static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const
 
 static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
-                                    SSR_PhaseBiasSatElement_r16 const* phase_bias,
-                                    bool                               ignore_l2l) {
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
+                                    bool code_bias_translate, bool code_bias_correction_shift,
+                                    bool phase_bias_translate, bool phase_bias_correction_shift) {
     if (!phase_bias) {
         builder.sf102_raw(false, 0);
     } else {
-        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l);
+        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
+                                            phase_bias_translate, phase_bias_correction_shift);
 
         builder.sf102(&types_of_biases);
         for (auto& kvp : types_of_biases) {
@@ -559,7 +590,8 @@ static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const
     if (!code_bias) {
         builder.sf105_raw(false, 0);
     } else {
-        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l);
+        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
+                                           code_bias_translate, code_bias_correction_shift);
 
         builder.sf105(&types_of_biases);
         for (auto& kvp : types_of_biases) {
@@ -666,9 +698,29 @@ void Generator::generate_ocb(uint16_t iod) {
                 auto radial = decode::delta_radial_r15(orbit.delta_radial_r15);
                 auto along  = decode::delta_AlongTrack_r15(orbit.delta_AlongTrack_r15);
                 auto cross  = decode::delta_CrossTrack_r15(orbit.delta_CrossTrack_r15);
+
+                if(mFlipOrbitCorrection) {
+                    radial *= -1;
+                    cross *= -1;
+                }
+
                 builder.sf020(radial);
                 builder.sf020(along);
                 builder.sf020(cross);
+
+#ifdef SPARTN_DEBUG_PRINT
+                printf("    ORBIT UPDATE INTERVAL: %f\n", corrections.orbit_update_interval);
+                printf("    RADIAL: %f\n", radial);
+                printf("    ALONG: %f\n", along);
+                printf("    CROSS: %f\n", cross);
+                if (orbit.dot_delta_radial_r15)
+                    printf("    DOT RADIAL: %ld\n", *orbit.dot_delta_radial_r15);
+                if (orbit.dot_delta_AlongTrack_r15)
+                    printf("    DOT ALONG: %ld\n", *orbit.dot_delta_AlongTrack_r15);
+                if (orbit.dot_delta_CrossTrack_r15)
+                    printf("    DOT CROSS: %ld\n", *orbit.dot_delta_CrossTrack_r15);
+#endif
+
                 if (yaw_angle_present) {
                     // NOTE(ewasjon): Yaw angle is assumed to be zero, 3GPP LPP inherits this
                     // assumption from CLAS specification.
@@ -690,8 +742,15 @@ void Generator::generate_ocb(uint16_t iod) {
                 // Thus, the single value at epoch time must be computed.
 
                 auto c0 = decode::delta_Clock_C0_r15(clock.delta_Clock_C0_r15);
-                auto c1 = decode::delta_Clock_C2_r15(clock.delta_Clock_C1_r15);
-                auto c2 = decode::delta_Clock_C1_r15(clock.delta_Clock_C2_r15);
+                auto c1 = decode::delta_Clock_C1_r15(clock.delta_Clock_C1_r15);
+                auto c2 = decode::delta_Clock_C2_r15(clock.delta_Clock_C2_r15);
+
+#ifdef SPARTN_DEBUG_PRINT
+                printf("    CLOCK UPDATE INTERVAL: %f\n", corrections.clock_update_interval);
+                printf("    C0: %f\n", c0);
+                printf("    C1: %f\n", c1);
+                printf("    C2: %f\n", c2);
+#endif
 
                 // t_0 = epochTime + (0.5 * ssrUpdateInterval)
                 // TODO(ewasjon): [low-priority] Include SSR update interval. This is fine not to
@@ -713,27 +772,40 @@ void Generator::generate_ocb(uint16_t iod) {
                     dc *= -1;
                 }
 
+#ifdef SPARTN_DEBUG_PRINT
+                printf("    clock: %f%s\n", dc, mUBloxClockCorrection ? " [u-blox]" : "");
+#endif
+
                 builder.sf020(dc);
 
                 if (mUraOverride >= 0) {
                     uint8_t ura_value = mUraOverride > 7 ? 7 : static_cast<uint8_t>(mUraOverride);
                     builder.sf024_raw(ura_value);
 #ifdef SPARTN_DEBUG_PRINT
-                    printf("    sf024: %u [override]\n", ura_value);
+                    printf("    sf024: %d (%u) [override]\n", mUraOverride, ura_value);
 #endif
                 } else if (satellite.ura) {
-                    auto& ura   = *satellite.ura;
-                    auto  value = decode::ssr_URA_r16(ura.ssr_URA_r16);
+                    auto& ura     = *satellite.ura;
+                    auto  quality = decode::ssr_URA_r16(ura.ssr_URA_r16);
+                    if (quality.invalid) {
+                        uint8_t ura_value =
+                            mUraDefault < 0 ? 0 : (mUraDefault > 7 ? 7 : mUraDefault);
+                        builder.sf024_raw(ura_value);
 #ifdef SPARTN_DEBUG_PRINT
-                    printf("    sf024: %f\n", value);
+                        printf("    sf024: %d (%u) [default/invalid]\n", mUraDefault, ura_value);
 #endif
-                    builder.sf024(value);
+                    } else {
+                        auto ura_value = builder.sf024(quality.value);
+#ifdef SPARTN_DEBUG_PRINT
+                        printf("    sf024: %f (%u)\n", quality.value, ura_value);
+#endif
+                    }
                 } else {
-#ifdef SPARTN_DEBUG_PRINT
-                    printf("    sf024: %u [default]\n", mUraDefault);
-#endif
                     uint8_t ura_value = mUraDefault < 0 ? 0 : (mUraDefault > 7 ? 7 : mUraDefault);
                     builder.sf024_raw(ura_value);
+#ifdef SPARTN_DEBUG_PRINT
+                    printf("    sf024: %d (%u) [default/missing]\n", mUraDefault, ura_value);
+#endif
                 }
             }
 
@@ -741,15 +813,21 @@ void Generator::generate_ocb(uint16_t iod) {
                 switch (gnss_id) {
                 case GNSS_ID__gnss_id_gps:
                     generate_gps_bias_block(builder, &GPS_SM, satellite.code_bias,
-                                            satellite.phase_bias, mIgnoreL2L);
+                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
+                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
+                                            mPhaseBiasCorrectionShift);
                     break;
                 case GNSS_ID__gnss_id_glonass:
                     generate_glo_bias_block(builder, &GLO_SM, satellite.code_bias,
-                                            satellite.phase_bias, mIgnoreL2L);
+                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
+                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
+                                            mPhaseBiasCorrectionShift);
                     break;
                 case GNSS_ID__gnss_id_galileo:
                     generate_gal_bias_block(builder, &GAL_SM, satellite.code_bias,
-                                            satellite.phase_bias, mIgnoreL2L);
+                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
+                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
+                                            mPhaseBiasCorrectionShift);
                     break;
                 default: SPARTN_UNREACHABLE();
                 }

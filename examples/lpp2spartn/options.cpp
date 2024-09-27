@@ -199,7 +199,7 @@ static OutputOptions parse_output_options() {
         }
 
         auto interface = interface::Interface::serial(serial_device.Get(), baud_rate, data_bits,
-                                                      stop_bits, parity_bit);
+                                                      stop_bits, parity_bit, false);
         output_options.interfaces.emplace_back(interface);
     }
 

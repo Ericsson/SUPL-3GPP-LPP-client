@@ -22,7 +22,7 @@ public:
     UBLOX_CONSTEXPR static uint8_t CLASS_ID   = 0x0A;
     UBLOX_CONSTEXPR static uint8_t MESSAGE_ID = 0x04;
 
-    UBLOX_EXPLICIT UbxMonVer(raw::MonVer payload) UBLOX_NOEXCEPT;
+    UBLOX_EXPLICIT UbxMonVer(raw::MonVer payload, std::vector<uint8_t>&& data) UBLOX_NOEXCEPT;
     ~UbxMonVer() override = default;
 
     UbxMonVer(UbxMonVer const& other) : Message(other), mPayload(other.mPayload) {}
@@ -44,8 +44,9 @@ public:
 
     void print() const UBLOX_NOEXCEPT override;
 
-    UBLOX_NODISCARD static std::unique_ptr<Message> parse(Decoder& decoder) UBLOX_NOEXCEPT;
-    UBLOX_NODISCARD static uint32_t                 poll(Encoder& encoder) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static std::unique_ptr<Message>
+    parse(Decoder& decoder, std::vector<uint8_t>&& raw_data) UBLOX_NOEXCEPT;
+    UBLOX_NODISCARD static uint32_t poll(Encoder& encoder) UBLOX_NOEXCEPT;
 
 private:
     raw::MonVer mPayload;

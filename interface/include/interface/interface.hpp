@@ -86,7 +86,7 @@ public:
     /// @param stop_bits The number of stop bits.
     /// @param parity_bit The parity bit.
     static Interface* serial(std::string device_path, uint32_t baud_rate, DataBits data_bits,
-                             StopBits stop_bits, ParityBit parity_bit);
+                             StopBits stop_bits, ParityBit parity_bit, bool read_only);
 
     /// Create an I2C interface.
     /// @param device_path The path to the I2C device.
