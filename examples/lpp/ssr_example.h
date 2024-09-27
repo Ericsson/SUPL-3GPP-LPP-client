@@ -9,11 +9,11 @@ enum class Format {
 #ifdef INCLUDE_GENERATOR_SPARTN
     SPARTN_NEW,
 #endif
-#ifdef INCLUDE_GENERATOR_SPARTN_OLD
-    SPARTN_OLD,
-#endif
 #ifdef INCLUDE_GENERATOR_RTCM
     LRF_UPER,
+#endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+    TOKORO,
 #endif
 };
 

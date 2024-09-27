@@ -1,416 +1,598 @@
 #include "options.hpp"
-#include <interface/interface.hpp>
-#include <receiver/ublox/receiver.hpp>
+#include <io/file.hpp>
+#include <io/serial.hpp>
+#include <io/stdin.hpp>
+#include <io/stdout.hpp>
+#include <io/tcp.hpp>
+#include <io/udp.hpp>
 
 #include <math.h>
 
-using namespace interface;
-using namespace receiver::ublox;
+static std::vector<std::string> split(std::string const& str, char delim) {
+    std::vector<std::string> tokens;
+    std::string              token;
+    std::istringstream       token_stream(str);
+    while (std::getline(token_stream, token, delim)) {
+        tokens.push_back(token);
+    }
+    return tokens;
+}
 
-static args::Group arguments{"Arguments:"};
+static args::Group gArguments{"Arguments:"};
 
 //
 // Location Server
 //
-static args::Group location_server{
+static args::Group gLocationServer{
     "Location Server:",
     args::Group::Validators::All,
     args::Options::Global,
 };
 
-static args::ValueFlag<std::string> location_server_host{
-    location_server, "host", "Host", {'h', "host"}, args::Options::Single};
-static args::ValueFlag<uint16_t> location_server_port{
-    location_server, "port", "Port", {'p', "port"}, args::Options::Single};
-static args::Flag location_server_ssl{
-    location_server, "ssl", "TLS", {'s', "ssl"}, args::Options::Single};
-static args::Flag location_server_slp_host_cell{location_server,
-                                                "slp-host-cell",
-                                                "Use Cell ID as SLP Host",
-                                                {"slp-host-cell"},
-                                                args::Options::Single};
-static args::Flag location_server_slp_host_imsi{location_server,
-                                                "slp-host-imsi",
-                                                "Use IMSI as SLP Host",
-                                                {"slp-host-imsi"},
-                                                args::Options::Single};
+static args::ValueFlag<std::string> gLocationServerHost{
+    gLocationServer, "host", "Host", {'h', "host"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gLocationServerPort{
+    gLocationServer, "port", "Port", {'p', "port"}, args::Options::Single};
+static args::Flag gLocationServerSsl{
+    gLocationServer, "ssl", "TLS", {'s', "ssl"}, args::Options::Single};
+static args::Flag gLocationServerSlpHostCell{gLocationServer,
+                                             "slp-host-cell",
+                                             "Use Cell ID as SLP Host",
+                                             {"slp-host-cell"},
+                                             args::Options::Single};
+static args::Flag gLocationServerSlpHostImsi{gLocationServer,
+                                             "slp-host-imsi",
+                                             "Use IMSI as SLP Host",
+                                             {"slp-host-imsi"},
+                                             args::Options::Single};
 
 //
 // Identity
 //
-static args::Group identity{
+static args::Group gIdentity{
     "Identity:",
     args::Group::Validators::All,
     args::Options::Global,
 };
 
-static args::ValueFlag<unsigned long long> msisdn{
-    identity, "msisdn", "MSISDN", {"msisdn"}, args::Options::Single};
-static args::ValueFlag<unsigned long long> imsi{
-    identity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
-static args::ValueFlag<std::string> ipv4{identity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
-static args::Flag                   use_supl_identity_fix{identity,
-                                        "supl-identity-fix",
-                                        "Use SUPL Identity Fix",
-                                                          {"supl-identity-fix"},
-                                        args::Options::Single};
-static args::Flag                   wait_for_identity{
-    identity,
-    "wait-for-identity",
-    "Wait for the identity to be provided via the control interface",
-                      {"wait-for-identity"},
-    args::Options::Single};
+static args::ValueFlag<unsigned long long> gMsisdn{
+    gIdentity, "msisdn", "MSISDN", {"msisdn"}, args::Options::Single};
+static args::ValueFlag<unsigned long long> gImsi{
+    gIdentity, "imsi", "IMSI", {"imsi"}, args::Options::Single};
+static args::ValueFlag<std::string> gIpv4{
+    gIdentity, "ipv4", "IPv4", {"ipv4"}, args::Options::Single};
+static args::Flag gUseSuplIdentityFix{gIdentity,
+                                      "supl-identity-fix",
+                                      "Use SUPL Identity Fix",
+                                      {"supl-identity-fix"},
+                                      args::Options::Single};
+static args::Flag gWaitForIdentity{gIdentity,
+                                   "wait-for-identity",
+                                   "Wait for the identity to be provided via the control interface",
+                                   {"wait-for-identity"},
+                                   args::Options::Single};
 
 //
 // Cell Information
 //
-static args::Group cell_information{
+static args::Group gCellInformation{
     "Cell Information:",
     args::Group::Validators::All,
     args::Options::Global,
 };
 
-static args::ValueFlag<int>                mcc{cell_information,
-                                "mcc",
-                                "Mobile Country Code",
-                                               {'c', "mcc"},
-                                args::Options::Single | args::Options::Required};
-static args::ValueFlag<int>                mnc{cell_information,
-                                "mnc",
-                                "Mobile Network Code",
-                                               {'n', "mnc"},
-                                args::Options::Single | args::Options::Required};
-static args::ValueFlag<int>                tac{cell_information,
-                                "tac",
-                                "Tracking Area Code",
-                                               {'t', "lac", "tac"},
-                                args::Options::Single | args::Options::Required};
-static args::ValueFlag<unsigned long long> ci{cell_information,
-                                              "ci",
-                                              "Cell Identity",
-                                              {'i', "ci"},
-                                              args::Options::Single | args::Options::Required};
-static args::Flag is_nr{cell_information, "nr", "The cell specified is a 5G NR cell", {"nr"}};
+static args::ValueFlag<int>                gMcc{gCellInformation,
+                                 "mcc",
+                                 "Mobile Country Code",
+                                                {'c', "mcc"},
+                                 args::Options::Single | args::Options::Required};
+static args::ValueFlag<int>                gMnc{gCellInformation,
+                                 "mnc",
+                                 "Mobile Network Code",
+                                                {'n', "mnc"},
+                                 args::Options::Single | args::Options::Required};
+static args::ValueFlag<int>                gTac{gCellInformation,
+                                 "tac",
+                                 "Tracking Area Code",
+                                                {'t', "lac", "tac"},
+                                 args::Options::Single | args::Options::Required};
+static args::ValueFlag<unsigned long long> gCi{gCellInformation,
+                                               "ci",
+                                               "Cell Identity",
+                                               {'i', "ci"},
+                                               args::Options::Single | args::Options::Required};
+static args::Flag gIsNr{gCellInformation, "nr", "The cell specified is a 5G NR cell", {"nr"}};
 
 //
 // u-blox
 //
 
-static args::Group ublox_receiver_group{
+static args::Group gUbloxReceiverGroup{
     "u-blox Receiver:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::ValueFlag<std::string> ublox_receiver_port{
-    ublox_receiver_group,
+static args::ValueFlag<std::string> gUbloxReceiverPort{
+    gUbloxReceiverGroup,
     "port",
     "The port used on the u-blox receiver, used by configuration.",
     {"ublox-port"},
     args::Options::Single};
 
-static args::Group ublox_serial_group{
-    ublox_receiver_group,
+static args::Group gUbloxSerialGroup{
+    gUbloxReceiverGroup,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> ublox_serial_device{
-    ublox_serial_group, "device", "Device", {"ublox-serial"}, args::Options::Single};
-static args::ValueFlag<int> ublox_serial_baud_rate{
-    ublox_serial_group, "baud_rate", "Baud Rate", {"ublox-serial-baud"}, args::Options::Single};
-static args::ValueFlag<int> ublox_serial_data_bits{
-    ublox_serial_group, "data_bits", "Data Bits", {"ublox-serial-data"}, args::Options::Single};
-static args::ValueFlag<int> ublox_serial_stop_bits{
-    ublox_serial_group, "stop_bits", "Stop Bits", {"ublox-serial-stop"}, args::Options::Single};
-static args::ValueFlag<std::string> ublox_serial_parity_bits{ublox_serial_group,
-                                                             "parity_bits",
-                                                             "Parity Bits",
-                                                             {"ublox-serial-parity"},
-                                                             args::Options::Single};
+static args::ValueFlag<std::string> gUbloxSerialDevice{
+    gUbloxSerialGroup, "device", "Device", {"ublox-serial"}, args::Options::Single};
+static args::ValueFlag<int> gUbloxSerialBaudRate{
+    gUbloxSerialGroup, "baud_rate", "Baud Rate", {"ublox-serial-baud"}, args::Options::Single};
+static args::ValueFlag<int> gUbloxSerialDataBits{
+    gUbloxSerialGroup, "data_bits", "Data Bits", {"ublox-serial-data"}, args::Options::Single};
+static args::ValueFlag<int> gUbloxSerialStopBits{
+    gUbloxSerialGroup, "stop_bits", "Stop Bits", {"ublox-serial-stop"}, args::Options::Single};
+static args::ValueFlag<std::string> gUbloxSerialParityBits{gUbloxSerialGroup,
+                                                           "parity_bits",
+                                                           "Parity Bits",
+                                                           {"ublox-serial-parity"},
+                                                           args::Options::Single};
 
-static args::Group ublox_i2c_group{
-    ublox_receiver_group,
-    "I2C:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> ublox_i2c_device{
-    ublox_i2c_group, "device", "Device", {"ublox-i2c"}, args::Options::Single};
-static args::ValueFlag<uint8_t> ublox_i2c_address{
-    ublox_i2c_group, "address", "Address", {"ublox-i2c-address"}, args::Options::Single};
-
-static args::Group ublox_tcp_device{
-    ublox_receiver_group,
+static args::Group gUbloxTcpGroup{
+    gUbloxReceiverGroup,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> ublox_tcp_ip_address{
-    ublox_tcp_device, "ip_address", "Host or IP Address", {"ublox-tcp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> ublox_tcp_port{
-    ublox_tcp_device, "port", "Port", {"ublox-tcp-port"}, args::Options::Single};
-
-static args::Group ublox_udp_device{
-    ublox_receiver_group,
-    "UDP:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> ublox_udp_ip_address{
-    ublox_udp_device, "ip_address", "Host or IP Address", {"ublox-udp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> ublox_udp_port{
-    ublox_udp_device, "port", "Port", {"ublox-udp-port"}, args::Options::Single};
-
-static args::ValueFlag<std::string> ublox_export_file{ublox_receiver_group,
-                                                      "file",
-                                                      "Export UBX messages to file",
-                                                      {"ublox-export-file"},
-                                                      args::Options::Single};
+static args::ValueFlag<std::string> gUbloxTcpIpAddress{
+    gUbloxTcpGroup, "ip_address", "Host or IP Address", {"ublox-tcp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gUbloxTcpPort{
+    gUbloxTcpGroup, "port", "Port", {"ublox-tcp-port"}, args::Options::Single};
 
 //
 // NMEA
 //
 
-static args::Group nmea_receiver_group{
+static args::Group gNmeaReceiverGroup{
     "NMEA Receiver:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::Flag receiver_readonly{
-    nmea_receiver_group, "readonly", "Readonly Receiver", {"readonly"}, args::Options::Single};
-
-static args::Group nmea_serial_group{
-    nmea_receiver_group,
+static args::Group gNmeaSerialGroup{
+    gNmeaReceiverGroup,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> nmea_serial_device{
-    nmea_receiver_group, "device", "Device", {"nmea-serial"}, args::Options::Single};
-static args::ValueFlag<int> nmea_serial_baud_rate{
-    nmea_receiver_group, "baud_rate", "Baud Rate", {"nmea-serial-baud"}, args::Options::Single};
-static args::ValueFlag<int> nmea_serial_data_bits{
-    nmea_receiver_group, "data_bits", "Data Bits", {"nmea-serial-data"}, args::Options::Single};
-static args::ValueFlag<int> nmea_serial_stop_bits{
-    nmea_receiver_group, "stop_bits", "Stop Bits", {"nmea-serial-stop"}, args::Options::Single};
-static args::ValueFlag<std::string> nmea_serial_parity_bits{nmea_receiver_group,
-                                                            "parity_bits",
-                                                            "Parity Bits",
-                                                            {"nmea-serial-parity"},
-                                                            args::Options::Single};
+static args::ValueFlag<std::string> gNmeaSerialDevice{
+    gNmeaSerialGroup, "device", "Device", {"nmea-serial"}, args::Options::Single};
+static args::ValueFlag<int> gNmeaSerialBaudRate{
+    gNmeaSerialGroup, "baud_rate", "Baud Rate", {"nmea-serial-baud"}, args::Options::Single};
+static args::ValueFlag<int> gNmeaSerialDataBits{
+    gNmeaSerialGroup, "data_bits", "Data Bits", {"nmea-serial-data"}, args::Options::Single};
+static args::ValueFlag<int> gNmeaSerialStopBits{
+    gNmeaSerialGroup, "stop_bits", "Stop Bits", {"nmea-serial-stop"}, args::Options::Single};
+static args::ValueFlag<std::string> gNmeaSerialParityBits{
+    gNmeaSerialGroup, "parity_bits", "Parity Bits", {"nmea-serial-parity"}, args::Options::Single};
 
-static args::Group nmea_tcp_group{
-    nmea_receiver_group,
+static args::Group gNmeaTcpGroup{
+    gNmeaReceiverGroup,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> nmea_tcp_ip_address{
-    nmea_tcp_group, "ip_address", "Host or IP Address", {"nmea-tcp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> nmea_tcp_port{
-    nmea_tcp_group, "port", "Port", {"nmea-tcp-port"}, args::Options::Single};
-
-static args::Group nmea_udp_group{
-    nmea_receiver_group,
-    "UDP:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> nmea_udp_ip_address{
-    nmea_udp_group, "ip_address", "Host or IP Address", {"nmea-udp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> nmea_udp_port{
-    nmea_udp_group, "port", "Port", {"nmea-udp-port"}, args::Options::Single};
+static args::ValueFlag<std::string> gNmeaTcpIpAddress{
+    gNmeaTcpGroup, "ip_address", "Host or IP Address", {"nmea-tcp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gNmeaTcpPort{
+    gNmeaTcpGroup, "port", "Port", {"nmea-tcp-port"}, args::Options::Single};
 
 // export nmea to unix socket
-static args::ValueFlag<std::string> nmea_export_un{nmea_receiver_group,
-                                                   "unix socket",
-                                                   "Export NMEA to unix socket",
-                                                   {"nmea-export-un"},
-                                                   args::Options::Single};
-static args::ValueFlag<std::string> nmea_export_tcp{
-    nmea_receiver_group, "ip", "Export NMEA to TCP", {"nmea-export-tcp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> nmea_export_tcp_port{nmea_receiver_group,
-                                                      "port",
-                                                      "Export NMEA to TCP Port",
-                                                      {"nmea-export-tcp-port"},
-                                                      args::Options::Single};
+static args::ValueFlag<std::string> gNmeaExportUn{gNmeaReceiverGroup,
+                                                  "unix socket",
+                                                  "Export NMEA to unix socket",
+                                                  {"nmea-export-un"},
+                                                  args::Options::Single};
+static args::ValueFlag<std::string> gNmeaExportTcp{
+    gNmeaReceiverGroup, "ip", "Export NMEA to TCP", {"nmea-export-tcp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gNmeaExportTcpPort{gNmeaReceiverGroup,
+                                                    "port",
+                                                    "Export NMEA to TCP Port",
+                                                    {"nmea-export-tcp-port"},
+                                                    args::Options::Single};
 
-static args::ValueFlag<std::string> nmea_export_file{nmea_receiver_group,
-                                                     "file",
-                                                     "Export NMEA to file",
-                                                     {"nmea-export-file"},
-                                                     args::Options::Single};
+//
+// Input
+//
+
+static args::Group gInputGroup{
+    "Input Options:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+static args::ValueFlagList<std::string> gInputArgs{
+    gInputGroup,
+    "input",
+    "Specify data input(s).\nUsage: --input <type>:<arguments>\n"
+    "All types have the following arguments:\n"
+    "  format=<fmt>[|<fmt>...]\n"
+    "type: stdin\n"
+    "type: file\n"
+    "  path=<path>\n"
+    "type: serial\n"
+    "  device=<device>\n"
+    "  baudrate=<baudrate>\n"
+    "  databits=<5|6|7|8>\n"
+    "  stopbits=<1|2>\n"
+    "  parity=<none|odd|even>\n"
+    "type: tcp-client\n"
+    "  host=<host>\n"
+    "  port=<port>\n"
+    "  reconnect=<true|false>\n"
+    "type: tcp-server\n"
+    "  port=<port>\n"
+    "type: udp-client\n"
+    "  host=<host>\n"
+    "  port=<port>\n"
+    "type: udp-server\n"
+    "  port=<port>\n"
+    "type: i2c\n"
+    "  device=<device>\n"
+    "  address=<address>\n"
+    "type: unix-socket\n"
+    "  path=<path>\n"
+    "\n"
+    "format:\n"
+    "  fmt: [+|-]<name>\n"
+    "  name: ubx|nmea|rtcm|control\n",
+    {"input"}};
 
 //
 // Output
 //
 
-static args::Group other_receiver_group{
+static args::Group gOtherReceiverGroup{
     "Other Receiver Options:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::Flag print_messages{other_receiver_group,
+static args::Flag gPrintMessages{gOtherReceiverGroup,
                                  "print-receiver-messages",
                                  "Print Receiver Messages",
                                  {"print-receiver-messages", "prm"},
                                  args::Options::Single};
 
+static args::Flag gReceiverReadonly{
+    gOtherReceiverGroup, "readonly", "Readonly Receiver", {"readonly"}, args::Options::Single};
+
 //
 // Output
 //
 
-static args::Group output{
+static args::Group gOutputGroup{
     "Output:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::Group file_output{
-    output,
-    "File:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> file_path{
-    file_output, "file_path", "Path", {"file"}, args::Options::Single};
+static args::ValueFlagList<std::string> gOutputArgs{
+    gOutputGroup,
+    "output",
+    "Specify data output(s).\nUsage: --output <type>:<arguments>\n"
+    "All types have the following arguments:\n"
+    "  format=<fmt>[+<fmt>...]\n"
+    "type: file\n"
+    "  path=<path>\n"
+    "type: serial\n"
+    "  device=<device>\n"
+    "  baudrate=<baudrate>\n"
+    "  databits=<5|6|7|8>\n"
+    "  stopbits=<1|2>\n"
+    "  parity=<none|odd|even>\n"
+    "type: tcp-client\n"
+    "  host=<host>\n"
+    "  port=<port>\n"
+    "type: udp-client\n"
+    "  host=<host>\n"
+    "  port=<port>\n"
+    "type: stdout\n"
+    "\n"
+    "format:\n"
+    "  fmt: ubx|nmea|rtcm|ctrl|spartn|lpp-xer|lpp-uper\n",
+    {"output"}};
 
-static args::Group serial_output{
-    output,
-    "Serial:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> serial_device{
-    serial_output, "device", "Device", {"serial"}, args::Options::Single};
-static args::ValueFlag<int> serial_baud_rate{
-    serial_output, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
-static args::ValueFlag<int> serial_data_bits{
-    serial_output, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
-static args::ValueFlag<int> serial_stop_bits{
-    serial_output, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
-static args::ValueFlag<std::string> serial_parity_bits{
-    serial_output, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
+static OutputFormat
+parse_output_format(std::unordered_map<std::string, std::string> const& options) {
+    if (options.find("format") == options.end()) {
+        return OUTPUT_FORMAT_NONE;
+    }
 
-static args::Group i2c_output{
-    output,
-    "I2C:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> i2c_device{
-    i2c_output, "device", "Device", {"i2c"}, args::Options::Single};
-static args::ValueFlag<uint8_t> i2c_address{
-    i2c_output, "address", "Address", {"i2c-address"}, args::Options::Single};
+    auto fmt    = options.at("format");
+    auto parts  = split(fmt, '+');
+    auto format = OUTPUT_FORMAT_NONE;
+    for (auto const& part : parts) {
+        if (part.empty()) {
+            continue;
+        } else if (part.length() < 2) {
+            throw args::ParseError("invalid output format format: \"" + part + "\"");
+        }
 
-static args::Group tcp_output{
-    output,
-    "TCP:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> tcp_ip_address{
-    tcp_output, "ip_address", "Host or IP Address", {"tcp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> tcp_port{
-    tcp_output, "port", "Port", {"tcp-port"}, args::Options::Single};
+        auto change      = OUTPUT_FORMAT_NONE;
+        auto format_name = part;
+        if (format_name == "ubx") {
+            change = OUTPUT_FORMAT_UBX;
+        } else if (format_name == "nmea") {
+            change = OUTPUT_FORMAT_NMEA;
+        } else if (format_name == "rtcm") {
+            change = OUTPUT_FORMAT_RTCM;
+        } else if (format_name == "lpp-xer") {
+            change = OUTPUT_FORMAT_LPP_XER;
+        } else if (format_name == "lpp-uper") {
+            change = OUTPUT_FORMAT_LPP_UPER;
+        } else if (format_name == "lpp-rtcm-frame") {
+            change = OUTPUT_FORMAT_LPP_RTCM_FRAME;
+        } else if (format_name == "spartn") {
+            change = OUTPUT_FORMAT_SPARTN;
+        } else {
+            throw std::invalid_argument("invalid output format name: \"" + format_name + "\"");
+        }
 
-static args::Group udp_output{
-    output,
-    "UDP:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> udp_ip_address{
-    udp_output, "ip_address", "Host or IP Address", {"udp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> udp_port{
-    udp_output, "port", "Port", {"udp-port"}, args::Options::Single};
+        format |= change;
+    }
 
-static args::Group stdout_output{
-    output,
-    "Stdout:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::Flag stdout_output_flag{
-    stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
+    return format;
+}
+
+static OutputOption
+parse_output_stdout(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_output_format(options);
+    auto output = std::unique_ptr<io::Output>(new io::StdoutOutput());
+    return {format, std::move(output)};
+}
+
+static OutputOption parse_output_file(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_output_format(options);
+    if (options.find("path") == options.end()) {
+        throw args::RequiredError("--output file requires 'path'");
+    }
+
+    auto path   = options.at("path");
+    auto output = std::unique_ptr<io::Output>(new io::FileOutput(path, true, false, true));
+    return {format, std::move(output)};
+}
+
+static io::BaudRate parse_output_baudrate(std::string const& str) {
+    long baud_rate = 0;
+    try {
+        baud_rate = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("--output serial 'baudrate' must be an integer");
+    }
+
+    if (baud_rate == 50) return io::BaudRate::BR50;
+    if (baud_rate == 75) return io::BaudRate::BR75;
+    if (baud_rate == 110) return io::BaudRate::BR110;
+    if (baud_rate == 134) return io::BaudRate::BR134;
+    if (baud_rate == 150) return io::BaudRate::BR150;
+    if (baud_rate == 200) return io::BaudRate::BR200;
+    if (baud_rate == 300) return io::BaudRate::BR300;
+    if (baud_rate == 600) return io::BaudRate::BR600;
+    if (baud_rate == 1200) return io::BaudRate::BR1200;
+    if (baud_rate == 1800) return io::BaudRate::BR1800;
+    if (baud_rate == 2400) return io::BaudRate::BR2400;
+    if (baud_rate == 4800) return io::BaudRate::BR4800;
+    if (baud_rate == 9600) return io::BaudRate::BR9600;
+    if (baud_rate == 19200) return io::BaudRate::BR19200;
+    if (baud_rate == 38400) return io::BaudRate::BR38400;
+    if (baud_rate == 57600) return io::BaudRate::BR57600;
+    if (baud_rate == 115200) return io::BaudRate::BR115200;
+    if (baud_rate == 230400) return io::BaudRate::BR230400;
+    if (baud_rate == 460800) return io::BaudRate::BR460800;
+    if (baud_rate == 500000) return io::BaudRate::BR500000;
+    if (baud_rate == 576000) return io::BaudRate::BR576000;
+    if (baud_rate == 921600) return io::BaudRate::BR921600;
+    if (baud_rate == 1000000) return io::BaudRate::BR1000000;
+    if (baud_rate == 1152000) return io::BaudRate::BR1152000;
+    if (baud_rate == 1500000) return io::BaudRate::BR1500000;
+    if (baud_rate == 2000000) return io::BaudRate::BR2000000;
+    if (baud_rate == 2500000) return io::BaudRate::BR2500000;
+    if (baud_rate == 3000000) return io::BaudRate::BR3000000;
+    if (baud_rate == 3500000) return io::BaudRate::BR3500000;
+    if (baud_rate == 4000000) return io::BaudRate::BR4000000;
+    throw args::ParseError("--output serial 'baudrate' must be a valid baud rate");
+}
+
+static io::DataBits parse_output_databits(std::string const& str) {
+    long databits = 0;
+    try {
+        databits = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("--output serial 'data' must be an integer");
+    }
+
+    if (databits == 5) return io::DataBits::FIVE;
+    if (databits == 6) return io::DataBits::SIX;
+    if (databits == 7) return io::DataBits::SEVEN;
+    if (databits == 8) return io::DataBits::EIGHT;
+    throw args::ParseError("--output serial 'data' must be 5, 6, 7, or 8");
+}
+
+static io::StopBits parse_output_stopbits(std::string const& str) {
+    long stopbits = 0;
+    try {
+        stopbits = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("--output serial 'stop' must be an integer");
+    }
+
+    if (stopbits == 1) return io::StopBits::ONE;
+    if (stopbits == 2) return io::StopBits::TWO;
+    throw args::ParseError("--output serial 'stop' must be 1 or 2");
+}
+
+static io::ParityBit parse_output_paritybit(std::string const& str) {
+    if (str == "none") return io::ParityBit::NONE;
+    if (str == "odd") return io::ParityBit::ODD;
+    if (str == "even") return io::ParityBit::EVEN;
+    throw args::ParseError("--output serial 'parity' must be none, odd, or even");
+}
+
+static OutputOption
+parse_output_serial(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_output_format(options);
+    if (options.find("device") == options.end()) {
+        throw args::RequiredError("--output serial requires 'device'");
+    }
+
+    auto baud_rate  = io::BaudRate::BR115200;
+    auto data_bits  = io::DataBits::EIGHT;
+    auto stop_bits  = io::StopBits::ONE;
+    auto parity_bit = io::ParityBit::NONE;
+
+    auto baud_rate_it = options.find("baudrate");
+    if (baud_rate_it != options.end()) baud_rate = parse_output_baudrate(baud_rate_it->second);
+
+    auto data_bits_it = options.find("data");
+    if (data_bits_it != options.end()) data_bits = parse_output_databits(data_bits_it->second);
+
+    auto stop_bits_it = options.find("stop");
+    if (stop_bits_it != options.end()) stop_bits = parse_output_stopbits(stop_bits_it->second);
+
+    auto parity_bit_it = options.find("parity");
+    if (parity_bit_it != options.end()) parity_bit = parse_output_paritybit(parity_bit_it->second);
+
+    auto device = options.at("device");
+    auto output = std::unique_ptr<io::Output>(
+        new io::SerialOutput(device, baud_rate, data_bits, stop_bits, parity_bit));
+    return {format, std::move(output)};
+}
+
+static OutputOption parse_output(std::string const& source) {
+    std::unordered_map<std::string, std::string> options;
+
+    auto parts = split(source, ':');
+    if (parts.size() == 1) {
+        // No options
+    } else if (parts.size() == 2) {
+        auto args = split(parts[1], ',');
+        for (std::string const& arg : args) {
+            auto kv = split(arg, '=');
+            if (kv.size() != 2) {
+                throw args::ParseError("--output argument not in key=value format: \"" + arg +
+                                       "\"");
+            }
+            options[kv[0]] = kv[1];
+        }
+    } else {
+        throw args::ParseError("--output not in type:arguments format: \"" + source + "\"");
+    }
+
+    auto type = parts[0];
+    if (type == "stdout") {
+        return parse_output_stdout(options);
+    } else if (type == "file") {
+        return parse_output_file(options);
+    } else if (type == "serial") {
+        return parse_output_serial(options);
+    } else {
+        throw args::ParseError("--output type not recognized: \"" + type + "\"");
+    }
+}
+
+static void parse_output_options(OutputOptions& output_options) {
+    for (auto const& output : gOutputArgs.Get()) {
+        output_options.outputs.push_back(parse_output(output));
+    }
+}
 
 //
 // Location Information
 //
 
-static args::Group location_infomation{
+static args::Group gLocationInformationGroup{
     "Location Infomation:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::Flag li_enable{
-    location_infomation,
+static args::Flag gLiEnable{
+    gLocationInformationGroup,
     "location-info",
     "Enable sending fake location information. Configure with '--fake-*' options.",
     {"fake-location-info", "fli"},
     args::Options::Single,
 };
-static args::Flag li_force{
-    location_infomation,
+static args::Flag gLiForce{
+    gLocationInformationGroup,
     "force-location-info",
     "Force Location Information (always send even if not requested)",
     {"force-location-info"},
     args::Options::Single,
 };
-static args::Flag li_unlocked{
-    location_infomation,
+static args::Flag gLiUnlocked{
+    gLocationInformationGroup,
     "unlocked",
     "Send location reports without locking the update rate. By default, the update rate is locked "
     "to 1 second.",
     {"location-report-unlocked"},
     args::Options::Single,
 };
-static args::ValueFlag<int> li_update_rate{
-    location_infomation,
-    "update-rate",
-    "Update rate in milliseconds",
-    {"update-rate"},
-    args::Options::Single};
-static args::ValueFlag<double> li_latitude{location_infomation,
+static args::Flag gLiDisableNmeaLocation{
+    gLocationInformationGroup,
+    "disable-nmea-location",
+    "Don't use location information from NMEA messages",
+    {"disable-nmea-location"},
+    args::Options::Single,
+};
+static args::Flag              gLiDisableUbxLocation{gLocationInformationGroup,
+                                        "disable-ubx-location",
+                                        "Don't use location information from UBX messages",
+                                                     {"disable-ubx-location"},
+                                        args::Options::Single};
+static args::ValueFlag<int>    gLiUpdateRate{gLocationInformationGroup,
+                                          "update-rate",
+                                          "Update rate in milliseconds",
+                                             {"update-rate"},
+                                          args::Options::Single};
+static args::ValueFlag<double> gLiLatitude{gLocationInformationGroup,
                                            "latitude",
                                            "Fake Latitude",
                                            {"fake-latitude", "flat"},
                                            args::Options::Single};
-static args::ValueFlag<double> li_longitude{location_infomation,
+static args::ValueFlag<double> gLiLongitude{gLocationInformationGroup,
                                             "longitude",
                                             "Fake Longitude",
                                             {"fake-longitude", "flon"},
                                             args::Options::Single};
-static args::ValueFlag<double> li_altitude{location_infomation,
+static args::ValueFlag<double> gLiAltitude{gLocationInformationGroup,
                                            "altitude",
                                            "Fake Altitude",
                                            {"fake-altitude", "falt"},
                                            args::Options::Single};
-static args::Flag              li_conf95to39{
-    location_infomation,
-    "confidence-95to39",
-    "DEPRECATED: Convert 95p confidence to 39p confidence (use --confidence-95to68)",
-                 {"confidence-95to39"},
-    args::Options::Single};
-static args::Flag li_conf95to68{
-    location_infomation,
+static args::Flag              gLiConf95to39{gLocationInformationGroup,
+                                "confidence-95to39",
+                                "Convert 95p confidence to 39p confidence",
+                                             {"confidence-95to39"},
+                                args::Options::Single};
+static args::Flag              gLiConf95to68{
+    gLocationInformationGroup,
     "confidence-95to68",
     "Rescale incoming semi-major/semi-minor axes from 95p to 68p confidence",
-    {"confidence-95to68"},
+                 {"confidence-95to68"},
     args::Options::Single};
-static args::Flag li_output_ellipse_68{
-    location_infomation,
+static args::Flag gLiOutputEllipse68{
+    gLocationInformationGroup,
     "output-ellipse-68",
     "Output error ellipse with confidence 68p instead of 39p",
     {"output-ellipse-68"},
     args::Options::Single,
 };
-static args::ValueFlag<double> li_override_horizontal_confidence{
-    location_infomation,
+static args::ValueFlag<double> gLiOverrideHorizontalConfidence{
+    gLocationInformationGroup,
     "override-horizontal-confidence",
     "Override horizontal confidence [0.0-1.0]",
     {"override-horizontal-confidence"},
@@ -421,79 +603,79 @@ static args::ValueFlag<double> li_override_horizontal_confidence{
 // Control Options
 //
 
-static args::Group control_options{
+static args::Group gControlGroup{
     "Control Options:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::Group control_interface{
-    control_options,
+static args::Group gControlInterface{
+    gControlGroup,
     "Interface:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
 
-static args::Group ctrl_serial_output{
-    control_interface,
+static args::Group gControlSerialGroup{
+    gControlInterface,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> ctrl_serial_device{
-    ctrl_serial_output, "device", "Device", {"ctrl-serial"}, args::Options::Single};
-static args::ValueFlag<int> ctrl_serial_baud_rate{
-    ctrl_serial_output, "baud_rate", "Baud Rate", {"ctrl-serial-baud"}, args::Options::Single};
-static args::ValueFlag<int> ctrl_serial_data_bits{
-    ctrl_serial_output, "data_bits", "Data Bits", {"ctrl-serial-data"}, args::Options::Single};
-static args::ValueFlag<int> ctrl_serial_stop_bits{
-    ctrl_serial_output, "stop_bits", "Stop Bits", {"ctrl-serial-stop"}, args::Options::Single};
-static args::ValueFlag<std::string> ctrl_serial_parity_bits{ctrl_serial_output,
-                                                            "parity_bits",
-                                                            "Parity Bits",
-                                                            {"ctrl-serial-parity"},
-                                                            args::Options::Single};
+static args::ValueFlag<std::string> gControlSerialDevice{
+    gControlSerialGroup, "device", "Device", {"ctrl-serial"}, args::Options::Single};
+static args::ValueFlag<int> gControlSerialBaudRate{
+    gControlSerialGroup, "baud_rate", "Baud Rate", {"ctrl-serial-baud"}, args::Options::Single};
+static args::ValueFlag<int> gControlSerialDataBits{
+    gControlSerialGroup, "data_bits", "Data Bits", {"ctrl-serial-data"}, args::Options::Single};
+static args::ValueFlag<int> gControlSerialStopBits{
+    gControlSerialGroup, "stop_bits", "Stop Bits", {"ctrl-serial-stop"}, args::Options::Single};
+static args::ValueFlag<std::string> gControlSerialParityBits{gControlSerialGroup,
+                                                             "parity_bits",
+                                                             "Parity Bits",
+                                                             {"ctrl-serial-parity"},
+                                                             args::Options::Single};
 
-static args::Group ctrl_tcp_output{
-    control_interface,
+static args::Group gControlTcpGroup{
+    gControlInterface,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> ctrl_tcp_ip_address{
-    ctrl_tcp_output, "ip_address", "Host or IP Address", {"ctrl-tcp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> ctrl_tcp_port{
-    ctrl_tcp_output, "port", "Port", {"ctrl-tcp-port"}, args::Options::Single};
+static args::ValueFlag<std::string> gControlTcpIpAddress{
+    gControlTcpGroup, "ip_address", "Host or IP Address", {"ctrl-tcp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gControlTcpPort{
+    gControlTcpGroup, "port", "Port", {"ctrl-tcp-port"}, args::Options::Single};
 
-static args::Group ctrl_udp_output{
-    control_interface,
+static args::Group gControlUdpGroup{
+    gControlInterface,
     "UDP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> ctrl_udp_ip_address{
-    ctrl_udp_output, "ip_address", "Host or IP Address", {"ctrl-udp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> ctrl_udp_port{
-    ctrl_udp_output, "port", "Port", {"ctrl-udp-port"}, args::Options::Single};
+static args::ValueFlag<std::string> gControlUdpIpAddress{
+    gControlUdpGroup, "ip_address", "Host or IP Address", {"ctrl-udp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gControlUdpPort{
+    gControlUdpGroup, "port", "Port", {"ctrl-udp-port"}, args::Options::Single};
 
-static args::Group ctrl_stdin_output{
-    control_interface,
+static args::Group gControlStdinGroup{
+    gControlInterface,
     "Stdin:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::Flag ctrl_stdin_output_flag{
-    ctrl_stdin_output, "stdin", "Stdin", {"ctrl-stdin"}, args::Options::Single};
+static args::Flag gControlStdin{
+    gControlStdinGroup, "stdin", "Stdin", {"ctrl-stdin"}, args::Options::Single};
 
-static args::Group ctrl_un_output{
-    control_interface,
+static args::Group gControlUnixSocketGroup{
+    gControlInterface,
     "Unix Socket:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
 
-static args::ValueFlag<std::string> ctrl_un_output_path{
-    ctrl_un_output, "path", "Path", {"ctrl-un"}, args::Options::Single};
+static args::ValueFlag<std::string> gControlUnixSocketPath{
+    gControlUnixSocketGroup, "path", "Path", {"ctrl-un"}, args::Options::Single};
 
 //
 // Options
@@ -501,13 +683,12 @@ static args::ValueFlag<std::string> ctrl_un_output_path{
 
 static LocationServerOptions parse_location_server_options(Options& options) {
     LocationServerOptions location_server_options{};
-    location_server_options.host = location_server_host.Get();
     location_server_options.port = 5431;
     location_server_options.ssl  = false;
 
-    if (location_server_host) {
-        location_server_options.host = location_server_host.Get();
-    } else if (location_server_slp_host_imsi) {
+    if (gLocationServerHost) {
+        location_server_options.host = gLocationServerHost.Get();
+    } else if (gLocationServerSlpHostImsi) {
         if (!options.identity_options.imsi) {
             throw args::RequiredError("`imsi` is required to use `slp-host-imsi`");
         } else if (options.identity_options.wait_for_identity) {
@@ -520,13 +701,13 @@ static LocationServerOptions parse_location_server_options(Options& options) {
             throw args::ValidationError("`imsi` must be at least 6 digits long");
         }
 
-        auto mcc = (imsi / (unsigned long long)std::pow(10, digits - 3)) % 1000;
-        auto mnc = (imsi / (unsigned long long)std::pow(10, digits - 6)) % 1000;
+        auto mcc = (imsi / static_cast<unsigned long long>(std::pow(10, digits - 3))) % 1000;
+        auto mnc = (imsi / static_cast<unsigned long long>(std::pow(10, digits - 6))) % 1000;
         char buffer[256];
         snprintf(buffer, sizeof(buffer), "h-slp.%03llu.%03llu.pub.3gppnetwork.org", mnc, mcc);
         auto h_slp                   = std::string{buffer};
         location_server_options.host = h_slp;
-    } else if (location_server_slp_host_cell) {
+    } else if (gLocationServerSlpHostCell) {
         auto mcc = options.cell_options.mcc;
         auto mnc = options.cell_options.mnc;
         char buffer[256];
@@ -537,12 +718,12 @@ static LocationServerOptions parse_location_server_options(Options& options) {
         throw args::RequiredError("`host` or `slp-host-cell` or `slp-host-imsi` is required");
     }
 
-    if (location_server_port) {
-        location_server_options.port = location_server_port.Get();
+    if (gLocationServerPort) {
+        location_server_options.port = gLocationServerPort.Get();
     }
 
-    if (location_server_ssl) {
-        location_server_options.ssl = location_server_ssl.Get();
+    if (gLocationServerSsl) {
+        location_server_options.ssl = gLocationServerSsl.Get();
     }
 
     return location_server_options;
@@ -553,21 +734,21 @@ static IdentityOptions parse_identity_options() {
     identity_options.use_supl_identity_fix = false;
     identity_options.wait_for_identity     = false;
 
-    if (msisdn) {
+    if (gMsisdn) {
         identity_options.msisdn =
-            std::unique_ptr<unsigned long long>{new unsigned long long{msisdn.Get()}};
+            std::unique_ptr<unsigned long long>{new unsigned long long{gMsisdn.Get()}};
     }
 
-    if (imsi) {
+    if (gImsi) {
         identity_options.imsi =
-            std::unique_ptr<unsigned long long>{new unsigned long long{imsi.Get()}};
+            std::unique_ptr<unsigned long long>{new unsigned long long{gImsi.Get()}};
     }
 
-    if (ipv4) {
-        identity_options.ipv4 = std::unique_ptr<std::string>{new std::string{ipv4.Get()}};
+    if (gIpv4) {
+        identity_options.ipv4 = std::unique_ptr<std::string>{new std::string{gIpv4.Get()}};
     }
 
-    if (wait_for_identity) {
+    if (gWaitForIdentity) {
         identity_options.wait_for_identity = true;
     }
 
@@ -577,7 +758,7 @@ static IdentityOptions parse_identity_options() {
             std::unique_ptr<unsigned long long>{new unsigned long long{2460813579lu}};
     }
 
-    if (use_supl_identity_fix) {
+    if (gUseSuplIdentityFix) {
         identity_options.use_supl_identity_fix = true;
     }
 
@@ -586,232 +767,111 @@ static IdentityOptions parse_identity_options() {
 
 static CellOptions parse_cell_options() {
     CellOptions cell_options{};
-    cell_options.mcc   = mcc.Get();
-    cell_options.mnc   = mnc.Get();
-    cell_options.tac   = tac.Get();
-    cell_options.cid   = ci.Get();
-    cell_options.is_nr = is_nr ? is_nr.Get() : false;
+    cell_options.mcc   = gMcc.Get();
+    cell_options.mnc   = gMnc.Get();
+    cell_options.tac   = gTac.Get();
+    cell_options.cid   = gCi.Get();
+    cell_options.is_nr = gIsNr ? gIsNr.Get() : false;
     return cell_options;
 }
 
-static OutputOptions parse_output_options() {
-    OutputOptions output_options{};
-
-    if (file_path) {
-        auto interface = interface::Interface::file(file_path.Get(), true);
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    if (serial_device || serial_baud_rate) {
-        if (!serial_device) {
-            throw args::RequiredError("serial_device");
-        }
-
-        uint32_t baud_rate = 115200;
-        if (serial_baud_rate) {
-            if (serial_baud_rate.Get() < 0) {
-                throw args::ValidationError("serial_baud_rate must be positive");
-            }
-
-            baud_rate = static_cast<uint32_t>(serial_baud_rate.Get());
-        }
-
-        auto data_bits = DataBits::EIGHT;
-        if (serial_data_bits) {
-            switch (serial_data_bits.Get()) {
-            case 5: data_bits = DataBits::FIVE; break;
-            case 6: data_bits = DataBits::SIX; break;
-            case 7: data_bits = DataBits::SEVEN; break;
-            case 8: data_bits = DataBits::EIGHT; break;
-            default: throw args::ValidationError("Invalid data bits");
-            }
-        }
-
-        auto stop_bits = StopBits::ONE;
-        if (serial_stop_bits) {
-            switch (serial_stop_bits.Get()) {
-            case 1: stop_bits = StopBits::ONE; break;
-            case 2: stop_bits = StopBits::TWO; break;
-            default: throw args::ValidationError("Invalid stop bits");
-            }
-        }
-
-        auto parity_bit = ParityBit::NONE;
-        if (serial_parity_bits) {
-            if (serial_parity_bits.Get() == "none") {
-                parity_bit = ParityBit::NONE;
-            } else if (serial_parity_bits.Get() == "odd") {
-                parity_bit = ParityBit::ODD;
-            } else if (serial_parity_bits.Get() == "even") {
-                parity_bit = ParityBit::EVEN;
-            } else {
-                throw args::ValidationError("Invalid parity bits");
-            }
-        }
-
-        auto interface = interface::Interface::serial(serial_device.Get(), baud_rate, data_bits,
-                                                      stop_bits, parity_bit, false);
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    if (i2c_device || i2c_address) {
-        if (!i2c_device) {
-            throw args::RequiredError("i2c_device");
-        }
-
-        if (!i2c_address) {
-            throw args::RequiredError("i2c_address");
-        }
-
-        auto interface = interface::Interface::i2c(i2c_device.Get(), i2c_address.Get());
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    if (tcp_ip_address || tcp_port) {
-        if (!tcp_ip_address) {
-            throw args::RequiredError("tcp_ip_address");
-        }
-
-        if (!tcp_port) {
-            throw args::RequiredError("tcp_port");
-        }
-
-        auto interface =
-            interface::Interface::tcp(tcp_ip_address.Get(), tcp_port.Get(), true /* reconnect */);
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    if (udp_ip_address || udp_port) {
-        if (!udp_ip_address) {
-            throw args::RequiredError("udp_ip_address");
-        }
-
-        if (!udp_port) {
-            throw args::RequiredError("udp_port");
-        }
-
-        auto interface =
-            interface::Interface::udp(udp_ip_address.Get(), udp_port.Get(), true /* reconnect */);
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    if (stdout_output_flag) {
-        auto interface = interface::Interface::stdout();
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    for (auto& interface : output_options.interfaces) {
-        interface->open();
-    }
-
-    return output_options;
-}
+//
+// Input
+//
 
 //
 // u-blox
 //
 
-static std::unique_ptr<Interface> ublox_parse_serial() {
-    assert(ublox_serial_device);
+struct UbloxResult {
+    std::unique_ptr<io::Input>  input;
+    std::unique_ptr<io::Output> output;
+};
 
-    uint32_t baud_rate = 115200;
-    if (ublox_serial_baud_rate) {
-        if (ublox_serial_baud_rate.Get() < 0) {
-            throw args::ValidationError("ublox-serial-baud-rate must be positive");
-        }
+static UbloxResult ublox_parse_serial() {
+    assert(gUbloxSerialDevice);
 
-        baud_rate = static_cast<uint32_t>(ublox_serial_baud_rate.Get());
-    }
-
-    auto data_bits = DataBits::EIGHT;
-    if (ublox_serial_data_bits) {
-        switch (ublox_serial_data_bits.Get()) {
-        case 5: data_bits = DataBits::FIVE; break;
-        case 6: data_bits = DataBits::SIX; break;
-        case 7: data_bits = DataBits::SEVEN; break;
-        case 8: data_bits = DataBits::EIGHT; break;
-        default: throw args::ValidationError("Invalid data bits");
-        }
-    }
-
-    auto stop_bits = StopBits::ONE;
-    if (ublox_serial_stop_bits) {
-        switch (ublox_serial_stop_bits.Get()) {
-        case 1: stop_bits = StopBits::ONE; break;
-        case 2: stop_bits = StopBits::TWO; break;
-        default: throw args::ValidationError("Invalid stop bits");
+    io::BaudRate baud_rate = io::BaudRate::BR115200;
+    if (gUbloxSerialBaudRate) {
+        auto baud_rate_value = gUbloxSerialBaudRate.Get();
+        switch (baud_rate_value) {
+        case 4800: baud_rate = io::BaudRate::BR4800; break;
+        case 9600: baud_rate = io::BaudRate::BR9600; break;
+        case 19200: baud_rate = io::BaudRate::BR19200; break;
+        case 38400: baud_rate = io::BaudRate::BR38400; break;
+        case 57600: baud_rate = io::BaudRate::BR57600; break;
+        case 115200: baud_rate = io::BaudRate::BR115200; break;
+        default: throw args::ValidationError("--ublox-serial-baud: invalid baud rate");
         }
     }
 
-    auto parity_bit = ParityBit::NONE;
-    if (ublox_serial_parity_bits) {
-        if (ublox_serial_parity_bits.Get() == "none") {
-            parity_bit = ParityBit::NONE;
-        } else if (ublox_serial_parity_bits.Get() == "odd") {
-            parity_bit = ParityBit::ODD;
-        } else if (ublox_serial_parity_bits.Get() == "even") {
-            parity_bit = ParityBit::EVEN;
+    auto data_bits = io::DataBits::EIGHT;
+    if (gUbloxSerialDataBits) {
+        switch (gUbloxSerialDataBits.Get()) {
+        case 5: data_bits = io::DataBits::FIVE; break;
+        case 6: data_bits = io::DataBits::SIX; break;
+        case 7: data_bits = io::DataBits::SEVEN; break;
+        case 8: data_bits = io::DataBits::EIGHT; break;
+        default: throw args::ValidationError("--ublox-serial-data: invalid data bits");
+        }
+    }
+
+    auto stop_bits = io::StopBits::ONE;
+    if (gUbloxSerialStopBits) {
+        switch (gUbloxSerialStopBits.Get()) {
+        case 1: stop_bits = io::StopBits::ONE; break;
+        case 2: stop_bits = io::StopBits::TWO; break;
+        default: throw args::ValidationError("--ublox-serial-stop: invalid stop bits");
+        }
+    }
+
+    auto parity_bit = io::ParityBit::NONE;
+    if (gUbloxSerialParityBits) {
+        if (gUbloxSerialParityBits.Get() == "none") {
+            parity_bit = io::ParityBit::NONE;
+        } else if (gUbloxSerialParityBits.Get() == "odd") {
+            parity_bit = io::ParityBit::ODD;
+        } else if (gUbloxSerialParityBits.Get() == "even") {
+            parity_bit = io::ParityBit::EVEN;
         } else {
-            throw args::ValidationError("Invalid parity bits");
+            throw args::ValidationError("--ublox-serial-parity: invalid parity");
         }
     }
 
-    auto read_only = false;
-    if (receiver_readonly) {
-        read_only = true;
+    std::unique_ptr<io::Input> input{};
+    if (gReceiverReadonly) {
+        input = std::unique_ptr<io::Input>(new io::SerialInput(gUbloxSerialDevice.Get(), baud_rate,
+                                                               data_bits, stop_bits, parity_bit));
     }
 
-    return std::unique_ptr<Interface>(Interface::serial(
-        ublox_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit, read_only));
+    auto output = std::unique_ptr<io::Output>(new io::SerialOutput(
+        gUbloxSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+    return UbloxResult{std::move(input), std::move(output)};
 }
 
-static std::unique_ptr<Interface> ublox_parse_i2c() {
-    assert(ublox_i2c_device);
+static UbloxResult ublox_parse_tcp() {
+    assert(gUbloxTcpIpAddress);
 
-    uint8_t address = 66;
-    if (ublox_i2c_address) {
-        address = ublox_i2c_address.Get();
-    }
-
-    return std::unique_ptr<Interface>(Interface::i2c(ublox_i2c_device.Get(), address));
-}
-
-static std::unique_ptr<Interface> ublox_parse_tcp() {
-    assert(ublox_tcp_ip_address);
-
-    if (!ublox_tcp_port) {
+    if (!gUbloxTcpPort) {
         throw args::RequiredError("ublox-tcp-port");
     }
 
-    return std::unique_ptr<Interface>(
-        Interface::tcp(ublox_tcp_ip_address.Get(), ublox_tcp_port.Get(), true /* reconnect */));
+    auto input = std::unique_ptr<io::Input>(
+        new io::TcpClientInput(gUbloxTcpIpAddress.Get(), gUbloxTcpPort.Get()));
+    return UbloxResult{std::move(input), nullptr};
 }
 
-static std::unique_ptr<Interface> ublox_parse_udp() {
-    assert(ublox_udp_ip_address);
-
-    if (!ublox_udp_port) {
-        throw args::RequiredError("ublox-udp-port");
-    }
-
-    return std::unique_ptr<Interface>(
-        Interface::udp(ublox_udp_ip_address.Get(), ublox_udp_port.Get(), true /* reconnect */));
-}
-
-static std::unique_ptr<Interface> ublox_parse_interface() {
-    if (ublox_serial_device) {
+static UbloxResult ublox_parse_interface() {
+    if (gUbloxSerialDevice) {
         return ublox_parse_serial();
-    } else if (ublox_i2c_device) {
-        return ublox_parse_i2c();
-    } else if (ublox_tcp_ip_address) {
+    } else if (gUbloxTcpIpAddress) {
         return ublox_parse_tcp();
-    } else if (ublox_udp_ip_address) {
-        return ublox_parse_udp();
     } else {
         throw args::RequiredError("No device/interface specified for u-blox receiver");
     }
 }
 
+#if 0
 static Port ublox_parse_port() {
     if (ublox_receiver_port) {
         if (ublox_receiver_port.Get() == "uart1") {
@@ -835,127 +895,128 @@ static Port ublox_parse_port() {
         }
     }
 }
+#endif
 
 static bool print_receiver_options_parse() {
-    if (print_messages) {
+    if (gPrintMessages) {
         return true;
     } else {
         return false;
     }
 }
 
-static UbloxOptions ublox_parse_options() {
-    if (ublox_serial_device || ublox_i2c_device || ublox_tcp_ip_address || ublox_udp_ip_address) {
-        auto port      = ublox_parse_port();
+static void ublox_parse_options(InputOptions& input_options, OutputOptions& output_options) {
+    if (gUbloxSerialDevice || gUbloxTcpIpAddress) {
         auto interface = ublox_parse_interface();
         auto prm       = print_receiver_options_parse();
-        auto readonly  = receiver_readonly ? true : false;
-
-        std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
-        if (ublox_export_file) {
-            auto interface = interface::Interface::file(ublox_export_file.Get(), true);
-            export_interfaces.emplace_back(interface);
-        }
-
-        return UbloxOptions{port, std::move(interface), prm, readonly,
-                            std::move(export_interfaces)};
-    } else {
-        return UbloxOptions{};
+        input_options.print_ubx |= prm;
+        input_options.inputs.emplace_back(InputOption{
+            INPUT_FORMAT_UBX,
+            std::move(interface.input),
+        });
+        output_options.outputs.emplace_back(OutputOption{
+            OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_SPARTN,
+            std::move(interface.output),
+        });
     }
 }
 
-static std::unique_ptr<Interface> nmea_parse_serial() {
-    uint32_t baud_rate = 115200;
-    if (nmea_serial_baud_rate) {
-        if (nmea_serial_baud_rate.Get() < 0) {
-            throw args::ValidationError("nmea-serial-baud-rate must be positive");
-        }
+struct NmeaResult {
+    std::unique_ptr<io::Input>  input;
+    std::unique_ptr<io::Output> output;
+};
 
-        baud_rate = static_cast<uint32_t>(nmea_serial_baud_rate.Get());
-    }
-
-    auto data_bits = DataBits::EIGHT;
-    if (nmea_serial_data_bits) {
-        switch (nmea_serial_data_bits.Get()) {
-        case 5: data_bits = DataBits::FIVE; break;
-        case 6: data_bits = DataBits::SIX; break;
-        case 7: data_bits = DataBits::SEVEN; break;
-        case 8: data_bits = DataBits::EIGHT; break;
-        default: throw args::ValidationError("Invalid data bits");
-        }
-    }
-
-    auto stop_bits = StopBits::ONE;
-    if (nmea_serial_stop_bits) {
-        switch (nmea_serial_stop_bits.Get()) {
-        case 1: stop_bits = StopBits::ONE; break;
-        case 2: stop_bits = StopBits::TWO; break;
-        default: throw args::ValidationError("Invalid stop bits");
+static NmeaResult nmea_parse_serial() {
+    io::BaudRate baud_rate = io::BaudRate::BR115200;
+    if (gNmeaSerialBaudRate) {
+        auto baud_rate_value = gNmeaSerialBaudRate.Get();
+        switch (baud_rate_value) {
+        case 4800: baud_rate = io::BaudRate::BR4800; break;
+        case 9600: baud_rate = io::BaudRate::BR9600; break;
+        case 19200: baud_rate = io::BaudRate::BR19200; break;
+        case 38400: baud_rate = io::BaudRate::BR38400; break;
+        case 57600: baud_rate = io::BaudRate::BR57600; break;
+        case 115200: baud_rate = io::BaudRate::BR115200; break;
+        default: throw args::ValidationError("--nmea-serial-baud: invalid baud rate");
         }
     }
 
-    auto parity_bit = ParityBit::NONE;
-    if (nmea_serial_parity_bits) {
-        if (nmea_serial_parity_bits.Get() == "none") {
-            parity_bit = ParityBit::NONE;
-        } else if (nmea_serial_parity_bits.Get() == "odd") {
-            parity_bit = ParityBit::ODD;
-        } else if (nmea_serial_parity_bits.Get() == "even") {
-            parity_bit = ParityBit::EVEN;
+    auto data_bits = io::DataBits::EIGHT;
+    if (gNmeaSerialDataBits) {
+        switch (gNmeaSerialDataBits.Get()) {
+        case 5: data_bits = io::DataBits::FIVE; break;
+        case 6: data_bits = io::DataBits::SIX; break;
+        case 7: data_bits = io::DataBits::SEVEN; break;
+        case 8: data_bits = io::DataBits::EIGHT; break;
+        default: throw args::ValidationError("--nmea-serial-data: invalid data bits");
+        }
+    }
+
+    auto stop_bits = io::StopBits::ONE;
+    if (gNmeaSerialStopBits) {
+        switch (gNmeaSerialStopBits.Get()) {
+        case 1: stop_bits = io::StopBits::ONE; break;
+        case 2: stop_bits = io::StopBits::TWO; break;
+        default: throw args::ValidationError("--nmea-serial-stop: invalid stop bits");
+        }
+    }
+
+    auto parity_bit = io::ParityBit::NONE;
+    if (gNmeaSerialParityBits) {
+        if (gNmeaSerialParityBits.Get() == "none") {
+            parity_bit = io::ParityBit::NONE;
+        } else if (gNmeaSerialParityBits.Get() == "odd") {
+            parity_bit = io::ParityBit::ODD;
+        } else if (gNmeaSerialParityBits.Get() == "even") {
+            parity_bit = io::ParityBit::EVEN;
         } else {
-            throw args::ValidationError("Invalid parity bits");
+            throw args::ValidationError("--nmea-serial-parity: invalid parity");
         }
     }
 
-    auto read_only = false;
-    if (receiver_readonly) {
-        read_only = true;
+    std::unique_ptr<io::Input> input{};
+    if (gReceiverReadonly) {
+        input = std::unique_ptr<io::Input>(new io::SerialInput(gNmeaSerialDevice.Get(), baud_rate,
+                                                               data_bits, stop_bits, parity_bit));
     }
-
-    return std::unique_ptr<Interface>(interface::Interface::serial(
-        nmea_serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit, read_only));
+    auto output = std::unique_ptr<io::Output>(
+        new io::SerialOutput(gNmeaSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+    return NmeaResult{std::move(input), std::move(output)};
 }
 
-static std::unique_ptr<Interface> nmea_parse_tcp() {
-    assert(nmea_tcp_ip_address);
+static NmeaResult nmea_parse_tcp_client() {
+    assert(gNmeaTcpIpAddress);
 
-    if (!nmea_tcp_port) {
+    if (!gNmeaTcpPort) {
         throw args::RequiredError("nmea-tcp-port");
     }
 
-    return std::unique_ptr<Interface>(
-        Interface::tcp(nmea_tcp_ip_address.Get(), nmea_tcp_port.Get(), true /* reconnect */));
+    auto input = std::unique_ptr<io::Input>(
+        new io::TcpClientInput(gNmeaTcpIpAddress.Get(), gNmeaTcpPort.Get()));
+    return NmeaResult{std::move(input), nullptr};
 }
 
-static std::unique_ptr<Interface> nmea_parse_udp() {
-    assert(nmea_udp_ip_address);
-
-    if (!nmea_udp_port) {
-        throw args::RequiredError("nmea-udp-port");
-    }
-
-    return std::unique_ptr<Interface>(
-        Interface::udp(nmea_udp_ip_address.Get(), nmea_udp_port.Get(), true /* reconnect */));
-}
-
-static std::unique_ptr<Interface> nmea_parse_interface() {
-    if (nmea_serial_device) {
+static NmeaResult nmea_parse_interface() {
+    if (gNmeaSerialDevice) {
         return nmea_parse_serial();
-    } else if (nmea_tcp_ip_address) {
-        return nmea_parse_tcp();
-    } else if (nmea_udp_ip_address) {
-        return nmea_parse_udp();
+    } else if (gNmeaTcpIpAddress) {
+        return nmea_parse_tcp_client();
     } else {
         throw args::RequiredError("No device/interface specified for NMEA receiver");
     }
 }
 
-static NmeaOptions nmea_parse_options() {
-    if (nmea_serial_device || nmea_tcp_ip_address || nmea_udp_ip_address) {
-        std::vector<std::unique_ptr<interface::Interface>> nmea_export_interfaces;
+static void nmea_parse_options(InputOptions& input_options, OutputOptions& output_options) {
+    if (gNmeaSerialDevice || gNmeaTcpIpAddress) {
+#if 0
+        // TODO(ewasjon): Add support for NMEA export
         if (nmea_export_un) {
             auto interface = interface::Interface::unix_socket_stream(nmea_export_un.Get(), true);
-            nmea_export_interfaces.emplace_back(interface);
+            interface->open();
+            output_options.outputs.emplace_back(OutputOption{
+                OUTPUT_FORMAT_NMEA,
+                std::unique_ptr<Interface>(interface),
+            });
         }
 
         if (nmea_export_tcp) {
@@ -965,76 +1026,92 @@ static NmeaOptions nmea_parse_options() {
 
             auto interface =
                 interface::Interface::tcp(nmea_export_tcp.Get(), nmea_export_tcp_port.Get(), true);
-            nmea_export_interfaces.emplace_back(interface);
+            interface->open();
+            output_options.outputs.emplace_back(OutputOption{
+                OUTPUT_FORMAT_NMEA,
+                std::unique_ptr<Interface>(interface),
+            });
         }
-
-        if (nmea_export_file) {
-            auto interface = interface::Interface::file(nmea_export_file.Get(), true);
-            nmea_export_interfaces.emplace_back(interface);
-        }
+#endif
 
         auto interface = nmea_parse_interface();
         auto prm       = print_receiver_options_parse();
-        auto readonly  = receiver_readonly ? true : false;
-        return NmeaOptions{std::move(interface), prm, readonly, std::move(nmea_export_interfaces)};
-    } else {
-        return NmeaOptions{};
+        input_options.print_nmea |= prm;
+        input_options.inputs.emplace_back(InputOption{
+            INPUT_FORMAT_NMEA,
+            std::move(interface.input),
+        });
+        output_options.outputs.emplace_back(OutputOption{
+            OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_SPARTN,
+            std::move(interface.output),
+        });
     }
 }
 
 static LocationInformationOptions parse_location_information_options() {
     LocationInformationOptions location_information{};
+    location_information.fake_location_info             = false;
     location_information.latitude                       = 69.0599730655754;
     location_information.longitude                      = 20.54864403253676;
     location_information.altitude                       = 0;
     location_information.force                          = false;
     location_information.unlock_update_rate             = false;
     location_information.update_rate                    = 1000;
+    location_information.convert_confidence_95_to_39    = false;
     location_information.convert_confidence_95_to_68    = false;
     location_information.output_ellipse_68              = false;
     location_information.override_horizontal_confidence = -1.0;
+    location_information.disable_nmea_location          = false;
+    location_information.disable_ubx_location           = false;
 
-    if (li_force) {
+    if (gLiForce) {
         location_information.force = true;
     }
 
-    if (li_unlocked) {
+    if (gLiUnlocked) {
         location_information.unlock_update_rate = true;
     }
 
-    if(li_update_rate) {
-        location_information.update_rate = li_update_rate.Get();
-        if(location_information.update_rate < 10) {
+    if (gLiUpdateRate) {
+        location_information.update_rate = gLiUpdateRate.Get();
+        if (location_information.update_rate < 10) {
             throw args::ValidationError("Update rate cannot be less than 10 milliseconds");
         }
     }
 
-    if (li_enable) {
-        location_information.enabled = true;
-        if (li_latitude) {
-            location_information.latitude = li_latitude.Get();
+    if (gLiDisableNmeaLocation) {
+        location_information.disable_nmea_location = true;
+    }
+
+    if (gLiDisableUbxLocation) {
+        location_information.disable_ubx_location = true;
+    }
+
+    if (gLiEnable) {
+        location_information.fake_location_info = true;
+        if (gLiLatitude) {
+            location_information.latitude = gLiLatitude.Get();
         }
 
-        if (li_longitude) {
-            location_information.longitude = li_longitude.Get();
+        if (gLiLongitude) {
+            location_information.longitude = gLiLongitude.Get();
         }
 
-        if (li_altitude) {
-            location_information.altitude = li_altitude.Get();
+        if (gLiAltitude) {
+            location_information.altitude = gLiAltitude.Get();
         }
     }
 
-    if (li_conf95to39 || li_conf95to68) {
-        location_information.convert_confidence_95_to_68 = true;
+    if (gLiConf95to39 || gLiConf95to68) {
+        location_information.convert_confidence_95_to_39 = true;
     }
 
-    if (li_output_ellipse_68) {
+    if (gLiOutputEllipse68) {
         location_information.output_ellipse_68 = true;
     }
 
-    if (li_override_horizontal_confidence) {
-        location_information.override_horizontal_confidence =
-            li_override_horizontal_confidence.Get();
+    if (gLiOverrideHorizontalConfidence) {
+        location_information.override_horizontal_confidence = gLiOverrideHorizontalConfidence.Get();
         if (location_information.override_horizontal_confidence < 0 ||
             location_information.override_horizontal_confidence > 1) {
             throw args::ValidationError(
@@ -1045,111 +1122,161 @@ static LocationInformationOptions parse_location_information_options() {
     return location_information;
 }
 
-static std::unique_ptr<Interface> control_parse_serial() {
-    assert(ctrl_serial_device);
+static std::unique_ptr<io::Input> control_parse_serial() {
+    assert(gControlSerialDevice);
 
-    uint32_t baud_rate = 115200;
-    if (ctrl_serial_baud_rate) {
-        if (ctrl_serial_baud_rate.Get() < 0) {
-            throw args::ValidationError("ctrl-serial-baud-rate must be positive");
-        }
-
-        baud_rate = static_cast<uint32_t>(ctrl_serial_baud_rate.Get());
-    }
-
-    auto data_bits = DataBits::EIGHT;
-    if (ctrl_serial_data_bits) {
-        switch (ctrl_serial_data_bits.Get()) {
-        case 5: data_bits = DataBits::FIVE; break;
-        case 6: data_bits = DataBits::SIX; break;
-        case 7: data_bits = DataBits::SEVEN; break;
-        case 8: data_bits = DataBits::EIGHT; break;
-        default: throw args::ValidationError("Invalid data bits");
+    io::BaudRate baud_rate = io::BaudRate::BR115200;
+    if (gControlSerialBaudRate) {
+        auto baud_rate_value = gControlSerialBaudRate.Get();
+        switch (baud_rate_value) {
+        case 4800: baud_rate = io::BaudRate::BR4800; break;
+        case 9600: baud_rate = io::BaudRate::BR9600; break;
+        case 19200: baud_rate = io::BaudRate::BR19200; break;
+        case 38400: baud_rate = io::BaudRate::BR38400; break;
+        case 57600: baud_rate = io::BaudRate::BR57600; break;
+        case 115200: baud_rate = io::BaudRate::BR115200; break;
+        default: throw args::ValidationError("--ctrl-serial-baud: invalid baud rate");
         }
     }
 
-    auto stop_bits = StopBits::ONE;
-    if (ctrl_serial_stop_bits) {
-        switch (ctrl_serial_stop_bits.Get()) {
-        case 1: stop_bits = StopBits::ONE; break;
-        case 2: stop_bits = StopBits::TWO; break;
-        default: throw args::ValidationError("Invalid stop bits");
+    auto data_bits = io::DataBits::EIGHT;
+    if (gControlSerialDataBits) {
+        switch (gControlSerialDataBits.Get()) {
+        case 5: data_bits = io::DataBits::FIVE; break;
+        case 6: data_bits = io::DataBits::SIX; break;
+        case 7: data_bits = io::DataBits::SEVEN; break;
+        case 8: data_bits = io::DataBits::EIGHT; break;
+        default: throw args::ValidationError("--ctrl-serial-data: invalid data bits");
         }
     }
 
-    auto parity_bit = ParityBit::NONE;
-    if (ctrl_serial_parity_bits) {
-        if (ctrl_serial_parity_bits.Get() == "none") {
-            parity_bit = ParityBit::NONE;
-        } else if (ctrl_serial_parity_bits.Get() == "odd") {
-            parity_bit = ParityBit::ODD;
-        } else if (ctrl_serial_parity_bits.Get() == "even") {
-            parity_bit = ParityBit::EVEN;
+    auto stop_bits = io::StopBits::ONE;
+    if (gControlSerialStopBits) {
+        switch (gControlSerialStopBits.Get()) {
+        case 1: stop_bits = io::StopBits::ONE; break;
+        case 2: stop_bits = io::StopBits::TWO; break;
+        default: throw args::ValidationError("--ctrl-serial-stop: invalid stop bits");
+        }
+    }
+
+    auto parity_bit = io::ParityBit::NONE;
+    if (gControlSerialParityBits) {
+        if (gControlSerialParityBits.Get() == "none") {
+            parity_bit = io::ParityBit::NONE;
+        } else if (gControlSerialParityBits.Get() == "odd") {
+            parity_bit = io::ParityBit::ODD;
+        } else if (gControlSerialParityBits.Get() == "even") {
+            parity_bit = io::ParityBit::EVEN;
         } else {
-            throw args::ValidationError("Invalid parity bits");
+            throw args::ValidationError("--ctrl-serial-parity: invalid parity");
         }
     }
 
-    return std::unique_ptr<Interface>(Interface::serial(ctrl_serial_device.Get(), baud_rate,
-                                                        data_bits, stop_bits, parity_bit, false));
+    return std::unique_ptr<io::Input>(new io::SerialInput(gControlSerialDevice.Get(), baud_rate,
+                                                          data_bits, stop_bits, parity_bit));
 }
 
-static std::unique_ptr<Interface> control_parse_tcp() {
-    assert(ctrl_tcp_ip_address);
+static std::unique_ptr<io::Input> control_parse_tcp() {
+    assert(gControlTcpIpAddress);
 
-    if (!ctrl_tcp_port) {
+    if (!gControlTcpPort) {
         throw args::RequiredError("ctrl-tcp-port");
     }
 
-    return std::unique_ptr<Interface>(
-        Interface::tcp(ctrl_tcp_ip_address.Get(), ctrl_tcp_port.Get(), true /* reconnect */));
+    return std::unique_ptr<io::Input>(
+        new io::TcpClientInput(gControlTcpIpAddress.Get(), gControlTcpPort.Get()));
 }
 
-static std::unique_ptr<Interface> control_parse_udp() {
-    assert(ctrl_udp_ip_address);
-
-    if (!ctrl_udp_port) {
-        throw args::RequiredError("ctrl-udp-port");
-    }
-
-    return std::unique_ptr<Interface>(
-        Interface::udp(ctrl_udp_ip_address.Get(), ctrl_udp_port.Get(), true /* reconnect */));
+static std::unique_ptr<io::Input> control_parse_stdin() {
+    return std::unique_ptr<io::Input>(new io::StdinInput());
 }
 
-static std::unique_ptr<Interface> control_parse_stdin() {
-    return std::unique_ptr<Interface>(Interface::stdin());
-}
-
-static std::unique_ptr<Interface> control_parse_unix_socket() {
-    assert(ctrl_un_output_path);
-
-    return std::unique_ptr<Interface>(
-        Interface::unix_socket_stream(ctrl_un_output_path.Get(), true));
-}
-
-static std::unique_ptr<Interface> control_parse_interface() {
-    if (ctrl_serial_device) {
+static std::unique_ptr<io::Input> control_parse_interface() {
+    if (gControlSerialDevice) {
         return control_parse_serial();
-    } else if (ctrl_tcp_ip_address) {
+    } else if (gControlTcpIpAddress) {
         return control_parse_tcp();
-    } else if (ctrl_udp_ip_address) {
-        return control_parse_udp();
-    } else if (ctrl_stdin_output_flag) {
+    } else if (gControlStdin) {
         return control_parse_stdin();
-    } else if (ctrl_un_output_path) {
-        return control_parse_unix_socket();
+    } else if (gControlUnixSocketPath) {
+        __builtin_unreachable();
     } else {
         throw args::RequiredError("No device/interface specified for control interface");
     }
 }
 
-static ControlOptions parse_control_options() {
-    if (ctrl_serial_device || ctrl_tcp_ip_address || ctrl_udp_ip_address ||
-        ctrl_stdin_output_flag || ctrl_un_output_path) {
-        auto interface = control_parse_interface();
-        return ControlOptions{std::move(interface)};
-    } else {
-        return ControlOptions{};
+static void parse_control_options(InputOptions& input_options) {
+    if (gControlSerialDevice || gControlTcpIpAddress || gControlStdin || gControlUnixSocketPath) {
+        auto input = control_parse_interface();
+        input_options.inputs.emplace_back(InputOption{
+            INPUT_FORMAT_CTRL,
+            std::move(input),
+        });
+    }
+}
+
+//
+//
+//
+
+static args::Group gLogGroup{
+    "Log:",
+    args::Group::Validators::AllChildGroups,
+    args::Options::Global,
+};
+
+static args::Flag gLogDebug{
+    gLogGroup, "debug", "Set log level to debug", {"debug"}, args::Options::Single};
+static args::Flag gLogVerbose{
+    gLogGroup, "verbose", "Set log level to verbose", {"verbose"}, args::Options::Single};
+static args::Flag gLogInfo{
+    gLogGroup, "info", "Set log level to info", {"info"}, args::Options::Single};
+static args::Flag gLogWarning{
+    gLogGroup, "warning", "Set log level to warning", {"warning"}, args::Options::Single};
+static args::Flag gLogError{
+    gLogGroup, "error", "Set log level to error", {"error"}, args::Options::Single};
+static args::ValueFlagList<std::string> gLogModules{
+    gLogGroup, "module", "<module>=<level>", {"lm"}};
+
+static void parse_log_level(Options& config) {
+    config.log_level = loglet::Level::Info;
+
+    if (gLogDebug) {
+        config.log_level = loglet::Level::Debug;
+    } else if (gLogVerbose) {
+        config.log_level = loglet::Level::Verbose;
+    } else if (gLogInfo) {
+        config.log_level = loglet::Level::Info;
+    } else if (gLogWarning) {
+        config.log_level = loglet::Level::Warning;
+    } else if (gLogError) {
+        config.log_level = loglet::Level::Error;
+    }
+
+    for (auto const& module : gLogModules) {
+        auto parts = split(module, '=');
+        if (parts.size() != 2) {
+            throw args::ValidationError("Invalid log module: " + module);
+        }
+
+        auto level = loglet::Level::Disabled;
+        if (parts[1] == "verbose") {
+            level = loglet::Level::Verbose;
+        } else if (parts[1] == "debug") {
+            level = loglet::Level::Debug;
+        } else if (parts[1] == "info") {
+            level = loglet::Level::Info;
+        } else if (parts[1] == "warning") {
+            level = loglet::Level::Warning;
+        } else if (parts[1] == "error") {
+            level = loglet::Level::Error;
+        } else if (parts[1] == "disable") {
+            level = loglet::Level::Disabled;
+        } else {
+            throw args::ValidationError("Invalid log level: " + parts[1]);
+        }
+
+        config.module_levels[parts[0]] = level;
     }
 }
 
@@ -1200,92 +1327,75 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 options.cell_options                 = parse_cell_options();
                 options.identity_options             = parse_identity_options();
                 options.location_server_options      = parse_location_server_options(options);
-                options.output_options               = parse_output_options();
-                options.ublox_options                = ublox_parse_options();
-                options.nmea_options                 = nmea_parse_options();
                 options.location_information_options = parse_location_information_options();
-                options.control_options              = parse_control_options();
+                parse_control_options(options.input_options);
+                parse_log_level(options);
+
+                parse_output_options(options.output_options);
+                // parse_input_options(options.input_options);
+                ublox_parse_options(options.input_options, options.output_options);
+                nmea_parse_options(options.input_options, options.output_options);
+
                 command_ptr->execute(std::move(options));
             }));
     }
 
     // Defaults
-    ublox_i2c_address.HelpDefault("66");
-    ublox_serial_baud_rate.HelpDefault("115200");
-    ublox_serial_data_bits.HelpDefault("8");
-    ublox_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-    ublox_serial_stop_bits.HelpDefault("1");
-    ublox_serial_stop_bits.HelpChoices({"1", "2"});
-    ublox_serial_parity_bits.HelpDefault("none");
-    ublox_serial_parity_bits.HelpChoices({
+    gUbloxSerialBaudRate.HelpDefault("115200");
+    gUbloxSerialDataBits.HelpDefault("8");
+    gUbloxSerialDataBits.HelpChoices({"5", "6", "7", "8"});
+    gUbloxSerialStopBits.HelpDefault("1");
+    gUbloxSerialStopBits.HelpChoices({"1", "2"});
+    gUbloxSerialParityBits.HelpDefault("none");
+    gUbloxSerialParityBits.HelpChoices({
         "none",
         "odd",
         "even",
     });
 
-    ublox_receiver_port.HelpDefault("(by interface)");
-    ublox_receiver_port.HelpChoices({
-        "uart1",
-        "uart2",
-        "i2c",
-        "usb",
-    });
-
-    nmea_serial_baud_rate.HelpDefault("115200");
-    nmea_serial_data_bits.HelpDefault("8");
-    nmea_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-    nmea_serial_stop_bits.HelpDefault("1");
-    nmea_serial_stop_bits.HelpChoices({"1", "2"});
-    nmea_serial_parity_bits.HelpDefault("none");
-    nmea_serial_parity_bits.HelpChoices({
+    gNmeaSerialBaudRate.HelpDefault("115200");
+    gNmeaSerialDataBits.HelpDefault("8");
+    gNmeaSerialDataBits.HelpChoices({"5", "6", "7", "8"});
+    gNmeaSerialStopBits.HelpDefault("1");
+    gNmeaSerialStopBits.HelpChoices({"1", "2"});
+    gNmeaSerialParityBits.HelpDefault("none");
+    gNmeaSerialParityBits.HelpChoices({
         "none",
         "odd",
         "even",
     });
 
-    location_server_port.HelpDefault("5431");
-    location_server_ssl.HelpDefault("false");
-    imsi.HelpDefault("2460813579");
+    gLocationServerPort.HelpDefault("5431");
+    gLocationServerSsl.HelpDefault("false");
+    gImsi.HelpDefault("2460813579");
 
-    i2c_address.HelpDefault("66");
-    serial_baud_rate.HelpDefault("115200");
-    serial_data_bits.HelpDefault("8");
-    serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-    serial_stop_bits.HelpDefault("1");
-    serial_stop_bits.HelpChoices({"1", "2"});
-    serial_parity_bits.HelpDefault("none");
-    serial_parity_bits.HelpChoices({
-        "none",
-        "odd",
-        "even",
-    });
+    gLiLatitude.HelpDefault("69.0599730655754");
+    gLiLongitude.HelpDefault("20.54864403253676");
+    gLiAltitude.HelpDefault("0");
 
-    li_latitude.HelpDefault("69.0599730655754");
-    li_longitude.HelpDefault("20.54864403253676");
-    li_altitude.HelpDefault("0");
-
-    ctrl_serial_baud_rate.HelpDefault("115200");
-    ctrl_serial_data_bits.HelpDefault("8");
-    ctrl_serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-    ctrl_serial_stop_bits.HelpDefault("1");
-    ctrl_serial_stop_bits.HelpChoices({"1", "2"});
-    ctrl_serial_parity_bits.HelpDefault("none");
-    ctrl_serial_parity_bits.HelpChoices({
+    gControlSerialBaudRate.HelpDefault("115200");
+    gControlSerialDataBits.HelpDefault("8");
+    gControlSerialDataBits.HelpChoices({"5", "6", "7", "8"});
+    gControlSerialStopBits.HelpDefault("1");
+    gControlSerialStopBits.HelpChoices({"1", "2"});
+    gControlSerialParityBits.HelpDefault("none");
+    gControlSerialParityBits.HelpChoices({
         "none",
         "odd",
         "even",
     });
 
     // Globals
-    args::GlobalOptions location_server_globals{parser, location_server};
-    args::GlobalOptions identity_globals{parser, identity};
-    args::GlobalOptions cell_information_globals{parser, cell_information};
-    args::GlobalOptions ublox_receiver_globals{parser, ublox_receiver_group};
-    args::GlobalOptions nmea_receiver_globals{parser, nmea_receiver_group};
-    args::GlobalOptions other_receiver_globals{parser, other_receiver_group};
-    args::GlobalOptions output_globals{parser, output};
-    args::GlobalOptions location_information_globals{parser, location_infomation};
-    args::GlobalOptions control_options_globals{parser, control_options};
+    args::GlobalOptions location_server_globals{parser, gLocationServer};
+    args::GlobalOptions identity_globals{parser, gIdentity};
+    args::GlobalOptions cell_information_globals{parser, gCellInformation};
+    args::GlobalOptions ublox_receiver_globals{parser, gUbloxReceiverGroup};
+    args::GlobalOptions nmea_receiver_globals{parser, gNmeaReceiverGroup};
+    args::GlobalOptions other_receiver_globals{parser, gOtherReceiverGroup};
+    args::GlobalOptions output_globals{parser, gOutputGroup};
+    args::GlobalOptions location_information_globals{parser, gLocationInformationGroup};
+    args::GlobalOptions control_options_globals{parser, gControlGroup};
+    args::GlobalOptions log_globals{parser, gLogGroup};
 
     // Parse
     try {

@@ -82,6 +82,7 @@ public:
 
     /// Unlock ProvideLocationInformation update rate.
     void unlock_update_rate();
+    void set_update_rate(int rate);
 
     OCTET_STRING* encode(LPP_Message* message);
     LPP_Message*  decode(OCTET_STRING* data);
@@ -129,6 +130,7 @@ private:
     bool mEnableSegmentation;
     bool mSuplIdentityFix;
     bool mLocationUpdateUnlocked;
+    int mLocationUpdateRate;
 };
 
 void network_initialize();

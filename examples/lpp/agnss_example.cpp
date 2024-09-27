@@ -2,13 +2,12 @@
 #include <lpp/lpp.h>
 #include <sstream>
 #include <stdexcept>
-#include <utility/types.h>
 
 static agnss_example::Format gFormat;
 static CellID                gCell;
 static Options               gOptions;
 
-static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+static bool agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
 [[noreturn]] void execute(Options options, agnss_example::Format format) {
     gOptions = std::move(options);
@@ -17,7 +16,6 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
     auto& cell_options            = gOptions.cell_options;
     auto& location_server_options = gOptions.location_server_options;
     auto& identity_options        = gOptions.identity_options;
-    auto& output_options          = gOptions.output_options;
 
     gCell.mcc   = cell_options.mcc;
     gCell.mnc   = cell_options.mnc;
@@ -34,11 +32,6 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
     if (identity_options.ipv4) printf("ipv4: %s\n", identity_options.ipv4->c_str());
     printf("  cell information:   %s %ld:%ld:%ld:%llu (mcc:mnc:tac:id)\n",
            cell_options.is_nr ? "[nr]" : "[lte]", gCell.mcc, gCell.mnc, gCell.tac, gCell.cell);
-
-    for (auto& interface : output_options.interfaces) {
-        interface->open();
-        interface->print_info();
-    }
 
     LPP_Client client{false /* enable experimental segmentation support */};
 
@@ -81,8 +74,8 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
     }
 }
 
-static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message,
-                                           void*) {
+static bool agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*) {
+#if 0
     if (gFormat == agnss_example::Format::XER) {
         std::stringstream buffer;
         xer_encode(
@@ -101,6 +94,8 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
     } else {
         throw std::runtime_error("Unsupported format");
     }
+#endif
+    return false;
 }
 
 namespace agnss_example {

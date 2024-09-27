@@ -1,36 +1,119 @@
 #include "osr_example.h"
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
-#include <receiver/nmea/threaded_receiver.hpp>
-#include <receiver/ublox/threaded_receiver.hpp>
 #include <sstream>
 #include <stdexcept>
 
-#include "control.hpp"
+#include <format/ctrl/cid.hpp>
+#include <format/ctrl/identity.hpp>
+#include <format/ctrl/parser.hpp>
+#include <format/nmea/message.hpp>
+#include <format/nmea/parser.hpp>
+#include <format/ubx/message.hpp>
+#include <format/ubx/parser.hpp>
+#include <io/input.hpp>
+#include <io/output.hpp>
+#include <scheduler/scheduler.hpp>
+#include <streamline/system.hpp>
+
 #include "location_information.h"
 
 #ifdef INCLUDE_GENERATOR_RTCM
 #include <generator/rtcm/generator.hpp>
 using RtcmGenerator = std::unique_ptr<generator::rtcm::Generator>;
-static RtcmGenerator gGenerator;
+static RtcmGenerator                  gGenerator;
+static generator::rtcm::MessageFilter gFilter;
 #endif
 
-using UReceiver = receiver::ublox::ThreadedReceiver;
-using NReceiver = receiver::nmea::ThreadedReceiver;
+static CellID              gCell;
+static osr_example::Format gFormat;
+static int                 gLrfRtcmId;
+static Options             gOptions;
+static bool                gPrintRtcm;
 
-static CellID                         gCell;
-static osr_example::Format            gFormat;
-static int                            gLrfRtcmId;
-static generator::rtcm::MessageFilter gFilter;
-static Options                        gOptions;
-static bool                           gPrintRtcm;
-static ControlParser                  gControlParser;
-static bool gReadOnly;
+#include "ctrl.hpp"
+#include "lpp.hpp"
+#include "lpp2rtcm.hpp"
+#include "nmea.hpp"
+#include "ubx.hpp"
 
-static std::unique_ptr<UReceiver> gUbloxReceiver;
-static std::unique_ptr<NReceiver> gNmeaReceiver;
+static streamline::System gStream;
 
-static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
+
+static void initialize_inputs(scheduler::Scheduler&           scheduler,
+                              std::vector<InputOption> const& inputs) {
+    for (auto const& input : inputs) {
+        format::nmea::Parser* nmea{};
+        if ((input.format & INPUT_FORMAT_NMEA) != 0) {
+            nmea = new format::nmea::Parser{};
+        }
+
+        format::ubx::Parser* ubx{};
+        if ((input.format & INPUT_FORMAT_UBX) != 0) {
+            ubx = new format::ubx::Parser{};
+        }
+
+        format::ctrl::Parser* ctrl{};
+        if ((input.format & INPUT_FORMAT_CTRL) != 0) {
+            ctrl = new format::ctrl::Parser{};
+        }
+
+        input.interface->schedule(scheduler);
+        input.interface->callback = [nmea, ubx, ctrl](io::Input&, uint8_t* buffer, size_t count) {
+            if (nmea) {
+                // TODO(ewasjon): handle count > 2^16
+                nmea->append(buffer, static_cast<uint16_t>(count));
+                for (;;) {
+                    auto message = nmea->try_parse();
+                    if (!message) break;
+                    gStream.push(std::move(message));
+                }
+            }
+
+            if (ubx) {
+                // TODO(ewasjon): handle count > 2^16
+                ubx->append(buffer, static_cast<uint16_t>(count));
+                for (;;) {
+                    auto message = ubx->try_parse();
+                    if (!message) break;
+                    gStream.push(std::move(message));
+                }
+            }
+
+            if (ctrl) {
+                // TODO(ewasjon): handle count > 2^16
+                ctrl->append(buffer, static_cast<uint16_t>(count));
+                for (;;) {
+                    auto message = ctrl->try_parse();
+                    if (!message) break;
+                    gStream.push(std::move(message));
+                }
+            }
+        };
+    }
+}
+
+static void initialize_outputs(OutputOptions const& outputs) {
+    bool lpp_xer_output  = false;
+    bool lpp_uper_output = false;
+    bool nmea_output     = false;
+    bool ubx_output      = false;
+    bool ctrl_output     = false;
+    for (auto& output : outputs.outputs) {
+        if ((output.format & OUTPUT_FORMAT_LPP_XER) != 0) lpp_xer_output = true;
+        if ((output.format & OUTPUT_FORMAT_LPP_UPER) != 0) lpp_uper_output = true;
+        if ((output.format & OUTPUT_FORMAT_NMEA) != 0) nmea_output = true;
+        if ((output.format & OUTPUT_FORMAT_UBX) != 0) ubx_output = true;
+        if ((output.format & OUTPUT_FORMAT_CTRL) != 0) ctrl_output = true;
+    }
+
+    if (lpp_xer_output) gStream.add_inspector<LppXerOutput>(outputs);
+    if (lpp_uper_output) gStream.add_inspector<LppUperOutput>(outputs);
+    if (nmea_output) gStream.add_inspector<NmeaOutput>(outputs);
+    if (ubx_output) gStream.add_inspector<UbxOutput>(outputs);
+    if (ctrl_output) gStream.add_inspector<CtrlOutput>(outputs);
+}
 
 [[noreturn]] void execute(Options options, osr_example::Format format, int lrf_rtcm_id,
                           osr_example::MsmType msm_type, bool print_rtcm, bool gps, bool glonass,
@@ -39,20 +122,15 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gFormat    = format;
     gLrfRtcmId = lrf_rtcm_id;
     gPrintRtcm = print_rtcm;
-    gReadOnly =false;
 
-    auto& cell_options                 = gOptions.cell_options;
-    auto& location_server_options      = gOptions.location_server_options;
-    auto& identity_options             = gOptions.identity_options;
-    auto& output_options               = gOptions.output_options;
-    auto& ublox_options                = gOptions.ublox_options;
-    auto& nmea_options                 = gOptions.nmea_options;
+    auto& cell_options            = gOptions.cell_options;
+    auto& location_server_options = gOptions.location_server_options;
+    auto& identity_options        = gOptions.identity_options;
+    auto& input_options           = gOptions.input_options;
+    auto& output_options          = gOptions.output_options;
+    // auto& ublox_options                = gOptions.ublox_options;
+    // auto& nmea_options                 = gOptions.nmea_options;
     auto& location_information_options = gOptions.location_information_options;
-    auto& control_options              = gOptions.control_options;
-
-    gConvertConfidence95To68      = location_information_options.convert_confidence_95_to_68;
-    gOutputEllipse68              = location_information_options.output_ellipse_68;
-    gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
 
     gCell.mcc   = cell_options.mcc;
     gCell.mnc   = cell_options.mnc;
@@ -75,96 +153,86 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     printf("  cell information:   %s %ld:%ld:%ld:%llu (mcc:mnc:tac:id)\n",
            cell_options.is_nr ? "[nr]" : "[lte]", gCell.mcc, gCell.mnc, gCell.tac, gCell.cell);
 
+    scheduler::Scheduler scheduler{};
+    gStream = streamline::System{scheduler};
+
+    if (input_options.print_ubx) {
+        gStream.add_inspector<UbxPrint>();
+    }
+
+    if (input_options.print_nmea) {
+        gStream.add_inspector<NmeaPrint>();
+    }
+
+    if (input_options.print_ctrl) {
+        gStream.add_inspector<CtrlPrint>();
+    }
+
+    gStream.add_inspector<UbxLocation>(location_information_options.convert_confidence_95_to_39,
+                                       location_information_options.override_horizontal_confidence,
+                                       location_information_options.output_ellipse_68);
+    gStream.add_consumer<NmeaLocation>(location_information_options.convert_confidence_95_to_39,
+                                       location_information_options.override_horizontal_confidence,
+                                       location_information_options.output_ellipse_68);
+
+    gStream.add_inspector<LocationCollector>();
+    gStream.add_inspector<MetricsCollector>();
+
+    initialize_inputs(scheduler, input_options.inputs);
+    initialize_outputs(output_options);
+
 #ifdef INCLUDE_GENERATOR_RTCM
-    // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
-    gFilter                 = generator::rtcm::MessageFilter{};
-    gFilter.systems.gps     = gps;
-    gFilter.systems.glonass = glonass;
-    gFilter.systems.galileo = galileo;
-    gFilter.systems.beidou  = beidou;
+    if (gFormat == osr_example::Format::RTCM) {
+        // Enable generation of message for GPS, GLONASS, Galileo, and Beidou.
+        gFilter                 = generator::rtcm::MessageFilter{};
+        gFilter.systems.gps     = gps;
+        gFilter.systems.glonass = glonass;
+        gFilter.systems.galileo = galileo;
+        gFilter.systems.beidou  = beidou;
 
-    printf("  gnss support:      ");
-    if (gFilter.systems.gps) printf(" GPS");
-    if (gFilter.systems.glonass) printf(" GLO");
-    if (gFilter.systems.galileo) printf(" GAL");
-    if (gFilter.systems.beidou) printf(" BDS");
-    printf("\n");
+        printf("  gnss support:      ");
+        if (gFilter.systems.gps) printf(" GPS");
+        if (gFilter.systems.glonass) printf(" GLO");
+        if (gFilter.systems.galileo) printf(" GAL");
+        if (gFilter.systems.beidou) printf(" BDS");
+        printf("\n");
 
-    // Force MSM type if requested.
-    switch (msm_type) {
-    case osr_example::MsmType::MSM4: gFilter.msm.force_msm4 = true; break;
-    case osr_example::MsmType::MSM5: gFilter.msm.force_msm5 = true; break;
-    case osr_example::MsmType::MSM6: gFilter.msm.force_msm6 = true; break;
-    case osr_example::MsmType::MSM7: gFilter.msm.force_msm7 = true; break;
-    case osr_example::MsmType::ANY: break;
+        // Force MSM type if requested.
+        switch (msm_type) {
+        case osr_example::MsmType::MSM4: gFilter.msm.force_msm4 = true; break;
+        case osr_example::MsmType::MSM5: gFilter.msm.force_msm5 = true; break;
+        case osr_example::MsmType::MSM6: gFilter.msm.force_msm6 = true; break;
+        case osr_example::MsmType::MSM7: gFilter.msm.force_msm7 = true; break;
+        case osr_example::MsmType::ANY: break;
+        }
+
+        printf("  msm support:       ");
+        if (gFilter.msm.force_msm4)
+            printf(" MSM4");
+        else if (gFilter.msm.force_msm5)
+            printf(" MSM5");
+        else if (gFilter.msm.force_msm6)
+            printf(" MSM6");
+        else if (gFilter.msm.force_msm7)
+            printf(" MSM7");
+        else {
+            if (gFilter.msm.msm4) printf(" MSM4");
+            if (gFilter.msm.msm5) printf(" MSM5");
+            if (gFilter.msm.msm5) printf(" MSM6");
+            if (gFilter.msm.msm7) printf(" MSM7");
+        }
+        printf("\n");
+
+        // Create RTCM generator for converting LPP messages to RTCM messages.
+        gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
+        gStream.add_inspector<Lpp2Rtcm>(gGenerator.get(), gFilter, gPrintRtcm, output_options);
     }
-
-    printf("  msm support:       ");
-    if (gFilter.msm.force_msm4)
-        printf(" MSM4");
-    else if (gFilter.msm.force_msm5)
-        printf(" MSM5");
-    else if (gFilter.msm.force_msm6)
-        printf(" MSM6");
-    else if (gFilter.msm.force_msm7)
-        printf(" MSM7");
-    else {
-        if (gFilter.msm.msm4) printf(" MSM4");
-        if (gFilter.msm.msm5) printf(" MSM5");
-        if (gFilter.msm.msm5) printf(" MSM6");
-        if (gFilter.msm.msm7) printf(" MSM7");
-    }
-    printf("\n");
 #endif
 
-    for (auto& interface : output_options.interfaces) {
-        interface->open();
-        interface->print_info();
-    }
-
-    if (ublox_options.interface) {
-        printf("[ublox]\n");
-        ublox_options.interface->open();
-        ublox_options.interface->print_info();
-        gReadOnly = ublox_options.readonly;
-
-        if (!ublox_options.export_interfaces.empty()) {
-            printf("[ublox-export]\n");
-            for (auto& interface : ublox_options.export_interfaces) {
-                interface->open();
-                interface->print_info();
-            }
-        }
-
-        gUbloxReceiver = std::unique_ptr<UReceiver>(new UReceiver(
-            ublox_options.port, std::move(ublox_options.interface), ublox_options.print_messages,
-            std::move(ublox_options.export_interfaces)));
-        gUbloxReceiver->start();
-    }
-
-    if (nmea_options.interface) {
-        printf("[nmea]\n");
-        nmea_options.interface->open();
-        nmea_options.interface->print_info();
-        gReadOnly = ublox_options.readonly;
-
-        if (!nmea_options.export_interfaces.empty()) {
-            printf("[nmea-export]\n");
-            for (auto& interface : nmea_options.export_interfaces) {
-                interface->open();
-                interface->print_info();
-            }
-        }
-
-        gNmeaReceiver = std::unique_ptr<NReceiver>(
-            new NReceiver(std::move(nmea_options.interface), nmea_options.print_messages,
-                          std::move(nmea_options.export_interfaces)));
-        gNmeaReceiver->start();
-    }
-
 #ifdef INCLUDE_GENERATOR_RTCM
-    // Create RTCM generator for converting LPP messages to RTCM messages.
-    gGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator());
+    if (gFormat == osr_example::Format::LRF_UPER) {
+        gStream.add_inspector<LppRtcmFramedOutput>(output_options, lrf_rtcm_id);
+    }
 #endif
 
     LPP_Client::AD_Request request;
@@ -176,49 +244,47 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         client.use_incorrect_supl_identity();
     }
 
-    if (control_options.interface) {
-        printf("[control]\n");
-        control_options.interface->open();
-        control_options.interface->print_info();
-
-        gControlParser.on_cid = [&](CellID cell) {
+    auto ctrl_events = gStream.add_inspector<CtrlEvents>();
+    if (ctrl_events) {
+        ctrl_events->on_cell_id = [&](format::ctrl::CellId const& cell) {
             if (!client_initialized) return;
-            if (gCell != cell) {
-                printf("[control] cell: %ld:%ld:%ld:%llu\n", cell.mcc, cell.mnc, cell.tac,
-                       cell.cell);
-                gCell = cell;
+            CellID new_cell{};
+            new_cell.mcc   = cell.mcc();
+            new_cell.mnc   = cell.mnc();
+            new_cell.tac   = cell.tac();
+            new_cell.cell  = cell.cell();
+            new_cell.is_nr = cell.is_nr();
+
+            if (gCell != new_cell) {
+                printf("[control] cell: %ld:%ld:%ld:%llu\n", new_cell.mcc, new_cell.mnc,
+                       new_cell.tac, new_cell.cell);
+                gCell = new_cell;
                 client.update_assistance_data(request, gCell);
             } else {
-                printf("[control] cell: %ld:%ld:%ld:%llu (unchanged)\n", cell.mcc, cell.mnc,
-                       cell.tac, cell.cell);
+                printf("[control] cell: %ld:%ld:%ld:%llu (unchanged)\n", new_cell.mcc, new_cell.mnc,
+                       new_cell.tac, new_cell.cell);
             }
         };
 
-        gControlParser.on_identity_imsi = [&](unsigned long long imsi) {
-            printf("[control] identity: imsi: %llu\n", imsi);
+        ctrl_events->on_identity_imsi = [&](format::ctrl::IdentityImsi const& identity) {
+            printf("[control] identity: imsi: %" PRIu64 "\n", identity.imsi());
             if (client_got_identity) return;
-            client.set_identity_imsi(imsi);
+            client.set_identity_imsi(identity.imsi());
             client_got_identity = true;
         };
     }
 
     if (identity_options.wait_for_identity) {
-        if (!control_options.interface) {
-            throw std::runtime_error("No control interface provided");
-        }
-
         printf("  waiting for identity\n");
         if (identity_options.imsi || identity_options.msisdn || identity_options.ipv4) {
             printf("  (imsi, msisdn, or ipv4 identity ignored)\n");
         }
-        while (!client_got_identity) {
-            struct timespec timeout;
-            timeout.tv_sec  = 0;
-            timeout.tv_nsec = 1000000 * 100;  // 100 ms
-            nanosleep(&timeout, nullptr);
 
-            gControlParser.parse(control_options.interface);
-        }
+        // TODO(ewasjon): Is there any way for us to know if we have a input for the control
+        // messages? We don't want to stall here forever.
+        scheduler.execute_while([&] {
+            return !client_got_identity;
+        });
     } else if (identity_options.imsi) {
         client.set_identity_imsi(*identity_options.imsi);
     } else if (identity_options.msisdn) {
@@ -230,22 +296,14 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     }
 
     printf("[location information]\n");
-    if (gUbloxReceiver.get()) {
-        printf("  source: ublox\n");
-        client.provide_location_information_callback(gUbloxReceiver.get(),
-                                                     provide_location_information_callback_ublox);
-    } else if (gNmeaReceiver.get()) {
-        printf("  source: nmea\n");
-        client.provide_location_information_callback(gNmeaReceiver.get(),
-                                                     provide_location_information_callback_nmea);
-    } else if (location_information_options.enabled) {
+    if (location_information_options.fake_location_info) {
         printf("  source: simulated\n");
         client.provide_location_information_callback(&location_information_options,
                                                      provide_location_information_callback_fake);
     } else {
-        printf("  source: none\n");
-        client.provide_location_information_callback(nullptr,
-                                                     provide_location_information_callback);
+        printf("  source: streamline\n");
+        client.provide_location_information_callback(
+            nullptr, provide_location_information_callback_streamline);
     }
 
     if (location_information_options.force) {
@@ -277,14 +335,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     client_initialized = true;
 
     for (;;) {
-        struct timespec timeout;
-        timeout.tv_sec  = 0;
-        timeout.tv_nsec = 1000000 * 100;  // 100 ms
-        nanosleep(&timeout, nullptr);
-
-        if (control_options.interface) {
-            gControlParser.parse(control_options.interface);
-        }
+        scheduler.execute_timeout(std::chrono::milliseconds(100));
 
         // client.process() MUST be called at least once every second, otherwise
         // ProvideLocationInformation messages will not be send to the server.
@@ -294,142 +345,9 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     }
 }
 
-static void transmit(void const* buffer, size_t size) {
-    for (auto& interface : gOptions.output_options.interfaces) {
-        interface->write(buffer, size);
-    }
-}
-
-static void assistance_data_callback(LPP_Client* client, LPP_Transaction*, LPP_Message* message,
-                                     void*) {
-    if (gFormat == osr_example::Format::NONE) {
-    } else if (gFormat == osr_example::Format::XER) {
-        std::stringstream buffer;
-        xer_encode(
-            &asn_DEF_LPP_Message, message, XER_F_BASIC,
-            [](void const* text_buffer, size_t text_size, void* app_key) -> int {
-                auto string_stream = static_cast<std::ostream*>(app_key);
-                string_stream->write(static_cast<char const*>(text_buffer),
-                                     static_cast<std::streamsize>(text_size));
-                return 0;
-            },
-            &buffer);
-        auto xer_message = buffer.str();
-        transmit(xer_message.data(), xer_message.size());
-    } else if (gFormat == osr_example::Format::ASN1_UPER) {
-        auto octet = client->encode(message);
-        if (octet) {
-            transmit(octet->buf, octet->size);
-
-            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
-        }
-    }
-#ifdef INCLUDE_GENERATOR_RTCM
-    else if (gFormat == osr_example::Format::LRF_UPER) {
-        auto octet = client->encode(message);
-        if (octet) {
-            auto submessages =
-                generator::rtcm::Generator::generate_framing(gLrfRtcmId, octet->buf, octet->size);
-
-            if (gPrintRtcm) {
-                size_t length = 0;
-                for (auto& submessage : submessages) {
-                    length += submessage.data().size();
-                }
-
-                printf("LRF: %4zu bytes | ", length);
-                for (auto& submessage : submessages) {
-                    printf("%4i ", submessage.id());
-                }
-                printf("\n");
-            }
-
-            for (auto& submessage : submessages) {
-                auto buffer = submessage.data().data();
-                auto size   = submessage.data().size();
-                transmit(buffer, size);
-            }
-
-            if (gUbloxReceiver && !gReadOnly) {
-                auto interface = gUbloxReceiver->interface();
-                if (interface) {
-                    for (auto& submessage : submessages) {
-                        auto buffer = submessage.data().data();
-                        auto size   = submessage.data().size();
-                        interface->write(buffer, size);
-                    }
-                } else {
-                    printf("*** ERROR: No u-blox interface\n");
-                }
-            }
-            
-            if (gNmeaReceiver && !gReadOnly) {
-                auto interface = gNmeaReceiver->interface();
-                if (interface) {
-                    for (auto& submessage : submessages) {
-                        auto buffer = submessage.data().data();
-                        auto size   = submessage.data().size();
-                        interface->write(buffer, size);
-                    }
-                } else {
-                    printf("*** ERROR: No NMEA interface\n");
-                }
-            }
-
-            ASN_STRUCT_FREE(asn_DEF_OCTET_STRING, octet);
-        }
-    } else if (gFormat == osr_example::Format::RTCM) {
-        auto messages = gGenerator->generate(message, gFilter);
-
-        if (gPrintRtcm) {
-            size_t length = 0;
-            for (auto& submessage : messages) {
-                length += submessage.data().size();
-            }
-
-            printf("RTCM: %4zu bytes | ", length);
-            for (auto& submessage : messages) {
-                printf("%4i ", submessage.id());
-            }
-            printf("\n");
-        }
-
-        for (auto& submessage : messages) {
-            auto buffer = submessage.data().data();
-            auto size   = submessage.data().size();
-            transmit(buffer, size);
-        }
-
-        if (gUbloxReceiver && !gReadOnly) {
-            auto interface = gUbloxReceiver->interface();
-            if (interface) {
-                for (auto& submessage : messages) {
-                    auto buffer = submessage.data().data();
-                    auto size   = submessage.data().size();
-                    interface->write(buffer, size);
-                }
-            } else {
-                printf("*** ERROR: No u-blox interface\n");
-            }
-        }
-        
-        if (gNmeaReceiver && !gReadOnly) {
-            auto interface = gNmeaReceiver->interface();
-            if (interface) {
-                for (auto& submessage : messages) {
-                    auto buffer = submessage.data().data();
-                    auto size   = submessage.data().size();
-                    interface->write(buffer, size);
-                }
-            } else {
-                printf("*** ERROR: No NMEA interface\n");
-            }
-        }
-    }
-#endif
-    else {
-        throw std::runtime_error("Unsupported format");
-    }
+static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
+    gStream.push(LppMessage{message});
+    return true;
 }
 
 namespace osr_example {
@@ -440,10 +358,6 @@ void OsrCommand::parse(args::Subparser& parser) {
     delete mLRFMessageIdArg;
     delete mMsmTypeArg;
     delete mPrintRTCMArg;
-    delete mNoGPS;
-    delete mNoGLONASS;
-    delete mNoGalileo;
-    delete mNoBeiDou;
 
     mFormatArg = new args::ValueFlag<std::string>(parser, "format", "Format", {'f', "format"},
                                                   args::Options::Single);

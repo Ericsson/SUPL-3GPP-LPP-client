@@ -28,8 +28,7 @@ void MetricsCollector::inspect(streamline::System&, DataType const& metrics) NOE
 using namespace location_information;
 
 PLI_Result provide_location_information_callback_streamline(LocationInformation& location,
-                                                            HaGnssMetrics&       metrics,
-                                                            void*                ) {
+                                                            HaGnssMetrics&       metrics, void*) {
     if (gHasLocation) {
         location = gLocation;
     }
@@ -78,7 +77,7 @@ PLI_Result provide_location_information_callback_fake(LocationInformation&  loca
     location.time     = ts::Tai::now();
     location.location = LocationShape::ha_ellipsoid_altitude_with_uncertainty(
         options->latitude, options->longitude, options->altitude,
-        HorizontalAccuracy::from_ellipse(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
+        HorizontalAccuracy::to_ellipse_39(0.5, 0.5, 0), VerticalAccuracy::from_1sigma(0.5));
 
     location.velocity = VelocityShape::horizontal_vertical_with_uncertainty(10, 0.5, 90, 1, 0.5,
                                                                             VerticalDirection::Up);

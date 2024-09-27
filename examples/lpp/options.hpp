@@ -1,6 +1,6 @@
 #pragma once
-#include <interface/interface.hpp>
-#include <receiver/ublox/receiver.hpp>
+#include <io/input.hpp>
+#include <io/output.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -16,6 +16,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+
+#include <loglet/loglet.hpp>
 
 /// Location server options.
 struct LocationServerOptions {
@@ -56,40 +58,59 @@ struct CellOptions {
     bool is_nr;
 };
 
+using OutputFormat                                         = uint64_t;
+constexpr static OutputFormat OUTPUT_FORMAT_NONE           = 0;
+constexpr static OutputFormat OUTPUT_FORMAT_UBX            = 1;
+constexpr static OutputFormat OUTPUT_FORMAT_NMEA           = 2;
+constexpr static OutputFormat OUTPUT_FORMAT_RTCM           = 4;
+constexpr static OutputFormat OUTPUT_FORMAT_CTRL           = 8;
+constexpr static OutputFormat OUTPUT_FORMAT_LPP_XER        = 16;
+constexpr static OutputFormat OUTPUT_FORMAT_LPP_UPER       = 32;
+constexpr static OutputFormat OUTPUT_FORMAT_LPP_RTCM_FRAME = 64;
+constexpr static OutputFormat OUTPUT_FORMAT_SPARTN         = 128;
+constexpr static OutputFormat OUTPUT_FORMAT_ALL =
+    OUTPUT_FORMAT_UBX | OUTPUT_FORMAT_NMEA | OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_CTRL |
+    OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_LPP_RTCM_FRAME |
+    OUTPUT_FORMAT_SPARTN;
+
+struct OutputOption {
+    OutputFormat                format;
+    std::unique_ptr<io::Output> interface;
+};
+
 /// Output options.
 struct OutputOptions {
-    /// Interfaces to output data to.
-    std::vector<std::unique_ptr<interface::Interface>> interfaces;
+    std::vector<OutputOption> outputs;
 };
 
-/// Ublox options.
-struct UbloxOptions {
-    /// Port on the u-blox receiver.
-    receiver::ublox::Port port;
-    /// Interface to use for communication with the receiver.
-    std::unique_ptr<interface::Interface> interface;
-    /// Whether to print messages.
-    bool print_messages;
-    bool readonly;
-    /// Export messages to other interfaces.
-    std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
+using InputFormat                              = uint64_t;
+constexpr static InputFormat INPUT_FORMAT_NONE = 0;
+constexpr static InputFormat INPUT_FORMAT_UBX  = 1;
+constexpr static InputFormat INPUT_FORMAT_NMEA = 2;
+constexpr static InputFormat INPUT_FORMAT_RTCM = 4;
+constexpr static InputFormat INPUT_FORMAT_CTRL = 8;
+constexpr static InputFormat INPUT_FORMAT_ALL =
+    INPUT_FORMAT_UBX | INPUT_FORMAT_NMEA | INPUT_FORMAT_RTCM | INPUT_FORMAT_CTRL;
+
+struct InputOption {
+    InputFormat                format;
+    std::unique_ptr<io::Input> interface;
 };
 
-/// Nmea options.
-struct NmeaOptions {
-    /// Interface to use for communication with the receiver.
-    std::unique_ptr<interface::Interface> interface;
-    /// Whether to print messages.
-    bool print_messages;
-    bool readonly;
-    /// Export messages to other interfaces.
-    std::vector<std::unique_ptr<interface::Interface>> export_interfaces;
+/// Input options.
+struct InputOptions {
+    std::vector<InputOption> inputs;
+    /// Print UBX messages.
+    bool print_ubx;
+    /// Print NMEA messages.
+    bool print_nmea;
+    bool print_ctrl;
 };
 
 /// Location information options.
 struct LocationInformationOptions {
     /// Enable fake location information.
-    bool enabled;
+    bool fake_location_info;
     /// Force location information to be sent, even if it hasn't been requested.
     bool force;
     /// Fake latitude.
@@ -100,32 +121,33 @@ struct LocationInformationOptions {
     double altitude;
     /// Unlock update rate.
     bool unlock_update_rate;
-    /// Convert incoming semi-major/semi-minor axes from 95% to 68% confidence.
+    /// Convert confidence 95% to 39%.
+    bool convert_confidence_95_to_39;
+    /// Convert confidence 95% to 68%.
     bool convert_confidence_95_to_68;
     /// Output error ellipse with confidence 68% instead of 39%.
     bool output_ellipse_68;
     /// Override horizontal confidence.
     double override_horizontal_confidence;
-    /// Update rate in milliseconds.
+    /// Don't use location information from NMEA messages.
+    bool disable_nmea_location;
+    /// Don't use location information from UBX messages.
+    bool disable_ubx_location;
+        /// Update rate in milliseconds.
     int update_rate;
-};
-
-/// Control options.
-struct ControlOptions {
-    /// Control interface.
-    std::unique_ptr<interface::Interface> interface;
 };
 
 /// Options.
 struct Options {
+    loglet::Level                                  log_level;
+    std::unordered_map<std::string, loglet::Level> module_levels;
+
     LocationServerOptions      location_server_options;
     IdentityOptions            identity_options;
     CellOptions                cell_options;
+    InputOptions               input_options;
     OutputOptions              output_options;
-    UbloxOptions               ublox_options;
-    NmeaOptions                nmea_options;
     LocationInformationOptions location_information_options;
-    ControlOptions             control_options;
 };
 
 /// Command.

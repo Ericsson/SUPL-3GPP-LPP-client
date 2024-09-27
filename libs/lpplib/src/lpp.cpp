@@ -24,6 +24,7 @@ LPP_Client::LPP_Client(bool segmentation) {
     mSUPL                     = std::unique_ptr<SUPL_Client>(new SUPL_Client());
     mSuplIdentityFix          = true;
     mLocationUpdateUnlocked   = false;
+    mLocationUpdateRate       = 1000;
 
     main_request_callback  = nullptr;
     main_request_userdata  = nullptr;
@@ -386,7 +387,8 @@ bool LPP_Client::process() {
             update_interval =
                 duration_cast<seconds>(std::chrono::milliseconds(provide_li.interval));
         } else {
-            update_interval = std::chrono::seconds(1);
+            update_interval =
+                duration_cast<seconds>(std::chrono::milliseconds(mLocationUpdateRate));
         }
 
         if (duration > update_interval) {
@@ -662,4 +664,8 @@ void LPP_Client::force_location_information() {
 
 void LPP_Client::unlock_update_rate() {
     mLocationUpdateUnlocked = true;
+}
+
+void LPP_Client::set_update_rate(int rate) {
+    mLocationUpdateRate = rate;
 }
