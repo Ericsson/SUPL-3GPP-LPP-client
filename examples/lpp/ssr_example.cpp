@@ -711,7 +711,7 @@ void SsrCommand::execute(Options options) {
     }
 
     if (*mLRFMessageIdArg) {
-        gGlobals.lrf_rtcm_id = mLRFMessageIdArg->Get();
+        lrf_rtcm_id = mLRFMessageIdArg->Get();
     }
 
     if (*mUraOverrideArg) {
