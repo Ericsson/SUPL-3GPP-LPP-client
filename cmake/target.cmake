@@ -34,7 +34,8 @@ function(setup_target target)
         endif()
 
         target_compile_options(${target} PRIVATE
-            "-Wno-c++17-extensions" 
+            "-Wno-c++17-extensions"
+            "-Wno-gnu-zero-variadic-macro-arguments"
         )
     elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         target_compile_options(${target} PRIVATE

@@ -5,6 +5,7 @@ add_library(dependency_format_nmea STATIC
     "messages/gga.cpp"
     "messages/vtg.cpp"
     "messages/gst.cpp"
+    "messages/epe.cpp"
 )
 add_library(dependency::format::nmea ALIAS dependency_format_nmea)
 

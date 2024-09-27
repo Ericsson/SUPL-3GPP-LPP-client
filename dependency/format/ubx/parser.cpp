@@ -8,6 +8,7 @@
 #include "messages/rxm_rtcm.hpp"
 #include "messages/rxm_sfrbx.hpp"
 #include "messages/rxm_spartn.hpp"
+#include "messages/rxm_rawx.hpp"
 
 #include <cstdio>
 
@@ -95,6 +96,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     case 0x0501: return UbxAckAck::parse(decoder, std::move(data));
     case 0x0500: return UbxAckNak::parse(decoder, std::move(data));
     case 0x0213: return RxmSfrbx::parse(decoder, std::move(data));
+    case 0x0215: return UbxRxmRawx::parse(decoder, std::move(data));
     case 0x0232: return UbxRxmRtcm::parse(decoder, std::move(data));
     case 0x0233: return UbxRxmSpartn::parse(decoder, std::move(data));
     default:

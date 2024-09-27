@@ -39,7 +39,7 @@ Message generate_1005(ReferenceStation const& reference_station, bool gps_indica
     encoder.b(gps_indicator);
     encoder.b(glonass_indicator);
     encoder.b(galileo_indicator);
-    encoder.b(reference_station.is_physical_reference_station);
+    encoder.b(!reference_station.is_physical_reference_station);
     df025(encoder, reference_station.x);
     encoder.u8(1, 0 /* single receiver oscillator indicator */);
     encoder.reserve(1);
@@ -69,7 +69,7 @@ Message generate_1006(ReferenceStation const& reference_station, bool gps_indica
     encoder.b(gps_indicator);
     encoder.b(glonass_indicator);
     encoder.b(galileo_indicator);
-    encoder.b(reference_station.is_physical_reference_station);
+    encoder.b(!reference_station.is_physical_reference_station);
     df025(encoder, reference_station.x);
     encoder.u8(1, 0 /* single receiver oscillator indicator */);
     encoder.reserve(1);

@@ -14,6 +14,7 @@ add_library(dependency_format_ubx STATIC
     "messages/rxm_rtcm.cpp"
     "messages/rxm_spartn.cpp"
     "messages/rxm_sfrbx.cpp"
+    "messages/rxm_rawx.cpp"
 )
 add_library(dependency::format::ubx ALIAS dependency_format_ubx)
 
