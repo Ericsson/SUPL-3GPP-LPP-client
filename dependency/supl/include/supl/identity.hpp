@@ -1,5 +1,5 @@
 #pragma once
-#include <supl/types.hpp>
+#include <core/core.hpp>
 
 #include <string>
 #include <cstring>
@@ -25,36 +25,45 @@ struct Identity {
         std::string fQDN;
     } data;
 
-    static Identity unknown() { return Identity{.type = Identity::UNKNOWN}; }
+    static Identity unknown() { 
+        Identity identity{};
+        identity.type = Identity::UNKNOWN;
+        return identity;
+     }
 
     static Identity msisdn(int64_t id) {
-        return Identity{
-            .type = Identity::MSISDN,
-            .data = {.msisdn = id},
-        };
+        Identity identity{};
+        identity.type = Identity::MSISDN;
+        identity.data.msisdn = id;
+        return identity;
     }
 
     static Identity imsi(int64_t id) {
-        return Identity{
-            .type = Identity::IMSI,
-            .data = {.msisdn = id},
-        };
+        Identity identity{};
+        identity.type = Identity::IMSI;
+        identity.data.imsi = id;
+        return identity;
     }
 
     static Identity ipv4(uint8_t* data) {
-        auto identity = Identity{.type = Identity::IPV4};
+        Identity identity{};
+        identity.type = Identity::IPV4;
         memcpy(identity.data.ipv4, data, 4);
         return identity;
     }
 
     static Identity ipv6(uint8_t* data) {
-        auto identity = Identity{.type = Identity::IPV6};
+        Identity identity{};
+        identity.type = Identity::IPV6;
         memcpy(identity.data.ipv6, data, 16);
         return identity;
     }
 
     static Identity fQDN(std::string data) {
-        return Identity{.type = Identity::FQDN, .data = {.fQDN = std::move(data)}};
+        Identity identity{};
+        identity.type = Identity::FQDN;
+        identity.data.fQDN = std::move(data);
+        return identity;
     }
 };
 

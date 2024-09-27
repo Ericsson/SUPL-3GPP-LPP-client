@@ -1,13 +1,10 @@
 
-add_library(loglet 
-    "src/loglet.cpp"
+add_library(dependency_loglet 
+    "loglet.cpp"
 )
-target_include_directories(loglet PUBLIC "include/")
-target_link_libraries(loglet PRIVATE Threads::Threads atomic)
+add_library(dependency::loglet ALIAS dependency_loglet)
+target_include_directories(dependency_loglet PUBLIC "include/")
+target_link_libraries(dependency_loglet PRIVATE Threads::Threads atomic)
+target_link_libraries(dependency_loglet PUBLIC dependency::core)
 
-target_compile_options(loglet PUBLIC "-Wno-unused-private-field")
-
-if (USE_ASAN)
-target_compile_options(loglet PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(loglet PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
+setup_target(dependency_loglet)

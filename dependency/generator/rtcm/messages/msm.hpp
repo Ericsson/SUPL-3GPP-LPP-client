@@ -2,23 +2,24 @@
 #include "generator.hpp"
 #include "rtk_data.hpp"
 
-extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
+extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm,
+                                             generator::rtcm::GenericGnssId                gnss,
                                              generator::rtcm::CommonObservationInfo const& common,
                                              generator::rtcm::Observations const& observations);
 
-RTCM_CONSTEXPR static int      mlt_size                  = 22;
-RTCM_CONSTEXPR static uint64_t mlt_coefficient[mlt_size] = {
+CONSTEXPR static int      mlt_size                  = 22;
+CONSTEXPR static uint64_t mlt_coefficient[mlt_size] = {
     1,    2,    4,    8,     16,    32,    64,     128,    256,    512,     1024,
     2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152,
 };
 
-RTCM_CONSTEXPR static uint64_t mlt_offset[mlt_size] = {
+CONSTEXPR static uint64_t mlt_offset[mlt_size] = {
     0,        64,       256,       768,       2048,      5120,       12288,   28672,
     65536,    147456,   327680,    720896,    1572864,   3407872,    7340032, 15728640,
     33554432, 71303168, 150994944, 318767104, 671088640, 1409286144,
 };
 
-RTCM_CONSTEXPR static uint64_t mlt_base[mlt_size] = {
+CONSTEXPR static uint64_t mlt_base[mlt_size] = {
     0,   64,  96,  128, 160, 192, 224, 256, 288, 320, 352,
     384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704,
 };
@@ -43,7 +44,7 @@ inline double from_msm_lock_ex(long input_value) {
     return 0.0;
 }
 
-RTCM_CONSTEXPR static uint64_t mlt2_table[16] = {
+CONSTEXPR static uint64_t mlt2_table[16] = {
     0, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288,
 };
 

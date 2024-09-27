@@ -1,5 +1,5 @@
 
-add_library(generator_rtcm STATIC 
+add_library(dependency_generator_rtcm STATIC 
     "generator.cpp"
     "satellite_id.cpp"
     "signal_id.cpp"
@@ -10,12 +10,6 @@ add_library(generator_rtcm STATIC
     "extract/residuals.cpp"
     "extract/auxiliary_information.cpp"
     "extract/extract.cpp"
-    "time/tai_time.cpp"
-    "time/gps_time.cpp"
-    "time/utc_time.cpp"
-    "time/bdt_time.cpp"
-    "time/gst_time.cpp"
-    "time/glo_time.cpp"
     "lowest_msm.cpp"
     "encoder.cpp"
     "messages/msm.cpp"
@@ -23,10 +17,13 @@ add_library(generator_rtcm STATIC
     "messages/residuals.cpp"
     "messages/reference_station.cpp"
 )
-add_library(generator::rtcm ALIAS generator_rtcm)
+add_library(dependency::generator::rtcm ALIAS dependency_generator_rtcm)
 
-target_include_directories(generator_rtcm PRIVATE "./" "include/generator/rtcm/")
-target_include_directories(generator_rtcm PUBLIC "include/")
-target_link_libraries(generator_rtcm PRIVATE asn1::generated::lpp asn1::helper)
+target_include_directories(dependency_generator_rtcm PRIVATE "./" "include/generator/rtcm/")
+target_include_directories(dependency_generator_rtcm PUBLIC "include/")
+target_link_libraries(dependency_generator_rtcm PRIVATE asn1::generated::lpp asn1::helper)
+target_link_libraries(dependency_generator_rtcm PUBLIC dependency::loglet)
+target_link_libraries(dependency_generator_rtcm PUBLIC dependency::time)
+target_link_libraries(dependency_generator_rtcm PUBLIC dependency::core)
 
-setup_target(generator_rtcm)
+setup_target(dependency_generator_rtcm)

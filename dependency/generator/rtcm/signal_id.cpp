@@ -1,6 +1,25 @@
 #include "signal_id.hpp"
 #include <cassert>
 
+SignalId const SignalId::GPS_L1_CA         = SignalId::from_lpp(SignalId::GPS, 0);
+SignalId const SignalId::GPS_L1C           = SignalId::from_lpp(SignalId::GPS, 1);
+SignalId const SignalId::GPS_L2C           = SignalId::from_lpp(SignalId::GPS, 2);
+SignalId const SignalId::GPS_L5            = SignalId::from_lpp(SignalId::GPS, 3);
+SignalId const SignalId::GPS_L1_P          = SignalId::from_lpp(SignalId::GPS, 4);
+SignalId const SignalId::GPS_L1_Z_TRACKING = SignalId::from_lpp(SignalId::GPS, 5);
+SignalId const SignalId::GPS_L2_C_A        = SignalId::from_lpp(SignalId::GPS, 6);
+SignalId const SignalId::GPS_L2_P          = SignalId::from_lpp(SignalId::GPS, 7);
+SignalId const SignalId::GPS_L2_Z_TRACKING = SignalId::from_lpp(SignalId::GPS, 8);
+SignalId const SignalId::GPS_L2_L2C_M      = SignalId::from_lpp(SignalId::GPS, 9);
+SignalId const SignalId::GPS_L2_L2C_L      = SignalId::from_lpp(SignalId::GPS, 10);
+SignalId const SignalId::GPS_L2_L2C_M_L    = SignalId::from_lpp(SignalId::GPS, 11);
+SignalId const SignalId::GPS_L5_I          = SignalId::from_lpp(SignalId::GPS, 12);
+SignalId const SignalId::GPS_L5_Q          = SignalId::from_lpp(SignalId::GPS, 13);
+SignalId const SignalId::GPS_L5_I_Q        = SignalId::from_lpp(SignalId::GPS, 14);
+SignalId const SignalId::GPS_L1_L1C_D      = SignalId::from_lpp(SignalId::GPS, 15);
+SignalId const SignalId::GPS_L1_L1C_P      = SignalId::from_lpp(SignalId::GPS, 16);
+SignalId const SignalId::GPS_L1_L1C_D_P    = SignalId::from_lpp(SignalId::GPS, 17);
+
 //
 // GPS
 //
@@ -12,8 +31,19 @@ static std::string GPS_NAMES[24] = {
     "Reserved", "Reserved", "Reserved",      "Reserved",  "Reserved",  "Reserved",
 };
 
-RTCM_CONSTEXPR static int32_t GPS_LPP_TO_RTCM[24] = {
+CONSTEXPR static int32_t GPS_LPP_TO_RTCM[24] = {
     2, -1, -1, -1, 3, 4, 8, 9, 10, 15, 16, 17, 22, 23, 24, 30, 31, 32, -1, -1, -1, -1, -1, -1,
+};
+
+#define GPS_L1_FREQ 1575.42e6
+#define GPS_L2_FREQ 1227.60e6
+#define GPS_L5_FREQ 1176.45e6
+
+static double GPS_FREQ[24] = {
+    GPS_L1_FREQ, GPS_L1_FREQ, GPS_L2_FREQ, GPS_L5_FREQ, GPS_L1_FREQ, GPS_L1_FREQ,
+    GPS_L2_FREQ, GPS_L2_FREQ, GPS_L2_FREQ, GPS_L2_FREQ, GPS_L2_FREQ, GPS_L2_FREQ,
+    GPS_L5_FREQ, GPS_L5_FREQ, GPS_L5_FREQ, GPS_L1_FREQ, GPS_L1_FREQ, GPS_L1_FREQ,
+    0.0,         0.0,         0.0,         0.0,         0.0,         0.0,
 };
 
 //
@@ -25,8 +55,39 @@ static std::string GLONASS_NAMES[24] = {
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
-RTCM_CONSTEXPR static int32_t GLONASS_LPP_TO_RTCM[24] = {
+CONSTEXPR static int32_t GLONASS_LPP_TO_RTCM[24] = {
     2, 8, -1, 3, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+};
+
+#define GLONASS_G1_FREQ 1602.0e6
+#define GLONASS_G2_FREQ 1246.0e6
+#define GLONASS_G3_FREQ 1202.025e6
+
+static double GLONASS_FREQ[24] = {
+    GLONASS_G1_FREQ,
+    GLONASS_G2_FREQ,
+    GLONASS_G3_FREQ,
+    GLONASS_G1_FREQ,
+    GLONASS_G2_FREQ,
+    GLONASS_G1_FREQ,
+    GLONASS_G1_FREQ,
+    GLONASS_G1_FREQ,
+    GLONASS_G2_FREQ,
+    GLONASS_G2_FREQ,
+    GLONASS_G2_FREQ,
+    GLONASS_G3_FREQ,
+    GLONASS_G3_FREQ,
+    GLONASS_G3_FREQ,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
 };
 
 //
@@ -41,8 +102,41 @@ static std::string GALILEO_NAMES[24] = {
     "E5(A+B) I+Q", "E5A I",        "E5A Q",     "E5A I+Q",
 };
 
-RTCM_CONSTEXPR static int32_t GALILEO_LPP_TO_RTCM[24] = {
+CONSTEXPR static int32_t GALILEO_LPP_TO_RTCM[24] = {
     -1, -1, -1, -1, -1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 18, 19, 20, 22, 23, 24,
+};
+
+#define GALILEO_E1_FREQ 1575.42e6
+#define GALILEO_E5A_FREQ 1176.45e6
+#define GALILEO_E5B_FREQ 1207.14e6
+#define GALILEO_E6_FREQ 1278.75e6
+#define GALILEO_E5A_E5B_FREQ 1191.795e6
+
+static double GALILEO_FREQ[24] = {
+    GALILEO_E1_FREQ,       // E1
+    GALILEO_E5A_FREQ,      // E5A
+    GALILEO_E5B_FREQ,      // E5B
+    GALILEO_E6_FREQ,       // E6
+    GALILEO_E5A_E5B_FREQ,  // E5A + E5B
+    GALILEO_E1_FREQ,       // E1 C No data
+    GALILEO_E1_FREQ,       // E1 A
+    GALILEO_E1_FREQ,       // E1 B I/NAV OS/CS/SoL
+    GALILEO_E1_FREQ,       // E1 B+C
+    GALILEO_E1_FREQ,       // E1 A+B+C
+    GALILEO_E6_FREQ,       // E6 C
+    GALILEO_E6_FREQ,       // E6 A
+    GALILEO_E6_FREQ,       // E6 B
+    GALILEO_E6_FREQ,       // E6 B+C
+    GALILEO_E6_FREQ,       // E6 A+B+C
+    GALILEO_E5B_FREQ,      // E5B I
+    GALILEO_E5B_FREQ,      // E5B Q
+    GALILEO_E5B_FREQ,      // E5B I+Q
+    GALILEO_E5A_E5B_FREQ,  // E5(A+B) I
+    GALILEO_E5A_E5B_FREQ,  // E5(A+B) Q
+    GALILEO_E5A_E5B_FREQ,  // E5(A+B) I+Q
+    GALILEO_E5A_FREQ,      // E5A I
+    GALILEO_E5A_FREQ,      // E5A Q
+    GALILEO_E5A_FREQ       // E5A I+Q
 };
 
 //
@@ -55,8 +149,40 @@ static std::string BDS_NAMES[24] = {
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
-RTCM_CONSTEXPR static int32_t BDS_LPP_TO_RTCM[24] = {
+CONSTEXPR static int32_t BDS_LPP_TO_RTCM[24] = {
     2, 3, 4, 8, 9, 10, 14, 15, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+};
+
+#define BEIDOU_B1_FREQ 1561.098e6
+#define BEIDOU_B1C_FREQ 1575.42e6
+#define BEIDOU_B2_FREQ 1207.14e6
+#define BEIDOU_B3_FREQ 1268.52e6
+
+static double BDS_FREQ[24] = {
+    BEIDOU_B1_FREQ,   // B1 I
+    BEIDOU_B1_FREQ,   // B1 Q
+    BEIDOU_B1_FREQ,   // B1 I+Q
+    BEIDOU_B3_FREQ,   // B3 I
+    BEIDOU_B3_FREQ,   // B3 Q
+    BEIDOU_B3_FREQ,   // B3 I+Q
+    BEIDOU_B2_FREQ,   // B2 I
+    BEIDOU_B2_FREQ,   // B2 Q
+    BEIDOU_B2_FREQ,   // B2 I+Q
+    BEIDOU_B1C_FREQ,  // B1C(D)
+    BEIDOU_B1C_FREQ,  // B1C(P)
+    BEIDOU_B1C_FREQ,  // B1C(D+P)
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0,              // Reserved
+    0.0               // Reserved
 };
 
 SignalId SignalId::from_lpp(Gnss gnss, long id) {
@@ -73,8 +199,10 @@ SignalId SignalId::from_lpp(Gnss gnss, long id) {
     } else if (gnss == Gnss::BEIDOU) {
         return SignalId(gnss, static_cast<int32_t>(id));
     } else {
-        assert(false);
+        CORE_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
         return {};
+#endif
     }
 }
 
@@ -90,9 +218,53 @@ std::string SignalId::to_string() const {
     } else if (mGnss == Gnss::BEIDOU) {
         return BDS_NAMES[id];
     } else {
-        assert(false);
+        CORE_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
         return "Invalid GNSS";
+#endif
     }
+}
+
+char const* SignalId::name() const {
+    auto id = lpp_id();
+
+    if (mGnss == Gnss::GPS) {
+        return GPS_NAMES[id].c_str();
+    } else if (mGnss == Gnss::GLONASS) {
+        return GLONASS_NAMES[id].c_str();
+    } else if (mGnss == Gnss::GALILEO) {
+        return GALILEO_NAMES[id].c_str();
+    } else if (mGnss == Gnss::BEIDOU) {
+        return BDS_NAMES[id].c_str();
+    } else {
+        CORE_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+        return "Invalid GNSS";
+#endif
+    }
+}
+
+double SignalId::frequency() const {
+    auto id = lpp_id();
+
+    if (mGnss == Gnss::GPS) {
+        return GPS_FREQ[id];
+    } else if (mGnss == Gnss::GLONASS) {
+        return GLONASS_FREQ[id];
+    } else if (mGnss == Gnss::GALILEO) {
+        return GALILEO_FREQ[id];
+    } else if (mGnss == Gnss::BEIDOU) {
+        return BDS_FREQ[id];
+    } else {
+        CORE_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+        return 0.0;
+#endif
+    }
+}
+
+double SignalId::wavelength() const {
+    return 299792458.0 / frequency();
 }
 
 Maybe<long> SignalId::as_msm() const {

@@ -1,9 +1,8 @@
 #pragma once
 #include <lpp/message.hpp>
 #include <lpp/transaction.hpp>
-#include <lpp/types.hpp>
 #include <lpp/version.hpp>
-#include <scheduler/task.hpp>
+#include <scheduler/scheduler.hpp>
 #include <supl/identity.hpp>
 
 #include <functional>
@@ -83,28 +82,28 @@ struct TransactionData {
     bool              single_side_endable;
 };
 
-class SessionTask : public Task {
+class SessionTask {
 public:
     SessionTask()
-        : mFd(-1), mSession(nullptr), mReadEnabled(false), mWriteEnabled(false),
-          mErrorEnabled(false), mRegistered(false) {}
+        : mFd(-1), mSession(nullptr), mScheduler(nullptr), mReadEnabled(false),
+          mWriteEnabled(false), mErrorEnabled(false) {}
     SessionTask(Session* session, int fd);
-    virtual ~SessionTask() = default;
+    ~SessionTask() = default;
 
-    virtual void register_task(Scheduler* scheduler) override;
-    virtual void unregister_task(Scheduler* scheduler) override;
+    bool schedule(scheduler::Scheduler& scheduler);
+    bool cancel();
 
     void event(struct epoll_event* event);
     void update(int fd, bool read, bool write, bool error);
 
 protected:
-    int        mFd;
-    EpollEvent mEvent;
-    Session*   mSession;
-    bool       mReadEnabled;
-    bool       mWriteEnabled;
-    bool       mErrorEnabled;
-    bool       mRegistered;
+    int                   mFd;
+    scheduler::EpollEvent mEvent;
+    Session*              mSession;
+    scheduler::Scheduler* mScheduler;
+    bool                  mReadEnabled;
+    bool                  mWriteEnabled;
+    bool                  mErrorEnabled;
 };
 
 class Session {
@@ -113,25 +112,26 @@ public:
     ~Session();
 
     // Setup the connection information for the session and switch to the CONNECT state
-    void connect(const std::string& host, uint16_t port);
+    void connect(std::string const& host, uint16_t port);
 
     // Create a new transaction. 'single_side_endable' determines if the transaction is can be ended
     // when either sides sends a endTransaction, otherwise you need to end the transaction yourself
     // in `on_server_end_transaction`.
     TransactionHandle create_transaction(bool single_side_endable = true);
-    void              delete_transaction(const TransactionHandle& transaction);
+    void              delete_transaction(TransactionHandle const& transaction);
 
-    void send(const TransactionHandle& handle, Message& message);
+    void send(TransactionHandle const& handle, Message& message);
 
     // Send message with endTransaction. Only sends the message if the transaction is alive by both
     // parties.
-    void send_with_end(const TransactionHandle& handle, Message& message);
+    void send_with_end(TransactionHandle const& handle, Message& message);
 
     // Send an abort message with endTransaction. Only sends the message if the transaction is alive
     // by both parties.
-    void abort(const TransactionHandle& handle);
+    void abort(TransactionHandle const& handle);
 
-    void schedule(Scheduler* scheduler);
+    void schedule(scheduler::Scheduler* scheduler);
+    void cancel();
 
     // Called when the session is connected to the server
     std::function<void(Session&)> on_connected;
@@ -141,13 +141,13 @@ public:
     // session is ready to send and receive messages
     std::function<void(Session&)> on_established;
     // Called when a transaction begins (from the server or client)
-    std::function<void(Session&, const TransactionHandle&)> on_begin_transaction;
+    std::function<void(Session&, TransactionHandle const&)> on_begin_transaction;
     // Callback for transaction that what to handle server endTransaction themself.
-    std::function<void(Session&, const TransactionHandle&)> on_server_end_transaction;
+    std::function<void(Session&, TransactionHandle const&)> on_server_end_transaction;
     // Called when a transaction ends (from the server or client)
-    std::function<void(Session&, const TransactionHandle&)> on_end_transaction;
+    std::function<void(Session&, TransactionHandle const&)> on_end_transaction;
     // Called when a message was received for a transaction
-    std::function<void(Session&, const TransactionHandle&, Message)> on_message;
+    std::function<void(Session&, TransactionHandle const&, Message)> on_message;
 
 protected:
     void switch_state(State state);
@@ -172,18 +172,18 @@ protected:
 
     TransactionHandle allocate_transaction();
 
-    TransactionData* find_transaction(const LPP_TransactionID& transaction_id);
-    TransactionData* find_transaction(const TransactionHandle& handle);
-    bool             add_transaction(const TransactionHandle& handle, bool single_side_endable);
-    bool             remove_transaction(const TransactionHandle& handle);
+    TransactionData* find_transaction(LPP_TransactionID const& transaction_id);
+    TransactionData* find_transaction(TransactionHandle const& handle);
+    bool             add_transaction(TransactionHandle const& handle, bool single_side_endable);
+    bool             remove_transaction(TransactionHandle const& handle);
 
-    void server_end_transaction(const TransactionHandle& handle);
-    void client_end_transaction(const TransactionHandle& handle);
+    void server_end_transaction(TransactionHandle const& handle);
+    void client_end_transaction(TransactionHandle const& handle);
 
-    void                 process_supl_pos(const supl::POS& pos);
-    void                 process_lpp_payload(const supl::Payload& payload);
-    Message              decode_lpp_message(const uint8_t* data, size_t size);
-    std::vector<uint8_t> encode_lpp_message(const Message& message);
+    void                 process_supl_pos(supl::POS const& pos);
+    void                 process_lpp_payload(supl::Payload const& payload);
+    Message              decode_lpp_message(uint8_t const* data, size_t size);
+    std::vector<uint8_t> encode_lpp_message(Message const& message);
 
 private:
     State          mState;
@@ -202,11 +202,11 @@ private:
     long mGenerationId;
     long mSequenceNumber;
 
-    Scheduler*  mScheduler;
-    SessionTask mTask;
-    State       mNextReadState;
-    State       mNextWriteState;
-    State       mNextErrorState;
+    scheduler::Scheduler* mScheduler;
+    SessionTask           mTask;
+    State                 mNextReadState;
+    State                 mNextWriteState;
+    State                 mNextErrorState;
 
     friend SessionTask;
 };

@@ -1,7 +1,10 @@
 #pragma once
-#include <generator/rtcm/types.hpp>
+#include <core/core.hpp>
+
 #include <memory>
 #include <vector>
+
+#include <generator/rtcm/rtk_data.hpp>
 
 struct LPP_Message;
 
@@ -72,12 +75,11 @@ struct MessageFilter {
 
 class Message {
 public:
-    RTCM_EXPLICIT Message(uint32_t id, std::vector<uint8_t> data) RTCM_NOEXCEPT
-        : mId(id),
-          mData(std::move(data)) {}
+    EXPLICIT Message(uint32_t id, std::vector<uint8_t> data) NOEXCEPT : mId(id),
+                                                                        mData(std::move(data)) {}
 
-    RTCM_NODISCARD uint32_t id() const RTCM_NOEXCEPT { return mId; }
-    RTCM_NODISCARD const std::vector<uint8_t>& data() const RTCM_NOEXCEPT { return mData; }
+    NODISCARD uint32_t id() const NOEXCEPT { return mId; }
+    NODISCARD const std::vector<uint8_t>& data() const NOEXCEPT { return mData; }
 
 private:
     uint32_t             mId;
@@ -100,7 +102,8 @@ public:
     /// @param[in] lpp_message The LPP RTK message.
     /// @param[in] filter The filter to apply to the LPP RTK message.
     /// @return The generated RTCM messages.
-    RTCM_NODISCARD std::vector<Message> generate(LPP_Message const* lpp_message, MessageFilter const& filter);
+    NODISCARD std::vector<Message> generate(LPP_Message const*   lpp_message,
+                                            MessageFilter const& filter);
 
     /// Generate RTCM messages that acts as framing for the LPP encoded data. One LPP message may be
     /// split into multiple RTCM messages. The RTCM message id of these message are 355.
@@ -108,13 +111,20 @@ public:
     /// @param[in] lpp_data The LPP encoded data.
     /// @param[in] lpp_data_size The size of the LPP encoded data.
     /// @return The generated RTCM messages.
-    static RTCM_NODISCARD std::vector<Message> generate_framing(int message_id, void const* lpp_data, size_t lpp_data_size) RTCM_NOEXCEPT;
+    static NODISCARD std::vector<Message> generate_framing(int message_id, void const* lpp_data,
+                                                           size_t lpp_data_size) NOEXCEPT;
 
 private:
     uint32_t                                  mGenerationIndex;
     std::unique_ptr<ReferenceStation>         mReferenceStation;
     std::unique_ptr<PhysicalReferenceStation> mPhysicalReferenceStation;
 };
+
+extern Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
+                            CommonObservationInfo const& common, Observations const& observations);
+
+extern Message generate_1005(ReferenceStation const& reference_station, bool gps_indicator,
+                             bool glonass_indicator, bool galileo_indicator);
 
 }  // namespace rtcm
 }  // namespace generator

@@ -1,7 +1,6 @@
 #pragma once
 #include <lpp/initiator.hpp>
 #include <lpp/message.hpp>
-#include <lpp/types.hpp>
 
 #include <memory>
 
@@ -13,7 +12,7 @@ struct TransactionLookup {
     long      id;
     Initiator initiator;
 
-    LPP_NODISCARD bool operator==(const TransactionLookup& other) const {
+    NODISCARD bool operator==(TransactionLookup const& other) const {
         return id == other.id && initiator == other.initiator;
     }
 };
@@ -26,11 +25,11 @@ public:
         : mSession(session), mTransactionId(transaction_id), mGenerationId(generation_id),
           mInitiator(initiator) {}
 
-    TransactionHandle(const TransactionHandle& other)
+    TransactionHandle(TransactionHandle const& other)
         : mSession(other.mSession), mTransactionId(other.mTransactionId),
           mGenerationId(other.mGenerationId), mInitiator(other.mInitiator) {}
 
-    TransactionHandle& operator=(const TransactionHandle& other) {
+    TransactionHandle& operator=(TransactionHandle const& other) {
         mSession       = other.mSession;
         mTransactionId = other.mTransactionId;
         mGenerationId  = other.mGenerationId;
@@ -53,25 +52,25 @@ public:
         return *this;
     }
 
-    LPP_NODISCARD bool is_valid() const { return mSession != nullptr; }
+    NODISCARD bool is_valid() const { return mSession != nullptr; }
 
     void send(Message& message);
     void send_with_end(Message& message);
     void abort();
 
-    LPP_NODISCARD long      id() const { return mTransactionId; }
-    LPP_NODISCARD long      generation_id() const { return mGenerationId; }
-    LPP_NODISCARD Initiator initiator() const { return mInitiator; }
+    NODISCARD long      id() const { return mTransactionId; }
+    NODISCARD long      generation_id() const { return mGenerationId; }
+    NODISCARD Initiator initiator() const { return mInitiator; }
 
-    LPP_NODISCARD bool operator==(const TransactionHandle& other) const {
+    NODISCARD bool operator==(TransactionHandle const& other) const {
         return mSession == other.mSession && mTransactionId == other.mTransactionId &&
                mGenerationId == other.mGenerationId && mInitiator == other.mInitiator;
     }
 
-    LPP_NODISCARD std::string       to_string() const;
-    LPP_NODISCARD TransactionLookup lookup() const { return TransactionLookup{id(), initiator()}; }
+    NODISCARD std::string       to_string() const;
+    NODISCARD TransactionLookup lookup() const { return TransactionLookup{id(), initiator()}; }
 
-    LPP_NODISCARD static TransactionHandle invalid() { return {}; }
+    NODISCARD static TransactionHandle invalid() { return {}; }
 
 private:
     Session* mSession;
@@ -86,7 +85,7 @@ private:
 
 template <>
 struct std::hash<lpp::TransactionHandle> {
-    std::size_t operator()(const lpp::TransactionHandle& k) const {
+    std::size_t operator()(lpp::TransactionHandle const& k) const {
         std::size_t result = 17;
         result             = result * 31 + hash<long>()(k.id());
         result             = result * 31 + hash<long>()(k.generation_id());
@@ -97,7 +96,7 @@ struct std::hash<lpp::TransactionHandle> {
 
 template <>
 struct std::hash<lpp::TransactionLookup> {
-    std::size_t operator()(const lpp::TransactionLookup& k) const {
+    std::size_t operator()(lpp::TransactionLookup const& k) const {
         std::size_t result = 17;
         result             = result * 31 + hash<long>()(k.id);
         result             = result * 31 + hash<lpp::Initiator>()(k.initiator);

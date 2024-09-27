@@ -1,16 +1,16 @@
 
-add_library(scheduler 
-    "src/scheduler.cpp"
-    "src/task.cpp"
-    "src/periodic_task.cpp"
+add_library(dependency_scheduler 
+    "scheduler.cpp"
+    "timeout.cpp"
+    "periodic.cpp"
+    "stream.cpp"
+    "file_descriptor.cpp"
+    "socket.cpp"
 )
-target_include_directories(scheduler PUBLIC "include/")
-target_link_libraries(scheduler PRIVATE Threads::Threads atomic)
-target_link_libraries(scheduler PRIVATE loglet)
+add_library(dependency::scheduler ALIAS dependency_scheduler)
+target_include_directories(dependency_scheduler PRIVATE "./" "include/scheduler/")
+target_include_directories(dependency_scheduler PUBLIC "include/")
+target_link_libraries(dependency_scheduler PRIVATE dependency::loglet)
+target_link_libraries(dependency_scheduler PUBLIC dependency::core)
 
-target_compile_options(scheduler PUBLIC "-Wno-unused-private-field")
-
-if (USE_ASAN)
-target_compile_options(scheduler PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(scheduler PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
+setup_target(dependency_scheduler)

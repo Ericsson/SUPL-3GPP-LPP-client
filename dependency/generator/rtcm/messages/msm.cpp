@@ -1,28 +1,31 @@
 #include "msm.hpp"
+#include "constant.hpp"
 #include "encoder.hpp"
 #include "helper.hpp"
-#include "time/bdt_time.hpp"
-#include "time/glo_time.hpp"
-#include "time/gps_time.hpp"
-#include "time/gst_time.hpp"
-#include "time/tai_time.hpp"
-#include "time/utc_time.hpp"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <inttypes.h>
 
+#include <time/bdt.hpp>
+#include <time/glo.hpp>
+#include <time/gps.hpp>
+#include <time/gst.hpp>
+#include <time/tai.hpp>
+#include <time/utc.hpp>
+
 using namespace generator::rtcm;
 
-static void epoch_time(Encoder& encoder, ts::TAI_Time const& time, GenericGnssId gnss) {
+static void epoch_time(Encoder& encoder, ts::Tai const& time, GenericGnssId gnss) {
     switch (gnss) {
     case GenericGnssId::GPS: {
-        auto tow          = ts::GPS_Time(time).time_of_week();
+        auto tow          = ts::Gps(time).time_of_week();
         auto milliseconds = tow.full_seconds() * 1000;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::GLONASS: {
-        auto glo          = ts::GLO_Time(time);
+        auto glo          = ts::Glo(time);
         auto dow          = glo.days() % 7;
         auto tow          = glo.time_of_day();
         auto milliseconds = tow.full_seconds() * 1000;
@@ -30,12 +33,12 @@ static void epoch_time(Encoder& encoder, ts::TAI_Time const& time, GenericGnssId
         encoder.u32(27, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::GALILEO: {
-        auto tow          = ts::GST_Time(time).time_of_week();
+        auto tow          = ts::Gst(time).time_of_week();
         auto milliseconds = tow.full_seconds() * 1000;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::BEIDOU: {
-        auto tow          = ts::BDT_Time(time).time_of_week();
+        auto tow          = ts::Bdt(time).time_of_week();
         auto milliseconds = tow.full_seconds() * 1000;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
@@ -291,9 +294,11 @@ static void generate_msm_signals(uint32_t msm, Encoder& encoder,
 // Header
 //
 
-extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
-                                             CommonObservationInfo const& common,
-                                             Observations const&          observations) {
+namespace generator {
+namespace rtcm {
+generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
+                                      CommonObservationInfo const& common,
+                                      Observations const&          observations) {
     auto message_id = msm_message_id(msm, gnss);
 
     auto encoder = Encoder();
@@ -318,6 +323,10 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
         }
     }
 
+    std::sort(satellites.begin(), satellites.end(), [](Satellite const* a, Satellite const* b) {
+        return a->id.as_msm().value < b->id.as_msm().value;
+    });
+
     for (auto& signal : observations.signals) {
         auto signal_id = signal.id.as_msm();
         if (!(signal_id.valid && signal_id.value >= 1 && signal_id.value <= 32)) continue;
@@ -326,6 +335,12 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
         if (!(satellite_id.valid && satellite_id.value >= 1 && satellite_id.value <= 64)) continue;
         signals.push_back(&signal);
     }
+
+    std::sort(signals.begin(), signals.end(), [](Signal const* a, Signal const* b) {
+        if (a->satellite.as_msm().value < b->satellite.as_msm().value) return true;
+        if (a->satellite.as_msm().value > b->satellite.as_msm().value) return false;
+        return a->id.as_msm().value < b->id.as_msm().value;
+    });
 
     uint64_t satellite_ids = 0;
     for (auto satellite : satellites) {
@@ -406,3 +421,5 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, Generi
 
     return generator::rtcm::Message(message_id, frame_encoder.buffer());
 }
+}  // namespace rtcm
+}  // namespace generator

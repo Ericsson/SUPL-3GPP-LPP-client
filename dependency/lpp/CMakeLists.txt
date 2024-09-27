@@ -1,23 +1,21 @@
 
-add_library(lpp 
-    "src/session.cpp"
-    "src/transaction.cpp"
-    "src/message.cpp"
-    "src/client.cpp"
-    "src/request_assistance_data.cpp"
-    "src/provide_capabilities.cpp"
-    "src/abort.cpp"
-    "src/periodic_session/handler.cpp"
-    "src/periodic_session/assistance_data.cpp"
+add_library(dependency_lpp 
+    "session.cpp"
+    "transaction.cpp"
+    "message.cpp"
+    "client.cpp"
+    "request_assistance_data.cpp"
+    "provide_capabilities.cpp"
+    "abort.cpp"
+    "periodic_session/handler.cpp"
+    "periodic_session/assistance_data.cpp"
 )
-target_include_directories(lpp PUBLIC "include/")
-target_link_libraries(lpp PRIVATE Threads::Threads atomic)
-target_link_libraries(lpp PRIVATE asn1::generated::lpp asn1::helper)
-target_link_libraries(lpp PRIVATE loglet supl scheduler)
+add_library(dependency::lpp ALIAS dependency_lpp)
+target_include_directories(dependency_lpp PUBLIC "include/")
+target_link_libraries(dependency_lpp PRIVATE asn1::generated::lpp asn1::helper)
+target_link_libraries(dependency_lpp PRIVATE dependency::loglet)
+target_link_libraries(dependency_lpp PRIVATE dependency::supl)
+target_link_libraries(dependency_lpp PRIVATE dependency::scheduler)
+target_link_libraries(dependency_lpp PUBLIC dependency::core)
 
-target_compile_options(lpp PUBLIC "-Wno-unused-private-field")
-
-if (USE_ASAN)
-target_compile_options(lpp PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(lpp PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
+setup_target(dependency_lpp)

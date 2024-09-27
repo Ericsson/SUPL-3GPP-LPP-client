@@ -283,10 +283,10 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
 
 // We are using a undocument RTCM message id (100-1000). Taking 355 as that is the ending of the
 // 3GPP LPP specification 37.355.
-static RTCM_CONSTEXPR uint16_t LRF_MESSAGE_ID = 355;
+static CONSTEXPR uint16_t LRF_MESSAGE_ID = 355;
 
-static Message generate_framing_message(int message_id, bool multiple_message_bit,
-                                        uint8_t const* lpp_data, size_t lpp_data_size) {
+static Message generate_framing_message(int message_id, bool multiple_message_bit, uint8_t const* lpp_data,
+                                        size_t lpp_data_size) {
     if (message_id < 0 || message_id > 4095) {
         message_id = LRF_MESSAGE_ID;
     }
@@ -311,7 +311,7 @@ static Message generate_framing_message(int message_id, bool multiple_message_bi
 }
 
 std::vector<Message> Generator::generate_framing(int message_id, void const* lpp_data,
-                                                 size_t lpp_data_size) RTCM_NOEXCEPT {
+                                                 size_t lpp_data_size) NOEXCEPT {
     std::vector<Message> messages;
 
     auto ptr  = reinterpret_cast<uint8_t const*>(lpp_data);

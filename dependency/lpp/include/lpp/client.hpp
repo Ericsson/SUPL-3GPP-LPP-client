@@ -3,7 +3,6 @@
 #include <lpp/periodic_session.hpp>
 #include <lpp/session.hpp>
 #include <lpp/transaction.hpp>
-#include <lpp/types.hpp>
 #include <supl/cell.hpp>
 
 #include <functional>
@@ -18,7 +17,7 @@ struct RequestAssistanceData;
 class PeriodicSession;
 class Client {
 public:
-    explicit Client(supl::Identity identity, const std::string& host, uint16_t port);
+    explicit Client(supl::Identity identity, std::string const& host, uint16_t port);
 
     // Called once the client is connected and ready to send and receive messages
     std::function<void(Client&)> on_connected;
@@ -29,53 +28,57 @@ public:
     // A request capabilities message has been received from the server. By default, the client will
     // respond with a "expected" capabilities message, to override this behavior, return true to
     // indicate the you have handled the message yourself.
-    std::function<bool(Client&, const TransactionHandle&, const Message&)> on_capabilities;
+    std::function<bool(Client&, TransactionHandle const&, Message const&)> on_capabilities;
 
     // Request assistance data from the server
     PeriodicSessionHandle
-    request_assistance_data(const RequestAssistanceData& request_assistance_data);
+    request_assistance_data(RequestAssistanceData const& request_assistance_data);
     // Update assistance data with a new cell for the given periodic session
-    bool update_assistance_data(const PeriodicSessionHandle& session, supl::Cell cell);
+    bool update_assistance_data(PeriodicSessionHandle const& session, supl::Cell cell);
     // Cancel assistance data for the given periodic session
-    void cancel_assistance_data(const PeriodicSessionHandle& session);
+    void cancel_assistance_data(PeriodicSessionHandle const& session);
 
-    bool is_periodic_session_valid(const PeriodicSessionHandle& session) const;
+    bool is_periodic_session_valid(PeriodicSessionHandle const& session) const;
 
     // Schedule the client to run on the given scheduler. Without calling this method, the client
     // will never connect to the server.
-    void schedule(Scheduler* scheduler);
+    void schedule(scheduler::Scheduler* scheduler);
+
+    // Cancel the client, this will disconnect the client from the server and stop all periodic
+    // sessions
+    void cancel();
 
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
 
-    void process_message(const TransactionHandle& transaction, Message message);
-    void process_request_capabilities(const TransactionHandle& transaction, Message message);
-    void process_request_assistance_data(const TransactionHandle& transaction, Message message);
-    void process_request_location_information(const TransactionHandle& transaction,
+    void process_message(TransactionHandle const& transaction, Message message);
+    void process_request_capabilities(TransactionHandle const& transaction, Message message);
+    void process_request_assistance_data(TransactionHandle const& transaction, Message message);
+    void process_request_location_information(TransactionHandle const& transaction,
                                               Message                  message);
-    void process_provide_capabilities(const TransactionHandle& transaction, Message message);
-    void process_provide_assistance_data(const TransactionHandle& transaction, Message message);
-    void process_provide_location_information(const TransactionHandle& transaction,
+    void process_provide_capabilities(TransactionHandle const& transaction, Message message);
+    void process_provide_assistance_data(TransactionHandle const& transaction, Message message);
+    void process_provide_location_information(TransactionHandle const& transaction,
                                               Message                  message);
 
-    void process_abort(const TransactionHandle& transaction, Message message);
-    void process_error(const TransactionHandle& transaction, Message message);
+    void process_abort(TransactionHandle const& transaction, Message message);
+    void process_error(TransactionHandle const& transaction, Message message);
 
-    void process_begin_transaction(const TransactionHandle& transaction);
-    void process_end_transaction(const TransactionHandle& transaction);
+    void process_begin_transaction(TransactionHandle const& transaction);
+    void process_end_transaction(TransactionHandle const& transaction);
 
     bool allocate_periodic_session_handle(PeriodicSessionHandle& handle);
-    bool deallocate_periodic_session_handle(const PeriodicSessionHandle& handle);
+    bool deallocate_periodic_session_handle(PeriodicSessionHandle const& handle);
 
-    PeriodicSession* find_by_periodic_session_handle(const PeriodicSessionHandle& session);
-    PeriodicSession* find_by_request_transaction_handle(const TransactionHandle& transaction);
-    PeriodicSession* find_by_periodic_transaction_handle(const TransactionHandle& transaction);
+    PeriodicSession* find_by_periodic_session_handle(PeriodicSessionHandle const& session);
+    PeriodicSession* find_by_request_transaction_handle(TransactionHandle const& transaction);
+    PeriodicSession* find_by_periodic_transaction_handle(TransactionHandle const& transaction);
 
 private:
-    std::string mHost;
-    uint16_t    mPort;
-    Session     mSession;
-    Scheduler*  mScheduler;
+    std::string           mHost;
+    uint16_t              mPort;
+    Session               mSession;
+    scheduler::Scheduler* mScheduler;
 
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;

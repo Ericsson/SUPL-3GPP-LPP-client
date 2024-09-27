@@ -1,7 +1,6 @@
 #pragma once
 #include <lpp/message.hpp>
 #include <lpp/periodic_session.hpp>
-#include <lpp/types.hpp>
 #include <supl/cell.hpp>
 
 #include <functional>

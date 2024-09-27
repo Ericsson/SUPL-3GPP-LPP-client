@@ -6,7 +6,3 @@ endif()
 if(${INCLUDE_GENERATOR_SPARTN})
 add_subdirectory("spartn2")
 endif()
-
-if(${INCLUDE_GENERATOR_SPARTN_OLD})
-add_subdirectory("spartn")
-endif()

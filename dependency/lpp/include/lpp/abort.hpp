@@ -1,6 +1,5 @@
 #pragma once
 #include <lpp/message.hpp>
-#include <lpp/types.hpp>
 
 namespace lpp {
 

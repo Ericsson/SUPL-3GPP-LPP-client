@@ -65,6 +65,8 @@ extern void extract_auxiliary_information(RtkData& data, GNSS_AuxiliaryInformati
         data.auxiliary_information =
             extract_glonass_auxiliary_information(src_aux.choice.gnss_ID_GLONASS);
         break;
-    default: break;
+    case GNSS_AuxiliaryInformation_PR_gnss_ID_GPS:
+    case GNSS_AuxiliaryInformation_PR_ext1:
+    case GNSS_AuxiliaryInformation_PR_NOTHING: break;
     }
 }

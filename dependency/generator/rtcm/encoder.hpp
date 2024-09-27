@@ -1,10 +1,11 @@
 #pragma once
+#include <core/core.hpp>
+
 #include <vector>
-#include "types.hpp"
 
 class Encoder {
 public:
-    RTCM_EXPLICIT Encoder() : mBitIndex(0) {}
+    EXPLICIT Encoder() : mBitIndex(0) {}
 
     void append_bit(uint8_t bit);
 

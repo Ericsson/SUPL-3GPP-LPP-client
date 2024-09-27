@@ -1,10 +1,14 @@
 #pragma once
-#include <interface/interface.hpp>
-#include <modem/types.hpp>
+#include <core/core.hpp>
 
 #include <memory>
+#include <queue>
 #include <string>
 #include <vector>
+
+#include <format/at/parser.hpp>
+#include <io/input.hpp>
+#include <io/output.hpp>
 
 namespace modem {
 
@@ -45,28 +49,57 @@ struct Cops {
 
 struct SupportedCopsModes {};
 
-class Device {
+class Modem {
 public:
-    MODEM_EXPLICIT Device(std::unique_ptr<interface::Interface> interface) MODEM_NOEXCEPT;
+    EXPLICIT Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> output) NOEXCEPT;
 
-    void disable_echo();
+    void schedule(scheduler::Scheduler& scheduler);
+    void cancel();
+
+    /// Enable echo-ing of commands.
     void enable_echo();
 
-    void               get_cgmi();
-    Cimi               get_cimi();
-    Creg               get_creg();
-    void               set_creg(int mode);
-    SupportedCregModes list_creg();
-    Cops               get_cops();
-    void               set_cops_format(int format);
-    SupportedCopsModes list_cops();
+    /// Request CIMI (International Mobile Subscriber Identity) of the SIM card.
+    bool get_cimi(scheduler::Scheduler& scheduler, Cimi& cimi);
 
-protected:
-    void     send_requst(char const* request);
-    Response wait_for_response();
+    /// Get supported CREG modes.
+    bool list_creg(scheduler::Scheduler& scheduler, SupportedCregModes& modes);
+    /// Set CREG mode.
+    void set_creg(int mode);
+    /// Get CREG status.
+    bool get_creg(scheduler::Scheduler& scheduler, Creg& reg);
+
+    /// Set COPS format.
+    void set_cops(int format);
+    /// Get COPS status.
+    bool get_cops(scheduler::Scheduler& scheduler, Cops& cops);
 
 private:
-    std::unique_ptr<interface::Interface> mInterface;
+    enum ResponseResult {
+        Success,
+        Failure,
+        MissingLines,
+    };
+
+    using ResponseCallback = std::function<ResponseResult(format::at::Parser&)>;
+
+    struct ResponseState {
+        std::string      request;
+        ResponseCallback callback;
+    };
+
+    void request(std::string const& command, ResponseCallback callback);
+    void request_no_response(std::string const& command);
+
+    ResponseResult handle_cimi_query(format::at::Parser& parser, Cimi& cimi);
+    ResponseResult handle_creg_test(format::at::Parser& parser, SupportedCregModes& modes);
+    ResponseResult handle_creg_query(format::at::Parser& parser, Creg& reg);
+    ResponseResult handle_cops_query(format::at::Parser& parser, Cops& cops);
+
+    std::unique_ptr<io::Input>  mInput;
+    std::unique_ptr<io::Output> mOutput;
+    format::at::Parser          mParser;
+    std::queue<ResponseState>   mCallbacks;
 };
 
 }  // namespace modem

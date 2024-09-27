@@ -1,6 +1,8 @@
-#include <cmath>
+#include "constant.hpp"
 #include "messages/msm.hpp"
 #include "rtk_data.hpp"
+
+#include <cmath>
 
 namespace generator {
 namespace rtcm {

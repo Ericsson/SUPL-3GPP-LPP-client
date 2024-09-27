@@ -1,19 +1,15 @@
 
-add_library(supl 
-    "src/session.cpp"
-    "src/tcp_client.cpp"
-    "src/encode.cpp"
-    "src/decode.cpp"
-    "src/print.cpp"
+add_library(dependency_supl 
+    "session.cpp"
+    "tcp_client.cpp"
+    "encode.cpp"
+    "decode.cpp"
+    "print.cpp"
 )
-target_include_directories(supl PUBLIC "include/")
-target_link_libraries(supl PRIVATE Threads::Threads atomic)
-target_link_libraries(supl PRIVATE asn1::generated::supl asn1::helper)
-target_link_libraries(supl PRIVATE loglet)
+add_library(dependency::supl ALIAS dependency_supl)
+target_include_directories(dependency_supl PUBLIC "include/")
+target_link_libraries(dependency_supl PRIVATE asn1::generated::supl asn1::helper)
+target_link_libraries(dependency_supl PUBLIC dependency::core)
+target_link_libraries(dependency_supl PRIVATE dependency::loglet)
 
-target_compile_options(supl PUBLIC "-Wno-unused-private-field")
-
-if (USE_ASAN)
-target_compile_options(supl PRIVATE -fsanitize=address,undefined,leak)
-target_link_libraries(supl PRIVATE -fsanitize=address,undefined,leak)
-endif (USE_ASAN)
+setup_target(dependency_supl)

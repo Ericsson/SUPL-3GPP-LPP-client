@@ -1,7 +1,5 @@
 #pragma once
-
 #include <supl/identity.hpp>
-#include <supl/types.hpp>
 #include <supl/version.hpp>
 
 struct ULP_PDU;
@@ -62,7 +60,7 @@ public:
 
     void                disconnect();
     bool                is_connected() const;
-    SUPL_NODISCARD bool is_disconnected() const { return mState == State::DISCONNECTED; }
+    NODISCARD bool is_disconnected() const { return mState == State::DISCONNECTED; }
 
     bool      handshake(const START& message);
     Handshake handle_handshake();
@@ -74,9 +72,9 @@ public:
     Received block_receive(RESPONSE* response, END* end, POS* pos);
     Received try_receive(RESPONSE* response, END* end, POS* pos);
 
-    SUPL_NODISCARD const Version& version() const { return mVersion; }
-    SUPL_NODISCARD const SET&     set() const { return mSETSession; }
-    SUPL_NODISCARD const SLP&     slp() const { return mSLPSession; }
+    NODISCARD const Version& version() const { return mVersion; }
+    NODISCARD const SET&     set() const { return mSETSession; }
+    NODISCARD const SLP&     slp() const { return mSLPSession; }
 
     int  fd() const;
     void fill_receive_buffer();

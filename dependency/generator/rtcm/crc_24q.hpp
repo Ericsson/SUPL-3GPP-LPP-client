@@ -1,5 +1,5 @@
 #pragma once
-#include "types.hpp"
+#include <core/core.hpp>
 
 static uint32_t const CRC24Q[256] = {
     0x00000000, 0x01864CFB, 0x028AD50D, 0x030C99F6, 0x0493E6E1, 0x0515AA1A, 0x061933EC, 0x079F7F17,

@@ -1,3 +1,4 @@
+#include "constant.hpp"
 #include "extract.hpp"
 
 #pragma GCC diagnostic push
@@ -44,18 +45,18 @@ carrier_to_noise_ratio(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal
 }
 
 #define LOCK_TIME_SIZE 22
-RTCM_CONSTEXPR static uint64_t LOCK_TIME_COEFF[LOCK_TIME_SIZE] = {
+CONSTEXPR static uint64_t LOCK_TIME_COEFF[LOCK_TIME_SIZE] = {
     1,    2,    4,    8,     16,    32,    64,     128,    256,    512,     1024,
     2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152,
 };
 
-RTCM_CONSTEXPR static uint64_t LOCK_TIME_OFFSET[LOCK_TIME_SIZE] = {
+CONSTEXPR static uint64_t LOCK_TIME_OFFSET[LOCK_TIME_SIZE] = {
     0,        64,       256,       768,       2048,      5120,       12288,   28672,
     65536,    147456,   327680,    720896,    1572864,   3407872,    7340032, 15728640,
     33554432, 71303168, 150994944, 318767104, 671088640, 1409286144,
 };
 
-RTCM_CONSTEXPR static uint64_t LOCK_TIME_BASE[LOCK_TIME_SIZE] = {
+CONSTEXPR static uint64_t LOCK_TIME_BASE[LOCK_TIME_SIZE] = {
     0,   64,  96,  128, 160, 192, 224, 256, 288, 320, 352,
     384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704,
 };

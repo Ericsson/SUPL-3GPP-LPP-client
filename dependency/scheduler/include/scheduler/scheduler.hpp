@@ -1,56 +1,36 @@
 #pragma once
+#include <core/core.hpp>
 
 #include <chrono>
 #include <functional>
-#include <queue>
 #include <sys/epoll.h>
-#include <vector>
 
-class Task;
-
+namespace scheduler {
 struct EpollEvent {
     std::function<void(struct epoll_event*)> event;
 };
 
-struct TimeoutEvent {
-    std::chrono::steady_clock::time_point time;
-    std::function<void()>                 event;
-};
-
-struct CompareTimeouts {
-    bool operator()(const TimeoutEvent* lhs, const TimeoutEvent* rhs) const {
-        return lhs->time > rhs->time;
-    }
-};
-
 class Scheduler {
 public:
-    Scheduler();
-    ~Scheduler();
+    Scheduler() NOEXCEPT;
+    ~Scheduler() NOEXCEPT;
 
-    // Schedule a task to run.
-    void schedule(Task* task);
-    // Cancel a task from running.
-    void cancel(Task* task);
-    // Run the scheduler until there are no more tasks to run.
-    void execute();
+    void execute() NOEXCEPT;
+    void execute_timeout(std::chrono::steady_clock::duration duration) NOEXCEPT;
+    void execute_while(std::function<bool()> condition) NOEXCEPT;
 
     // Add, remove, and update file descriptors in the epoll instance.
-    bool add_epoll_fd(int fd, uint32_t events, EpollEvent* event);
-    bool update_epoll_fd(int fd, uint32_t events, EpollEvent* event);
-    bool remove_epoll_fd(int fd);
-
-    // Add and remove timeouts.
-    void add_timeout(TimeoutEvent* event);
-    void remove_timeout(TimeoutEvent* event);
-
-protected:
-    TimeoutEvent* next_timeout() const;
+    NODISCARD bool add_epoll_fd(int fd, uint32_t events,
+                                          EpollEvent* event) NOEXCEPT;
+    NODISCARD bool update_epoll_fd(int fd, uint32_t events,
+                                             EpollEvent* event) NOEXCEPT;
+    NODISCARD bool remove_epoll_fd(int fd) NOEXCEPT;
 
 private:
+    void process_event(struct epoll_event& event) NOEXCEPT;
+
     int mEpollFd;
     int mInterruptFd;
     int mEpollCount;
-
-    std::priority_queue<TimeoutEvent*, std::vector<TimeoutEvent*>, CompareTimeouts> mTimeouts;
 };
+}  // namespace scheduler
