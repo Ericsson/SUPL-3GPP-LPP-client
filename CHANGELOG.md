@@ -30,6 +30,7 @@
     - `--no-beidou` to skip generating BeiDou RTCM messages.
 - Added receiver option `--readonly` to prevent opening receiver serial port in write mode.
 - Added support to export NMEA sentences to file with `--nmea-export-file` command-line argument.
+- Added support to export UBX messages to file with `--ublox-export-file` command-line argument.
 
 ## [3.4.11] 2024-09-26
 - Added support for UBX-RXM-RAWX messages.
