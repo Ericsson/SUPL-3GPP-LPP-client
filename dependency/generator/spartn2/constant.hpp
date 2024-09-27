@@ -1,18 +1,19 @@
 #pragma once
-#include <generator/spartn2/types.hpp>
+#include <core/core.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <GNSS-ID.h>
 #pragma GCC diagnostic pop
 
 #define X 255
 #define INVALID_MAPPING 255
 
-static SPARTN_CONSTEXPR uint8_t GPS_TO_SPARTN[24] = {
+static CONSTEXPR uint8_t GPS_TO_SPARTN[24] = {
     0,  // L1 C/A -> L1C
     X,  // L1C
     X,  // L2C
@@ -40,7 +41,7 @@ static SPARTN_CONSTEXPR uint8_t GPS_TO_SPARTN[24] = {
     X,
 };
 
-static SPARTN_CONSTEXPR uint8_t GPS_MAPPING[32] = {
+static CONSTEXPR uint8_t GPS_MAPPING[32] = {
     X,   // L1 C/A
     X,   // L1C
     X,   // L2C
@@ -71,7 +72,7 @@ static SPARTN_CONSTEXPR uint8_t GPS_MAPPING[32] = {
 #define GPS_L1 1575.42
 #define GPS_L2 1227.60
 #define GPS_L5 1176.45
-static SPARTN_CONSTEXPR double GPS_FREQ[24] = {
+static CONSTEXPR double GPS_FREQ[24] = {
     GPS_L1,  // L1 C/A
     GPS_L1,  // L1C
     GPS_L2,  // L2C
@@ -99,7 +100,7 @@ static SPARTN_CONSTEXPR double GPS_FREQ[24] = {
     0,
 };
 
-static SPARTN_CONSTEXPR const char* GPS_SIGNAL_NAMES[24] = {
+static CONSTEXPR const char* GPS_SIGNAL_NAMES[24] = {
     "L1 C/A",
     "L1C",
     "L2C",
@@ -127,7 +128,7 @@ static SPARTN_CONSTEXPR const char* GPS_SIGNAL_NAMES[24] = {
     "Reserved",
 };
 
-static SPARTN_CONSTEXPR uint8_t GLO_TO_SPARTN[24] = {
+static CONSTEXPR uint8_t GLO_TO_SPARTN[24] = {
     0,  // G1 C/A -> L1C
     1,  // G2 C/A -> L2C
     X,  // G3
@@ -155,7 +156,7 @@ static SPARTN_CONSTEXPR uint8_t GLO_TO_SPARTN[24] = {
     X,
 };
 
-static SPARTN_CONSTEXPR uint8_t GLO_MAPPING[32] = {
+static CONSTEXPR uint8_t GLO_MAPPING[32] = {
     X,  // G1 C/A
     X,  // G2 C/A
     X,  // G3
@@ -183,7 +184,7 @@ static SPARTN_CONSTEXPR uint8_t GLO_MAPPING[32] = {
     X,
 };
 
-static SPARTN_CONSTEXPR double GLO_FREQ[24] = {
+static CONSTEXPR double GLO_FREQ[24] = {
     1.0,  // G1 C/A
     1.0,  // G2 C/A
     1.0,  // G3
@@ -211,7 +212,7 @@ static SPARTN_CONSTEXPR double GLO_FREQ[24] = {
     0.0,
 };
 
-static SPARTN_CONSTEXPR const char* GLO_SIGNAL_NAMES[24] = {
+static CONSTEXPR const char* GLO_SIGNAL_NAMES[24] = {
     "G1 C/A",
     "G2 C/A",
     "G3",
@@ -238,7 +239,7 @@ static SPARTN_CONSTEXPR const char* GLO_SIGNAL_NAMES[24] = {
     "Reserved",
 };
 
-static SPARTN_CONSTEXPR uint8_t GAL_TO_SPARTN[24] = {
+static CONSTEXPR uint8_t GAL_TO_SPARTN[24] = {
     X,  // E1
     X,  // E5A
     X,  // E5B
@@ -265,7 +266,7 @@ static SPARTN_CONSTEXPR uint8_t GAL_TO_SPARTN[24] = {
     X,  // E5A I+Q
 };
 
-static SPARTN_CONSTEXPR uint8_t GAL_MAPPING[32] = {
+static CONSTEXPR uint8_t GAL_MAPPING[32] = {
     X,   // E1
     X,   // E5A
     X,   // E5B
@@ -297,7 +298,7 @@ static SPARTN_CONSTEXPR uint8_t GAL_MAPPING[32] = {
 #define GAL_E5 1191.795
 #define GAL_E5a 1176.450
 #define GAL_E5b 1207.140
-static SPARTN_CONSTEXPR double GAL_FREQ[24] = {
+static CONSTEXPR double GAL_FREQ[24] = {
     GAL_E1,   // E1
     GAL_E5a,  // E5A
     GAL_E5b,  // E5B
@@ -324,7 +325,7 @@ static SPARTN_CONSTEXPR double GAL_FREQ[24] = {
     GAL_E5a,  // E5A I+Q
 };
 
-static SPARTN_CONSTEXPR const char* GAL_SIGNAL_NAMES[24] = {
+static CONSTEXPR const char* GAL_SIGNAL_NAMES[24] = {
     "E1",        "E5A",        "E5B",         "E6",       "E5A+E5B", "E1 C No data",
     "E1 A",      "E1 B I/NAV", "E1 B+C",      "E1 A+B+C", "E6 C",    "E6 A",
     "E6 B",      "E6 B+C",     "E6 A+B+C",    "E5B I",    "E5B Q",   "E5B I+Q",
@@ -345,49 +346,49 @@ struct SystemMapping {
     }
 };
 
-static SPARTN_CONSTEXPR SystemMapping GPS_SM = {
+static CONSTEXPR SystemMapping GPS_SM = {
     GNSS_ID__gnss_id_gps, 24, GPS_TO_SPARTN, GPS_MAPPING, GPS_FREQ, GPS_SIGNAL_NAMES,
 };
 
-static SPARTN_CONSTEXPR SystemMapping GLO_SM = {
+static CONSTEXPR SystemMapping GLO_SM = {
     GNSS_ID__gnss_id_glonass, 24, GLO_TO_SPARTN, GLO_MAPPING, GLO_FREQ, GLO_SIGNAL_NAMES,
 };
 
-static SPARTN_CONSTEXPR SystemMapping GAL_SM = {
+static CONSTEXPR SystemMapping GAL_SM = {
     GNSS_ID__gnss_id_galileo, 24, GAL_TO_SPARTN, GAL_MAPPING, GAL_FREQ, GAL_SIGNAL_NAMES,
 };
 
-static SPARTN_CONSTEXPR const char* GPS_PHASE_BIAS_TYPES[4] = {
+static CONSTEXPR const char* GPS_PHASE_BIAS_TYPES[4] = {
     "L1C",
     "L2W",
     "L2L",
     "L5Q",
 };
 
-static SPARTN_CONSTEXPR const char* GLO_PHASE_BIAS_TYPES[2] = {
+static CONSTEXPR const char* GLO_PHASE_BIAS_TYPES[2] = {
     "L1C",
     "L2C",
 };
 
-static SPARTN_CONSTEXPR const char* GAL_PHASE_BIAS_TYPES[3] = {
+static CONSTEXPR const char* GAL_PHASE_BIAS_TYPES[3] = {
     "L1C",
     "L5Q",
     "L7Q",
 };
 
-static SPARTN_CONSTEXPR const char* GPS_CODE_BIAS_TYPES[4] = {
+static CONSTEXPR const char* GPS_CODE_BIAS_TYPES[4] = {
     "C1C",
     "C2W",
     "C2L",
     "C5Q",
 };
 
-static SPARTN_CONSTEXPR const char* GLO_CODE_BIAS_TYPES[2] = {
+static CONSTEXPR const char* GLO_CODE_BIAS_TYPES[2] = {
     "C1C",
     "C2C",
 };
 
-static SPARTN_CONSTEXPR const char* GAL_CODE_BIAS_TYPES[3] = {
+static CONSTEXPR const char* GAL_CODE_BIAS_TYPES[3] = {
     "C1C",
     "C5Q",
     "C7Q",

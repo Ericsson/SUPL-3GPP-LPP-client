@@ -74,6 +74,12 @@
         CORE_UNREACHABLE();                                                                        \
     } while (0)
 
+#define XUNREACHABLE(module)                                                                       \
+    do {                                                                                           \
+        XERRORF(module, "unreachable code reached: %s:%d", __FILE__, __LINE__);                    \
+        CORE_UNREACHABLE();                                                                        \
+    } while (0)
+
 #define ASSERT(cond, reason)                                                                       \
     do {                                                                                           \
         if (!(cond)) {                                                                             \

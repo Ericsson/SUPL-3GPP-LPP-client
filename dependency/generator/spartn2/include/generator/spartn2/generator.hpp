@@ -1,5 +1,6 @@
 #pragma once
-#include <generator/spartn2/types.hpp>
+#include <core/core.hpp>
+
 #include <memory>
 #include <unordered_map>
 #include <vector>
@@ -13,7 +14,7 @@ namespace spartn {
 /// SPARTN message
 class Message {
 public:
-    SPARTN_EXPLICIT Message(uint8_t message_type, uint8_t message_subtype, uint32_t message_time,
+    EXPLICIT Message(uint8_t message_type, uint8_t message_subtype, uint32_t message_time,
                             std::vector<uint8_t>&& payload);
 
     /// Message type

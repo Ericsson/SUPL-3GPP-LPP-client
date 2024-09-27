@@ -50,6 +50,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     if (!lpp_message) return mMessages;
 
     auto body = lpp_message->lpp_MessageBody;
+    if(!body) return mMessages;
     if (body->present != LPP_MessageBody_PR_c1) return mMessages;
     if (body->choice.c1.present != LPP_MessageBody__c1_PR_provideAssistanceData) return mMessages;
 

@@ -1,5 +1,5 @@
 #pragma once
-#include <generator/spartn2/types.hpp>
+#include <core/core.hpp>
 
 #include <cmath>
 

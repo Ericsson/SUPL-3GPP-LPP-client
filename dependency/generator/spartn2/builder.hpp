@@ -1,12 +1,12 @@
 #pragma once
-#include <generator/spartn2/types.hpp>
+#include <core/core.hpp>
 
 #include <vector>
 
 /// Builds binary blobs of bits for the SPARTN format
 class Builder {
 public:
-    SPARTN_EXPLICIT Builder(uint32_t capacity);
+    EXPLICIT Builder(uint32_t capacity);
 
     inline void u8(uint8_t value) { bits(static_cast<uint64_t>(value), 8); }
     inline void u16(uint16_t value) { bits(static_cast<uint64_t>(value), 16); }

@@ -1,5 +1,5 @@
 
-add_library(generator_spartn2 STATIC 
+add_library(dependency_generator_spartn2 STATIC 
     "generator.cpp"
     "ocb.cpp"
     "gad.cpp"
@@ -8,15 +8,17 @@ add_library(generator_spartn2 STATIC
     "builder.cpp"
     "message.cpp"
 )
-add_library(generator::spartn2 ALIAS generator_spartn2)
+add_library(dependency::generator::spartn2 ALIAS dependency_generator_spartn2)
 
-target_include_directories(generator_spartn2 PRIVATE "./" "include/generator/spartn2/")
-target_include_directories(generator_spartn2 PUBLIC "include/")
-target_link_libraries(generator_spartn2 PRIVATE asn1::generated::lpp asn1::helper)
-target_link_libraries(generator_spartn2 PRIVATE utility)
+target_include_directories(dependency_generator_spartn2 PRIVATE "./" "include/generator/spartn2/")
+target_include_directories(dependency_generator_spartn2 PUBLIC "include/")
+target_link_libraries(dependency_generator_spartn2 PRIVATE asn1::generated::lpp asn1::helper)
+target_link_libraries(dependency_generator_spartn2 PUBLIC dependency::loglet)
+target_link_libraries(dependency_generator_spartn2 PUBLIC dependency::core)
 
-if (SPARTN_DEBUG_PRINT)
-target_compile_definitions(generator_spartn2 PRIVATE SPARTN_DEBUG_PRINT=2)
-endif (SPARTN_DEBUG_PRINT)
+setup_target(dependency_generator_spartn2)
 
-setup_target(generator_spartn2)
+if(${SPARTN_DEBUG_PRINT})
+target_compile_definitions(dependency_generator_spartn2 PRIVATE "SPARTN_DEBUG_PRINT=1")
+endif()
+

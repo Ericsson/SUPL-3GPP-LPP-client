@@ -1,6 +1,5 @@
 #pragma once
-#include <cmath>
-#include <generator/spartn2/types.hpp>
+#include <core/core.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -10,6 +9,8 @@
 #include <GNSS-SignalID.h>
 #include <STEC-ResidualSatElement-r16.h>
 #pragma GCC diagnostic pop
+
+#include <cmath>
 
 namespace decode {
 
@@ -35,9 +36,9 @@ inline double ssrUpdateInterval_r15(long value) {
     }
 }
 
-static SPARTN_CONSTEXPR double ORBIT_RADIAL_RESOLUTION = 0.0001;
-static SPARTN_CONSTEXPR double ORBIT_ALONG_RESOLUTION  = 0.0004;
-static SPARTN_CONSTEXPR double ORBIT_CROSS_RESOLUTION  = 0.0004;
+static CONSTEXPR double ORBIT_RADIAL_RESOLUTION = 0.0001;
+static CONSTEXPR double ORBIT_ALONG_RESOLUTION  = 0.0004;
+static CONSTEXPR double ORBIT_CROSS_RESOLUTION  = 0.0004;
 
 inline double delta_radial_r15(long value) {
     return static_cast<double>(value) * ORBIT_RADIAL_RESOLUTION;
@@ -51,9 +52,9 @@ inline double delta_CrossTrack_r15(long value) {
     return static_cast<double>(value) * ORBIT_CROSS_RESOLUTION;
 }
 
-static SPARTN_CONSTEXPR double CLOCK_C0_RESOLUTION = 0.0001;
-static SPARTN_CONSTEXPR double CLOCK_C1_RESOLUTION = 0.000001;
-static SPARTN_CONSTEXPR double CLOCK_C2_RESOLUTION = 0.00000002;
+static CONSTEXPR double CLOCK_C0_RESOLUTION = 0.0001;
+static CONSTEXPR double CLOCK_C1_RESOLUTION = 0.000001;
+static CONSTEXPR double CLOCK_C2_RESOLUTION = 0.00000002;
 
 inline double delta_Clock_C0_r15(long value) {
     return static_cast<double>(value) * CLOCK_C0_RESOLUTION;
@@ -75,8 +76,8 @@ inline long signal_id(GNSS_SignalID const& signal_id) {
     }
 }
 
-static SPARTN_CONSTEXPR double PHASE_BIAS_RESOLUTION = 0.001;
-static SPARTN_CONSTEXPR double CODE_BIAS_RESOLUTION  = 0.01;
+static CONSTEXPR double PHASE_BIAS_RESOLUTION = 0.001;
+static CONSTEXPR double CODE_BIAS_RESOLUTION  = 0.01;
 
 inline double phaseBias_r16(long value) {
     return static_cast<double>(value) * PHASE_BIAS_RESOLUTION;
@@ -114,11 +115,11 @@ inline QualityIndicator troposphericDelayQualityIndicator_r16(BIT_STRING_s& bit_
     return quality_indicator(bit_string);
 }
 
-static SPARTN_CONSTEXPR double REFERENCE_POINT_LATITUDE_DEG        = 90.0;
-static SPARTN_CONSTEXPR double REFERENCE_POINT_LATITUDE_RESOLUTION = 0.00006103515625;  // 2^-14
+static CONSTEXPR double REFERENCE_POINT_LATITUDE_DEG        = 90.0;
+static CONSTEXPR double REFERENCE_POINT_LATITUDE_RESOLUTION = 0.00006103515625;  // 2^-14
 
-static SPARTN_CONSTEXPR double REFERENCE_POINT_LONGITUDE_DEG        = 180.0;
-static SPARTN_CONSTEXPR double REFERENCE_POINT_LONGITUDE_RESOLUTION = 0.000030517578125;  // 2^-15
+static CONSTEXPR double REFERENCE_POINT_LONGITUDE_DEG        = 180.0;
+static CONSTEXPR double REFERENCE_POINT_LONGITUDE_RESOLUTION = 0.000030517578125;  // 2^-15
 
 inline double referencePointLatitude_r16(long value) {
     return (static_cast<double>(value) * REFERENCE_POINT_LATITUDE_DEG) *
@@ -130,8 +131,8 @@ inline double referencePointLongitude_r16(long value) {
            REFERENCE_POINT_LONGITUDE_RESOLUTION;
 }
 
-static SPARTN_CONSTEXPR double STEP_OF_LONGITUDE_RESOLUTION = 0.01;
-static SPARTN_CONSTEXPR double STEP_OF_LATITUDE_RESOLUTION  = 0.01;
+static CONSTEXPR double STEP_OF_LONGITUDE_RESOLUTION = 0.01;
+static CONSTEXPR double STEP_OF_LATITUDE_RESOLUTION  = 0.01;
 
 inline double stepOfLatitude_r16(long value) {
     return static_cast<double>(value) * STEP_OF_LONGITUDE_RESOLUTION;
@@ -141,8 +142,8 @@ inline double stepOfLongitude_r16(long value) {
     return static_cast<double>(value) * STEP_OF_LATITUDE_RESOLUTION;
 }
 
-static SPARTN_CONSTEXPR double TROPOSPHERIC_HYDRO_STATIC_DELAY_RESOLUTION = 0.004;
-static SPARTN_CONSTEXPR double TROPOSPHERIC_WET_DELAY_RESOLUTION          = 0.004;
+static CONSTEXPR double TROPOSPHERIC_HYDRO_STATIC_DELAY_RESOLUTION = 0.004;
+static CONSTEXPR double TROPOSPHERIC_WET_DELAY_RESOLUTION          = 0.004;
 
 inline double tropoHydroStaticVerticalDelay_r16(long value) {
     return static_cast<double>(value) * TROPOSPHERIC_HYDRO_STATIC_DELAY_RESOLUTION;
@@ -158,7 +159,7 @@ struct StecQualityIndicator {
 };
 
 inline StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
-    static SPARTN_CONSTEXPR double QUALITY_INDICATOR[64] = {
+    static CONSTEXPR double QUALITY_INDICATOR[64] = {
         33.6664, 30.2992, 26.9319, 23.5647, 20.1974, 16.8301, 13.4629, 12.3405, 11.2180,
         10.0956, 8.9732,  7.8508,  6.7284,  5.6059,  4.4835,  4.1094,  3.7352,  3.3611,
         2.9870,  2.6128,  2.2387,  1.8645,  1.4904,  1.3657,  1.2410,  1.1163,  0.9915,
@@ -183,10 +184,10 @@ inline StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
     };
 }
 
-static SPARTN_CONSTEXPR double STEC_C00_RESOLUTION = 0.05;
-static SPARTN_CONSTEXPR double STEC_C01_RESOLUTION = 0.02;
-static SPARTN_CONSTEXPR double STEC_C10_RESOLUTION = 0.02;
-static SPARTN_CONSTEXPR double STEC_C11_RESOLUTION = 0.02;
+static CONSTEXPR double STEC_C00_RESOLUTION = 0.05;
+static CONSTEXPR double STEC_C01_RESOLUTION = 0.02;
+static CONSTEXPR double STEC_C10_RESOLUTION = 0.02;
+static CONSTEXPR double STEC_C11_RESOLUTION = 0.02;
 
 inline double stec_C00_r16(long value) {
     return static_cast<double>(value) * STEC_C00_RESOLUTION;
@@ -204,8 +205,8 @@ inline double stec_C11_r16(long* value) {
     return (value ? static_cast<double>(*value) : 0) * STEC_C11_RESOLUTION;
 }
 
-static SPARTN_CONSTEXPR double STEC_RESIDUAL_B7_RESOLUTION  = 0.04;
-static SPARTN_CONSTEXPR double STEC_RESIDUAL_B16_RESOLUTION = 0.04;
+static CONSTEXPR double STEC_RESIDUAL_B7_RESOLUTION  = 0.04;
+static CONSTEXPR double STEC_RESIDUAL_B16_RESOLUTION = 0.04;
 
 inline double stecResidualCorrection_r16(
     STEC_ResidualSatElement_r16::STEC_ResidualSatElement_r16__stecResidualCorrection_r16
@@ -215,7 +216,7 @@ inline double stecResidualCorrection_r16(
         return static_cast<double>(correction.choice.b7_r16) * STEC_RESIDUAL_B7_RESOLUTION;
     case STEC_ResidualSatElement_r16__stecResidualCorrection_r16_PR_b16_r16:
         return static_cast<double>(correction.choice.b16_r16) * STEC_RESIDUAL_B16_RESOLUTION;
-    default: SPARTN_UNREACHABLE();
+    case STEC_ResidualSatElement_r16__stecResidualCorrection_r16_PR_NOTHING: CORE_UNREACHABLE();
     }
 }
 

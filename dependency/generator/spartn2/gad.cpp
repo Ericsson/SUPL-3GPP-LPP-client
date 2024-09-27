@@ -12,10 +12,12 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
     auto& correction_point_set = *(cps_it->second.get());
 
 #ifdef SPARTN_DEBUG_PRINT
-    printf("  grid points: %ld\n", correction_point_set.grid_point_count);
+    printf("  grid points: %ld\n", correction_point_set.grid_points);
     printf("  bitmask:     ");
-    for (auto i = 0; i < correction_point_set.grid_point_count; i++) {
-        printf("%d", correction_point_set.has_grid_point(i) ? 1 : 0);
+    for (auto i = 0; i < correction_point_set.grid_points; i++) {
+        auto bit_index = 64 - i - 1;
+        auto bit       = (correction_point_set.bitmask >> bit_index) & 1;
+        printf("%d", bit ? 1 : 0);
     }
     printf("\n");
     printf("  ref-lat:  %9.6f\n",
@@ -29,18 +31,19 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
     printf("  delta-lng: %10.6f\n",
            decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16));
 
-    auto i = 0;
-    auto grid_points = correction_point_set.grid_points();
-    for (auto gp : grid_points) {
-        if (gp.id < 0) {
-            printf("-- ");
-        } else {
-            printf("%02ld ", gp.id);
+    // print the grid in ascii
+    for (auto i = 0; i < correction_point_set.numberOfStepsLatitude_r16 + 1; i++) {
+        for (auto j = 0; j < correction_point_set.numberOfStepsLongitude_r16 + 1; j++) {
+            auto index     = i * (correction_point_set.numberOfStepsLongitude_r16 + 1) + j;
+            auto bit_index = 64 - index - 1;
+            auto bit       = (correction_point_set.bitmask >> bit_index) & 1;
+            if (bit == 0) {
+                printf("-- ");
+            } else {
+                printf("%02ld ", index);
+            }
         }
-
-        if (++i % (correction_point_set.numberOfStepsLongitude_r16 + 1) == 0) {
-            printf("\n");
-        }
+        printf("\n");
     }
 #endif
 

@@ -1,14 +1,14 @@
 #pragma once
-#include <generator/spartn2/generator.hpp>
-#include <generator/spartn2/types.hpp>
-
+#include "generator.hpp"
 #include "builder.hpp"
 #include "data.hpp"
 
 #include <map>
 #include <stdio.h>
 
-#define SPARTN_CRC_16_CCITT 1
+#include <loglet/loglet.hpp>
+
+#define CRC_16_CCITT 1
 
 struct BIT_STRING_s;
 struct GNSS_SSR_STEC_Correction_r16;
@@ -20,7 +20,7 @@ struct ByteRange {
 
 class TransportBuilder {
 public:
-    SPARTN_EXPLICIT TransportBuilder();
+    EXPLICIT TransportBuilder();
 
     std::vector<uint8_t> build();
     ByteRange            range(size_t begin_bit, size_t end_bit);
@@ -59,7 +59,7 @@ public:
         //     input reflected = true
         //     result reflected = true
         //     final XOR value = 0
-        static SPARTN_CONSTEXPR const uint8_t CRC4_LOOKUP[256] = {
+        static CONSTEXPR const uint8_t CRC4_LOOKUP[256] = {
             0x00, 0x0B, 0x05, 0x0E, 0x0A, 0x01, 0x0F, 0x04, 0x07, 0x0C, 0x02, 0x09, 0x0D, 0x06,
             0x08, 0x03, 0x0E, 0x05, 0x0B, 0x00, 0x04, 0x0F, 0x01, 0x0A, 0x09, 0x02, 0x0C, 0x07,
             0x03, 0x08, 0x06, 0x0D, 0x0F, 0x04, 0x0A, 0x01, 0x05, 0x0E, 0x00, 0x0B, 0x08, 0x03,
@@ -125,7 +125,7 @@ private:
 
 class MessageBuilder {
 public:
-    SPARTN_EXPLICIT MessageBuilder(uint8_t message_type, uint8_t message_subtype,
+    EXPLICIT MessageBuilder(uint8_t message_type, uint8_t message_subtype,
                                    uint32_t message_time);
 
     generator::spartn::Message build();
@@ -520,7 +520,7 @@ public:
         case 1: return sf065(value); break;
         case 2: return sf066(value); break;
         case 3: return sf067(value); break;
-        default: SPARTN_UNREACHABLE();
+        default: XUNREACHABLE("spartn");
         }
     }
 
@@ -530,7 +530,7 @@ public:
         case 1: sf065_invalid(); break;
         case 2: sf066_invalid(); break;
         case 3: sf067_invalid(); break;
-        default: SPARTN_UNREACHABLE();
+        default: XUNREACHABLE("spartn");
         }
     }
 

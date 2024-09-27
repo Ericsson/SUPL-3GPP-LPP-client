@@ -11,6 +11,10 @@
 
 #include <asn.1/bit_string.hpp>
 
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "spartn/g"
+
 #define GNSS_ID_GPS 0
 #define GNSS_ID_GLO 4
 #define GNSS_ID_GAL 3
@@ -25,7 +29,7 @@ static uint16_t crc16_ccitt(uint8_t* data, size_t length) {
     //     result reflected = false
     //     final XOR value = 0
 
-    static SPARTN_CONSTEXPR const uint16_t CRC16_LOOKUP[256] = {
+    static CONSTEXPR const uint16_t CRC16_LOOKUP[256] = {
         0x0000, 0x1021, 0x2042, 0x3063, 0x4084, 0x50A5, 0x60C6, 0x70E7, 0x8108, 0x9129, 0xA14A,
         0xB16B, 0xC18C, 0xD1AD, 0xE1CE, 0xF1EF, 0x1231, 0x0210, 0x3273, 0x2252, 0x52B5, 0x4294,
         0x72F7, 0x62D6, 0x9339, 0x8318, 0xB37B, 0xA35A, 0xD3BD, 0xC39C, 0xF3FF, 0xE3DE, 0x2462,
@@ -79,7 +83,7 @@ std::vector<uint8_t> Message::build() {
     builder.tf002(mMessageType);
     builder.tf003(mPayload.size());
     builder.tf004(false);
-    builder.tf005(SPARTN_CRC_16_CCITT);
+    builder.tf005(CRC_16_CCITT);
     builder.tf006();
     builder.tf007(mMessageSubtype);
     builder.tf008(true);  // Full 32-bit time
@@ -175,7 +179,7 @@ void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
             count = 36;
         }
         break;
-    default: SPARTN_UNREACHABLE();
+    default: UNREACHABLE();
     }
 
     for (uint8_t i = 0; i < count; i++) {
@@ -230,7 +234,7 @@ void MessageBuilder::ephemeris_type(long gnss_id) {
     case GNSS_ID_QZS:         // SF098 - QZSS Ephemeris Type
         mBuilder.bits(0, 3);  // QZSS LNAV (L1C/A)
         break;
-    default: SPARTN_UNREACHABLE();
+    default: UNREACHABLE();
     }
 }
 
@@ -250,6 +254,6 @@ void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string, bool iod
     case GNSS_ID_GAL:  // SF099 - Galileo IOD
         mBuilder.bits(iode & 0x3FF, 10);
         break;
-    default: SPARTN_UNREACHABLE();
+    default: UNREACHABLE();
     }
 }

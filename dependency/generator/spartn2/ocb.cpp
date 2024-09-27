@@ -10,6 +10,7 @@
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <GNSS-SSR-ClockCorrections-r15.h>
 #include <GNSS-SSR-CodeBias-r15.h>
 #include <GNSS-SSR-OrbitCorrections-r15.h>
@@ -33,6 +34,10 @@
 
 #include <algorithm>
 #include <map>
+
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "spartn/g"
 
 namespace generator {
 namespace spartn {
@@ -829,7 +834,7 @@ void Generator::generate_ocb(uint16_t iod) {
                                             mCodeBiasCorrectionShift, mPhaseBiasTranslate,
                                             mPhaseBiasCorrectionShift);
                     break;
-                default: SPARTN_UNREACHABLE();
+                default: UNREACHABLE();
                 }
             }
         }

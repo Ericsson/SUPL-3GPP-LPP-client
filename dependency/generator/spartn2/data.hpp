@@ -1,5 +1,4 @@
 #pragma once
-#include <generator/spartn2/types.hpp>
 #include "time.hpp"
 
 #include <functional>
@@ -12,6 +11,7 @@
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <GNSS-ID.h>
 #pragma GCC diagnostic pop
 
@@ -238,7 +238,7 @@ inline uint8_t subtype_from_gnss_id(long gnss_id) {
     if (gnss_id == GNSS_ID__gnss_id_bds) return 3;
     if (gnss_id == GNSS_ID__gnss_id_qzss) return 4;
 
-    SPARTN_UNREACHABLE();
+    CORE_UNREACHABLE();
 }
 
 }  // namespace spartn
