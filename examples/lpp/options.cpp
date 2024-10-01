@@ -839,13 +839,15 @@ static UbloxResult ublox_parse_serial() {
     }
 
     std::unique_ptr<io::Input> input{};
-    if (gReceiverReadonly) {
-        input = std::unique_ptr<io::Input>(new io::SerialInput(gUbloxSerialDevice.Get(), baud_rate,
-                                                               data_bits, stop_bits, parity_bit));
+    input = std::unique_ptr<io::Input>(
+        new io::SerialInput(gUbloxSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+
+    std::unique_ptr<io::Output> output{};
+    if (!gReceiverReadonly) {
+        output = std::unique_ptr<io::Output>(new io::SerialOutput(
+            gUbloxSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
     }
 
-    auto output = std::unique_ptr<io::Output>(new io::SerialOutput(
-        gUbloxSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
     return UbloxResult{std::move(input), std::move(output)};
 }
 
@@ -910,14 +912,18 @@ static void ublox_parse_options(InputOptions& input_options, OutputOptions& outp
         auto interface = ublox_parse_interface();
         auto prm       = print_receiver_options_parse();
         input_options.print_ubx |= prm;
-        input_options.inputs.emplace_back(InputOption{
-            INPUT_FORMAT_UBX,
-            std::move(interface.input),
-        });
-        output_options.outputs.emplace_back(OutputOption{
-            OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_SPARTN,
-            std::move(interface.output),
-        });
+        if (interface.input) {
+            input_options.inputs.emplace_back(InputOption{
+                INPUT_FORMAT_UBX,
+                std::move(interface.input),
+            });
+        }
+        if (interface.output) {
+            output_options.outputs.emplace_back(OutputOption{
+                OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_SPARTN,
+                std::move(interface.output),
+            });
+        }
     }
 }
 
@@ -975,12 +981,14 @@ static NmeaResult nmea_parse_serial() {
     }
 
     std::unique_ptr<io::Input> input{};
-    if (gReceiverReadonly) {
-        input = std::unique_ptr<io::Input>(new io::SerialInput(gNmeaSerialDevice.Get(), baud_rate,
-                                                               data_bits, stop_bits, parity_bit));
+    input = std::unique_ptr<io::Input>(
+        new io::SerialInput(gNmeaSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
+
+    std::unique_ptr<io::Output> output{};
+    if (!gReceiverReadonly) {
+        output = std::unique_ptr<io::Output>(new io::SerialOutput(
+            gNmeaSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
     }
-    auto output = std::unique_ptr<io::Output>(
-        new io::SerialOutput(gNmeaSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit));
     return NmeaResult{std::move(input), std::move(output)};
 }
 
@@ -1037,14 +1045,18 @@ static void nmea_parse_options(InputOptions& input_options, OutputOptions& outpu
         auto interface = nmea_parse_interface();
         auto prm       = print_receiver_options_parse();
         input_options.print_nmea |= prm;
-        input_options.inputs.emplace_back(InputOption{
-            INPUT_FORMAT_NMEA,
-            std::move(interface.input),
-        });
-        output_options.outputs.emplace_back(OutputOption{
-            OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_SPARTN,
-            std::move(interface.output),
-        });
+        if (interface.input) {
+            input_options.inputs.emplace_back(InputOption{
+                INPUT_FORMAT_NMEA,
+                std::move(interface.input),
+            });
+        }
+        if (interface.output) {
+            output_options.outputs.emplace_back(OutputOption{
+                OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_SPARTN,
+                std::move(interface.output),
+            });
+        }
     }
 }
 

@@ -375,13 +375,6 @@ void CorrectionData::add_correction(long                                 gnss_id
         auto dot_along  = decode::dot_delta_AlongTrack_r15(satellite->dot_delta_AlongTrack_r15);
         auto dot_cross  = decode::dot_delta_CrossTrack_r15(satellite->dot_delta_CrossTrack_r15);
 
-#if 1
-        radial      = -radial;
-        cross_track = -cross_track;
-        dot_radial  = -dot_radial;
-        dot_cross   = -dot_cross;
-#endif
-
         auto& correction          = mOrbit[satellite_id];
         correction.reference_time = reference_time;
         correction.delta          = {radial, along_track, cross_track};

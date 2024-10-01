@@ -439,8 +439,8 @@ void SsrCommand::parse(args::Subparser& parser) {
 #ifdef INCLUDE_GENERATOR_SPARTN
         "spartn",
 #endif
-#ifdef INCLUDE_GENERATOR_SPARTN_OLD
-        "spartn-old",
+#ifdef INCLUDE_GENERATOR_TOKORO
+        "tokoro",
 #endif
 #ifdef INCLUDE_GENERATOR_RTCM
         "lrf-uper",

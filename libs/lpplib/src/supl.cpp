@@ -239,9 +239,11 @@ SUPL_Message SUPL_Client::process() {
         expected_size = static_cast<size_t>(pdu->length);
     }
 
-    // Remove the message from the buffer
-    if (expected_size > mReceiveLength) {
+    printf("receive-length: %zu, expected-size: %zu\n", mReceiveLength, expected_size);
+    if(expected_size > mReceiveLength) {
         mReceiveLength = 0;
+        ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
+        return nullptr;
     }
 
     memmove(mReceiveBuffer, mReceiveBuffer + expected_size, mReceiveLength - expected_size);

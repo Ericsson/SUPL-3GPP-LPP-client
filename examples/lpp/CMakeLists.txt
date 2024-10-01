@@ -38,11 +38,6 @@ if(${INCLUDE_GENERATOR_SPARTN})
     target_link_libraries(example_lpp PRIVATE dependency::generator::spartn2)
 endif()
 
-if(${INCLUDE_GENERATOR_SPARTN_OLD})
-    target_compile_definitions(example_lpp PRIVATE "INCLUDE_GENERATOR_SPARTN_OLD=1")
-    target_link_libraries(example_lpp PRIVATE dependency::generator::spartn)
-endif()
-
 if(${INCLUDE_GENERATOR_TOKORO})
     target_compile_definitions(example_lpp PRIVATE "INCLUDE_GENERATOR_TOKORO=1")
     target_link_libraries(example_lpp PRIVATE dependency::format::nav)

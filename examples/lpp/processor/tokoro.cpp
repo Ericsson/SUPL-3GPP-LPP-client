@@ -75,9 +75,13 @@ public:
 
         mGenerator.process_lpp(*message.get());
 
-        auto r_x = 3234.241e3;
-        auto r_y = 854.055e3;
-        auto r_z = 5412.345e3;
+        // auto r_x = 3234.241e3;
+        // auto r_y = 854.055e3;
+        // auto r_z = 5412.345e3;
+
+        auto r_x = 3226.697e3;
+        auto r_y = 902.44e3;
+        auto r_z = 5409.136e3;
 
         auto t = mGenerator.last_correction_data_time();
         auto p = EcefPosition{r_x, r_y, r_z};

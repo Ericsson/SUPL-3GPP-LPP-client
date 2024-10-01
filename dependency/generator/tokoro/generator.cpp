@@ -376,6 +376,16 @@ void Generator::build_rtcm_satellite(Satellite const&    satellite,
     for (auto const& observation : mObservations) {
         if (observation.sv_id() != satellite.id()) continue;
 
+        if (observation.signal_id().gnss() == SignalId::Gnss::GPS) {
+            observations.gps_observation_count++;
+        } else if (observation.signal_id().gnss() == SignalId::Gnss::GALILEO) {
+            observations.galileo_observation_count++;
+        } else if (observation.signal_id().gnss() == SignalId::Gnss::BEIDOU) {
+            observations.beidou_observation_count++;
+        } else if (observation.signal_id().gnss() == SignalId::Gnss::GLONASS) {
+            observations.glonass_observation_count++;
+        }
+
         auto meter_to_cms   = 1.0e3 / constant::SPEED_OF_LIGHT;
         auto code_range_ms  = observation.pseudorange() * meter_to_cms;
         auto phase_range_ms = observation.carrier_cycle() * meter_to_cms;
@@ -434,8 +444,23 @@ void Generator::build_rtcm_messages(std::vector<rtcm::Message>& messages) NOEXCE
     rtcm::CommonObservationInfo common{};
     common.reference_station_id = 1;
 
-    auto message = rtcm::generate_msm(7, true, rtcm::GenericGnssId::GPS, common, observations);
-    messages.push_back(std::move(message));
+    if (mGenerateGps && observations.gps_observation_count > 0) {
+        auto gps_message =
+            rtcm::generate_msm(7, true, rtcm::GenericGnssId::GPS, common, observations);
+        messages.push_back(std::move(gps_message));
+    }
+
+    if (mGenerateGal && observations.galileo_observation_count > 0) {
+        auto gal_message =
+            rtcm::generate_msm(7, true, rtcm::GenericGnssId::GALILEO, common, observations);
+        messages.push_back(std::move(gal_message));
+    }
+
+    if (mGenerateBds && observations.beidou_observation_count > 0) {
+        auto bds_message =
+            rtcm::generate_msm(7, true, rtcm::GenericGnssId::BEIDOU, common, observations);
+        messages.push_back(std::move(bds_message));
+    }
 }
 
 std::vector<rtcm::Message> Generator::generate(ts::Tai const& time_reception,
