@@ -53,8 +53,8 @@ static double delta_m(double elevation, double ellipsoidal_height) {
 
 HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Wgs84Position position,
                                                       double elevation) {
-    VSCOPE_FUNCTIONF("%s, (%f, %f, %f), %f", ts::Utc{time}.rtklib_time_string().c_str(),
-                     position.x, position.y, position.z, elevation * constant::RAD2DEG);
+    VSCOPE_FUNCTIONF("%s, (%f, %f, %f), %f", ts::Utc{time}.rtklib_time_string().c_str(), position.x,
+                     position.y, position.z, elevation * constant::RAD2DEG);
 
     if (elevation < 0.0) {
         return {0.0, 0.0};
@@ -71,7 +71,7 @@ HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Wgs84Positio
     VERBOSEF("day_of_year: %f", day_of_year);
     VERBOSEF("time_y: %f", time_y);
 
-    auto cos_y             = std::cos(2.0 * constant::PI * time_y);
+    auto cos_y = std::cos(2.0 * constant::PI * time_y);
 
     auto a_d = interpolate_coef(position.x, MAP_COEF[0]) -
                interpolate_coef(position.x, MAP_COEF[3]) * cos_y;
@@ -86,7 +86,7 @@ HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Wgs84Positio
 
     auto height = position.z / 1.0e3;
 
-    auto hydrostatic = mapping_function(elevation, a_d, b_d, c_d);
+    auto hydrostatic         = mapping_function(elevation, a_d, b_d, c_d);
     auto hydrostatic_delta_m = delta_m(elevation, height);
 
     auto a_w = interpolate_coef(position.x, MAP_COEF[6]);

@@ -20,6 +20,31 @@ SignalId const SignalId::GPS_L1_L1C_D      = SignalId::from_lpp(SignalId::GPS, 1
 SignalId const SignalId::GPS_L1_L1C_P      = SignalId::from_lpp(SignalId::GPS, 16);
 SignalId const SignalId::GPS_L1_L1C_D_P    = SignalId::from_lpp(SignalId::GPS, 17);
 
+SignalId const SignalId::GALILEO_E1                   = SignalId::from_lpp(SignalId::GALILEO, 0);
+SignalId const SignalId::GALILEO_E5A                  = SignalId::from_lpp(SignalId::GALILEO, 1);
+SignalId const SignalId::GALILEO_E5B                  = SignalId::from_lpp(SignalId::GALILEO, 2);
+SignalId const SignalId::GALILEO_E6                   = SignalId::from_lpp(SignalId::GALILEO, 3);
+SignalId const SignalId::GALILEO_E5A_E5B              = SignalId::from_lpp(SignalId::GALILEO, 4);
+SignalId const SignalId::GALILEO_E1_C_NO_DATA         = SignalId::from_lpp(SignalId::GALILEO, 5);
+SignalId const SignalId::GALILEO_E1_A                 = SignalId::from_lpp(SignalId::GALILEO, 6);
+SignalId const SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL = SignalId::from_lpp(SignalId::GALILEO, 7);
+SignalId const SignalId::GALILEO_E1_B_C               = SignalId::from_lpp(SignalId::GALILEO, 8);
+SignalId const SignalId::GALILEO_E1_A_B_C             = SignalId::from_lpp(SignalId::GALILEO, 9);
+SignalId const SignalId::GALILEO_E6_C                 = SignalId::from_lpp(SignalId::GALILEO, 10);
+SignalId const SignalId::GALILEO_E6_A                 = SignalId::from_lpp(SignalId::GALILEO, 11);
+SignalId const SignalId::GALILEO_E6_B                 = SignalId::from_lpp(SignalId::GALILEO, 12);
+SignalId const SignalId::GALILEO_E6_B_C               = SignalId::from_lpp(SignalId::GALILEO, 13);
+SignalId const SignalId::GALILEO_E6_A_B_C             = SignalId::from_lpp(SignalId::GALILEO, 14);
+SignalId const SignalId::GALILEO_E5B_I                = SignalId::from_lpp(SignalId::GALILEO, 15);
+SignalId const SignalId::GALILEO_E5B_Q                = SignalId::from_lpp(SignalId::GALILEO, 16);
+SignalId const SignalId::GALILEO_E5B_I_Q              = SignalId::from_lpp(SignalId::GALILEO, 17);
+SignalId const SignalId::GALILEO_E5_A_B_I             = SignalId::from_lpp(SignalId::GALILEO, 18);
+SignalId const SignalId::GALILEO_E5_A_B_Q             = SignalId::from_lpp(SignalId::GALILEO, 19);
+SignalId const SignalId::GALILEO_E5_A_B_I_Q           = SignalId::from_lpp(SignalId::GALILEO, 20);
+SignalId const SignalId::GALILEO_E5A_I                = SignalId::from_lpp(SignalId::GALILEO, 21);
+SignalId const SignalId::GALILEO_E5A_Q                = SignalId::from_lpp(SignalId::GALILEO, 22);
+SignalId const SignalId::GALILEO_E5A_I_Q              = SignalId::from_lpp(SignalId::GALILEO, 23);
+
 //
 // GPS
 //
@@ -35,9 +60,9 @@ CONSTEXPR static int32_t GPS_LPP_TO_RTCM[24] = {
     2, -1, -1, -1, 3, 4, 8, 9, 10, 15, 16, 17, 22, 23, 24, 30, 31, 32, -1, -1, -1, -1, -1, -1,
 };
 
-#define GPS_L1_FREQ 1575.42e6
-#define GPS_L2_FREQ 1227.60e6
-#define GPS_L5_FREQ 1176.45e6
+#define GPS_L1_FREQ 1575.42e3
+#define GPS_L2_FREQ 1227.60e3
+#define GPS_L5_FREQ 1176.45e3
 
 static double GPS_FREQ[24] = {
     GPS_L1_FREQ, GPS_L1_FREQ, GPS_L2_FREQ, GPS_L5_FREQ, GPS_L1_FREQ, GPS_L1_FREQ,
@@ -59,9 +84,9 @@ CONSTEXPR static int32_t GLONASS_LPP_TO_RTCM[24] = {
     2, 8, -1, 3, 9, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-#define GLONASS_G1_FREQ 1602.0e6
-#define GLONASS_G2_FREQ 1246.0e6
-#define GLONASS_G3_FREQ 1202.025e6
+#define GLONASS_G1_FREQ 1602.0e3
+#define GLONASS_G2_FREQ 1246.0e3
+#define GLONASS_G3_FREQ 1202.025e3
 
 static double GLONASS_FREQ[24] = {
     GLONASS_G1_FREQ,
@@ -106,11 +131,11 @@ CONSTEXPR static int32_t GALILEO_LPP_TO_RTCM[24] = {
     -1, -1, -1, -1, -1, 2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15, 16, 18, 19, 20, 22, 23, 24,
 };
 
-#define GALILEO_E1_FREQ 1575.42e6
-#define GALILEO_E5A_FREQ 1176.45e6
-#define GALILEO_E5B_FREQ 1207.14e6
-#define GALILEO_E6_FREQ 1278.75e6
-#define GALILEO_E5A_E5B_FREQ 1191.795e6
+#define GALILEO_E1_FREQ 1575.42e3
+#define GALILEO_E5A_FREQ 1176.45e3
+#define GALILEO_E5B_FREQ 1207.14e3
+#define GALILEO_E6_FREQ 1278.75e3
+#define GALILEO_E5A_E5B_FREQ 1191.795e3
 
 static double GALILEO_FREQ[24] = {
     GALILEO_E1_FREQ,       // E1
@@ -153,10 +178,10 @@ CONSTEXPR static int32_t BDS_LPP_TO_RTCM[24] = {
     2, 3, 4, 8, 9, 10, 14, 15, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
-#define BEIDOU_B1_FREQ 1561.098e6
-#define BEIDOU_B1C_FREQ 1575.42e6
-#define BEIDOU_B2_FREQ 1207.14e6
-#define BEIDOU_B3_FREQ 1268.52e6
+#define BEIDOU_B1_FREQ 1561.098e3
+#define BEIDOU_B1C_FREQ 1575.42e3
+#define BEIDOU_B2_FREQ 1207.14e3
+#define BEIDOU_B3_FREQ 1268.52e3
 
 static double BDS_FREQ[24] = {
     BEIDOU_B1_FREQ,   // B1 I

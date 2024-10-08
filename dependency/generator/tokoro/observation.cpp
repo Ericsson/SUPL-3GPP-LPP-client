@@ -131,10 +131,10 @@ double Observation::pseudorange() const NOEXCEPT {
     auto stec_grid = 0.0;
     auto stec_poly = 0.0;
     if (mIonoValid) {
-        stec_grid = 40.3e16 * mIonoGridResidual / (mFrequency * mFrequency);
-        stec_poly = 40.3e16 * mIonoPolyResidual / (mFrequency * mFrequency);
-        VERBOSEF("stec_grid:  %+24.10f (%g TECU)", stec_grid, mIonoGridResidual);
-        VERBOSEF("stec_poly:  %+24.10f (%g TECU)", stec_poly, mIonoPolyResidual);
+        stec_grid = 40.3e10 * mIonoGridResidual / (mFrequency * mFrequency);
+        stec_poly = 40.3e10 * mIonoPolyResidual / (mFrequency * mFrequency);
+        VERBOSEF("stec_grid:  %+24.10f (%g TECU, %g kHz)", stec_grid, mIonoGridResidual, mFrequency);
+        VERBOSEF("stec_poly:  %+24.10f (%g TECU, %g kHz)", stec_poly, mIonoPolyResidual, mFrequency);
     } else {
         VERBOSEF("stec_grid:  ---");
         VERBOSEF("stec_poly:  ---");
@@ -184,10 +184,10 @@ double Observation::carrier_cycle() const NOEXCEPT {
     auto stec_grid = 0.0;
     auto stec_poly = 0.0;
     if (mIonoValid) {
-        stec_grid = -40.3e16 * mIonoGridResidual / (mFrequency * mFrequency);
-        stec_poly = -40.3e16 * mIonoPolyResidual / (mFrequency * mFrequency);
-        VERBOSEF("stec_grid:  %+24.10f (%g TECU)", stec_grid, mIonoGridResidual);
-        VERBOSEF("stec_poly:  %+24.10f (%g TECU)", stec_poly, mIonoPolyResidual);
+        stec_grid = -40.3e10 * mIonoGridResidual / (mFrequency * mFrequency);
+        stec_poly = -40.3e10 * mIonoPolyResidual / (mFrequency * mFrequency);
+        VERBOSEF("stec_grid:  %+24.10f (%g TECU, %g kHz)", stec_grid, mIonoGridResidual, mFrequency);
+        VERBOSEF("stec_poly:  %+24.10f (%g TECU, %g kHz)", stec_poly, mIonoPolyResidual, mFrequency);
     } else {
         VERBOSEF("stec_grid:  ---");
         VERBOSEF("stec_poly:  ---");

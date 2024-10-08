@@ -27,6 +27,8 @@ struct LocationServerOptions {
     int port;
     /// Whether to use SSL or not.
     bool ssl;
+
+    bool skip_request_assistance_data;
 };
 
 /// Identity options.
@@ -89,8 +91,9 @@ constexpr static InputFormat INPUT_FORMAT_UBX  = 1;
 constexpr static InputFormat INPUT_FORMAT_NMEA = 2;
 constexpr static InputFormat INPUT_FORMAT_RTCM = 4;
 constexpr static InputFormat INPUT_FORMAT_CTRL = 8;
+constexpr static InputFormat INPUT_FORMAT_LPP  = 16;
 constexpr static InputFormat INPUT_FORMAT_ALL =
-    INPUT_FORMAT_UBX | INPUT_FORMAT_NMEA | INPUT_FORMAT_RTCM | INPUT_FORMAT_CTRL;
+    INPUT_FORMAT_UBX | INPUT_FORMAT_NMEA | INPUT_FORMAT_RTCM | INPUT_FORMAT_CTRL | INPUT_FORMAT_LPP;
 
 struct InputOption {
     InputFormat                format;
@@ -133,7 +136,7 @@ struct LocationInformationOptions {
     bool disable_nmea_location;
     /// Don't use location information from UBX messages.
     bool disable_ubx_location;
-        /// Update rate in milliseconds.
+    /// Update rate in milliseconds.
     int update_rate;
 };
 

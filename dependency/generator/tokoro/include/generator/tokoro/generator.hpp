@@ -87,7 +87,7 @@ private:
     bool mGenerateGps{true};
     bool mGenerateGlo{false};
     bool mGenerateGal{true};
-    bool mGenerateBds{true};
+    bool mGenerateBds{false};
 
     std::unordered_map<SatelliteId, std::unique_ptr<Satellite>> mSatellites;
     std::vector<Observation>                                    mObservations;

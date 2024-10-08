@@ -4,6 +4,7 @@
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 #include <time/tai.hpp>
 
@@ -60,30 +61,10 @@ struct CorrectionPointSet {
     long     number_of_steps_longitude;
     uint64_t bitmask;
 
-    inline bool has_grid_point(GridIndex grid_index) const {
-        auto index = 64 - 1 - grid_index.i;
-        return (bitmask & (1ULL << index)) != 0;
-    }
-
-    NODISCARD GridIndex next_latitude(GridIndex index) const NOEXCEPT {
-        return {index.x, index.y + 1, index.i + 1};
-    }
-
-    NODISCARD GridIndex prev_latitude(GridIndex index) const NOEXCEPT {
-        return {index.x, index.y - 1, index.i - 1};
-    }
-
-    NODISCARD GridIndex next_longitude(GridIndex index) const NOEXCEPT {
-        return {index.x + 1, index.y, index.i + number_of_steps_latitude + 1};
-    }
-
-    NODISCARD GridIndex prev_longitude(GridIndex index) const NOEXCEPT {
-        return {index.x - 1, index.y, index.i - number_of_steps_latitude - 1};
-    }
-
-    NODISCARD Wgs84Position grid_point_position(GridIndex index) const NOEXCEPT;
-    NODISCARD bool          array_to_index(long array_i, GridIndex& index) const NOEXCEPT;
-    NODISCARD bool position_to_index(Wgs84Position position, GridIndex& index) const NOEXCEPT;
+    // Convert array index (the index of the grid point in the array from LPP) to an absolute index
+    // that includes invalid grid points.
+    NODISCARD bool array_to_index(long array_index, long& index, bool& valid,
+                                  Wgs84Position& position) const NOEXCEPT;
 
     NODISCARD double latitude_min() const NOEXCEPT { return reference_point_latitude; }
     NODISCARD double latitude_max() const NOEXCEPT {
@@ -174,6 +155,70 @@ struct TroposphereGrid {
                                         TroposphericCorrection& correction) const NOEXCEPT;
 };
 
+struct GridPoint {
+    bool          valid;
+    bool          tropspheric_valid;
+    bool          ionospheric_valid;
+    Wgs84Position position;
+
+    long array_index;
+    long absolute_index;
+
+    std::unordered_map<SatelliteId, double> ionospheric_residual;
+    double                                  tropospheric_wet;
+    double                                  tropospheric_dry;
+
+    bool has_ionospheric_residual(SatelliteId sv_id) const {
+        return ionospheric_residual.find(sv_id) != ionospheric_residual.end();
+    }
+
+    bool has_tropospheric_data() const { return tropspheric_valid; }
+};
+
+struct GridData {
+    GridPoint const* find_top_left(Wgs84Position position) const NOEXCEPT;
+    GridPoint const* find_with_absolute_index(long absolute_index) const NOEXCEPT;
+    bool find_4_points(Wgs84Position position, GridPoint const*& tl, GridPoint const*& tr,
+                       GridPoint const*& bl, GridPoint const*& br) const NOEXCEPT;
+
+    bool ionospheric(SatelliteId sv_id, Wgs84Position position,
+                     double& ionospheric_residual) const NOEXCEPT;
+    bool tropospheric(Wgs84Position position, TroposphericCorrection& correction) const NOEXCEPT;
+
+    void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
+        mDeltaLatitude          = correction_point_set.step_of_latitude;
+        mDeltaLongitude         = correction_point_set.step_of_longitude;
+        mNumberOfStepsLatitude  = correction_point_set.number_of_steps_latitude;
+        mNumberOfStepsLongitude = correction_point_set.number_of_steps_longitude;
+        mGridPoints.resize((mNumberOfStepsLatitude + 1) * (mNumberOfStepsLongitude + 1));
+    }
+
+    void add_point(long array_index, long absolute_index, bool valid, Wgs84Position position) {
+        assert(absolute_index >= 0);
+        assert(absolute_index < static_cast<long>(mGridPoints.size()));
+        auto& grid_point             = mGridPoints[absolute_index];
+        grid_point.valid             = valid;
+        grid_point.position          = position;
+        grid_point.array_index       = array_index;
+        grid_point.absolute_index    = absolute_index;
+        grid_point.tropspheric_valid = false;
+        grid_point.ionospheric_valid = false;
+    }
+
+    GridPoint* point_from_array_index(long array_index) {
+        for (auto& grid_point : mGridPoints) {
+            if (grid_point.array_index == array_index) return &grid_point;
+        }
+        return nullptr;
+    }
+
+    double                 mDeltaLatitude;
+    double                 mDeltaLongitude;
+    long                   mNumberOfStepsLatitude;
+    long                   mNumberOfStepsLongitude;
+    std::vector<GridPoint> mGridPoints;
+};
+
 struct CorrectionData {
     ts::Tai const& latest_correction_time() const { return mLatestCorrectionTime; }
 
@@ -227,8 +272,7 @@ private:
     std::unordered_map<SatelliteId, SignalCorrection> mSignal;
 
     std::unordered_map<SatelliteId, IonosphericPolynomial> mIonosphericPolynomial;
-    std::unordered_map<SatelliteId, IonosphereGrid>        mIonosphereGrid;
-    std::unordered_map<SatelliteId::Gnss, TroposphereGrid> mTroposphereGrid;
+    std::unordered_map<SatelliteId::Gnss, GridData>        mGrid;
 };
 
 }  // namespace tokoro

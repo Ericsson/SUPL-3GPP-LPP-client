@@ -26,6 +26,7 @@ target_link_libraries(example_lpp PRIVATE dependency::io)
 target_link_libraries(example_lpp PRIVATE dependency::format::ubx)
 target_link_libraries(example_lpp PRIVATE dependency::format::nmea)
 target_link_libraries(example_lpp PRIVATE dependency::format::ctrl)
+target_link_libraries(example_lpp PRIVATE dependency::format::lpp)
 target_link_libraries(example_lpp PRIVATE asn1::generated::lpp asn1::helper)
 
 if(${INCLUDE_GENERATOR_RTCM})

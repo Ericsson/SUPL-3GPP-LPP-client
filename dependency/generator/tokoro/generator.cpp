@@ -110,6 +110,13 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
         correction_point_set.step_of_latitude          = step_of_latitude;
         correction_point_set.step_of_longitude         = step_of_longitude;
 
+        VERBOSEF("correction point set:");
+        VERBOSEF("  set_id: %u", correction_point_set.set_id);
+        VERBOSEF("  reference_point_latitude:  %.14f", correction_point_set.reference_point_latitude);
+        VERBOSEF("  reference_point_longitude: %.14f", correction_point_set.reference_point_longitude);
+        VERBOSEF("  step_of_latitude:  %.14f", correction_point_set.step_of_latitude);
+        VERBOSEF("  step_of_longitude: %.14f", correction_point_set.step_of_longitude);
+
         uint64_t bitmask = 0;
         if (array.bitmaskOfGrids_r16) {
             for (size_t i = 0; i < array.bitmaskOfGrids_r16->size; i++) {

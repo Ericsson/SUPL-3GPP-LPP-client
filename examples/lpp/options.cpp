@@ -18,6 +18,25 @@ static std::vector<std::string> split(std::string const& str, char delim) {
     return tokens;
 }
 
+static std::vector<std::string> split_at_any(std::string const& input,
+                                             std::string const& delimiters) {
+    std::vector<std::string> result;
+    std::size_t              last_pos = 0;
+    for (std::size_t i = 0; i < input.size(); ++i) {
+        if (delimiters.find(input[i]) != delimiters.npos) {
+            result.push_back(input.substr(last_pos, i - last_pos));
+            ++i;
+            last_pos = i - 1;
+        }
+    }
+
+    if (last_pos != input.size()) {
+        result.push_back(input.substr(last_pos, input.size()));
+    }
+
+    return result;
+}
+
 static args::Group gArguments{"Arguments:"};
 
 //
@@ -44,6 +63,11 @@ static args::Flag gLocationServerSlpHostImsi{gLocationServer,
                                              "slp-host-imsi",
                                              "Use IMSI as SLP Host",
                                              {"slp-host-imsi"},
+                                             args::Options::Single};
+static args::Flag gSkipRequestAssistanceData{gLocationServer,
+                                             "skip-request-assistance-data",
+                                             "Skip Request Assistance Data",
+                                             {"skip-request-assistance-data"},
                                              args::Options::Single};
 
 //
@@ -510,6 +534,312 @@ static void parse_output_options(OutputOptions& output_options) {
 }
 
 //
+//
+//
+
+static InputFormat parse_input_format(std::unordered_map<std::string, std::string> const& options) {
+    if (options.find("format") == options.end()) {
+        return INPUT_FORMAT_ALL;
+    }
+
+    auto fmt    = options.at("format");
+    auto parts  = split_at_any(fmt, "-+");
+    auto format = INPUT_FORMAT_ALL;
+    for (auto const& part : parts) {
+        if (part.empty()) {
+            continue;
+        } else if (part.length() < 2) {
+            throw args::ParseError("invalid input format format: \"" + part + "\"");
+        }
+
+        auto add_or_remove = true;
+        if (part[0] == '+') {
+            add_or_remove = true;
+        } else if (part[0] == '-') {
+            add_or_remove = false;
+        } else {
+            throw std::invalid_argument("expected '+' or '-'");
+        }
+
+        auto change      = INPUT_FORMAT_NONE;
+        auto format_name = part.substr(1);
+        if (format_name == "ubx") {
+            change = INPUT_FORMAT_UBX;
+        } else if (format_name == "nmea") {
+            change = INPUT_FORMAT_NMEA;
+        } else if (format_name == "rtcm") {
+            change = INPUT_FORMAT_RTCM;
+        } else if (format_name == "control") {
+            change = INPUT_FORMAT_CTRL;
+        } else if (format_name == "lpp") {
+            change = INPUT_FORMAT_LPP;
+        } else if (format_name == "all") {
+            change = INPUT_FORMAT_ALL;
+        } else {
+            throw std::invalid_argument("invalid input format name: \"" + format_name + "\"");
+        }
+
+        if (add_or_remove) {
+            format |= change;
+        } else {
+            format &= ~change;
+        }
+    }
+
+    return format;
+}
+
+static InputOption parse_input_stdin(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_input_format(options);
+    auto input  = std::unique_ptr<io::Input>(new io::StdinInput());
+    return {format, std::move(input)};
+}
+
+static InputOption parse_input_file(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_input_format(options);
+    if (options.find("path") == options.end()) {
+        throw args::RequiredError("--input file requires 'path'");
+    }
+
+    auto path = options.at("path");
+    auto bps  = 128 * 10;
+    if (options.find("bps") != options.end()) {
+        try {
+            bps = std::stoi(options.at("bps"));
+        } catch (...) {
+            throw args::ParseError("--input file 'bps' must be an integer");
+        }
+    }
+
+    auto tick_interval  = std::chrono::milliseconds(100);
+    auto bytes_per_tick = static_cast<size_t>((bps + 9) / 10);
+
+    auto input = std::unique_ptr<io::Input>(new io::FileInput(path, bytes_per_tick, tick_interval));
+    return {format, std::move(input)};
+}
+
+static io::BaudRate parse_baudrate(std::string const& str) {
+    long baud_rate = 0;
+    try {
+        baud_rate = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("--input serial 'baudrate' must be an integer");
+    }
+
+    if (baud_rate == 50) return io::BaudRate::BR50;
+    if (baud_rate == 75) return io::BaudRate::BR75;
+    if (baud_rate == 110) return io::BaudRate::BR110;
+    if (baud_rate == 134) return io::BaudRate::BR134;
+    if (baud_rate == 150) return io::BaudRate::BR150;
+    if (baud_rate == 200) return io::BaudRate::BR200;
+    if (baud_rate == 300) return io::BaudRate::BR300;
+    if (baud_rate == 600) return io::BaudRate::BR600;
+    if (baud_rate == 1200) return io::BaudRate::BR1200;
+    if (baud_rate == 1800) return io::BaudRate::BR1800;
+    if (baud_rate == 2400) return io::BaudRate::BR2400;
+    if (baud_rate == 4800) return io::BaudRate::BR4800;
+    if (baud_rate == 9600) return io::BaudRate::BR9600;
+    if (baud_rate == 19200) return io::BaudRate::BR19200;
+    if (baud_rate == 38400) return io::BaudRate::BR38400;
+    if (baud_rate == 57600) return io::BaudRate::BR57600;
+    if (baud_rate == 115200) return io::BaudRate::BR115200;
+    if (baud_rate == 230400) return io::BaudRate::BR230400;
+    if (baud_rate == 460800) return io::BaudRate::BR460800;
+    if (baud_rate == 500000) return io::BaudRate::BR500000;
+    if (baud_rate == 576000) return io::BaudRate::BR576000;
+    if (baud_rate == 921600) return io::BaudRate::BR921600;
+    if (baud_rate == 1000000) return io::BaudRate::BR1000000;
+    if (baud_rate == 1152000) return io::BaudRate::BR1152000;
+    if (baud_rate == 1500000) return io::BaudRate::BR1500000;
+    if (baud_rate == 2000000) return io::BaudRate::BR2000000;
+    if (baud_rate == 2500000) return io::BaudRate::BR2500000;
+    if (baud_rate == 3000000) return io::BaudRate::BR3000000;
+    if (baud_rate == 3500000) return io::BaudRate::BR3500000;
+    if (baud_rate == 4000000) return io::BaudRate::BR4000000;
+    throw args::ParseError("--input serial 'baudrate' must be a valid baud rate");
+}
+
+static io::DataBits parse_databits(std::string const& str) {
+    long databits = 0;
+    try {
+        databits = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("--input serial 'data' must be an integer");
+    }
+
+    if (databits == 5) return io::DataBits::FIVE;
+    if (databits == 6) return io::DataBits::SIX;
+    if (databits == 7) return io::DataBits::SEVEN;
+    if (databits == 8) return io::DataBits::EIGHT;
+    throw args::ParseError("--input serial 'data' must be 5, 6, 7, or 8");
+}
+
+static io::StopBits parse_stopbits(std::string const& str) {
+    long stopbits = 0;
+    try {
+        stopbits = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("--input serial 'stop' must be an integer");
+    }
+
+    if (stopbits == 1) return io::StopBits::ONE;
+    if (stopbits == 2) return io::StopBits::TWO;
+    throw args::ParseError("--input serial 'stop' must be 1 or 2");
+}
+
+static io::ParityBit parse_paritybit(std::string const& str) {
+    if (str == "none") return io::ParityBit::NONE;
+    if (str == "odd") return io::ParityBit::ODD;
+    if (str == "even") return io::ParityBit::EVEN;
+    throw args::ParseError("--input serial 'parity' must be none, odd, or even");
+}
+
+static InputOption parse_input_serial(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_input_format(options);
+    if (options.find("device") == options.end()) {
+        throw args::RequiredError("--input serial requires 'device'");
+    }
+
+    auto device = options.at("device");
+
+    auto baud_rate  = io::BaudRate::BR115200;
+    auto data_bits  = io::DataBits::EIGHT;
+    auto stop_bits  = io::StopBits::ONE;
+    auto parity_bit = io::ParityBit::NONE;
+
+    auto baud_rate_it = options.find("baudrate");
+    if (baud_rate_it != options.end()) baud_rate = parse_baudrate(baud_rate_it->second);
+
+    auto data_bits_it = options.find("data");
+    if (data_bits_it != options.end()) data_bits = parse_databits(data_bits_it->second);
+
+    auto stop_bits_it = options.find("stop");
+    if (stop_bits_it != options.end()) stop_bits = parse_stopbits(stop_bits_it->second);
+
+    auto parity_bit_it = options.find("parity");
+    if (parity_bit_it != options.end()) parity_bit = parse_paritybit(parity_bit_it->second);
+
+    auto input = std::unique_ptr<io::Input>(
+        new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
+    return {format, std::move(input)};
+}
+
+static InputOption parse_input_tcp_server(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_input_format(options);
+    if (options.find("port") == options.end()) {
+        throw args::RequiredError("--input tcp-server requires 'port'");
+    }
+
+    auto port = 0;
+    try {
+        port = std::stoi(options.at("port"));
+    } catch (...) {
+        throw args::ParseError("--input tcp-server 'port' must be an integer");
+    }
+
+    if (port < 0 || port > 65535) {
+        throw args::ParseError("--input tcp-server 'port' must be in the range [0, 65535]");
+    }
+
+    auto input =
+        std::unique_ptr<io::Input>(new io::TcpServerInput("0.0.0.0", static_cast<uint16_t>(port)));
+    return {format, std::move(input)};
+}
+
+static InputOption parse_input_tcp_client(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_input_format(options);
+    if (options.find("host") == options.end()) {
+        throw args::RequiredError("--input tcp-client requires 'host'");
+    }
+    if (options.find("port") == options.end()) {
+        throw args::RequiredError("--input tcp-client requires 'port'");
+    }
+
+    auto host = options.at("host");
+    auto port = 0;
+    try {
+        port = std::stoi(options.at("port"));
+    } catch (...) {
+        throw args::ParseError("--input tcp-client 'port' must be an integer");
+    }
+
+    if (port < 0 || port > 65535) {
+        throw args::ParseError("--input tcp-client 'port' must be in the range [0, 65535]");
+    }
+
+    auto input =
+        std::unique_ptr<io::Input>(new io::TcpClientInput(host, static_cast<uint16_t>(port)));
+    return {format, std::move(input)};
+}
+
+static InputOption parse_input_udp_server(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_input_format(options);
+    if (options.find("port") == options.end()) {
+        throw args::RequiredError("--input udp-server requires 'port'");
+    }
+
+    auto port = 0;
+    try {
+        port = std::stoi(options.at("port"));
+    } catch (...) {
+        throw args::ParseError("--input udp-server 'port' must be an integer");
+    }
+
+    if (port < 0 || port > 65535) {
+        throw args::ParseError("--input udp-server 'port' must be in the range [0, 65535]");
+    }
+
+    auto input =
+        std::unique_ptr<io::Input>(new io::UdpServerInput("0.0.0.0", static_cast<uint16_t>(port)));
+    return {format, std::move(input)};
+}
+
+static InputOption parse_input(std::string const& source) {
+    std::unordered_map<std::string, std::string> options;
+
+    auto parts = split(source, ':');
+    if (parts.size() == 1) {
+        // No options
+    } else if (parts.size() == 2) {
+        auto args = split(parts[1], ',');
+        for (std::string const& arg : args) {
+            auto kv = split(arg, '=');
+            if (kv.size() != 2) {
+                throw args::ParseError("--input argument not in key=value format: \"" + arg + "\"");
+            }
+            options[kv[0]] = kv[1];
+        }
+    } else {
+        throw args::ParseError("--input not in type:arguments format: \"" + source + "\"");
+    }
+
+    auto type = parts[0];
+    if (type == "stdin") {
+        return parse_input_stdin(options);
+    } else if (type == "file") {
+        return parse_input_file(options);
+    } else if (type == "serial") {
+        return parse_input_serial(options);
+    } else if (type == "tcp-client") {
+        return parse_input_tcp_client(options);
+    } else if (type == "tcp-server") {
+        return parse_input_tcp_server(options);
+    } else if (type == "udp-server") {
+        return parse_input_udp_server(options);
+    } else if (type == "unix-socket") {
+        throw args::ParseError("--input type not implemented: \"" + type + "\"");
+    } else {
+        throw args::ParseError("--input type not recognized: \"" + type + "\"");
+    }
+}
+
+static void parse_input_options(InputOptions& input_options) {
+    for (auto const& input : gInputArgs.Get()) {
+        input_options.inputs.push_back(parse_input(input));
+    }
+}
+
+//
 // Location Information
 //
 
@@ -683,8 +1013,13 @@ static args::ValueFlag<std::string> gControlUnixSocketPath{
 
 static LocationServerOptions parse_location_server_options(Options& options) {
     LocationServerOptions location_server_options{};
-    location_server_options.port = 5431;
-    location_server_options.ssl  = false;
+    location_server_options.port                         = 5431;
+    location_server_options.ssl                          = false;
+    location_server_options.skip_request_assistance_data = false;
+
+    if (gSkipRequestAssistanceData) {
+        location_server_options.skip_request_assistance_data = true;
+    }
 
     if (gLocationServerHost) {
         location_server_options.host = gLocationServerHost.Get();
@@ -1344,7 +1679,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 parse_log_level(options);
 
                 parse_output_options(options.output_options);
-                // parse_input_options(options.input_options);
+                parse_input_options(options.input_options);
                 ublox_parse_options(options.input_options, options.output_options);
                 nmea_parse_options(options.input_options, options.output_options);
 
@@ -1405,6 +1740,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     args::GlobalOptions nmea_receiver_globals{parser, gNmeaReceiverGroup};
     args::GlobalOptions other_receiver_globals{parser, gOtherReceiverGroup};
     args::GlobalOptions output_globals{parser, gOutputGroup};
+    args::GlobalOptions input_globals{parser, gInputGroup};
     args::GlobalOptions location_information_globals{parser, gLocationInformationGroup};
     args::GlobalOptions control_options_globals{parser, gControlGroup};
     args::GlobalOptions log_globals{parser, gLogGroup};
