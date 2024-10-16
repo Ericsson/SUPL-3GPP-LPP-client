@@ -31,6 +31,7 @@
 - Added receiver option `--readonly` to prevent opening receiver serial port in write mode.
 - Added support to export NMEA sentences to file with `--nmea-export-file` command-line argument.
 - Added support to export UBX messages to file with `--ublox-export-file` command-line argument.
+- New example that shows how to decode LPP-Message objects from UPER octets (see `example-decode-uper`)
 
 ## [3.4.11] 2024-09-26
 - Added support for UBX-RXM-RAWX messages.
