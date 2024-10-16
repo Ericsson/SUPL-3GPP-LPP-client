@@ -6,20 +6,18 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 project(example LANGUAGES C CXX)
 
-
 include(cmake/color.cmake)
 include(cmake/vars.cmake)
 include(cmake/compiler.cmake)
 include(cmake/target.cmake)
 
 add_definitions(-D_POSIX_C_SOURCE=200809L)
-add_definitions(-DCLIENT_VERSION="3.4.11")
-add_definitions(-DCLIENT_VERSION_INT=0x030411)
+add_definitions(-DCLIENT_VERSION="4.0.0")
+add_definitions(-DCLIENT_VERSION_INT=0x040000)
 
 find_package(Threads REQUIRED)
 
 add_subdirectory("libs")
-
 add_subdirectory("dependency")
 add_subdirectory("external")
 
