@@ -1,4 +1,5 @@
 #include "lpp/client.hpp"
+#include "location_information_delivery.hpp"
 #include "lpp.hpp"
 #include "lpp/assistance_data.hpp"
 #include "lpp/provide_capabilities.hpp"
@@ -13,6 +14,7 @@
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wunused-function"
 #include <ProvideAssistanceData-r9-IEs.h>
+#include <RequestLocationInformation-r9-IEs.h>
 #pragma GCC diagnostic pop
 
 #define LOGLET_CURRENT_MODULE "lpp/c"
@@ -22,6 +24,13 @@ namespace lpp {
 Client::Client(supl::Identity identity, std::string const& host, uint16_t port)
     : mHost(host), mPort(port), mSession{lpp::VERSION_16_4_0, identity}, mScheduler{nullptr} {
     SCOPE_FUNCTION();
+
+    on_capabilities                          = nullptr;
+    on_request_location_information          = nullptr;
+    on_provide_location_information          = nullptr;
+    on_provide_location_information_advanced = nullptr;
+    on_connected                             = nullptr;
+    on_disconnected                          = nullptr;
 
     mNextSessionId        = 1;
     mSession.on_connected = [](Session&) {
@@ -205,8 +214,111 @@ void Client::process_request_assistance_data(lpp::TransactionHandle const& trans
 }
 
 void Client::process_request_location_information(lpp::TransactionHandle const& transaction,
-                                                  lpp::Message) {
+                                                  lpp::Message                  message) {
     SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+
+    auto it = mLocationInformationDeliveries.find(transaction);
+    if (it != mLocationInformationDeliveries.end()) {
+        WARNF("location information delivery already exists for transaction");
+        return;
+    }
+
+    auto handled_by_user = false;
+    if (on_request_location_information) {
+        handled_by_user = on_request_location_information(*this, transaction, message);
+    }
+
+    if (handled_by_user) {
+        DEBUGF("location information request handled by user");
+        return;
+    }
+
+    auto inner = lpp::get_request_location_information(message);
+    if (!inner) {
+        WARNF(
+            "request location information message does not contain a request location information");
+        return;
+    }
+
+    auto common = inner->commonIEsRequestLocationInformation;
+    if (!common) {
+        WARNF("request location information message does not contain common IEs");
+        return;
+    }
+
+    auto periodical_reporting = common->periodicalReporting;
+    if (!periodical_reporting) {
+        WARNF("only 'periodicalReporting' is supported and must be set");
+        return;
+    }
+
+    auto reporting_amount = (periodical_reporting->reportingAmount == nullptr ?
+                                 PeriodicalReportingCriteria__reportingAmount_ra1 :
+                                 *periodical_reporting->reportingAmount);
+    auto reporting_amount_unlimited =
+        (reporting_amount == PeriodicalReportingCriteria__reportingAmount_ra_Infinity);
+    switch (reporting_amount) {
+    case PeriodicalReportingCriteria__reportingAmount_ra1: reporting_amount = 1; break;
+    case PeriodicalReportingCriteria__reportingAmount_ra2: reporting_amount = 2; break;
+    case PeriodicalReportingCriteria__reportingAmount_ra4: reporting_amount = 4; break;
+    case PeriodicalReportingCriteria__reportingAmount_ra8: reporting_amount = 8; break;
+    case PeriodicalReportingCriteria__reportingAmount_ra16: reporting_amount = 16; break;
+    case PeriodicalReportingCriteria__reportingAmount_ra32: reporting_amount = 32; break;
+    case PeriodicalReportingCriteria__reportingAmount_ra64: reporting_amount = 64; break;
+    case PeriodicalReportingCriteria__reportingAmount_ra_Infinity: reporting_amount = 0; break;
+    default: WARNF("unknown reporting amount"); return;
+    };
+
+    std::chrono::seconds reporting_interval{1};
+    switch (periodical_reporting->reportingInterval) {
+    case PeriodicalReportingCriteria__reportingInterval_noPeriodicalReporting:
+        WARNF("no periodical reporting is not supported");
+        return;
+    case PeriodicalReportingCriteria__reportingInterval_ri0_25:
+        reporting_interval = std::chrono::seconds{1};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri0_5:
+        reporting_interval = std::chrono::seconds{2};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri1:
+        reporting_interval = std::chrono::seconds{4};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri2:
+        reporting_interval = std::chrono::seconds{8};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri4:
+        reporting_interval = std::chrono::seconds{10};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri8:
+        reporting_interval = std::chrono::seconds{16};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri16:
+        reporting_interval = std::chrono::seconds{20};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri32:
+        reporting_interval = std::chrono::seconds{32};
+        break;
+    case PeriodicalReportingCriteria__reportingInterval_ri64:
+        reporting_interval = std::chrono::seconds{64};
+        break;
+    default: WARNF("unknown reporting interval"); return;
+    };
+
+    PeriodicLocationInformationDeliveryDescription description{};
+    description.reporting_amount_unlimited = reporting_amount_unlimited;
+    description.reporting_amount           = reporting_amount;
+    description.reporting_interval         = reporting_interval;
+    description.coordinate_type = get_location_coordinate_types(common->locationCoordinateTypes);
+    description.velocity_type   = get_velocity_types(common->velocityTypes);
+    description.ha_gnss_metrics = did_request_ha_gnss_metrics(inner);
+
+    auto delivery =
+        std::make_shared<LocationInformationDelivery>(this, &mSession, transaction, description);
+    // TODO(ewasjon): Should we deliver the location information directly or wait for the next
+    // interval?
+    delivery->deliver();
+
+    mLocationInformationDeliveries[transaction] = std::move(delivery);
 }
 
 void Client::process_provide_capabilities(lpp::TransactionHandle const& transaction, lpp::Message) {

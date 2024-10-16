@@ -3,12 +3,10 @@
 #include <lpp/assistance_data.hpp>
 #include <lpp/client.hpp>
 #include <lpp/session.hpp>
-#include <scheduler/periodic_task.hpp>
-#include <scheduler/scheduler.hpp>
-#include <scheduler/task.hpp>
 #include <sys/eventfd.h>
 #include <thread>
 #include <unistd.h>
+#include <scheduler/scheduler.hpp>
 
 #include "client.hpp"
 
@@ -48,10 +46,23 @@ static void client_initialize(lpp::Client& client) {
         INFOF("disconnected from LPP server");
         // TODO: reconnect
     };
+
+
+    client.on_request_location_information = [](lpp::Client& client, lpp::TransactionHandle const& transaction,
+                                               lpp::Message const& message) {
+        INFOF("received request location information");
+        return false;
+    };
+
+    client.on_provide_location_information = [](lpp::Client& client, lpp::TransactionHandle const& transaction,
+                                               lpp::messages::ProvideLocationInformation& data) {
+        INFOF("providing location information");
+        return false;
+    };
 }
 
 int main(int argc, char** argv) {
-    loglet::set_level(loglet::Level::Debug);
+    loglet::set_level(loglet::Level::Verbose);
     loglet::disable_module("sched");
     loglet::disable_module("supl");
     loglet::disable_module("lpp/s");
@@ -70,7 +81,7 @@ int main(int argc, char** argv) {
 
     client_initialize(client);
 
-    Scheduler scheduler{};
+    scheduler::Scheduler scheduler{};
     client.schedule(&scheduler);
 
 #if 0

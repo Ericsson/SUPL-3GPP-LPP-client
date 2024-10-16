@@ -13,8 +13,13 @@
 
 namespace lpp {
 
+namespace messages {
+struct ProvideLocationInformation;
+}
+
 struct RequestAssistanceData;
 class PeriodicSession;
+class LocationInformationDelivery;
 class Client {
 public:
     explicit Client(supl::Identity identity, std::string const& host, uint16_t port);
@@ -29,6 +34,21 @@ public:
     // respond with a "expected" capabilities message, to override this behavior, return true to
     // indicate the you have handled the message yourself.
     std::function<bool(Client&, TransactionHandle const&, Message const&)> on_capabilities;
+
+    // Called when the client receives a request location information from the server. If this
+    // callback is set and you return true, the client will assume that you have handled the message
+    // otherwise it will setup the periodic location information delivery for you. To reject request
+    // location information, simply return true and do nothing.
+    std::function<bool(Client&, TransactionHandle const&, Message const&)>
+        on_request_location_information;
+    // Called every time to get the latest location information to send to the server.
+    std::function<bool(Client&, LocationInformationDelivery const&, messages::ProvideLocationInformation&)>
+        on_provide_location_information;
+    // More advanced callback for providing location information to the server. If you return true,
+    // you're responsible for sending the provide location information message yourself. This will
+    // disable the default behavior of the client - that's to call 'on_provide_location_information'
+    // and send the message automatically.
+    std::function<bool(Client&, LocationInformationDelivery const&)> on_provide_location_information_advanced;
 
     // Request assistance data from the server
     PeriodicSessionHandle
@@ -50,6 +70,7 @@ public:
 
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
+    using Lid = std::shared_ptr<LocationInformationDelivery>;
 
     void process_message(TransactionHandle const& transaction, Message message);
     void process_request_capabilities(TransactionHandle const& transaction, Message message);
@@ -83,9 +104,11 @@ private:
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;
     std::unordered_map<PeriodicSessionHandle, Pah>               mSessions;
+    std::unordered_map<TransactionHandle, Lid>                   mLocationInformationDeliveries;
     long                                                         mNextSessionId;
 
     friend class PeriodicSession;
+    friend class LocationInformationDelivery;
 };
 
 }  // namespace lpp

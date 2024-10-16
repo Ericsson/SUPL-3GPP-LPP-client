@@ -193,4 +193,21 @@ bool get_periodic_session(ProvideAssistanceData_r9_IEs const& inner,
     return true;
 }
 
+RequestLocationInformation_r9_IEs* get_request_location_information(Message const& message) {
+    if (!message) return nullptr;
+    if (!message->lpp_MessageBody) return nullptr;
+
+    auto& body = *message->lpp_MessageBody;
+    if (body.present != LPP_MessageBody_PR_c1) return nullptr;
+    if (body.choice.c1.present != LPP_MessageBody__c1_PR_requestLocationInformation) return nullptr;
+
+    auto& outer = body.choice.c1.choice.requestLocationInformation.criticalExtensions;
+    if (outer.present != RequestLocationInformation__criticalExtensions_PR_c1) return nullptr;
+    if (outer.choice.c1.present !=
+        RequestLocationInformation__criticalExtensions__c1_PR_requestLocationInformation_r9)
+        return nullptr;
+
+    return &outer.choice.c1.choice.requestLocationInformation_r9;
+}
+
 }  // namespace lpp

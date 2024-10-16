@@ -156,6 +156,7 @@ void log(char const* module, Level level, char const* message) {
         printf("  ");
     }
     printf("%s%s\n", message, stop_color);
+    fflush(stdout);
 }
 
 void logf(char const* module, Level level, char const* format, ...) {

@@ -47,7 +47,7 @@ static double delta_m(double elevation, double ellipsoidal_height) {
     auto a_ht = 2.53E-5;
     auto b_ht = 5.49E-3;
     auto c_ht = 1.14E-3;
-    return (1.0 / std::sin(elevation) - mapping_function(elevation, a_ht, b_ht, c_ht)) *
+    return ((1.0 / std::sin(elevation)) - mapping_function(elevation, a_ht, b_ht, c_ht)) *
            ellipsoidal_height;
 }
 
