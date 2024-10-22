@@ -3,15 +3,6 @@
 #include <sstream>
 #include <unistd.h>
 
-#ifdef INCLUDE_GENERATOR_SPARTN_OLD
-#include <generator/spartn/generator.h>
-#include <generator/spartn/transmitter.h>
-#endif
-
-#ifdef INCLUDE_GENERATOR_SPARTN
-#include <generator/spartn2/generator.hpp>
-#endif
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
@@ -66,7 +57,7 @@ struct StdinStream {
 };
 
 #define ALLOC_ZERO(T) (reinterpret_cast<T*>(calloc(1, sizeof(T))))
-LPP_Message* lpp_decode(StdinStream& stream) {
+static LPP_Message* lpp_decode(StdinStream& stream) {
     asn_codec_ctx_t stack_ctx{};
     stack_ctx.max_stack_size = 1024 * 1024 * 4;
 
@@ -83,7 +74,7 @@ LPP_Message* lpp_decode(StdinStream& stream) {
     return lpp;
 }
 
-LPP_Message* next_message(StdinStream& stream) {
+static LPP_Message* next_message(StdinStream& stream) {
     if (stream.buffer.empty()) {
         if (!stream.read()) return nullptr;
     }
