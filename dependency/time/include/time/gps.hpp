@@ -26,6 +26,7 @@ public:
     NODISCARD int64_t   week() const;
     NODISCARD Timestamp time_of_week() const;
     NODISCARD Timestamp timestamp() const { return tm; }
+    NODISCARD Timestamp mod_timestamp() const;
 
     NODISCARD Gps operator+(Timestamp delta) const { return Gps(tm + delta); }
     NODISCARD Timestamp difference(Gps const& other) const;

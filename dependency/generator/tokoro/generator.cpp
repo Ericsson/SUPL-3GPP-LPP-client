@@ -331,6 +331,10 @@ bool Generator::generate_observation(Satellite const& satellite, SignalId signal
     observation.compute_tropospheric(mEcefLocation, *mCorrectionData);
     observation.compute_ionospheric(mEcefLocation, *mCorrectionData);
 
+    observation.compute_shapiro();
+    observation.compute_phase_windup();
+    observation.compute_solid_tides();
+
     VERBOSEF("observation: p=%f, c=%f", observation.pseudorange(), observation.carrier_cycle());
 
     if (!observation.has_phase_bias()) {

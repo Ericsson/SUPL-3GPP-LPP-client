@@ -22,6 +22,10 @@ public:
                               CorrectionData const& correction_data) NOEXCEPT;
     void compute_ionospheric(EcefPosition location, CorrectionData const& correction_data) NOEXCEPT;
 
+    void compute_shapiro() NOEXCEPT;
+    void compute_phase_windup() NOEXCEPT;
+    void compute_solid_tides() NOEXCEPT;
+
     NODISCARD double pseudorange() const NOEXCEPT;
     NODISCARD double carrier_cycle() const NOEXCEPT;
 
@@ -38,8 +42,11 @@ private:
     SignalId      mSignalId;
     ts::Tai       mEmissionTime;
     ts::Tai       mReceptionTime;
+    Float3        mGroundPosition;
     Wgs84Position mWgsPosition;
     double        mElevation;
+
+    Float3 mSatelliteApc;
 
     double mFrequency;
     double mWavelength;
@@ -68,6 +75,13 @@ private:
     double mIonoGridResidual;
     double mIonoPolyResidual;
     bool   mIonoValid;
+
+    double mShapiro;
+    bool   mShapiroValid;
+    double mPhaseWindup;
+    bool   mPhaseWindupValid;
+    double mSolidTides;
+    bool   mSolidTidesValid;
 };
 
 }  // namespace tokoro

@@ -23,6 +23,12 @@ inline double geometric_distance(Float3 a, Float3 b, Float3* line_of_sight = nul
     return distance + correction;
 }
 
+inline double geocentric_distance(Float3 a) {
+    auto delta    = a;
+    auto distance = delta.length();
+    return distance;
+}
+
 struct RangeTimeDivision {
     int32_t integer_ms;
     double  rough_range;

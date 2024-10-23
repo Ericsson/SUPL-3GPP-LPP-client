@@ -74,7 +74,7 @@ private:
 class LeapSeconds {
 public:
     NODISCARD static int64_t count() {
-#define LAST_UPDATE_CHECKED 0x030411
+#define LAST_UPDATE_CHECKED 0x040000
 #ifndef CLIENT_VERSION_INT
 #error "Please define CLIENT_VERSION_INT"
 #endif

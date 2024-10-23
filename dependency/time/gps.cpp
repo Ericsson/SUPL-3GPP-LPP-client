@@ -73,6 +73,14 @@ Timestamp Gps::time_of_week() const {
     return tm - Timestamp{week() * WEEK_IN_SECONDS};
 }
 
+NODISCARD Timestamp Gps::mod_timestamp() const {
+    auto timestamp = tm;
+    while(timestamp.seconds() > WEEK_IN_SECONDS * 1024) {
+        timestamp.subtract(WEEK_IN_SECONDS * 1024);
+    }
+    return timestamp;
+}
+
 Timestamp Gps::difference(Gps const& other) const {
     return tm - other.tm;
 }

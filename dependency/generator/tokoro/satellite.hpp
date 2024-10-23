@@ -31,6 +31,7 @@ public:
     NODISCARD double true_range() const NOEXCEPT { return mTrueRange; }
     NODISCARD double pseudorange() const NOEXCEPT;
     NODISCARD double elevation() const NOEXCEPT { return mTrueElevation; }
+    NODISCARD Float3 apc() const NOEXCEPT { return mTruePosition; }
     NODISCARD double eph_range() const NOEXCEPT { return mEphRange; }
     NODISCARD double eph_clock_bias() const NOEXCEPT { return mEphClockBias; }
     NODISCARD double clock_correction() const NOEXCEPT;

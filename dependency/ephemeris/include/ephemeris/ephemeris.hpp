@@ -26,6 +26,24 @@ public:
     EXPLICIT Ephemeris(BdsEphemeris const& ephemeris) NOEXCEPT : mType(Type::BDS),
                                                                  mBdsEphemeris(ephemeris) {}
 
+    NODISCARD uint8_t iode() const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0;
+        case Type::GPS: return mGpsEphemeris.iode;
+        case Type::GAL: return mGalEphemeris.iod_nav;
+        case Type::BDS: return mBdsEphemeris.iode;
+        }
+    }
+
+    NODISCARD uint8_t iodc() const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0;
+        case Type::GPS: return mGpsEphemeris.iodc;
+        case Type::GAL: return 0;
+        case Type::BDS: return mBdsEphemeris.iodc;
+        }
+    }
+
     NODISCARD bool is_valid(ts::Tai const& time) const NOEXCEPT {
         switch (mType) {
         case Type::NONE: return false;

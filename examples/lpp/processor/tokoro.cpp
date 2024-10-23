@@ -145,7 +145,7 @@ public:
         printf("ground position: %.3f, %.3f, %.3f\n", p.x, p.y, p.z);
         printf("wgs84  position: %.12f, %.12f, %.12f\n", wgs.x, wgs.y, wgs.z);
 
-#if 0
+#if 1
         printf("%li: %s\n", t.timestamp().seconds(), t.rtklib_time_string().c_str());
 
         // 2024/10/01 12:10:43.000000000000 1727784605
@@ -155,12 +155,12 @@ public:
             return;
         }
 
-#if 0
-        mGenerator.include_satellite(SatelliteId::from_gps_prn(9));
+#if 1
+        mGenerator.include_satellite(SatelliteId::from_gps_prn(7));
         mGenerator.include_signal(SignalId::GPS_L1_CA);
 #endif
 
-#if 1
+#if 0
         mGenerator.include_satellite(SatelliteId::from_gal_prn(10));
         mGenerator.include_signal(SignalId::GALILEO_E1_B_C);
 #endif

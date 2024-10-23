@@ -3,10 +3,10 @@
 #include <lpp/assistance_data.hpp>
 #include <lpp/client.hpp>
 #include <lpp/session.hpp>
+#include <scheduler/scheduler.hpp>
 #include <sys/eventfd.h>
 #include <thread>
 #include <unistd.h>
-#include <scheduler/scheduler.hpp>
 
 #include "client.hpp"
 
@@ -47,15 +47,16 @@ static void client_initialize(lpp::Client& client) {
         // TODO: reconnect
     };
 
-
-    client.on_request_location_information = [](lpp::Client& client, lpp::TransactionHandle const& transaction,
-                                               lpp::Message const& message) {
+    client.on_request_location_information = [](lpp::Client&                  client,
+                                                lpp::TransactionHandle const& transaction,
+                                                lpp::Message const&           message) {
         INFOF("received request location information");
         return false;
     };
 
-    client.on_provide_location_information = [](lpp::Client& client, lpp::TransactionHandle const& transaction,
-                                               lpp::messages::ProvideLocationInformation& data) {
+    client.on_provide_location_information = [](lpp::Client&                               client,
+                                                lpp::LocationInformationDelivery const&    delivery,
+                                                lpp::messages::ProvideLocationInformation& data) {
         INFOF("providing location information");
         return false;
     };

@@ -15,6 +15,8 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #include <ProvideAssistanceData-r9-IEs.h>
 #include <RequestLocationInformation-r9-IEs.h>
+#include <CommonIEsRequestLocationInformation.h>
+#include <PeriodicalReportingCriteria.h>
 #pragma GCC diagnostic pop
 
 #define LOGLET_CURRENT_MODULE "lpp/c"
@@ -308,9 +310,11 @@ void Client::process_request_location_information(lpp::TransactionHandle const& 
     description.reporting_amount_unlimited = reporting_amount_unlimited;
     description.reporting_amount           = reporting_amount;
     description.reporting_interval         = reporting_interval;
-    description.coordinate_type = get_location_coordinate_types(common->locationCoordinateTypes);
-    description.velocity_type   = get_velocity_types(common->velocityTypes);
-    description.ha_gnss_metrics = did_request_ha_gnss_metrics(inner);
+
+    // TODO(ewasjon):
+    // description.coordinate_type = get_location_coordinate_types(common->locationCoordinateTypes);
+    // description.velocity_type   = get_velocity_types(common->velocityTypes);
+    // description.ha_gnss_metrics = did_request_ha_gnss_metrics(inner);
 
     auto delivery =
         std::make_shared<LocationInformationDelivery>(this, &mSession, transaction, description);

@@ -23,6 +23,9 @@ Satellite::Satellite(SatelliteId id, ephemeris::Ephemeris ephemeris, ts::Tai rec
 bool Satellite::compute_true_position() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
+    VERBOSEF("iode: %u", mEph.iode());
+    VERBOSEF("iodc: %u", mEph.iodc());
+
     // initial guess is that emission = reception
     auto t_r = mReceptionTime;
     auto t_e = t_r;
@@ -33,7 +36,9 @@ bool Satellite::compute_true_position() NOEXCEPT {
     t_e = t_e + ts::Timestamp{-0.08};
 
     for (auto i = 0; i < 10; i++) {
-        VERBOSEF("iteration %i: %+f us", i, t_e.difference(t_r).full_seconds() * 1000000.0);
+        VERBOSEF("iteration %i: %+f us  %s (GPS %.16f)", i,
+                 t_e.difference(t_r).full_seconds() * 1000000.0, t_e.rtklib_time_string().c_str(),
+                 ts::Gps{t_e}.time_of_week().full_seconds());
 
         // ephemeral position at t_e
         auto result = mEph.compute(t_e);
@@ -70,6 +75,8 @@ bool Satellite::compute_true_position() NOEXCEPT {
             break;
         }
     }
+
+    //t_e = ts::Tai{ts::Gps::from_week_tow(2334, 216659, 0.924)};
 
     auto t_e2          = t_e + ts::Timestamp{0.1};
     auto final_result  = mEph.compute(t_e);
@@ -114,9 +121,14 @@ bool Satellite::compute_true_position() NOEXCEPT {
              mEphLineOfSight.z);
 
     VERBOSEF("true parameters:");
-    VERBOSEF("    emission time:   %s", mEmissionTime.rtklib_time_string().c_str());
-    VERBOSEF("    reception time:  %s", mReceptionTime.rtklib_time_string().c_str());
-    VERBOSEF("    calculated time: %s", calculated_time.rtklib_time_string().c_str());
+    VERBOSEF("    t_e:             %s (GPS %.16f)", t_e.rtklib_time_string().c_str(),
+             ts::Gps{t_e}.time_of_week().full_seconds());
+    VERBOSEF("    emission time:   %s (GPS %.16f)", mEmissionTime.rtklib_time_string().c_str(),
+             ts::Gps{mEmissionTime}.time_of_week().full_seconds());
+    VERBOSEF("    reception time:  %s (GPS %.16f)", mReceptionTime.rtklib_time_string().c_str(),
+             ts::Gps{mReceptionTime}.time_of_week().full_seconds());
+    VERBOSEF("    calculated time: %s (GPS %.16f)", calculated_time.rtklib_time_string().c_str(),
+             ts::Gps{calculated_time}.time_of_week().full_seconds());
     VERBOSEF("    position: (%.14f, %.14f, %.14f)", mTruePosition.x, mTruePosition.y,
              mTruePosition.z);
     VERBOSEF("    velocity: (%f, %f, %f)", mTrueVelocity.x, mTrueVelocity.y, mTrueVelocity.z);
