@@ -32,6 +32,7 @@
 - Added support to export NMEA sentences to file with `--nmea-export-file` command-line argument.
 - Added support to export UBX messages to file with `--ublox-export-file` command-line argument.
 - New example that shows how to decode LPP-Message objects from UPER octets (see `example-decode-uper`)
+- Added support for `B2a(D)`, `B2a(P)`, `B2a(D+P)`, and `B2b(I)` signals in RTCM.
 
 ## [3.4.11] 2024-09-26
 - Added support for UBX-RXM-RAWX messages.
