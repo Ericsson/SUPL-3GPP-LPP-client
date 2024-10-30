@@ -1,11 +1,10 @@
 #pragma once
 #include <core/core.hpp>
+#include <ephemeris/result.hpp>
 #include <maths/float3.hpp>
 #include <time/gps.hpp>
-#include <ephemeris/result.hpp>
 
 namespace ephemeris {
-
 
 struct GpsEphemeris {
     uint8_t prn;
@@ -57,6 +56,8 @@ struct GpsEphemeris {
     NODISCARD double calculate_clock_bias(ts::Gps const& time, double e_k) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly(double t_k) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT;
+    NODISCARD double calculate_relativistic_correction(Float3 const& position,
+                                                       Float3 const& velocity) const NOEXCEPT;
 };
 
 }  // namespace ephemeris

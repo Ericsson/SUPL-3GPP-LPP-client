@@ -130,6 +130,23 @@ void Observation::compute_phase_windup() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 }
 
+static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
+                                              Float3& moon) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
+    return true;
+}
+
+static bool compute_sun_and_moon_position_ecef(ts::Tai const& time, Float3& sun,
+                                               Float3& moon) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
+
+    if (!compute_sun_and_moon_position_eci(time, sun, moon)) {
+        return false;
+    }
+
+    return true;
+}
+
 void Observation::compute_solid_tides() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 }

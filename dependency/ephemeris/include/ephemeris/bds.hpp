@@ -48,6 +48,8 @@ struct BdsEphemeris {
     NODISCARD double calculate_clock_bias(ts::Bdt const& time, double e_k) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly(double t_k) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT;
+    NODISCARD double calculate_relativistic_correction(Float3 const& position,
+                                                       Float3 const& velocity) const NOEXCEPT;
 };
 
 }  // namespace ephemeris

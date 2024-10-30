@@ -218,7 +218,8 @@ bool InavWord::decode(Words const& words, InavWord& word) NOEXCEPT {
     data.set(0, 32, words.u32(2, 32));
     data.set(32, 32, words.u32(34, 32));
     data.set(64, 32, words.u32(66, 32));
-    data.set(96, 32, words.u32(98, 32));
+    data.set(96, 16, words.u32(98, 16));
+    data.set(112, 16, words.u32(130, 16));
 
     auto word_type = words.u8(2, 6);
     word.word_type = word_type;

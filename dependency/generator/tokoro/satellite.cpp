@@ -76,16 +76,16 @@ bool Satellite::compute_true_position() NOEXCEPT {
         }
     }
 
-    //t_e = ts::Tai{ts::Gps::from_week_tow(2334, 216659, 0.924)};
+    auto final_result = mEph.compute(t_e);
 
-    auto t_e2          = t_e + ts::Timestamp{0.1};
-    auto final_result  = mEph.compute(t_e);
+#if 0
+    auto t_e2         = t_e + ts::Timestamp{0.1};
     auto final_result2 = mEph.compute(t_e2);
-
     auto delta_position = final_result2.position - final_result.position;
     VERBOSEF("delta_position: (%f, %f, %f)", delta_position.x, delta_position.y, delta_position.z);
     auto velocity = delta_position / 0.1;
-    VERBOSEF("velocity: (%f, %f, %f)", velocity.x, velocity.y, velocity.z);
+    VERBOSEF("velocity by ts: (%f, %f, %f)", velocity.x, velocity.y, velocity.z);
+#endif
 
     mEphPosition  = final_result.position;
     mEphVelocity  = final_result.velocity;
@@ -102,6 +102,9 @@ bool Satellite::compute_true_position() NOEXCEPT {
     if (!mOrbitCorrection.correction(t_e, mEphPosition, mEphVelocity, mTruePosition)) {
         WARNF("failed to correct satellite position");
     }
+
+    auto relative_correction = mEph.relativistic_correction(mTruePosition, mTrueVelocity);
+    mEphClockBias += relative_correction;
 
     mTrueRange = geometric_distance(mTruePosition, mReceptionLocation, &mTrueLineOfSight);
     if (!mTrueLineOfSight.normalize()) {

@@ -18,4 +18,4 @@ NODISCARD Float3 operator-(Float3 a, Float3 b) NOEXCEPT;
 NODISCARD Float3 operator*(Float3 a, double b) NOEXCEPT;
 NODISCARD Float3 operator/(Float3 a, double b) NOEXCEPT;
 NODISCARD Float3 cross_product(Float3 a, Float3 b) NOEXCEPT;
-
+NODISCARD double dot_product(Float3 a, Float3 b) NOEXCEPT;

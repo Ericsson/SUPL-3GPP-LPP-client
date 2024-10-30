@@ -44,8 +44,8 @@ double GpsEphemeris::calculate_elapsed_time(ts::Gps const& time, double referenc
     auto reference_ts =
         ts::Gps::from_week_tow(time.week(), reference_tow, reference_frac).timestamp();
     auto current_ts = time.timestamp();
-    VERBOSEF("reference_ts: %f", reference_ts.full_seconds());
-    VERBOSEF("current_ts: %f", current_ts.full_seconds());
+    VERBOSEF("reference_ts: %f (%f)", reference_ts.full_seconds(), reference);
+    VERBOSEF("current_ts:   %f", current_ts.full_seconds());
     auto difference = (current_ts - reference_ts).full_seconds();
 
     VERBOSEF("difference: %f", difference);
@@ -116,9 +116,20 @@ double GpsEphemeris::calculate_clock_bias(ts::Gps const& time, double e_k) const
     auto t_k = calculate_elapsed_time_toc(time);
     VERBOSEF("t_k: %+.14f", t_k);
 
+#if 0
+    // TODO(ewasjon): REMOVE
     // relativistic correction term
+    VERBOSEF("a:   %+.14f", a);
+    VERBOSEF("e:   %+.14f", e);
+    VERBOSEF("e_k: %+.14f", e_k);
+
     auto t_r = -2.0 * std::sqrt(CONSTANT_MU * a) * e * std::sin(e_k) / (CONSTANT_C * CONSTANT_C);
     VERBOSEF("t_r: %+.14f", t_r);
+#endif
+
+    VERBOSEF("af0: %+.14f", af0);
+    VERBOSEF("af1: %+.14f", af1);
+    VERBOSEF("af2: %+.14f", af2);
 
     // satellite clock bias
     auto t_b = t_k;
@@ -133,9 +144,24 @@ double GpsEphemeris::calculate_clock_bias(ts::Gps const& time, double e_k) const
     auto delta_t_sv = af0 + af1 * t_b + af2 * t_b * t_b;
     VERBOSEF("delta_t_sv: %+.14f", delta_t_sv);
 
-    auto clock_bias = delta_t_sv + t_r;
+    auto clock_bias = delta_t_sv;
+#if 0
+    clock_bias += t_r;
+#endif
     VERBOSEF("clock_bias: %+.14f", clock_bias);
     return clock_bias;
+}
+
+double GpsEphemeris::calculate_relativistic_correction(Float3 const& position,
+                                                       Float3 const& velocity) const NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    auto r_v = dot_product(position, velocity);
+    VERBOSEF("r_v: %+.14f", r_v);
+
+    auto t_r = -2.0 * r_v / (CONSTANT_C * CONSTANT_C);
+    VERBOSEF("t_r: %+.14f (%+.14fm)", t_r, t_r * CONSTANT_C);
+    return t_r;
 }
 
 EphemerisResult GpsEphemeris::compute(ts::Gps const& time) const NOEXCEPT {

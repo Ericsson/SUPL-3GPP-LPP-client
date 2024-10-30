@@ -43,3 +43,7 @@ Float3 cross_product(Float3 a, Float3 b) NOEXCEPT {
         a.x * b.y - a.y * b.x,
     };
 }
+
+double dot_product(Float3 a, Float3 b) NOEXCEPT {
+    return a.x * b.x + a.y * b.y + a.z * b.z;
+}

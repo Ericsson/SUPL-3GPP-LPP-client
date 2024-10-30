@@ -155,12 +155,12 @@ public:
             return;
         }
 
-#if 1
+#if 0
         mGenerator.include_satellite(SatelliteId::from_gps_prn(7));
         mGenerator.include_signal(SignalId::GPS_L1_CA);
 #endif
 
-#if 0
+#if 1
         mGenerator.include_satellite(SatelliteId::from_gal_prn(10));
         mGenerator.include_signal(SignalId::GALILEO_E1_B_C);
 #endif

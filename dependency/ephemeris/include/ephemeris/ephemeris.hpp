@@ -62,6 +62,15 @@ public:
         }
     }
 
+    NODISCARD double relativistic_correction(Float3 const& position, Float3 const& velocity) const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0.0;
+        case Type::GPS: return mGpsEphemeris.calculate_relativistic_correction(position, velocity);
+        case Type::GAL: return mGalEphemeris.calculate_relativistic_correction(position, velocity);
+        case Type::BDS: return mBdsEphemeris.calculate_relativistic_correction(position, velocity);
+        }
+    }
+
 private:
     Type mType;
     union {
