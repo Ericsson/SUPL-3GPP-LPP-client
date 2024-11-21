@@ -9,6 +9,7 @@
 #include <inttypes.h>
 #include <sys/time.h>
 #include <time.h>
+#include <math.h>
 
 namespace ts {
 
@@ -136,6 +137,25 @@ double Utc::day_of_year() const {
     return (ts - start).full_seconds() / DAY_IN_SECONDS;
 }
 
+Timestamp Utc::ut1(double ut1_utc) const {
+    return tm + Timestamp{ut1_utc};
+}
+
+double Utc::gmst(double ut1_utc) const {
+    auto ut1   = this->ut1(ut1_utc);
+    auto j2000 = utc_from_date(2000, 1, 1, 12, 0, 0);
+
+    auto days_in_seconds = static_cast<double>(ut1.days() * DAY_IN_SECONDS);
+    auto days            = ts::Timestamp{days_in_seconds};
+    auto seconds         = (ut1 - days).full_seconds();
+
+    auto t    = (days - j2000).full_seconds() / 86400.0 / 36525.0;
+    auto gmst = 24110.54841 + 8640184.812866 * t + 0.093104 * t * t - 6.2e-6 * t * t * t;
+    gmst += 1.002737909350795 * seconds;
+    gmst = fmod(gmst, 86400.0);
+    return gmst * 3.1415926535897932 / 43200.0;
+}
+
 std::string Utc::rtklib_time_string() const {
     constexpr int fraction_digits = 12;
 
@@ -174,6 +194,11 @@ Utc Utc::now() {
 
 Utc Utc::from_day_tod(int64_t day, double tod) {
     return Utc(Timestamp{static_cast<double>(day * DAY_IN_SECONDS) + tod});
+}
+
+Utc Utc::from_date_time(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t minute,
+                        double second) {
+    return Utc(utc_from_date(year, month, day, hour, minute, second));
 }
 
 }  // namespace ts

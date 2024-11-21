@@ -91,11 +91,6 @@ struct Observations {
     std::vector<Signal>    signals;
     std::vector<Satellite> satellites;
 
-    size_t gps_observation_count = 0;
-    size_t glonass_observation_count = 0;
-    size_t galileo_observation_count = 0;
-    size_t beidou_observation_count = 0;
-
     uint32_t lowest_msm_version() const;
 };
 

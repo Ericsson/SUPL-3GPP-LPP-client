@@ -121,6 +121,10 @@ public:
     /// UTC timestamp is valid.
     NODISCARD bool valid_time() const NOEXCEPT;
 
+    /// Age of correction data.
+    NODISCARD double age_of_correction_data() const NOEXCEPT;
+
+
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
 

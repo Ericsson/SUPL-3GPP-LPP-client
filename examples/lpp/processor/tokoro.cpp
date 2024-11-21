@@ -1,5 +1,6 @@
 #include "tokoro.hpp"
 #include "ubx.hpp"
+#include "ssr_example.h"
 
 #ifdef INCLUDE_GENERATOR_TOKORO
 #include <math.h>
@@ -130,9 +131,39 @@ public:
 
         mGenerator.process_lpp(*message.get());
 
+#if 0
+        // Trimble Test Reference
         auto r_x = 3233520.957;
         auto r_y = 859415.096;
         auto r_z = 5412047.363;
+#endif
+
+#if 0
+        auto r_lat = 58.399359;
+        auto r_lon = 15.554420;
+        auto r_alt = 0.0;
+
+        auto r_x = 3227.56e3;
+        auto r_y = 898.384e3;
+        auto r_z = 5409.177e3;
+#endif
+
+#if 1
+        // SE_Lin_Office
+        auto r_lat = 58.399353434;
+        auto r_lon = 15.554410;
+        auto r_alt = 0.0;
+
+        auto r_x = 3227560.90670000016689;
+        auto r_y = 898383.43410000007134;
+        auto r_z = 5409177.11160000041127;
+
+        mGenerator.set_physical_reference_station(EcefPosition{
+            3219441.0553999999538064,
+            927415.5111000000033528,
+            5409116.6926000006496906,
+        });
+#endif
 
         // auto r_x = 3226.697e3;
         // auto r_y = 902.44e3;
@@ -144,11 +175,12 @@ public:
 
         printf("ground position: %.3f, %.3f, %.3f\n", p.x, p.y, p.z);
         printf("wgs84  position: %.12f, %.12f, %.12f\n", wgs.x, wgs.y, wgs.z);
+        printf("time: %s\n", ts::Utc(t).rtklib_time_string().c_str());
 
-#if 1
+#if 0
         printf("%li: %s\n", t.timestamp().seconds(), t.rtklib_time_string().c_str());
 
-        // 2024/10/01 12:10:43.000000000000 1727784605
+        // 2024/10/01 12:10:42.000000000000 1727784605
         // 2024/09/09 12:12:46.000000000000 1725883929
         if (t.timestamp().seconds() != 1727784605) {
             printf("----------- SKIPING ----------------\n");
@@ -160,8 +192,8 @@ public:
         mGenerator.include_signal(SignalId::GPS_L1_CA);
 #endif
 
-#if 1
-        mGenerator.include_satellite(SatelliteId::from_gal_prn(10));
+#if 0
+        mGenerator.include_satellite(SatelliteId::from_gal_prn(4));
         mGenerator.include_signal(SignalId::GALILEO_E1_B_C);
 #endif
 #endif
@@ -182,7 +214,7 @@ public:
                 }
             }
         }
-#if 1
+#if 0
         for (;;) {
             sleep(1);
         }
@@ -194,9 +226,22 @@ private:
     OutputOptions const& mOptions;
 };
 
-void tokoro_initialize(System& system, OutputOptions const& options) {
+void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals, OutputOptions const& options) {
     auto  evaluator = system.add_inspector<SsrEvaluator>(options);
     auto& generator = evaluator->generator();
+
+    generator.set_gps_supported(globals.generate_gps);
+    generator.set_glonass_supported(globals.generate_glonass);
+    generator.set_galileo_supported(globals.generate_galileo);
+    generator.set_beidou_supported(globals.generate_beidou);
+
+    generator.set_shaprio_correction(globals.shapiro_correction);
+    generator.set_earth_solid_tides_correction(globals.earth_solid_tides_correction);
+    generator.set_phase_windup_correction(globals.phase_windup_correction);
+    generator.set_antenna_phase_variation_correction(globals.antenna_phase_variation_correction);
+
+    generator.set_tropospheric_height_correction(globals.tropospheric_height_correction);
+
     system.add_inspector<EphemerisExtractor>(generator);
 }
 

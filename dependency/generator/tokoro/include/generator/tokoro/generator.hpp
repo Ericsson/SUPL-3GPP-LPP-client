@@ -46,6 +46,23 @@ public:
     void include_satellite(SatelliteId sv_id) NOEXCEPT { mSatelliteIncludeSet.insert(sv_id); }
     void include_signal(SignalId signal_id) NOEXCEPT { mSignalIncludeSet.insert(signal_id); }
 
+    void set_gps_supported(bool supported) { mGenerateGps = supported; }
+    void set_glonass_supported(bool supported) { mGenerateGlo = supported; }
+    void set_galileo_supported(bool supported) { mGenerateGal = supported; }
+    void set_beidou_supported(bool supported) { mGenerateBds = supported; }
+
+    void set_shaprio_correction(bool enabled) { mShapiroCorrection = enabled; }
+    void set_earth_solid_tides_correction(bool enabled) { mEarthSolidTidesCorrection = enabled; }
+    void set_phase_windup_correction(bool enabled) { mPhaseWindupCorrection = enabled; }
+    void set_antenna_phase_variation_correction(bool enabled) { mAntennaPhaseVariation = enabled; }
+
+    void set_tropospheric_height_correction(bool enabled) { mTropoHeightCorrection = enabled; }
+
+    void set_physical_reference_station(EcefPosition position) {
+        mGeneratePhysicalReferenceStation = true;
+        mPhysicalPosition = position;
+    }
+
     std::vector<rtcm::Message> generate(ts::Tai const& reception_time,
                                         EcefPosition   reception_position) NOEXCEPT;
 
@@ -67,7 +84,7 @@ private:
     bool generate_observation(Satellite const& satellite, SignalId signal_id) NOEXCEPT;
     void build_rtcm_satellite(Satellite const&    satellite,
                               rtcm::Observations& observations) NOEXCEPT;
-    void build_rtcm_observations(rtcm::Observations& observations) NOEXCEPT;
+    void build_rtcm_observations(SatelliteId::Gnss gnss, rtcm::Observations& observations) NOEXCEPT;
     void build_rtcm_messages(std::vector<rtcm::Message>& messages) NOEXCEPT;
 
     std::unordered_map<SatelliteId, ephemeris::GpsEphemeris> mGpsEphemeris;
@@ -86,8 +103,20 @@ private:
 
     bool mGenerateGps{true};
     bool mGenerateGlo{false};
-    bool mGenerateGal{true};
+    bool mGenerateGal{false};
     bool mGenerateBds{false};
+
+    bool mShapiroCorrection{true};
+    bool mEarthSolidTidesCorrection{false};
+    bool mPhaseWindupCorrection{false};
+    bool mAntennaPhaseVariation{false};
+
+    bool mTropoHeightCorrection{true};
+
+    bool mGeneratePhysicalReferenceStation{false};
+    EcefPosition mPhysicalPosition;
+
+    double mElevationMask{10.0};
 
     std::unordered_map<SatelliteId, std::unique_ptr<Satellite>> mSatellites;
     std::vector<Observation>                                    mObservations;

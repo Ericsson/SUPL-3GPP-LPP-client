@@ -126,5 +126,11 @@ extern Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
 extern Message generate_1005(ReferenceStation const& reference_station, bool gps_indicator,
                              bool glonass_indicator, bool galileo_indicator);
 
+extern Message generate_1006(ReferenceStation const& reference_station, bool gps_indicator,
+                             bool glonass_indicator, bool galileo_indicator);
+
+extern Message generate_1032(ReferenceStation const&         reference_station,
+                             PhysicalReferenceStation const& physical_reference_station);
+
 }  // namespace rtcm
 }  // namespace generator

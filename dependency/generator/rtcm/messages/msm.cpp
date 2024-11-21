@@ -18,6 +18,7 @@
 using namespace generator::rtcm;
 
 static void epoch_time(Encoder& encoder, ts::Tai const& time, GenericGnssId gnss) {
+    printf("epoch_time: %s\n", time.rtklib_time_string().c_str());
     switch (gnss) {
     case GenericGnssId::GPS: {
         auto tow          = ts::Gps(time).time_of_week();
@@ -106,7 +107,7 @@ static void df400(Encoder& encoder, Signal const& signal) {
     if (signal.fine_phase_range.valid) {
         encoder.i16(15, static_cast<int16_t>(value));
     } else {
-        encoder.i16(15, 0x4000);
+        encoder.u16(15, 0x4000);
     }
 }
 
@@ -115,7 +116,7 @@ static void df401(Encoder& encoder, Signal const& signal) {
     if (signal.fine_pseudo_range.valid) {
         encoder.i32(22, static_cast<int32_t>(value));
     } else {
-        encoder.i32(22, 0x200000);
+        encoder.u32(22, 0x200000);
     }
 }
 
@@ -142,7 +143,7 @@ static void df404(Encoder& encoder, Signal const& signal) {
     if (signal.fine_phase_range_rate.valid && value > -16384 && value <= 16383) {
         encoder.i16(15, static_cast<int16_t>(value));
     } else {
-        encoder.i16(15, 0x4000);
+        encoder.u16(15, 0x4000);
     }
 }
 
@@ -151,7 +152,7 @@ static void df405(Encoder& encoder, Signal const& signal) {
     if (signal.fine_phase_range.valid) {
         encoder.i32(20, static_cast<int32_t>(value));
     } else {
-        encoder.i32(20, 0x80000);
+        encoder.u32(20, 0x80000);
     }
 }
 
@@ -160,7 +161,7 @@ static void df406(Encoder& encoder, Signal const& signal) {
     if (signal.fine_pseudo_range.valid) {
         encoder.i32(24, static_cast<int32_t>(value));
     } else {
-        encoder.i32(24, 0x800000);
+        encoder.u32(24, 0x800000);
     }
 }
 

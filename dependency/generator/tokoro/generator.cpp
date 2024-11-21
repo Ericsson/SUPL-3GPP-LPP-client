@@ -112,8 +112,10 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
 
         VERBOSEF("correction point set:");
         VERBOSEF("  set_id: %u", correction_point_set.set_id);
-        VERBOSEF("  reference_point_latitude:  %.14f", correction_point_set.reference_point_latitude);
-        VERBOSEF("  reference_point_longitude: %.14f", correction_point_set.reference_point_longitude);
+        VERBOSEF("  reference_point_latitude:  %.14f",
+                 correction_point_set.reference_point_latitude);
+        VERBOSEF("  reference_point_longitude: %.14f",
+                 correction_point_set.reference_point_longitude);
         VERBOSEF("  step_of_latitude:  %.14f", correction_point_set.step_of_latitude);
         VERBOSEF("  step_of_longitude: %.14f", correction_point_set.step_of_longitude);
 
@@ -276,8 +278,9 @@ void Generator::create_satellite(SatelliteId sv_id) NOEXCEPT {
         return;
     }
 
-    if (satellite->elevation() < 15.0 * constant::DEG2RAD) {
-        WARNF("rejected: elevation too low (%.2f)", satellite->elevation() * constant::RAD2DEG);
+    if (satellite->elevation() < mElevationMask * constant::DEG2RAD) {
+        WARNF("rejected: %s - elevation too low (%.2f)", satellite->id().name(),
+              satellite->elevation() * constant::RAD2DEG);
         return;
     }
 
@@ -331,25 +334,31 @@ bool Generator::generate_observation(Satellite const& satellite, SignalId signal
     observation.compute_tropospheric(mEcefLocation, *mCorrectionData);
     observation.compute_ionospheric(mEcefLocation, *mCorrectionData);
 
-    observation.compute_shapiro();
-    observation.compute_phase_windup();
-    observation.compute_solid_tides();
+    if (mTropoHeightCorrection) observation.compute_tropospheric_height();
+
+    if (mShapiroCorrection) observation.compute_shapiro();
+    if (mPhaseWindupCorrection) observation.compute_phase_windup();
+    if (mEarthSolidTidesCorrection) observation.compute_earth_solid_tides();
+    if (mAntennaPhaseVariation) observation.compute_antenna_phase_variation();
+
+    observation.compute_code_range();
+    observation.compute_phase_range();
 
     VERBOSEF("observation: p=%f, c=%f", observation.pseudorange(), observation.carrier_cycle());
 
     if (!observation.has_phase_bias()) {
-        WARNF("discarded (no phase bias)");
+        WARNF("discarded: %s %s - no phase bias", satellite.id().name(), signal_id.name());
         return false;
     } else if (!observation.has_code_bias()) {
-        WARNF("discarded (no code bias)");
+        WARNF("discarded: %s %s - no code bias", satellite.id().name(), signal_id.name());
         return false;
     }
 
     if (!observation.has_tropospheric()) {
-        WARNF("missing tropospheric correction");
+        WARNF("%s %s missing tropospheric correction", satellite.id().name(), signal_id.name());
     }
     if (!observation.has_ionospheric()) {
-        WARNF("missing ionospheric correction");
+        WARNF("%s %s missing ionospheric correction", satellite.id().name(), signal_id.name());
     }
 
     mObservations.push_back(observation);
@@ -360,18 +369,21 @@ void Generator::build_rtcm_satellite(Satellite const&    satellite,
                                      rtcm::Observations& observations) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", satellite.id().name());
 
-    auto satellite_observation_count = 0;
+    auto average_pseudorange = 0.0;
+    auto observation_count   = 0;
     for (auto const& observation : mObservations) {
         if (observation.sv_id() != satellite.id()) continue;
-        satellite_observation_count++;
+        average_pseudorange += observation.pseudorange();
+        observation_count++;
     }
 
-    if (satellite_observation_count == 0) {
+    if (observation_count == 0) {
         VERBOSEF("no observations for satellite %s", satellite.id().name());
         return;
     }
 
-    auto rtd = range_time_division(satellite.pseudorange());
+    average_pseudorange /= observation_count;
+    auto rtd = range_time_division(average_pseudorange);
     VERBOSEF("rtd:");
     VERBOSEF("  integer_ms:   %d", rtd.integer_ms);
     VERBOSEF("  rough_range:  %.14f", rtd.rough_range);
@@ -386,29 +398,27 @@ void Generator::build_rtcm_satellite(Satellite const&    satellite,
 
     for (auto const& observation : mObservations) {
         if (observation.sv_id() != satellite.id()) continue;
-
-        if (observation.signal_id().gnss() == SignalId::Gnss::GPS) {
-            observations.gps_observation_count++;
-        } else if (observation.signal_id().gnss() == SignalId::Gnss::GALILEO) {
-            observations.galileo_observation_count++;
-        } else if (observation.signal_id().gnss() == SignalId::Gnss::BEIDOU) {
-            observations.beidou_observation_count++;
-        } else if (observation.signal_id().gnss() == SignalId::Gnss::GLONASS) {
-            observations.glonass_observation_count++;
-        }
+        auto code_range  = observation.pseudorange();
+        auto phase_range = observation.carrier_cycle();
 
         auto meter_to_cms   = 1.0e3 / constant::SPEED_OF_LIGHT;
-        auto code_range_ms  = observation.pseudorange() * meter_to_cms;
-        auto phase_range_ms = observation.carrier_cycle() * meter_to_cms;
-
-        VERBOSEF("code_range: %.14f", code_range_ms);
-        VERBOSEF("phase_range: %.14f", phase_range_ms);
+        auto code_range_ms  = code_range * meter_to_cms;
+        auto phase_range_ms = phase_range * meter_to_cms;
 
         auto delta_code_range_ms  = code_range_ms - rtd.used_range;
         auto delta_phase_range_ms = phase_range_ms - rtd.used_range;
 
-        VERBOSEF("delta_code_range: %.14f", delta_code_range_ms);
-        VERBOSEF("delta_phase_range: %.14f", delta_phase_range_ms);
+        VERBOSEF("%-15s code:  %+.14f (%+.14f)", observation.signal_id().name(), code_range_ms,
+                 delta_code_range_ms);
+        VERBOSEF("%-15s phase: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_ms,
+                 delta_phase_range_ms);
+
+#if 0
+        auto reconstructed =
+            (rtd.integer_ms + rtd.rough_range + delta_code_range_ms) / meter_to_cms;
+        VERBOSEF("code_range reconstructed: %.14f == %.14f (%.14f)", code_range, reconstructed,
+                 code_range - reconstructed);
+#endif
 
         rtcm::Signal signal{};
         signal.id                     = observation.signal_id();
@@ -421,11 +431,14 @@ void Generator::build_rtcm_satellite(Satellite const&    satellite,
     }
 }
 
-void Generator::build_rtcm_observations(rtcm::Observations& observations) NOEXCEPT {
+void Generator::build_rtcm_observations(SatelliteId::Gnss   gnss,
+                                        rtcm::Observations& observations) NOEXCEPT {
     VSCOPE_FUNCTION();
 
     for (auto& kvp : mSatellites) {
-        build_rtcm_satellite(*kvp.second.get(), observations);
+        auto& satellite = *kvp.second.get();
+        if (satellite.id().gnss() != gnss) continue;
+        build_rtcm_satellite(satellite, observations);
     }
 }
 
@@ -437,39 +450,92 @@ void Generator::build_rtcm_messages(std::vector<rtcm::Message>& messages) NOEXCE
         return;
     }
 
-    rtcm::Observations observations{};
-    observations.time = mTimeReception;
-    build_rtcm_observations(observations);
+    if (!mGenerateGps && !mGenerateGlo && !mGenerateGal && !mGenerateBds) {
+        WARNF("no GNSS systems enabled");
+        return;
+    }
 
-    DEBUGF("satellites: %zu, signals: %zu", observations.satellites.size(),
-           observations.signals.size());
+    auto reference_station_id = 1902;
+    auto msm_type             = 5;
 
     rtcm::ReferenceStation reference_station{};
-    reference_station.reference_station_id = 1;
-    reference_station.x                    = mEcefLocation.x;
-    reference_station.y                    = mEcefLocation.y;
-    reference_station.z                    = mEcefLocation.z;
+    reference_station.reference_station_id          = reference_station_id;
+    reference_station.x                             = mEcefLocation.x;
+    reference_station.y                             = mEcefLocation.y;
+    reference_station.z                             = mEcefLocation.z;
+    reference_station.is_physical_reference_station = false;
+    reference_station.antenna_height                = 0.0;
 
-    messages.push_back(rtcm::generate_1005(reference_station, true, false, false));
+    messages.push_back(
+        rtcm::generate_1006(reference_station, mGenerateGps, mGenerateGlo, mGenerateGal));
+
+    if (mGeneratePhysicalReferenceStation) {
+        auto physical_reference_station_id = 4095;
+        if (reference_station_id > 1) {
+            physical_reference_station_id = reference_station_id - 1;
+        }
+
+        rtcm::PhysicalReferenceStation physical_reference_station{};
+        physical_reference_station.reference_station_id = physical_reference_station_id;
+        physical_reference_station.x                    = mPhysicalPosition.x;
+        physical_reference_station.y                    = mPhysicalPosition.y;
+        physical_reference_station.z                    = mPhysicalPosition.z;
+        messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
+    }
 
     rtcm::CommonObservationInfo common{};
-    common.reference_station_id = 1;
+    common.reference_station_id = reference_station_id;
+    common.clock_steering       = 1;
 
-    if (mGenerateGps && observations.gps_observation_count > 0) {
+    if (mGenerateGps) {
+        rtcm::Observations observations{};
+        observations.time = mTimeReception;
+        build_rtcm_observations(SatelliteId::Gnss::GPS, observations);
+        DEBUGF("GPS generate: satellites=%zu, signals=%zu", observations.satellites.size(),
+               observations.signals.size());
+
+        auto last_msm = !mGenerateGlo && !mGenerateGal && !mGenerateBds;
         auto gps_message =
-            rtcm::generate_msm(7, true, rtcm::GenericGnssId::GPS, common, observations);
+            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GPS, common, observations);
         messages.push_back(std::move(gps_message));
     }
 
-    if (mGenerateGal && observations.galileo_observation_count > 0) {
-        auto gal_message =
-            rtcm::generate_msm(7, true, rtcm::GenericGnssId::GALILEO, common, observations);
+    if (mGenerateGlo) {
+        rtcm::Observations observations{};
+        observations.time = mTimeReception;
+        build_rtcm_observations(SatelliteId::Gnss::GLONASS, observations);
+        DEBUGF("GLO generate: satellites=%zu, signals=%zu", observations.satellites.size(),
+               observations.signals.size());
+
+        auto last_msm    = !mGenerateGal && !mGenerateBds;
+        auto glo_message = rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GLONASS,
+                                              common, observations);
+        messages.push_back(std::move(glo_message));
+    }
+
+    if (mGenerateGal) {
+        rtcm::Observations observations{};
+        observations.time = mTimeReception;
+        build_rtcm_observations(SatelliteId::Gnss::GALILEO, observations);
+        DEBUGF("GAL generate: satellites=%zu, signals=%zu", observations.satellites.size(),
+               observations.signals.size());
+
+        auto last_msm    = !mGenerateBds;
+        auto gal_message = rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GALILEO,
+                                              common, observations);
         messages.push_back(std::move(gal_message));
     }
 
-    if (mGenerateBds && observations.beidou_observation_count > 0) {
-        auto bds_message =
-            rtcm::generate_msm(7, true, rtcm::GenericGnssId::BEIDOU, common, observations);
+    if (mGenerateBds) {
+        rtcm::Observations observations{};
+        observations.time = mTimeReception;
+        build_rtcm_observations(SatelliteId::Gnss::BEIDOU, observations);
+        DEBUGF("BDS generate: satellites=%zu, signals=%zu", observations.satellites.size(),
+               observations.signals.size());
+
+        auto last_msm    = true;
+        auto bds_message = rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::BEIDOU,
+                                              common, observations);
         messages.push_back(std::move(bds_message));
     }
 }

@@ -400,7 +400,11 @@ bool LPP_Client::process() {
     }
 
     std::vector<LPP_Message*> messages;
-    if (!supl_receive(messages, timeout, false)) {
+    while (supl_receive(messages, timeout, false)) { 
+        printf("more messages: %d\n", messages.size());
+    }
+    
+    if(messages.size() == 0) {
         if (!mSUPL->is_connected()) {
             return false;
         }

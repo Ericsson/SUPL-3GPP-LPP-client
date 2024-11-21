@@ -213,6 +213,7 @@ SUPL_Message SUPL_Client::process() {
                                        mReceiveBuffer, mReceiveLength);
     if (result.code == RC_FAIL) {
         mReceiveLength = 0;
+        printf("failed to decode UPER\n");
         ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
         return nullptr;
     } else if (result.code == RC_WMORE) {
@@ -220,27 +221,33 @@ SUPL_Message SUPL_Client::process() {
         if (expected_size > SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
             // Unable to handle such big messages
             mReceiveLength = 0;
+            printf("too big message, unsupported\n");
             ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         } else if (expected_size > mReceiveLength) {
             // Not enough data
+            printf("wait for more data\n");
             ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         }
 
+        // TODO(ewasjon): This is weird decoding again will never work, we must return from the
+        // function to wait for more data.
         result = uper_decode_complete(0, &asn_DEF_ULP_PDU, reinterpret_cast<void**>(&pdu),
                                       mReceiveBuffer, expected_size);
         if (result.code != RC_OK) {
+            printf("failed to decode UPER (more)\n");
             mReceiveLength = 0;
             ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         }
     } else {
         expected_size = static_cast<size_t>(pdu->length);
+        printf("success: %zu (%zu)\n", expected_size, result.consumed);
     }
 
     printf("receive-length: %zu, expected-size: %zu\n", mReceiveLength, expected_size);
-    if(expected_size > mReceiveLength) {
+    if (expected_size > mReceiveLength) {
         mReceiveLength = 0;
         ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
         return nullptr;

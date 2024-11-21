@@ -2,6 +2,8 @@
 #include "encoder.hpp"
 #include "helper.hpp"
 
+#include <stdio.h>
+
 using namespace generator::rtcm;
 
 static void df02X(Encoder& encoder, double value) {
@@ -76,6 +78,9 @@ Message generate_1006(ReferenceStation const& reference_station, bool gps_indica
     df026(encoder, reference_station.y);
     encoder.u8(2, 0 /* quarter cycle indicator */);
     df027(encoder, reference_station.z);
+    // printf("x: %+24.14f\n", reference_station.x);
+    // printf("y: %+24.14f\n", reference_station.y);
+    // printf("z: %+24.14f\n", reference_station.z);
     if (reference_station.antenna_height.valid) {
         df028(encoder, reference_station.antenna_height.value);
     } else {

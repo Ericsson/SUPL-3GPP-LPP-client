@@ -2,11 +2,11 @@
 #include <format/ctrl/cid.hpp>
 #include <format/ctrl/identity.hpp>
 #include <format/ctrl/parser.hpp>
+#include <format/lpp/uper_parser.hpp>
 #include <format/nmea/message.hpp>
 #include <format/nmea/parser.hpp>
 #include <format/ubx/message.hpp>
 #include <format/ubx/parser.hpp>
-#include <format/lpp/uper_parser.hpp>
 #include <iostream>
 #include <lpp/internal_lpp.h>
 #include <lpp/location_information.h>
@@ -34,50 +34,6 @@
 #include <scheduler/scheduler.hpp>
 #include <streamline/system.hpp>
 
-struct SsrGlobals {
-    Options                       options;
-    CellID                        cell;
-    ssr_example::Format           format;
-    int                           lrf_rtcm_id;
-    int                           ura_override;
-    int                           ura_default;
-    bool                          ublox_clock_correction;
-    bool                          force_continuity;
-    bool                          average_zenith_delay;
-    bool                          iode_shift;
-    int                           sf055_override;
-    int                           sf055_default;
-    int                           sf042_override;
-    int                           sf042_default;
-    bool                          increasing_siou;
-    bool                          filter_by_residuals;
-    bool                          filter_by_ocb;
-    bool                          ignore_l2l;
-    bool                          print_rtcm;
-    bool                          hydrostatic_in_zenith;
-    generator::spartn::StecMethod stec_method;
-    bool                          stec_transform;
-    bool                          stec_invalid_to_zero;
-    bool                          sign_flip_c00;
-    bool                          sign_flip_c01;
-    bool                          sign_flip_c10;
-    bool                          sign_flip_c11;
-    bool                          sign_flip_stec_residuals;
-    bool                          code_bias_translate;
-    bool                          code_bias_correction_shift;
-    bool                          phase_bias_translate;
-    bool                          phase_bias_correction_shift;
-    bool                          generate_gps;
-    bool                          generate_glonass;
-    bool                          generate_galileo;
-    bool                          generate_beidou;
-    bool                          generate_gad;
-    bool                          generate_ocb;
-    bool                          generate_hpac;
-    bool                          flip_grid_bitmask;
-    bool                          flip_orbit_correction;
-};
-
 #include "ctrl.hpp"
 #include "lpp.hpp"
 #include "lpp2spartn.hpp"
@@ -92,8 +48,8 @@ struct SsrGlobals {
 
 #define LOGLET_CURRENT_MODULE "ex/ssr"
 
-static streamline::System gStream;
-static SsrGlobals         gGlobals;
+static streamline::System      gStream;
+static ssr_example::SsrGlobals gGlobals;
 
 static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*, void*);
 
@@ -327,7 +283,7 @@ static void initialize_outputs(OutputOptions const& outputs) {
 
 #ifdef INCLUDE_GENERATOR_TOKORO
     if (gGlobals.format == ssr_example::Format::TOKORO) {
-        tokoro_initialize(gStream, output_options);
+        tokoro_initialize(gStream, gGlobals, output_options);
     }
 #endif
 
@@ -414,28 +370,30 @@ static void initialize_outputs(OutputOptions const& outputs) {
         client.unlock_update_rate();
     }
 
-    if (!location_server_options.skip_request_assistance_data) {
+    if (!location_server_options.skip_connect) {
         if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
                             location_server_options.ssl, gGlobals.cell)) {
             ERRORF("unable to connect to location server");
             throw std::runtime_error("Unable to connect to location server");
         }
 
-        request =
-            client.request_assistance_data_ssr(gGlobals.cell, nullptr, assistance_data_callback);
-        if (request == AD_REQUEST_INVALID) {
-            ERRORF("unable to request assistance data");
-            throw std::runtime_error("Unable to request assistance data");
-        }
+        if (!location_server_options.skip_request_assistance_data) {
+            request = client.request_assistance_data_ssr(gGlobals.cell, nullptr,
+                                                         assistance_data_callback);
+            if (request == AD_REQUEST_INVALID) {
+                ERRORF("unable to request assistance data");
+                throw std::runtime_error("Unable to request assistance data");
+            }
 
-        client_initialized = true;
+            client_initialized = true;
+        }
     }
 
     for (;;) {
         scheduler.execute_timeout(
             std::chrono::milliseconds(location_information_options.update_rate));
 
-        if (!location_server_options.skip_request_assistance_data) {
+        if (!location_server_options.skip_connect) {
             // client.process() MUST be called at least once every second, otherwise
             // ProvideLocationInformation messages will not be send to the server.
             if (!client.process()) {
@@ -473,11 +431,21 @@ void SsrCommand::parse(args::Subparser& parser) {
 #endif
     });
 
+    mNoGPS = new args::Flag(parser, "no-gps", "Skip generating GPS messages", {"no-gps"});
+    mNoGLONASS =
+        new args::Flag(parser, "no-glonass", "Skip generating GLONASS messages", {"no-glonass"});
+    mNoGalileo =
+        new args::Flag(parser, "no-galileo", "Skip generating Galileo messages", {"no-galileo"});
+    mNoBeiDou =
+        new args::Flag(parser, "no-beidou", "Skip generating BeiDou messages", {"no-beidou"});
+
+#ifdef INCLUDE_GENERATOR_RTCM
     mLRFMessageIdArg =
         new args::ValueFlag<int>(parser, "lrf-message-id", "RTCM message ID for LRF-UPER format",
                                  {"lrf-message-id"}, args::Options::Single);
     mLRFMessageIdArg->HelpDefault("355");
-
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
     mUraOverrideArg = new args::ValueFlag<int>(
         parser, "ura-override",
         "Override the URA (SF024) value, value will be clamped between 0-7. "
@@ -593,14 +561,6 @@ void SsrCommand::parse(args::Subparser& parser) {
         new args::Flag(parser, "sf-c11", "Flip the sign of the C11 coefficient", {"sf-c11"});
     mSignFlipStecResiduals = new args::Flag(
         parser, "sf-stec-residuals", "Flip the sign of the STEC residuals", {"sf-stec-residuals"});
-
-    mNoGPS = new args::Flag(parser, "no-gps", "Skip generating GPS SPARTN messages", {"no-gps"});
-    mNoGLONASS = new args::Flag(parser, "no-glonass", "Skip generating GLONASS SPARTN messages",
-                                {"no-glonass"});
-    mNoGalileo = new args::Flag(parser, "no-galileo", "Skip generating Galileo SPARTN messages",
-                                {"no-galileo"});
-    mBeiDou    = new args::Flag(parser, "beidou", "Generate BeiDou SPARTN messages", {"beidou"});
-
     mFlipGridBitmask =
         new args::Flag(parser, "flip-grid-bitmask",
                        "Flip the grid bitmask for incoming LPP messages", {"flip-grid-bitmask"});
@@ -615,13 +575,37 @@ void SsrCommand::parse(args::Subparser& parser) {
     mFlipOrbitCorrection =
         new args::Flag(parser, "flip-orbit-correction", "Flip the sign of the orbit correction",
                        {"flip-orbit-correction"});
+#endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+    mShapiroCorrection = new args::Flag(parser, "shapiro-correction", "Disable Shapiro correction",
+                                        {"no-shapiro-correction"});
+    mPhaseWindupCorrection =
+        new args::Flag(parser, "phase-windup-correction", "Enable phase windup correction",
+                       {"phase-windup-correction"});
+    mEarthSolidTidesCorrection =
+        new args::Flag(parser, "earth-solid-tides-correction",
+                       "Enable Earth solid tides correction", {"earth-solid-tides-correction"});
+    mAntennaPhaseVariationCorrection = new args::Flag(parser, "antenna-phase-variation-correction",
+                                                      "Enable antenna phase variation correction",
+                                                      {"antenna-phase-variation-correction"});
+    mTroposphericHeightCorrection    = new args::Flag(parser, "no-tropospheric-height-correction",
+                                                      "Disable tropospheric height correction",
+                                                      {"no-tropospheric-height-correction"});
+#endif
 }
 
 void SsrCommand::execute(Options options) {
-    gGlobals.options                     = std::move(options);
-    gGlobals.cell                        = {};
-    gGlobals.format                      = ssr_example::Format::XER;
-    gGlobals.lrf_rtcm_id                 = 355;
+    gGlobals.options          = std::move(options);
+    gGlobals.cell             = {};
+    gGlobals.format           = ssr_example::Format::XER;
+    gGlobals.generate_gps     = true;
+    gGlobals.generate_glonass = true;
+    gGlobals.generate_galileo = true;
+    gGlobals.generate_beidou  = true;
+#ifdef INCLUDE_GENERATOR_RTCM
+    gGlobals.lrf_rtcm_id = 355;
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
     gGlobals.ura_override                = -1;
     gGlobals.ura_default                 = -1;
     gGlobals.ublox_clock_correction      = true;
@@ -650,15 +634,19 @@ void SsrCommand::execute(Options options) {
     gGlobals.code_bias_correction_shift  = true;
     gGlobals.phase_bias_translate        = true;
     gGlobals.phase_bias_correction_shift = true;
-    gGlobals.generate_gps                = true;
-    gGlobals.generate_glonass            = true;
-    gGlobals.generate_galileo            = true;
-    gGlobals.generate_beidou             = false;
     gGlobals.flip_grid_bitmask           = false;
     gGlobals.generate_gad                = true;
     gGlobals.generate_ocb                = true;
     gGlobals.generate_hpac               = true;
     gGlobals.flip_orbit_correction       = false;
+#endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+    gGlobals.shapiro_correction                 = false;
+    gGlobals.phase_windup_correction            = false;
+    gGlobals.earth_solid_tides_correction       = false;
+    gGlobals.antenna_phase_variation_correction = false;
+    gGlobals.tropospheric_height_correction     = true;
+#endif
 
     if (*mFormatArg) {
         if (mFormatArg->Get() == "xer") {
@@ -685,10 +673,29 @@ void SsrCommand::execute(Options options) {
 #endif
     }
 
+    if (*mNoGPS) {
+        gGlobals.generate_gps = false;
+    }
+
+    if (*mNoGLONASS) {
+        gGlobals.generate_glonass = false;
+    }
+
+    if (*mNoGalileo) {
+        gGlobals.generate_galileo = false;
+    }
+
+    if (*mNoBeiDou) {
+        gGlobals.generate_beidou = false;
+    }
+
+#ifdef INCLUDE_GENERATOR_RTCM
     if (*mLRFMessageIdArg) {
         gGlobals.lrf_rtcm_id = mLRFMessageIdArg->Get();
     }
+#endif
 
+#ifdef INCLUDE_GENERATOR_SPARTN
     if (*mUraOverrideArg) {
         gGlobals.ura_override = mUraOverrideArg->Get();
     }
@@ -828,22 +835,6 @@ void SsrCommand::execute(Options options) {
         gGlobals.sign_flip_stec_residuals = true;
     }
 
-    if (*mNoGPS) {
-        gGlobals.generate_gps = false;
-    }
-
-    if (*mNoGLONASS) {
-        gGlobals.generate_glonass = false;
-    }
-
-    if (*mNoGalileo) {
-        gGlobals.generate_galileo = false;
-    }
-
-    if (*mBeiDou) {
-        gGlobals.generate_beidou = true;
-    }
-
     if (*mFlipGridBitmask) {
         gGlobals.flip_grid_bitmask = true;
     }
@@ -863,6 +854,29 @@ void SsrCommand::execute(Options options) {
     if (*mFlipOrbitCorrection) {
         gGlobals.flip_orbit_correction = true;
     }
+#endif
+
+#ifdef INCLUDE_GENERATOR_TOKORO
+    if (*mShapiroCorrection) {
+        gGlobals.shapiro_correction = false;
+    }
+
+    if (*mPhaseWindupCorrection) {
+        gGlobals.phase_windup_correction = true;
+    }
+
+    if (*mEarthSolidTidesCorrection) {
+        gGlobals.earth_solid_tides_correction = true;
+    }
+
+    if (*mAntennaPhaseVariationCorrection) {
+        gGlobals.antenna_phase_variation_correction = true;
+    }
+
+    if (*mTroposphericHeightCorrection) {
+        gGlobals.tropospheric_height_correction = false;
+    }
+#endif
 
     auto& cell_options  = gGlobals.options.cell_options;
     gGlobals.cell.mcc   = cell_options.mcc;

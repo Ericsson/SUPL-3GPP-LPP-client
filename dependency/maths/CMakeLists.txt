@@ -1,6 +1,7 @@
 
 add_library(dependency_maths 
     "float3.cpp"
+    "mat3.cpp"
 )
 add_library(dependency::maths ALIAS dependency_maths)
 target_include_directories(dependency_maths PUBLIC "include/")

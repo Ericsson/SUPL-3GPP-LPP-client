@@ -84,6 +84,13 @@ void UbxLocation::nav_pvt(streamline::System& system, format::ubx::UbxNavPvt con
         metrics.fix_quality = FixQuality::DEAD_RECKONING;
     }
 
+    auto age_of_correction_data = nav_pvt.age_of_correction_data();
+    if (age_of_correction_data > 0) {
+        if (age_of_correction_data >= 10.0) age_of_correction_data = 9.9;
+        if (age_of_correction_data < 0.0) age_of_correction_data = 0.0;
+        metrics.age_of_corrections = age_of_correction_data;
+    }
+
     metrics.number_of_satellites = nav_pvt.num_sv();
     metrics.pdop                 = nav_pvt.p_dop();
     system.push(std::move(metrics));

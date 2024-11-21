@@ -28,6 +28,7 @@ struct LocationServerOptions {
     /// Whether to use SSL or not.
     bool ssl;
 
+    bool skip_connect;
     bool skip_request_assistance_data;
 };
 

@@ -32,6 +32,8 @@ public:
     NODISCARD double  fraction() const { return mFraction; }
     NODISCARD double  full_seconds() const { return static_cast<double>(mSeconds) + mFraction; }
 
+    NODISCARD int64_t days() const { return mSeconds / DAY_IN_SECONDS; }
+
     Timestamp operator+(Timestamp const& other) const {
         return Timestamp{seconds() + other.seconds(), fraction() + other.fraction()};
     }

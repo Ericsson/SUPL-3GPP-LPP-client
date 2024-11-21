@@ -7,6 +7,9 @@ add_library(dependency_generator_tokoro STATIC
     "observation.cpp"
     "helper.cpp"
     "ecef.cpp"
+    "gpt.cpp"
+    "mops.cpp"
+    "geoid.cpp"
 )
 add_library(dependency::generator::tokoro ALIAS dependency_generator_tokoro)
 

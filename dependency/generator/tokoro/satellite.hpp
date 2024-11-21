@@ -34,6 +34,7 @@ public:
     NODISCARD Float3 apc() const NOEXCEPT { return mTruePosition; }
     NODISCARD double eph_range() const NOEXCEPT { return mEphRange; }
     NODISCARD double eph_clock_bias() const NOEXCEPT { return mEphClockBias; }
+    NODISCARD Float3 line_of_sight() const NOEXCEPT { return mTrueLineOfSight; }
     NODISCARD double clock_correction() const NOEXCEPT;
 
 private:

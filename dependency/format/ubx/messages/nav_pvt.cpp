@@ -104,6 +104,35 @@ bool UbxNavPvt::valid_time() const NOEXCEPT {
     return mPayload.valid.valid_date != 0 && mPayload.valid.valid_time != 0;
 }
 
+double UbxNavPvt::age_of_correction_data() const NOEXCEPT {
+    if (mPayload.flags3.last_correction_arg == 0)
+        return -1;
+    else if (mPayload.flags3.last_correction_arg == 1)
+        return 0;
+    else if (mPayload.flags3.last_correction_arg == 2)
+        return 1;
+    else if (mPayload.flags3.last_correction_arg == 3)
+        return 2;
+    else if (mPayload.flags3.last_correction_arg == 4)
+        return 5;
+    else if (mPayload.flags3.last_correction_arg == 5)
+        return 10;
+    else if (mPayload.flags3.last_correction_arg == 6)
+        return 15;
+    else if (mPayload.flags3.last_correction_arg == 7)
+        return 20;
+    else if (mPayload.flags3.last_correction_arg == 8)
+        return 30;
+    else if (mPayload.flags3.last_correction_arg == 9)
+        return 45;
+    else if (mPayload.flags3.last_correction_arg == 10)
+        return 60;
+    else if (mPayload.flags3.last_correction_arg == 12)
+        return 90;
+    else
+        return 120;
+}
+
 void UbxNavPvt::print() const NOEXCEPT {
     printf("[%02X %02X] UBX-NAV-PVT:\n", message_class(), message_id());
     printf("[.....]    i_tow: %u\n", mPayload.i_tow);

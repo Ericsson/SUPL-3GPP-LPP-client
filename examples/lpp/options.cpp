@@ -64,6 +64,8 @@ static args::Flag gLocationServerSlpHostImsi{gLocationServer,
                                              "Use IMSI as SLP Host",
                                              {"slp-host-imsi"},
                                              args::Options::Single};
+static args::Flag gSkipConnect{
+    gLocationServer, "skip-connect", "Skip Connect", {"skip-connect"}, args::Options::Single};
 static args::Flag gSkipRequestAssistanceData{gLocationServer,
                                              "skip-request-assistance-data",
                                              "Skip Request Assistance Data",
@@ -724,7 +726,8 @@ static InputOption parse_input_serial(std::unordered_map<std::string, std::strin
     return {format, std::move(input)};
 }
 
-static InputOption parse_input_tcp_server(std::unordered_map<std::string, std::string> const& options) {
+static InputOption
+parse_input_tcp_server(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_input_format(options);
     if (options.find("port") == options.end()) {
         throw args::RequiredError("--input tcp-server requires 'port'");
@@ -746,7 +749,8 @@ static InputOption parse_input_tcp_server(std::unordered_map<std::string, std::s
     return {format, std::move(input)};
 }
 
-static InputOption parse_input_tcp_client(std::unordered_map<std::string, std::string> const& options) {
+static InputOption
+parse_input_tcp_client(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_input_format(options);
     if (options.find("host") == options.end()) {
         throw args::RequiredError("--input tcp-client requires 'host'");
@@ -772,7 +776,8 @@ static InputOption parse_input_tcp_client(std::unordered_map<std::string, std::s
     return {format, std::move(input)};
 }
 
-static InputOption parse_input_udp_server(std::unordered_map<std::string, std::string> const& options) {
+static InputOption
+parse_input_udp_server(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_input_format(options);
     if (options.find("port") == options.end()) {
         throw args::RequiredError("--input udp-server requires 'port'");
@@ -1015,7 +1020,12 @@ static LocationServerOptions parse_location_server_options(Options& options) {
     LocationServerOptions location_server_options{};
     location_server_options.port                         = 5431;
     location_server_options.ssl                          = false;
+    location_server_options.skip_connect                 = false;
     location_server_options.skip_request_assistance_data = false;
+
+    if (gSkipConnect) {
+        location_server_options.skip_connect = true;
+    }
 
     if (gSkipRequestAssistanceData) {
         location_server_options.skip_request_assistance_data = true;

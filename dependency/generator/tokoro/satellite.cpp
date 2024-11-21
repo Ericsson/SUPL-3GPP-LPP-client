@@ -103,6 +103,40 @@ bool Satellite::compute_true_position() NOEXCEPT {
         WARNF("failed to correct satellite position");
     }
 
+#if 0
+    for (int orbit_r = 0; orbit_r <= 1; orbit_r++) {
+        for (int orbit_a = 0; orbit_a <= 1; orbit_a++) {
+            for (int orbit_c = 0; orbit_c <= 1; orbit_c++) {
+                auto new_orbit_correction = mOrbitCorrection;
+                if (orbit_r == 1) {
+                    new_orbit_correction.delta.x     = -new_orbit_correction.delta.x;
+                    new_orbit_correction.dot_delta.x = -new_orbit_correction.dot_delta.x;
+                }
+                if (orbit_a == 1) {
+                    new_orbit_correction.delta.y     = -new_orbit_correction.delta.y;
+                    new_orbit_correction.dot_delta.y = -new_orbit_correction.dot_delta.y;
+                }
+                if (orbit_c == 1) {
+                    new_orbit_correction.delta.z     = -new_orbit_correction.delta.z;
+                    new_orbit_correction.dot_delta.z = -new_orbit_correction.dot_delta.z;
+                }
+                Float3 orbit_corrected_position{};
+                new_orbit_correction.correction(t_e, mEphPosition, mEphVelocity,
+                                                                    orbit_corrected_position);
+
+                Float3 line_of_sight{};
+                auto   orbit_corrected_range = geometric_distance(orbit_corrected_position,
+                                                                  mReceptionLocation, &line_of_sight);
+                VERBOSEF("[%s,%s,%s]: %.14f, %.14f, %.14f, %.14f", orbit_r == 0 ? "+R" : "-R",
+                         orbit_a == 0 ? "+A" : "-A", orbit_c == 0 ? "+C" : "-C",
+                         orbit_corrected_position.x, orbit_corrected_position.y,
+                         orbit_corrected_position.z, orbit_corrected_range);
+            }
+        }
+    }
+
+#endif
+
     auto relative_correction = mEph.relativistic_correction(mTruePosition, mTrueVelocity);
     mEphClockBias += relative_correction;
 

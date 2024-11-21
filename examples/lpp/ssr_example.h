@@ -1,5 +1,10 @@
 #pragma once
+#include <lpp/cell_id.h>
 #include "options.hpp"
+
+#ifdef INCLUDE_GENERATOR_SPARTN
+#include <generator/spartn2/generator.hpp>
+#endif
 
 namespace ssr_example {
 
@@ -17,32 +22,132 @@ enum class Format {
 #endif
 };
 
+struct SsrGlobals {
+    Options options;
+    CellID  cell;
+    Format  format;
+    int     lrf_rtcm_id;
+
+#ifdef INCLUDE_GENERATOR_SPARTN
+    int                           ura_override;
+    int                           ura_default;
+    bool                          ublox_clock_correction;
+    bool                          force_continuity;
+    bool                          average_zenith_delay;
+    bool                          iode_shift;
+    int                           sf055_override;
+    int                           sf055_default;
+    int                           sf042_override;
+    int                           sf042_default;
+    bool                          increasing_siou;
+    bool                          filter_by_residuals;
+    bool                          filter_by_ocb;
+    bool                          ignore_l2l;
+    bool                          print_rtcm;
+    bool                          hydrostatic_in_zenith;
+    generator::spartn::StecMethod stec_method;
+    bool                          stec_transform;
+    bool                          stec_invalid_to_zero;
+    bool                          sign_flip_c00;
+    bool                          sign_flip_c01;
+    bool                          sign_flip_c10;
+    bool                          sign_flip_c11;
+    bool                          sign_flip_stec_residuals;
+    bool                          code_bias_translate;
+    bool                          code_bias_correction_shift;
+    bool                          phase_bias_translate;
+    bool                          phase_bias_correction_shift;
+    bool                          generate_gad;
+    bool                          generate_ocb;
+    bool                          generate_hpac;
+    bool                          flip_grid_bitmask;
+    bool                          flip_orbit_correction;
+#endif
+
+#ifdef INCLUDE_GENERATOR_TOKORO
+    bool shapiro_correction;
+    bool phase_windup_correction;
+    bool earth_solid_tides_correction;
+    bool antenna_phase_variation_correction;
+    bool tropospheric_height_correction;
+#endif
+
+    bool generate_gps;
+    bool generate_glonass;
+    bool generate_galileo;
+    bool generate_beidou;
+};
+
 class SsrCommand final : public Command {
 public:
     SsrCommand()
-        : Command("ssr", "Request State-space Representation (SSR) data from the location server"),
-          mFormatArg(nullptr), mLRFMessageIdArg(nullptr), mUraOverrideArg(nullptr),
-          mUraDefaultArg(nullptr), mUbloxClockCorrectionArg(nullptr),
-          mNoUbloxClockCorrectionArg(nullptr), mForceContinuityArg(nullptr),
-          mNoForceContinuityArg(nullptr), mAverageZenithDelayArg(nullptr),
-          mNoAverageZenithDelayArg(nullptr), mSf055Override(nullptr), mSf055Default(nullptr),
-          mSf042Override(nullptr), mSf042Default(nullptr), mIncreasingSiou(nullptr),
-          mFilterByResiduals(nullptr), mFilterByOcb(nullptr), mIgnoreL2L(nullptr),
-          mPrintRTCMArg(nullptr), mCodeBiasNoTranslateArg(nullptr),
-          mCodeBiasNoCorrectionShiftArg(nullptr), mPhaseBiasNoTranslateArg(nullptr),
-          mPhaseBiasNoCorrectionShiftArg(nullptr), mHydrostaticInZenithArg(nullptr),
-          mStecMethod(nullptr), mNoStecTransform(nullptr), mStecInvalidToZero(nullptr),
-          mSignFlipC00(nullptr), mSignFlipC01(nullptr), mSignFlipC10(nullptr),
-          mSignFlipC11(nullptr), mSignFlipStecResiduals(nullptr), mNoGPS(nullptr),
-          mNoGLONASS(nullptr), mNoGalileo(nullptr), mBeiDou(nullptr), mFlipGridBitmask(nullptr),
-          mNoGenerateGAD(nullptr), mNoGenerateOCB(nullptr), mNoGenerateHPAC(nullptr),
-          mFlipOrbitCorrection(nullptr) {}
+        : Command("ssr", "Request State-space Representation (SSR) data from the location server") {
+        mFormatArg = nullptr;
+        mNoGPS     = nullptr;
+        mNoGLONASS = nullptr;
+        mNoGalileo = nullptr;
+        mNoBeiDou  = nullptr;
+#ifdef INCLUDE_GENERATOR_RTCM
+        mLRFMessageIdArg = nullptr;
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
+        mUraOverrideArg                = nullptr;
+        mUraDefaultArg                 = nullptr;
+        mUbloxClockCorrectionArg       = nullptr;
+        mNoUbloxClockCorrectionArg     = nullptr;
+        mForceContinuityArg            = nullptr;
+        mNoForceContinuityArg          = nullptr;
+        mAverageZenithDelayArg         = nullptr;
+        mNoAverageZenithDelayArg       = nullptr;
+        mSf055Override                 = nullptr;
+        mSf055Default                  = nullptr;
+        mSf042Override                 = nullptr;
+        mSf042Default                  = nullptr;
+        mIncreasingSiou                = nullptr;
+        mFilterByResiduals             = nullptr;
+        mFilterByOcb                   = nullptr;
+        mIgnoreL2L                     = nullptr;
+        mPrintRTCMArg                  = nullptr;
+        mCodeBiasNoTranslateArg        = nullptr;
+        mCodeBiasNoCorrectionShiftArg  = nullptr;
+        mPhaseBiasNoTranslateArg       = nullptr;
+        mPhaseBiasNoCorrectionShiftArg = nullptr;
+        mHydrostaticInZenithArg        = nullptr;
+        mStecMethod                    = nullptr;
+        mNoStecTransform               = nullptr;
+        mStecInvalidToZero             = nullptr;
+        mSignFlipC00                   = nullptr;
+        mSignFlipC01                   = nullptr;
+        mSignFlipC10                   = nullptr;
+        mSignFlipC11                   = nullptr;
+        mSignFlipStecResiduals         = nullptr;
+        mFlipGridBitmask               = nullptr;
+        mNoGenerateGAD                 = nullptr;
+        mNoGenerateOCB                 = nullptr;
+        mNoGenerateHPAC                = nullptr;
+        mFlipOrbitCorrection           = nullptr;
+#endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+        mShapiroCorrection               = nullptr;
+        mPhaseWindupCorrection           = nullptr;
+        mEarthSolidTidesCorrection       = nullptr;
+        mAntennaPhaseVariationCorrection = nullptr;
+        mTroposphericHeightCorrection    = nullptr;
+#endif
+    }
 
     ~SsrCommand() override { cleanup(); }
 
     void cleanup() {
         delete mFormatArg;
+        delete mNoGPS;
+        delete mNoGLONASS;
+        delete mNoGalileo;
+        delete mNoBeiDou;
+#ifdef INCLUDE_GENERATOR_RTCM
         delete mLRFMessageIdArg;
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
         delete mUraOverrideArg;
         delete mUraDefaultArg;
         delete mUbloxClockCorrectionArg;
@@ -73,15 +178,19 @@ public:
         delete mSignFlipC10;
         delete mSignFlipC11;
         delete mSignFlipStecResiduals;
-        delete mNoGPS;
-        delete mNoGLONASS;
-        delete mNoGalileo;
-        delete mBeiDou;
         delete mFlipGridBitmask;
         delete mNoGenerateGAD;
         delete mNoGenerateOCB;
         delete mNoGenerateHPAC;
         delete mFlipOrbitCorrection;
+#endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+        delete mShapiroCorrection;
+        delete mPhaseWindupCorrection;
+        delete mEarthSolidTidesCorrection;
+        delete mAntennaPhaseVariationCorrection;
+        delete mTroposphericHeightCorrection;
+#endif
     }
 
     void parse(args::Subparser& parser) override;
@@ -89,7 +198,14 @@ public:
 
 private:
     args::ValueFlag<std::string>* mFormatArg;
+    args::Flag*                   mNoGPS;
+    args::Flag*                   mNoGLONASS;
+    args::Flag*                   mNoGalileo;
+    args::Flag*                   mNoBeiDou;
+#ifdef INCLUDE_GENERATOR_RTCM
     args::ValueFlag<int>*         mLRFMessageIdArg;
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
     args::ValueFlag<int>*         mUraOverrideArg;
     args::ValueFlag<int>*         mUraDefaultArg;
     args::Flag*                   mUbloxClockCorrectionArg;
@@ -120,15 +236,19 @@ private:
     args::Flag*                   mSignFlipC10;
     args::Flag*                   mSignFlipC11;
     args::Flag*                   mSignFlipStecResiduals;
-    args::Flag*                   mNoGPS;
-    args::Flag*                   mNoGLONASS;
-    args::Flag*                   mNoGalileo;
-    args::Flag*                   mBeiDou;
     args::Flag*                   mFlipGridBitmask;
     args::Flag*                   mNoGenerateGAD;
     args::Flag*                   mNoGenerateOCB;
     args::Flag*                   mNoGenerateHPAC;
     args::Flag*                   mFlipOrbitCorrection;
+#endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+    args::Flag* mShapiroCorrection;
+    args::Flag* mPhaseWindupCorrection;
+    args::Flag* mEarthSolidTidesCorrection;
+    args::Flag* mAntennaPhaseVariationCorrection;
+    args::Flag* mTroposphericHeightCorrection;
+#endif
 };
 
 }  // namespace ssr_example

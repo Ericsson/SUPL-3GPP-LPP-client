@@ -437,6 +437,20 @@ void CorrectionData::add_correction(long                                 gnss_id
         dot_cross  = -dot_cross;
 #endif
 
+#if 0
+        radial      = -radial;
+        dot_radial = -dot_radial;
+#endif
+#if 0
+        along_track = -along_track;
+        dot_along = -dot_along;
+#endif
+#if 0
+        cross_track = -cross_track;
+        dot_cross = -dot_cross;
+#endif
+
+
         auto& correction          = mOrbit[satellite_id];
         correction.reference_time = reference_time;
         correction.delta          = {radial, along_track, cross_track};
@@ -510,7 +524,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
 
         auto satellite_id = SatelliteId::from_lpp(satellite_gnss, satellite->svID_r15.satellite_id);
         if (!satellite_id.is_valid()) {
-            WARNF("code bias with invalid satellite id");
+            WARNF("code bias rejected: invalid satellite id (%ld)", satellite->svID_r15.satellite_id);
             continue;
         }
 
@@ -555,7 +569,7 @@ void CorrectionData::add_correction(long                          gnss_id,
 
         auto satellite_id = SatelliteId::from_lpp(satellite_gnss, satellite->svID_r16.satellite_id);
         if (!satellite_id.is_valid()) {
-            WARNF("code bias with invalid satellite id");
+            WARNF("phase bias rejected: invalid satellite id (%ld)", satellite->svID_r16.satellite_id);
             continue;
         }
 
