@@ -5,6 +5,7 @@
 #include "helper.hpp"
 #include "observation.hpp"
 #include "satellite.hpp"
+#include "coordinate.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -40,9 +41,333 @@
 namespace generator {
 namespace tokoro {
 
+ReferenceStation::ReferenceStation(Generator& generator, Float3 ground_position) NOEXCEPT
+    : mGroundPosition(ground_position),
+      mPhysicalGroundPosition(ground_position),
+      mPhysicalGroundPositionSet(false),
+      mGenerateGps(true),
+      mGenerateGlo(false),
+      mGenerateGal(false),
+      mGenerateBds(false),
+      mShapiroCorrection(true),
+      mEarthSolidTidesCorrection(false),
+      mPhaseWindupCorrection(false),
+      mAntennaPhaseVariation(false),
+      mTropoHeightCorrection(false),
+      mElevationMask(10.0),
+      mGenerator(generator) {
+    // Initialize the satellite vector to the maximum number of satellites
+    // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
+    mSatellites.reserve(32 + 24 + 36 + 35);
+
+    // Initialize the satellites
+    initialize_satellites();
+}
+
+ReferenceStation::~ReferenceStation() NOEXCEPT = default;
+
+void ReferenceStation::initialize_satellites() NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    // GPS
+    for (uint8_t i = 1; i <= 32; i++) {
+        auto id = SatelliteId::from_gps_prn(i);
+        ASSERT(id.is_valid(), "invalid satellite id");
+        mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+    }
+
+    // TODO: GLONASS
+    // TODO: GALILEO
+    // TODO: BEIDOU
+}
+
+void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    auto correction_data = *mGenerator.mCorrectionData;
+
+    auto& observation = satellite.initialize_observation(signal_id);
+    observation.compute_phase_bias(correction_data);
+    observation.compute_code_bias(correction_data);
+    observation.compute_tropospheric(mGroundPosition, correction_data);
+    observation.compute_ionospheric(mGroundPosition, correction_data);
+
+    if (mShapiroCorrection) observation.compute_shapiro();
+    if (mEarthSolidTidesCorrection) observation.compute_earth_solid_tides();
+    if (mPhaseWindupCorrection) observation.compute_phase_windup();
+    if (mAntennaPhaseVariation) observation.compute_antenna_phase_variation();
+
+    if (mTropoHeightCorrection) observation.compute_tropospheric_height();
+
+    observation.compute_code_range();
+    observation.compute_phase_range();
+
+    VERBOSEF("observation: p=%f, c=%f", observation.pseudorange(), observation.carrier_cycle());
+
+    if (!observation.has_phase_bias()) {
+        WARNF("discarded: %s %s - no phase bias", satellite.id().name(), signal_id.name());
+        observation.discard();
+    } else if (!observation.has_code_bias()) {
+        WARNF("discarded: %s %s - no code bias", satellite.id().name(), signal_id.name());
+        observation.discard();
+    }
+
+    if (!observation.has_tropospheric()) {
+        WARNF("discarded: %s %s - no tropospheric correction", satellite.id().name(),
+              signal_id.name());
+        observation.discard();
+    }
+    if (!observation.has_ionospheric()) {
+        WARNF("discarded: %s %s - no ionospheric correction", satellite.id().name(),
+              signal_id.name());
+        observation.discard();
+    }
+}
+
+bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    if (mGenerator.mCorrectionData == nullptr) {
+        WARNF("no correction data available");
+        return false;
+    }
+
+    mGenerationTime = reception_time;
+
+    // Update the satellites
+    for (auto& satellite : mSatellites) {
+        satellite.update(mGenerationTime);
+    }
+
+    // Generate the observations
+    for (auto& satellite : mSatellites) {
+        if (!satellite.enabled()) continue;
+        satellite.reset_observations();
+
+        if (mSatelliteIncludeSet.size() > 0 &&
+            mSatelliteIncludeSet.find(satellite.id()) == mSatelliteIncludeSet.end()) {
+            satellite.disable();
+            continue;
+        }
+
+        auto signals = mGenerator.mCorrectionData->signals(satellite.id());
+        if (!signals) continue;
+
+        for (auto& signal : *signals) {
+            if (mSignalIncludeSet.size() > 0 &&
+                mSignalIncludeSet.find(signal) == mSignalIncludeSet.end()) {
+                continue;
+            }
+
+            initialize_observation(satellite, signal);
+        }
+    }
+
+    return true;
+}
+
+void ReferenceStation::build_rtcm_observation(Satellite const&         satellite,
+                                              Observation const&       observation,
+                                              RangeTimeDivision const& rtd,
+                                              rtcm::Observations&      observations) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s", observation.signal_id().name());
+
+    auto code_range  = observation.pseudorange();
+    auto phase_range = observation.carrier_cycle();
+
+    auto meter_to_cms   = 1.0e3 / constant::SPEED_OF_LIGHT;
+    auto code_range_ms  = code_range * meter_to_cms;
+    auto phase_range_ms = phase_range * meter_to_cms;
+
+    auto delta_code_range_ms  = code_range_ms - rtd.used_range;
+    auto delta_phase_range_ms = phase_range_ms - rtd.used_range;
+
+    VERBOSEF("%-15s code:  %+.14f (%+.14f)", observation.signal_id().name(), code_range_ms,
+             delta_code_range_ms);
+    VERBOSEF("%-15s phase: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_ms,
+             delta_phase_range_ms);
+
+#if 0
+        auto reconstructed =
+            (rtd.integer_ms + rtd.rough_range + delta_code_range_ms) / meter_to_cms;
+        VERBOSEF("code_range reconstructed: %.14f == %.14f (%.14f)", code_range, reconstructed,
+                 code_range - reconstructed);
+#endif
+
+    rtcm::Signal signal{};
+    signal.id                     = observation.signal_id();
+    signal.satellite              = satellite.id();
+    signal.fine_pseudo_range      = delta_code_range_ms;
+    signal.fine_phase_range       = delta_phase_range_ms;
+    signal.carrier_to_noise_ratio = 47.0;   // TODO(ewasjon): How do we choose this value?
+    signal.lock_time              = 525.0;  // TODO: How do we determine this value?
+    observations.signals.push_back(signal);
+}
+
+void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
+                                            rtcm::Observations& observations) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s, observations=%zu", satellite.id().name(),
+                     satellite.observations().size());
+    VERBOSEF("enabled: %s", satellite.enabled() ? "true" : "false");
+
+    auto average_code_range = satellite.average_code_range();
+    auto rtd                = range_time_division(average_code_range);
+    VERBOSEF("rtd:");
+    VERBOSEF("  integer_ms:   %d", rtd.integer_ms);
+    VERBOSEF("  rough_range:  %.14f", rtd.rough_range);
+    VERBOSEF("  used_range:   %.14f", rtd.used_range);
+    VERBOSEF("  unused_range: %.14f", rtd.unused_range);
+
+    rtcm::Satellite rtcm{};
+    rtcm.id          = satellite.id();
+    rtcm.integer_ms  = rtd.integer_ms;
+    rtcm.rough_range = rtd.rough_range;
+    observations.satellites.push_back(rtcm);
+
+    for (auto const& observation : satellite.observations()) {
+        if (!observation.is_valid()) continue;
+        build_rtcm_observation(satellite, observation, rtd, observations);
+    }
+}
+
+std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    auto gp_itrf2020 = mGroundPosition;
+    auto gp_itrf89   = itrf_transform(Itrf::ITRF2020, Itrf::ITRF1989, 2024.0, gp_itrf2020);
+    auto gp_etrf89   = itrf89_to_etrf89(2024.0, gp_itrf89);
+
+    std::vector<rtcm::Message> messages;
+
+    auto reference_station_id = 1902;
+    auto msm_type             = 5;
+
+    rtcm::ReferenceStation reference_station{};
+    reference_station.reference_station_id          = reference_station_id;
+    reference_station.x                             = gp_etrf89.x;
+    reference_station.y                             = gp_etrf89.y;
+    reference_station.z                             = gp_etrf89.z;
+    reference_station.is_physical_reference_station = false;
+    reference_station.antenna_height                = 0.0;
+
+    messages.push_back(
+        rtcm::generate_1006(reference_station, mGenerateGps, mGenerateGlo, mGenerateGal));
+
+    if (mPhysicalGroundPositionSet) {
+        auto physical_reference_station_id = 4095;
+        if (reference_station_id > 1) {
+            physical_reference_station_id = reference_station_id - 1;
+        }
+
+        rtcm::PhysicalReferenceStation physical_reference_station{};
+        physical_reference_station.reference_station_id = physical_reference_station_id;
+        physical_reference_station.x                    = mPhysicalGroundPosition.x;
+        physical_reference_station.y                    = mPhysicalGroundPosition.y;
+        physical_reference_station.z                    = mPhysicalGroundPosition.z;
+        messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
+    }
+
+    rtcm::CommonObservationInfo common{};
+    common.reference_station_id = reference_station_id;
+    common.clock_steering       = 1;
+
+    rtcm::Observations msm_gps{};
+    rtcm::Observations msm_glo{};
+    rtcm::Observations msm_gal{};
+    rtcm::Observations msm_bds{};
+
+    msm_gps.time = mGenerationTime;
+    msm_glo.time = mGenerationTime;
+    msm_gal.time = mGenerationTime;
+    msm_bds.time = mGenerationTime;
+
+    if (mGenerateGps) {
+        for (auto& satellite : mSatellites) {
+            if (!satellite.enabled()) continue;
+            if (satellite.id().gnss() != SatelliteId::Gnss::GPS) continue;
+            build_rtcm_satellite(satellite, msm_gps);
+        }
+    }
+
+    if (mGenerateGlo) {
+        for (auto& satellite : mSatellites) {
+            if (!satellite.enabled()) continue;
+            if (satellite.id().gnss() != SatelliteId::Gnss::GLONASS) continue;
+            build_rtcm_satellite(satellite, msm_glo);
+        }
+    }
+
+    if (mGenerateGal) {
+        for (auto& satellite : mSatellites) {
+            if (!satellite.enabled()) continue;
+            if (satellite.id().gnss() != SatelliteId::Gnss::GALILEO) continue;
+            build_rtcm_satellite(satellite, msm_gal);
+        }
+    }
+
+    if (mGenerateBds) {
+        for (auto& satellite : mSatellites) {
+            if (!satellite.enabled()) continue;
+            if (satellite.id().gnss() != SatelliteId::Gnss::BEIDOU) continue;
+            build_rtcm_satellite(satellite, msm_bds);
+        }
+    }
+
+    DEBUGF("GPS: satellites=%2zu, signals=%2zu", msm_gps.satellites.size(), msm_gps.signals.size());
+    DEBUGF("GLO: satellites=%2zu, signals=%2zu", msm_glo.satellites.size(), msm_glo.signals.size());
+    DEBUGF("GAL: satellites=%2zu, signals=%2zu", msm_gal.satellites.size(), msm_gal.signals.size());
+    DEBUGF("BDS: satellites=%2zu, signals=%2zu", msm_bds.satellites.size(), msm_bds.signals.size());
+    auto will_generate_gps =
+        mGenerateGps && msm_gps.satellites.size() > 0 && msm_gps.signals.size() > 0;
+    auto will_generate_glo =
+        mGenerateGlo && msm_glo.satellites.size() > 0 && msm_glo.signals.size() > 0;
+    auto will_generate_gal =
+        mGenerateGal && msm_gal.satellites.size() > 0 && msm_gal.signals.size() > 0;
+    auto will_generate_bds =
+        mGenerateBds && msm_bds.satellites.size() > 0 && msm_bds.signals.size() > 0;
+
+    if (will_generate_gps) {
+        auto last_msm = !will_generate_glo && !will_generate_gal && !will_generate_bds;
+        auto message =
+            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GPS, common, msm_gps);
+        messages.push_back(std::move(message));
+    }
+
+    if (will_generate_glo) {
+        auto last_msm = !will_generate_gal && !will_generate_bds;
+        auto message =
+            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GLONASS, common, msm_glo);
+        messages.push_back(std::move(message));
+    }
+
+    if (will_generate_gal) {
+        auto last_msm = !will_generate_bds;
+        auto message =
+            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GALILEO, common, msm_gal);
+        messages.push_back(std::move(message));
+    }
+
+    if (will_generate_bds) {
+        auto message =
+            rtcm::generate_msm(msm_type, true, rtcm::GenericGnssId::BEIDOU, common, msm_bds);
+        messages.push_back(std::move(message));
+    }
+
+    return messages;
+}
+
+//
+//
+//
+
 Generator::Generator() NOEXCEPT {}
 
 Generator::~Generator() NOEXCEPT = default;
+
+std::shared_ptr<ReferenceStation>
+Generator::define_reference_station(Float3 ground_position) NOEXCEPT {
+    return std::make_shared<ReferenceStation>(*this, ground_position);
+}
 
 void Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
     VSCOPE_FUNCTION();
@@ -154,19 +479,19 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
         if (!element) continue;
 
         auto gnss_id = element->gnss_ID.gnss_id;
-        if (!mGenerateGps && gnss_id == GNSS_ID__gnss_id_gps) {
-            VERBOSEF("skipping GPS");
-            continue;
-        } else if (!mGenerateGal && gnss_id == GNSS_ID__gnss_id_galileo) {
-            VERBOSEF("skipping Galileo");
-            continue;
-        } else if (!mGenerateBds && gnss_id == GNSS_ID__gnss_id_bds) {
-            VERBOSEF("skipping BeiDou");
-            continue;
-        } else if (!mGenerateGlo && gnss_id == GNSS_ID__gnss_id_glonass) {
-            VERBOSEF("skipping GLONASS");
-            continue;
-        }
+        // if (!mGenerateGps && gnss_id == GNSS_ID__gnss_id_gps) {
+        //     VERBOSEF("skipping GPS");
+        //     continue;
+        // } else if (!mGenerateGal && gnss_id == GNSS_ID__gnss_id_galileo) {
+        //     VERBOSEF("skipping Galileo");
+        //     continue;
+        // } else if (!mGenerateBds && gnss_id == GNSS_ID__gnss_id_bds) {
+        //     VERBOSEF("skipping BeiDou");
+        //     continue;
+        // } else if (!mGenerateGlo && gnss_id == GNSS_ID__gnss_id_glonass) {
+        //     VERBOSEF("skipping GLONASS");
+        //     continue;
+        // }
 
         if (gnss_id != GNSS_ID__gnss_id_gps && gnss_id != GNSS_ID__gnss_id_galileo &&
             gnss_id != GNSS_ID__gnss_id_bds && gnss_id != GNSS_ID__gnss_id_glonass) {
@@ -191,29 +516,8 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
     }
 }
 
-void Generator::create_satellites() NOEXCEPT {
-    mSatellites.clear();
-
-    if (mGenerateGps) {
-        for (auto& kvp : mGpsEphemeris) {
-            create_satellite(kvp.first);
-        }
-    }
-
-    if (mGenerateGal) {
-        for (auto& kvp : mGalEphemeris) {
-            create_satellite(kvp.first);
-        }
-    }
-
-    if (mGenerateBds) {
-        for (auto& kvp : mBdsEphemeris) {
-            create_satellite(kvp.first);
-        }
-    }
-}
-
-bool Generator::find_ephemeris(SatelliteId sv_id, ephemeris::Ephemeris& eph) NOEXCEPT {
+bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iode,
+                               ephemeris::Ephemeris& eph) const NOEXCEPT {
     if (sv_id.gnss() == SatelliteId::Gnss::GPS) {
         auto it = mGpsEphemeris.find(sv_id);
         if (it != mGpsEphemeris.end()) {
@@ -236,55 +540,6 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ephemeris::Ephemeris& eph) NOE
 
     UNREACHABLE();
     return false;
-}
-
-void Generator::create_satellite(SatelliteId sv_id) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s", sv_id.name());
-    auto it = mSatellites.find(sv_id);
-    if (it != mSatellites.end()) {
-        VERBOSEF("satellite already exists");
-        return;
-    }
-
-    if (mSatelliteIncludeSet.size() > 0 &&
-        mSatelliteIncludeSet.find(sv_id) == mSatelliteIncludeSet.end()) {
-        VERBOSEF("satellite not included");
-        return;
-    }
-
-    ephemeris::Ephemeris eph{};
-    if (!find_ephemeris(sv_id, eph)) {
-        WARNF("ephemeris not found");
-        return;
-    }
-
-    if (!eph.is_valid(mTimeReception)) {
-        WARNF("ephemeris outside validity period");
-        return;
-    }
-
-    auto satellite =
-        std::unique_ptr<Satellite>(new Satellite(sv_id, eph, mTimeReception, mEcefLocation));
-
-    satellite->find_orbit_correction(*mCorrectionData);
-    satellite->find_clock_correction(*mCorrectionData);
-    if (!satellite->compute_true_position()) {
-        WARNF("failed to compute true position");
-        return;
-    }
-
-    if (!satellite->compute_azimuth_and_elevation()) {
-        WARNF("failed to compute azimuth and elevation");
-        return;
-    }
-
-    if (satellite->elevation() < mElevationMask * constant::DEG2RAD) {
-        WARNF("rejected: %s - elevation too low (%.2f)", satellite->id().name(),
-              satellite->elevation() * constant::RAD2DEG);
-        return;
-    }
-
-    mSatellites[sv_id] = std::move(satellite);
 }
 
 void Generator::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
@@ -318,261 +573,6 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
 
     DEBUGF("ephemeris: %s", satellite_id.name());
     mBdsEphemeris[satellite_id] = ephemeris;
-}
-
-bool Generator::generate_observation(Satellite const& satellite, SignalId signal_id) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s, %s", satellite.id().name(), signal_id.name());
-    if (mSignalIncludeSet.size() > 0 &&
-        mSignalIncludeSet.find(signal_id) == mSignalIncludeSet.end()) {
-        VERBOSEF("signal not included");
-        return false;
-    }
-
-    Observation observation{satellite, signal_id, mEcefLocation};
-    observation.compute_phase_bias(*mCorrectionData);
-    observation.compute_code_bias(*mCorrectionData);
-    observation.compute_tropospheric(mEcefLocation, *mCorrectionData);
-    observation.compute_ionospheric(mEcefLocation, *mCorrectionData);
-
-    if (mTropoHeightCorrection) observation.compute_tropospheric_height();
-
-    if (mShapiroCorrection) observation.compute_shapiro();
-    if (mPhaseWindupCorrection) observation.compute_phase_windup();
-    if (mEarthSolidTidesCorrection) observation.compute_earth_solid_tides();
-    if (mAntennaPhaseVariation) observation.compute_antenna_phase_variation();
-
-    observation.compute_code_range();
-    observation.compute_phase_range();
-
-    VERBOSEF("observation: p=%f, c=%f", observation.pseudorange(), observation.carrier_cycle());
-
-    if (!observation.has_phase_bias()) {
-        WARNF("discarded: %s %s - no phase bias", satellite.id().name(), signal_id.name());
-        return false;
-    } else if (!observation.has_code_bias()) {
-        WARNF("discarded: %s %s - no code bias", satellite.id().name(), signal_id.name());
-        return false;
-    }
-
-    if (!observation.has_tropospheric()) {
-        WARNF("%s %s missing tropospheric correction", satellite.id().name(), signal_id.name());
-    }
-    if (!observation.has_ionospheric()) {
-        WARNF("%s %s missing ionospheric correction", satellite.id().name(), signal_id.name());
-    }
-
-    mObservations.push_back(observation);
-    return true;
-}
-
-void Generator::build_rtcm_satellite(Satellite const&    satellite,
-                                     rtcm::Observations& observations) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s", satellite.id().name());
-
-    auto average_pseudorange = 0.0;
-    auto observation_count   = 0;
-    for (auto const& observation : mObservations) {
-        if (observation.sv_id() != satellite.id()) continue;
-        average_pseudorange += observation.pseudorange();
-        observation_count++;
-    }
-
-    if (observation_count == 0) {
-        VERBOSEF("no observations for satellite %s", satellite.id().name());
-        return;
-    }
-
-    average_pseudorange /= observation_count;
-    auto rtd = range_time_division(average_pseudorange);
-    VERBOSEF("rtd:");
-    VERBOSEF("  integer_ms:   %d", rtd.integer_ms);
-    VERBOSEF("  rough_range:  %.14f", rtd.rough_range);
-    VERBOSEF("  used_range:   %.14f", rtd.used_range);
-    VERBOSEF("  unused_range: %.14f", rtd.unused_range);
-
-    rtcm::Satellite rtcm{};
-    rtcm.id          = satellite.id();
-    rtcm.integer_ms  = rtd.integer_ms;
-    rtcm.rough_range = rtd.rough_range;
-    observations.satellites.push_back(rtcm);
-
-    for (auto const& observation : mObservations) {
-        if (observation.sv_id() != satellite.id()) continue;
-        auto code_range  = observation.pseudorange();
-        auto phase_range = observation.carrier_cycle();
-
-        auto meter_to_cms   = 1.0e3 / constant::SPEED_OF_LIGHT;
-        auto code_range_ms  = code_range * meter_to_cms;
-        auto phase_range_ms = phase_range * meter_to_cms;
-
-        auto delta_code_range_ms  = code_range_ms - rtd.used_range;
-        auto delta_phase_range_ms = phase_range_ms - rtd.used_range;
-
-        VERBOSEF("%-15s code:  %+.14f (%+.14f)", observation.signal_id().name(), code_range_ms,
-                 delta_code_range_ms);
-        VERBOSEF("%-15s phase: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_ms,
-                 delta_phase_range_ms);
-
-#if 0
-        auto reconstructed =
-            (rtd.integer_ms + rtd.rough_range + delta_code_range_ms) / meter_to_cms;
-        VERBOSEF("code_range reconstructed: %.14f == %.14f (%.14f)", code_range, reconstructed,
-                 code_range - reconstructed);
-#endif
-
-        rtcm::Signal signal{};
-        signal.id                     = observation.signal_id();
-        signal.satellite              = satellite.id();
-        signal.fine_pseudo_range      = delta_code_range_ms;
-        signal.fine_phase_range       = delta_phase_range_ms;
-        signal.carrier_to_noise_ratio = 47.0;   // TODO(ewasjon): How do we choose this value?
-        signal.lock_time              = 525.0;  // TODO: How do we determine this value?
-        observations.signals.push_back(signal);
-    }
-}
-
-void Generator::build_rtcm_observations(SatelliteId::Gnss   gnss,
-                                        rtcm::Observations& observations) NOEXCEPT {
-    VSCOPE_FUNCTION();
-
-    for (auto& kvp : mSatellites) {
-        auto& satellite = *kvp.second.get();
-        if (satellite.id().gnss() != gnss) continue;
-        build_rtcm_satellite(satellite, observations);
-    }
-}
-
-void Generator::build_rtcm_messages(std::vector<rtcm::Message>& messages) NOEXCEPT {
-    VSCOPE_FUNCTION();
-
-    if (mObservations.empty()) {
-        WARNF("no observations available");
-        return;
-    }
-
-    if (!mGenerateGps && !mGenerateGlo && !mGenerateGal && !mGenerateBds) {
-        WARNF("no GNSS systems enabled");
-        return;
-    }
-
-    auto reference_station_id = 1902;
-    auto msm_type             = 5;
-
-    rtcm::ReferenceStation reference_station{};
-    reference_station.reference_station_id          = reference_station_id;
-    reference_station.x                             = mEcefLocation.x;
-    reference_station.y                             = mEcefLocation.y;
-    reference_station.z                             = mEcefLocation.z;
-    reference_station.is_physical_reference_station = false;
-    reference_station.antenna_height                = 0.0;
-
-    messages.push_back(
-        rtcm::generate_1006(reference_station, mGenerateGps, mGenerateGlo, mGenerateGal));
-
-    if (mGeneratePhysicalReferenceStation) {
-        auto physical_reference_station_id = 4095;
-        if (reference_station_id > 1) {
-            physical_reference_station_id = reference_station_id - 1;
-        }
-
-        rtcm::PhysicalReferenceStation physical_reference_station{};
-        physical_reference_station.reference_station_id = physical_reference_station_id;
-        physical_reference_station.x                    = mPhysicalPosition.x;
-        physical_reference_station.y                    = mPhysicalPosition.y;
-        physical_reference_station.z                    = mPhysicalPosition.z;
-        messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
-    }
-
-    rtcm::CommonObservationInfo common{};
-    common.reference_station_id = reference_station_id;
-    common.clock_steering       = 1;
-
-    if (mGenerateGps) {
-        rtcm::Observations observations{};
-        observations.time = mTimeReception;
-        build_rtcm_observations(SatelliteId::Gnss::GPS, observations);
-        DEBUGF("GPS generate: satellites=%zu, signals=%zu", observations.satellites.size(),
-               observations.signals.size());
-
-        auto last_msm = !mGenerateGlo && !mGenerateGal && !mGenerateBds;
-        auto gps_message =
-            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GPS, common, observations);
-        messages.push_back(std::move(gps_message));
-    }
-
-    if (mGenerateGlo) {
-        rtcm::Observations observations{};
-        observations.time = mTimeReception;
-        build_rtcm_observations(SatelliteId::Gnss::GLONASS, observations);
-        DEBUGF("GLO generate: satellites=%zu, signals=%zu", observations.satellites.size(),
-               observations.signals.size());
-
-        auto last_msm    = !mGenerateGal && !mGenerateBds;
-        auto glo_message = rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GLONASS,
-                                              common, observations);
-        messages.push_back(std::move(glo_message));
-    }
-
-    if (mGenerateGal) {
-        rtcm::Observations observations{};
-        observations.time = mTimeReception;
-        build_rtcm_observations(SatelliteId::Gnss::GALILEO, observations);
-        DEBUGF("GAL generate: satellites=%zu, signals=%zu", observations.satellites.size(),
-               observations.signals.size());
-
-        auto last_msm    = !mGenerateBds;
-        auto gal_message = rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GALILEO,
-                                              common, observations);
-        messages.push_back(std::move(gal_message));
-    }
-
-    if (mGenerateBds) {
-        rtcm::Observations observations{};
-        observations.time = mTimeReception;
-        build_rtcm_observations(SatelliteId::Gnss::BEIDOU, observations);
-        DEBUGF("BDS generate: satellites=%zu, signals=%zu", observations.satellites.size(),
-               observations.signals.size());
-
-        auto last_msm    = true;
-        auto bds_message = rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::BEIDOU,
-                                              common, observations);
-        messages.push_back(std::move(bds_message));
-    }
-}
-
-std::vector<rtcm::Message> Generator::generate(ts::Tai const& time_reception,
-                                               EcefPosition   position_reception) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s, (%f, %f, %f)", ts::Utc(time_reception).rtklib_time_string().c_str(),
-                     position_reception.x, position_reception.y, position_reception.z);
-
-    std::vector<rtcm::Message> messages{};
-    if (!mCorrectionData) return messages;
-
-    mEcefLocation  = position_reception;
-    mWgs84Location = ecef_to_wgs84(position_reception);
-    mTimeReception = time_reception;
-    DEBUGF("location: ecef  (%f, %f, %f)", mEcefLocation.x, mEcefLocation.y, mEcefLocation.z);
-    DEBUGF("location: wgs84 (%f, %f, %f)", mWgs84Location.x * constant::RAD2DEG,
-           mWgs84Location.y * constant::RAD2DEG, mWgs84Location.z);
-
-    create_satellites();
-    DEBUGF("%lu satellites available", mSatellites.size());
-
-    // generate observations
-    mObservations.clear();
-    for (auto& kvp : mSatellites) {
-        auto signals = mCorrectionData->signals(kvp.first);
-        if (!signals) continue;
-
-        for (auto& signal : *signals) {
-            generate_observation(*kvp.second.get(), signal);
-        }
-    }
-
-    // generate RTCM messages
-    build_rtcm_messages(messages);
-
-    return messages;
 }
 
 }  // namespace tokoro

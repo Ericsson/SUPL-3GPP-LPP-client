@@ -33,6 +33,9 @@ public:
     void compute_code_range() NOEXCEPT;
     void compute_phase_range() NOEXCEPT;
 
+    NODISCARD bool is_valid() const NOEXCEPT { return mIsValid; }
+    void           discard() NOEXCEPT { mIsValid = false; }
+
     NODISCARD double pseudorange() const NOEXCEPT;
     NODISCARD double carrier_cycle() const NOEXCEPT;
 
@@ -45,8 +48,10 @@ public:
     NODISCARD bool has_ionospheric() const NOEXCEPT { return mIonoValid; }
 
 private:
-    SatelliteId   mSvId;
-    SignalId      mSignalId;
+    SatelliteId mSvId;
+    SignalId    mSignalId;
+    bool        mIsValid;
+
     ts::Tai       mEmissionTime;
     ts::Tai       mReceptionTime;
     Float3        mGroundPosition;

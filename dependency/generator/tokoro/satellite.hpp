@@ -2,6 +2,7 @@
 #include "constant.hpp"
 #include "data.hpp"
 #include "sv_id.hpp"
+#include "observation.hpp"
 
 #include <ephemeris/ephemeris.hpp>
 #include <generator/rtcm/satellite_id.hpp>
@@ -12,12 +13,14 @@
 namespace generator {
 namespace tokoro {
 
+class Generator;
 struct Satellite {
 public:
-    EXPLICIT Satellite(SatelliteId id, ephemeris::Ephemeris ephemeris, ts::Tai reception_time,
-                       Float3 vrs_location) NOEXCEPT;
+    EXPLICIT Satellite(SatelliteId id, Float3 ground_position, Generator const& generator) NOEXCEPT;
 
-    NODISCARD bool compute_true_position() NOEXCEPT;
+    void update(ts::Tai const& generation_time) NOEXCEPT;
+
+    NODISCARD bool compute_true_position(ephemeris::Ephemeris const& eph) NOEXCEPT;
     NODISCARD bool compute_azimuth_and_elevation() NOEXCEPT;
 
     NODISCARD bool find_orbit_correction(CorrectionData const& correction_data) NOEXCEPT;
@@ -37,13 +40,27 @@ public:
     NODISCARD Float3 line_of_sight() const NOEXCEPT { return mTrueLineOfSight; }
     NODISCARD double clock_correction() const NOEXCEPT;
 
-private:
-    SatelliteId          mId;
-    ephemeris::Ephemeris mEph;
+    NODISCARD bool enabled() const NOEXCEPT { return mEnabled; }
+    void disable() NOEXCEPT { mEnabled = false; }
+    
+    NODISCARD double average_code_range() const NOEXCEPT;
 
+    void                      reset_observations() NOEXCEPT { mObservations.clear(); }
+    std::vector<Observation> const& observations() const NOEXCEPT { return mObservations; }
+
+    Observation& initialize_observation(SignalId signal_id) NOEXCEPT {
+        mObservations.emplace_back(*this, signal_id, mGroundPosition);
+        return mObservations.back();
+    }
+
+private:
+    SatelliteId mId;
+    Float3      mGroundPosition;
+    bool        mEnabled;
+
+    ts::Tai mLastGenerationTime;
     ts::Tai mReceptionTime;
     ts::Tai mEmissionTime;
-    Float3  mReceptionLocation;
 
     /// Ephemeris Parameters
     Float3 mEphPosition;
@@ -62,6 +79,10 @@ private:
 
     OrbitCorrection mOrbitCorrection;
     ClockCorrection mClockCorrection;
+
+    std::vector<Observation> mObservations;
+
+    Generator const& mGenerator;
 };
 ;
 

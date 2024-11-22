@@ -1,6 +1,7 @@
 #include "satellite.hpp"
 #include "data.hpp"
 #include "ecef.hpp"
+#include "generator.hpp"
 #include "helper.hpp"
 #include "wgs84.hpp"
 
@@ -14,17 +15,60 @@
 namespace generator {
 namespace tokoro {
 
-Satellite::Satellite(SatelliteId id, ephemeris::Ephemeris ephemeris, ts::Tai reception_time,
-                     Float3 vrs_location) NOEXCEPT : mId{id},
-                                                     mEph{ephemeris},
-                                                     mReceptionTime{reception_time},
-                                                     mReceptionLocation{vrs_location} {}
+Satellite::Satellite(SatelliteId id, Float3 ground_position, Generator const& generator) NOEXCEPT
+    : mId{id},
+      mGroundPosition{ground_position},
+      mEnabled{false},
+      mGenerator{generator} {}
 
-bool Satellite::compute_true_position() NOEXCEPT {
+void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
-    VERBOSEF("iode: %u", mEph.iode());
-    VERBOSEF("iodc: %u", mEph.iodc());
+    mEnabled            = false;
+    mLastGenerationTime = generation_time;
+    mReceptionTime      = generation_time;
+    if (!mGenerator.mCorrectionData) {
+        WARNF("no correction data available");
+        return;
+    }
+
+    // Find orbit and clock corrections
+    if (!find_orbit_correction(*mGenerator.mCorrectionData)) {
+        WARNF("failed to find orbit correction");
+        return;
+    }
+    if (!find_clock_correction(*mGenerator.mCorrectionData)) {
+        WARNF("failed to find clock correction");
+        return;
+    }
+
+    // Find broadcast ephemeris
+    ephemeris::Ephemeris eph{};
+    if (!mGenerator.find_ephemeris(mId, generation_time, 0, eph)) {
+        WARNF("ephemeris not found");
+        return;
+    }
+
+    if (!compute_true_position(eph)) {
+        WARNF("failed to compute true position");
+        return;
+    }
+
+    if (!compute_azimuth_and_elevation()) {
+        WARNF("failed to compute azimuth and elevation");
+        return;
+    }
+
+    // TODO: Elevation mask
+
+    mEnabled = true;
+}
+
+bool Satellite::compute_true_position(ephemeris::Ephemeris const& eph) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s", mId.name());
+
+    VERBOSEF("iode: %u", eph.iode());
+    VERBOSEF("iodc: %u", eph.iodc());
 
     // initial guess is that emission = reception
     auto t_r = mReceptionTime;
@@ -41,7 +85,7 @@ bool Satellite::compute_true_position() NOEXCEPT {
                  ts::Gps{t_e}.time_of_week().full_seconds());
 
         // ephemeral position at t_e
-        auto result = mEph.compute(t_e);
+        auto result = eph.compute(t_e);
         VERBOSEF("    x=%f, y=%f, z=%f", result.position.x, result.position.y, result.position.z);
         VERBOSEF("    dx=%f, dy=%f, dz=%f", result.velocity.x, result.velocity.y,
                  result.velocity.z);
@@ -60,7 +104,7 @@ bool Satellite::compute_true_position() NOEXCEPT {
 
         // compute the pseudo-range (this is not the true range, as it contains the satellite orbit
         // error and the satellite clock error)
-        auto pseudorange = geometric_distance(satellite_position, mReceptionLocation);
+        auto pseudorange = geometric_distance(satellite_position, mGroundPosition);
         auto travel_time = pseudorange / constant::SPEED_OF_LIGHT;
         VERBOSEF("    range=%f, time=%f", i, pseudorange, travel_time);
 
@@ -76,7 +120,7 @@ bool Satellite::compute_true_position() NOEXCEPT {
         }
     }
 
-    auto final_result = mEph.compute(t_e);
+    auto final_result = eph.compute(t_e);
 
 #if 0
     auto t_e2         = t_e + ts::Timestamp{0.1};
@@ -90,7 +134,7 @@ bool Satellite::compute_true_position() NOEXCEPT {
     mEphPosition  = final_result.position;
     mEphVelocity  = final_result.velocity;
     mEphClockBias = final_result.clock;
-    mEphRange     = geometric_distance(mEphPosition, mReceptionLocation, &mEphLineOfSight);
+    mEphRange     = geometric_distance(mEphPosition, mGroundPosition, &mEphLineOfSight);
     if (!mEphLineOfSight.normalize()) {
         WARNF("line of sight (eph) could not be normalized");
     }
@@ -137,10 +181,10 @@ bool Satellite::compute_true_position() NOEXCEPT {
 
 #endif
 
-    auto relative_correction = mEph.relativistic_correction(mTruePosition, mTrueVelocity);
+    auto relative_correction = eph.relativistic_correction(mTruePosition, mTrueVelocity);
     mEphClockBias += relative_correction;
 
-    mTrueRange = geometric_distance(mTruePosition, mReceptionLocation, &mTrueLineOfSight);
+    mTrueRange = geometric_distance(mTruePosition, mGroundPosition, &mTrueLineOfSight);
     if (!mTrueLineOfSight.normalize()) {
         WARNF("line of sight (true) could not be normalized");
     }
@@ -187,7 +231,7 @@ bool Satellite::compute_azimuth_and_elevation() NOEXCEPT {
     }
 
     Wgs84Position wgs84{};
-    wgs84 = ecef_to_wgs84(mReceptionLocation);
+    wgs84 = ecef_to_wgs84(mGroundPosition);
     VERBOSEF("WGS84: (%f, %f, %f)", wgs84.x, wgs84.y, wgs84.z);
 
     if (wgs84.z > -constant::RE_WGS84) {
@@ -265,6 +309,15 @@ double Satellite::clock_correction() const NOEXCEPT {
     auto delta_t_sv = mClockCorrection.correction(mEmissionTime);
     VERBOSEF("delta_t_sv: %f", delta_t_sv);
     return delta_t_sv;
+}
+
+NODISCARD double Satellite::average_code_range() const NOEXCEPT {
+    if (mObservations.size() == 0) return 0.0;
+    double sum = 0.0;
+    for (auto const& observation : mObservations) {
+        sum += observation.pseudorange();
+    }
+    return sum / mObservations.size();
 }
 
 }  // namespace tokoro

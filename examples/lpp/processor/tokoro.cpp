@@ -1,6 +1,6 @@
 #include "tokoro.hpp"
-#include "ubx.hpp"
 #include "ssr_example.h"
+#include "ubx.hpp"
 
 #ifdef INCLUDE_GENERATOR_TOKORO
 #include <math.h>
@@ -15,6 +15,7 @@
 
 #include <generator/rtcm/generator.hpp>
 #include <generator/tokoro/generator.hpp>
+#include <generator/tokoro/coordinate.hpp>
 #include <loglet/loglet.hpp>
 #include <time/gps.hpp>
 #include <time/tai.hpp>
@@ -131,51 +132,19 @@ public:
 
         mGenerator.process_lpp(*message.get());
 
-#if 0
-        // Trimble Test Reference
-        auto r_x = 3233520.957;
-        auto r_y = 859415.096;
-        auto r_z = 5412047.363;
-#endif
-
-#if 0
-        auto r_lat = 58.399359;
-        auto r_lon = 15.554420;
-        auto r_alt = 0.0;
-
-        auto r_x = 3227.56e3;
-        auto r_y = 898.384e3;
-        auto r_z = 5409.177e3;
-#endif
-
-#if 1
-        // SE_Lin_Office
-        auto r_lat = 58.399353434;
-        auto r_lon = 15.554410;
-        auto r_alt = 0.0;
-
-        auto r_x = 3227560.90670000016689;
-        auto r_y = 898383.43410000007134;
-        auto r_z = 5409177.11160000041127;
-
-        mGenerator.set_physical_reference_station(EcefPosition{
-            3219441.0553999999538064,
-            927415.5111000000033528,
-            5409116.6926000006496906,
-        });
-#endif
-
         // auto r_x = 3226.697e3;
         // auto r_y = 902.44e3;
         // auto r_z = 5409.136e3;
 
-        auto t   = mGenerator.last_correction_data_time();
+        auto t = mGenerator.last_correction_data_time();
+        printf("time: %s\n", ts::Utc(t).rtklib_time_string().c_str());
+#if 0
         auto p   = EcefPosition{r_x, r_y, r_z};
         auto wgs = generator::tokoro::ecef_to_wgs84(p);
 
         printf("ground position: %.3f, %.3f, %.3f\n", p.x, p.y, p.z);
         printf("wgs84  position: %.12f, %.12f, %.12f\n", wgs.x, wgs.y, wgs.z);
-        printf("time: %s\n", ts::Utc(t).rtklib_time_string().c_str());
+#endif
 
 #if 0
         printf("%li: %s\n", t.timestamp().seconds(), t.rtklib_time_string().c_str());
@@ -187,18 +156,12 @@ public:
             return;
         }
 
-#if 0
-        mGenerator.include_satellite(SatelliteId::from_gps_prn(7));
-        mGenerator.include_signal(SignalId::GPS_L1_CA);
 #endif
 
-#if 0
-        mGenerator.include_satellite(SatelliteId::from_gal_prn(4));
-        mGenerator.include_signal(SignalId::GALILEO_E1_B_C);
-#endif
-#endif
+        mReferenceStation->generate(t);
+        auto messages = mReferenceStation->produce();
 
-        auto messages = mGenerator.generate(t, p);
+        // auto messages = mGenerator.generate(t, p);
         for (auto& submessage : messages) {
             printf("message: %4d: %zu bytes\n", submessage.id(), submessage.data().size());
         }
@@ -221,26 +184,72 @@ public:
 #endif
     }
 
+    void set_reference_station(std::shared_ptr<ReferenceStation> rs) {
+        mReferenceStation = std::move(rs);
+    }
+
 private:
-    Generator            mGenerator;
-    OutputOptions const& mOptions;
+    Generator                         mGenerator;
+    OutputOptions const&              mOptions;
+    std::shared_ptr<ReferenceStation> mReferenceStation;
 };
 
-void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals, OutputOptions const& options) {
+void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
+                       OutputOptions const& options) {
     auto  evaluator = system.add_inspector<SsrEvaluator>(options);
     auto& generator = evaluator->generator();
 
-    generator.set_gps_supported(globals.generate_gps);
-    generator.set_glonass_supported(globals.generate_glonass);
-    generator.set_galileo_supported(globals.generate_galileo);
-    generator.set_beidou_supported(globals.generate_beidou);
+#if 0
+    // Trimble Test Reference
+    auto location_itrf2020 = Float3{
+        3233520.957,
+        859415.096,
+        5412047.363,
+    };
+#endif
 
-    generator.set_shaprio_correction(globals.shapiro_correction);
-    generator.set_earth_solid_tides_correction(globals.earth_solid_tides_correction);
-    generator.set_phase_windup_correction(globals.phase_windup_correction);
-    generator.set_antenna_phase_variation_correction(globals.antenna_phase_variation_correction);
+#if 1
+    // SE_Lin_Office ETRF89
+    auto location_etrf89 = Float3{
+        3227560.90670000016689,
+        898383.43410000007134,
+        5409177.11160000041127,
+    };
+    // SE_Lin_Office ITRF2020
+    auto location_itrf2020 =
+        itrf_transform(Itrf::ITRF1989, Itrf::ITRF2020, 2024.0, etrf89_to_itrf89(2024.0, location_etrf89));
 
-    generator.set_tropospheric_height_correction(globals.tropospheric_height_correction);
+    auto physical_location = Float3{
+        3219441.0553999999538064,
+        927415.5111000000033528,
+        5409116.6926000006496906,
+    };
+
+    // mGenerator.set_physical_reference_station(location);
+#endif
+
+    auto rs = generator.define_reference_station(location_itrf2020);
+    rs->set_gps_supported(globals.generate_gps);
+    rs->set_glonass_supported(globals.generate_glonass);
+    rs->set_galileo_supported(globals.generate_galileo);
+    rs->set_beidou_supported(globals.generate_beidou);
+    rs->set_shaprio_correction(globals.shapiro_correction);
+    rs->set_earth_solid_tides_correction(globals.earth_solid_tides_correction);
+    rs->set_phase_windup_correction(globals.phase_windup_correction);
+    rs->set_antenna_phase_variation_correction(globals.antenna_phase_variation_correction);
+    rs->set_tropospheric_height_correction(globals.tropospheric_height_correction);
+
+#if 0
+    rs->include_satellite(SatelliteId::from_gps_prn(7));
+    rs->include_signal(SignalId::GPS_L1_CA);
+#endif
+
+#if 0
+        rs->include_satellite(SatelliteId::from_gal_prn(4));
+        rs->include_signal(SignalId::GALILEO_E1_B_C);
+#endif
+
+    evaluator->set_reference_station(rs);
 
     system.add_inspector<EphemerisExtractor>(generator);
 }

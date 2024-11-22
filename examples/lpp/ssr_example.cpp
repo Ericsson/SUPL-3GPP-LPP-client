@@ -577,7 +577,7 @@ void SsrCommand::parse(args::Subparser& parser) {
                        {"flip-orbit-correction"});
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
-    mShapiroCorrection = new args::Flag(parser, "shapiro-correction", "Disable Shapiro correction",
+    mShapiroCorrection = new args::Flag(parser, "no-shapiro-correction", "Disable Shapiro correction",
                                         {"no-shapiro-correction"});
     mPhaseWindupCorrection =
         new args::Flag(parser, "phase-windup-correction", "Enable phase windup correction",
@@ -641,7 +641,7 @@ void SsrCommand::execute(Options options) {
     gGlobals.flip_orbit_correction       = false;
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
-    gGlobals.shapiro_correction                 = false;
+    gGlobals.shapiro_correction                 = true;
     gGlobals.phase_windup_correction            = false;
     gGlobals.earth_solid_tides_correction       = false;
     gGlobals.antenna_phase_variation_correction = false;
