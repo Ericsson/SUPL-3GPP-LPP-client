@@ -10,6 +10,9 @@ add_library(dependency_generator_tokoro STATIC
     "gpt.cpp"
     "mops.cpp"
     "geoid.cpp"
+
+    "coordinates/coordinate.cpp"
+    "coordinates/reference_ellipsoid.cpp"
 )
 add_library(dependency::generator::tokoro ALIAS dependency_generator_tokoro)
 

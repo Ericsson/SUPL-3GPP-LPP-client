@@ -281,11 +281,14 @@ SUPL_Message SUPL_Client::receive2() {
         mTCP->receive(mReceiveBuffer + mReceiveLength,
                       static_cast<int>(SUPL_CLIENT_RECEIVER_BUFFER_SIZE - mReceiveLength), 0);
     if (bytes <= 0) {
+        printf("ERROR: Failed to receive data\n");
         return nullptr;
     }
 
     mReceiveLength += static_cast<size_t>(bytes);
     if (mReceiveLength >= SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
+        printf("ERROR: Receive buffer full (%zu >= %d)\n", mReceiveLength,
+               SUPL_CLIENT_RECEIVER_BUFFER_SIZE);
         mReceiveLength = 0;
         return nullptr;
     }

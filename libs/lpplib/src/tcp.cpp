@@ -190,6 +190,7 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
 
         auto status = select(mSocket + 1, &sock, nullptr, nullptr, timeout_ptr);
         if (status < 0) {
+            printf("ERROR: Failed to select on socket: %d %s\n", errno, strerror(errno));
             disconnect();
             return -1;
         }
@@ -208,6 +209,7 @@ int TCP_Client::receive(void* buffer, int size, int milliseconds) {
 
     auto read = ::read(mSocket, buffer, static_cast<size_t>(size));
     if(read <= 0) {
+        printf("ERROR: Failed to read from socket: %d %s\n", errno, strerror(errno));
         disconnect();
         return -1;
     }
@@ -223,6 +225,12 @@ int TCP_Client::send(void* buffer, int size) {
     else
         return write(mSocket, buffer, size);
 #else
-    return static_cast<int>(write(mSocket, buffer, static_cast<size_t>(size)));
+    auto written = ::write(mSocket, buffer, static_cast<size_t>(size));
+    if(written <= 0) {
+        printf("ERROR: Failed to write to socket: %d %s\n", errno, strerror(errno));
+        return -1;
+    }
+
+    return static_cast<int>(written);
 #endif
 }
