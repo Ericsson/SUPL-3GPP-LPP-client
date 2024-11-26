@@ -79,9 +79,10 @@ struct CorrectionPointSet {
 };
 
 struct OrbitCorrection {
-    ts::Tai reference_time;
-    Float3  delta;      // {radial, along_track, cross_track}
-    Float3  dot_delta;  // {radial, along_track, cross_track}
+    ts::Tai  reference_time;
+    uint16_t iode;
+    Float3   delta;      // {radial, along_track, cross_track}
+    Float3   dot_delta;  // {radial, along_track, cross_track}
 
     NODISCARD bool correction(ts::Tai time, Float3 eph_position, Float3 eph_velocity,
                               Float3& result) const NOEXCEPT;

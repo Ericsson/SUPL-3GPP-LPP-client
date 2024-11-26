@@ -4,6 +4,8 @@
 #include <maths/float3.hpp>
 #include <time/gst.hpp>
 
+#include <math.h>
+
 namespace ephemeris {
 
 struct GalEphemeris {
@@ -36,7 +38,11 @@ struct GalEphemeris {
     double omega_dot;
     double idot;
 
-    NODISCARD bool            is_valid(ts::Gst const& time) const NOEXCEPT;
+    NODISCARD bool is_valid(ts::Gst const& time) const NOEXCEPT;
+    NODISCARD bool compare(GalEphemeris const& other) const NOEXCEPT {
+        return prn == other.prn && week_number == other.week_number && iod_nav == other.iod_nav &&
+               std::abs(toe - other.toe) < 1e-3;
+    }
     NODISCARD EphemerisResult compute(ts::Gst const& time) const NOEXCEPT;
 
     NODISCARD double calculate_elapsed_time(ts::Gst const& time, double reference) const NOEXCEPT;

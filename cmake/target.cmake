@@ -12,6 +12,12 @@ function(setup_target target)
         )
     endif()
 
+    if(${USE_DWARF4})
+        target_compile_options(${target} PRIVATE
+            "-gdwarf-4"
+        )
+    endif()
+
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if(${BUILD_WITH_ALL_WARNINGS})
             target_compile_options(${target} PRIVATE

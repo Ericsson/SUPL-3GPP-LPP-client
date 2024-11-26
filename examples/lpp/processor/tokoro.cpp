@@ -14,8 +14,8 @@
 #include <format/ubx/messages/rxm_sfrbx.hpp>
 
 #include <generator/rtcm/generator.hpp>
-#include <generator/tokoro/generator.hpp>
 #include <generator/tokoro/coordinate.hpp>
+#include <generator/tokoro/generator.hpp>
 #include <loglet/loglet.hpp>
 #include <time/gps.hpp>
 #include <time/tai.hpp>
@@ -112,6 +112,7 @@ void EphemerisExtractor::inspect(streamline::System&, DataType const& message) {
     auto sfrbx = dynamic_cast<RxmSfrbx*>(ptr);
     if (!sfrbx) return;
 
+#if 1
     if (sfrbx->gnss_id() == 0) {
         handle_gps(sfrbx);
     } else if (sfrbx->gnss_id() == 2) {
@@ -119,6 +120,7 @@ void EphemerisExtractor::inspect(streamline::System&, DataType const& message) {
     } else if (sfrbx->gnss_id() == 3) {
         handle_bds(sfrbx);
     }
+#endif
 }
 
 class SsrEvaluator : public Inspector<LppMessage> {
@@ -130,6 +132,7 @@ public:
     void inspect(System&, DataType const& message) override {
         if (!message) return;
 
+#if 1
         mGenerator.process_lpp(*message.get());
 
         // auto r_x = 3226.697e3;
@@ -146,7 +149,7 @@ public:
         printf("wgs84  position: %.12f, %.12f, %.12f\n", wgs.x, wgs.y, wgs.z);
 #endif
 
-#if 0
+#if 1
         printf("%li: %s\n", t.timestamp().seconds(), t.rtklib_time_string().c_str());
 
         // 2024/10/01 12:10:42.000000000000 1727784605
@@ -177,10 +180,11 @@ public:
                 }
             }
         }
-#if 0
+#if 1
         for (;;) {
             sleep(1);
         }
+#endif
 #endif
     }
 
@@ -199,7 +203,7 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
     auto  evaluator = system.add_inspector<SsrEvaluator>(options);
     auto& generator = evaluator->generator();
 
-#if 0
+#if 1
     // Trimble Test Reference
     auto location_itrf2020 = Float3{
         3233520.957,
@@ -208,7 +212,7 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
     };
 #endif
 
-#if 1
+#if 0
     // SE_Lin_Office ETRF89
     auto location_etrf89 = Float3{
         3227560.90670000016689,
@@ -216,8 +220,8 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
         5409177.11160000041127,
     };
     // SE_Lin_Office ITRF2020
-    auto location_itrf2020 =
-        itrf_transform(Itrf::ITRF1989, Itrf::ITRF2020, 2024.0, etrf89_to_itrf89(2024.0, location_etrf89));
+    auto location_itrf2020 = itrf_transform(Itrf::ITRF1989, Itrf::ITRF2020, 2024.0,
+                                            etrf89_to_itrf89(2024.0, location_etrf89));
 
     auto physical_location = Float3{
         3219441.0553999999538064,
@@ -228,11 +232,13 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
     // mGenerator.set_physical_reference_station(location);
 #endif
 
-    auto rs = generator.define_reference_station(location_itrf2020);
-    rs->set_gps_supported(globals.generate_gps);
-    rs->set_glonass_supported(globals.generate_glonass);
-    rs->set_galileo_supported(globals.generate_galileo);
-    rs->set_beidou_supported(globals.generate_beidou);
+    auto rs = generator.define_reference_station(ReferenceStationConfig{
+        location_itrf2020,
+        globals.generate_gps,
+        globals.generate_glonass,
+        globals.generate_galileo,
+        globals.generate_beidou,
+    });
     rs->set_shaprio_correction(globals.shapiro_correction);
     rs->set_earth_solid_tides_correction(globals.earth_solid_tides_correction);
     rs->set_phase_windup_correction(globals.phase_windup_correction);
@@ -241,12 +247,14 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
 
 #if 0
     rs->include_satellite(SatelliteId::from_gps_prn(7));
+    rs->include_satellite(SatelliteId::from_gps_prn(9));
     rs->include_signal(SignalId::GPS_L1_CA);
 #endif
 
-#if 0
-        rs->include_satellite(SatelliteId::from_gal_prn(4));
-        rs->include_signal(SignalId::GALILEO_E1_B_C);
+#if 1
+    rs->include_satellite(SatelliteId::from_gal_prn(4));
+    rs->include_satellite(SatelliteId::from_gal_prn(10));
+    rs->include_signal(SignalId::GALILEO_E1_B_C);
 #endif
 
     evaluator->set_reference_station(rs);

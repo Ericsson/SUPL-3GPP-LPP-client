@@ -117,6 +117,7 @@ static void initialize_inputs(scheduler::Scheduler&           scheduler,
                 for (;;) {
                     auto message = lpp_uper->try_parse();
                     if (!message) break;
+                    XDEBUGF("lpp/msg", "create %p", message);
                     auto lpp_message = LppMessage{message};
                     gStream.push(std::move(lpp_message));
                 }
@@ -403,8 +404,10 @@ static void initialize_outputs(OutputOptions const& outputs) {
     }
 }
 
-static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
-    gStream.push(LppMessage{message});
+static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* raw_message, void*) {
+    XDEBUGF("lpp/msg", "new %p", raw_message);
+    auto message = LppMessage{raw_message};
+    gStream.push(std::move(message));
     return true;
 }
 

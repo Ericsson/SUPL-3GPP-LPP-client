@@ -27,6 +27,7 @@
 #include <TropospericDelayCorrection-r16.h>
 #pragma GCC diagnostic pop
 
+#include <asn.1/bit_string.hpp>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include <loglet/loglet.hpp>
@@ -198,7 +199,7 @@ bool GridData::ionospheric(SatelliteId sv_id, Wgs84Position position,
 
         if (!tl->has_ionospheric_residual(sv_id) || !tr->has_ionospheric_residual(sv_id) ||
             !bl->has_ionospheric_residual(sv_id) || !br->has_ionospheric_residual(sv_id)) {
-            WARNF("ionospheric correction not found");
+            VERBOSEF("ionospheric correction not found");
             return false;
         }
 
@@ -421,6 +422,8 @@ void CorrectionData::add_correction(long                                 gnss_id
             continue;
         }
 
+        auto iode = static_cast<uint16_t>(helper::BitString::from(&satellite->iod_r15)->as_int64());
+
         auto radial      = decode::delta_radial_r15(satellite->delta_radial_r15);
         auto along_track = decode::delta_AlongTrack_r15(satellite->delta_AlongTrack_r15);
         auto cross_track = decode::delta_CrossTrack_r15(satellite->delta_CrossTrack_r15);
@@ -450,8 +453,8 @@ void CorrectionData::add_correction(long                                 gnss_id
         dot_cross = -dot_cross;
 #endif
 
-
         auto& correction          = mOrbit[satellite_id];
+        correction.iode           = iode;
         correction.reference_time = reference_time;
         correction.delta          = {radial, along_track, cross_track};
         correction.dot_delta      = {dot_radial, dot_along, dot_cross};
@@ -524,7 +527,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
 
         auto satellite_id = SatelliteId::from_lpp(satellite_gnss, satellite->svID_r15.satellite_id);
         if (!satellite_id.is_valid()) {
-            WARNF("code bias rejected: invalid satellite id (%ld)", satellite->svID_r15.satellite_id);
+            WARNF("code bias rejected: invalid satellite id (%ld)",
+                  satellite->svID_r15.satellite_id);
             continue;
         }
 
@@ -569,7 +573,8 @@ void CorrectionData::add_correction(long                          gnss_id,
 
         auto satellite_id = SatelliteId::from_lpp(satellite_gnss, satellite->svID_r16.satellite_id);
         if (!satellite_id.is_valid()) {
-            WARNF("phase bias rejected: invalid satellite id (%ld)", satellite->svID_r16.satellite_id);
+            WARNF("phase bias rejected: invalid satellite id (%ld)",
+                  satellite->svID_r16.satellite_id);
             continue;
         }
 

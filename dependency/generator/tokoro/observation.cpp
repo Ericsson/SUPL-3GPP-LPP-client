@@ -1,4 +1,5 @@
 #include "observation.hpp"
+#include "coordinate.hpp"
 #include "data.hpp"
 #include "geoid.hpp"
 #include "helper.hpp"
@@ -22,10 +23,12 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
       mCodeBiasValid(false),
       mPhaseBiasValid(false),
       mTropoValid(false),
+      mTropeHeightCorrectionValid(false),
       mIonoValid(false),
       mShapiroValid(false),
       mPhaseWindupValid(false),
-      mSolidTidesValid(false) {
+      mSolidTidesValid(false),
+      mAntennaPhaseVariation(false) {
     mIsValid = true;
 
     // TODO(ewasjon): For GLONASS, the frequency depends on the channel number
@@ -46,6 +49,7 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mEmissionTime   = satellite.emission_time();
     mReceptionTime  = satellite.reception_time();
     mGroundPosition = location;
+    mGroundLlh      = ecef_to_llh(location, WGS84);
     mWgsPosition    = ecef_to_wgs84(location);
     mElevation      = satellite.elevation();
 
@@ -364,9 +368,11 @@ static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
     // Compute seconds since J2000
     auto j2000 = ts::Utc::from_date_time(2000, 1, 1, 12, 0, 0);
     auto t_js  = (ut1_time - j2000.timestamp()).full_seconds();
+    VERBOSEF("t_js: %f", t_js);
 
     // Get the Julian centuries since J2000
     auto t_jc = t_js / 86400.0 / 36525.0;
+    VERBOSEF("t_jc: %f", t_jc);
 
     // Get astronomical arguments
     AstronomicalArguments args{};
@@ -375,10 +381,20 @@ static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
         return false;
     }
 
+    VERBOSEF("astronomical arguments:");
+    VERBOSEF("  l: %f", args.l);
+    VERBOSEF("  lp: %f", args.lp);
+    VERBOSEF("  f: %f", args.f);
+    VERBOSEF("  d: %f", args.d);
+    VERBOSEF("  omega: %f", args.omega);
+
     // Obliquity of the ecliptic
-    auto epsilon = 23.439291 - 0.000130042 * t_jc;
+    auto epsilon = 23.439291 - 0.0130042 * t_jc;
     auto sine    = sin(epsilon * constant::DEG2RAD);
     auto cose    = cos(epsilon * constant::DEG2RAD);
+    VERBOSEF("epsilon: %f", epsilon);
+    VERBOSEF("sine: %f", sine);
+    VERBOSEF("cose: %f", cose);
 
     {
         // Sun
@@ -391,13 +407,14 @@ static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
         auto cosl = cos(ls * constant::DEG2RAD);
 
         sun.x = rs * cosl;
-        sun.y = rs * sinl * cose;
-        sun.z = rs * sinl * sine;
+        sun.y = rs * cose * sinl;
+        sun.z = rs * sine * sinl;
+        VERBOSEF("sun: (%f, %f, %f)", sun.x, sun.y, sun.z);
     }
 
     {
         // Moon
-        auto mm = 218.32 + 481267.883 * t_jc + 6.29 * sin(args.l) -
+        auto lm = 218.32 + 481267.883 * t_jc + 6.29 * sin(args.l) -
                   1.27 * sin(args.l - 2.0 * args.d) + 0.66 * sin(2.0 * args.d) +
                   0.21 * sin(2.0 * args.l) - 0.19 * sin(args.lp) - 0.11 * sin(2.0 * args.f);
         auto pm = 5.13 * sin(args.f) + 0.28 * sin(args.l + args.f) - 0.28 * sin(args.f - args.l) -
@@ -407,21 +424,22 @@ static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
                        0.0078 * cos(2.0 * args.d) + 0.0028 * cos(2.0 * args.l)) *
                       constant::DEG2RAD);
 
-        auto sinl = sin(pm * constant::DEG2RAD);
-        auto cosl = cos(pm * constant::DEG2RAD);
-        auto sinp = sin(mm * constant::DEG2RAD);
-        auto cosp = cos(mm * constant::DEG2RAD);
+        auto sinl = sin(lm * constant::DEG2RAD);
+        auto cosl = cos(lm * constant::DEG2RAD);
+        auto sinp = sin(pm * constant::DEG2RAD);
+        auto cosp = cos(pm * constant::DEG2RAD);
 
         moon.x = rm * cosp * cosl;
         moon.y = rm * (cose * cosp * sinl - sine * sinp);
         moon.z = rm * (sine * cosp * sinl + cose * sinp);
+        VERBOSEF("moon: (%f, %f, %f)", moon.x, moon.y, moon.z);
     }
 
     return true;
 }
 
-static bool eci_2_ecef(ts::Tai const& time, Float3 const& eci, Float3& ecef) {
-    VSCOPE_FUNCTIONF("%s, (%f, %f, %f)", time.rtklib_time_string().c_str(), eci.x, eci.y, eci.z);
+static bool eci_2_ecef(ts::Tai const& time, Mat3& transform, double* gmst_out) {
+    VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
 
     // TODO(ewasjon): Earth rotation angle
     auto xp      = 0.0;
@@ -429,20 +447,35 @@ static bool eci_2_ecef(ts::Tai const& time, Float3 const& eci, Float3& ecef) {
     auto ut1_utc = 0.0;
 
     // Get Terrestrial Time (TT) from TAI
-    auto t_s = time.timestamp().full_seconds() + 32.184 /* TT - TAI */;
+    auto j2000     = ts::Utc::from_date_time(2000, 1, 1, 12, 0, 0);
+    auto j2000_tai = ts::Tai{j2000};
+    auto t_s       = (time.timestamp().full_seconds() - j2000_tai.timestamp().full_seconds()) +
+               32.184 /* TT - TAI */;
     auto t_c = t_s / 86400.0 / 36525.0;
 
     auto t  = t_c;
     auto t2 = t * t;
     auto t3 = t2 * t;
+    VERBOSEF("t: %f", t);
+    VERBOSEF("t2: %f", t2);
+    VERBOSEF("t3: %f", t3);
 
     // IAU 1976 Precession
     auto ze  = (2306.2181 * t + 0.30188 * t2 + 0.017998 * t3) * constant::ARCSEC2RAD;
     auto th  = (2004.3109 * t - 0.42665 * t2 - 0.041833 * t3) * constant::ARCSEC2RAD;
     auto z   = (2306.2181 * t + 1.09468 * t2 + 0.018203 * t3) * constant::ARCSEC2RAD;
     auto eps = (84381.448 - 46.8150 * t - 0.00059 * t2 + 0.001813 * t3) * constant::ARCSEC2RAD;
+    VERBOSEF("ze: %f", ze);
+    VERBOSEF("th: %f", th);
+    VERBOSEF("z: %f", z);
+    VERBOSEF("eps: %f", eps);
 
-    auto p = Mat3::rotate_z(-ze) * Mat3::rotate_y(th) * Mat3::rotate_z(-ze);
+    auto p = Mat3::rotate_z(-z) * Mat3::rotate_y(th) * Mat3::rotate_z(-ze);
+
+    VERBOSEF("p:");
+    VERBOSEF("  %+.14f %+.14f %+.14f", p.m[0], p.m[1], p.m[2]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", p.m[3], p.m[4], p.m[5]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", p.m[6], p.m[7], p.m[8]);
 
     // IAU 1980 Nutation
     AstronomicalArguments args{};
@@ -451,114 +484,229 @@ static bool eci_2_ecef(ts::Tai const& time, Float3 const& eci, Float3& ecef) {
         return false;
     }
 
+    VERBOSEF("astronomical arguments:");
+    VERBOSEF("  l: %f", args.l);
+    VERBOSEF("  lp: %f", args.lp);
+    VERBOSEF("  f: %f", args.f);
+    VERBOSEF("  d: %f", args.d);
+    VERBOSEF("  omega: %f", args.omega);
+
     Iau1980Nutation nutation{};
     if (!compute_iau1980_nutation(t, args, nutation)) {
         VERBOSEF("failed to compute IAU 1980 nutation");
         return false;
     }
 
-    auto n = Mat3::rotate_x(-eps - nutation.d_eps) * Mat3::rotate_z(-nutation.d_psi) *
-             Mat3::rotate_x(eps);
+    VERBOSEF("nutation:");
+    VERBOSEF("  d_psi: %+.14f", nutation.d_psi);
+    VERBOSEF("  d_eps: %+.14f", nutation.d_eps);
+
+    VERBOSEF("  sin(-d_psi): %+.14f", sin(-nutation.d_psi));
+
+    auto n1 = Mat3::rotate_x(-eps - nutation.d_eps);
+    auto n2 = Mat3::rotate_z(-nutation.d_psi);
+    auto n3 = Mat3::rotate_x(eps);
+
+    auto r = n1 * n2;
+    auto n = r * n3;
+
+    VERBOSEF("n1:");
+    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[0], n1.m[1], n1.m[2]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[3], n1.m[4], n1.m[5]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[6], n1.m[7], n1.m[8]);
+    VERBOSEF("n2:");
+    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[0], n2.m[1], n2.m[2]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[3], n2.m[4], n2.m[5]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[6], n2.m[7], n2.m[8]);
+    VERBOSEF("n3:");
+    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[0], n3.m[1], n3.m[2]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[3], n3.m[4], n3.m[5]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[6], n3.m[7], n3.m[8]);
+    VERBOSEF("r:");
+    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[0], r.m[1], r.m[2]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[3], r.m[4], r.m[5]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[6], r.m[7], r.m[8]);
+
+    VERBOSEF("n:");
+    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[0], n.m[1], n.m[2]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[3], n.m[4], n.m[5]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[6], n.m[7], n.m[8]);
 
     // Greenwich Mean Sidereal Time
     auto gmst = ts::Utc{time}.gmst(ut1_utc);
     auto gast = gmst + nutation.d_psi * cos(eps);
     gast += (0.00264 * sin(args.d) + 0.000063 * sin(2.0 * args.d)) * constant::ARCSEC2RAD;
 
+    VERBOSEF("gmst: %f", gmst);
+    VERBOSEF("gast: %f", gast);
+
+    if (gmst_out) {
+        *gmst_out = gmst;
+    }
+
     // ECI to ECEF matrix
     auto w = Mat3::rotate_y(-xp) * Mat3::rotate_x(-yp);
-    auto u = w * Mat3::rotate_z(gast) * n * p;
+    VERBOSEF("w:");
+    VERBOSEF("  %+.14f %+.14f %+.14f", w.m[0], w.m[1], w.m[2]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", w.m[3], w.m[4], w.m[5]);
+    VERBOSEF("  %+.14f %+.14f %+.14f", w.m[6], w.m[7], w.m[8]);
 
-    ecef = u * eci;
+    auto u = (w * Mat3::rotate_z(gast)) * (n * p);
+
+    VERBOSEF("u:");
+    VERBOSEF("  %+.4f %+.4f %+.4f", u.m[0], u.m[1], u.m[2]);
+    VERBOSEF("  %+.4f %+.4f %+.4f", u.m[3], u.m[4], u.m[5]);
+    VERBOSEF("  %+.4f %+.4f %+.4f", u.m[6], u.m[7], u.m[8]);
+
+    transform = u;
     return true;
 }
 
-static bool compute_sun_and_moon_position_ecef(ts::Tai const& time, Float3& sun,
-                                               Float3& moon) NOEXCEPT {
+static bool compute_sun_and_moon_position_ecef(ts::Tai const& time, Float3& sun_ecef,
+                                               Float3& moon_ecef, double* gmst) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
 
-    if (!compute_sun_and_moon_position_eci(time, sun, moon)) {
+    Float3 sun_eci{};
+    Float3 moon_eci{};
+    if (!compute_sun_and_moon_position_eci(time, sun_eci, moon_eci)) {
         return false;
     }
 
+    Mat3 transform{};
+    if (!eci_2_ecef(time, transform, gmst)) {
+        return false;
+    }
+
+    sun_ecef  = transform * sun_eci;
+    moon_ecef = transform * moon_eci;
     return true;
 }
 
-static bool compute_solid_tide_pole(ts::Tai const& time, Float3 const& ground, Float3 const& body,
+static bool compute_solid_tide_pole(ts::Tai const& time, Float3 const& up, Float3 const& body,
                                     double g_constant, Float3& pole) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
 
-    VERBOSEF("ground: (%f, %f, %f)", ground.x, ground.y, ground.z);
-    VERBOSEF("body:   (%f, %f, %f)", body.x, body.y, body.z);
+    VERBOSEF("up:     (%+.4f, %+.4f, %+.4f)", up.x, up.y, up.z);
+    VERBOSEF("body:   (%+.4f, %+.4f, %+.4f)", body.x, body.y, body.z);
 
-    auto gr = ground.length_squared();
-
-    auto ground_unit = ground;
-    if (!ground_unit.normalize()) {
-        VERBOSEF("failed to ...");
-        return false;
-    }
-
-    auto body_unit = body;
+    auto body_distance = body.length();
+    auto body_unit     = body;
     if (!body_unit.normalize()) {
         VERBOSEF("failed to ...");
         return false;
     }
 
-    auto gm  = constant::GME / g_constant;
+    VERBOSEF("body_unit:     (%+.4f, %+.4f, %+.4f)", body_unit.x, body_unit.y, body_unit.z);
+    VERBOSEF("body_distance: %+.4f", body_distance);
+
+    auto gm  = g_constant / constant::GME;
     auto re4 = constant::RE_WGS84 * constant::RE_WGS84 * constant::RE_WGS84 * constant::RE_WGS84;
-    auto gr3 = gr * gr * gr;
-    auto k2  = gm * re4 / gr3;
+    auto br3 = body_distance * body_distance * body_distance;
+    auto k2  = gm * re4 / br3;
+    VERBOSEF("k2: %+.14f", k2);
 
     auto h2 = 0.6078;
     auto l2 = 0.0847;
+    VERBOSEF("h2: %+.14f", h2);
+    VERBOSEF("l2: %+.14f", l2);
 
-    auto a  = dot_product(body_unit, ground_unit);
+    auto a  = dot_product(body_unit, up);
     auto dp = k2 * 3.0 * l2 * a;
     auto du = k2 * (h2 * (1.5 * a * a - 0.5) - 3.0 * l2 * a * a);
+    VERBOSEF("dp: %+.14f", dp);
+    VERBOSEF("du: %+.14f", du);
 
-    pole.x = dp * body_unit.x + du * ground_unit.x;
-    pole.y = dp * body_unit.y + du * ground_unit.y;
-    pole.z = dp * body_unit.z + du * ground_unit.z;
+    pole.x = dp * body_unit.x + du * up.x;
+    pole.y = dp * body_unit.y + du * up.y;
+    pole.z = dp * body_unit.z + du * up.z;
+
+    VERBOSEF("pole: (%+.14f, %+.14f, %+.14f)", pole.x, pole.y, pole.z);
+    return true;
+}
+
+static bool compute_enu_basis(Float3 location, Float3& east, Float3& north, Float3& up) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%+.4f, %+.4f, %+.4f", location.x, location.y, location.z);
+
+    auto r = location.length();
+
+    // Calculate geodetic latitude and longitude assuming a spherical Earth
+    auto lat = asin(location.z / r);
+    auto lon = atan2(location.y, location.x);
+
+    auto cos_lat = cos(lat);
+    auto sin_lat = sin(lat);
+    auto cos_lon = cos(lon);
+    auto sin_lon = sin(lon);
+
+    east.x = -sin_lon;
+    east.y = cos_lon;
+    east.z = 0.0;
+
+    north.x = -sin_lat * cos_lon;
+    north.y = -sin_lat * sin_lon;
+    north.z = cos_lat;
+
+    up.x = cos_lat * cos_lon;
+    up.y = cos_lat * sin_lon;
+    up.z = sin_lat;
+
+    VERBOSEF("east:  (%+.4f, %+.4f, %+.4f)", east.x, east.y, east.z);
+    VERBOSEF("north: (%+.4f, %+.4f, %+.4f)", north.x, north.y, north.z);
+    VERBOSEF("up:    (%+.4f, %+.4f, %+.4f)", up.x, up.y, up.z);
     return true;
 }
 
 void Observation::compute_earth_solid_tides() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
+    Float3 east{};
+    Float3 north{};
+    Float3 up{};
+    if (!compute_enu_basis(mGroundPosition, east, north, up)) {
+        VERBOSEF("failed to compute ENU basis");
+        return;
+    }
+
     Float3 sun{};
     Float3 moon{};
-    if (!compute_sun_and_moon_position_ecef(mReceptionTime, sun, moon)) {
+    double gmst = 0.0;
+    if (!compute_sun_and_moon_position_ecef(mReceptionTime, sun, moon, &gmst)) {
         VERBOSEF("failed to compute sun and moon position");
         return;
     }
 
     Float3 sun_pole{};
-    if (!compute_solid_tide_pole(mReceptionTime, mGroundPosition, sun,
-                                 constant::SUN_GRAVITATIONAL_CONSTANT, sun_pole)) {
+    if (!compute_solid_tide_pole(mReceptionTime, up, sun, constant::SUN_GRAVITATIONAL_CONSTANT,
+                                 sun_pole)) {
         VERBOSEF("failed to compute solid tide pole");
         return;
     }
 
     Float3 moon_pole{};
-    if (!compute_solid_tide_pole(mReceptionTime, mGroundPosition, moon,
-                                 constant::MOON_GRAVITATIONAL_CONSTANT, moon_pole)) {
+    if (!compute_solid_tide_pole(mReceptionTime, up, moon, constant::MOON_GRAVITATIONAL_CONSTANT,
+                                 moon_pole)) {
         VERBOSEF("failed to compute solid tide pole");
         return;
     }
 
-    Float3 delta{};
-    delta.x = sun_pole.x + moon_pole.x;
-    delta.y = sun_pole.y + moon_pole.y;
-    delta.z = sun_pole.z + moon_pole.z;
+    auto sin2l    = std::sin(2.0 * mGroundLlh.x * constant::DEG2RAD);
+    auto delta_up = -0.012 * sin2l * std::sin(gmst + mGroundLlh.y * constant::DEG2RAD);
+    VERBOSEF("ground: %+.4f, %+.4f, %+.4f", mGroundLlh.x * constant::DEG2RAD,
+             mGroundLlh.y * constant::DEG2RAD, mGroundLlh.z);
+    VERBOSEF("sin2l: %+.14f", sin2l);
+    VERBOSEF("delta_up: %+.14f", delta_up);
 
-    mSolidTidesDisplacement = delta;
-    mSolidTides             = dot_product(mLineOfSight, mSolidTidesDisplacement);
+    mSolidTidesDisplacement = sun_pole + moon_pole + delta_up * up;
+    mSolidTides             = -dot_product(mLineOfSight, mSolidTidesDisplacement);
     mSolidTidesValid        = true;
 
-    VERBOSEF("disp x: %+.14f", mSolidTidesDisplacement.x);
-    VERBOSEF("disp y: %+.14f", mSolidTidesDisplacement.y);
-    VERBOSEF("disp z: %+.14f", mSolidTidesDisplacement.z);
+    VERBOSEF("disp x: %+.14f * %+.14f = %+.14f", mSolidTidesDisplacement.x, mLineOfSight.x,
+             mSolidTidesDisplacement.x * mLineOfSight.x);
+    VERBOSEF("disp y: %+.14f * %+.14f = %+.14f", mSolidTidesDisplacement.y, mLineOfSight.y,
+             mSolidTidesDisplacement.y * mLineOfSight.y);
+    VERBOSEF("disp z: %+.14f * %+.14f = %+.14f", mSolidTidesDisplacement.z, mLineOfSight.z,
+             mSolidTidesDisplacement.z * mLineOfSight.z);
+    VERBOSEF("solid tides: %+.14f", mSolidTides);
 }
 
 void Observation::compute_antenna_phase_variation() NOEXCEPT {

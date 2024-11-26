@@ -39,7 +39,11 @@ struct BdsEphemeris {
     double omega_dot;
     double idot;
 
-    NODISCARD bool            is_valid(ts::Bdt const& time) const NOEXCEPT;
+    NODISCARD bool is_valid(ts::Bdt const& time) const NOEXCEPT;
+    NODISCARD bool compare(BdsEphemeris const& other) const NOEXCEPT {
+        return prn == other.prn && week_number == other.week_number && iode == other.iode &&
+               std::abs(toe - other.toe) < 1e-3 && iodc == other.iodc;
+    }
     NODISCARD EphemerisResult compute(ts::Bdt const& time) const NOEXCEPT;
 
     NODISCARD double calculate_elapsed_time(ts::Bdt const& time, double reference) const NOEXCEPT;

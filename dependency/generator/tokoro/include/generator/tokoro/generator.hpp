@@ -28,6 +28,14 @@ struct Observations;
 
 namespace tokoro {
 
+struct ReferenceStationConfig {
+    Float3 ground_position;
+    bool   generate_gps;
+    bool   generate_glo;
+    bool   generate_gal;
+    bool   generate_bds;
+};
+
 struct CorrectionData;
 struct CorrectionPointSet;
 struct Satellite;
@@ -36,7 +44,7 @@ struct RangeTimeDivision;
 class Generator;
 class ReferenceStation {
 public:
-    ReferenceStation(Generator& generator, Float3 ground_position) NOEXCEPT;
+    ReferenceStation(Generator& generator, ReferenceStationConfig const& config) NOEXCEPT;
     ~ReferenceStation() NOEXCEPT;
 
     // Generate a new set of observations.
@@ -53,10 +61,6 @@ public:
         mPhysicalGroundPositionSet = true;
     }
 
-    void set_gps_supported(bool supported) { mGenerateGps = supported; }
-    void set_glonass_supported(bool supported) { mGenerateGlo = supported; }
-    void set_galileo_supported(bool supported) { mGenerateGal = supported; }
-    void set_beidou_supported(bool supported) { mGenerateBds = supported; }
     void set_shaprio_correction(bool enabled) { mShapiroCorrection = enabled; }
     void set_earth_solid_tides_correction(bool enabled) { mEarthSolidTidesCorrection = enabled; }
     void set_phase_windup_correction(bool enabled) { mPhaseWindupCorrection = enabled; }
@@ -108,7 +112,8 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
 
-    std::shared_ptr<ReferenceStation> define_reference_station(Float3 ground_position) NOEXCEPT;
+    std::shared_ptr<ReferenceStation>
+    define_reference_station(ReferenceStationConfig const& config) NOEXCEPT;
 
     NODISCARD ts::Tai const& last_correction_data_time() const NOEXCEPT {
         return mLastCorrectionDataTime;
@@ -122,9 +127,9 @@ private:
                         ephemeris::Ephemeris& eph) const NOEXCEPT;
     bool compute_tropospheric_residual(double& residual) NOEXCEPT;
 
-    std::unordered_map<SatelliteId, ephemeris::GpsEphemeris> mGpsEphemeris;
-    std::unordered_map<SatelliteId, ephemeris::GalEphemeris> mGalEphemeris;
-    std::unordered_map<SatelliteId, ephemeris::BdsEphemeris> mBdsEphemeris;
+    std::unordered_map<SatelliteId, std::vector<ephemeris::GpsEphemeris>> mGpsEphemeris;
+    std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
+    std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
 
     ts::Tai                             mLastCorrectionDataTime;
     std::unique_ptr<CorrectionData>     mCorrectionData;

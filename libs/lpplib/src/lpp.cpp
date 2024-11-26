@@ -334,19 +334,23 @@ LPP_Transaction LPP_Client::new_transaction() {
 bool LPP_Client::process_message(LPP_Message* message, LPP_Transaction* transaction) {
     auto periodic_id = lpp_get_periodic_id(message);
     if (lpp_is_provide_assistance_data(message)) {
+        auto destroyed = false;
         if ((periodic_id == main_request || transaction->id == main_request_transaction.id) &&
             main_request >= 0) {
             if (main_request_callback) {
-                if (!main_request_callback(this, transaction, message, main_request_userdata)) {
-                    lpp_destroy(message);
+                if (main_request_callback(this, transaction, message, main_request_userdata)) {
+                    destroyed = true;
                 }
             }
         }
         if (agnss_request_callback && transaction->id == agnss_request_transaction.id) {
-            if (!agnss_request_callback(this, transaction, message, agnss_request_userdata)) {
-                lpp_destroy(message);
+            if (agnss_request_callback(this, transaction, message, agnss_request_userdata)) {
+                destroyed = true;
             }
         }
+        if(!destroyed) {
+            lpp_destroy(message);
+        }        
         return true;
     } else if (lpp_is_request_capabilities(message)) {
         transaction->end = true;

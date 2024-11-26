@@ -127,7 +127,6 @@ static bool decode_subframe2(Words const& words, Subframe2& subframe) {
              signed_transform(16, delta_n), subframe.m0, signed_transform(32, m0), subframe.cuc,
              signed_transform(16, cuc), subframe.e, e, subframe.cus, signed_transform(16, cus),
              subframe.sqrt_a, sqrt_a, subframe.toe, toe, subframe.fit_interval_flag, subframe.aodo);
-    DEBUGF("subframe2: M0: %g, %" PRIi64 ", %u", subframe.m0, signed_transform(32, m0), m0);
     return true;
 }
 

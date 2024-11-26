@@ -28,39 +28,32 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     mLastGenerationTime = generation_time;
     mReceptionTime      = generation_time;
     if (!mGenerator.mCorrectionData) {
-        WARNF("no correction data available");
+        WARNF("no correction data available [sv=%s]", mId.name());
         return;
     }
 
     // Find orbit and clock corrections
-    if (!find_orbit_correction(*mGenerator.mCorrectionData)) {
-        WARNF("failed to find orbit correction");
-        return;
-    }
-    if (!find_clock_correction(*mGenerator.mCorrectionData)) {
-        WARNF("failed to find clock correction");
-        return;
-    }
+    if (!find_orbit_correction(*mGenerator.mCorrectionData)) return;
+    if (!find_clock_correction(*mGenerator.mCorrectionData)) return;
 
     // Find broadcast ephemeris
     ephemeris::Ephemeris eph{};
-    if (!mGenerator.find_ephemeris(mId, generation_time, 0, eph)) {
-        WARNF("ephemeris not found");
+    if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iode, eph)) {
+        WARNF("ephemeris not found [sv=%s,iode=%u]", mId.name(), mOrbitCorrection.iode);
         return;
     }
 
     if (!compute_true_position(eph)) {
-        WARNF("failed to compute true position");
+        WARNF("failed to compute true position [sv=%s]", mId.name());
         return;
     }
 
     if (!compute_azimuth_and_elevation()) {
-        WARNF("failed to compute azimuth and elevation");
+        WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
         return;
     }
 
     // TODO: Elevation mask
-
     mEnabled = true;
 }
 
@@ -269,7 +262,7 @@ bool Satellite::find_orbit_correction(CorrectionData const& correction_data) NOE
 
     auto correction = correction_data.orbit_correction(mId);
     if (!correction) {
-        WARNF("satellite missing orbit corrections [sv=%s]", mId.name());
+        DEBUGF("satellite missing orbit corrections [sv=%s]", mId.name());
         return false;
     }
 
@@ -282,7 +275,7 @@ bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOE
 
     auto correction = correction_data.clock_correction(mId);
     if (!correction) {
-        WARNF("satellite missing clock corrections [sv=%s]", mId.name());
+        DEBUGF("satellite missing clock corrections [sv=%s]", mId.name());
         return false;
     }
 

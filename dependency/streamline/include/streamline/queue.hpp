@@ -8,6 +8,8 @@
 
 #include <loglet/loglet.hpp>
 
+#define EVENT_QUEUE_SIZE 256
+
 namespace streamline {
 template <typename T>
 class EventQueue {
@@ -18,8 +20,9 @@ public:
     void push(T&& data) {
         std::lock_guard<std::mutex> lock(mMutex);
         mQueue.push(std::move(data));
-        if (mQueue.size() > 512) {
-            XWARNF("smtl", "queue size limit reached (%lu), discarding data", mQueue.size());
+        if (mQueue.size() > EVENT_QUEUE_SIZE) {
+            XWARNF("smtl", "queue size limit reached (%lu > %d), discarding data", mQueue.size(),
+                   EVENT_QUEUE_SIZE);
             mQueue.pop();
         } else {
             uint64_t value = 1;

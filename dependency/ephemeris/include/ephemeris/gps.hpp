@@ -47,7 +47,12 @@ struct GpsEphemeris {
     bool fit_interval_flag;
     bool l2_p_data_flag;
 
-    NODISCARD bool            is_valid(ts::Gps const& time) const NOEXCEPT;
+    NODISCARD bool is_valid(ts::Gps const& time) const NOEXCEPT;
+    NODISCARD bool compare(GpsEphemeris const& other) const NOEXCEPT {
+        return prn == other.prn && week_number == other.week_number && iode == other.iode &&
+               iodc == other.iodc && std::abs(toe - other.toe) < 1e-3 &&
+               fit_interval_flag == other.fit_interval_flag && sv_health == other.sv_health;
+    }
     NODISCARD EphemerisResult compute(ts::Gps const& time) const NOEXCEPT;
 
     NODISCARD double calculate_elapsed_time(ts::Gps const& time, double reference) const NOEXCEPT;

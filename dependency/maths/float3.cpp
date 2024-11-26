@@ -32,6 +32,10 @@ Float3 operator*(Float3 a, double b) NOEXCEPT {
     return {a.x * b, a.y * b, a.z * b};
 }
 
+Float3 operator*(double a, Float3 b) NOEXCEPT {
+    return {a * b.x, a * b.y, a * b.z};
+}
+
 Float3 operator/(Float3 a, double b) NOEXCEPT {
     return {a.x / b, a.y / b, a.z / b};
 }

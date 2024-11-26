@@ -55,6 +55,7 @@ private:
     ts::Tai       mEmissionTime;
     ts::Tai       mReceptionTime;
     Float3        mGroundPosition;
+    Float3        mGroundLlh;
     Float3        mLineOfSight;
     Wgs84Position mWgsPosition;
     double        mElevation;

@@ -4,6 +4,7 @@
 
 #include <lpp/internal_lpp.h>
 #include <lpp/lpp.h>
+#include <loglet/loglet.hpp>
 
 #ifdef INCLUDE_GENERATOR_RTCM
 #include <generator/rtcm/generator.hpp>
@@ -11,6 +12,7 @@
 
 namespace internal {
 void LppMessageDeleter::operator()(LPP_Message* message) {
+    XDEBUGF("lpp/msg", "delete %p", message);
     ASN_STRUCT_FREE(asn_DEF_LPP_Message, message);
 }
 }  // namespace internal

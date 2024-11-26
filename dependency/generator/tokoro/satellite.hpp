@@ -1,8 +1,8 @@
 #pragma once
 #include "constant.hpp"
 #include "data.hpp"
-#include "sv_id.hpp"
 #include "observation.hpp"
+#include "sv_id.hpp"
 
 #include <ephemeris/ephemeris.hpp>
 #include <generator/rtcm/satellite_id.hpp>
@@ -41,11 +41,12 @@ public:
     NODISCARD double clock_correction() const NOEXCEPT;
 
     NODISCARD bool enabled() const NOEXCEPT { return mEnabled; }
+
     void disable() NOEXCEPT { mEnabled = false; }
-    
+
     NODISCARD double average_code_range() const NOEXCEPT;
 
-    void                      reset_observations() NOEXCEPT { mObservations.clear(); }
+    void                            reset_observations() NOEXCEPT { mObservations.clear(); }
     std::vector<Observation> const& observations() const NOEXCEPT { return mObservations; }
 
     Observation& initialize_observation(SignalId signal_id) NOEXCEPT {

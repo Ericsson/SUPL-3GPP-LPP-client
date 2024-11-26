@@ -218,27 +218,22 @@ SUPL_Message SUPL_Client::process() {
         return nullptr;
     } else if (result.code == RC_WMORE) {
         expected_size = static_cast<size_t>(pdu->length);
+        printf("wait for more data: %zu\n", expected_size);
+        ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
+        pdu = nullptr;
         if (expected_size > SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
             // Unable to handle such big messages
             mReceiveLength = 0;
             printf("too big message, unsupported\n");
-            ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         } else if (expected_size > mReceiveLength) {
             // Not enough data
             printf("wait for more data\n");
-            ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
-        }
-
-        // TODO(ewasjon): This is weird decoding again will never work, we must return from the
-        // function to wait for more data.
-        result = uper_decode_complete(0, &asn_DEF_ULP_PDU, reinterpret_cast<void**>(&pdu),
-                                      mReceiveBuffer, expected_size);
-        if (result.code != RC_OK) {
-            printf("failed to decode UPER (more)\n");
+        } else {
+            // We have enough data, but the decoding it failed?
+            printf("have enough data, but failed to decode\n");
             mReceiveLength = 0;
-            ASN_STRUCT_FREE(asn_DEF_ULP_PDU, pdu);
             return nullptr;
         }
     } else {
@@ -272,7 +267,7 @@ SUPL_Message SUPL_Client::receive2() {
     }
 
     // If the buffer is full, clear it
-    if (mReceiveLength > SUPL_CLIENT_RECEIVER_BUFFER_SIZE - 64) {
+    if (mReceiveLength >= SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
         mReceiveLength = 0;
     }
 
@@ -286,7 +281,9 @@ SUPL_Message SUPL_Client::receive2() {
     }
 
     mReceiveLength += static_cast<size_t>(bytes);
-    if (mReceiveLength >= SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
+    // This should never happen, if we receive more data than the buffer can then
+    // mTcp->receive will have overflowed the buffer.
+    if (mReceiveLength > SUPL_CLIENT_RECEIVER_BUFFER_SIZE) {
         printf("ERROR: Receive buffer full (%zu >= %d)\n", mReceiveLength,
                SUPL_CLIENT_RECEIVER_BUFFER_SIZE);
         mReceiveLength = 0;

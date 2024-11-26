@@ -1,11 +1,11 @@
 #include "generator.hpp"
 #include "constant.hpp"
+#include "coordinate.hpp"
 #include "data.hpp"
 #include "decode.hpp"
 #include "helper.hpp"
 #include "observation.hpp"
 #include "satellite.hpp"
-#include "coordinate.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -41,14 +41,15 @@
 namespace generator {
 namespace tokoro {
 
-ReferenceStation::ReferenceStation(Generator& generator, Float3 ground_position) NOEXCEPT
-    : mGroundPosition(ground_position),
-      mPhysicalGroundPosition(ground_position),
+ReferenceStation::ReferenceStation(Generator&                    generator,
+                                   ReferenceStationConfig const& config) NOEXCEPT
+    : mGroundPosition(config.ground_position),
+      mPhysicalGroundPosition(config.ground_position),
       mPhysicalGroundPositionSet(false),
-      mGenerateGps(true),
-      mGenerateGlo(false),
-      mGenerateGal(false),
-      mGenerateBds(false),
+      mGenerateGps(config.generate_gps),
+      mGenerateGlo(config.generate_glo),
+      mGenerateGal(config.generate_gal),
+      mGenerateBds(config.generate_bds),
       mShapiroCorrection(true),
       mEarthSolidTidesCorrection(false),
       mPhaseWindupCorrection(false),
@@ -70,15 +71,35 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
     VSCOPE_FUNCTION();
 
     // GPS
-    for (uint8_t i = 1; i <= 32; i++) {
-        auto id = SatelliteId::from_gps_prn(i);
-        ASSERT(id.is_valid(), "invalid satellite id");
-        mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+    if (mGenerateGps) {
+        for (uint8_t i = 1; i <= 32; i++) {
+            auto id = SatelliteId::from_gps_prn(i);
+            ASSERT(id.is_valid(), "invalid satellite id");
+            mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+        }
     }
 
     // TODO: GLONASS
-    // TODO: GALILEO
-    // TODO: BEIDOU
+    if (mGenerateGlo) {
+    }
+
+    // GALILEO
+    if (mGenerateGal) {
+        for (uint8_t i = 1; i <= 36; i++) {
+            auto id = SatelliteId::from_gal_prn(i);
+            ASSERT(id.is_valid(), "invalid satellite id");
+            mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+        }
+    }
+
+    // BEIDOU
+    if (mGenerateBds) {
+        for (uint8_t i = 1; i <= 35; i++) {
+            auto id = SatelliteId::from_bds_prn(i);
+            ASSERT(id.is_valid(), "invalid satellite id");
+            mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+        }
+    }
 }
 
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT {
@@ -134,6 +155,9 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
     mGenerationTime = reception_time;
 
+    WARNF("generation time: %s", mGenerationTime.rtklib_time_string().c_str());
+    WARNF("satellite count: %zu", mSatellites.size());
+
     // Update the satellites
     for (auto& satellite : mSatellites) {
         satellite.update(mGenerationTime);
@@ -141,11 +165,19 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
     // Generate the observations
     for (auto& satellite : mSatellites) {
-        if (!satellite.enabled()) continue;
         satellite.reset_observations();
 
+        if (!satellite.enabled()) continue;
         if (mSatelliteIncludeSet.size() > 0 &&
             mSatelliteIncludeSet.find(satellite.id()) == mSatelliteIncludeSet.end()) {
+            WARNF("discarded: %s - not included", satellite.id().name());
+            satellite.disable();
+            continue;
+        }
+
+        if (satellite.elevation() * constant::RAD2DEG < mElevationMask) {
+            WARNF("discarded: %s - elevation mask (%.2f < %.2f)", satellite.id().name(),
+                  satellite.elevation() * constant::RAD2DEG, mElevationMask);
             satellite.disable();
             continue;
         }
@@ -161,6 +193,9 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
             initialize_observation(satellite, signal);
         }
+
+        WARNF("satellite %s: %zu observations", satellite.id().name(),
+              satellite.observations().size());
     }
 
     return true;
@@ -208,15 +243,10 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
                                             rtcm::Observations& observations) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, observations=%zu", satellite.id().name(),
                      satellite.observations().size());
-    VERBOSEF("enabled: %s", satellite.enabled() ? "true" : "false");
 
     auto average_code_range = satellite.average_code_range();
     auto rtd                = range_time_division(average_code_range);
-    VERBOSEF("rtd:");
-    VERBOSEF("  integer_ms:   %d", rtd.integer_ms);
-    VERBOSEF("  rough_range:  %.14f", rtd.rough_range);
-    VERBOSEF("  used_range:   %.14f", rtd.used_range);
-    VERBOSEF("  unused_range: %.14f", rtd.unused_range);
+    VERBOSEF("rtd: %d %f %f %f", rtd.integer_ms, rtd.rough_range, rtd.used_range, rtd.unused_range);
 
     rtcm::Satellite rtcm{};
     rtcm.id          = satellite.id();
@@ -365,8 +395,8 @@ Generator::Generator() NOEXCEPT {}
 Generator::~Generator() NOEXCEPT = default;
 
 std::shared_ptr<ReferenceStation>
-Generator::define_reference_station(Float3 ground_position) NOEXCEPT {
-    return std::make_shared<ReferenceStation>(*this, ground_position);
+Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCEPT {
+    return std::make_shared<ReferenceStation>(*this, config);
 }
 
 void Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
@@ -520,22 +550,51 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                                ephemeris::Ephemeris& eph) const NOEXCEPT {
     if (sv_id.gnss() == SatelliteId::Gnss::GPS) {
         auto it = mGpsEphemeris.find(sv_id);
-        if (it != mGpsEphemeris.end()) {
-            eph = ephemeris::Ephemeris(it->second);
+        if (it == mGpsEphemeris.end()) return false;
+        auto& list = it->second;
+
+        auto gps_time = ts::Gps(time);
+        for (auto& ephemeris : list) {
+            WARNF("searching: %4u %.0f %4u%s%s", ephemeris.week_number, ephemeris.toe,
+                  ephemeris.iode, ephemeris.is_valid(gps_time) ? " [time]" : "",
+                  ephemeris.iode == iode ? " [iode]" : "");
+            if (!ephemeris.is_valid(gps_time)) continue;
+            if (ephemeris.iode != iode) continue;
+            eph = ephemeris::Ephemeris(ephemeris);
             return true;
         }
+
+        return false;
+    } else if (sv_id.gnss() == SatelliteId::Gnss::GLONASS) {
+        // TODO:
+        return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GALILEO) {
         auto it = mGalEphemeris.find(sv_id);
-        if (it != mGalEphemeris.end()) {
-            eph = ephemeris::Ephemeris(it->second);
+        if (it == mGalEphemeris.end()) return false;
+        auto& list = it->second;
+
+        auto gal_time = ts::Gst(time);
+        for (auto& ephemeris : list) {
+            if (!ephemeris.is_valid(gal_time)) continue;
+            if (ephemeris.iod_nav != iode) continue;
+            eph = ephemeris::Ephemeris(ephemeris);
             return true;
         }
+
+        return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::BEIDOU) {
-        auto it = mBdsEphemeris.find(sv_id);
-        if (it != mBdsEphemeris.end()) {
-            eph = ephemeris::Ephemeris(it->second);
+        auto  it   = mBdsEphemeris.find(sv_id);
+        auto& list = it->second;
+
+        auto bds_time = ts::Bdt(time);
+        for (auto& ephemeris : list) {
+            if (!ephemeris.is_valid(bds_time)) continue;
+            if (ephemeris.iode != iode) continue;
+            eph = ephemeris::Ephemeris(ephemeris);
             return true;
         }
+
+        return false;
     }
 
     UNREACHABLE();
@@ -545,34 +604,82 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 void Generator::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
     auto satellite_id = SatelliteId::from_gps_prn(ephemeris.prn);
     if (!satellite_id.is_valid()) {
-        VERBOSEF("invalid satellite id");
+        VERBOSEF("invalid satellite id: GPS %d", ephemeris.prn);
         return;
     }
 
+    auto& list = mGpsEphemeris[satellite_id];
+
+    // Check if the ephemeris is already in the list
+    for (auto& eph : list) {
+        if (eph.compare(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s", satellite_id.name());
+            return;
+        }
+    }
+
+    // Remove the oldest ephemeris if the list is full
+    if (list.size() >= 10) {
+        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
+        list.erase(list.begin());
+    }
+
+    list.push_back(ephemeris);
     DEBUGF("ephemeris: %s", satellite_id.name());
-    mGpsEphemeris[satellite_id] = ephemeris;
 }
 
 void Generator::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT {
     auto satellite_id = SatelliteId::from_gal_prn(ephemeris.prn);
     if (!satellite_id.is_valid()) {
-        VERBOSEF("invalid satellite id");
+        VERBOSEF("invalid satellite id: GAL %d", ephemeris.prn);
         return;
     }
 
+    auto& list = mGalEphemeris[satellite_id];
+
+    // Check if the ephemeris is already in the list
+    for (auto& eph : list) {
+        if (eph.compare(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s", satellite_id.name());
+            return;
+        }
+    }
+
+    // Remove the oldest ephemeris if the list is full
+    if (list.size() >= 10) {
+        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
+        list.erase(list.begin());
+    }
+
+    list.push_back(ephemeris);
     DEBUGF("ephemeris: %s", satellite_id.name());
-    mGalEphemeris[satellite_id] = ephemeris;
 }
 
 void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
     auto satellite_id = SatelliteId::from_bds_prn(ephemeris.prn);
     if (!satellite_id.is_valid()) {
-        VERBOSEF("invalid satellite id");
+        VERBOSEF("invalid satellite id: BDS %d", ephemeris.prn);
         return;
     }
 
+    auto& list = mBdsEphemeris[satellite_id];
+
+    // Check if the ephemeris is already in the list
+    for (auto& eph : list) {
+        if (eph.compare(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s", satellite_id.name());
+            return;
+        }
+    }
+
+    // Remove the oldest ephemeris if the list is full
+    if (list.size() >= 10) {
+        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
+        list.erase(list.begin());
+    }
+
+    list.push_back(ephemeris);
     DEBUGF("ephemeris: %s", satellite_id.name());
-    mBdsEphemeris[satellite_id] = ephemeris;
 }
 
 }  // namespace tokoro
