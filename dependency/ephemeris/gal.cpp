@@ -9,7 +9,7 @@
 
 namespace ephemeris {
 
-CONSTEXPR static double CONSTANT_MU              = 3.986005e14;
+CONSTEXPR static double CONSTANT_MU              = 3.986004418e14;
 CONSTEXPR static double CONSTANT_OMEGA_EARTH_DOT = 7.2921151467e-5;
 CONSTEXPR static double CONSTANT_C               = 2.99792458e8;
 
@@ -116,17 +116,6 @@ double GalEphemeris::calculate_clock_bias(ts::Gst const& time, double e_k) const
     auto t_k = calculate_elapsed_time_toc(time);
     VERBOSEF("t_k: %+.14f", t_k);
 
-#if 0
-    // TODO(ewasjon): REMOVE
-    // relativistic correction term
-    VERBOSEF("a:   %+.14f", a);
-    VERBOSEF("e:   %+.14f", e);
-    VERBOSEF("e_k: %+.14f", e_k);
-
-    auto t_r = -2.0 * std::sqrt(CONSTANT_MU * a) * e * std::sin(e_k) / (CONSTANT_C * CONSTANT_C);
-    VERBOSEF("t_r: %+.14f", t_r);
-#endif
-
     VERBOSEF("af0: %+.14f", af0);
     VERBOSEF("af1: %+.14f", af1);
     VERBOSEF("af2: %+.14f", af2);
@@ -145,9 +134,6 @@ double GalEphemeris::calculate_clock_bias(ts::Gst const& time, double e_k) const
     VERBOSEF("delta_t_sv: %+.14f", delta_t_sv);
 
     auto clock_bias = delta_t_sv;
-#if 0
-    clock_bias += t_r;
-#endif
     VERBOSEF("clock_bias: %+.14f", clock_bias);
     return clock_bias;
 }

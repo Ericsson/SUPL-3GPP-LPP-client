@@ -160,6 +160,13 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
     // Update the satellites
     for (auto& satellite : mSatellites) {
+        if (mSatelliteIncludeSet.size() > 0 &&
+            mSatelliteIncludeSet.find(satellite.id()) == mSatelliteIncludeSet.end()) {
+            WARNF("discarded: %s - not included", satellite.id().name());
+            satellite.disable();
+            continue;
+        }
+
         satellite.update(mGenerationTime);
     }
 
