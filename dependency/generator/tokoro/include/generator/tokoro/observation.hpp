@@ -12,6 +12,35 @@ namespace tokoro {
 
 struct CorrectionData;
 struct Satellite;
+struct SatelliteLocation;
+
+struct TroposphericDelay {
+    double hydrostatic;
+    double wet;
+    double mapping_hydrostatic;
+    double mapping_wet;
+    double height_mapping_hydrostatic;
+    double height_mapping_wet;
+    bool   valid;
+    bool   valid_height_mapping;
+};
+
+struct IonosphericDelay {
+    double grid_residual;
+    double poly_residual;
+    bool   valid;
+};
+
+struct Correction {
+    double correction;
+    bool   valid;
+};
+
+struct SolidEarthTides {
+    double displacement;
+    Float3 displacement_vector;
+    bool   valid;
+};
 
 struct Observation {
 public:
@@ -30,81 +59,50 @@ public:
     void compute_earth_solid_tides() NOEXCEPT;
     void compute_antenna_phase_variation() NOEXCEPT;
 
-    void compute_code_range() NOEXCEPT;
-    void compute_phase_range() NOEXCEPT;
+    void compute_ranges() NOEXCEPT;
 
     NODISCARD bool is_valid() const NOEXCEPT { return mIsValid; }
     void           discard() NOEXCEPT { mIsValid = false; }
 
-    NODISCARD double pseudorange() const NOEXCEPT;
-    NODISCARD double carrier_cycle() const NOEXCEPT;
+    NODISCARD double code_range() const NOEXCEPT;
+    NODISCARD double phase_range() const NOEXCEPT;
+    NODISCARD double phase_range_rate() const NOEXCEPT { return mPhaseRangeRate; }
+
+    NODISCARD bool has_phase_bias() const NOEXCEPT { return mPhaseBias.valid; }
+    NODISCARD bool has_code_bias() const NOEXCEPT { return mCodeBias.valid; }
+    NODISCARD bool has_tropospheric() const NOEXCEPT { return mTropospheric.valid; }
+    NODISCARD bool has_ionospheric() const NOEXCEPT { return mIonospheric.valid; }
 
     NODISCARD SatelliteId const& sv_id() const NOEXCEPT { return mSvId; }
     NODISCARD SignalId const&    signal_id() const NOEXCEPT { return mSignalId; }
-
-    NODISCARD bool has_phase_bias() const NOEXCEPT { return mPhaseBiasValid; }
-    NODISCARD bool has_code_bias() const NOEXCEPT { return mCodeBiasValid; }
-    NODISCARD bool has_tropospheric() const NOEXCEPT { return mTropoValid; }
-    NODISCARD bool has_ionospheric() const NOEXCEPT { return mIonoValid; }
 
 private:
     SatelliteId mSvId;
     SignalId    mSignalId;
     bool        mIsValid;
+    uint16_t    mIode;
 
-    ts::Tai       mEmissionTime;
-    ts::Tai       mReceptionTime;
-    Float3        mGroundPosition;
-    Float3        mGroundLlh;
-    Float3        mLineOfSight;
-    Wgs84Position mWgsPosition;
-    double        mElevation;
+    Float3 mGroundPosition;
+    Float3 mGroundLlh;
 
-    Float3 mSatelliteApc;
+    SatelliteLocation const& mCurrent;
+    SatelliteLocation const& mNext;
 
     double mFrequency;
     double mWavelength;
 
-    double mTrueRange;
-    double mEphRange;
-
-    double mEphOrbitError;
-    double mEphClockBias;
-
-    double mClockCorrection;
-    bool   mClockCorrectionValid;
-
-    double mCodeBias;
-    bool   mCodeBiasValid;
-
-    double mPhaseBias;
-    bool   mPhaseBiasValid;
-
-    double mTropoDry;
-    double mTropoWet;
-    double mTropoDryMapping;
-    double mTropoWetMapping;
-    bool   mTropoValid;
-
-    double mTropoDryHeightCorrection;
-    double mTropoWetHeightCorrection;
-    bool   mTropeHeightCorrectionValid;
-
-    double mIonoGridResidual;
-    double mIonoPolyResidual;
-    bool   mIonoValid;
-
-    double mShapiro;
-    bool   mShapiroValid;
-    double mPhaseWindup;
-    bool   mPhaseWindupValid;
-    double mSolidTides;
-    Float3 mSolidTidesDisplacement;
-    bool   mSolidTidesValid;
-    double mAntennaPhaseVariation;
-    bool   mAntennaPhaseVariationValid;
+    Correction        mClockCorrection;
+    Correction        mCodeBias;
+    Correction        mPhaseBias;
+    TroposphericDelay mTropospheric;
+    IonosphericDelay  mIonospheric;
+    Correction        mShapiro;
+    Correction        mPhaseWindup;
+    SolidEarthTides   mEarthSolidTides;
+    Correction        mAntennaPhaseVariation;
 
     double mPhaseRange;
+    double mPhaseRangeRate;
     double mCodeRange;
 };
 

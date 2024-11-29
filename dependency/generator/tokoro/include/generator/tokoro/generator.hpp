@@ -29,7 +29,8 @@ struct Observations;
 namespace tokoro {
 
 struct ReferenceStationConfig {
-    Float3 ground_position;
+    Float3 itrf_ground_position;
+    Float3 rtcm_ground_position;
     bool   generate_gps;
     bool   generate_glo;
     bool   generate_gal;
@@ -57,8 +58,8 @@ public:
     void include_signal(SignalId signal_id) NOEXCEPT { mSignalIncludeSet.insert(signal_id); }
 
     void set_physical_ground_position(Float3 position) NOEXCEPT {
-        mPhysicalGroundPosition    = position;
-        mPhysicalGroundPositionSet = true;
+        mRtcmPhysicalGroundPosition    = position;
+        mRtcmPhysicalGroundPositionSet = true;
     }
 
     void set_shaprio_correction(bool enabled) { mShapiroCorrection = enabled; }
@@ -72,15 +73,16 @@ protected:
     void initialize_satellites() NOEXCEPT;
     void initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT;
     void build_rtcm_observation(Satellite const& satellite, Observation const& observation,
-                                RangeTimeDivision const& rtd,
-                                rtcm::Observations&      observations) NOEXCEPT;
+                                RangeTimeDivision const& rtd, double reference_phase_range_rate,
+                                rtcm::Observations& observations) NOEXCEPT;
     void build_rtcm_satellite(Satellite const&    satellite,
                               rtcm::Observations& observations) NOEXCEPT;
 
 private:
     Float3 mGroundPosition;
-    Float3 mPhysicalGroundPosition;
-    bool   mPhysicalGroundPositionSet;
+    Float3 mRtcmGroundPosition;
+    Float3 mRtcmPhysicalGroundPosition;
+    bool   mRtcmPhysicalGroundPositionSet;
 
     bool   mGenerateGps;
     bool   mGenerateGlo;

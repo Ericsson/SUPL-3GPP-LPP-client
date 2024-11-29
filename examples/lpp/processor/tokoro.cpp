@@ -123,6 +123,8 @@ void EphemerisExtractor::inspect(streamline::System&, DataType const& message) {
 #endif
 }
 
+#define TRIMBLE_TEST 0
+
 class SsrEvaluator : public Inspector<LppMessage> {
 public:
     SsrEvaluator(OutputOptions const& options) : mGenerator(), mOptions(options) {}
@@ -149,7 +151,7 @@ public:
         printf("wgs84  position: %.12f, %.12f, %.12f\n", wgs.x, wgs.y, wgs.z);
 #endif
 
-#if 1
+#if TRIMBLE_TEST
         printf("%li: %s\n", t.timestamp().seconds(), t.rtklib_time_string().c_str());
 
         // 2024/10/01 12:10:42.000000000000 1727784605
@@ -180,7 +182,7 @@ public:
                 }
             }
         }
-#if 1
+#if TRIMBLE_TEST
         for (;;) {
             sleep(1);
         }
@@ -203,16 +205,23 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
     auto  evaluator = system.add_inspector<SsrEvaluator>(options);
     auto& generator = evaluator->generator();
 
-#if 1
+#if TRIMBLE_TEST
     // Trimble Test Reference
     auto location_itrf2020 = Float3{
         3233520.957,
         859415.096,
         5412047.363,
     };
-#endif
-
-#if 0
+    auto location_output = location_itrf2020;
+        auto rs = generator.define_reference_station(ReferenceStationConfig{
+        location_itrf2020,
+        location_output,
+        globals.generate_gps,
+        globals.generate_glonass,
+        globals.generate_galileo,
+        globals.generate_beidou,
+    });
+#elif 1
     // SE_Lin_Office ETRF89
     auto location_etrf89 = Float3{
         3227560.90670000016689,
@@ -220,7 +229,7 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
         5409177.11160000041127,
     };
     // SE_Lin_Office ITRF2020
-    auto location_itrf2020 = itrf_transform(Itrf::ITRF1989, Itrf::ITRF2020, 2024.0,
+    auto location_itrf2020_2024 = itrf_transform(Itrf::ITRF1989, Itrf::ITRF2020, 2024.0,
                                             etrf89_to_itrf89(2024.0, location_etrf89));
 
     auto physical_location = Float3{
@@ -229,32 +238,51 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
         5409116.6926000006496906,
     };
 
-    // mGenerator.set_physical_reference_station(location);
-#endif
+    printf("etrf89:   %+14.4f %+14.4f %+14.4f (----.--)\n", location_etrf89.x, location_etrf89.y, location_etrf89.z);
+    printf("itrf2020: %+14.4f %+14.4f %+14.4f (2024.00)\n", location_itrf2020_2024.x, location_itrf2020_2024.y, location_itrf2020_2024.z);
+
+    auto from_epoch = 2005.0;
+    auto to_epoch = 2024.9;
+    auto location_itrf2020_1991 = itrf_transform(Itrf::ITRF1989, Itrf::ITRF2020, to_epoch,
+                                            etrf89_to_itrf89(from_epoch, location_etrf89));
+    printf("itrf2020: %+14.4f %+14.4f %+14.4f (%.2f)\n", location_itrf2020_1991.x, location_itrf2020_1991.y, location_itrf2020_1991.z, to_epoch);
+    printf("from tri: %+14.4f %+14.4f %+14.4f\n", 3227560.2384, 898383.8764, 5409177.4438);
+
+
+    auto location_itrf2020 = Float3{3227560.2384, 898383.8764, 5409177.4438};
+    auto location_output = location_etrf89;
 
     auto rs = generator.define_reference_station(ReferenceStationConfig{
         location_itrf2020,
+        location_output,
         globals.generate_gps,
         globals.generate_glonass,
         globals.generate_galileo,
         globals.generate_beidou,
     });
+    rs->set_physical_ground_position(physical_location);
+#endif
+
+
     rs->set_shaprio_correction(globals.shapiro_correction);
     rs->set_earth_solid_tides_correction(globals.earth_solid_tides_correction);
     rs->set_phase_windup_correction(globals.phase_windup_correction);
     rs->set_antenna_phase_variation_correction(globals.antenna_phase_variation_correction);
     rs->set_tropospheric_height_correction(globals.tropospheric_height_correction);
 
-#if 0
+#if TRIMBLE_TEST
+#if 1
     rs->include_satellite(SatelliteId::from_gps_prn(7));
-    rs->include_satellite(SatelliteId::from_gps_prn(9));
+    //rs->include_satellite(SatelliteId::from_gps_prn(9));
+    //rs->include_satellite(SatelliteId::from_gps_prn(13));
     rs->include_signal(SignalId::GPS_L1_CA);
 #endif
 
-#if 1
+#if 0
     rs->include_satellite(SatelliteId::from_gal_prn(4));
     rs->include_satellite(SatelliteId::from_gal_prn(10));
     rs->include_signal(SignalId::GALILEO_E1_B_C);
+#endif
 #endif
 
     evaluator->set_reference_station(rs);

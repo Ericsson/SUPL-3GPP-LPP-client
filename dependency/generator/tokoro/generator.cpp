@@ -43,9 +43,10 @@ namespace tokoro {
 
 ReferenceStation::ReferenceStation(Generator&                    generator,
                                    ReferenceStationConfig const& config) NOEXCEPT
-    : mGroundPosition(config.ground_position),
-      mPhysicalGroundPosition(config.ground_position),
-      mPhysicalGroundPositionSet(false),
+    : mGroundPosition(config.itrf_ground_position),
+      mRtcmGroundPosition(config.rtcm_ground_position),
+      mRtcmPhysicalGroundPosition(config.rtcm_ground_position),
+      mRtcmPhysicalGroundPositionSet(false),
       mGenerateGps(config.generate_gps),
       mGenerateGlo(config.generate_glo),
       mGenerateGal(config.generate_gal),
@@ -120,10 +121,9 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
-    observation.compute_code_range();
-    observation.compute_phase_range();
+    observation.compute_ranges();
 
-    VERBOSEF("observation: p=%f, c=%f", observation.pseudorange(), observation.carrier_cycle());
+    VERBOSEF("observation: c=%f, p=%f", observation.code_range(), observation.phase_range());
 
     if (!observation.has_phase_bias()) {
         WARNF("discarded: %s %s - no phase bias", satellite.id().name(), signal_id.name());
@@ -155,8 +155,8 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
     mGenerationTime = reception_time;
 
-    WARNF("generation time: %s", mGenerationTime.rtklib_time_string().c_str());
-    WARNF("satellite count: %zu", mSatellites.size());
+    DEBUGF("generation time: %s", mGenerationTime.rtklib_time_string().c_str());
+    DEBUGF("satellite count: %zu", mSatellites.size());
 
     // Update the satellites
     for (auto& satellite : mSatellites) {
@@ -201,8 +201,8 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             initialize_observation(satellite, signal);
         }
 
-        WARNF("satellite %s: %zu observations", satellite.id().name(),
-              satellite.observations().size());
+        DEBUGF("satellite %s: %zu observations", satellite.id().name(),
+               satellite.observations().size());
     }
 
     return true;
@@ -211,23 +211,28 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 void ReferenceStation::build_rtcm_observation(Satellite const&         satellite,
                                               Observation const&       observation,
                                               RangeTimeDivision const& rtd,
+                                              double                   reference_phase_range_rate,
                                               rtcm::Observations&      observations) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", observation.signal_id().name());
 
-    auto code_range  = observation.pseudorange();
-    auto phase_range = observation.carrier_cycle();
+    auto code_range       = observation.code_range();
+    auto phase_range      = observation.phase_range();
+    auto phase_range_rate = observation.phase_range_rate();
 
     auto meter_to_cms   = 1.0e3 / constant::SPEED_OF_LIGHT;
     auto code_range_ms  = code_range * meter_to_cms;
     auto phase_range_ms = phase_range * meter_to_cms;
 
-    auto delta_code_range_ms  = code_range_ms - rtd.used_range;
-    auto delta_phase_range_ms = phase_range_ms - rtd.used_range;
+    auto delta_code_range_ms    = code_range_ms - rtd.used_range;
+    auto delta_phase_range_ms   = phase_range_ms - rtd.used_range;
+    auto delta_phase_range_rate = phase_range_rate - reference_phase_range_rate;
 
     VERBOSEF("%-15s code:  %+.14f (%+.14f)", observation.signal_id().name(), code_range_ms,
              delta_code_range_ms);
     VERBOSEF("%-15s phase: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_ms,
              delta_phase_range_ms);
+    VERBOSEF("%-15s phase rate: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_rate,
+             delta_phase_range_rate);
 
 #if 0
         auto reconstructed =
@@ -241,6 +246,7 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
     signal.satellite              = satellite.id();
     signal.fine_pseudo_range      = delta_code_range_ms;
     signal.fine_phase_range       = delta_phase_range_ms;
+    signal.fine_phase_range_rate  = delta_phase_range_rate;
     signal.carrier_to_noise_ratio = 47.0;   // TODO(ewasjon): How do we choose this value?
     signal.lock_time              = 525.0;  // TODO: How do we determine this value?
     observations.signals.push_back(signal);
@@ -251,28 +257,31 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
     VSCOPE_FUNCTIONF("%s, observations=%zu", satellite.id().name(),
                      satellite.observations().size());
 
-    auto average_code_range = satellite.average_code_range();
-    auto rtd                = range_time_division(average_code_range);
+    auto average_code_range       = satellite.average_code_range();
+    auto average_phase_range_rate = satellite.average_phase_range_rate();
+    auto rtd                      = range_time_division(average_code_range);
+    VERBOSEF("average_code_range:       %.4f", average_code_range);
+    VERBOSEF("average_phase_range_rate: %.4f", average_phase_range_rate);
     VERBOSEF("rtd: %d %f %f %f", rtd.integer_ms, rtd.rough_range, rtd.used_range, rtd.unused_range);
 
+    // Round average phase_range_rate to the nearest integer
+    auto phase_range_rate = std::round(average_phase_range_rate);
+
     rtcm::Satellite rtcm{};
-    rtcm.id          = satellite.id();
-    rtcm.integer_ms  = rtd.integer_ms;
-    rtcm.rough_range = rtd.rough_range;
+    rtcm.id                     = satellite.id();
+    rtcm.integer_ms             = rtd.integer_ms;
+    rtcm.rough_range            = rtd.rough_range;
+    rtcm.rough_phase_range_rate = phase_range_rate;
     observations.satellites.push_back(rtcm);
 
     for (auto const& observation : satellite.observations()) {
         if (!observation.is_valid()) continue;
-        build_rtcm_observation(satellite, observation, rtd, observations);
+        build_rtcm_observation(satellite, observation, rtd, phase_range_rate, observations);
     }
 }
 
 std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     VSCOPE_FUNCTION();
-
-    auto gp_itrf2020 = mGroundPosition;
-    auto gp_itrf89   = itrf_transform(Itrf::ITRF2020, Itrf::ITRF1989, 2024.0, gp_itrf2020);
-    auto gp_etrf89   = itrf89_to_etrf89(2024.0, gp_itrf89);
 
     std::vector<rtcm::Message> messages;
 
@@ -281,16 +290,16 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 
     rtcm::ReferenceStation reference_station{};
     reference_station.reference_station_id          = reference_station_id;
-    reference_station.x                             = gp_etrf89.x;
-    reference_station.y                             = gp_etrf89.y;
-    reference_station.z                             = gp_etrf89.z;
+    reference_station.x                             = mRtcmGroundPosition.x;
+    reference_station.y                             = mRtcmGroundPosition.y;
+    reference_station.z                             = mRtcmGroundPosition.z;
     reference_station.is_physical_reference_station = false;
     reference_station.antenna_height                = 0.0;
 
     messages.push_back(
         rtcm::generate_1006(reference_station, mGenerateGps, mGenerateGlo, mGenerateGal));
 
-    if (mPhysicalGroundPositionSet) {
+    if (mRtcmPhysicalGroundPositionSet) {
         auto physical_reference_station_id = 4095;
         if (reference_station_id > 1) {
             physical_reference_station_id = reference_station_id - 1;
@@ -298,9 +307,9 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 
         rtcm::PhysicalReferenceStation physical_reference_station{};
         physical_reference_station.reference_station_id = physical_reference_station_id;
-        physical_reference_station.x                    = mPhysicalGroundPosition.x;
-        physical_reference_station.y                    = mPhysicalGroundPosition.y;
-        physical_reference_station.z                    = mPhysicalGroundPosition.z;
+        physical_reference_station.x                    = mRtcmPhysicalGroundPosition.x;
+        physical_reference_station.y                    = mRtcmPhysicalGroundPosition.y;
+        physical_reference_station.z                    = mRtcmPhysicalGroundPosition.z;
         messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
     }
 
@@ -403,6 +412,14 @@ Generator::~Generator() NOEXCEPT = default;
 
 std::shared_ptr<ReferenceStation>
 Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCEPT {
+    INFOF("define reference station:");
+    INFOF("  ground position (itrf): (%f, %f, %f)", config.itrf_ground_position.x,
+          config.itrf_ground_position.x, config.itrf_ground_position.x);
+    INFOF("  ground position (rtcm): (%f, %f, %f)", config.rtcm_ground_position.x,
+          config.rtcm_ground_position.x, config.rtcm_ground_position.x);
+    INFOF("  gnss: %s%s%s%s", config.generate_gps ? "G" : "-", config.generate_glo ? "R" : "-",
+          config.generate_gal ? "E" : "-", config.generate_bds ? "C" : "-");
+
     return std::make_shared<ReferenceStation>(*this, config);
 }
 
@@ -562,9 +579,9 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 
         auto gps_time = ts::Gps(time);
         for (auto& ephemeris : list) {
-            WARNF("searching: %4u %.0f %4u%s%s", ephemeris.week_number, ephemeris.toe,
-                  ephemeris.iode, ephemeris.is_valid(gps_time) ? " [time]" : "",
-                  ephemeris.iode == iode ? " [iode]" : "");
+            VERBOSEF("searching: %s %4u %.0f %4u%s%s", sv_id.name(), ephemeris.week_number,
+                     ephemeris.toe, ephemeris.iode, ephemeris.is_valid(gps_time) ? " [time]" : "",
+                     ephemeris.iode == iode ? " [iode]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
             if (ephemeris.iode != iode) continue;
             eph = ephemeris::Ephemeris(ephemeris);
@@ -582,6 +599,10 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 
         auto gal_time = ts::Gst(time);
         for (auto& ephemeris : list) {
+            VERBOSEF("searching: %s %4u %.0f %4u%s%s", sv_id.name(), ephemeris.week_number,
+                     ephemeris.toe, ephemeris.iod_nav,
+                     ephemeris.is_valid(gal_time) ? " [time]" : "",
+                     ephemeris.iod_nav == iode ? " [iode]" : "");
             if (!ephemeris.is_valid(gal_time)) continue;
             if (ephemeris.iod_nav != iode) continue;
             eph = ephemeris::Ephemeris(ephemeris);
@@ -595,6 +616,9 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 
         auto bds_time = ts::Bdt(time);
         for (auto& ephemeris : list) {
+            VERBOSEF("searching: %s %4u %.0f %4u%s%s", sv_id.name(), ephemeris.week_number,
+                     ephemeris.toe, ephemeris.iode, ephemeris.is_valid(bds_time) ? " [time]" : "",
+                     ephemeris.iode == iode ? " [iode]" : "");
             if (!ephemeris.is_valid(bds_time)) continue;
             if (ephemeris.iode != iode) continue;
             eph = ephemeris::Ephemeris(ephemeris);

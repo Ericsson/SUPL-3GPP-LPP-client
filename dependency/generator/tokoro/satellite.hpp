@@ -13,6 +13,27 @@
 namespace generator {
 namespace tokoro {
 
+struct SatelliteLocation {
+    ts::Tai reception_time;
+    ts::Tai emission_time;
+
+    /// Ephemeris Parameters
+    Float3   eph_position;
+    Float3   eph_velocity;
+    double   eph_clock_bias;
+    double   eph_range;
+    Float3   eph_line_of_sight;
+    uint16_t eph_iode;
+
+    /// True Parameters
+    Float3 true_position;
+    Float3 true_velocity;
+    double true_range;
+    Float3 true_line_of_sight;
+    double true_azimuth;
+    double true_elevation;
+};
+
 class Generator;
 struct Satellite {
 public:
@@ -20,24 +41,16 @@ public:
 
     void update(ts::Tai const& generation_time) NOEXCEPT;
 
-    NODISCARD bool compute_true_position(ephemeris::Ephemeris const& eph) NOEXCEPT;
-    NODISCARD bool compute_azimuth_and_elevation() NOEXCEPT;
-
-    NODISCARD bool find_orbit_correction(CorrectionData const& correction_data) NOEXCEPT;
-    NODISCARD bool find_clock_correction(CorrectionData const& correction_data) NOEXCEPT;
-
     NODISCARD const SatelliteId& id() const NOEXCEPT { return mId; }
 
-    NODISCARD ts::Tai reception_time() const NOEXCEPT { return mReceptionTime; }
-    NODISCARD ts::Tai emission_time() const NOEXCEPT { return mEmissionTime; }
+    NODISCARD SatelliteLocation const& current_location() const NOEXCEPT {
+        return mCurrentLocation;
+    }
+    NODISCARD SatelliteLocation const& next_location() const NOEXCEPT { return mNextLocation; }
 
-    NODISCARD double true_range() const NOEXCEPT { return mTrueRange; }
+    NODISCARD double elevation() const NOEXCEPT { return mCurrentLocation.true_elevation; }
+
     NODISCARD double pseudorange() const NOEXCEPT;
-    NODISCARD double elevation() const NOEXCEPT { return mTrueElevation; }
-    NODISCARD Float3 apc() const NOEXCEPT { return mTruePosition; }
-    NODISCARD double eph_range() const NOEXCEPT { return mEphRange; }
-    NODISCARD double eph_clock_bias() const NOEXCEPT { return mEphClockBias; }
-    NODISCARD Float3 line_of_sight() const NOEXCEPT { return mTrueLineOfSight; }
     NODISCARD double clock_correction() const NOEXCEPT;
 
     NODISCARD bool enabled() const NOEXCEPT { return mEnabled; }
@@ -45,6 +58,7 @@ public:
     void disable() NOEXCEPT { mEnabled = false; }
 
     NODISCARD double average_code_range() const NOEXCEPT;
+    NODISCARD double average_phase_range_rate() const NOEXCEPT;
 
     void                            reset_observations() NOEXCEPT { mObservations.clear(); }
     std::vector<Observation> const& observations() const NOEXCEPT { return mObservations; }
@@ -54,29 +68,27 @@ public:
         return mObservations.back();
     }
 
+protected:
+    NODISCARD static bool compute_true_position(SatelliteId id, Float3 ground_position,
+                                                ts::Tai const&              reception_time,
+                                                ephemeris::Ephemeris const& eph,
+                                                OrbitCorrection const&      orbit_correction,
+                                                SatelliteLocation&          location) NOEXCEPT;
+    NODISCARD static bool compute_azimuth_and_elevation(SatelliteId id, Float3 ground_position,
+                                                        SatelliteLocation& location) NOEXCEPT;
+
+    NODISCARD bool find_orbit_correction(CorrectionData const& correction_data) NOEXCEPT;
+    NODISCARD bool find_clock_correction(CorrectionData const& correction_data) NOEXCEPT;
+
 private:
     SatelliteId mId;
     Float3      mGroundPosition;
     bool        mEnabled;
 
     ts::Tai mLastGenerationTime;
-    ts::Tai mReceptionTime;
-    ts::Tai mEmissionTime;
 
-    /// Ephemeris Parameters
-    Float3 mEphPosition;
-    Float3 mEphVelocity;
-    double mEphClockBias;
-    double mEphRange;
-    Float3 mEphLineOfSight;
-
-    /// True Parameters
-    Float3 mTruePosition;
-    Float3 mTrueVelocity;
-    double mTrueRange;
-    Float3 mTrueLineOfSight;
-    double mTrueAzimuth;
-    double mTrueElevation;
+    SatelliteLocation mCurrentLocation;
+    SatelliteLocation mNextLocation;
 
     OrbitCorrection mOrbitCorrection;
     ClockCorrection mClockCorrection;

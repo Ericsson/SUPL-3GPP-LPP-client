@@ -18,66 +18,52 @@ namespace tokoro {
 Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 location) NOEXCEPT
     : mSvId(satellite.id()),
       mSignalId(signal_id),
-      mTrueRange(satellite.true_range()),
-      mEphRange(satellite.eph_range()),
-      mCodeBiasValid(false),
-      mPhaseBiasValid(false),
-      mTropoValid(false),
-      mTropeHeightCorrectionValid(false),
-      mIonoValid(false),
-      mShapiroValid(false),
-      mPhaseWindupValid(false),
-      mSolidTidesValid(false),
-      mAntennaPhaseVariation(false) {
+      mCurrent{satellite.current_location()},
+      mNext{satellite.next_location()} {
     mIsValid = true;
 
     // TODO(ewasjon): For GLONASS, the frequency depends on the channel number
     mFrequency  = signal_id.frequency();
-    mWavelength = constant::SPEED_OF_LIGHT / mFrequency;
+    mWavelength = constant::SPEED_OF_LIGHT / mFrequency / 1000.0;
 
-    mEphOrbitError = mEphRange - mTrueRange;
+    mClockCorrection       = Correction{satellite.clock_correction(), true};
+    mCodeBias              = Correction{0.0, false};
+    mPhaseBias             = Correction{0.0, false};
+    mTropospheric          = TroposphericDelay{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false};
+    mIonospheric           = IonosphericDelay{0.0, 0.0, false};
+    mShapiro               = Correction{0.0, false};
+    mPhaseWindup           = Correction{0.0, false};
+    mEarthSolidTides       = SolidEarthTides{0.0, {}, false};
+    mAntennaPhaseVariation = Correction{0.0, false};
 
-    // NOTE(ewasjon): The clock bias should be added to the satellite time to "correct" it, however,
-    // we want to uncorrect the satellite time, so we subtract it.
-    mEphClockBias = -satellite.eph_clock_bias();
-
-    mLineOfSight = satellite.line_of_sight();
-
-    mClockCorrection      = satellite.clock_correction();
-    mClockCorrectionValid = true;
-
-    mEmissionTime   = satellite.emission_time();
-    mReceptionTime  = satellite.reception_time();
     mGroundPosition = location;
     mGroundLlh      = ecef_to_llh(location, WGS84);
-    mWgsPosition    = ecef_to_wgs84(location);
-    mElevation      = satellite.elevation();
 
-    mSatelliteApc = satellite.apc();
-
-    auto mapping     = hydrostatic_mapping_function(mReceptionTime, mWgsPosition, mElevation);
-    mTropoDryMapping = mapping.hydrostatic;
-    mTropoWetMapping = mapping.wet;
+    auto mapping =
+        hydrostatic_mapping_function(mCurrent.reception_time, mGroundLlh, mCurrent.true_elevation);
+    mTropospheric.mapping_hydrostatic = mapping.hydrostatic;
+    mTropospheric.mapping_wet         = mapping.wet;
 }
 
 void Observation::compute_tropospheric_height() NOEXCEPT {
     VSCOPE_FUNCTION();
 
-    auto ellipsoidal_height = mWgsPosition.z;
-    auto geoid_height       = Geoid::height(mWgsPosition.x, mWgsPosition.y, Geoid::Model::EMBEDDED);
+    auto ellipsoidal_height = mGroundLlh.z;
+    auto geoid_height       = Geoid::height(mGroundLlh.x, mGroundLlh.y, Geoid::Model::EMBEDDED);
 
     HydrostaticAndWetDelay alt_0{};
     HydrostaticAndWetDelay alt_eh{};
-    auto mops_0 = mops_tropospheric_delay(mReceptionTime, mWgsPosition.x, 0.0, geoid_height, alt_0);
-    auto mops_eh = mops_tropospheric_delay(mReceptionTime, mWgsPosition.x, ellipsoidal_height,
-                                           geoid_height, alt_eh);
+    auto                   mops_0 =
+        mops_tropospheric_delay(mCurrent.reception_time, mGroundLlh.x, 0.0, geoid_height, alt_0);
+    auto mops_eh = mops_tropospheric_delay(mCurrent.reception_time, mGroundLlh.x,
+                                           ellipsoidal_height, geoid_height, alt_eh);
     if (mops_0 && mops_eh) {
-        mTropoDryHeightCorrection   = alt_eh.hydrostatic / alt_0.hydrostatic;
-        mTropoWetHeightCorrection   = alt_eh.wet / alt_0.wet;
-        mTropeHeightCorrectionValid = true;
+        mTropospheric.height_mapping_hydrostatic = alt_eh.hydrostatic / alt_0.hydrostatic;
+        mTropospheric.height_mapping_wet         = alt_eh.wet / alt_0.wet;
+        mTropospheric.valid_height_mapping       = true;
     } else {
         WARNF("failed to compute tropospheric height correction");
-        mTropeHeightCorrectionValid = false;
+        mTropospheric.valid_height_mapping = false;
     }
 }
 
@@ -89,9 +75,7 @@ void Observation::compute_phase_bias(CorrectionData const& correction_data) NOEX
 
     auto it = signals->phase_bias.find(mSignalId);
     if (it == signals->phase_bias.end()) return;
-
-    mPhaseBias      = it->second.bias;
-    mPhaseBiasValid = true;
+    mPhaseBias = Correction{it->second.bias, true};
 }
 
 void Observation::compute_code_bias(CorrectionData const& correction_data) NOEXCEPT {
@@ -102,9 +86,7 @@ void Observation::compute_code_bias(CorrectionData const& correction_data) NOEXC
 
     auto it = signals->code_bias.find(mSignalId);
     if (it == signals->code_bias.end()) return;
-
-    mCodeBias      = it->second.bias;
-    mCodeBiasValid = true;
+    mCodeBias = Correction{it->second.bias, true};
 }
 
 void Observation::compute_tropospheric(EcefPosition          location,
@@ -119,14 +101,14 @@ void Observation::compute_tropospheric(EcefPosition          location,
         return;
     }
 
-    if (mTropoValid) {
+    if (mTropospheric.valid) {
         VERBOSEF("tropospheric correction already computed");
         return;
     }
 
-    mTropoDry   = correction.dry;
-    mTropoWet   = correction.wet;
-    mTropoValid = true;
+    mTropospheric.hydrostatic = correction.dry;
+    mTropospheric.wet         = correction.wet;
+    mTropospheric.valid       = true;
 }
 
 void Observation::compute_ionospheric(EcefPosition          location,
@@ -139,28 +121,23 @@ void Observation::compute_ionospheric(EcefPosition          location,
         return;
     }
 
-    mIonoGridResidual = correction.grid_residual;
-    mIonoPolyResidual = correction.polynomial_residual;
-    mIonoValid        = true;
+    mIonospheric.grid_residual = correction.grid_residual;
+    mIonospheric.poly_residual = correction.polynomial_residual;
+    mIonospheric.valid         = true;
 }
 
 void Observation::compute_shapiro() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-    auto r_sat = geocentric_distance(mSatelliteApc);
+    auto r_sat = geocentric_distance(mCurrent.true_position);
     auto r_rcv = geocentric_distance(mGroundPosition);
-    auto r     = mTrueRange;
+    auto r     = mCurrent.true_range;
 
     // https://gssc.esa.int/navipedia/index.php/Relativistic_Path_Range_Effect
     auto shapiro = (2 * constant::GME / (constant::SPEED_OF_LIGHT * constant::SPEED_OF_LIGHT)) *
                    log((r_sat + r_rcv + r) / (r_sat + r_rcv - r));
 
-    mShapiro      = shapiro;
-    mShapiroValid = true;
-}
-
-void Observation::compute_phase_windup() NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
+    mShapiro = Correction{shapiro, true};
 }
 
 struct AstronomicalArguments {
@@ -670,21 +647,21 @@ void Observation::compute_earth_solid_tides() NOEXCEPT {
     Float3 sun{};
     Float3 moon{};
     double gmst = 0.0;
-    if (!compute_sun_and_moon_position_ecef(mReceptionTime, sun, moon, &gmst)) {
+    if (!compute_sun_and_moon_position_ecef(mCurrent.reception_time, sun, moon, &gmst)) {
         VERBOSEF("failed to compute sun and moon position");
         return;
     }
 
     Float3 sun_pole{};
-    if (!compute_solid_tide_pole(mReceptionTime, up, sun, constant::SUN_GRAVITATIONAL_CONSTANT,
-                                 sun_pole)) {
+    if (!compute_solid_tide_pole(mCurrent.reception_time, up, sun,
+                                 constant::SUN_GRAVITATIONAL_CONSTANT, sun_pole)) {
         VERBOSEF("failed to compute solid tide pole");
         return;
     }
 
     Float3 moon_pole{};
-    if (!compute_solid_tide_pole(mReceptionTime, up, moon, constant::MOON_GRAVITATIONAL_CONSTANT,
-                                 moon_pole)) {
+    if (!compute_solid_tide_pole(mCurrent.reception_time, up, moon,
+                                 constant::MOON_GRAVITATIONAL_CONSTANT, moon_pole)) {
         VERBOSEF("failed to compute solid tide pole");
         return;
     }
@@ -696,139 +673,138 @@ void Observation::compute_earth_solid_tides() NOEXCEPT {
     VERBOSEF("sin2l: %+.14f", sin2l);
     VERBOSEF("delta_up: %+.14f", delta_up);
 
-    mSolidTidesDisplacement = sun_pole + moon_pole + delta_up * up;
-    mSolidTides             = -dot_product(mLineOfSight, mSolidTidesDisplacement);
-    mSolidTidesValid        = true;
+    mEarthSolidTides.displacement_vector = sun_pole + moon_pole + delta_up * up;
+    mEarthSolidTides.displacement =
+        -dot_product(mCurrent.true_line_of_sight, mEarthSolidTides.displacement_vector);
+    mEarthSolidTides.valid = true;
 
-    VERBOSEF("disp x: %+.14f * %+.14f = %+.14f", mSolidTidesDisplacement.x, mLineOfSight.x,
-             mSolidTidesDisplacement.x * mLineOfSight.x);
-    VERBOSEF("disp y: %+.14f * %+.14f = %+.14f", mSolidTidesDisplacement.y, mLineOfSight.y,
-             mSolidTidesDisplacement.y * mLineOfSight.y);
-    VERBOSEF("disp z: %+.14f * %+.14f = %+.14f", mSolidTidesDisplacement.z, mLineOfSight.z,
-             mSolidTidesDisplacement.z * mLineOfSight.z);
-    VERBOSEF("solid tides: %+.14f", mSolidTides);
+    VERBOSEF("disp x: %+.14f * %+.14f = %+.14f", mEarthSolidTides.displacement_vector.x,
+             mCurrent.true_line_of_sight.x,
+             mEarthSolidTides.displacement_vector.x * mCurrent.true_line_of_sight.x);
+    VERBOSEF("disp y: %+.14f * %+.14f = %+.14f", mEarthSolidTides.displacement_vector.y,
+             mCurrent.true_line_of_sight.y,
+             mEarthSolidTides.displacement_vector.y * mCurrent.true_line_of_sight.y);
+    VERBOSEF("disp z: %+.14f * %+.14f = %+.14f", mEarthSolidTides.displacement_vector.z,
+             mCurrent.true_line_of_sight.z,
+             mEarthSolidTides.displacement_vector.z * mCurrent.true_line_of_sight.z);
+    VERBOSEF("solid tides: %+.14f", mEarthSolidTides.displacement);
+}
+
+void Observation::compute_phase_windup() NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
+
+    Float3 sun{};
+    Float3 moon{};
+    if (!compute_sun_and_moon_position_ecef(mCurrent.reception_time, sun, moon, nullptr)) {
+        VERBOSEF("failed to compute sun and moon position");
+        return;
+    }
+
+    auto k = mGroundPosition - mCurrent.true_position;
+    if (!k.normalize()) return;
+    VERBOSEF("k:   %+.4f, %+.4f, %+.4f", k.x, k.y, k.z);
+
+    auto sz = -1.0 * mCurrent.true_position;
+    if (!sz.normalize()) return;
+    VERBOSEF("sz:  %+.4f, %+.4f, %+.4f", sz.x, sz.y, sz.z);
+
+    auto we = Float3{0.0, 0.0, constant::EARTH_ANGULAR_VELOCITY};
+
+    auto e = sun - mCurrent.true_position;
+    if (!e.normalize()) return;
+
+    auto o_cross_r = cross_product(we, mCurrent.true_position);
+    auto ss        = cross_product(k, e);
+    if (!ss.normalize()) return;
+    VERBOSEF("ss:  %+.4f, %+.4f, %+.4f", ss.x, ss.y, ss.z);
+
+    auto sy = cross_product(sz, ss);
+    if (!sy.normalize()) return;
+    VERBOSEF("sy:  %+.4f, %+.4f, %+.4f", sy.x, sy.y, sy.z);
+
+    auto sx = cross_product(sy, sz);
+    VERBOSEF("sx:  %+.4f, %+.4f, %+.4f", sx.x, sx.y, sx.z);
+
+    auto sb = cross_product(k, e);
+    auto sa = cross_product(sb, k);
+
+    Float3 east, north, up;
+    compute_enu_basis(mGroundLlh, east, north, up);
+
+    auto rx = north;
+    auto ry = -1.0 * east;
+    VERBOSEF("rx:  %+.4f, %+.4f, %+.4f", rx.x, rx.y, rx.z);
+    VERBOSEF("ry:  %+.4f, %+.4f, %+.4f", ry.x, ry.y, ry.z);
+
+    auto ra = rx;
+    auto rb = ry;
+
+    auto rd = ra - k * dot_product(k, ra) + cross_product(k, rb);
+    auto sd = sa - k * dot_product(k, sa) - cross_product(k, sb);
+    VERBOSEF("sd:  %+.4f, %+.4f, %+.4f", sd.x, sd.y, sd.z);
+    VERBOSEF("rd:  %+.4f, %+.4f, %+.4f", rd.x, rd.y, rd.z);
+    auto cosp = dot_product(sd, rd) / (rd.length() * sd.length());
+    if (cosp < -1.0) cosp = -1.0;
+    if (cosp > 1.0) cosp = 1.0;
+    VERBOSEF("cos: %+.4f", cosp);
+    auto ph = acos(cosp) / (2.0 * constant::PI);
+    VERBOSEF("ph:  %+.4f", ph);
+    if (dot_product(k, cross_product(sd, rd)) < 0.0) ph = -ph;
+
+    auto prev_phw = 0.0;
+    VERBOSEF("phw: %+.4f", prev_phw);
+    auto phw = ph + floor(prev_phw - ph + 0.5);
+    VERBOSEF("phw: %+.4f (%+.4f)", phw, ph);
+
+    mPhaseWindup.correction = phw;
+    mPhaseWindup.valid      = true;
 }
 
 void Observation::compute_antenna_phase_variation() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
+    mAntennaPhaseVariation.valid = false;
 }
 
-void Observation::compute_code_range() NOEXCEPT {
+void Observation::compute_ranges() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
-    VERBOSEF("true_range:   %+24.10f", mTrueRange);
+    VERBOSEF("true_range:   %+24.10f", mCurrent.true_range);
 
-    auto clock_bias = constant::SPEED_OF_LIGHT * mEphClockBias;
-    VERBOSEF("clock_bias:   %+24.10f (%gs)", clock_bias, mEphClockBias);
+    auto clock_bias = constant::SPEED_OF_LIGHT * -mCurrent.eph_clock_bias;
+    VERBOSEF("clock_bias:   %+24.10f (%gs)", clock_bias, -mCurrent.eph_clock_bias);
 
     auto clock = 0.0;
-    if (mClockCorrectionValid) {
-        clock = mClockCorrection;
+    if (mClockCorrection.valid) {
+        clock = mClockCorrection.correction;
         VERBOSEF("clock:        %+24.10f (%gs)", clock,
-                 mClockCorrection / constant::SPEED_OF_LIGHT);
+                 mClockCorrection.correction / constant::SPEED_OF_LIGHT);
     } else {
         VERBOSEF("clock:        ---");
     }
 
     auto code_bias = 0.0;
-    if (mCodeBiasValid) {
-        code_bias = mCodeBias;
-        VERBOSEF("code_bias:    %+24.10f (%gm)", code_bias, mCodeBias);
+    if (mCodeBias.valid) {
+        code_bias = mCodeBias.correction;
+        VERBOSEF("code_bias:    %+24.10f (%gm)", code_bias, mCodeBias.correction);
     } else {
         VERBOSEF("code_bias:    ---");
     }
 
-    auto stec_grid = 0.0;
-    auto stec_poly = 0.0;
-    if (mIonoValid) {
-        stec_grid = 40.3e10 * mIonoGridResidual / (mFrequency * mFrequency);
-        stec_poly = 40.3e10 * mIonoPolyResidual / (mFrequency * mFrequency);
-        VERBOSEF("stec_grid:    %+24.10f (%g TECU, %g kHz)", stec_grid, mIonoGridResidual,
-                 mFrequency);
-        VERBOSEF("stec_poly:    %+24.10f (%g TECU, %g kHz)", stec_poly, mIonoPolyResidual,
-                 mFrequency);
-    } else {
-        VERBOSEF("stec_grid:    ---");
-        VERBOSEF("stec_poly:    ---");
-    }
-
-    auto tropo_wet_height_correction = 1.0;
-    auto tropo_dry_height_correction = 1.0;
-    if (mTropeHeightCorrectionValid) {
-        tropo_dry_height_correction = mTropoDryHeightCorrection;
-        tropo_wet_height_correction = mTropoWetHeightCorrection;
-    }
-
-    auto tropo_wet = 0.0;
-    auto tropo_dry = 0.0;
-    if (mTropoValid) {
-        tropo_dry = mTropoDry * mTropoDryMapping * tropo_dry_height_correction;
-        tropo_wet = mTropoWet * mTropoWetMapping * tropo_wet_height_correction;
-        VERBOSEF("tropo_dry:    %+24.10f (%gm x %g x %g)", tropo_dry, mTropoDry, mTropoDryMapping,
-                 tropo_dry_height_correction);
-        VERBOSEF("tropo_wet:    %+24.10f (%gm x %g x %g)", tropo_wet, mTropoWet, mTropoWetMapping,
-                 tropo_wet_height_correction);
-    } else {
-        VERBOSEF("tropo_dry:    ---");
-        VERBOSEF("tropo_wet:    ---");
-    }
-
-    auto shapiro = 0.0;
-    if (mShapiroValid) {
-        shapiro = mShapiro;
-        VERBOSEF("shapiro:      %+24.10f (%gm)", shapiro, mShapiro);
-    } else {
-        VERBOSEF("shapiro:      ---");
-    }
-
-    auto solid_tides = 0.0;
-    if (mSolidTidesValid) {
-        solid_tides = mSolidTides;
-        VERBOSEF("solid_tides:  %+24.10f (%gm)", solid_tides, mSolidTides);
-    } else {
-        VERBOSEF("solid_tides:  ---");
-    }
-
-    auto pseudo_correction = clock + code_bias + stec_grid + stec_poly + tropo_dry + tropo_wet;
-    auto final_correction  = shapiro + solid_tides;
-    auto result            = mTrueRange + clock_bias + pseudo_correction + final_correction;
-    DEBUGF("%s(%s): code  %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), result,
-           pseudo_correction, final_correction);
-
-    mCodeRange = result;
-}
-
-void Observation::compute_phase_range() NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
-    VERBOSEF("true_range:   %+24.10f", mTrueRange);
-
-    auto clock_bias = constant::SPEED_OF_LIGHT * mEphClockBias;
-    VERBOSEF("clock_bias:   %+24.10f (%gs)", clock_bias, mEphClockBias);
-
-    auto clock = 0.0;
-    if (mClockCorrectionValid) {
-        clock = mClockCorrection;
-        VERBOSEF("clock:        %+24.10f (%gs)", clock,
-                 mClockCorrection / constant::SPEED_OF_LIGHT);
-    } else {
-        VERBOSEF("clock:        ---");
-    }
-
     auto phase_bias = 0.0;
-    if (mPhaseBiasValid) {
-        phase_bias = mPhaseBias;
-        VERBOSEF("phase_bias:   %+24.10f (%gm)", phase_bias, mPhaseBias);
+    if (mPhaseBias.valid) {
+        phase_bias = mPhaseBias.correction;
+        VERBOSEF("phase_bias:   %+24.10f (%gm)", phase_bias, mPhaseBias.correction);
     } else {
         VERBOSEF("phase_bias:   ---");
     }
 
     auto stec_grid = 0.0;
     auto stec_poly = 0.0;
-    if (mIonoValid) {
-        stec_grid = -40.3e10 * mIonoGridResidual / (mFrequency * mFrequency);
-        stec_poly = -40.3e10 * mIonoPolyResidual / (mFrequency * mFrequency);
-        VERBOSEF("stec_grid:    %+24.10f (%g TECU, %g kHz)", stec_grid, mIonoGridResidual,
+    if (mIonospheric.valid) {
+        stec_grid = 40.3e10 * mIonospheric.grid_residual / (mFrequency * mFrequency);
+        stec_poly = 40.3e10 * mIonospheric.poly_residual / (mFrequency * mFrequency);
+        VERBOSEF("stec_grid:    %+24.10f (%g TECU, %g kHz)", stec_grid, mIonospheric.grid_residual,
                  mFrequency);
-        VERBOSEF("stec_poly:    %+24.10f (%g TECU, %g kHz)", stec_poly, mIonoPolyResidual,
+        VERBOSEF("stec_poly:    %+24.10f (%g TECU, %g kHz)", stec_poly, mIonospheric.poly_residual,
                  mFrequency);
     } else {
         VERBOSEF("stec_grid:    ---");
@@ -837,70 +813,101 @@ void Observation::compute_phase_range() NOEXCEPT {
 
     auto tropo_wet_height_correction = 1.0;
     auto tropo_dry_height_correction = 1.0;
-    if (mTropeHeightCorrectionValid) {
-        tropo_dry_height_correction = mTropoDryHeightCorrection;
-        tropo_wet_height_correction = mTropoWetHeightCorrection;
+    if (mTropospheric.valid_height_mapping) {
+        tropo_dry_height_correction = mTropospheric.height_mapping_hydrostatic;
+        tropo_wet_height_correction = mTropospheric.height_mapping_wet;
     }
 
     auto tropo_wet = 0.0;
     auto tropo_dry = 0.0;
-    if (mTropoValid) {
-        tropo_dry = mTropoDry * mTropoDryMapping * tropo_dry_height_correction;
-        tropo_wet = mTropoWet * mTropoWetMapping * tropo_wet_height_correction;
-        VERBOSEF("tropo_dry:    %+24.10f (%gm x %g x %g)", tropo_dry, mTropoDry, mTropoDryMapping,
-                 tropo_dry_height_correction);
-        VERBOSEF("tropo_wet:    %+24.10f (%gm x %g x %g)", tropo_wet, mTropoWet, mTropoWetMapping,
-                 tropo_wet_height_correction);
+    if (mTropospheric.valid) {
+        tropo_dry = mTropospheric.hydrostatic * mTropospheric.mapping_hydrostatic *
+                    tropo_dry_height_correction;
+        tropo_wet = mTropospheric.wet * mTropospheric.mapping_wet * tropo_wet_height_correction;
+        VERBOSEF("tropo_dry:    %+24.10f (%gm x %g x %g)", tropo_dry, mTropospheric.hydrostatic,
+                 mTropospheric.mapping_hydrostatic, tropo_dry_height_correction);
+        VERBOSEF("tropo_wet:    %+24.10f (%gm x %g x %g)", tropo_wet, mTropospheric.wet,
+                 mTropospheric.mapping_wet, tropo_wet_height_correction);
     } else {
         VERBOSEF("tropo_dry:    ---");
         VERBOSEF("tropo_wet:    ---");
     }
 
     auto shapiro = 0.0;
-    if (mShapiroValid) {
-        shapiro = mShapiro;
-        VERBOSEF("shapiro:      %+24.10f (%gm)", shapiro, mShapiro);
+    if (mShapiro.valid) {
+        shapiro = mShapiro.correction;
+        VERBOSEF("shapiro:      %+24.10f (%gm)", shapiro, mShapiro.correction);
     } else {
         VERBOSEF("shapiro:      ---");
     }
 
     auto solid_tides = 0.0;
-    if (mSolidTidesValid) {
-        solid_tides = mSolidTides;
-        VERBOSEF("solid_tides:  %+24.10f (%gm)", solid_tides, mSolidTides);
+    if (mEarthSolidTides.valid) {
+        solid_tides = mEarthSolidTides.displacement;
+        VERBOSEF("solid_tides:  %+24.10f (%gm,(%g,%g,%g))", solid_tides,
+                 mEarthSolidTides.displacement, mEarthSolidTides.displacement_vector.x,
+                 mEarthSolidTides.displacement_vector.y, mEarthSolidTides.displacement_vector.z);
     } else {
         VERBOSEF("solid_tides:  ---");
     }
 
     auto phase_windup = 0.0;
-    if (mPhaseWindupValid) {
-        phase_windup = mPhaseWindup;
-        VERBOSEF("phase_windup: %+24.10f (%gm)", phase_windup, mPhaseWindup);
+    if (mPhaseWindup.valid) {
+        phase_windup = mPhaseWindup.correction * mWavelength;
+        VERBOSEF("phase_windup: %+24.10f (%gc x %g)", phase_windup, mPhaseWindup.correction,
+                 mWavelength);
     } else {
         VERBOSEF("phase_windup: ---");
     }
 
     auto antenna_phase_variation = 0.0;
-    if (mAntennaPhaseVariationValid) {
-        antenna_phase_variation = mAntennaPhaseVariation;
-        VERBOSEF("ant_phase:    %+24.10f (%gm)", antenna_phase_variation, mAntennaPhaseVariation);
+    if (mAntennaPhaseVariation.valid) {
+        antenna_phase_variation = mAntennaPhaseVariation.correction;
+        VERBOSEF("ant_phase:    %+24.10f (%gm)", antenna_phase_variation,
+                 mAntennaPhaseVariation.correction);
     } else {
         VERBOSEF("ant_phase:    ---");
     }
 
-    auto carrier_correction = clock + phase_bias + stec_grid + stec_poly + tropo_dry + tropo_wet;
-    auto final_correction   = shapiro + solid_tides + phase_windup + antenna_phase_variation;
-    auto result             = mTrueRange + clock_bias + carrier_correction + final_correction;
-    DEBUGF("%s(%s): phase %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), result,
-           carrier_correction, final_correction);
-    mPhaseRange = result;
+    auto code_correction       = clock + code_bias + stec_grid + stec_poly + tropo_dry + tropo_wet;
+    auto phase_correction      = clock + phase_bias - stec_grid - stec_poly + tropo_dry + tropo_wet;
+    auto final_code_correction = shapiro + solid_tides;
+    auto final_phase_correction = shapiro + solid_tides + phase_windup + antenna_phase_variation;
+    auto code_result = mCurrent.true_range + clock_bias + code_correction + final_code_correction;
+    auto phase_result =
+        mCurrent.true_range + clock_bias + phase_correction + final_phase_correction;
+    DEBUGF("%s(%s): code  %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), code_result,
+           code_correction, final_code_correction);
+    DEBUGF("%s(%s): phase %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_result,
+           phase_correction, final_phase_correction);
+
+    auto next_phase_result =
+        mNext.true_range + constant::SPEED_OF_LIGHT * -mNext.eph_clock_bias + phase_correction + final_phase_correction;
+    auto phase_delta = next_phase_result - phase_result;
+    auto time_delta = (mNext.reception_time.timestamp() - mCurrent.reception_time.timestamp()).full_seconds();
+    auto phase_rate = phase_delta / time_delta;
+
+    DEBUGF("%s(%s): phase rate %+19.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_rate,
+           phase_delta, time_delta);
+
+
+    INFOF(",%s,%s,%g,%u,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,TOTAL,%.14f,%.14f,TOTAL,%.14f,%."
+          "14f,%.14f,%.14f",
+          mSvId.name(), mSignalId.name(), mFrequency, mIode, mCurrent.true_range, clock_bias, clock,
+          code_bias, phase_bias, stec_grid, stec_poly, tropo_dry, tropo_wet, shapiro, solid_tides,
+          phase_windup, antenna_phase_variation);
+
+
+    mCodeRange      = code_result;
+    mPhaseRange     = phase_result;
+    mPhaseRangeRate = phase_rate;
 }
 
-double Observation::pseudorange() const NOEXCEPT {
+double Observation::code_range() const NOEXCEPT {
     return mCodeRange;
 }
 
-double Observation::carrier_cycle() const NOEXCEPT {
+double Observation::phase_range() const NOEXCEPT {
     return mPhaseRange;
 }
 
