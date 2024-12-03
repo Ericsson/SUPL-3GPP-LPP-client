@@ -5,9 +5,9 @@
 
 namespace generator {
 namespace tokoro {
-    
-using Wgs84Position = Float3;
-Wgs84Position ecef_to_wgs84(Float3 ecef) NOEXCEPT;
+
+// Transform ecef vector to local tangental coordinate
+bool ecef_to_enu(Float3 llh, Float3 ecef_vector, Float3& enu);
 
 }  // namespace tokoro
 }  // namespace generator

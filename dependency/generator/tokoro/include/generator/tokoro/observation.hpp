@@ -1,10 +1,8 @@
 #pragma once
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
-#include <generator/tokoro/ecef.hpp>
-#include <generator/tokoro/mops.hpp>
-#include <generator/tokoro/wgs84.hpp>
 
+#include <maths/float3.hpp>
 #include <time/tai.hpp>
 
 namespace generator {
@@ -48,9 +46,8 @@ public:
 
     void compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT;
     void compute_code_bias(CorrectionData const& correction_data) NOEXCEPT;
-    void compute_tropospheric(EcefPosition          location,
-                              CorrectionData const& correction_data) NOEXCEPT;
-    void compute_ionospheric(EcefPosition location, CorrectionData const& correction_data) NOEXCEPT;
+    void compute_tropospheric(CorrectionData const& correction_data) NOEXCEPT;
+    void compute_ionospheric(CorrectionData const& correction_data) NOEXCEPT;
 
     void compute_tropospheric_height() NOEXCEPT;
 

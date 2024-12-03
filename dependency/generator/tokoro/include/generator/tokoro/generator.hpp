@@ -12,9 +12,7 @@
 #include <ephemeris/gps.hpp>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
-#include <generator/tokoro/ecef.hpp>
 #include <generator/tokoro/sv_id.hpp>
-#include <generator/tokoro/wgs84.hpp>
 #include <time/tai.hpp>
 
 struct LPP_Message;

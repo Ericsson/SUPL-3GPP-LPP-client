@@ -64,7 +64,7 @@ public:
     std::vector<Observation> const& observations() const NOEXCEPT { return mObservations; }
 
     Observation& initialize_observation(SignalId signal_id) NOEXCEPT {
-        mObservations.emplace_back(*this, signal_id, mGroundPosition);
+        mObservations.emplace_back(*this, signal_id, mGroundPositionEcef);
         return mObservations.back();
     }
 
@@ -82,7 +82,8 @@ protected:
 
 private:
     SatelliteId mId;
-    Float3      mGroundPosition;
+    Float3      mGroundPositionEcef;
+    Float3      mGroundPositionLlh;
     bool        mEnabled;
 
     ts::Tai mLastGenerationTime;

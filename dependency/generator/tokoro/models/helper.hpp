@@ -1,6 +1,5 @@
 #pragma once
 #include "constant.hpp"
-#include "wgs84.hpp"
 
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
@@ -62,7 +61,7 @@ struct HydrostaticAndWetMapping {
     double wet;
 };
 
-HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Wgs84Position position,
+HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Float3 position,
                                                       double elevation);
 
 }  // namespace tokoro

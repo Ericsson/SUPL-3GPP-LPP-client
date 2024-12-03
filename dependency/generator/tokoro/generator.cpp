@@ -3,7 +3,7 @@
 #include "coordinate.hpp"
 #include "data.hpp"
 #include "decode.hpp"
-#include "helper.hpp"
+#include "models/helper.hpp"
 #include "observation.hpp"
 #include "satellite.hpp"
 
@@ -111,8 +111,8 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     auto& observation = satellite.initialize_observation(signal_id);
     observation.compute_phase_bias(correction_data);
     observation.compute_code_bias(correction_data);
-    observation.compute_tropospheric(mGroundPosition, correction_data);
-    observation.compute_ionospheric(mGroundPosition, correction_data);
+    observation.compute_tropospheric(correction_data);
+    observation.compute_ionospheric(correction_data);
 
     if (mShapiroCorrection) observation.compute_shapiro();
     if (mEarthSolidTidesCorrection) observation.compute_earth_solid_tides();

@@ -1,7 +1,6 @@
 #include "data.hpp"
+#include "constant.hpp"
 #include "decode.hpp"
-#include "ecef.hpp"
-#include "wgs84.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -85,7 +84,7 @@ double ClockCorrection::correction(ts::Tai time) const NOEXCEPT {
 }
 
 bool CorrectionPointSet::array_to_index(long array_index, long& index, bool& valid,
-                                        Wgs84Position& position) const NOEXCEPT {
+                                        Float3& llh) const NOEXCEPT {
     long array_count    = 0;
     long absolute_index = 0;
     for (long y = 0; y <= number_of_steps_latitude; y++) {
@@ -95,10 +94,11 @@ bool CorrectionPointSet::array_to_index(long array_index, long& index, bool& val
             auto is_valid = (bitmask & bit) != 0;
 
             if (array_count == array_index) {
-                index      = absolute_index;
-                valid      = is_valid;
-                position.x = reference_point_latitude - static_cast<double>(y) * step_of_latitude;
-                position.y = reference_point_longitude + static_cast<double>(x) * step_of_longitude;
+                index = absolute_index;
+                valid = is_valid;
+                llh.x = reference_point_latitude - static_cast<double>(y) * step_of_latitude;
+                llh.y = reference_point_longitude + static_cast<double>(x) * step_of_longitude;
+                llh.z = 0;
                 return true;
             }
 
@@ -117,7 +117,7 @@ static double interpolate(double a, double b, double t) {
     return a * (1.0 - t) + b * t;
 }
 
-GridPoint const* GridData::find_top_left(Wgs84Position position) const NOEXCEPT {
+GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
     VSCOPE_FUNCTION();
 
     for (auto& grid_point : mGridPoints) {
@@ -129,9 +129,9 @@ GridPoint const* GridData::find_top_left(Wgs84Position position) const NOEXCEPT 
         auto y0 = grid_point.position.y;
         auto x1 = x0 - mDeltaLatitude;
         auto y1 = y0 + mDeltaLongitude;
-        VERBOSEF("latitude:  %+18.14f >= %+18.14f >= %+18.14f", x0, position.x, x1);
-        VERBOSEF("longitude: %+18.14f <= %+18.14f <= %+18.14f", y0, position.y, y1);
-        if (position.x <= x0 && position.x >= x1 && position.y >= y0 && position.y <= y1) {
+        VERBOSEF("latitude:  %+18.14f >= %+18.14f >= %+18.14f", x0, llh.x * constant::RAD2DEG, x1);
+        VERBOSEF("longitude: %+18.14f <= %+18.14f <= %+18.14f", y0, llh.y * constant::RAD2DEG, y1);
+        if (llh.x * constant::RAD2DEG <= x0 && llh.x * constant::RAD2DEG >= x1 && llh.y * constant::RAD2DEG >= y0 && llh.y * constant::RAD2DEG <= y1) {
             VERBOSEF("found: %ld/%ld", grid_point.array_index, grid_point.absolute_index);
             return &grid_point;
         }
@@ -158,11 +158,11 @@ GridPoint const* GridData::find_with_absolute_index(long absolute_index) const N
     return nullptr;
 }
 
-bool GridData::find_4_points(Wgs84Position position, GridPoint const*& tl, GridPoint const*& tr,
+bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr,
                              GridPoint const*& bl, GridPoint const*& br) const NOEXCEPT {
     VSCOPE_FUNCTION();
 
-    auto top_left = find_top_left(position);
+    auto top_left = find_top_left(llh);
     if (top_left == nullptr) {
         VERBOSEF("top left not found");
         return false;
@@ -185,7 +185,7 @@ bool GridData::find_4_points(Wgs84Position position, GridPoint const*& tl, GridP
     return true;
 }
 
-bool GridData::ionospheric(SatelliteId sv_id, Wgs84Position position,
+bool GridData::ionospheric(SatelliteId sv_id, Float3 llh,
                            double& ionospheric_residual) const NOEXCEPT {
     VSCOPE_FUNCTION();
 
@@ -194,7 +194,7 @@ bool GridData::ionospheric(SatelliteId sv_id, Wgs84Position position,
     GridPoint const* tr = nullptr;
     GridPoint const* bl = nullptr;
     GridPoint const* br = nullptr;
-    if (find_4_points(position, tl, tr, bl, br)) {
+    if (find_4_points(llh, tl, tr, bl, br)) {
         VERBOSEF("bilinear interpolation");
 
         if (!tl->has_ionospheric_residual(sv_id) || !tr->has_ionospheric_residual(sv_id) ||
@@ -203,8 +203,8 @@ bool GridData::ionospheric(SatelliteId sv_id, Wgs84Position position,
             return false;
         }
 
-        auto dx = (position.x - tl->position.x) / (br->position.x - tl->position.x);
-        auto dy = (position.y - tl->position.y) / (br->position.y - tl->position.y);
+        auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
+        auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
 
         VERBOSEF("dx: %+.14f", dx);
         VERBOSEF("dy: %+.14f", dy);
@@ -229,8 +229,7 @@ bool GridData::ionospheric(SatelliteId sv_id, Wgs84Position position,
     return false;
 }
 
-bool GridData::tropospheric(Wgs84Position           position,
-                            TroposphericCorrection& correction) const NOEXCEPT {
+bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT {
     VSCOPE_FUNCTION();
 
     // if we're inside 4 points, bilinear interpolation
@@ -238,7 +237,7 @@ bool GridData::tropospheric(Wgs84Position           position,
     GridPoint const* tr = nullptr;
     GridPoint const* bl = nullptr;
     GridPoint const* br = nullptr;
-    if (find_4_points(position, tl, tr, bl, br)) {
+    if (find_4_points(llh, tl, tr, bl, br)) {
         VERBOSEF("bilinear interpolation");
 
         if (!tl->has_tropospheric_data() || !tr->has_tropospheric_data() ||
@@ -247,8 +246,8 @@ bool GridData::tropospheric(Wgs84Position           position,
             return false;
         }
 
-        auto dx = (position.x - tl->position.x) / (br->position.x - tl->position.x);
-        auto dy = (position.y - tl->position.y) / (br->position.y - tl->position.y);
+        auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
+        auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
 
         VERBOSEF("dx: %+.14f", dx);
         VERBOSEF("dy: %+.14f", dy);
@@ -278,13 +277,16 @@ bool GridData::tropospheric(Wgs84Position           position,
         correction.dry = interpolate(interpolate(tl_value_dry, bl_value_dry, dx),
                                      interpolate(tr_value_dry, br_value_dry, dx), dy);
 
+        VERBOSEF("tropospheric wet: %+.14f", correction.wet);
+        VERBOSEF("tropospheric dry: %+.14f", correction.dry);
+
         return true;
     }
 
     return false;
 }
 
-bool CorrectionData::tropospheric(SatelliteId sv_id, EcefPosition ecef,
+bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
                                   TroposphericCorrection& correction) const NOEXCEPT {
     VSCOPE_FUNCTION();
 
@@ -293,15 +295,14 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, EcefPosition ecef,
         return false;
     }
 
-    auto position = ecef_to_wgs84(ecef);
-    auto grid_it  = mGrid.find(sv_id.gnss());
+    auto grid_it = mGrid.find(sv_id.gnss());
     if (grid_it == mGrid.end()) {
         WARNF("tropospheric correction for satellite not found");
         return false;
     }
 
     auto& grid = grid_it->second;
-    if (!grid.tropospheric(position, correction)) {
+    if (!grid.tropospheric(llh, correction)) {
         WARNF("tropospheric correction not found");
         return false;
     }
@@ -309,11 +310,10 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, EcefPosition ecef,
     return true;
 }
 
-bool CorrectionData::ionospheric(SatelliteId sv_id, EcefPosition ecef,
+bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
                                  IonosphericCorrection& correction) const NOEXCEPT {
     VSCOPE_FUNCTION();
 
-    auto position       = ecef_to_wgs84(ecef);
     auto has_polynomial = false;
     auto has_gridded    = false;
 
@@ -322,8 +322,8 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, EcefPosition ecef,
     auto it = mIonosphericPolynomial.find(sv_id);
     if (it != mIonosphericPolynomial.end()) {
         auto& polynomial = it->second;
-        auto  latitude   = position.x - polynomial.reference_point_latitude;
-        auto  longitude  = position.y - polynomial.reference_point_longitude;
+        auto  latitude   = (llh.x * constant::RAD2DEG) - polynomial.reference_point_latitude;
+        auto  longitude  = (llh.y * constant::RAD2DEG) - polynomial.reference_point_longitude;
 
         VERBOSEF("polynomial:");
         VERBOSEF("  c00: %.14f", polynomial.c00);
@@ -331,11 +331,11 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, EcefPosition ecef,
         VERBOSEF("  c10: %.14f", polynomial.c10);
         VERBOSEF("  c11: %.14f", polynomial.c11);
 
-        VERBOSEF("  px: %.14f", position.x);
+        VERBOSEF("  px: %.14f", llh.x * constant::RAD2DEG);
         VERBOSEF("  rx: %.14f", polynomial.reference_point_latitude);
         VERBOSEF("  dx: %.14f", latitude);
 
-        VERBOSEF("  py: %.14f", position.y);
+        VERBOSEF("  py: %.14f", llh.y * constant::RAD2DEG);
         VERBOSEF("  ry: %.14f", polynomial.reference_point_longitude);
         VERBOSEF("  dy: %.14f", longitude);
 
@@ -355,7 +355,7 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, EcefPosition ecef,
 
     auto grid_it = mGrid.find(sv_id.gnss());
     if (grid_it != mGrid.end()) {
-        if (grid_it->second.ionospheric(sv_id, position, correction.grid_residual)) {
+        if (grid_it->second.ionospheric(sv_id, llh, correction.grid_residual)) {
             has_gridded = true;
         }
     }
@@ -679,7 +679,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                 auto bit      = 1ULL << (64 - 1 - i);
                 auto is_valid = (correction_point_set.bitmask & bit) != 0;
 
-                Wgs84Position position{};
+                Float3 position{};
                 position.x = correction_point_set.reference_point_latitude -
                              static_cast<double>(y) * correction_point_set.step_of_latitude;
                 position.y = correction_point_set.reference_point_longitude +

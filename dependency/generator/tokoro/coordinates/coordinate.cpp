@@ -33,7 +33,7 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
             phi = phi_n;
 
             auto h = p / std::cos(phi) - N;
-            return Float3{phi * constant::RAD2DEG, lon * constant::RAD2DEG, h};
+            return Float3{phi, lon, h};
         }
 
         phi = phi_n;
@@ -41,8 +41,8 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
 }
 
 Float3 llh_to_ecef(Float3 llh, ReferenceEllipsoid const& ellipsoid) {
-    auto lat = llh.x * constant::DEG2RAD;
-    auto lon = llh.y * constant::DEG2RAD;
+    auto lat = llh.x;
+    auto lon = llh.y;
     auto h   = llh.z;
 
     auto d = ellipsoid.eccentricity * std::sin(lat);

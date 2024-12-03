@@ -2,6 +2,7 @@
 #include "constant.hpp"
 
 #include <loglet/loglet.hpp>
+#include <math.h>
 #include <time/utc.hpp>
 
 #define LOGLET_CURRENT_MODULE "tokoro"
@@ -20,9 +21,9 @@ static double interpolate(double const* x, double const* y, int nx, int ny, doub
 }
 
 bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
-    VSCOPE_FUNCTIONF("%s, %+.8f", time.rtklib_time_string().c_str(), latitude);
+    VSCOPE_FUNCTIONF("%s, %+.8f", time.rtklib_time_string().c_str(), latitude * constant::RAD2DEG);
 
-    auto         latdeg = latitude;       /* rad->deg */
+    auto         latdeg = latitude * constant::RAD2DEG;
     double const dminN = 28, DminS = 211; /* 28@north hemisphere, 211@south hemisphere */
     double const interval[] = {15.0, 30.0, 45.0, 60.0, 75.0};
 
@@ -44,7 +45,7 @@ bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
 
     auto doy = ts::Utc{time}.day_of_year();
     for (auto i = 0; i < 5; i++) {
-        auto cos_    = cos(2.0 * constant::PI * (doy - dminN) / 365.25);
+        auto cos_    = std::cos(2.0 * constant::PI * (doy - dminN) / 365.25);
         calcPsta[i]  = pTave[i] - pTableS[i] * cos_;
         calcTsta[i]  = tTave[i] - tTableS[i] * cos_;
         calcWsta[i]  = wTave[i] - wTableS[i] * cos_;
@@ -84,8 +85,11 @@ bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
 }
 
 static double hydrostatic_function(double latitude, double ellipsoidal_height, double pressure) {
-    VSCOPE_FUNCTIONF("%+.8f, %+.8f, %+.8f", latitude, ellipsoidal_height, pressure);
-    return 2.2768 / (1.0 - 0.00266 * cos(2.0 * latitude) - (2.8e-7) * ellipsoidal_height) *
+    VSCOPE_FUNCTIONF("%+.8f, %+.8f, %+.8f", latitude * constant::RAD2DEG, ellipsoidal_height,
+                     pressure);
+    return 2.2768 /
+           (1.0 - 0.00266 * cos(2.0 * latitude * constant::RAD2DEG) -
+            (2.8e-7) * ellipsoidal_height) *
            pressure * 0.001;
 }
 
@@ -96,8 +100,8 @@ static double wet_function(double temperature, double water_pressure) {
 
 bool mops_tropospheric_delay(ts::Tai const& time, double latitude, double ellipsoidal_height,
                              double geoid_height, HydrostaticAndWetDelay& result) {
-    VSCOPE_FUNCTIONF("%s, %+.8f, %+.8f, %+.8f", time.rtklib_time_string().c_str(), latitude,
-                     ellipsoidal_height, geoid_height);
+    VSCOPE_FUNCTIONF("%s, %+.8f, %+.8f, %+.8f", time.rtklib_time_string().c_str(),
+                     latitude * constant::RAD2DEG, ellipsoidal_height, geoid_height);
 
     Mops mops{};
     if (!evaluate_mops(time, latitude, mops)) {

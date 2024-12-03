@@ -1,7 +1,6 @@
 #pragma once
 #include <maths/float3.hpp>
-
-#include "reference_ellipsoid.hpp"
+#include <generator/tokoro/reference_ellipsoid.hpp>
 
 namespace generator {
 namespace tokoro {

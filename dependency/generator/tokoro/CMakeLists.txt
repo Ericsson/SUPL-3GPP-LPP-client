@@ -3,16 +3,18 @@ add_library(dependency_generator_tokoro STATIC
     "generator.cpp"
     "satellite.cpp"
     "data.cpp"
-    "wgs84.cpp"
     "observation.cpp"
-    "helper.cpp"
-    "ecef.cpp"
-    "gpt.cpp"
-    "mops.cpp"
-    "geoid.cpp"
 
+    "models/helper.cpp"
+    "models/gpt.cpp"
+    "models/mops.cpp"
+    "models/geoid.cpp"
+    
     "coordinates/coordinate.cpp"
     "coordinates/reference_ellipsoid.cpp"
+    "coordinates/enu.cpp"
+    "coordinates/wgs84.cpp"
+    "coordinates/ecef.cpp"
 )
 add_library(dependency::generator::tokoro ALIAS dependency_generator_tokoro)
 

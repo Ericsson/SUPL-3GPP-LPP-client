@@ -1,9 +1,9 @@
 #include "satellite.hpp"
+#include "coordinate.hpp"
 #include "data.hpp"
-#include "ecef.hpp"
 #include "generator.hpp"
-#include "helper.hpp"
-#include "wgs84.hpp"
+#include "models/helper.hpp"
+#include "coordinates/enu.hpp"
 
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
@@ -17,9 +17,11 @@ namespace tokoro {
 
 Satellite::Satellite(SatelliteId id, Float3 ground_position, Generator const& generator) NOEXCEPT
     : mId{id},
-      mGroundPosition{ground_position},
+      mGroundPositionEcef{ground_position},
       mEnabled{false},
-      mGenerator{generator} {}
+      mGenerator{generator} {
+    mGroundPositionLlh = ecef_to_llh(mGroundPositionEcef, ellipsoid::WGS84);
+}
 
 void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
@@ -45,24 +47,24 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     auto current_time = generation_time;
     auto next_time    = generation_time + ts::Timestamp{1.0};
 
-    if (!compute_true_position(mId, mGroundPosition, current_time, eph, mOrbitCorrection,
+    if (!compute_true_position(mId, mGroundPositionEcef, current_time, eph, mOrbitCorrection,
                                mCurrentLocation)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         return;
     }
 
-    if (!compute_true_position(mId, mGroundPosition, next_time, eph, mOrbitCorrection,
+    if (!compute_true_position(mId, mGroundPositionEcef, next_time, eph, mOrbitCorrection,
                                mNextLocation)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         return;
     }
 
-    if (!compute_azimuth_and_elevation(mId, mGroundPosition, mCurrentLocation)) {
+    if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mCurrentLocation)) {
         WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
         return;
     }
 
-    if (!compute_azimuth_and_elevation(mId, mGroundPosition, mNextLocation)) {
+    if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mNextLocation)) {
         WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
         return;
     }
@@ -237,10 +239,11 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
     VERBOSEF("    range: %.14f", location.true_range);
     VERBOSEF("    line of sight: (%f, %f, %f)", location.true_line_of_sight.x,
              location.true_line_of_sight.y, location.true_line_of_sight.z);
+
     return true;
 }
 
-bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_location,
+bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_position_llh,
                                               SatelliteLocation& location) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", id.name());
 
@@ -252,17 +255,8 @@ bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_loca
         return false;
     }
 
-    Wgs84Position wgs84{};
-    wgs84 = ecef_to_wgs84(ground_location);
-    VERBOSEF("WGS84: (%f, %f, %f)", wgs84.x, wgs84.y, wgs84.z);
-
-    if (wgs84.z > -constant::RE_WGS84) {
-        Float3 enu{};
-        if (!ecef_to_enu(wgs84, location.true_line_of_sight, enu)) {
-            VERBOSEF("failed to convert ECEF to ENU");
-            return false;
-        }
-
+    if (ground_position_llh.z > -constant::RE_WGS84) {
+        auto enu = ecef_to_enu_at_llh(ground_position_llh, location.true_line_of_sight);
         VERBOSEF("ENU: (%f, %f, %f)", enu.x, enu.y, enu.z);
 
         auto azimuth = 0.0;

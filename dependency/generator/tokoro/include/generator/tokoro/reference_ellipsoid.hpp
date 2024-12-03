@@ -28,10 +28,12 @@ struct ReferenceEllipsoid {
     }
 };
 
+namespace ellipsoid {
 extern ReferenceEllipsoid const WGS84;
 extern ReferenceEllipsoid const GRS80;
 extern ReferenceEllipsoid const PZ90;
 extern ReferenceEllipsoid const PZ90_11;
+}
 
 }  // namespace tokoro
 }  // namespace generator

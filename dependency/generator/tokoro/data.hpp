@@ -6,11 +6,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include <maths/float3.hpp>
 #include <time/tai.hpp>
 
-#include "ecef.hpp"
 #include "sv_id.hpp"
-#include "wgs84.hpp"
 
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
@@ -64,7 +63,7 @@ struct CorrectionPointSet {
     // Convert array index (the index of the grid point in the array from LPP) to an absolute index
     // that includes invalid grid points.
     NODISCARD bool array_to_index(long array_index, long& index, bool& valid,
-                                  Wgs84Position& position) const NOEXCEPT;
+                                  Float3& position) const NOEXCEPT;
 
     NODISCARD double latitude_min() const NOEXCEPT { return reference_point_latitude; }
     NODISCARD double latitude_max() const NOEXCEPT {
@@ -130,8 +129,8 @@ struct IonosphericPolynomial {
 };
 
 struct IonosphereGridPoint {
-    Wgs84Position position;
-    double        ionospheric;
+    Float3 position;
+    double ionospheric;
 };
 
 struct IonosphereGrid {
@@ -139,11 +138,11 @@ struct IonosphereGrid {
 
     NODISCARD bool interpolate_4_points(GridIndex top_left_index, GridIndex top_right_index,
                                         GridIndex bottom_left_index, GridIndex bottom_right_index,
-                                        Wgs84Position position, double& correction) const NOEXCEPT;
+                                        Float3 position, double& correction) const NOEXCEPT;
 };
 
 struct TroposphereGridPoint {
-    Wgs84Position          position;
+    Float3                 position;
     TroposphericCorrection tropospheric;
 };
 
@@ -152,15 +151,15 @@ struct TroposphereGrid {
 
     NODISCARD bool interpolate_4_points(GridIndex top_left_index, GridIndex top_right_index,
                                         GridIndex bottom_left_index, GridIndex bottom_right_index,
-                                        Wgs84Position           position,
+                                        Float3                  position,
                                         TroposphericCorrection& correction) const NOEXCEPT;
 };
 
 struct GridPoint {
-    bool          valid;
-    bool          tropspheric_valid;
-    bool          ionospheric_valid;
-    Wgs84Position position;
+    bool   valid;
+    bool   tropspheric_valid;
+    bool   ionospheric_valid;
+    Float3 position;
 
     long array_index;
     long absolute_index;
@@ -177,14 +176,13 @@ struct GridPoint {
 };
 
 struct GridData {
-    GridPoint const* find_top_left(Wgs84Position position) const NOEXCEPT;
+    GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
     GridPoint const* find_with_absolute_index(long absolute_index) const NOEXCEPT;
-    bool find_4_points(Wgs84Position position, GridPoint const*& tl, GridPoint const*& tr,
-                       GridPoint const*& bl, GridPoint const*& br) const NOEXCEPT;
+    bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
+                       GridPoint const*& br) const NOEXCEPT;
 
-    bool ionospheric(SatelliteId sv_id, Wgs84Position position,
-                     double& ionospheric_residual) const NOEXCEPT;
-    bool tropospheric(Wgs84Position position, TroposphericCorrection& correction) const NOEXCEPT;
+    bool ionospheric(SatelliteId sv_id, Float3 llh, double& ionospheric_residual) const NOEXCEPT;
+    bool tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
         mDeltaLatitude          = correction_point_set.step_of_latitude;
@@ -194,12 +192,12 @@ struct GridData {
         mGridPoints.resize((mNumberOfStepsLatitude + 1) * (mNumberOfStepsLongitude + 1));
     }
 
-    void add_point(long array_index, long absolute_index, bool valid, Wgs84Position position) {
+    void add_point(long array_index, long absolute_index, bool valid, Float3 llh) {
         assert(absolute_index >= 0);
         assert(absolute_index < static_cast<long>(mGridPoints.size()));
         auto& grid_point             = mGridPoints[absolute_index];
         grid_point.valid             = valid;
-        grid_point.position          = position;
+        grid_point.position          = llh;
         grid_point.array_index       = array_index;
         grid_point.absolute_index    = absolute_index;
         grid_point.tropspheric_valid = false;
@@ -241,9 +239,9 @@ struct CorrectionData {
         return nullptr;
     }
 
-    bool tropospheric(SatelliteId sv_id, EcefPosition position,
+    bool tropospheric(SatelliteId sv_id, Float3 llh,
                       TroposphericCorrection& correction) const NOEXCEPT;
-    bool ionospheric(SatelliteId sv_id, EcefPosition position,
+    bool ionospheric(SatelliteId sv_id, Float3 llh,
                      IonosphericCorrection& correction) const NOEXCEPT;
 
     void add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15 const* orbit) NOEXCEPT;

@@ -51,10 +51,11 @@ static double delta_m(double elevation, double ellipsoidal_height) {
            ellipsoidal_height;
 }
 
-HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Wgs84Position position,
+HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Float3 position,
                                                       double elevation) {
-    VSCOPE_FUNCTIONF("%s, (%f, %f, %f), %f", ts::Utc{time}.rtklib_time_string().c_str(), position.x,
-                     position.y, position.z, elevation * constant::RAD2DEG);
+    VSCOPE_FUNCTIONF("%s, (%f, %f, %f), %f", ts::Utc{time}.rtklib_time_string().c_str(),
+                     position.x * constant::RAD2DEG, position.y * constant::RAD2DEG, position.z,
+                     elevation * constant::RAD2DEG);
 
     if (elevation < 0.0) {
         return {0.0, 0.0};
@@ -71,14 +72,15 @@ HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Wgs84Positio
     VERBOSEF("day_of_year: %f", day_of_year);
     VERBOSEF("time_y: %f", time_y);
 
+    auto lat_deg = position.x * constant::RAD2DEG;
     auto cos_y = std::cos(2.0 * constant::PI * time_y);
 
-    auto a_d = interpolate_coef(position.x, MAP_COEF[0]) -
-               interpolate_coef(position.x, MAP_COEF[3]) * cos_y;
-    auto b_d = interpolate_coef(position.x, MAP_COEF[1]) -
-               interpolate_coef(position.x, MAP_COEF[4]) * cos_y;
-    auto c_d = interpolate_coef(position.x, MAP_COEF[2]) -
-               interpolate_coef(position.x, MAP_COEF[5]) * cos_y;
+    auto a_d = interpolate_coef(lat_deg, MAP_COEF[0]) -
+               interpolate_coef(lat_deg, MAP_COEF[3]) * cos_y;
+    auto b_d = interpolate_coef(lat_deg, MAP_COEF[1]) -
+               interpolate_coef(lat_deg, MAP_COEF[4]) * cos_y;
+    auto c_d = interpolate_coef(lat_deg, MAP_COEF[2]) -
+               interpolate_coef(lat_deg, MAP_COEF[5]) * cos_y;
 
     VERBOSEF("a_d: %+f", a_d);
     VERBOSEF("b_d: %+f", b_d);
@@ -89,9 +91,9 @@ HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Wgs84Positio
     auto hydrostatic         = mapping_function(elevation, a_d, b_d, c_d);
     auto hydrostatic_delta_m = delta_m(elevation, height);
 
-    auto a_w = interpolate_coef(position.x, MAP_COEF[6]);
-    auto b_w = interpolate_coef(position.x, MAP_COEF[7]);
-    auto c_w = interpolate_coef(position.x, MAP_COEF[8]);
+    auto a_w = interpolate_coef(lat_deg, MAP_COEF[6]);
+    auto b_w = interpolate_coef(lat_deg, MAP_COEF[7]);
+    auto c_w = interpolate_coef(lat_deg, MAP_COEF[8]);
 
     VERBOSEF("a_w: %+f", a_w);
     VERBOSEF("b_w: %+f", b_w);
