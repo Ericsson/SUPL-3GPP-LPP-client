@@ -1,9 +1,9 @@
 #include "satellite.hpp"
 #include "coordinate.hpp"
+#include "coordinates/enu.hpp"
 #include "data.hpp"
 #include "generator.hpp"
 #include "models/helper.hpp"
-#include "coordinates/enu.hpp"
 
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
@@ -48,23 +48,23 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     auto next_time    = generation_time + ts::Timestamp{1.0};
 
     if (!compute_true_position(mId, mGroundPositionEcef, current_time, eph, mOrbitCorrection,
-                               mCurrentLocation)) {
+                               mCurrentState)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         return;
     }
 
     if (!compute_true_position(mId, mGroundPositionEcef, next_time, eph, mOrbitCorrection,
-                               mNextLocation)) {
+                               mNextState)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         return;
     }
 
-    if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mCurrentLocation)) {
+    if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mCurrentState)) {
         WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
         return;
     }
 
-    if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mNextLocation)) {
+    if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mNextState)) {
         WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
         return;
     }
@@ -76,7 +76,7 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
                                       ts::Tai const&              reception_time,
                                       ephemeris::Ephemeris const& eph,
                                       OrbitCorrection const&      orbit_correction,
-                                      SatelliteLocation&          location) NOEXCEPT {
+                                      SatelliteState&             state) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", id.name());
 
     VERBOSEF("iode: %u", eph.iode());
@@ -143,22 +143,22 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
     VERBOSEF("velocity by ts: (%f, %f, %f)", velocity.x, velocity.y, velocity.z);
 #endif
 
-    location.eph_iode       = eph.iode();
-    location.eph_position   = final_result.position;
-    location.eph_velocity   = final_result.velocity;
-    location.eph_clock_bias = final_result.clock;
-    location.eph_range =
-        geometric_distance(location.eph_position, ground_position, &location.eph_line_of_sight);
-    if (!location.eph_line_of_sight.normalize()) {
+    state.eph_iode       = eph.iode();
+    state.eph_position   = final_result.position;
+    state.eph_velocity   = final_result.velocity;
+    state.eph_clock_bias = final_result.clock;
+    state.eph_range =
+        geometric_distance(state.eph_position, ground_position, &state.eph_line_of_sight);
+    if (!state.eph_line_of_sight.normalize()) {
         WARNF("line of sight (eph) could not be normalized");
     }
 
-    location.true_position = location.eph_position;
+    state.true_position = state.eph_position;
     // TODO(ewasjon): Does the orbit velocity differ between the uncorrected and corrected
     // positions? I think so, because the orbit correction can have time-dependent terms.
-    location.true_velocity = location.eph_velocity;
-    if (!orbit_correction.correction(t_e, location.eph_position, location.eph_velocity,
-                                     location.true_position)) {
+    state.true_velocity = state.eph_velocity;
+    if (!orbit_correction.correction(t_e, state.eph_position, state.eph_velocity,
+                                     state.true_position)) {
         WARNF("failed to correct satellite position");
     }
 
@@ -197,66 +197,66 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
 #endif
 
     auto relative_correction =
-        eph.relativistic_correction(location.true_position, location.true_velocity);
-    location.eph_clock_bias += relative_correction;
+        eph.relativistic_correction(state.true_position, state.true_velocity);
+    state.eph_clock_bias += relative_correction;
 
-    location.true_range =
-        geometric_distance(location.true_position, ground_position, &location.true_line_of_sight);
-    if (!location.true_line_of_sight.normalize()) {
+    state.true_range =
+        geometric_distance(state.true_position, ground_position, &state.true_line_of_sight);
+    if (!state.true_line_of_sight.normalize()) {
         WARNF("line of sight (true) could not be normalized");
     }
 
-    auto true_travel_time   = location.true_range / constant::SPEED_OF_LIGHT;
-    location.reception_time = t_r;
-    location.emission_time  = t_r + ts::Timestamp{-true_travel_time};
-    auto calculated_time    = location.emission_time + ts::Timestamp{true_travel_time};
+    auto true_travel_time = state.true_range / constant::SPEED_OF_LIGHT;
+    state.reception_time  = t_r;
+    state.emission_time   = t_r + ts::Timestamp{-true_travel_time};
+    auto calculated_time  = state.emission_time + ts::Timestamp{true_travel_time};
 
     VERBOSEF("eph parameters:");
-    VERBOSEF("    position: (%.14f, %.14f, %.14f)", location.eph_position.x,
-             location.eph_position.y, location.eph_position.z);
-    VERBOSEF("    velocity: (%f, %f, %f)", location.eph_velocity.x, location.eph_velocity.y,
-             location.eph_velocity.z);
-    VERBOSEF("    clock bias: %+.14f", location.eph_clock_bias);
-    VERBOSEF("    range: %.14f", location.eph_range);
-    VERBOSEF("    line of sight: (%f, %f, %f)", location.eph_line_of_sight.x,
-             location.eph_line_of_sight.y, location.eph_line_of_sight.z);
+    VERBOSEF("    position: (%.14f, %.14f, %.14f)", state.eph_position.x, state.eph_position.y,
+             state.eph_position.z);
+    VERBOSEF("    velocity: (%f, %f, %f)", state.eph_velocity.x, state.eph_velocity.y,
+             state.eph_velocity.z);
+    VERBOSEF("    clock bias: %+.14f", state.eph_clock_bias);
+    VERBOSEF("    range: %.14f", state.eph_range);
+    VERBOSEF("    line of sight: (%f, %f, %f)", state.eph_line_of_sight.x,
+             state.eph_line_of_sight.y, state.eph_line_of_sight.z);
 
     VERBOSEF("true parameters:");
     VERBOSEF("    t_e:             %s (GPS %.16f)", t_e.rtklib_time_string().c_str(),
              ts::Gps{t_e}.time_of_week().full_seconds());
     VERBOSEF("    emission time:   %s (GPS %.16f)",
-             location.emission_time.rtklib_time_string().c_str(),
-             ts::Gps{location.emission_time}.time_of_week().full_seconds());
+             state.emission_time.rtklib_time_string().c_str(),
+             ts::Gps{state.emission_time}.time_of_week().full_seconds());
     VERBOSEF("    reception time:  %s (GPS %.16f)",
-             location.reception_time.rtklib_time_string().c_str(),
-             ts::Gps{location.reception_time}.time_of_week().full_seconds());
+             state.reception_time.rtklib_time_string().c_str(),
+             ts::Gps{state.reception_time}.time_of_week().full_seconds());
     VERBOSEF("    calculated time: %s (GPS %.16f)", calculated_time.rtklib_time_string().c_str(),
              ts::Gps{calculated_time}.time_of_week().full_seconds());
-    VERBOSEF("    position: (%.14f, %.14f, %.14f)", location.true_position.x,
-             location.true_position.y, location.true_position.z);
-    VERBOSEF("    velocity: (%f, %f, %f)", location.true_velocity.x, location.true_velocity.y,
-             location.true_velocity.z);
-    VERBOSEF("    range: %.14f", location.true_range);
-    VERBOSEF("    line of sight: (%f, %f, %f)", location.true_line_of_sight.x,
-             location.true_line_of_sight.y, location.true_line_of_sight.z);
+    VERBOSEF("    position: (%.14f, %.14f, %.14f)", state.true_position.x, state.true_position.y,
+             state.true_position.z);
+    VERBOSEF("    velocity: (%f, %f, %f)", state.true_velocity.x, state.true_velocity.y,
+             state.true_velocity.z);
+    VERBOSEF("    range: %.14f", state.true_range);
+    VERBOSEF("    line of sight: (%f, %f, %f)", state.true_line_of_sight.x,
+             state.true_line_of_sight.y, state.true_line_of_sight.z);
 
     return true;
 }
 
 bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_position_llh,
-                                              SatelliteLocation& location) NOEXCEPT {
+                                              SatelliteState& state) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", id.name());
 
-    location.true_azimuth   = 0.0;
-    location.true_elevation = 0.0;
+    state.true_azimuth   = 0.0;
+    state.true_elevation = 0.0;
 
-    if (location.true_range < 1.0) {
+    if (state.true_range < 1.0) {
         VERBOSEF("satellite is too close");
         return false;
     }
 
     if (ground_position_llh.z > -constant::RE_WGS84) {
-        auto enu = ecef_to_enu_at_llh(ground_position_llh, location.true_line_of_sight);
+        auto enu = ecef_to_enu_at_llh(ground_position_llh, state.true_line_of_sight);
         VERBOSEF("ENU: (%f, %f, %f)", enu.x, enu.y, enu.z);
 
         auto azimuth = 0.0;
@@ -268,11 +268,11 @@ bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_posi
             azimuth += 2 * constant::PI;
         }
 
-        auto elevation          = std::asin(enu.z);
-        location.true_azimuth   = azimuth;
-        location.true_elevation = elevation;
-        VERBOSEF("azimuth: %.2f, elevation: %.2f", location.true_azimuth * constant::RAD2DEG,
-                 location.true_elevation * constant::RAD2DEG);
+        auto elevation       = std::asin(enu.z);
+        state.true_azimuth   = azimuth;
+        state.true_elevation = elevation;
+        VERBOSEF("azimuth: %.2f, elevation: %.2f", state.true_azimuth * constant::RAD2DEG,
+                 state.true_elevation * constant::RAD2DEG);
         return true;
     } else {
         VERBOSEF("altitude is below sea level");
@@ -308,21 +308,21 @@ bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOE
 
 double Satellite::pseudorange() const NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
-    auto orbit = mCurrentLocation.true_range - mCurrentLocation.eph_range;
+    auto orbit = mCurrentState.true_range - mCurrentState.eph_range;
     VERBOSEF("orbit:      %+24.10f", orbit);
-    auto clock_bias = constant::SPEED_OF_LIGHT * -mCurrentLocation.eph_clock_bias;
+    auto clock_bias = constant::SPEED_OF_LIGHT * -mCurrentState.eph_clock_bias;
     VERBOSEF("clock_bias: %+24.10f", clock_bias);
     auto clock = clock_correction();
     VERBOSEF("clock:      %+24.10f", clock);
 
-    auto result = mCurrentLocation.true_range + orbit + clock_bias + clock;
+    auto result = mCurrentState.true_range + orbit + clock_bias + clock;
     VERBOSEF("==          %+24.10f", result);
     return result;
 }
 
 double Satellite::clock_correction() const NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
-    auto delta_t_sv = mClockCorrection.correction(mCurrentLocation.emission_time);
+    auto delta_t_sv = mClockCorrection.correction(mCurrentState.emission_time);
     VERBOSEF("delta_t_sv: %f", delta_t_sv);
     return delta_t_sv;
 }

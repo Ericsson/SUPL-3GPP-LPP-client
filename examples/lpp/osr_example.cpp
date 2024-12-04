@@ -123,6 +123,11 @@ static void initialize_outputs(OutputOptions const& outputs) {
     gLrfRtcmId = lrf_rtcm_id;
     gPrintRtcm = print_rtcm;
 
+    loglet::set_level(gOptions.log_level);
+    for (auto const& [module, level] : gOptions.module_levels) {
+        loglet::set_module_level(module.c_str(), level);
+    }
+
     auto& cell_options            = gOptions.cell_options;
     auto& location_server_options = gOptions.location_server_options;
     auto& identity_options        = gOptions.identity_options;

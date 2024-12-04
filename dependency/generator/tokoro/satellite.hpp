@@ -13,7 +13,7 @@
 namespace generator {
 namespace tokoro {
 
-struct SatelliteLocation {
+struct SatelliteState {
     ts::Tai reception_time;
     ts::Tai emission_time;
 
@@ -43,12 +43,10 @@ public:
 
     NODISCARD const SatelliteId& id() const NOEXCEPT { return mId; }
 
-    NODISCARD SatelliteLocation const& current_location() const NOEXCEPT {
-        return mCurrentLocation;
-    }
-    NODISCARD SatelliteLocation const& next_location() const NOEXCEPT { return mNextLocation; }
+    NODISCARD SatelliteState const& current_state() const NOEXCEPT { return mCurrentState; }
+    NODISCARD SatelliteState const& next_state() const NOEXCEPT { return mNextState; }
 
-    NODISCARD double elevation() const NOEXCEPT { return mCurrentLocation.true_elevation; }
+    NODISCARD double elevation() const NOEXCEPT { return mCurrentState.true_elevation; }
 
     NODISCARD double pseudorange() const NOEXCEPT;
     NODISCARD double clock_correction() const NOEXCEPT;
@@ -73,9 +71,9 @@ protected:
                                                 ts::Tai const&              reception_time,
                                                 ephemeris::Ephemeris const& eph,
                                                 OrbitCorrection const&      orbit_correction,
-                                                SatelliteLocation&          location) NOEXCEPT;
+                                                SatelliteState&             state) NOEXCEPT;
     NODISCARD static bool compute_azimuth_and_elevation(SatelliteId id, Float3 ground_position,
-                                                        SatelliteLocation& location) NOEXCEPT;
+                                                        SatelliteState& state) NOEXCEPT;
 
     NODISCARD bool find_orbit_correction(CorrectionData const& correction_data) NOEXCEPT;
     NODISCARD bool find_clock_correction(CorrectionData const& correction_data) NOEXCEPT;
@@ -88,8 +86,8 @@ private:
 
     ts::Tai mLastGenerationTime;
 
-    SatelliteLocation mCurrentLocation;
-    SatelliteLocation mNextLocation;
+    SatelliteState mCurrentState;
+    SatelliteState mNextState;
 
     OrbitCorrection mOrbitCorrection;
     ClockCorrection mClockCorrection;

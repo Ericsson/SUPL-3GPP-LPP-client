@@ -57,6 +57,9 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mAntennaPhaseVariation(false),
       mTropoHeightCorrection(false),
       mElevationMask(10.0),
+      mPhaseRangeRate(true),
+      mRtcmReferenceStationId(1902),
+      mRtcmMsmType(5),
       mGenerator(generator) {
     // Initialize the satellite vector to the maximum number of satellites
     // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
@@ -95,7 +98,7 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
 
     // BEIDOU
     if (mGenerateBds) {
-        for (uint8_t i = 1; i <= 35; i++) {
+        for (uint8_t i = 1; i <= 63; i++) {
             auto id = SatelliteId::from_bds_prn(i);
             ASSERT(id.is_valid(), "invalid satellite id");
             mSatellites.emplace_back(id, mGroundPosition, mGenerator);
@@ -215,24 +218,20 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
                                               rtcm::Observations&      observations) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", observation.signal_id().name());
 
-    auto code_range       = observation.code_range();
-    auto phase_range      = observation.phase_range();
-    auto phase_range_rate = observation.phase_range_rate();
+    auto code_range  = observation.code_range();
+    auto phase_range = observation.phase_range();
 
     auto meter_to_cms   = 1.0e3 / constant::SPEED_OF_LIGHT;
     auto code_range_ms  = code_range * meter_to_cms;
     auto phase_range_ms = phase_range * meter_to_cms;
 
-    auto delta_code_range_ms    = code_range_ms - rtd.used_range;
-    auto delta_phase_range_ms   = phase_range_ms - rtd.used_range;
-    auto delta_phase_range_rate = phase_range_rate - reference_phase_range_rate;
+    auto delta_code_range_ms  = code_range_ms - rtd.used_range;
+    auto delta_phase_range_ms = phase_range_ms - rtd.used_range;
 
     VERBOSEF("%-15s code:  %+.14f (%+.14f)", observation.signal_id().name(), code_range_ms,
              delta_code_range_ms);
     VERBOSEF("%-15s phase: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_ms,
              delta_phase_range_ms);
-    VERBOSEF("%-15s phase rate: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_rate,
-             delta_phase_range_rate);
 
 #if 0
         auto reconstructed =
@@ -246,9 +245,18 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
     signal.satellite              = satellite.id();
     signal.fine_pseudo_range      = delta_code_range_ms;
     signal.fine_phase_range       = delta_phase_range_ms;
-    signal.fine_phase_range_rate  = delta_phase_range_rate;
     signal.carrier_to_noise_ratio = 47.0;   // TODO(ewasjon): How do we choose this value?
     signal.lock_time              = 525.0;  // TODO: How do we determine this value?
+
+    if (mPhaseRangeRate) {
+        auto phase_range_rate       = observation.phase_range_rate();
+        auto delta_phase_range_rate = phase_range_rate - reference_phase_range_rate;
+        VERBOSEF("%-15s phase rate: %+.14f (%+.14f)", observation.signal_id().name(),
+                 phase_range_rate, delta_phase_range_rate);
+
+        signal.fine_phase_range_rate = delta_phase_range_rate;
+    }
+
     observations.signals.push_back(signal);
 }
 
@@ -257,21 +265,27 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
     VSCOPE_FUNCTIONF("%s, observations=%zu", satellite.id().name(),
                      satellite.observations().size());
 
-    auto average_code_range       = satellite.average_code_range();
-    auto average_phase_range_rate = satellite.average_phase_range_rate();
-    auto rtd                      = range_time_division(average_code_range);
+    auto average_code_range = satellite.average_code_range();
+    auto rtd                = range_time_division(average_code_range);
     VERBOSEF("average_code_range:       %.4f", average_code_range);
-    VERBOSEF("average_phase_range_rate: %.4f", average_phase_range_rate);
-    VERBOSEF("rtd: %d %f %f %f", rtd.integer_ms, rtd.rough_range, rtd.used_range, rtd.unused_range);
+    VERBOSEF("rtd:                      %d %f %f %f", rtd.integer_ms, rtd.rough_range,
+             rtd.used_range, rtd.unused_range);
 
-    // Round average phase_range_rate to the nearest integer
-    auto phase_range_rate = std::round(average_phase_range_rate);
+    auto phase_range_rate = 0.0;
+    if (mPhaseRangeRate) {
+        // Round average phase_range_rate to the nearest integer
+        auto avg_phase_range_rate = satellite.average_phase_range_rate();
+        VERBOSEF("avg_phase_range_rate: %.4f", avg_phase_range_rate);
+        phase_range_rate = std::round(avg_phase_range_rate);
+    }
 
     rtcm::Satellite rtcm{};
-    rtcm.id                     = satellite.id();
-    rtcm.integer_ms             = rtd.integer_ms;
-    rtcm.rough_range            = rtd.rough_range;
-    rtcm.rough_phase_range_rate = phase_range_rate;
+    rtcm.id          = satellite.id();
+    rtcm.integer_ms  = rtd.integer_ms;
+    rtcm.rough_range = rtd.rough_range;
+    if (mPhaseRangeRate) {
+        rtcm.rough_phase_range_rate = phase_range_rate;
+    }
     observations.satellites.push_back(rtcm);
 
     for (auto const& observation : satellite.observations()) {
@@ -285,11 +299,8 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 
     std::vector<rtcm::Message> messages;
 
-    auto reference_station_id = 1902;
-    auto msm_type             = 5;
-
     rtcm::ReferenceStation reference_station{};
-    reference_station.reference_station_id          = reference_station_id;
+    reference_station.reference_station_id          = mRtcmReferenceStationId;
     reference_station.x                             = mRtcmGroundPosition.x;
     reference_station.y                             = mRtcmGroundPosition.y;
     reference_station.z                             = mRtcmGroundPosition.z;
@@ -301,8 +312,8 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 
     if (mRtcmPhysicalGroundPositionSet) {
         auto physical_reference_station_id = 4095;
-        if (reference_station_id > 1) {
-            physical_reference_station_id = reference_station_id - 1;
+        if (mRtcmReferenceStationId > 1) {
+            physical_reference_station_id = mRtcmReferenceStationId - 1;
         }
 
         rtcm::PhysicalReferenceStation physical_reference_station{};
@@ -314,7 +325,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     }
 
     rtcm::CommonObservationInfo common{};
-    common.reference_station_id = reference_station_id;
+    common.reference_station_id = mRtcmReferenceStationId;
     common.clock_steering       = 1;
 
     rtcm::Observations msm_gps{};
@@ -375,27 +386,27 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     if (will_generate_gps) {
         auto last_msm = !will_generate_glo && !will_generate_gal && !will_generate_bds;
         auto message =
-            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GPS, common, msm_gps);
+            rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GPS, common, msm_gps);
         messages.push_back(std::move(message));
     }
 
     if (will_generate_glo) {
         auto last_msm = !will_generate_gal && !will_generate_bds;
-        auto message =
-            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GLONASS, common, msm_glo);
+        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
+                                           common, msm_glo);
         messages.push_back(std::move(message));
     }
 
     if (will_generate_gal) {
         auto last_msm = !will_generate_bds;
-        auto message =
-            rtcm::generate_msm(msm_type, last_msm, rtcm::GenericGnssId::GALILEO, common, msm_gal);
+        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
+                                           common, msm_gal);
         messages.push_back(std::move(message));
     }
 
     if (will_generate_bds) {
         auto message =
-            rtcm::generate_msm(msm_type, true, rtcm::GenericGnssId::BEIDOU, common, msm_bds);
+            rtcm::generate_msm(mRtcmMsmType, true, rtcm::GenericGnssId::BEIDOU, common, msm_bds);
         messages.push_back(std::move(message));
     }
 

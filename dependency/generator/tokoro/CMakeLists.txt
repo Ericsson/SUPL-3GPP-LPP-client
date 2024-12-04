@@ -9,6 +9,11 @@ add_library(dependency_generator_tokoro STATIC
     "models/gpt.cpp"
     "models/mops.cpp"
     "models/geoid.cpp"
+    "models/shapiro.cpp"
+    "models/earth_solid_tides.cpp"
+    "models/phase_windup.cpp"
+    "models/antenna_phase_variation.cpp"
+    "models/astronomical_arguments.cpp"
     
     "coordinates/coordinate.cpp"
     "coordinates/reference_ellipsoid.cpp"

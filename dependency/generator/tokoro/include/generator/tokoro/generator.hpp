@@ -66,6 +66,9 @@ public:
     void set_antenna_phase_variation_correction(bool enabled) { mAntennaPhaseVariation = enabled; }
     void set_tropospheric_height_correction(bool enabled) { mTropoHeightCorrection = enabled; }
     void set_elevation_mask(double mask) { mElevationMask = mask; }
+    void set_phase_range_rate(bool enabled) { mPhaseRangeRate = enabled; }
+    void set_reference_station_id(int id) { mRtcmReferenceStationId = id; }
+    void set_msm_type(int type) { mRtcmMsmType = type; }
 
 protected:
     void initialize_satellites() NOEXCEPT;
@@ -92,6 +95,9 @@ private:
     bool   mAntennaPhaseVariation;
     bool   mTropoHeightCorrection;
     double mElevationMask;
+    bool   mPhaseRangeRate;
+    int    mRtcmReferenceStationId;
+    int    mRtcmMsmType;
 
     std::vector<Satellite>          mSatellites;
     std::unordered_set<SatelliteId> mSatelliteIncludeSet;

@@ -123,7 +123,7 @@ void EphemerisExtractor::inspect(streamline::System&, DataType const& message) {
 #endif
 }
 
-#define TRIMBLE_TEST 1
+#define TRIMBLE_TEST 0
 
 class SsrEvaluator : public Inspector<LppMessage> {
 public:
@@ -271,14 +271,14 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
     rs->set_tropospheric_height_correction(globals.tropospheric_height_correction);
 
 #if TRIMBLE_TEST
-#if 0
+#if 1
     rs->include_satellite(SatelliteId::from_gps_prn(7));
     rs->include_satellite(SatelliteId::from_gps_prn(9));
     //rs->include_satellite(SatelliteId::from_gps_prn(13));
     rs->include_signal(SignalId::GPS_L1_CA);
 #endif
 
-#if 0
+#if 1
     rs->include_satellite(SatelliteId::from_gal_prn(4));
     rs->include_satellite(SatelliteId::from_gal_prn(10));
     rs->include_signal(SignalId::GALILEO_E1_B_C);

@@ -32,7 +32,7 @@ SatelliteId SatelliteId::from_gal_prn(uint8_t prn) {
 }
 
 SatelliteId SatelliteId::from_bds_prn(uint8_t prn) {
-    if (prn >= 1 && prn <= 35) {
+    if (prn >= 1 && prn <= 63) {
         return SatelliteId(Gnss::BEIDOU, prn - 1);
     } else {
         return invalid();
@@ -104,10 +104,13 @@ static char const* GAL_NAMES[36] = {
     "E25", "E26", "E27", "E28", "E29", "E30", "E31", "E32", "E33", "E34", "E35", "E36",
 };
 
-static char const* BDS_NAMES[35] = {
+static char const* BDS_NAMES[63] = {
     "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12",
     "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24",
-    "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35",
+    "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36",
+    "C37", "C38", "C39", "C40", "C41", "C42", "C43", "C44", "C45", "C46", "C47", "C48",
+    "C49", "C50", "C51", "C52", "C53", "C54", "C55", "C56", "C57", "C58", "C59", "C60",
+    "C61", "C62", "C63",
 };
 
 char const* SatelliteId::name() const {
@@ -116,7 +119,7 @@ char const* SatelliteId::name() const {
     case Gnss::GPS: return (mLppId >= 0 && mLppId < 32) ? GPS_NAMES[mLppId] : "G--";
     case Gnss::GLONASS: return (mLppId >= 0 && mLppId < 24) ? GLO_NAMES[mLppId] : "R--";
     case Gnss::GALILEO: return (mLppId >= 0 && mLppId < 36) ? GAL_NAMES[mLppId] : "E--";
-    case Gnss::BEIDOU: return (mLppId >= 0 && mLppId < 35) ? BDS_NAMES[mLppId] : "C--";
+    case Gnss::BEIDOU: return (mLppId >= 0 && mLppId < 63) ? BDS_NAMES[mLppId] : "C--";
     case Gnss::UNKNOWN: return "U--";
     }
 }

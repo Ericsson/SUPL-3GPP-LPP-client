@@ -2,9 +2,11 @@
 #include "coordinate.hpp"
 #include "coordinates/enu.hpp"
 #include "data.hpp"
+#include "models/astronomical_arguments.hpp"
 #include "models/geoid.hpp"
 #include "models/helper.hpp"
 #include "models/mops.hpp"
+#include "models/shapiro.hpp"
 #include "satellite.hpp"
 
 #include <loglet/loglet.hpp>
@@ -19,8 +21,8 @@ namespace tokoro {
 Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 location) NOEXCEPT
     : mSvId(satellite.id()),
       mSignalId(signal_id),
-      mCurrent{satellite.current_location()},
-      mNext{satellite.next_location()} {
+      mCurrent{satellite.current_state()},
+      mNext{satellite.next_state()} {
     mIsValid = true;
 
     // TODO(ewasjon): For GLONASS, the frequency depends on the channel number
@@ -32,7 +34,7 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mPhaseBias             = Correction{0.0, false};
     mTropospheric          = TroposphericDelay{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false};
     mIonospheric           = IonosphericDelay{0.0, 0.0, false};
-    mShapiro               = Correction{0.0, false};
+    mShapiro               = {};
     mPhaseWindup           = Correction{0.0, false};
     mEarthSolidTides       = SolidEarthTides{0.0, {}, false};
     mAntennaPhaseVariation = Correction{0.0, false};
@@ -125,18 +127,10 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
 
 void Observation::compute_shapiro() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
-
-    auto r_sat = geocentric_distance(mCurrent.true_position);
-    auto r_rcv = geocentric_distance(mGroundPosition);
-    auto r     = mCurrent.true_range;
-
-    // https://gssc.esa.int/navipedia/index.php/Relativistic_Path_Range_Effect
-    auto shapiro = (2 * constant::GME / (constant::SPEED_OF_LIGHT * constant::SPEED_OF_LIGHT)) *
-                   log((r_sat + r_rcv + r) / (r_sat + r_rcv - r));
-
-    mShapiro = Correction{shapiro, true};
+    mShapiro = model_shapiro(mCurrent, mGroundPosition);
 }
 
+#if 0
 struct AstronomicalArguments {
     double l;      // mean anomaly of the Moon
     double lp;     // mean anomaly of the Sun
@@ -184,6 +178,7 @@ static bool compute_astronomical_arguments(double t_jc, AstronomicalArguments& a
     args.omega = fmod(args.omega * constant::ARCSEC2RAD, 2 * constant::PI);
     return true;
 }
+#endif
 
 struct Iau1980Nutation {
     double d_psi;  // nutation in longitude
@@ -348,12 +343,15 @@ static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
     auto t_jc = t_js / 86400.0 / 36525.0;
     VERBOSEF("t_jc: %f", t_jc);
 
-    // Get astronomical arguments
+// Get astronomical arguments
+#if 0
     AstronomicalArguments args{};
     if (!compute_astronomical_arguments(t_jc, args)) {
         VERBOSEF("failed to compute astronomical arguments");
         return false;
     }
+#endif
+    auto args = AstronomicalArguments::evaluate(t_jc);
 
     VERBOSEF("astronomical arguments:");
     VERBOSEF("  l: %f", args.l);
@@ -451,12 +449,16 @@ static bool eci_2_ecef(ts::Tai const& time, Mat3& transform, double* gmst_out) {
     VERBOSEF("  %+.14f %+.14f %+.14f", p.m[3], p.m[4], p.m[5]);
     VERBOSEF("  %+.14f %+.14f %+.14f", p.m[6], p.m[7], p.m[8]);
 
-    // IAU 1980 Nutation
+// IAU 1980 Nutation
+#if 0
     AstronomicalArguments args{};
     if (!compute_astronomical_arguments(t, args)) {
         VERBOSEF("failed to compute astronomical arguments");
         return false;
     }
+#endif
+
+    auto args = AstronomicalArguments::evaluate(t);
 
     VERBOSEF("astronomical arguments:");
     VERBOSEF("  l: %f", args.l);

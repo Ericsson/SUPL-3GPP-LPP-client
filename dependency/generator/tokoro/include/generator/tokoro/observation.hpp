@@ -1,6 +1,7 @@
 #pragma once
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
+#include "models/shapiro.hpp"
 
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
@@ -10,7 +11,7 @@ namespace tokoro {
 
 struct CorrectionData;
 struct Satellite;
-struct SatelliteLocation;
+struct SatelliteState;
 
 struct TroposphericDelay {
     double hydrostatic;
@@ -82,8 +83,8 @@ private:
     Float3 mGroundPosition;
     Float3 mGroundLlh;
 
-    SatelliteLocation const& mCurrent;
-    SatelliteLocation const& mNext;
+    SatelliteState const& mCurrent;
+    SatelliteState const& mNext;
 
     double mFrequency;
     double mWavelength;
@@ -93,7 +94,7 @@ private:
     Correction        mPhaseBias;
     TroposphericDelay mTropospheric;
     IonosphericDelay  mIonospheric;
-    Correction        mShapiro;
+    Shapiro        mShapiro;
     Correction        mPhaseWindup;
     SolidEarthTides   mEarthSolidTides;
     Correction        mAntennaPhaseVariation;
