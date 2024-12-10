@@ -170,18 +170,20 @@ static double GALILEO_FREQ[24] = {
 
 static std::string BDS_NAMES[24] = {
     "B1 I",     "B1 Q",     "B1 I+Q",   "B3 I",     "B3 Q",     "B3 I+Q",   "B2 I",     "B2 Q",
-    "B2 I+Q",   "B1C(D)",   "B1C(P)",   "B1C(D+P)", "Reserved", "Reserved", "Reserved", "Reserved",
+    "B2 I+Q",   "B1C(D)",   "B1C(P)",   "B1C(D+P)", "B2a(D)",   "B2a(P)",   "B2a(D+P)", "Reserved",
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
 CONSTEXPR static int32_t BDS_LPP_TO_RTCM[24] = {
-    2, 3, 4, 8, 9, 10, 14, 15, 16, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+    2, 3, 4, 8, 9, 10, 14, 15, 16, 30, 31, 32, 22, 23, 24, -1, -1, -1, -1, -1, -1, -1, -1, -1,
 };
 
 #define BEIDOU_B1_FREQ 1561.098e3
-#define BEIDOU_B1C_FREQ 1575.42e3
 #define BEIDOU_B2_FREQ 1207.14e3
 #define BEIDOU_B3_FREQ 1268.52e3
+#define BEIDOU_B2a_FREQ 1176.45e3
+#define BEIDOU_B2b_FREQ 1207.140e3
+#define BEIDOU_B1C_FREQ 1575.42e3
 
 static double BDS_FREQ[24] = {
     BEIDOU_B1_FREQ,   // B1 I
@@ -196,9 +198,9 @@ static double BDS_FREQ[24] = {
     BEIDOU_B1C_FREQ,  // B1C(D)
     BEIDOU_B1C_FREQ,  // B1C(P)
     BEIDOU_B1C_FREQ,  // B1C(D+P)
-    0.0,              // Reserved
-    0.0,              // Reserved
-    0.0,              // Reserved
+    BEIDOU_B2a_FREQ,  // B2a(D)
+    BEIDOU_B2a_FREQ,  // B2a(P)
+    BEIDOU_B2a_FREQ,  // B2a(D+P)
     0.0,              // Reserved
     0.0,              // Reserved
     0.0,              // Reserved

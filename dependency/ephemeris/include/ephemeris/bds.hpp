@@ -11,8 +11,9 @@ struct BdsEphemeris {
 
     uint16_t week_number;
     uint8_t  sv_health;
-    uint16_t iode;
-    uint16_t iodc;
+    uint16_t lpp_iod;
+    uint8_t  iode;
+    uint8_t  iodc;
 
     double toc;
     double toe;
@@ -42,7 +43,7 @@ struct BdsEphemeris {
     NODISCARD bool is_valid(ts::Bdt const& time) const NOEXCEPT;
     NODISCARD bool compare(BdsEphemeris const& other) const NOEXCEPT {
         return prn == other.prn && week_number == other.week_number && iode == other.iode &&
-               std::abs(toe - other.toe) < 1e-3 && iodc == other.iodc;
+               std::abs(toe - other.toe) < 1e-3;
     }
     NODISCARD EphemerisResult compute(ts::Bdt const& time) const NOEXCEPT;
 

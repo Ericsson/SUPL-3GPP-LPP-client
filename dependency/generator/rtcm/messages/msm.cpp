@@ -68,7 +68,7 @@ static void df397(Encoder& encoder, Satellite const& satellite) {
 
 static void df398(Encoder& encoder, Satellite const& satellite) {
     auto value = ROUND(satellite.rough_range.value * RTCM_P2_10);
-    if (satellite.rough_range.valid && value >= 0 && value <= 1024) {
+    if (satellite.rough_range.valid && value >= 0 && value <= 1023) {
         encoder.u16(10, static_cast<uint16_t>(value));
     } else {
         // TODO: How to we report an invalid if the DF doesn't have an invalid bit pattern?

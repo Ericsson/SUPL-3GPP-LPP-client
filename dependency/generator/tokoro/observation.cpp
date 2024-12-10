@@ -1,11 +1,13 @@
 #include "observation.hpp"
 #include "coordinate.hpp"
 #include "coordinates/enu.hpp"
+#include "coordinates/eci.hpp"
 #include "data.hpp"
 #include "models/astronomical_arguments.hpp"
 #include "models/geoid.hpp"
 #include "models/helper.hpp"
 #include "models/mops.hpp"
+#include "models/nutation.hpp"
 #include "models/shapiro.hpp"
 #include "satellite.hpp"
 
@@ -21,8 +23,8 @@ namespace tokoro {
 Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 location) NOEXCEPT
     : mSvId(satellite.id()),
       mSignalId(signal_id),
-      mCurrent{satellite.current_state()},
-      mNext{satellite.next_state()} {
+      mCurrent{&satellite.current_state()},
+      mNext{&satellite.next_state()} {
     mIsValid = true;
 
     // TODO(ewasjon): For GLONASS, the frequency depends on the channel number
@@ -42,8 +44,8 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mGroundPosition = location;
     mGroundLlh      = ecef_to_llh(location, ellipsoid::WGS84);
 
-    auto mapping =
-        hydrostatic_mapping_function(mCurrent.reception_time, mGroundLlh, mCurrent.true_elevation);
+    auto mapping = hydrostatic_mapping_function(mCurrent->reception_time, mGroundLlh,
+                                                mCurrent->true_elevation);
     mTropospheric.mapping_hydrostatic = mapping.hydrostatic;
     mTropospheric.mapping_wet         = mapping.wet;
 }
@@ -57,8 +59,8 @@ void Observation::compute_tropospheric_height() NOEXCEPT {
     HydrostaticAndWetDelay alt_0{};
     HydrostaticAndWetDelay alt_eh{};
     auto                   mops_0 =
-        mops_tropospheric_delay(mCurrent.reception_time, mGroundLlh.x, 0.0, geoid_height, alt_0);
-    auto mops_eh = mops_tropospheric_delay(mCurrent.reception_time, mGroundLlh.x,
+        mops_tropospheric_delay(mCurrent->reception_time, mGroundLlh.x, 0.0, geoid_height, alt_0);
+    auto mops_eh = mops_tropospheric_delay(mCurrent->reception_time, mGroundLlh.x,
                                            ellipsoidal_height, geoid_height, alt_eh);
     if (mops_0 && mops_eh) {
         mTropospheric.height_mapping_hydrostatic = alt_eh.hydrostatic / alt_0.hydrostatic;
@@ -127,7 +129,7 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
 
 void Observation::compute_shapiro() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
-    mShapiro = model_shapiro(mCurrent, mGroundPosition);
+    mShapiro = model_shapiro(*mCurrent, mGroundPosition);
 }
 
 #if 0
@@ -180,185 +182,18 @@ static bool compute_astronomical_arguments(double t_jc, AstronomicalArguments& a
 }
 #endif
 
-struct Iau1980Nutation {
-    double d_psi;  // nutation in longitude
-    double d_eps;  // nutation in obliquity
-};
-
-static double const IAU1980_NUTATION_DATA[106][10] = {
-    {0, 0, 0, 0, 1, -6798.4, -171996, -174.2, 92025, 8.9},
-    {0, 0, 2, -2, 2, 182.6, -13187, -1.6, 5736, -3.1},
-    {0, 0, 2, 0, 2, 13.7, -2274, -0.2, 977, -0.5},
-    {0, 0, 0, 0, 2, -3399.2, 2062, 0.2, -895, 0.5},
-    {0, -1, 0, 0, 0, -365.3, -1426, 3.4, 54, -0.1},
-    {1, 0, 0, 0, 0, 27.6, 712, 0.1, -7, 0.0},
-    {0, 1, 2, -2, 2, 121.7, -517, 1.2, 224, -0.6},
-    {0, 0, 2, 0, 1, 13.6, -386, -0.4, 200, 0.0},
-    {1, 0, 2, 0, 2, 9.1, -301, 0.0, 129, -0.1},
-    {0, -1, 2, -2, 2, 365.2, 217, -0.5, -95, 0.3},
-    {-1, 0, 0, 2, 0, 31.8, 158, 0.0, -1, 0.0},
-    {0, 0, 2, -2, 1, 177.8, 129, 0.1, -70, 0.0},
-    {-1, 0, 2, 0, 2, 27.1, 123, 0.0, -53, 0.0},
-    {1, 0, 0, 0, 1, 27.7, 63, 0.1, -33, 0.0},
-    {0, 0, 0, 2, 0, 14.8, 63, 0.0, -2, 0.0},
-    {-1, 0, 2, 2, 2, 9.6, -59, 0.0, 26, 0.0},
-    {-1, 0, 0, 0, 1, -27.4, -58, -0.1, 32, 0.0},
-    {1, 0, 2, 0, 1, 9.1, -51, 0.0, 27, 0.0},
-    {-2, 0, 0, 2, 0, -205.9, -48, 0.0, 1, 0.0},
-    {-2, 0, 2, 0, 1, 1305.5, 46, 0.0, -24, 0.0},
-    {0, 0, 2, 2, 2, 7.1, -38, 0.0, 16, 0.0},
-    {2, 0, 2, 0, 2, 6.9, -31, 0.0, 13, 0.0},
-    {2, 0, 0, 0, 0, 13.8, 29, 0.0, -1, 0.0},
-    {1, 0, 2, -2, 2, 23.9, 29, 0.0, -12, 0.0},
-    {0, 0, 2, 0, 0, 13.6, 26, 0.0, -1, 0.0},
-    {0, 0, 2, -2, 0, 173.3, -22, 0.0, 0, 0.0},
-    {-1, 0, 2, 0, 1, 27.0, 21, 0.0, -10, 0.0},
-    {0, 2, 0, 0, 0, 182.6, 17, -0.1, 0, 0.0},
-    {0, 2, 2, -2, 2, 91.3, -16, 0.1, 7, 0.0},
-    {-1, 0, 0, 2, 1, 32.0, 16, 0.0, -8, 0.0},
-    {0, 1, 0, 0, 1, 386.0, -15, 0.0, 9, 0.0},
-    {1, 0, 0, -2, 1, -31.7, -13, 0.0, 7, 0.0},
-    {0, -1, 0, 0, 1, -346.6, -12, 0.0, 6, 0.0},
-    {2, 0, -2, 0, 0, -1095.2, 11, 0.0, 0, 0.0},
-    {-1, 0, 2, 2, 1, 9.5, -10, 0.0, 5, 0.0},
-    {1, 0, 2, 2, 2, 5.6, -8, 0.0, 3, 0.0},
-    {0, -1, 2, 0, 2, 14.2, -7, 0.0, 3, 0.0},
-    {0, 0, 2, 2, 1, 7.1, -7, 0.0, 3, 0.0},
-    {1, 1, 0, -2, 0, -34.8, -7, 0.0, 0, 0.0},
-    {0, 1, 2, 0, 2, 13.2, 7, 0.0, -3, 0.0},
-    {-2, 0, 0, 2, 1, -199.8, -6, 0.0, 3, 0.0},
-    {0, 0, 0, 2, 1, 14.8, -6, 0.0, 3, 0.0},
-    {2, 0, 2, -2, 2, 12.8, 6, 0.0, -3, 0.0},
-    {1, 0, 0, 2, 0, 9.6, 6, 0.0, 0, 0.0},
-    {1, 0, 2, -2, 1, 23.9, 6, 0.0, -3, 0.0},
-    {0, 0, 0, -2, 1, -14.7, -5, 0.0, 3, 0.0},
-    {0, -1, 2, -2, 1, 346.6, -5, 0.0, 3, 0.0},
-    {2, 0, 2, 0, 1, 6.9, -5, 0.0, 3, 0.0},
-    {1, -1, 0, 0, 0, 29.8, 5, 0.0, 0, 0.0},
-    {1, 0, 0, -1, 0, 411.8, -4, 0.0, 0, 0.0},
-    {0, 0, 0, 1, 0, 29.5, -4, 0.0, 0, 0.0},
-    {0, 1, 0, -2, 0, -15.4, -4, 0.0, 0, 0.0},
-    {1, 0, -2, 0, 0, -26.9, 4, 0.0, 0, 0.0},
-    {2, 0, 0, -2, 1, 212.3, 4, 0.0, -2, 0.0},
-    {0, 1, 2, -2, 1, 119.6, 4, 0.0, -2, 0.0},
-    {1, 1, 0, 0, 0, 25.6, -3, 0.0, 0, 0.0},
-    {1, -1, 0, -1, 0, -3232.9, -3, 0.0, 0, 0.0},
-    {-1, -1, 2, 2, 2, 9.8, -3, 0.0, 1, 0.0},
-    {0, -1, 2, 2, 2, 7.2, -3, 0.0, 1, 0.0},
-    {1, -1, 2, 0, 2, 9.4, -3, 0.0, 1, 0.0},
-    {3, 0, 2, 0, 2, 5.5, -3, 0.0, 1, 0.0},
-    {-2, 0, 2, 0, 2, 1615.7, -3, 0.0, 1, 0.0},
-    {1, 0, 2, 0, 0, 9.1, 3, 0.0, 0, 0.0},
-    {-1, 0, 2, 4, 2, 5.8, -2, 0.0, 1, 0.0},
-    {1, 0, 0, 0, 2, 27.8, -2, 0.0, 1, 0.0},
-    {-1, 0, 2, -2, 1, -32.6, -2, 0.0, 1, 0.0},
-    {0, -2, 2, -2, 1, 6786.3, -2, 0.0, 1, 0.0},
-    {-2, 0, 0, 0, 1, -13.7, -2, 0.0, 1, 0.0},
-    {2, 0, 0, 0, 1, 13.8, 2, 0.0, -1, 0.0},
-    {3, 0, 0, 0, 0, 9.2, 2, 0.0, 0, 0.0},
-    {1, 1, 2, 0, 2, 8.9, 2, 0.0, -1, 0.0},
-    {0, 0, 2, 1, 2, 9.3, 2, 0.0, -1, 0.0},
-    {1, 0, 0, 2, 1, 9.6, -1, 0.0, 0, 0.0},
-    {1, 0, 2, 2, 1, 5.6, -1, 0.0, 1, 0.0},
-    {1, 1, 0, -2, 1, -34.7, -1, 0.0, 0, 0.0},
-    {0, 1, 0, 2, 0, 14.2, -1, 0.0, 0, 0.0},
-    {0, 1, 2, -2, 0, 117.5, -1, 0.0, 0, 0.0},
-    {0, 1, -2, 2, 0, -329.8, -1, 0.0, 0, 0.0},
-    {1, 0, -2, 2, 0, 23.8, -1, 0.0, 0, 0.0},
-    {1, 0, -2, -2, 0, -9.5, -1, 0.0, 0, 0.0},
-    {1, 0, 2, -2, 0, 32.8, -1, 0.0, 0, 0.0},
-    {1, 0, 0, -4, 0, -10.1, -1, 0.0, 0, 0.0},
-    {2, 0, 0, -4, 0, -15.9, -1, 0.0, 0, 0.0},
-    {0, 0, 2, 4, 2, 4.8, -1, 0.0, 0, 0.0},
-    {0, 0, 2, -1, 2, 25.4, -1, 0.0, 0, 0.0},
-    {-2, 0, 2, 4, 2, 7.3, -1, 0.0, 1, 0.0},
-    {2, 0, 2, 2, 2, 4.7, -1, 0.0, 0, 0.0},
-    {0, -1, 2, 0, 1, 14.2, -1, 0.0, 0, 0.0},
-    {0, 0, -2, 0, 1, -13.6, -1, 0.0, 0, 0.0},
-    {0, 0, 4, -2, 2, 12.7, 1, 0.0, 0, 0.0},
-    {0, 1, 0, 0, 2, 409.2, 1, 0.0, 0, 0.0},
-    {1, 1, 2, -2, 2, 22.5, 1, 0.0, -1, 0.0},
-    {3, 0, 2, -2, 2, 8.7, 1, 0.0, 0, 0.0},
-    {-2, 0, 2, 2, 2, 14.6, 1, 0.0, -1, 0.0},
-    {-1, 0, 0, 0, 2, -27.3, 1, 0.0, -1, 0.0},
-    {0, 0, -2, 2, 1, -169.0, 1, 0.0, 0, 0.0},
-    {0, 1, 2, 0, 1, 13.1, 1, 0.0, 0, 0.0},
-    {-1, 0, 4, 0, 2, 9.1, 1, 0.0, 0, 0.0},
-    {2, 1, 0, -2, 0, 131.7, 1, 0.0, 0, 0.0},
-    {2, 0, 0, 2, 0, 7.1, 1, 0.0, 0, 0.0},
-    {2, 0, 2, -2, 1, 12.8, 1, 0.0, -1, 0.0},
-    {2, 0, -2, 0, 1, -943.2, 1, 0.0, 0, 0.0},
-    {1, -1, 0, -2, 0, -29.3, 1, 0.0, 0, 0.0},
-    {-1, 0, 0, 1, 1, -388.3, 1, 0.0, 0, 0.0},
-    {-1, -1, 0, 2, 1, 35.0, 1, 0.0, 0, 0.0},
-    {0, 1, 0, 1, 0, 27.3, 1, 0.0, 0, 0.0},
-};
-
-static bool compute_iau1980_nutation(double t, AstronomicalArguments const& args,
-                                     Iau1980Nutation& nutation) {
-    VSCOPE_FUNCTIONF("%f", t);
-
-    nutation.d_psi = 0.0;
-    nutation.d_eps = 0.0;
-
-    for (auto i = 0; i < 106; i++) {
-        auto angle = 0.0;
-        angle += IAU1980_NUTATION_DATA[i][0] * args.l;
-        angle += IAU1980_NUTATION_DATA[i][1] * args.lp;
-        angle += IAU1980_NUTATION_DATA[i][2] * args.f;
-        angle += IAU1980_NUTATION_DATA[i][3] * args.d;
-        angle += IAU1980_NUTATION_DATA[i][4] * args.omega;
-
-        nutation.d_psi +=
-            (IAU1980_NUTATION_DATA[i][6] + IAU1980_NUTATION_DATA[i][7] * t) * sin(angle);
-        nutation.d_eps +=
-            (IAU1980_NUTATION_DATA[i][8] + IAU1980_NUTATION_DATA[i][9] * t) * cos(angle);
-    }
-
-    // 0.1 mas to rad
-    nutation.d_psi *= 1.0e-4 * constant::ARCSEC2RAD;
-    nutation.d_eps *= 1.0e-4 * constant::ARCSEC2RAD;
-    return true;
-}
-
 static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
                                               Float3& moon) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
 
-    // Convert the time to UT1 (Universal Time 1)
-    auto utc_time = ts::Utc{time};
-
     // TODO(ewasjon): Need UT1-UTC correction term, usually given by Earth Orientation Parameters
     // (EOP). However, UTC is by definition maintained to be within +-0.9s of UT1, so it probably
     // doesn't matter for our purposes.
-    auto ut1_utc  = 0.0;
-    auto ut1_time = utc_time.ut1(ut1_utc);
+    auto ut1_utc = 0.0;
+    auto t_jc    = ts::Utc{time}.j2000_century(ut1_utc);
 
-    // Compute seconds since J2000
-    auto j2000 = ts::Utc::from_date_time(2000, 1, 1, 12, 0, 0);
-    auto t_js  = (ut1_time - j2000.timestamp()).full_seconds();
-    VERBOSEF("t_js: %f", t_js);
-
-    // Get the Julian centuries since J2000
-    auto t_jc = t_js / 86400.0 / 36525.0;
-    VERBOSEF("t_jc: %f", t_jc);
-
-// Get astronomical arguments
-#if 0
-    AstronomicalArguments args{};
-    if (!compute_astronomical_arguments(t_jc, args)) {
-        VERBOSEF("failed to compute astronomical arguments");
-        return false;
-    }
-#endif
+    // Get astronomical arguments
     auto args = AstronomicalArguments::evaluate(t_jc);
-
-    VERBOSEF("astronomical arguments:");
-    VERBOSEF("  l: %f", args.l);
-    VERBOSEF("  lp: %f", args.lp);
-    VERBOSEF("  f: %f", args.f);
-    VERBOSEF("  d: %f", args.d);
-    VERBOSEF("  omega: %f", args.omega);
 
     // Obliquity of the ecliptic
     auto epsilon = 23.439291 - 0.0130042 * t_jc;
@@ -410,134 +245,6 @@ static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
     return true;
 }
 
-static bool eci_2_ecef(ts::Tai const& time, Mat3& transform, double* gmst_out) {
-    VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
-
-    // TODO(ewasjon): Earth rotation angle
-    auto xp      = 0.0;
-    auto yp      = 0.0;
-    auto ut1_utc = 0.0;
-
-    // Get Terrestrial Time (TT) from TAI
-    auto j2000     = ts::Utc::from_date_time(2000, 1, 1, 12, 0, 0);
-    auto j2000_tai = ts::Tai{j2000};
-    auto t_s       = (time.timestamp().full_seconds() - j2000_tai.timestamp().full_seconds()) +
-               32.184 /* TT - TAI */;
-    auto t_c = t_s / 86400.0 / 36525.0;
-
-    auto t  = t_c;
-    auto t2 = t * t;
-    auto t3 = t2 * t;
-    VERBOSEF("t: %f", t);
-    VERBOSEF("t2: %f", t2);
-    VERBOSEF("t3: %f", t3);
-
-    // IAU 1976 Precession
-    auto ze  = (2306.2181 * t + 0.30188 * t2 + 0.017998 * t3) * constant::ARCSEC2RAD;
-    auto th  = (2004.3109 * t - 0.42665 * t2 - 0.041833 * t3) * constant::ARCSEC2RAD;
-    auto z   = (2306.2181 * t + 1.09468 * t2 + 0.018203 * t3) * constant::ARCSEC2RAD;
-    auto eps = (84381.448 - 46.8150 * t - 0.00059 * t2 + 0.001813 * t3) * constant::ARCSEC2RAD;
-    VERBOSEF("ze: %f", ze);
-    VERBOSEF("th: %f", th);
-    VERBOSEF("z: %f", z);
-    VERBOSEF("eps: %f", eps);
-
-    auto p = Mat3::rotate_z(-z) * Mat3::rotate_y(th) * Mat3::rotate_z(-ze);
-
-    VERBOSEF("p:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", p.m[0], p.m[1], p.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", p.m[3], p.m[4], p.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", p.m[6], p.m[7], p.m[8]);
-
-// IAU 1980 Nutation
-#if 0
-    AstronomicalArguments args{};
-    if (!compute_astronomical_arguments(t, args)) {
-        VERBOSEF("failed to compute astronomical arguments");
-        return false;
-    }
-#endif
-
-    auto args = AstronomicalArguments::evaluate(t);
-
-    VERBOSEF("astronomical arguments:");
-    VERBOSEF("  l: %f", args.l);
-    VERBOSEF("  lp: %f", args.lp);
-    VERBOSEF("  f: %f", args.f);
-    VERBOSEF("  d: %f", args.d);
-    VERBOSEF("  omega: %f", args.omega);
-
-    Iau1980Nutation nutation{};
-    if (!compute_iau1980_nutation(t, args, nutation)) {
-        VERBOSEF("failed to compute IAU 1980 nutation");
-        return false;
-    }
-
-    VERBOSEF("nutation:");
-    VERBOSEF("  d_psi: %+.14f", nutation.d_psi);
-    VERBOSEF("  d_eps: %+.14f", nutation.d_eps);
-
-    VERBOSEF("  sin(-d_psi): %+.14f", sin(-nutation.d_psi));
-
-    auto n1 = Mat3::rotate_x(-eps - nutation.d_eps);
-    auto n2 = Mat3::rotate_z(-nutation.d_psi);
-    auto n3 = Mat3::rotate_x(eps);
-
-    auto r = n1 * n2;
-    auto n = r * n3;
-
-    VERBOSEF("n1:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[0], n1.m[1], n1.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[3], n1.m[4], n1.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[6], n1.m[7], n1.m[8]);
-    VERBOSEF("n2:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[0], n2.m[1], n2.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[3], n2.m[4], n2.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[6], n2.m[7], n2.m[8]);
-    VERBOSEF("n3:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[0], n3.m[1], n3.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[3], n3.m[4], n3.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[6], n3.m[7], n3.m[8]);
-    VERBOSEF("r:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[0], r.m[1], r.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[3], r.m[4], r.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[6], r.m[7], r.m[8]);
-
-    VERBOSEF("n:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[0], n.m[1], n.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[3], n.m[4], n.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[6], n.m[7], n.m[8]);
-
-    // Greenwich Mean Sidereal Time
-    auto gmst = ts::Utc{time}.gmst(ut1_utc);
-    auto gast = gmst + nutation.d_psi * cos(eps);
-    gast += (0.00264 * sin(args.d) + 0.000063 * sin(2.0 * args.d)) * constant::ARCSEC2RAD;
-
-    VERBOSEF("gmst: %f", gmst);
-    VERBOSEF("gast: %f", gast);
-
-    if (gmst_out) {
-        *gmst_out = gmst;
-    }
-
-    // ECI to ECEF matrix
-    auto w = Mat3::rotate_y(-xp) * Mat3::rotate_x(-yp);
-    VERBOSEF("w:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", w.m[0], w.m[1], w.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", w.m[3], w.m[4], w.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", w.m[6], w.m[7], w.m[8]);
-
-    auto u = (w * Mat3::rotate_z(gast)) * (n * p);
-
-    VERBOSEF("u:");
-    VERBOSEF("  %+.4f %+.4f %+.4f", u.m[0], u.m[1], u.m[2]);
-    VERBOSEF("  %+.4f %+.4f %+.4f", u.m[3], u.m[4], u.m[5]);
-    VERBOSEF("  %+.4f %+.4f %+.4f", u.m[6], u.m[7], u.m[8]);
-
-    transform = u;
-    return true;
-}
-
 static bool compute_sun_and_moon_position_ecef(ts::Tai const& time, Float3& sun_ecef,
                                                Float3& moon_ecef, double* gmst) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
@@ -548,10 +255,9 @@ static bool compute_sun_and_moon_position_ecef(ts::Tai const& time, Float3& sun_
         return false;
     }
 
+    EciEarthParameters earth_params{};
     Mat3 transform{};
-    if (!eci_2_ecef(time, transform, gmst)) {
-        return false;
-    }
+    eci_to_ecef_matrix(time, earth_params, &transform, gmst);
 
     sun_ecef  = transform * sun_eci;
     moon_ecef = transform * moon_eci;
@@ -611,20 +317,20 @@ void Observation::compute_earth_solid_tides() NOEXCEPT {
     Float3 sun{};
     Float3 moon{};
     double gmst = 0.0;
-    if (!compute_sun_and_moon_position_ecef(mCurrent.reception_time, sun, moon, &gmst)) {
+    if (!compute_sun_and_moon_position_ecef(mCurrent->reception_time, sun, moon, &gmst)) {
         VERBOSEF("failed to compute sun and moon position");
         return;
     }
 
     Float3 sun_pole{};
-    if (!compute_solid_tide_pole(mCurrent.reception_time, up, sun,
+    if (!compute_solid_tide_pole(mCurrent->reception_time, up, sun,
                                  constant::SUN_GRAVITATIONAL_CONSTANT, sun_pole)) {
         VERBOSEF("failed to compute solid tide pole");
         return;
     }
 
     Float3 moon_pole{};
-    if (!compute_solid_tide_pole(mCurrent.reception_time, up, moon,
+    if (!compute_solid_tide_pole(mCurrent->reception_time, up, moon,
                                  constant::MOON_GRAVITATIONAL_CONSTANT, moon_pole)) {
         VERBOSEF("failed to compute solid tide pole");
         return;
@@ -638,18 +344,18 @@ void Observation::compute_earth_solid_tides() NOEXCEPT {
 
     mEarthSolidTides.displacement_vector = sun_pole + moon_pole + delta_up * up;
     mEarthSolidTides.displacement =
-        -dot_product(mCurrent.true_line_of_sight, mEarthSolidTides.displacement_vector);
+        -dot_product(mCurrent->true_line_of_sight, mEarthSolidTides.displacement_vector);
     mEarthSolidTides.valid = true;
 
     VERBOSEF("disp x: %+.14f * %+.14f = %+.14f", mEarthSolidTides.displacement_vector.x,
-             mCurrent.true_line_of_sight.x,
-             mEarthSolidTides.displacement_vector.x * mCurrent.true_line_of_sight.x);
+             mCurrent->true_line_of_sight.x,
+             mEarthSolidTides.displacement_vector.x * mCurrent->true_line_of_sight.x);
     VERBOSEF("disp y: %+.14f * %+.14f = %+.14f", mEarthSolidTides.displacement_vector.y,
-             mCurrent.true_line_of_sight.y,
-             mEarthSolidTides.displacement_vector.y * mCurrent.true_line_of_sight.y);
+             mCurrent->true_line_of_sight.y,
+             mEarthSolidTides.displacement_vector.y * mCurrent->true_line_of_sight.y);
     VERBOSEF("disp z: %+.14f * %+.14f = %+.14f", mEarthSolidTides.displacement_vector.z,
-             mCurrent.true_line_of_sight.z,
-             mEarthSolidTides.displacement_vector.z * mCurrent.true_line_of_sight.z);
+             mCurrent->true_line_of_sight.z,
+             mEarthSolidTides.displacement_vector.z * mCurrent->true_line_of_sight.z);
     VERBOSEF("solid tides: %+.14f", mEarthSolidTides.displacement);
 }
 
@@ -849,31 +555,31 @@ static bool compute_receiver_antenna_basis(Float3 ground_position_llh, Float3& x
 void Observation::compute_phase_windup() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-#if 0
+#if 1
     Float3 sun{};
     Float3 moon{};
-    if (!compute_sun_and_moon_position_ecef(mCurrent.reception_time, sun, moon, nullptr)) {
+    if (!compute_sun_and_moon_position_ecef(mCurrent->reception_time, sun, moon, nullptr)) {
         VERBOSEF("failed to compute sun and moon position");
         return;
     }
 
     Float3 sx, sy, sz;
-    if (!compute_satellite_antenna_basis_sun(mCurrent.true_position, sun, sx, sy, sz)) {
+    if (!compute_satellite_antenna_basis_sun(mCurrent->true_position, sun, sx, sy, sz)) {
         VERBOSEF("failed to compute satellite antenna basis");
         return;
     }
 #elif 0
     Float3 sx, sy, sz;
-    if (!compute_satellite_antenna_basis_velocity(mGroundPosition, mCurrent.true_position,
-                                                  mCurrent.true_velocity, sx, sy, sz)) {
+    if (!compute_satellite_antenna_basis_velocity(mGroundPosition, mCurrent->true_position,
+                                                  mCurrent->true_velocity, sx, sy, sz)) {
         VERBOSEF("failed to compute satellite antenna basis");
         return;
     }
 #else
     Float3 sx, sy, sz;
-    if (!compute_satellite_antenna_basis_yaw(mCurrent.emission_time, mGroundPosition,
-                                             mCurrent.true_position, mCurrent.true_velocity, sx, sy,
-                                             sz)) {
+    if (!compute_satellite_antenna_basis_yaw(mCurrent->emission_time, mGroundPosition,
+                                             mCurrent->true_position, mCurrent->true_velocity, sx,
+                                             sy, sz)) {
         VERBOSEF("failed to compute satellite antenna basis");
         return;
     }
@@ -886,7 +592,7 @@ void Observation::compute_phase_windup() NOEXCEPT {
     }
 
 #if 1
-    auto k = mCurrent.true_line_of_sight;  // mGroundPosition - mCurrent.true_position;
+    auto k = mCurrent->true_line_of_sight;  // mGroundPosition - mCurrent->true_position;
     if (!k.normalize()) return;
     VERBOSEF("k:   %+.4f, %+.4f, %+.4f", k.x, k.y, k.z);
 
@@ -910,6 +616,18 @@ void Observation::compute_phase_windup() NOEXCEPT {
     VERBOSEF("phw: %+.4f", prev_phw);
     auto phw = ph + floor(prev_phw - ph + 0.5);
     VERBOSEF("phw: %+.4f (%+.4f)", phw, ph);
+
+    printf("TRACK-PHW,%s,%s,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,,%.14f,%.14f,%."
+           "14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,,%.14f,%.14f,%.14f,%.14f,%.14f\n",
+           mSvId.name(), mSignalId.name(),  //
+           rx.x, rx.y, rx.z,                //
+           ry.x, ry.y, ry.z,                //
+           rd.x, rd.y, rd.z,                //
+           sx.x, sx.y, sx.z,                //
+           sy.x, sy.y, sy.z,                //
+           sd.x, sd.y, sd.z,                //
+           k.x, k.y, k.z,                   //
+           ph, phw);
 #else
 
 #endif
@@ -925,10 +643,10 @@ void Observation::compute_antenna_phase_variation() NOEXCEPT {
 
 void Observation::compute_ranges() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
-    VERBOSEF("true_range:   %+24.10f", mCurrent.true_range);
+    VERBOSEF("true_range:   %+24.10f", mCurrent->true_range);
 
-    auto clock_bias = constant::SPEED_OF_LIGHT * -mCurrent.eph_clock_bias;
-    VERBOSEF("clock_bias:   %+24.10f (%gs)", clock_bias, -mCurrent.eph_clock_bias);
+    auto clock_bias = constant::SPEED_OF_LIGHT * -mCurrent->eph_clock_bias;
+    VERBOSEF("clock_bias:   %+24.10f (%gs)", clock_bias, -mCurrent->eph_clock_bias);
 
     auto clock = 0.0;
     if (mClockCorrection.valid) {
@@ -1011,7 +729,7 @@ void Observation::compute_ranges() NOEXCEPT {
 
     auto phase_windup = 0.0;
     if (mPhaseWindup.valid) {
-        phase_windup = mPhaseWindup.correction * mWavelength;
+        phase_windup = -mPhaseWindup.correction * mWavelength;
         VERBOSEF("phase_windup: %+24.10f (%gc x %gm)", phase_windup, mPhaseWindup.correction,
                  mWavelength);
     } else {
@@ -1031,29 +749,30 @@ void Observation::compute_ranges() NOEXCEPT {
     auto phase_correction      = clock + phase_bias - stec_grid - stec_poly + tropo_dry + tropo_wet;
     auto final_code_correction = shapiro + solid_tides;
     auto final_phase_correction = shapiro + solid_tides + phase_windup + antenna_phase_variation;
-    auto code_result = mCurrent.true_range + clock_bias + code_correction + final_code_correction;
+    auto code_result = mCurrent->true_range + clock_bias + code_correction + final_code_correction;
     auto phase_result =
-        mCurrent.true_range + clock_bias + phase_correction + final_phase_correction;
+        mCurrent->true_range + clock_bias + phase_correction + final_phase_correction;
     DEBUGF("%s(%s): code  %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), code_result,
            code_correction, final_code_correction);
     DEBUGF("%s(%s): phase %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_result,
            phase_correction, final_phase_correction);
 
-    auto next_phase_result = mNext.true_range + constant::SPEED_OF_LIGHT * -mNext.eph_clock_bias +
+    auto next_phase_result = mNext->true_range + constant::SPEED_OF_LIGHT * -mNext->eph_clock_bias +
                              phase_correction + final_phase_correction;
     auto phase_delta = next_phase_result - phase_result;
     auto time_delta =
-        (mNext.reception_time.timestamp() - mCurrent.reception_time.timestamp()).full_seconds();
+        (mNext->reception_time.timestamp() - mCurrent->reception_time.timestamp()).full_seconds();
     auto phase_rate = phase_delta / time_delta;
 
     DEBUGF("%s(%s): phase rate %+19.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_rate,
            phase_delta, time_delta);
 
-    INFOF(",%s,%s,%g,%u,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,TOTAL,%.14f,%.14f,TOTAL,%.14f,%."
-          "14f,%.14f,%.14f",
-          mSvId.name(), mSignalId.name(), mFrequency, mIode, mCurrent.true_range, clock_bias, clock,
-          code_bias, phase_bias, stec_grid, stec_poly, tropo_dry, tropo_wet, shapiro, solid_tides,
-          phase_windup, antenna_phase_variation);
+    printf("TRACK-OBS,%s,%s,%g,%u,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,TOTAL,%.14f,%.14f,"
+           "TOTAL,%.14f,%."
+           "14f,%.14f,%.14f\n",
+           mSvId.name(), mSignalId.name(), mFrequency / 1.0e6, mCurrent->eph_iode,
+           mCurrent->true_range, clock_bias, clock, code_bias, phase_bias, stec_grid, stec_poly,
+           tropo_dry, tropo_wet, shapiro, solid_tides, phase_windup, antenna_phase_variation);
 
     mCodeRange      = code_result;
     mPhaseRange     = phase_result;

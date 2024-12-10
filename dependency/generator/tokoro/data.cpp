@@ -32,7 +32,7 @@
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
-#define LOGLET_CURRENT_MODULE "tokoro"
+#define LOGLET_CURRENT_MODULE "tokoro/data"
 
 namespace generator {
 namespace tokoro {
@@ -131,7 +131,8 @@ GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
         auto y1 = y0 + mDeltaLongitude;
         VERBOSEF("latitude:  %+18.14f >= %+18.14f >= %+18.14f", x0, llh.x * constant::RAD2DEG, x1);
         VERBOSEF("longitude: %+18.14f <= %+18.14f <= %+18.14f", y0, llh.y * constant::RAD2DEG, y1);
-        if (llh.x * constant::RAD2DEG <= x0 && llh.x * constant::RAD2DEG >= x1 && llh.y * constant::RAD2DEG >= y0 && llh.y * constant::RAD2DEG <= y1) {
+        if (llh.x * constant::RAD2DEG <= x0 && llh.x * constant::RAD2DEG >= x1 &&
+            llh.y * constant::RAD2DEG >= y0 && llh.y * constant::RAD2DEG <= y1) {
             VERBOSEF("found: %ld/%ld", grid_point.array_index, grid_point.absolute_index);
             return &grid_point;
         }
@@ -422,7 +423,7 @@ void CorrectionData::add_correction(long                                 gnss_id
             continue;
         }
 
-        auto iode = static_cast<uint16_t>(helper::BitString::from(&satellite->iod_r15)->as_int64());
+        auto iod = static_cast<uint16_t>(helper::BitString::from(&satellite->iod_r15)->as_int64());
 
         auto radial      = decode::delta_radial_r15(satellite->delta_radial_r15);
         auto along_track = decode::delta_AlongTrack_r15(satellite->delta_AlongTrack_r15);
@@ -432,29 +433,8 @@ void CorrectionData::add_correction(long                                 gnss_id
         auto dot_along  = decode::dot_delta_AlongTrack_r15(satellite->dot_delta_AlongTrack_r15);
         auto dot_cross  = decode::dot_delta_CrossTrack_r15(satellite->dot_delta_CrossTrack_r15);
 
-#if 0
-        radial      = -radial;
-        cross_track = -cross_track;
-
-        dot_radial = -dot_radial;
-        dot_cross  = -dot_cross;
-#endif
-
-#if 0
-        radial      = -radial;
-        dot_radial = -dot_radial;
-#endif
-#if 0
-        along_track = -along_track;
-        dot_along = -dot_along;
-#endif
-#if 0
-        cross_track = -cross_track;
-        dot_cross = -dot_cross;
-#endif
-
         auto& correction          = mOrbit[satellite_id];
-        correction.iode           = iode;
+        correction.iod            = iod;
         correction.reference_time = reference_time;
         correction.delta          = {radial, along_track, cross_track};
         correction.dot_delta      = {dot_radial, dot_along, dot_cross};

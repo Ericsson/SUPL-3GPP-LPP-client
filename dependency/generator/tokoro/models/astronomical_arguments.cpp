@@ -17,14 +17,14 @@ static double const ASTRONOMICAL_ARGUMENTS_DATA[][5] = {
     {125.04455501, -6962890.2665, 7.4722, 0.007702, -0.00005939},
 };
 
-AstronomicalArguments AstronomicalArguments::evaluate(double t_jc) NOEXCEPT {
-    VSCOPE_FUNCTION();
+AstronomicalArguments AstronomicalArguments::evaluate(double t) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%f", t);
 
     double time[4];
-    time[0] = t_jc;
-    time[1] = time[0] * t_jc;
-    time[2] = time[1] * t_jc;
-    time[3] = time[2] * t_jc;
+    time[0] = t;
+    time[1] = time[0] * t;
+    time[2] = time[1] * t;
+    time[3] = time[2] * t;
 
     AstronomicalArguments args{};
     args.l     = ASTRONOMICAL_ARGUMENTS_DATA[0][0] * 3600.0;
@@ -46,6 +46,12 @@ AstronomicalArguments AstronomicalArguments::evaluate(double t_jc) NOEXCEPT {
     args.f     = fmod(args.f * constant::ARCSEC2RAD, 2 * constant::PI);
     args.d     = fmod(args.d * constant::ARCSEC2RAD, 2 * constant::PI);
     args.omega = fmod(args.omega * constant::ARCSEC2RAD, 2 * constant::PI);
+
+    VERBOSEF("l:     %+.14f", args.l);
+    VERBOSEF("lp:    %+.14f", args.lp);
+    VERBOSEF("f:     %+.14f", args.f);
+    VERBOSEF("d:     %+.14f", args.d);
+    VERBOSEF("omega: %+.14f", args.omega);
     return args;
 }
 

@@ -14,12 +14,14 @@ add_library(dependency_generator_tokoro STATIC
     "models/phase_windup.cpp"
     "models/antenna_phase_variation.cpp"
     "models/astronomical_arguments.cpp"
+    "models/nutation.cpp"
     
     "coordinates/coordinate.cpp"
     "coordinates/reference_ellipsoid.cpp"
     "coordinates/enu.cpp"
     "coordinates/wgs84.cpp"
     "coordinates/ecef.cpp"
+    "coordinates/eci.cpp"
 )
 add_library(dependency::generator::tokoro ALIAS dependency_generator_tokoro)
 

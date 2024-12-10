@@ -26,7 +26,17 @@ public:
     EXPLICIT Ephemeris(BdsEphemeris const& ephemeris) NOEXCEPT : mType(Type::BDS),
                                                                  mBdsEphemeris(ephemeris) {}
 
-    NODISCARD uint8_t iode() const NOEXCEPT {
+    /// Issue of Data as defined by 3GPP LPP
+    NODISCARD uint16_t iod() const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0;
+        case Type::GPS: return mGpsEphemeris.lpp_iod;
+        case Type::GAL: return mGalEphemeris.lpp_iod;
+        case Type::BDS: return mBdsEphemeris.lpp_iod;
+        }
+    }
+
+    NODISCARD uint16_t iode() const NOEXCEPT {
         switch (mType) {
         case Type::NONE: return 0;
         case Type::GPS: return mGpsEphemeris.iode;
@@ -35,11 +45,11 @@ public:
         }
     }
 
-    NODISCARD uint8_t iodc() const NOEXCEPT {
+    NODISCARD uint16_t iodc() const NOEXCEPT {
         switch (mType) {
         case Type::NONE: return 0;
         case Type::GPS: return mGpsEphemeris.iodc;
-        case Type::GAL: return 0;
+        case Type::GAL: return mGalEphemeris.iod_nav;
         case Type::BDS: return mBdsEphemeris.iodc;
         }
     }

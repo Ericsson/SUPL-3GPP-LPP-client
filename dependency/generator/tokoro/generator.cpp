@@ -124,10 +124,6 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
-    observation.compute_ranges();
-
-    VERBOSEF("observation: c=%f, p=%f", observation.code_range(), observation.phase_range());
-
     if (!observation.has_phase_bias()) {
         WARNF("discarded: %s %s - no phase bias", satellite.id().name(), signal_id.name());
         observation.discard();
@@ -146,6 +142,10 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
               signal_id.name());
         observation.discard();
     }
+
+    if (!observation.is_valid()) return;
+    observation.compute_ranges();
+    VERBOSEF("observation: c=%f, p=%f", observation.code_range(), observation.phase_range());
 }
 
 bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
@@ -198,10 +198,23 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         for (auto& signal : *signals) {
             if (mSignalIncludeSet.size() > 0 &&
                 mSignalIncludeSet.find(signal) == mSignalIncludeSet.end()) {
+                WARNF("discarded: %s %s - not included", satellite.id().name(), signal.name());
+                continue;
+            }
+
+            if (signal.frequency() <= 1.0) {
+                WARNF("discarded: %s %s - invalid frequency", satellite.id().name(), signal.name());
                 continue;
             }
 
             initialize_observation(satellite, signal);
+            satellite.remove_discarded_observations();
+        }
+
+        if (satellite.observations().size() == 0) {
+            WARNF("discarded: %s - no valid observations", satellite.id().name());
+            satellite.disable();
+            continue;
         }
 
         DEBUGF("satellite %s: %zu observations", satellite.id().name(),
@@ -267,16 +280,15 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
 
     auto average_code_range = satellite.average_code_range();
     auto rtd                = range_time_division(average_code_range);
-    VERBOSEF("average_code_range:       %.4f", average_code_range);
-    VERBOSEF("rtd:                      %d %f %f %f", rtd.integer_ms, rtd.rough_range,
-             rtd.used_range, rtd.unused_range);
+    VERBOSEF("avg_code_range:       %.4f (%d, %.4f)", rtd.used_range, rtd.integer_ms,
+             rtd.rough_range);
 
     auto phase_range_rate = 0.0;
     if (mPhaseRangeRate) {
         // Round average phase_range_rate to the nearest integer
         auto avg_phase_range_rate = satellite.average_phase_range_rate();
-        VERBOSEF("avg_phase_range_rate: %.4f", avg_phase_range_rate);
-        phase_range_rate = std::round(avg_phase_range_rate);
+        phase_range_rate          = std::round(avg_phase_range_rate);
+        VERBOSEF("avg_phase_range_rate: %.4f (%f)", avg_phase_range_rate, phase_range_rate);
     }
 
     rtcm::Satellite rtcm{};
@@ -417,7 +429,9 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 //
 //
 
-Generator::Generator() NOEXCEPT {}
+Generator::Generator() NOEXCEPT {
+    mIodConsistencyCheck = false;
+}
 
 Generator::~Generator() NOEXCEPT = default;
 
@@ -581,7 +595,7 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
     }
 }
 
-bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iode,
+bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iod,
                                ephemeris::Ephemeris& eph) const NOEXCEPT {
     if (sv_id.gnss() == SatelliteId::Gnss::GPS) {
         auto it = mGpsEphemeris.find(sv_id);
@@ -590,12 +604,13 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 
         auto gps_time = ts::Gps(time);
         for (auto& ephemeris : list) {
-            VERBOSEF("searching: %s %4u %.0f %4u%s%s", sv_id.name(), ephemeris.week_number,
+            VERBOSEF("searching: %s %4u %.2f %4u%s%s", sv_id.name(), ephemeris.week_number,
                      ephemeris.toe, ephemeris.iode, ephemeris.is_valid(gps_time) ? " [time]" : "",
-                     ephemeris.iode == iode ? " [iode]" : "");
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
-            if (ephemeris.iode != iode) continue;
+            if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
 
@@ -610,29 +625,47 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 
         auto gal_time = ts::Gst(time);
         for (auto& ephemeris : list) {
-            VERBOSEF("searching: %s %4u %.0f %4u%s%s", sv_id.name(), ephemeris.week_number,
+            VERBOSEF("searching: %s %4u %.2f %4u%s%s", sv_id.name(), ephemeris.week_number,
                      ephemeris.toe, ephemeris.iod_nav,
                      ephemeris.is_valid(gal_time) ? " [time]" : "",
-                     ephemeris.iod_nav == iode ? " [iode]" : "");
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gal_time)) continue;
-            if (ephemeris.iod_nav != iode) continue;
+            if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
 
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::BEIDOU) {
-        auto  it   = mBdsEphemeris.find(sv_id);
+        auto it = mBdsEphemeris.find(sv_id);
+        if (it == mBdsEphemeris.end()) return false;
         auto& list = it->second;
 
         auto bds_time = ts::Bdt(time);
         for (auto& ephemeris : list) {
-            VERBOSEF("searching: %s %4u %.0f %4u%s%s", sv_id.name(), ephemeris.week_number,
-                     ephemeris.toe, ephemeris.iode, ephemeris.is_valid(bds_time) ? " [time]" : "",
-                     ephemeris.iode == iode ? " [iode]" : "");
+            auto eph_time = ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toe, 0);
+            WARNF("searching: %s %u==%u %.2f %.2f %u==%u %u %u %s%s %s %s", sv_id.name(),
+                  ephemeris.week_number, bds_time.week(), ephemeris.toe, ephemeris.toc,
+                  ephemeris.lpp_iod, iod, ephemeris.iode, ephemeris.iodc,
+                  ephemeris.is_valid(bds_time) ? " [time]" : "",
+                  ephemeris.lpp_iod == iod ? " [iod]" : "",
+                  ts::Utc{eph_time}.rtklib_time_string().c_str(),
+                  ts::Utc{bds_time}.rtklib_time_string().c_str());
+#if 0
+            // TODO: REMOVE:
+            INFOF("%s:", sv_id.name());
+            INFOF("  toc:  %.0f    // %s", ephemeris.toc, ts::Utc{ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toc, 0)}.rtklib_time_string().c_str());
+            INFOF("  toe:  %.0f    // %s", ephemeris.toe, ts::Utc{ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toe, 0)}.rtklib_time_string().c_str());
+            INFOF("  iode: %6u     // mod(toe / 720, 240)", ephemeris.iode);
+            INFOF("  iodc: %6u     // mod(toc / 720, 240)", ephemeris.iodc);
+            INFOF("  iod:  %6u     // msb(toe, 11)", ephemeris.lpp_iod);
+            INFOF("  iod:  %6u     // OrbitCorrection.iod_r15", iod);
+#endif
             if (!ephemeris.is_valid(bds_time)) continue;
-            if (ephemeris.iode != iode) continue;
+            if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
 

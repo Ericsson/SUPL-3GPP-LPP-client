@@ -70,6 +70,7 @@ struct SsrGlobals {
     bool earth_solid_tides_correction;
     bool antenna_phase_variation_correction;
     bool tropospheric_height_correction;
+    bool iod_consistency_check;
 #endif
 
     bool generate_gps;
@@ -133,6 +134,7 @@ public:
         mEarthSolidTidesCorrection       = nullptr;
         mAntennaPhaseVariationCorrection = nullptr;
         mTroposphericHeightCorrection    = nullptr;
+        mIodConsistencyCheck             = nullptr;
 #endif
     }
 
@@ -190,6 +192,7 @@ public:
         delete mEarthSolidTidesCorrection;
         delete mAntennaPhaseVariationCorrection;
         delete mTroposphericHeightCorrection;
+        delete mIodConsistencyCheck;
 #endif
     }
 
@@ -203,7 +206,7 @@ private:
     args::Flag*                   mNoGalileo;
     args::Flag*                   mNoBeiDou;
 #ifdef INCLUDE_GENERATOR_RTCM
-    args::ValueFlag<int>*         mLRFMessageIdArg;
+    args::ValueFlag<int>* mLRFMessageIdArg;
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     args::ValueFlag<int>*         mUraOverrideArg;
@@ -248,6 +251,7 @@ private:
     args::Flag* mEarthSolidTidesCorrection;
     args::Flag* mAntennaPhaseVariationCorrection;
     args::Flag* mTroposphericHeightCorrection;
+    args::Flag* mIodConsistencyCheck;
 #endif
 };
 

@@ -78,13 +78,12 @@ private:
     SatelliteId mSvId;
     SignalId    mSignalId;
     bool        mIsValid;
-    uint16_t    mIode;
 
     Float3 mGroundPosition;
     Float3 mGroundLlh;
 
-    SatelliteState const& mCurrent;
-    SatelliteState const& mNext;
+    SatelliteState const* mCurrent;
+    SatelliteState const* mNext;
 
     double mFrequency;
     double mWavelength;

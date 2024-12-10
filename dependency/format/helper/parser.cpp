@@ -3,7 +3,7 @@
 namespace format {
 namespace helper {
 
-static CONSTEXPR uint32_t PARSER_BUFFER_SIZE = 16 * 1024;
+static CONSTEXPR uint32_t PARSER_BUFFER_SIZE = 32 * 4096;
 
 Parser::Parser() NOEXCEPT : mBuffer(nullptr),
                                mBufferCapacity(0),

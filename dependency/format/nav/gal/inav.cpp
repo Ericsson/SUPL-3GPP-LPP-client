@@ -309,6 +309,9 @@ bool InavEphemerisCollector::process(uint8_t prn, InavWord const& word,
         ephemeris.cic       = w4.cic;
         ephemeris.cis       = w4.cis;
 
+        // [3GPP TS 37.355]: In the case of broadcasted Galileo ephemeris, the iod contains the IOD index as described in [8]. 
+        ephemeris.lpp_iod = ephemeris.iod_nav;
+
         internal_ephemeris.word1 = false;
         internal_ephemeris.word2 = false;
         internal_ephemeris.word3 = false;

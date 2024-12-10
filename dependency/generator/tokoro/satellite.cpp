@@ -8,6 +8,8 @@
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
+#include <algorithm>
+
 #define LOGLET_CURRENT_MODULE "tokoro"
 
 #define ORBIT_CORRECTED_IN_ITERATION 0
@@ -39,8 +41,8 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
     // Find broadcast ephemeris
     ephemeris::Ephemeris eph{};
-    if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iode, eph)) {
-        WARNF("ephemeris not found [sv=%s,iode=%u]", mId.name(), mOrbitCorrection.iode);
+    if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iod, eph)) {
+        WARNF("ephemeris not found [sv=%s,iod=%u]", mId.name(), mOrbitCorrection.iod);
         return;
     }
 
@@ -327,7 +329,7 @@ double Satellite::clock_correction() const NOEXCEPT {
     return delta_t_sv;
 }
 
-NODISCARD double Satellite::average_code_range() const NOEXCEPT {
+double Satellite::average_code_range() const NOEXCEPT {
     if (mObservations.size() == 0) return 0.0;
     double sum = 0.0;
     for (auto const& observation : mObservations) {
@@ -336,13 +338,21 @@ NODISCARD double Satellite::average_code_range() const NOEXCEPT {
     return sum / mObservations.size();
 }
 
-NODISCARD double Satellite::average_phase_range_rate() const NOEXCEPT {
+double Satellite::average_phase_range_rate() const NOEXCEPT {
     if (mObservations.size() == 0) return 0.0;
     double sum = 0.0;
     for (auto const& observation : mObservations) {
         sum += observation.phase_range_rate();
     }
     return sum / mObservations.size();
+}
+
+void Satellite::remove_discarded_observations() NOEXCEPT {
+    mObservations.erase(std::remove_if(mObservations.begin(), mObservations.end(),
+                                       [](Observation const& observation) {
+                                           return !observation.is_valid();
+                                       }),
+                        mObservations.end());
 }
 
 }  // namespace tokoro

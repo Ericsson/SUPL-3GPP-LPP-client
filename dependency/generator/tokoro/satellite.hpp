@@ -66,6 +66,8 @@ public:
         return mObservations.back();
     }
 
+    void remove_discarded_observations() NOEXCEPT;
+    
 protected:
     NODISCARD static bool compute_true_position(SatelliteId id, Float3 ground_position,
                                                 ts::Tai const&              reception_time,

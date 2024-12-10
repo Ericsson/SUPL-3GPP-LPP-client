@@ -14,6 +14,7 @@ struct GpsEphemeris {
     uint8_t  ura_index;
     uint8_t  sv_health;
 
+    uint16_t lpp_iod;
     uint16_t iodc;
     uint8_t  iode;
     uint8_t  aodo;

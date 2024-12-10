@@ -7,6 +7,7 @@
 #include <format/ctrl/cid.hpp>
 #include <format/ctrl/identity.hpp>
 #include <format/ctrl/parser.hpp>
+#include <format/lpp/uper_parser.hpp>
 #include <format/nmea/message.hpp>
 #include <format/nmea/parser.hpp>
 #include <format/ubx/message.hpp>
@@ -17,6 +18,10 @@
 #include <streamline/system.hpp>
 
 #include "location_information.h"
+
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "ex/osr"
 
 #ifdef INCLUDE_GENERATOR_RTCM
 #include <generator/rtcm/generator.hpp>
@@ -59,11 +64,22 @@ static void initialize_inputs(scheduler::Scheduler&           scheduler,
             ctrl = new format::ctrl::Parser{};
         }
 
+        format::lpp::UperParser* lpp_uper{};
+        if ((input.format & INPUT_FORMAT_LPP) != 0) {
+            lpp_uper = new format::lpp::UperParser{};
+        }
+
+        DEBUGF("input %p: %s%s%s%s", input.interface.get(),
+               (input.format & INPUT_FORMAT_UBX) ? "UBX " : "",
+               (input.format & INPUT_FORMAT_NMEA) ? "NMEA " : "",
+               (input.format & INPUT_FORMAT_CTRL) ? "CTRL " : "",
+               (input.format & INPUT_FORMAT_LPP) ? "LPP " : "");
+
         input.interface->schedule(scheduler);
-        input.interface->callback = [nmea, ubx, ctrl](io::Input&, uint8_t* buffer, size_t count) {
+        input.interface->callback = [nmea, ubx, ctrl, lpp_uper](io::Input&, uint8_t* buffer,
+                                                                size_t count) {
             if (nmea) {
-                // TODO(ewasjon): handle count > 2^16
-                nmea->append(buffer, static_cast<uint16_t>(count));
+                nmea->append(buffer, count);
                 for (;;) {
                     auto message = nmea->try_parse();
                     if (!message) break;
@@ -72,8 +88,7 @@ static void initialize_inputs(scheduler::Scheduler&           scheduler,
             }
 
             if (ubx) {
-                // TODO(ewasjon): handle count > 2^16
-                ubx->append(buffer, static_cast<uint16_t>(count));
+                ubx->append(buffer, count);
                 for (;;) {
                     auto message = ubx->try_parse();
                     if (!message) break;
@@ -82,12 +97,22 @@ static void initialize_inputs(scheduler::Scheduler&           scheduler,
             }
 
             if (ctrl) {
-                // TODO(ewasjon): handle count > 2^16
-                ctrl->append(buffer, static_cast<uint16_t>(count));
+                ctrl->append(buffer, count);
                 for (;;) {
                     auto message = ctrl->try_parse();
                     if (!message) break;
                     gStream.push(std::move(message));
+                }
+            }
+
+            if (lpp_uper) {
+                lpp_uper->append(buffer, count);
+                for (;;) {
+                    auto message = lpp_uper->try_parse();
+                    if (!message) break;
+                    XDEBUGF("lpp/msg", "create %p", message);
+                    auto lpp_message = LppMessage{message};
+                    gStream.push(std::move(lpp_message));
                 }
             }
         };
@@ -95,12 +120,21 @@ static void initialize_inputs(scheduler::Scheduler&           scheduler,
 }
 
 static void initialize_outputs(OutputOptions const& outputs) {
+    VSCOPE_FUNCTION();
+
     bool lpp_xer_output  = false;
     bool lpp_uper_output = false;
     bool nmea_output     = false;
     bool ubx_output      = false;
     bool ctrl_output     = false;
     for (auto& output : outputs.outputs) {
+        DEBUGF("%p: %s%s%s%s%s", output.interface.get(),
+               (output.format & OUTPUT_FORMAT_UBX) ? "UBX " : "",
+               (output.format & OUTPUT_FORMAT_NMEA) ? "NMEA " : "",
+               (output.format & OUTPUT_FORMAT_CTRL) ? "CTRL " : "",
+               (output.format & OUTPUT_FORMAT_LPP_XER) ? "LPP_XER " : "",
+               (output.format & OUTPUT_FORMAT_LPP_UPER) ? "LPP_UPER " : "");
+
         if ((output.format & OUTPUT_FORMAT_LPP_XER) != 0) lpp_xer_output = true;
         if ((output.format & OUTPUT_FORMAT_LPP_UPER) != 0) lpp_uper_output = true;
         if ((output.format & OUTPUT_FORMAT_NMEA) != 0) nmea_output = true;
@@ -173,12 +207,21 @@ static void initialize_outputs(OutputOptions const& outputs) {
         gStream.add_inspector<CtrlPrint>();
     }
 
-    gStream.add_inspector<UbxLocation>(location_information_options.convert_confidence_95_to_39,
-                                       location_information_options.override_horizontal_confidence,
-                                       location_information_options.output_ellipse_68);
-    gStream.add_consumer<NmeaLocation>(location_information_options.convert_confidence_95_to_39,
-                                       location_information_options.override_horizontal_confidence,
-                                       location_information_options.output_ellipse_68);
+    if (!location_information_options.disable_ubx_location) {
+        INFOF("UBX location enabled");
+        gStream.add_inspector<UbxLocation>(
+            location_information_options.convert_confidence_95_to_39,
+            location_information_options.override_horizontal_confidence,
+            location_information_options.output_ellipse_68);
+    }
+
+    if (!location_information_options.disable_nmea_location) {
+        INFOF("NMEA location enabled");
+        gStream.add_consumer<NmeaLocation>(
+            location_information_options.convert_confidence_95_to_39,
+            location_information_options.override_horizontal_confidence,
+            location_information_options.output_ellipse_68);
+    }
 
     gStream.add_inspector<LocationCollector>();
     gStream.add_inspector<MetricsCollector>();
@@ -318,6 +361,7 @@ static void initialize_outputs(OutputOptions const& outputs) {
         printf("  force: false\n");
     }
 
+    client.set_update_rate(location_information_options.update_rate);
     if (location_information_options.unlock_update_rate) {
         client.unlock_update_rate();
         printf("  unlock update rate: true\n");
@@ -325,33 +369,43 @@ static void initialize_outputs(OutputOptions const& outputs) {
         printf("  unlock update rate: false\n");
     }
 
-    if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
-                        location_server_options.ssl, gCell)) {
-        throw std::runtime_error("Unable to connect to location server");
-    }
+    if (!location_server_options.skip_connect) {
+        if (!client.connect(location_server_options.host.c_str(), location_server_options.port,
+                            location_server_options.ssl, gCell)) {
+            ERRORF("unable to connect to location server");
+            throw std::runtime_error("Unable to connect to location server");
+        }
 
-    // Request OSR assistance data from location server for the 'cell' and register a callback
-    // that will be called when we receive assistance data.
-    request = client.request_assistance_data(gCell, nullptr, assistance_data_callback);
-    if (request == AD_REQUEST_INVALID) {
-        throw std::runtime_error("Unable to request assistance data");
-    }
+        if (!location_server_options.skip_request_assistance_data) {
+            request = client.request_assistance_data(gCell, nullptr, assistance_data_callback);
+            if (request == AD_REQUEST_INVALID) {
+                ERRORF("unable to request assistance data");
+                throw std::runtime_error("Unable to request assistance data");
+            }
 
-    client_initialized = true;
+            client_initialized = true;
+        }
+    }
 
     for (;;) {
-        scheduler.execute_timeout(std::chrono::milliseconds(100));
+        scheduler.execute_timeout(
+            std::chrono::milliseconds(location_information_options.update_rate));
 
-        // client.process() MUST be called at least once every second, otherwise
-        // ProvideLocationInformation messages will not be send to the server.
-        if (!client.process()) {
-            throw std::runtime_error("Unable to process LPP client (probably disconnected)");
+        if (!location_server_options.skip_connect) {
+            // client.process() MUST be called at least once every second, otherwise
+            // ProvideLocationInformation messages will not be send to the server.
+            if (!client.process()) {
+                throw std::runtime_error("Unable to process LPP client (probably disconnected)");
+            }
         }
     }
 }
 
-static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* message, void*) {
-    gStream.push(LppMessage{message});
+static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* raw_message,
+                                     void*) {
+    XDEBUGF("lpp/msg", "new %p", raw_message);
+    auto message = LppMessage{raw_message};
+    gStream.push(std::move(message));
     return true;
 }
 

@@ -79,7 +79,7 @@ struct CorrectionPointSet {
 
 struct OrbitCorrection {
     ts::Tai  reference_time;
-    uint16_t iode;
+    uint16_t iod;
     Float3   delta;      // {radial, along_track, cross_track}
     Float3   dot_delta;  // {radial, along_track, cross_track}
 

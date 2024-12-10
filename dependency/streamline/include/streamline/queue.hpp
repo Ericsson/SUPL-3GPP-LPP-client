@@ -8,7 +8,7 @@
 
 #include <loglet/loglet.hpp>
 
-#define EVENT_QUEUE_SIZE 256
+#define EVENT_QUEUE_SIZE 2048
 
 namespace streamline {
 template <typename T>

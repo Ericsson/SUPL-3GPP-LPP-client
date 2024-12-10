@@ -73,6 +73,15 @@ private:
     double  mFraction;
 };
 
+struct TimePoint {
+    int64_t year;
+    int64_t month;
+    int64_t day;
+    int64_t hour;
+    int64_t minutes;
+    double  seconds;
+};
+
 class LeapSeconds {
 public:
     NODISCARD static int64_t count() {

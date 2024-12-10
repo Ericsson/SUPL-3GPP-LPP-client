@@ -404,7 +404,8 @@ static void initialize_outputs(OutputOptions const& outputs) {
     }
 }
 
-static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* raw_message, void*) {
+static bool assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message* raw_message,
+                                     void*) {
     XDEBUGF("lpp/msg", "new %p", raw_message);
     auto message = LppMessage{raw_message};
     gStream.push(std::move(message));
@@ -580,8 +581,8 @@ void SsrCommand::parse(args::Subparser& parser) {
                        {"flip-orbit-correction"});
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
-    mShapiroCorrection = new args::Flag(parser, "no-shapiro-correction", "Disable Shapiro correction",
-                                        {"no-shapiro-correction"});
+    mShapiroCorrection = new args::Flag(parser, "no-shapiro-correction",
+                                        "Disable Shapiro correction", {"no-shapiro-correction"});
     mPhaseWindupCorrection =
         new args::Flag(parser, "phase-windup-correction", "Enable phase windup correction",
                        {"phase-windup-correction"});
@@ -594,6 +595,10 @@ void SsrCommand::parse(args::Subparser& parser) {
     mTroposphericHeightCorrection    = new args::Flag(parser, "no-tropospheric-height-correction",
                                                       "Disable tropospheric height correction",
                                                       {"no-tropospheric-height-correction"});
+    mIodConsistencyCheck =
+        new args::Flag(parser, "no-iod-consistency-check",
+                       "Do not perform IOD consistency check when finding ephemeris",
+                       {"no-iod-consistency-check"});
 #endif
 }
 
@@ -649,6 +654,7 @@ void SsrCommand::execute(Options options) {
     gGlobals.earth_solid_tides_correction       = false;
     gGlobals.antenna_phase_variation_correction = false;
     gGlobals.tropospheric_height_correction     = true;
+    gGlobals.iod_consistency_check              = true;
 #endif
 
     if (*mFormatArg) {
@@ -878,6 +884,10 @@ void SsrCommand::execute(Options options) {
 
     if (*mTroposphericHeightCorrection) {
         gGlobals.tropospheric_height_correction = false;
+    }
+
+    if (*mIodConsistencyCheck) {
+        gGlobals.iod_consistency_check = false;
     }
 #endif
 

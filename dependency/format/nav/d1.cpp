@@ -309,35 +309,39 @@ bool D1Collector::process(uint8_t prn, D1Subframe const& subframe,
         auto const& sf2 = internal_ephemeris.subframe2_data;
         auto const& sf3 = internal_ephemeris.subframe3_data;
 
-        ephemeris.prn               = prn;
-        ephemeris.week_number       = sf1.wn;
-        ephemeris.sv_health         = sf1.sat_h1;
-        ephemeris.iodc              = sf1.aodc;
-        ephemeris.iode              = sf1.aode;
-        ephemeris.toc               = sf1.toc;
-        auto toe      = sf2.toe_msb << 15 | sf3.toe_lsb;
-        ephemeris.toe = static_cast<double>(toe) * 8.0;
+        ephemeris.prn         = prn;
+        ephemeris.week_number = sf1.wn;
+        ephemeris.sv_health   = sf1.sat_h1;
+        ephemeris.toc         = sf1.toc;
+        auto toe              = sf2.toe_msb << 15 | sf3.toe_lsb;
+        ephemeris.toe         = static_cast<double>(toe) * 8.0;
+        ephemeris.iodc        = (static_cast<uint32_t>(ephemeris.toc) / 720) % 240;
+        ephemeris.iode        = (static_cast<uint32_t>(ephemeris.toe) / 720) % 240;
 
-        ephemeris.af0               = sf1.a0;
-        ephemeris.af1               = sf1.a1;
-        ephemeris.af2               = sf1.a2;
+        ephemeris.af0 = sf1.a0;
+        ephemeris.af1 = sf1.a1;
+        ephemeris.af2 = sf1.a2;
 
-        ephemeris.delta_n           = sf2.delta_n;
-        ephemeris.m0                = sf2.m0;
-        ephemeris.e                 = sf2.e;
-        ephemeris.cuc               = sf2.cuc;
-        ephemeris.cus               = sf2.cus;
-        ephemeris.crc               = sf2.crc;
-        ephemeris.crs               = sf2.crs;
-        ephemeris.a                 = sf2.sqrt_a * sf2.sqrt_a;
-        
-        ephemeris.i0                = sf3.i0;
-        ephemeris.idot              = sf3.idot;
-        ephemeris.omega0            = sf3.omega0;
-        ephemeris.omega             = sf3.omega;
-        ephemeris.omega_dot         = sf3.omega_dot;
-        ephemeris.cic               = sf3.cic;
-        ephemeris.cis               = sf3.cis;
+        ephemeris.delta_n = sf2.delta_n;
+        ephemeris.m0      = sf2.m0;
+        ephemeris.e       = sf2.e;
+        ephemeris.cuc     = sf2.cuc;
+        ephemeris.cus     = sf2.cus;
+        ephemeris.crc     = sf2.crc;
+        ephemeris.crs     = sf2.crs;
+        ephemeris.a       = sf2.sqrt_a * sf2.sqrt_a;
+
+        ephemeris.i0        = sf3.i0;
+        ephemeris.idot      = sf3.idot;
+        ephemeris.omega0    = sf3.omega0;
+        ephemeris.omega     = sf3.omega;
+        ephemeris.omega_dot = sf3.omega_dot;
+        ephemeris.cic       = sf3.cic;
+        ephemeris.cis       = sf3.cis;
+
+        // [3GPP TS 37.355]: In the case of broadcasted BDS B1I/B3I ephemeris, the iod contains 11
+        // MSB bits of the toe as defined in [23], [50].
+        ephemeris.lpp_iod = static_cast<uint32_t>(ephemeris.toe) >> 9;
 
         internal_ephemeris.subframe1 = false;
         internal_ephemeris.subframe2 = false;

@@ -11,6 +11,7 @@ namespace ephemeris {
 struct GalEphemeris {
     uint8_t  prn;
     uint16_t week_number;
+    uint16_t lpp_iod;
     uint16_t iod_nav;
 
     double toc;

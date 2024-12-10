@@ -45,6 +45,16 @@ inline RangeTimeDivision range_time_division(double range) {
     time_range -= converted_integer_ms;
 
     auto rough_range           = static_cast<long>(floor((time_range / RTCM_N2_10) + 0.5));
+    if(rough_range >= 1024) {
+        // if the range is close to the next integer millisecond (79.9999), then there are cases
+        // where integer ms is 79 and rough range is 1.0, which is not valid. In this case, we
+        // should adjust the integer ms and rough range.
+        integer_ms += 1;
+        converted_integer_ms += 1.0;
+        time_range -= 1.0;
+        rough_range = static_cast<long>(floor((time_range / RTCM_N2_10) + 0.5));
+    }
+
     auto converted_rough_range = static_cast<double>(rough_range) * RTCM_N2_10;
     time_range -= converted_rough_range;
 

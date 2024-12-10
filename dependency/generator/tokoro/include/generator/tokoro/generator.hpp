@@ -118,6 +118,8 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
 
+    void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
+
     std::shared_ptr<ReferenceStation>
     define_reference_station(ReferenceStationConfig const& config) NOEXCEPT;
 
@@ -129,7 +131,7 @@ private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;
     void find_corrections(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;
 
-    bool find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iode,
+    bool find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iod,
                         ephemeris::Ephemeris& eph) const NOEXCEPT;
     bool compute_tropospheric_residual(double& residual) NOEXCEPT;
 
@@ -140,6 +142,8 @@ private:
     ts::Tai                             mLastCorrectionDataTime;
     std::unique_ptr<CorrectionData>     mCorrectionData;
     std::unique_ptr<CorrectionPointSet> mCorrectionPointSet;
+
+    bool mIodConsistencyCheck;
 
     friend struct Satellite;
     friend class ReferenceStation;
