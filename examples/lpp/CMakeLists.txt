@@ -45,6 +45,10 @@ if(${INCLUDE_GENERATOR_TOKORO})
     target_link_libraries(example_lpp PRIVATE dependency::generator::tokoro)
 endif()
 
+if(${DATA_TRACING})
+    target_link_libraries(example_lpp PRIVATE dependency::datatrace)
+endif()
+
 set_target_properties(example_lpp PROPERTIES OUTPUT_NAME "example-lpp")
 set_target_properties(example_lpp PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 

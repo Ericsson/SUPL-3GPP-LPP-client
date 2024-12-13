@@ -70,6 +70,11 @@ public:
     void set_reference_station_id(int id) { mRtcmReferenceStationId = id; }
     void set_msm_type(int type) { mRtcmMsmType = type; }
 
+    // TODO(ewasjon): REMOVE: for testing only
+    NODISCARD double g04_l1_ca() const NOEXCEPT;
+    NODISCARD double g05_l1_ca() const NOEXCEPT;
+    NODISCARD double g07_l1_ca() const NOEXCEPT;
+
 protected:
     void initialize_satellites() NOEXCEPT;
     void initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT;

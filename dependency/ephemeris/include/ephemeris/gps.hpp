@@ -49,10 +49,36 @@ struct GpsEphemeris {
     bool l2_p_data_flag;
 
     NODISCARD bool is_valid(ts::Gps const& time) const NOEXCEPT;
+    NODISCARD bool match(GpsEphemeris const& other) const NOEXCEPT {
+        if(prn != other.prn) return false;
+        if(week_number != other.week_number) return false;
+        if(iode != other.iode) return false;
+        if(iodc != other.iodc) return false;
+        if(lpp_iod != other.lpp_iod) return false;
+        if(std::abs(toe - other.toe) > 1e-3) return false;
+        if(std::abs(toc - other.toc) > 1e-3) return false;
+        if(fit_interval_flag != other.fit_interval_flag) return false;
+        if(sv_health != other.sv_health) return false;
+        return true;
+    }
     NODISCARD bool compare(GpsEphemeris const& other) const NOEXCEPT {
-        return prn == other.prn && week_number == other.week_number && iode == other.iode &&
-               iodc == other.iodc && std::abs(toe - other.toe) < 1e-3 &&
-               fit_interval_flag == other.fit_interval_flag && sv_health == other.sv_health;
+        if(week_number < other.week_number) return true;
+        if(week_number > other.week_number) return false;
+        if(iode < other.iode) return true;
+        if(iode > other.iode) return false;
+        if(iodc < other.iodc) return true;
+        if(iodc > other.iodc) return false;
+        if(lpp_iod < other.lpp_iod) return true;
+        if(lpp_iod > other.lpp_iod) return false;
+        if(toe < other.toe) return true;
+        if(toe > other.toe) return false;
+        if(toc < other.toc) return true;
+        if(toc > other.toc) return false;
+        if(fit_interval_flag < other.fit_interval_flag) return true;
+        if(fit_interval_flag > other.fit_interval_flag) return false;
+        if(sv_health < other.sv_health) return true;
+        if(sv_health > other.sv_health) return false;
+        return false;
     }
     NODISCARD EphemerisResult compute(ts::Gps const& time) const NOEXCEPT;
 

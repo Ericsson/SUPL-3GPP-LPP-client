@@ -69,7 +69,7 @@ ts::Tai epoch_time(GNSS_SystemTime const& src_time) {
     case generator::rtcm::GenericGnssId::GALILEO:
         return ts::Tai(ts::Gst::from_day_tod(day_number, time_of_day));
     case generator::rtcm::GenericGnssId::BEIDOU:
-        return ts::Tai(ts::Gst::from_day_tod(day_number, time_of_day));
+        return ts::Tai(ts::Bdt::from_day_tod(day_number, time_of_day));
     }
 
     return ts::Tai::now();

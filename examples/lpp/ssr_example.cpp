@@ -7,10 +7,11 @@
 #include <format/nmea/parser.hpp>
 #include <format/ubx/message.hpp>
 #include <format/ubx/parser.hpp>
-#include <iostream>
 #include <lpp/internal_lpp.h>
 #include <lpp/location_information.h>
 #include <lpp/lpp.h>
+
+#include <iostream>
 #include <sstream>
 #include <stdexcept>
 
@@ -27,6 +28,10 @@
 
 #ifdef INCLUDE_GENERATOR_RTCM
 #include <generator/rtcm/generator.hpp>
+#endif
+
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
 #endif
 
 #include <io/input.hpp>
@@ -168,6 +173,15 @@ static void initialize_outputs(OutputOptions const& outputs) {
     for (auto const& [module, level] : gGlobals.options.module_levels) {
         loglet::set_module_level(module.c_str(), level);
     }
+
+#ifdef DATA_TRACING
+    if (gGlobals.options.data_tracing) {
+        datatrace::initialize(
+            gGlobals.options.data_tracing->device,
+            gGlobals.options.data_tracing->server, gGlobals.options.data_tracing->port,
+            gGlobals.options.data_tracing->username, gGlobals.options.data_tracing->password);
+    }
+#endif
 
     INFOF("[settings]");
     INFOF("  location server:    \"%s:%d\" %s", location_server_options.host.c_str(),

@@ -1,7 +1,7 @@
 #include "observation.hpp"
 #include "coordinate.hpp"
-#include "coordinates/enu.hpp"
 #include "coordinates/eci.hpp"
+#include "coordinates/enu.hpp"
 #include "data.hpp"
 #include "models/astronomical_arguments.hpp"
 #include "models/geoid.hpp"
@@ -14,6 +14,10 @@
 #include <loglet/loglet.hpp>
 #include <maths/mat3.hpp>
 #include <time/utc.hpp>
+
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
+#endif
 
 #define LOGLET_CURRENT_MODULE "tokoro"
 
@@ -30,6 +34,9 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     // TODO(ewasjon): For GLONASS, the frequency depends on the channel number
     mFrequency  = signal_id.frequency();
     mWavelength = constant::SPEED_OF_LIGHT / mFrequency / 1000.0;
+
+    mCarrierToNoiseRatio = 47.0;   // TODO: How do we choose this value?
+    mLockTime            = 525.0;  // TODO: How do we determine this value?
 
     mClockCorrection       = Correction{satellite.clock_correction(), true};
     mCodeBias              = Correction{0.0, false};
@@ -132,56 +139,6 @@ void Observation::compute_shapiro() NOEXCEPT {
     mShapiro = model_shapiro(*mCurrent, mGroundPosition);
 }
 
-#if 0
-struct AstronomicalArguments {
-    double l;      // mean anomaly of the Moon
-    double lp;     // mean anomaly of the Sun
-    double f;      // mean argument of the latitude of the Moon
-    double d;      // mean elongation of the Moon from the Sun
-    double omega;  // mean longitude of the ascending node of the Moon
-};
-
-static double const ASTRONOMICAL_ARGUMENTS_DATA[][5] = {
-    /* coefficients for iau 1980 nutation */
-    {134.96340251, 1717915923.2178, 31.8792, 0.051635, -0.00024470},
-    {357.52910918, 129596581.0481, -0.5532, 0.000136, -0.00001149},
-    {93.27209062, 1739527262.8478, -12.7512, -0.001037, 0.00000417},
-    {297.85019547, 1602961601.2090, -6.3706, 0.006593, -0.00003169},
-    {125.04455501, -6962890.2665, 7.4722, 0.007702, -0.00005939},
-};
-
-static bool compute_astronomical_arguments(double t_jc, AstronomicalArguments& args) NOEXCEPT {
-    VSCOPE_FUNCTION();
-
-    double time[4];
-    time[0] = t_jc;
-    time[1] = time[0] * t_jc;
-    time[2] = time[1] * t_jc;
-    time[3] = time[2] * t_jc;
-
-    args.l     = ASTRONOMICAL_ARGUMENTS_DATA[0][0] * 3600.0;
-    args.lp    = ASTRONOMICAL_ARGUMENTS_DATA[1][0] * 3600.0;
-    args.f     = ASTRONOMICAL_ARGUMENTS_DATA[2][0] * 3600.0;
-    args.d     = ASTRONOMICAL_ARGUMENTS_DATA[3][0] * 3600.0;
-    args.omega = ASTRONOMICAL_ARGUMENTS_DATA[4][0] * 3600.0;
-
-    for (int i = 0; i < 4; i++) {
-        args.l += ASTRONOMICAL_ARGUMENTS_DATA[0][i + 1] * time[i];
-        args.lp += ASTRONOMICAL_ARGUMENTS_DATA[1][i + 1] * time[i];
-        args.f += ASTRONOMICAL_ARGUMENTS_DATA[2][i + 1] * time[i];
-        args.d += ASTRONOMICAL_ARGUMENTS_DATA[3][i + 1] * time[i];
-        args.omega += ASTRONOMICAL_ARGUMENTS_DATA[4][i + 1] * time[i];
-    }
-
-    args.l     = fmod(args.l * constant::ARCSEC2RAD, 2 * constant::PI);
-    args.lp    = fmod(args.lp * constant::ARCSEC2RAD, 2 * constant::PI);
-    args.f     = fmod(args.f * constant::ARCSEC2RAD, 2 * constant::PI);
-    args.d     = fmod(args.d * constant::ARCSEC2RAD, 2 * constant::PI);
-    args.omega = fmod(args.omega * constant::ARCSEC2RAD, 2 * constant::PI);
-    return true;
-}
-#endif
-
 static bool compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
                                               Float3& moon) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
@@ -256,7 +213,7 @@ static bool compute_sun_and_moon_position_ecef(ts::Tai const& time, Float3& sun_
     }
 
     EciEarthParameters earth_params{};
-    Mat3 transform{};
+    Mat3               transform{};
     eci_to_ecef_matrix(time, earth_params, &transform, gmst);
 
     sun_ecef  = transform * sun_eci;
@@ -617,6 +574,7 @@ void Observation::compute_phase_windup() NOEXCEPT {
     auto phw = ph + floor(prev_phw - ph + 0.5);
     VERBOSEF("phw: %+.4f (%+.4f)", phw, ph);
 
+#if 0
     printf("TRACK-PHW,%s,%s,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,,%.14f,%.14f,%."
            "14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,,%.14f,%.14f,%.14f,%.14f,%.14f\n",
            mSvId.name(), mSignalId.name(),  //
@@ -628,6 +586,7 @@ void Observation::compute_phase_windup() NOEXCEPT {
            sd.x, sd.y, sd.z,                //
            k.x, k.y, k.z,                   //
            ph, phw);
+#endif
 #else
 
 #endif
@@ -643,6 +602,26 @@ void Observation::compute_antenna_phase_variation() NOEXCEPT {
 
 void Observation::compute_ranges() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
+
+    // Discard this observation if it is missing important corrections, however, we still want to
+    // compute the ranges to report via DATA TRACING.
+    if (!has_phase_bias()) {
+        WARNF("discarded: %s %s - no phase bias", mSvId.name(), mSignalId.name());
+        discard();
+    }
+    if (!has_code_bias()) {
+        WARNF("discarded: %s %s - no code bias", mSvId.name(), mSignalId.name());
+        discard();
+    }
+    if (!has_tropospheric()) {
+        WARNF("discarded: %s %s - no tropospheric correction", mSvId.name(), mSignalId.name());
+        discard();
+    }
+    if (!has_ionospheric()) {
+        WARNF("discarded: %s %s - no ionospheric correction", mSvId.name(), mSignalId.name());
+        discard();
+    }
+
     VERBOSEF("true_range:   %+24.10f", mCurrent->true_range);
 
     auto clock_bias = constant::SPEED_OF_LIGHT * -mCurrent->eph_clock_bias;
@@ -745,38 +724,76 @@ void Observation::compute_ranges() NOEXCEPT {
         VERBOSEF("ant_phase:    ---");
     }
 
-    auto code_correction       = clock + code_bias + stec_grid + stec_poly + tropo_dry + tropo_wet;
-    auto phase_correction      = clock + phase_bias - stec_grid - stec_poly + tropo_dry + tropo_wet;
-    auto final_code_correction = shapiro + solid_tides;
-    auto final_phase_correction = shapiro + solid_tides + phase_windup + antenna_phase_variation;
-    auto code_result = mCurrent->true_range + clock_bias + code_correction + final_code_correction;
-    auto phase_result =
-        mCurrent->true_range + clock_bias + phase_correction + final_phase_correction;
-    DEBUGF("%s(%s): code  %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), code_result,
-           code_correction, final_code_correction);
-    DEBUGF("%s(%s): phase %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_result,
-           phase_correction, final_phase_correction);
+#ifdef DATA_TRACING
+    datatrace::Observation dt_obs{};
+    dt_obs.frequency               = mFrequency * 1.0e3;
+    dt_obs.geo_range               = mCurrent->true_range;
+    dt_obs.sat_clock               = clock_bias;
+    dt_obs.clock                   = clock;
+    dt_obs.orbit                   = mCurrent->true_range - mCurrent->eph_range;
+    dt_obs.code_bias               = code_bias;
+    dt_obs.phase_bias              = phase_bias;
+    dt_obs.stec_grid               = stec_grid;
+    dt_obs.stec_poly               = stec_poly;
+    dt_obs.tropo_dry               = tropo_dry;
+    dt_obs.tropo_wet               = tropo_wet;
+    dt_obs.shapiro                 = shapiro;
+    dt_obs.earth_solid_tides       = solid_tides;
+    dt_obs.phase_windup            = phase_windup;
+    dt_obs.antenna_phase_variation = antenna_phase_variation;
+    dt_obs.phase_lock_time         = mLockTime;
+    dt_obs.carrier_to_noise_ratio  = mCarrierToNoiseRatio;
+#endif
 
-    auto next_phase_result = mNext->true_range + constant::SPEED_OF_LIGHT * -mNext->eph_clock_bias +
-                             phase_correction + final_phase_correction;
-    auto phase_delta = next_phase_result - phase_result;
-    auto time_delta =
-        (mNext->reception_time.timestamp() - mCurrent->reception_time.timestamp()).full_seconds();
-    auto phase_rate = phase_delta / time_delta;
+    if (is_valid()) {
+        auto code_correction  = clock + code_bias + stec_grid + stec_poly + tropo_dry + tropo_wet;
+        auto phase_correction = clock + phase_bias - stec_grid - stec_poly + tropo_dry + tropo_wet;
+        auto final_code_correction = shapiro + solid_tides;
+        auto final_phase_correction =
+            shapiro + solid_tides + phase_windup + antenna_phase_variation;
+        auto code_result =
+            mCurrent->true_range + clock_bias + code_correction + final_code_correction;
+        auto phase_result =
+            mCurrent->true_range + clock_bias + phase_correction + final_phase_correction;
 
-    DEBUGF("%s(%s): phase rate %+19.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_rate,
-           phase_delta, time_delta);
+        auto next_phase_result = mNext->true_range +
+                                 constant::SPEED_OF_LIGHT * -mNext->eph_clock_bias +
+                                 phase_correction + final_phase_correction;
+        auto phase_delta = next_phase_result - phase_result;
+        auto time_delta = (mNext->reception_time.timestamp() - mCurrent->reception_time.timestamp())
+                              .full_seconds();
+        auto phase_rate = phase_delta / time_delta;
 
+        DEBUGF("%s(%s): code  %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), code_result,
+               code_correction, final_code_correction);
+        DEBUGF("%s(%s): phase %+24.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_result,
+               phase_correction, final_phase_correction);
+        DEBUGF("%s(%s): phase rate %+19.10f (%g, %g)", mSvId.name(), mSignalId.name(), phase_rate,
+               phase_delta, time_delta);
+
+#ifdef DATA_TRACING
+        dt_obs.code_range       = code_result;
+        dt_obs.phase_range      = phase_result;
+        dt_obs.phase_range_rate = phase_rate;
+#endif
+
+#if 0
     printf("TRACK-OBS,%s,%s,%g,%u,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,TOTAL,%.14f,%.14f,"
            "TOTAL,%.14f,%."
            "14f,%.14f,%.14f\n",
-           mSvId.name(), mSignalId.name(), mFrequency / 1.0e6, mCurrent->eph_iode,
+           mSvId.name(), mSignalId.name(), mFrequency / 1.0e6, mCurrent->eph_iod,
            mCurrent->true_range, clock_bias, clock, code_bias, phase_bias, stec_grid, stec_poly,
            tropo_dry, tropo_wet, shapiro, solid_tides, phase_windup, antenna_phase_variation);
+#endif
 
-    mCodeRange      = code_result;
-    mPhaseRange     = phase_result;
-    mPhaseRangeRate = phase_rate;
+        mCodeRange      = code_result;
+        mPhaseRange     = phase_result;
+        mPhaseRangeRate = phase_rate;
+    }
+
+#ifdef DATA_TRACING
+    datatrace::report_observation(mCurrent->reception_time, mSvId.name(), mSignalId.name(), dt_obs);
+#endif
 }
 
 double Observation::code_range() const NOEXCEPT {

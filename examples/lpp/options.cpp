@@ -39,6 +39,28 @@ static std::vector<std::string> split_at_any(std::string const& input,
 
 static args::Group gArguments{"Arguments:"};
 
+#ifdef DATA_TRACING
+//
+// Data Tracing
+//
+static args::Group gDataTracingGroup{
+    "Data Tracing:",
+    args::Group::Validators::All,
+    args::Options::Global,
+};
+
+static args::ValueFlag<std::string> gDataTracingDevice{
+    gDataTracingGroup, "device", "Device", {"dt-device"}, args::Options::Single};
+static args::ValueFlag<std::string> gDataTracingServer{
+    gDataTracingGroup, "server", "Server", {"dt-server"}, args::Options::Single};
+static args::ValueFlag<int> gDataTracingPort{
+    gDataTracingGroup, "port", "Port", {"dt-port"}, args::Options::Single};
+static args::ValueFlag<std::string> gDataTracingUsername{
+    gDataTracingGroup, "username", "Username", {"dt-username"}, args::Options::Single};
+static args::ValueFlag<std::string> gDataTracingPassword{
+    gDataTracingGroup, "password", "Password", {"dt-password"}, args::Options::Single};
+#endif
+
 //
 // Location Server
 //
@@ -1637,6 +1659,34 @@ static void parse_log_level(Options& config) {
     }
 }
 
+static void parse_data_tracing(Options& config) {
+#ifdef DATA_TRACING
+    if (gDataTracingServer || gDataTracingUsername || gDataTracingPassword) {
+        if (!gDataTracingServer || !gDataTracingUsername || !gDataTracingPassword) {
+            throw args::RequiredError(
+                "dt-server, dt-username, and dt-password must be specified together");
+        }
+
+        if (!gDataTracingDevice) {
+            throw args::RequiredError("dt-device must be specified");
+        }
+
+        int port = 1883;
+        if (gDataTracingPort) {
+            port = gDataTracingPort.Get();
+        }
+
+        auto data_tracing      = std::unique_ptr<DataTracingOptions>(new DataTracingOptions());
+        data_tracing->device   = gDataTracingDevice.Get();
+        data_tracing->server   = gDataTracingServer.Get();
+        data_tracing->port     = port;
+        data_tracing->username = gDataTracingUsername.Get();
+        data_tracing->password = gDataTracingPassword.Get();
+        config.data_tracing    = std::move(data_tracing);
+    }
+#endif
+}
+
 //
 // Option Parser
 //
@@ -1687,6 +1737,7 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
                 options.location_information_options = parse_location_information_options();
                 parse_control_options(options.input_options);
                 parse_log_level(options);
+                parse_data_tracing(options);
 
                 parse_output_options(options.output_options);
                 parse_input_options(options.input_options);
@@ -1754,6 +1805,10 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
     args::GlobalOptions location_information_globals{parser, gLocationInformationGroup};
     args::GlobalOptions control_options_globals{parser, gControlGroup};
     args::GlobalOptions log_globals{parser, gLogGroup};
+
+#ifdef DATA_TRACING
+    args::GlobalOptions data_tracing_globals{parser, gDataTracingGroup};
+#endif
 
     // Parse
     try {

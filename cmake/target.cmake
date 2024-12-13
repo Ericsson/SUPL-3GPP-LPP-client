@@ -18,6 +18,18 @@ function(setup_target target)
         )
     endif()
 
+    if(${DISABLE_LOGGING})
+        target_compile_definitions(${target} PRIVATE
+            "-DDISABLE_LOGGING"
+        )
+    endif()
+
+    if(${DATA_TRACING})
+        target_compile_definitions(${target} PRIVATE
+            "-DDATA_TRACING"
+        )
+    endif()
+
     if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
         if(${BUILD_WITH_ALL_WARNINGS})
             target_compile_options(${target} PRIVATE

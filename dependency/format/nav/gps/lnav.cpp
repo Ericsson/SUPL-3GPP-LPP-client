@@ -311,7 +311,7 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         ephemeris.idot              = sf3.idot;
 
         // [3GPP TS 37.355]: In the case of broadcasted GPS NAV ephemeris, the iod contains the IODC as described in [4].
-        ephemeris.lpp_iod = ephemeris.iodc;
+        ephemeris.lpp_iod = ephemeris.iode;
 
         internal_ephemeris.subframe1 = false;
         internal_ephemeris.subframe2 = false;

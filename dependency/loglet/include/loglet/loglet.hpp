@@ -7,6 +7,16 @@
 #define LOGLET_NAMEPASTE2(a, b) a##b
 #define LOGLET_NAMEPASTE(a, b) LOGLET_NAMEPASTE2(a, b)
 
+#ifdef DISABLE_LOGGING
+#define LOGLET_VINDENT_SCOPE()
+#define LOGLET_DINDENT_SCOPE()
+#define LOGLET_IINDENT_SCOPE()
+#define LOGLET_WINDENT_SCOPE()
+#define LOGLET_EINDENT_SCOPE()
+#define LOGLET_XINDENT_SCOPE(module, level)
+#define VSCOPE_FUNCTION()
+#define VSCOPE_FUNCTIONF(fmt, ...)
+#else
 #define LOGLET_VINDENT_SCOPE()                                                                     \
     loglet::ScopeFunction LOGLET_NAMEPASTE(loglet_scope_function, __LINE__) {                      \
         loglet::Level::Verbose, LOGLET_CURRENT_MODULE                                              \
@@ -39,7 +49,7 @@
 #define VSCOPE_FUNCTIONF(fmt, ...)                                                                 \
     VERBOSEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                               \
     LOGLET_VINDENT_SCOPE()
-
+#endif
 #ifdef _GNU_SOURCE
 #if defined(__GLIBC__) && defined(__GLIBC_MINOR__)
 #if (__GLIBC__ > 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 30))
@@ -56,6 +66,19 @@
 #define ERRNO_ARGS(e) e, strerror(e)
 #endif
 
+#ifdef DISABLE_LOGGING
+#define VERBOSEF(fmt, ...)
+#define DEBUGF(fmt, ...)
+#define INFOF(fmt, ...)
+#define WARNF(fmt, ...)
+#define ERRORF(fmt, ...)
+
+#define XVERBOSEF(module, fmt, ...)
+#define XDEBUGF(module, fmt, ...)
+#define XINFOF(module, fmt, ...)
+#define XWARNF(module, fmt, ...)
+#define XERRORF(module, fmt, ...)
+#else
 #define VERBOSEF(fmt, ...) loglet::verbosef(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define DEBUGF(fmt, ...) loglet::debugf(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define INFOF(fmt, ...) loglet::infof(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
@@ -67,6 +90,7 @@
 #define XINFOF(module, fmt, ...) loglet::infof(module, fmt, ##__VA_ARGS__)
 #define XWARNF(module, fmt, ...) loglet::warnf(module, fmt, ##__VA_ARGS__)
 #define XERRORF(module, fmt, ...) loglet::errorf(module, fmt, ##__VA_ARGS__)
+#endif
 
 #define UNREACHABLE()                                                                              \
     do {                                                                                           \

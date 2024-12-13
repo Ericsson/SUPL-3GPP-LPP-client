@@ -178,6 +178,18 @@ std::string Utc::rtklib_time_string() const {
     return std::string{buffer.data()};
 }
 
+std::string Utc::rfc3339() const {
+    auto ts    = timestamp();
+    auto epoch = date_from_utc(ts);
+
+    std::array<char, 256> buffer;
+    snprintf(buffer.data(), buffer.size(),
+             "%04" PRId64 "-%02" PRId64 "-%02" PRId64 "T%02" PRId64 ":%02" PRId64 ":%06.3fZ",
+             epoch.year, epoch.month, epoch.day, epoch.hour, epoch.minutes, epoch.seconds);
+
+    return std::string{buffer.data()};
+}
+
 Utc Utc::now() {
     struct timeval tv {};
     struct tm      tm {};
@@ -220,9 +232,6 @@ Utc Utc::from_time_point(TimePoint const& tp) {
 double Utc::julian_date(double ut1_utc) const {
     auto ts    = this->ut1(ut1_utc);
     auto epoch = date_from_utc(ts);
-
-    printf("epoch: %ld %ld %ld %ld %ld %f\n", epoch.year, epoch.month, epoch.day, epoch.hour,
-           epoch.minutes, epoch.seconds);
 
     auto y = epoch.year;
     auto m = epoch.month;

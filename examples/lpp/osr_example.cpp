@@ -23,6 +23,10 @@
 
 #define LOGLET_CURRENT_MODULE "ex/osr"
 
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
+#endif
+
 #ifdef INCLUDE_GENERATOR_RTCM
 #include <generator/rtcm/generator.hpp>
 using RtcmGenerator = std::unique_ptr<generator::rtcm::Generator>;
@@ -161,6 +165,14 @@ static void initialize_outputs(OutputOptions const& outputs) {
     for (auto const& [module, level] : gOptions.module_levels) {
         loglet::set_module_level(module.c_str(), level);
     }
+
+#ifdef DATA_TRACING
+    if (gOptions.data_tracing) {
+        datatrace::initialize(gOptions.data_tracing->device, gOptions.data_tracing->server,
+                              gOptions.data_tracing->port, gOptions.data_tracing->username,
+                              gOptions.data_tracing->password);
+    }
+#endif
 
     auto& cell_options            = gOptions.cell_options;
     auto& location_server_options = gOptions.location_server_options;

@@ -26,6 +26,7 @@
 #include <SSR-PhaseBiasSignalElement-r16.h>
 #pragma GCC diagnostic pop
 
+#include <algorithm>
 #include <map>
 #include <math.h>
 #include <unordered_map>
@@ -71,6 +72,45 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
 
 ReferenceStation::~ReferenceStation() NOEXCEPT = default;
 
+double ReferenceStation::g04_l1_ca() const NOEXCEPT {
+    for (auto& satellite : mSatellites) {
+        if (satellite.id().gnss() == SatelliteId::Gnss::GPS && satellite.id().lpp_id().value == 3) {
+            for (auto& observation : satellite.observations()) {
+                if (observation.signal_id() == SignalId::GPS_L1_CA) {
+                    return observation.code_range();
+                }
+            }
+        }
+    }
+    return 0.0;
+}
+
+double ReferenceStation::g05_l1_ca() const NOEXCEPT {
+    for (auto& satellite : mSatellites) {
+        if (satellite.id().gnss() == SatelliteId::Gnss::GPS && satellite.id().lpp_id().value == 4) {
+            for (auto& observation : satellite.observations()) {
+                if (observation.signal_id() == SignalId::GPS_L1_CA) {
+                    return observation.code_range();
+                }
+            }
+        }
+    }
+    return 0.0;
+}
+
+double ReferenceStation::g07_l1_ca() const NOEXCEPT {
+    for (auto& satellite : mSatellites) {
+        if (satellite.id().gnss() == SatelliteId::Gnss::GPS && satellite.id().lpp_id().value == 6) {
+            for (auto& observation : satellite.observations()) {
+                if (observation.signal_id() == SignalId::GPS_L1_CA) {
+                    return observation.code_range();
+                }
+            }
+        }
+    }
+    return 0.0;
+}
+
 void ReferenceStation::initialize_satellites() NOEXCEPT {
     VSCOPE_FUNCTION();
 
@@ -83,7 +123,7 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
         }
     }
 
-    // TODO: GLONASS
+    // TODO(ewasjon): GLONASS
     if (mGenerateGlo) {
     }
 
@@ -124,27 +164,9 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
-    if (!observation.has_phase_bias()) {
-        WARNF("discarded: %s %s - no phase bias", satellite.id().name(), signal_id.name());
-        observation.discard();
-    } else if (!observation.has_code_bias()) {
-        WARNF("discarded: %s %s - no code bias", satellite.id().name(), signal_id.name());
-        observation.discard();
-    }
-
-    if (!observation.has_tropospheric()) {
-        WARNF("discarded: %s %s - no tropospheric correction", satellite.id().name(),
-              signal_id.name());
-        observation.discard();
-    }
-    if (!observation.has_ionospheric()) {
-        WARNF("discarded: %s %s - no ionospheric correction", satellite.id().name(),
-              signal_id.name());
-        observation.discard();
-    }
+    observation.compute_ranges();
 
     if (!observation.is_valid()) return;
-    observation.compute_ranges();
     VERBOSEF("observation: c=%f, p=%f", observation.code_range(), observation.phase_range());
 }
 
@@ -258,8 +280,8 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
     signal.satellite              = satellite.id();
     signal.fine_pseudo_range      = delta_code_range_ms;
     signal.fine_phase_range       = delta_phase_range_ms;
-    signal.carrier_to_noise_ratio = 47.0;   // TODO(ewasjon): How do we choose this value?
-    signal.lock_time              = 525.0;  // TODO: How do we determine this value?
+    signal.carrier_to_noise_ratio = observation.carrier_to_noise_ratio();
+    signal.lock_time              = observation.lock_time();
 
     if (mPhaseRangeRate) {
         auto phase_range_rate       = observation.phase_range_rate();
@@ -603,10 +625,12 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto& list = it->second;
 
         auto gps_time = ts::Gps(time);
+        WARNF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
-            VERBOSEF("searching: %s %4u %.2f %4u%s%s", sv_id.name(), ephemeris.week_number,
-                     ephemeris.toe, ephemeris.iode, ephemeris.is_valid(gps_time) ? " [time]" : "",
-                     ephemeris.lpp_iod == iod ? " [iod]" : "");
+            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", sv_id.name(), ephemeris.week_number,
+                  ephemeris.toe, ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
+                  ephemeris.is_valid(gps_time) ? " [time]" : "",
+                  ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
@@ -624,11 +648,12 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto& list = it->second;
 
         auto gal_time = ts::Gst(time);
+        WARNF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
-            VERBOSEF("searching: %s %4u %.2f %4u%s%s", sv_id.name(), ephemeris.week_number,
-                     ephemeris.toe, ephemeris.iod_nav,
-                     ephemeris.is_valid(gal_time) ? " [time]" : "",
-                     ephemeris.lpp_iod == iod ? " [iod]" : "");
+            WARNF("  %4u %8.0f %8.0f | %4u %4u |%s%s", sv_id.name(), ephemeris.week_number,
+                  ephemeris.toe, ephemeris.toc, ephemeris.lpp_iod, ephemeris.iod_nav,
+                  ephemeris.is_valid(gal_time) ? " [time]" : "",
+                  ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gal_time)) continue;
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
@@ -643,25 +668,14 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto& list = it->second;
 
         auto bds_time = ts::Bdt(time);
+        WARNF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
             auto eph_time = ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toe, 0);
-            WARNF("searching: %s %u==%u %.2f %.2f %u==%u %u %u %s%s %s %s", sv_id.name(),
-                  ephemeris.week_number, bds_time.week(), ephemeris.toe, ephemeris.toc,
-                  ephemeris.lpp_iod, iod, ephemeris.iode, ephemeris.iodc,
+            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", sv_id.name(),
+                  ephemeris.week_number, ephemeris.toe, ephemeris.toc,
+                  ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
                   ephemeris.is_valid(bds_time) ? " [time]" : "",
-                  ephemeris.lpp_iod == iod ? " [iod]" : "",
-                  ts::Utc{eph_time}.rtklib_time_string().c_str(),
-                  ts::Utc{bds_time}.rtklib_time_string().c_str());
-#if 0
-            // TODO: REMOVE:
-            INFOF("%s:", sv_id.name());
-            INFOF("  toc:  %.0f    // %s", ephemeris.toc, ts::Utc{ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toc, 0)}.rtklib_time_string().c_str());
-            INFOF("  toe:  %.0f    // %s", ephemeris.toe, ts::Utc{ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toe, 0)}.rtklib_time_string().c_str());
-            INFOF("  iode: %6u     // mod(toe / 720, 240)", ephemeris.iode);
-            INFOF("  iodc: %6u     // mod(toc / 720, 240)", ephemeris.iodc);
-            INFOF("  iod:  %6u     // msb(toe, 11)", ephemeris.lpp_iod);
-            INFOF("  iod:  %6u     // OrbitCorrection.iod_r15", iod);
-#endif
+                  ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(bds_time)) continue;
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
@@ -687,8 +701,8 @@ void Generator::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEX
 
     // Check if the ephemeris is already in the list
     for (auto& eph : list) {
-        if (eph.compare(ephemeris)) {
-            VERBOSEF("duplicate ephemeris: %s", satellite_id.name());
+        if (eph.match(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
             return;
         }
     }
@@ -700,7 +714,12 @@ void Generator::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEX
     }
 
     list.push_back(ephemeris);
-    DEBUGF("ephemeris: %s", satellite_id.name());
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::GpsEphemeris const& a, ephemeris::GpsEphemeris const& b) {
+                  return a.compare(b);
+              });
+
+    DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
 }
 
 void Generator::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT {
@@ -714,8 +733,8 @@ void Generator::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEX
 
     // Check if the ephemeris is already in the list
     for (auto& eph : list) {
-        if (eph.compare(ephemeris)) {
-            VERBOSEF("duplicate ephemeris: %s", satellite_id.name());
+        if (eph.match(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
             return;
         }
     }
@@ -727,7 +746,12 @@ void Generator::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEX
     }
 
     list.push_back(ephemeris);
-    DEBUGF("ephemeris: %s", satellite_id.name());
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::GalEphemeris const& a, ephemeris::GalEphemeris const& b) {
+                  return a.compare(b);
+              });
+
+    DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
 }
 
 void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
@@ -741,8 +765,8 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
 
     // Check if the ephemeris is already in the list
     for (auto& eph : list) {
-        if (eph.compare(ephemeris)) {
-            VERBOSEF("duplicate ephemeris: %s", satellite_id.name());
+        if (eph.match(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
             return;
         }
     }
@@ -754,7 +778,12 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
     }
 
     list.push_back(ephemeris);
-    DEBUGF("ephemeris: %s", satellite_id.name());
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::BdsEphemeris const& a, ephemeris::BdsEphemeris const& b) {
+                  return a.compare(b);
+              });
+
+    DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
 }
 
 }  // namespace tokoro

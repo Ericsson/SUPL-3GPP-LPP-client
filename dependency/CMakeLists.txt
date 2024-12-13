@@ -12,3 +12,6 @@ add_subdirectory("time")
 add_subdirectory("maths")
 add_subdirectory("ephemeris")
 
+if(${DATA_TRACING})
+    add_subdirectory("datatrace")
+endif()

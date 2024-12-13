@@ -41,9 +41,33 @@ struct BdsEphemeris {
     double idot;
 
     NODISCARD bool is_valid(ts::Bdt const& time) const NOEXCEPT;
+    NODISCARD bool match(BdsEphemeris const& other) const NOEXCEPT {
+        if (prn != other.prn) return false;
+        if (week_number != other.week_number) return false;
+        if (iode != other.iode) return false;
+        if (iodc != other.iodc) return false;
+        if (lpp_iod != other.lpp_iod) return false;
+        if (std::abs(toe - other.toe) > 1e-3) return false;
+        if (std::abs(toc - other.toc) > 1e-3) return false;
+        if (sv_health != other.sv_health) return false;
+        return true;
+    }
     NODISCARD bool compare(BdsEphemeris const& other) const NOEXCEPT {
-        return prn == other.prn && week_number == other.week_number && iode == other.iode &&
-               std::abs(toe - other.toe) < 1e-3;
+        if (week_number < other.week_number) return true;
+        if (week_number > other.week_number) return false;
+        if (iode < other.iode) return true;
+        if (iode > other.iode) return false;
+        if (iodc < other.iodc) return true;
+        if (iodc > other.iodc) return false;
+        if (lpp_iod < other.lpp_iod) return true;
+        if (lpp_iod > other.lpp_iod) return false;
+        if (toe < other.toe) return true;
+        if (toe > other.toe) return false;
+        if (toc < other.toc) return true;
+        if (toc > other.toc) return false;
+        if (sv_health < other.sv_health) return true;
+        if (sv_health > other.sv_health) return false;
+        return false;
     }
     NODISCARD EphemerisResult compute(ts::Bdt const& time) const NOEXCEPT;
 

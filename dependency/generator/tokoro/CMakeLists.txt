@@ -34,4 +34,8 @@ target_link_libraries(dependency_generator_tokoro PUBLIC dependency::format::nav
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::generator::rtcm)
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::maths)
 
+if(${DATA_TRACING})
+    target_link_libraries(dependency_generator_tokoro PRIVATE dependency::datatrace)
+endif()
+
 setup_target(dependency_generator_tokoro)

@@ -141,10 +141,20 @@ struct LocationInformationOptions {
     int update_rate;
 };
 
+struct DataTracingOptions {
+    std::string device;
+    std::string server;
+    int         port;
+    std::string username;
+    std::string password;
+};
+
 /// Options.
 struct Options {
     loglet::Level                                  log_level;
     std::unordered_map<std::string, loglet::Level> module_levels;
+
+    std::unique_ptr<DataTracingOptions> data_tracing;
 
     LocationServerOptions      location_server_options;
     IdentityOptions            identity_options;

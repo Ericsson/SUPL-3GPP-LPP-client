@@ -66,6 +66,9 @@ public:
     NODISCARD double phase_range() const NOEXCEPT;
     NODISCARD double phase_range_rate() const NOEXCEPT { return mPhaseRangeRate; }
 
+    NODISCARD double carrier_to_noise_ratio() const NOEXCEPT { return mCarrierToNoiseRatio; }
+    NODISCARD double lock_time() const NOEXCEPT { return mLockTime; }
+
     NODISCARD bool has_phase_bias() const NOEXCEPT { return mPhaseBias.valid; }
     NODISCARD bool has_code_bias() const NOEXCEPT { return mCodeBias.valid; }
     NODISCARD bool has_tropospheric() const NOEXCEPT { return mTropospheric.valid; }
@@ -87,6 +90,8 @@ private:
 
     double mFrequency;
     double mWavelength;
+    double mCarrierToNoiseRatio;
+    double mLockTime;
 
     Correction        mClockCorrection;
     Correction        mCodeBias;

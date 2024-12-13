@@ -9,6 +9,10 @@
 #include "rtk_data.hpp"
 #include "satellite_id.hpp"
 
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
+#endif
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -136,6 +140,54 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
 
     auto rtk_data = extract_rtk_data(*lpp_message);
     if (!rtk_data) return messages;
+
+#ifdef DATA_TRACING
+    for (auto& kvp : rtk_data->observations) {
+        auto& observation = *kvp.second;
+        for (auto& satellite : observation.satellites) {
+            for (auto& signal : observation.signals) {
+                if (satellite.id != signal.satellite) continue;
+                if (!satellite.integer_ms.valid) continue;
+                if (!satellite.rough_range.valid) continue;
+
+                auto code_range = 0.0;
+                code_range += static_cast<double>(satellite.integer_ms.value);
+                code_range += satellite.rough_range.value;
+                if (signal.fine_pseudo_range.valid) {
+                    code_range += signal.fine_pseudo_range.value;
+                }
+
+                auto phase_range = 0.0;
+                phase_range += static_cast<double>(satellite.integer_ms.value);
+                phase_range += satellite.rough_range.value;
+                if (signal.fine_phase_range.valid) {
+                    phase_range += signal.fine_phase_range.value;
+                }
+
+                code_range *= 2.99792458e8 / 1.0e3;
+                phase_range *= 2.99792458e8 / 1.0e3;
+
+                auto phase_range_rate = 0.0;
+                if (satellite.rough_phase_range_rate.valid) {
+                    phase_range_rate = satellite.rough_phase_range_rate.value;
+                    if (signal.fine_phase_range_rate.valid) {
+                        phase_range_rate += signal.fine_phase_range_rate.value;
+                    }
+                }
+
+                datatrace::Observation dtobs{};
+                dtobs.code_range       = code_range;
+                dtobs.phase_range      = phase_range;
+                dtobs.phase_range_rate = phase_range_rate;
+                dtobs.phase_lock_time  = signal.lock_time.valid ? signal.lock_time.value : 0.0;
+                dtobs.carrier_to_noise_ratio =
+                    signal.carrier_to_noise_ratio.valid ? signal.carrier_to_noise_ratio.value : 0.0;
+                datatrace::report_observation(observation.time, satellite.id.name(),
+                                              signal.id.name(), dtobs);
+            }
+        }
+    }
+#endif
 
     // Get frequency channel etc. from auxiliary information
     if (rtk_data->auxiliary_information) {
@@ -285,8 +337,8 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
 // 3GPP LPP specification 37.355.
 static CONSTEXPR uint16_t LRF_MESSAGE_ID = 355;
 
-static Message generate_framing_message(int message_id, bool multiple_message_bit, uint8_t const* lpp_data,
-                                        size_t lpp_data_size) {
+static Message generate_framing_message(int message_id, bool multiple_message_bit,
+                                        uint8_t const* lpp_data, size_t lpp_data_size) {
     if (message_id < 0 || message_id > 4095) {
         message_id = LRF_MESSAGE_ID;
     }

@@ -8,6 +8,10 @@
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
+#endif
+
 #include <algorithm>
 
 #define LOGLET_CURRENT_MODULE "tokoro"
@@ -70,6 +74,16 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
         WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
         return;
     }
+
+#ifdef DATA_TRACING
+    datatrace::Satellite dt_sat{};
+    dt_sat.position   = mCurrentState.true_position;
+    dt_sat.velocity   = mCurrentState.true_velocity;
+    dt_sat.elevation  = mCurrentState.true_elevation * constant::RAD2DEG;
+    dt_sat.azimuth    = mCurrentState.true_azimuth * constant::RAD2DEG;
+    dt_sat.iod        = mCurrentState.eph_iod;
+    datatrace::report_satellite(generation_time, mId.name(), dt_sat);
+#endif
 
     mEnabled = true;
 }
@@ -145,7 +159,7 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
     VERBOSEF("velocity by ts: (%f, %f, %f)", velocity.x, velocity.y, velocity.z);
 #endif
 
-    state.eph_iode       = eph.iode();
+    state.eph_iod        = eph.iod();
     state.eph_position   = final_result.position;
     state.eph_velocity   = final_result.velocity;
     state.eph_clock_bias = final_result.clock;

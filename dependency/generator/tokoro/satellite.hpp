@@ -23,7 +23,7 @@ struct SatelliteState {
     double   eph_clock_bias;
     double   eph_range;
     Float3   eph_line_of_sight;
-    uint16_t eph_iode;
+    uint16_t eph_iod;
 
     /// True Parameters
     Float3 true_position;
