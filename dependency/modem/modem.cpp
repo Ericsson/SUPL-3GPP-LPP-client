@@ -116,7 +116,7 @@ Modem::ResponseResult Modem::handle_cimi_query(format::at::Parser& parser, Cimi&
         cimi.imsi = std::stoull(line);
         return ResponseResult::Success;
     } catch (std::exception const& e) {
-        WARNF("failed to parse IMSI: %s", e.what());
+        WARNF("failed to parse IMSI: \"%s\" %s", line.c_str(), e.what());
     }
 
     return ResponseResult::Failure;

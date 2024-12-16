@@ -1,9 +1,9 @@
 #include "parser.hpp"
+#include "epe.hpp"
 #include "gga.hpp"
 #include "gst.hpp"
 #include "message.hpp"
 #include "vtg.hpp"
-#include "epe.hpp"
 
 #include <cstdio>
 
@@ -128,17 +128,21 @@ ChecksumResult Parser::checksum(std::string const& buffer) {
 
     auto fmt_string = buffer.substr(1, fmt_end - 1);
 
-    auto expected_checksum_hex = buffer.substr(fmt_end + 1, fmt_end + 3);
-    auto expected_checksum     = std::stoull(std::string{expected_checksum_hex}, nullptr, 16);
+    try {
+        auto expected_checksum_hex = buffer.substr(fmt_end + 1, fmt_end + 3);
+        auto expected_checksum     = std::stoull(std::string{expected_checksum_hex}, nullptr, 16);
 
-    auto calculated_checksum = 0ULL;
-    for (auto fmt_char : fmt_string) {
-        calculated_checksum = calculated_checksum ^ static_cast<unsigned long long>(fmt_char);
-    }
+        auto calculated_checksum = 0ULL;
+        for (auto fmt_char : fmt_string) {
+            calculated_checksum = calculated_checksum ^ static_cast<unsigned long long>(fmt_char);
+        }
 
-    if (expected_checksum == calculated_checksum) {
-        return ChecksumResult::OK;
-    } else {
+        if (expected_checksum == calculated_checksum) {
+            return ChecksumResult::OK;
+        } else {
+            return ChecksumResult::INVALID_VALUE;
+        }
+    } catch (std::exception const& e) {
         return ChecksumResult::INVALID_VALUE;
     }
 }

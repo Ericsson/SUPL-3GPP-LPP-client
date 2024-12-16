@@ -112,6 +112,10 @@ std::unique_ptr<Message> Parser::parse_cid(std::string const&              messa
         is_nr = tokens[1] == "N";
     } catch (std::exception const& e) {
         WARNF("/CID parsing failed: %s", e.what());
+        WARNF("  mcc:  \"%s\"", tokens[2].c_str());
+        WARNF("  mnc:  \"%s\"", tokens[3].c_str());
+        WARNF("  tac:  \"%s\"", tokens[4].c_str());
+        WARNF("  cell: \"%s\"", tokens[5].c_str());
         return nullptr;
     }
 
@@ -138,7 +142,7 @@ Parser::parse_identity(std::string const&              message,
         try {
             imsi = std::stoull(tokens[2]);
         } catch (std::exception const& e) {
-            WARNF("/IDENTITY,IMSI parsing failed: %s", e.what());
+            WARNF("/IDENTITY,IMSI parsing failed: \"%s\" %s", tokens[2].c_str(), e.what());
             return nullptr;
         }
 

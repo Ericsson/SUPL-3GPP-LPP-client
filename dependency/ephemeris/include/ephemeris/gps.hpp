@@ -64,16 +64,16 @@ struct GpsEphemeris {
     NODISCARD bool compare(GpsEphemeris const& other) const NOEXCEPT {
         if(week_number < other.week_number) return true;
         if(week_number > other.week_number) return false;
-        if(iode < other.iode) return true;
-        if(iode > other.iode) return false;
-        if(iodc < other.iodc) return true;
-        if(iodc > other.iodc) return false;
-        if(lpp_iod < other.lpp_iod) return true;
-        if(lpp_iod > other.lpp_iod) return false;
         if(toe < other.toe) return true;
         if(toe > other.toe) return false;
         if(toc < other.toc) return true;
         if(toc > other.toc) return false;
+        if(lpp_iod < other.lpp_iod) return true;
+        if(lpp_iod > other.lpp_iod) return false;
+        if(iode < other.iode) return true;
+        if(iode > other.iode) return false;
+        if(iodc < other.iodc) return true;
+        if(iodc > other.iodc) return false;
         if(fit_interval_flag < other.fit_interval_flag) return true;
         if(fit_interval_flag > other.fit_interval_flag) return false;
         if(sv_health < other.sv_health) return true;
