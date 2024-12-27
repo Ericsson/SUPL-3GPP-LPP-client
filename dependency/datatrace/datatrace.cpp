@@ -100,29 +100,56 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
     ss << std::setprecision(14);
     ss << "{";
     ss << "\"time\":\"" << utc_time.rfc3339() << "\"";
-    if (std::abs(obs.frequency) > 1e-6) ss << ",\"freq\":" << obs.frequency;
-    if (std::abs(obs.geo_range) > 1e-6) ss << ",\"geo_range\":" << obs.geo_range;
-    if (std::abs(obs.sat_clock) > 1e-6) ss << ",\"sat_clock\":" << obs.sat_clock;
-    if (std::abs(obs.clock) > 1e-6) ss << ",\"clock\":" << obs.clock;
-    if (std::abs(obs.orbit) > 1e-6) ss << ",\"orbit\":" << obs.orbit;
-    if (std::abs(obs.code_bias) > 1e-6) ss << ",\"code_bias\":" << obs.code_bias;
-    if (std::abs(obs.phase_bias) > 1e-6) ss << ",\"phase_bias\":" << obs.phase_bias;
-    if (std::abs(obs.stec_grid) > 1e-6) ss << ",\"stec_grid\":" << obs.stec_grid;
-    if (std::abs(obs.stec_poly) > 1e-6) ss << ",\"stec_poly\":" << obs.stec_poly;
-    if (std::abs(obs.tropo_dry) > 1e-6) ss << ",\"tropo_dry\":" << obs.tropo_dry;
-    if (std::abs(obs.tropo_wet) > 1e-6) ss << ",\"tropo_wet\":" << obs.tropo_wet;
-    if (std::abs(obs.shapiro) > 1e-6) ss << ",\"shapiro\":" << obs.shapiro;
-    if (std::abs(obs.earth_solid_tides) > 1e-6) ss << ",\"est\":" << obs.earth_solid_tides;
-    if (std::abs(obs.phase_windup) > 1e-6) ss << ",\"pw\":" << obs.phase_windup;
-    if (std::abs(obs.antenna_phase_variation) > 1e-6)
-        ss << ",\"apv\":" << obs.antenna_phase_variation;
-    if (std::abs(obs.code_range) > 1e-6) ss << ",\"code_range\":" << obs.code_range;
-    if (std::abs(obs.phase_range) > 1e-6) ss << ",\"phase_range\":" << obs.phase_range;
-    if (std::abs(obs.phase_range_rate) > 1e-6)
-        ss << ",\"phase_range_rate\":" << obs.phase_range_rate;
-    if (std::abs(obs.carrier_to_noise_ratio) > 1e-6)
-        ss << ",\"carrier_to_noise_ratio\":" << obs.carrier_to_noise_ratio;
-    if (std::abs(obs.phase_lock_time) > 1e-6) ss << ",\"phase_lock_time\":" << obs.phase_lock_time;
+    if (obs.frequency.valid) ss << ",\"freq\":" << obs.frequency.value;
+    if (obs.geo_range.valid) ss << ",\"geo_range\":" << obs.geo_range.value;
+    if (obs.eph_range.valid) ss << ",\"eph_range\":" << obs.eph_range.value;
+    if (obs.eph_relativistic_correction.valid)
+        ss << ",\"eph_relativistic_correction\":" << obs.eph_relativistic_correction.value;
+    if (obs.sat_clock.valid) ss << ",\"sat_clock\":" << obs.sat_clock.value;
+    if (obs.clock.valid) ss << ",\"clock\":" << obs.clock.value;
+    if (obs.orbit.valid) ss << ",\"orbit\":" << obs.orbit.value;
+    if (obs.code_bias.valid) ss << ",\"code_bias\":" << obs.code_bias.value;
+    if (obs.phase_bias.valid) ss << ",\"phase_bias\":" << obs.phase_bias.value;
+    if (obs.stec_grid.valid) ss << ",\"stec_grid\":" << obs.stec_grid.value;
+    if (obs.stec_poly.valid) ss << ",\"stec_poly\":" << obs.stec_poly.value;
+    if (obs.tropo_dry.valid) ss << ",\"tropo_dry\":" << obs.tropo_dry.value;
+    if (obs.tropo_wet.valid) ss << ",\"tropo_wet\":" << obs.tropo_wet.value;
+    if (obs.tropo_dry_mapping.valid) ss << ",\"tropo_dry_mapping\":" << obs.tropo_dry_mapping.value;
+    if (obs.tropo_wet_mapping.valid) ss << ",\"tropo_wet_mapping\":" << obs.tropo_wet_mapping.value;
+    if (obs.tropo_dry_height_correction.valid)
+        ss << ",\"tropo_dry_height_correction\":" << obs.tropo_dry_height_correction.value;
+    if (obs.tropo_wet_height_correction.valid)
+        ss << ",\"tropo_wet_height_correction\":" << obs.tropo_wet_height_correction.value;
+    if (obs.shapiro.valid) ss << ",\"shapiro\":" << obs.shapiro.value;
+    if (obs.earth_solid_tides.valid) ss << ",\"est\":" << obs.earth_solid_tides.value;
+    if (obs.phase_windup.valid) ss << ",\"pw\":" << obs.phase_windup.value;
+    if (obs.phase_windup_velocity.valid)
+        ss << ",\"pw_velocity\":" << obs.phase_windup_velocity.value;
+    if (obs.phase_windup_angle.valid) ss << ",\"pw_angle\":" << obs.phase_windup_angle.value;
+    if (obs.antenna_phase_variation.valid) ss << ",\"apv\":" << obs.antenna_phase_variation.value;
+    if (obs.code_range.valid) ss << ",\"code_range\":" << obs.code_range.value;
+    if (obs.phase_range.valid) ss << ",\"phase_range\":" << obs.phase_range.value;
+    if (obs.phase_range_rate.valid) ss << ",\"phase_range_rate\":" << obs.phase_range_rate.value;
+    if (obs.carrier_to_noise_ratio.valid)
+        ss << ",\"carrier_to_noise_ratio\":" << obs.carrier_to_noise_ratio.value;
+    if (obs.phase_lock_time.valid) ss << ",\"phase_lock_time\":" << obs.phase_lock_time.value;
+
+    if(obs.orbit_radial_axis.valid) {
+        ss << ",\"orbit_radial_axis_x\":" << obs.orbit_radial_axis.value.x;
+        ss << ",\"orbit_radial_axis_y\":" << obs.orbit_radial_axis.value.y;
+        ss << ",\"orbit_radial_axis_z\":" << obs.orbit_radial_axis.value.z;
+    }
+    if(obs.orbit_cross_axis.valid) {
+        ss << ",\"orbit_cross_axis_x\":" << obs.orbit_cross_axis.value.x;
+        ss << ",\"orbit_cross_axis_y\":" << obs.orbit_cross_axis.value.y;
+        ss << ",\"orbit_cross_axis_z\":" << obs.orbit_cross_axis.value.z;
+    }
+    if(obs.orbit_along_axis.valid) {
+        ss << ",\"orbit_along_axis_x\":" << obs.orbit_along_axis.value.x;
+        ss << ",\"orbit_along_axis_y\":" << obs.orbit_along_axis.value.y;
+        ss << ",\"orbit_along_axis_z\":" << obs.orbit_along_axis.value.z;
+    }
+    if(obs.orbit_delta_t.valid) ss << ",\"orbit_delta_t\":" << obs.orbit_delta_t.value;
     ss << "}";
 
     auto ss_data = ss.str();
@@ -147,15 +174,24 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
     ss << std::setprecision(14);
     ss << "{";
     ss << "\"time\":\"" << utc_time.rfc3339() << "\"";
-    ss << ",\"pos_x\":" << sat.position.x;
-    ss << ",\"pos_y\":" << sat.position.y;
-    ss << ",\"pos_z\":" << sat.position.z;
-    ss << ",\"vel_x\":" << sat.velocity.x;
-    ss << ",\"vel_y\":" << sat.velocity.y;
-    ss << ",\"vel_z\":" << sat.velocity.z;
-    ss << ",\"elevation\":" << sat.elevation;
-    ss << ",\"azimuth\":" << sat.azimuth;
-    ss << ",\"iod\":" << sat.iod;
+    if (sat.position.valid) {
+        ss << ",\"pos_x\":" << sat.position.value.x;
+        ss << ",\"pos_y\":" << sat.position.value.y;
+        ss << ",\"pos_z\":" << sat.position.value.z;
+    }
+    if (sat.velocity.valid) {
+        ss << ",\"vel_x\":" << sat.velocity.value.x;
+        ss << ",\"vel_y\":" << sat.velocity.value.y;
+        ss << ",\"vel_z\":" << sat.velocity.value.z;
+    }
+    if (sat.elevation.valid) ss << ",\"elevation\":" << sat.elevation.value;
+    if (sat.azimuth.valid) ss << ",\"azimuth\":" << sat.azimuth.value;
+    if (sat.iod.valid) ss << ",\"iod\":" << sat.iod.value;
+    if(sat.eph_position.valid) {
+        ss << ",\"eph_pos_x\":" << sat.eph_position.value.x;
+        ss << ",\"eph_pos_y\":" << sat.eph_position.value.y;
+        ss << ",\"eph_pos_z\":" << sat.eph_position.value.z;
+    }
     ss << "}";
 
     auto ss_data = ss.str();
@@ -165,6 +201,169 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
              topic.c_str(), ss_data.size(), result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish satellite: %s", mosquitto_strerror(result));
+        return;
+    }
+}
+
+void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satellite,
+                                 Option<Float3> delta, Option<Float3> dot_delta) {
+    if (gMosq == nullptr) return;
+    VSCOPE_FUNCTION();
+
+    auto topic    = "datatrace/ssr/orbit/" + gDevice + "/" + satellite + "/v1";
+    auto utc_time = ts::Utc{time};
+
+    std::stringstream ss;
+    ss << std::setprecision(14);
+    ss << "{";
+    ss << "\"time\":\"" << utc_time.rfc3339() << "\"";
+    if (delta.valid) {
+        ss << ",\"delta_radial\":" << delta.value.x;
+        ss << ",\"delta_along\":" << delta.value.y;
+        ss << ",\"delta_cross\":" << delta.value.z;
+    }
+    if (dot_delta.valid) {
+        ss << ",\"delta_radial_rate\":" << dot_delta.value.x;
+        ss << ",\"delta_along_rate\":" << dot_delta.value.y;
+        ss << ",\"delta_cross_rate\":" << dot_delta.value.z;
+    }
+    ss << "}";
+
+    auto ss_data = ss.str();
+    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
+                                       ss_data.c_str(), 0, false);
+    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
+             topic.c_str(), ss_data.size(), result);
+    if (result != MOSQ_ERR_SUCCESS) {
+        WARNF("failed to publish ssr orbit correction: %s", mosquitto_strerror(result));
+        return;
+    }
+}
+
+void report_ssr_clock_correction(ts::Tai const& time, std::string const& satellite,
+                                 Option<double> c0, Option<double> c1, Option<double> c2) {
+    if (gMosq == nullptr) return;
+    VSCOPE_FUNCTION();
+
+    auto topic    = "datatrace/ssr/clock/" + gDevice + "/" + satellite + "/v1";
+    auto utc_time = ts::Utc{time};
+
+    std::stringstream ss;
+    ss << std::setprecision(14);
+    ss << "{";
+    ss << "\"time\":\"" << utc_time.rfc3339() << "\"";
+    if (c0.valid) ss << ",\"c0\":" << c0.value;
+    if (c1.valid) ss << ",\"c1\":" << c1.value;
+    if (c2.valid) ss << ",\"c2\":" << c2.value;
+    ss << "}";
+
+    auto ss_data = ss.str();
+    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
+                                       ss_data.c_str(), 0, false);
+    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
+             topic.c_str(), ss_data.size(), result);
+    if (result != MOSQ_ERR_SUCCESS) {
+        WARNF("failed to publish ssr clock correction: %s", mosquitto_strerror(result));
+        return;
+    }
+}
+
+void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& satellite,
+                                       Option<double> c00, Option<double> c01, Option<double> c10,
+                                       Option<double> c11, Option<double> reference_point_latitude,
+                                       Option<double> reference_point_longitude) {
+    if (gMosq == nullptr) return;
+    VSCOPE_FUNCTION();
+
+    auto topic    = "datatrace/ssr/iono_poly/" + gDevice + "/" + satellite + "/v1";
+    auto utc_time = ts::Utc{time};
+
+    std::stringstream ss;
+    ss << std::setprecision(14);
+    ss << "{";
+    ss << "\"time\":\"" << utc_time.rfc3339() << "\"";
+    if (c00.valid) ss << ",\"c00\":" << c00.value;
+    if (c01.valid) ss << ",\"c01\":" << c01.value;
+    if (c10.valid) ss << ",\"c10\":" << c10.value;
+    if (c11.valid) ss << ",\"c11\":" << c11.value;
+    if (reference_point_latitude.valid)
+        ss << ",\"reference_point_latitude\":" << reference_point_latitude.value;
+    if (reference_point_longitude.valid)
+        ss << ",\"reference_point_longitude\":" << reference_point_longitude.value;
+    ss << "}";
+
+    auto ss_data = ss.str();
+    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
+                                       ss_data.c_str(), 0, false);
+    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
+             topic.c_str(), ss_data.size(), result);
+    if (result != MOSQ_ERR_SUCCESS) {
+        WARNF("failed to publish ssr ionospheric polynomial: %s", mosquitto_strerror(result));
+        return;
+    }
+}
+
+void report_ssr_tropospheric_grid(ts::Tai const& time, int grid_point_id,
+                                  Option<Float3> position_llh, Option<double> tropo_wet,
+                                  Option<double> tropo_dry) {
+    if (gMosq == nullptr) return;
+    VSCOPE_FUNCTION();
+
+    auto topic =
+        "datatrace/ssr/tropo_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/v1";
+    auto utc_time = ts::Utc{time};
+
+    std::stringstream ss;
+    ss << std::setprecision(14);
+    ss << "{";
+    ss << "\"time\":\"" << utc_time.rfc3339() << "\"";
+    if (position_llh.valid) {
+        ss << ",\"pos_lat\":" << position_llh.value.x;
+        ss << ",\"pos_lon\":" << position_llh.value.y;
+    }
+    if (tropo_wet.valid) ss << ",\"tropo_wet\":" << tropo_wet.value;
+    if (tropo_dry.valid) ss << ",\"tropo_dry\":" << tropo_dry.value;
+    ss << "}";
+
+    auto ss_data = ss.str();
+    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
+                                       ss_data.c_str(), 0, false);
+    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
+             topic.c_str(), ss_data.size(), result);
+    if (result != MOSQ_ERR_SUCCESS) {
+        WARNF("failed to publish ssr tropospheric grid: %s", mosquitto_strerror(result));
+        return;
+    }
+}
+
+void report_ssr_ionospheric_grid(ts::Tai const& time, int grid_point_id,
+                                 Option<Float3> position_llh, std::string const& satellite,
+                                 Option<double> residual) {
+    if (gMosq == nullptr) return;
+    VSCOPE_FUNCTION();
+
+    auto topic = "datatrace/ssr/iono_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/" +
+                 satellite + "/v1";
+    auto utc_time = ts::Utc{time};
+
+    std::stringstream ss;
+    ss << std::setprecision(14);
+    ss << "{";
+    ss << "\"time\":\"" << utc_time.rfc3339() << "\"";
+    if (position_llh.valid) {
+        ss << ",\"pos_lat\":" << position_llh.value.x;
+        ss << ",\"pos_lon\":" << position_llh.value.y;
+    }
+    if (residual.valid) ss << ",\"residual\":" << residual.value;
+    ss << "}";
+
+    auto ss_data = ss.str();
+    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
+                                       ss_data.c_str(), 0, false);
+    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
+             topic.c_str(), ss_data.size(), result);
+    if (result != MOSQ_ERR_SUCCESS) {
+        WARNF("failed to publish ssr ionospheric grid: %s", mosquitto_strerror(result));
         return;
     }
 }

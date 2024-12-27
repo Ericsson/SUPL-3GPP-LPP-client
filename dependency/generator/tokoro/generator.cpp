@@ -61,6 +61,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mPhaseRangeRate(true),
       mRtcmReferenceStationId(1902),
       mRtcmMsmType(5),
+      mNegativePhaseWindup(false),
       mGenerator(generator) {
     // Initialize the satellite vector to the maximum number of satellites
     // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
@@ -157,13 +158,11 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     observation.compute_tropospheric(correction_data);
     observation.compute_ionospheric(correction_data);
 
-    if (mShapiroCorrection) observation.compute_shapiro();
-    if (mEarthSolidTidesCorrection) observation.compute_earth_solid_tides();
-    if (mPhaseWindupCorrection) observation.compute_phase_windup();
     if (mAntennaPhaseVariation) observation.compute_antenna_phase_variation();
 
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
+    observation.set_negative_phase_windup(mNegativePhaseWindup);
     observation.compute_ranges();
 
     if (!observation.is_valid()) return;
@@ -200,6 +199,12 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         satellite.reset_observations();
 
         if (!satellite.enabled()) continue;
+
+        if (mShapiroCorrection) satellite.compute_shapiro();
+        if (mEarthSolidTidesCorrection) satellite.compute_earth_solid_tides();
+        if (mPhaseWindupCorrection) satellite.compute_phase_windup();
+        satellite.datatrace_report();
+
         if (mSatelliteIncludeSet.size() > 0 &&
             mSatelliteIncludeSet.find(satellite.id()) == mSatelliteIncludeSet.end()) {
             WARNF("discarded: %s - not included", satellite.id().name());
@@ -452,7 +457,9 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 //
 
 Generator::Generator() NOEXCEPT {
-    mIodConsistencyCheck = false;
+    mIodConsistencyCheck                         = false;
+    mUseReceptionTimeForOrbitAndClockCorrections = false;
+    mUseOrbitCorrectionInIteration               = false;
 }
 
 Generator::~Generator() NOEXCEPT = default;
@@ -627,8 +634,8 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto gps_time = ts::Gps(time);
         WARNF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
-            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", sv_id.name(), ephemeris.week_number,
-                  ephemeris.toe, ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
+            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
+                  ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
                   ephemeris.is_valid(gps_time) ? " [time]" : "",
                   ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
@@ -650,8 +657,8 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto gal_time = ts::Gst(time);
         WARNF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
-            WARNF("  %4u %8.0f %8.0f | %4u %4u |%s%s", sv_id.name(), ephemeris.week_number,
-                  ephemeris.toe, ephemeris.toc, ephemeris.lpp_iod, ephemeris.iod_nav,
+            WARNF("  %4u %8.0f %8.0f | %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
+                  ephemeris.toc, ephemeris.lpp_iod, ephemeris.iod_nav,
                   ephemeris.is_valid(gal_time) ? " [time]" : "",
                   ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gal_time)) continue;
@@ -671,9 +678,8 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         WARNF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
             auto eph_time = ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toe, 0);
-            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", sv_id.name(),
-                  ephemeris.week_number, ephemeris.toe, ephemeris.toc,
-                  ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
+            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
+                  ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
                   ephemeris.is_valid(bds_time) ? " [time]" : "",
                   ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(bds_time)) continue;

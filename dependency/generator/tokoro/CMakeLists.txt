@@ -15,6 +15,7 @@ add_library(dependency_generator_tokoro STATIC
     "models/antenna_phase_variation.cpp"
     "models/astronomical_arguments.cpp"
     "models/nutation.cpp"
+    "models/sun_moon.cpp"
     
     "coordinates/coordinate.cpp"
     "coordinates/reference_ellipsoid.cpp"

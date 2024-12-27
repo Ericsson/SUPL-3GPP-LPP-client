@@ -177,9 +177,9 @@ static void initialize_outputs(OutputOptions const& outputs) {
 #ifdef DATA_TRACING
     if (gGlobals.options.data_tracing) {
         datatrace::initialize(
-            gGlobals.options.data_tracing->device,
-            gGlobals.options.data_tracing->server, gGlobals.options.data_tracing->port,
-            gGlobals.options.data_tracing->username, gGlobals.options.data_tracing->password);
+            gGlobals.options.data_tracing->device, gGlobals.options.data_tracing->server,
+            gGlobals.options.data_tracing->port, gGlobals.options.data_tracing->username,
+            gGlobals.options.data_tracing->password);
     }
 #endif
 
@@ -613,6 +613,13 @@ void SsrCommand::parse(args::Subparser& parser) {
         new args::Flag(parser, "no-iod-consistency-check",
                        "Do not perform IOD consistency check when finding ephemeris",
                        {"no-iod-consistency-check"});
+    mRtOC = new args::Flag(parser, "rtoc", "Use reception time in orbit and clock corrections",
+                           {"rtoc"});
+    mOcit = new args::Flag(parser, "ocit", "Use orbit corrections in satellite position evaluation",
+                           {"ocit"});
+    mNegativePhaseWindup =
+        new args::Flag(parser, "negative-phase-windup", "Use negative phase windup correction",
+                       {"negative-phase-windup"});
 #endif
 }
 
@@ -669,6 +676,9 @@ void SsrCommand::execute(Options options) {
     gGlobals.antenna_phase_variation_correction = false;
     gGlobals.tropospheric_height_correction     = true;
     gGlobals.iod_consistency_check              = true;
+    gGlobals.rtoc                               = false;
+    gGlobals.ocit                               = false;
+    gGlobals.negative_phase_windup              = false;
 #endif
 
     if (*mFormatArg) {
@@ -902,6 +912,18 @@ void SsrCommand::execute(Options options) {
 
     if (*mIodConsistencyCheck) {
         gGlobals.iod_consistency_check = false;
+    }
+
+    if (*mRtOC) {
+        gGlobals.rtoc = true;
+    }
+
+    if (*mOcit) {
+        gGlobals.ocit = true;
+    }
+
+    if (*mNegativePhaseWindup) {
+        gGlobals.negative_phase_windup = true;
     }
 #endif
 

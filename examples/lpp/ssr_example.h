@@ -71,6 +71,9 @@ struct SsrGlobals {
     bool antenna_phase_variation_correction;
     bool tropospheric_height_correction;
     bool iod_consistency_check;
+    bool rtoc;
+    bool ocit;
+    bool negative_phase_windup;
 #endif
 
     bool generate_gps;
@@ -135,6 +138,9 @@ public:
         mAntennaPhaseVariationCorrection = nullptr;
         mTroposphericHeightCorrection    = nullptr;
         mIodConsistencyCheck             = nullptr;
+        mRtOC                            = nullptr;
+        mOcit                            = nullptr;
+        mNegativePhaseWindup             = nullptr;
 #endif
     }
 
@@ -193,6 +199,9 @@ public:
         delete mAntennaPhaseVariationCorrection;
         delete mTroposphericHeightCorrection;
         delete mIodConsistencyCheck;
+        delete mRtOC;
+        delete mOcit;
+        delete mNegativePhaseWindup;
 #endif
     }
 
@@ -252,6 +261,9 @@ private:
     args::Flag* mAntennaPhaseVariationCorrection;
     args::Flag* mTroposphericHeightCorrection;
     args::Flag* mIodConsistencyCheck;
+    args::Flag* mRtOC;
+    args::Flag* mOcit;
+    args::Flag* mNegativePhaseWindup;
 #endif
 };
 

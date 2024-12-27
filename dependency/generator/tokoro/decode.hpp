@@ -82,7 +82,7 @@ inline ts::Tai epochTime_r15(GNSS_SystemTime const& src_time) {
     case GNSS_ID__gnss_id_gps: return ts::Tai(ts::Gps::from_day_tod(day_number, time_of_day));
     case GNSS_ID__gnss_id_glonass: return ts::Tai(ts::Glo::from_day_tod(day_number, time_of_day));
     case GNSS_ID__gnss_id_galileo: return ts::Tai(ts::Gst::from_day_tod(day_number, time_of_day));
-    case GNSS_ID__gnss_id_bds: return ts::Tai(ts::Gst::from_day_tod(day_number, time_of_day));
+    case GNSS_ID__gnss_id_bds: return ts::Tai(ts::Bdt::from_day_tod(day_number, time_of_day));
     default: return ts::Tai::now();
     }
 }
@@ -139,13 +139,14 @@ inline double delta_CrossTrack_r15(long value) {
     return static_cast<double>(value) * ORBIT_CROSS_RESOLUTION;
 }
 
-static CONSTEXPR double ORBIT_DOT_RADIAL_RESOLUTION = 0.000001;
-static CONSTEXPR double ORBIT_DOT_ALONG_RESOLUTION  = 0.000004;
-static CONSTEXPR double ORBIT_DOT_CROSS_RESOLUTION  = 0.000004;
+static CONSTEXPR double ORBIT_DOT_RADIAL_RESOLUTION = 0.001;
+static CONSTEXPR double ORBIT_DOT_ALONG_RESOLUTION  = 0.004;
+static CONSTEXPR double ORBIT_DOT_CROSS_RESOLUTION  = 0.004;
+static CONSTEXPR double ORBIT_DOT_MM_TO_M           = 0.001;
 
 inline double dot_delta_radial_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_RADIAL_RESOLUTION;
+        return static_cast<double>(*value) * ORBIT_RADIAL_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }
@@ -153,7 +154,7 @@ inline double dot_delta_radial_r15(long* value) {
 
 inline double dot_delta_AlongTrack_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_ALONG_RESOLUTION;
+        return static_cast<double>(*value) * ORBIT_ALONG_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }
@@ -161,7 +162,7 @@ inline double dot_delta_AlongTrack_r15(long* value) {
 
 inline double dot_delta_CrossTrack_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_CROSS_RESOLUTION;
+        return static_cast<double>(*value) * ORBIT_CROSS_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }

@@ -1,7 +1,9 @@
 #pragma once
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
+#include "models/earth_solid_tides.hpp"
 #include "models/shapiro.hpp"
+#include "models/phase_windup.hpp"
 
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
@@ -35,12 +37,6 @@ struct Correction {
     bool   valid;
 };
 
-struct SolidEarthTides {
-    double displacement;
-    Float3 displacement_vector;
-    bool   valid;
-};
-
 struct Observation {
 public:
     EXPLICIT Observation(Satellite const& satellite, SignalId signal_id, Float3 location) NOEXCEPT;
@@ -52,15 +48,14 @@ public:
 
     void compute_tropospheric_height() NOEXCEPT;
 
-    void compute_shapiro() NOEXCEPT;
-    void compute_phase_windup() NOEXCEPT;
-    void compute_earth_solid_tides() NOEXCEPT;
     void compute_antenna_phase_variation() NOEXCEPT;
 
     void compute_ranges() NOEXCEPT;
 
     NODISCARD bool is_valid() const NOEXCEPT { return mIsValid; }
     void           discard() NOEXCEPT { mIsValid = false; }
+
+    void set_negative_phase_windup(bool enabled) NOEXCEPT { mNegativePhaseWindup = enabled; }
 
     NODISCARD double code_range() const NOEXCEPT;
     NODISCARD double phase_range() const NOEXCEPT;
@@ -92,15 +87,13 @@ private:
     double mWavelength;
     double mCarrierToNoiseRatio;
     double mLockTime;
+    bool   mNegativePhaseWindup;
 
     Correction        mClockCorrection;
     Correction        mCodeBias;
     Correction        mPhaseBias;
     TroposphericDelay mTropospheric;
     IonosphericDelay  mIonospheric;
-    Shapiro        mShapiro;
-    Correction        mPhaseWindup;
-    SolidEarthTides   mEarthSolidTides;
     Correction        mAntennaPhaseVariation;
 
     double mPhaseRange;

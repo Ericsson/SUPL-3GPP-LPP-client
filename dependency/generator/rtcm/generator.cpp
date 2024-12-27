@@ -167,21 +167,20 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
                 code_range *= 2.99792458e8 / 1.0e3;
                 phase_range *= 2.99792458e8 / 1.0e3;
 
-                auto phase_range_rate = 0.0;
+                datatrace::Observation dtobs{};
+                dtobs.code_range  = code_range;
+                dtobs.phase_range = phase_range;
+
                 if (satellite.rough_phase_range_rate.valid) {
-                    phase_range_rate = satellite.rough_phase_range_rate.value;
                     if (signal.fine_phase_range_rate.valid) {
-                        phase_range_rate += signal.fine_phase_range_rate.value;
+                        dtobs.phase_range_rate = satellite.rough_phase_range_rate.value +
+                                                 signal.fine_phase_range_rate.value;
                     }
                 }
 
-                datatrace::Observation dtobs{};
-                dtobs.code_range       = code_range;
-                dtobs.phase_range      = phase_range;
-                dtobs.phase_range_rate = phase_range_rate;
-                dtobs.phase_lock_time  = signal.lock_time.valid ? signal.lock_time.value : 0.0;
-                dtobs.carrier_to_noise_ratio =
-                    signal.carrier_to_noise_ratio.valid ? signal.carrier_to_noise_ratio.value : 0.0;
+                if (signal.lock_time.valid) dtobs.phase_lock_time = signal.lock_time.value;
+                if (signal.carrier_to_noise_ratio.valid)
+                    dtobs.carrier_to_noise_ratio = signal.carrier_to_noise_ratio.value;
                 datatrace::report_observation(observation.time, satellite.id.name(),
                                               signal.id.name(), dtobs);
             }

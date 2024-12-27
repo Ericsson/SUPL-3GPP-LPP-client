@@ -84,7 +84,8 @@ struct OrbitCorrection {
     Float3   dot_delta;  // {radial, along_track, cross_track}
 
     NODISCARD bool correction(ts::Tai time, Float3 eph_position, Float3 eph_velocity,
-                              Float3& result) const NOEXCEPT;
+                              Float3& result, Float3* output_radial, Float3* output_along,
+                              Float3* output_cross, double* output_delta) const NOEXCEPT;
 };
 
 struct ClockCorrection {

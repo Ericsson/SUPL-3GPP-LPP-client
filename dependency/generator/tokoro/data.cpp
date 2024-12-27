@@ -32,13 +32,18 @@
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
+#endif
+
 #define LOGLET_CURRENT_MODULE "tokoro/data"
 
 namespace generator {
 namespace tokoro {
 
 bool OrbitCorrection::correction(ts::Tai time, Float3 eph_position, Float3 eph_velocity,
-                                 Float3& result) const NOEXCEPT {
+                                 Float3& result, Float3* output_radial, Float3* output_along,
+                                 Float3* output_cross, double* output_delta) const NOEXCEPT {
     VSCOPE_FUNCTION();
 
     auto e_along = eph_velocity;
@@ -46,41 +51,63 @@ bool OrbitCorrection::correction(ts::Tai time, Float3 eph_position, Float3 eph_v
         WARNF("failed to normalize e_along");
         return false;
     }
-    VERBOSEF("e_along: %24.14f, %24.14f, %24.14f", e_along.x, e_along.y, e_along.z);
+    VERBOSEF("e_along:   %+24.14f, %+24.14f, %+24.14f", e_along.x, e_along.y, e_along.z);
 
     auto e_cross = cross_product(eph_position, eph_velocity);
     if (!e_cross.normalize()) {
         WARNF("failed to normalize e_cross");
         return false;
     }
-    VERBOSEF("e_cross: %24.14f, %24.14f, %24.14f", e_cross.x, e_cross.y, e_cross.z);
+    VERBOSEF("e_cross:   %+24.14f, %+24.14f, %+24.14f", e_cross.x, e_cross.y, e_cross.z);
 
     auto e_radial = cross_product(e_along, e_cross);
-    VERBOSEF("e_radial: %24.14f, %24.14f, %24.14f", e_radial.x, e_radial.y, e_radial.z);
+    VERBOSEF("e_radial:  %+24.14f, %+24.14f, %+24.14f", e_radial.x, e_radial.y, e_radial.z);
 
-    VERBOSEF("time: %s", ts::Utc{time}.rtklib_time_string().c_str());
-    VERBOSEF("reference_time: %s", ts::Utc{reference_time}.rtklib_time_string().c_str());
-    auto t_k      = ts::Gps{time}.difference(ts::Gps{reference_time}).full_seconds();
+    VERBOSEF("t:   %s", time.rtklib_time_string().c_str());
+    VERBOSEF("t0:  %s", reference_time.rtklib_time_string().c_str());
+
+    auto t_k = time.difference_seconds(reference_time);
+    VERBOSEF("t_k: %+.14f", t_k);
+
     auto delta_at = delta + dot_delta * t_k;
-
-    VERBOSEF("t_k: %24.14f", t_k);
-    VERBOSEF("delta:     %24.14f, %24.14f, %24.14f", delta.x, delta.y, delta.z);
-    VERBOSEF("dot_delta: %24.14f, %24.14f, %24.14f", dot_delta.x, dot_delta.y, dot_delta.z);
-    VERBOSEF("delta_at:  %24.14f, %24.14f, %24.14f", delta_at.x, delta_at.y, delta_at.z);
+    VERBOSEF("delta:     %+24.14f, %+24.14f, %+24.14f", delta.x, delta.y, delta.z);
+    VERBOSEF("dot_delta: %+24.14f, %+24.14f, %+24.14f", dot_delta.x, dot_delta.y, dot_delta.z);
+    VERBOSEF("delta_at:  %+24.14f, %+24.14f, %+24.14f", delta_at.x, delta_at.y, delta_at.z);
 
     auto x = e_radial.x * delta_at.x + e_along.x * delta_at.y + e_cross.x * delta_at.z;
     auto y = e_radial.y * delta_at.x + e_along.y * delta_at.y + e_cross.y * delta_at.z;
     auto z = e_radial.z * delta_at.x + e_along.z * delta_at.y + e_cross.z * delta_at.z;
 
-    VERBOSEF("result: %24.14f, %24.14f, %24.14f", x, y, z);
+    VERBOSEF("result:    %+24.14f, %+24.14f, %+24.14f", x, y, z);
+
+    if (output_radial) *output_radial = e_radial;
+    if (output_along) *output_along = e_along;
+    if (output_cross) *output_cross = e_cross;
+    if (output_delta) *output_delta = t_k;
 
     result = eph_position - Float3{x, y, z};
     return true;
 }
 
 double ClockCorrection::correction(ts::Tai time) const NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    VERBOSEF("t:   %s", ts::Utc{time}.rtklib_time_string().c_str());
+    VERBOSEF("t0:  %s", ts::Utc{reference_time}.rtklib_time_string().c_str());
+
     auto t_k = ts::Gps{time}.difference(ts::Gps{reference_time}).full_seconds();
-    return c0 + c1 * t_k + c2 * t_k * t_k;
+    VERBOSEF("t_k: %+.14f", t_k);
+
+    VERBOSEF("c:      %+24.14f, %+24.14f, %+24.14f", c0, c1, c2);
+
+    auto r0 = c0;
+    auto r1 = c1 * t_k;
+    auto r2 = c2 * t_k * t_k;
+    VERBOSEF("parts:  %+24.14f, %+24.14f, %+24.14f", r0, r1, r2);
+
+    auto result = r0 + r1 + r2;
+    VERBOSEF("result: %+24.14f", result);
+    return result;
 }
 
 bool CorrectionPointSet::array_to_index(long array_index, long& index, bool& valid,
@@ -412,6 +439,8 @@ void CorrectionData::add_correction(long                                 gnss_id
         reference_time.add_seconds(update_interval * 0.5);
     }
 
+    VERBOSEF("epoch: %s", epoch_time.rtklib_time_string().c_str());
+
     auto& list = orbit->ssr_OrbitCorrectionList_r15.list;
     for (int i = 0; i < list.count; i++) {
         auto satellite = list.array[i];
@@ -439,6 +468,11 @@ void CorrectionData::add_correction(long                                 gnss_id
         correction.delta          = {radial, along_track, cross_track};
         correction.dot_delta      = {dot_radial, dot_along, dot_cross};
 
+#ifdef DATA_TRACING
+        datatrace::report_ssr_orbit_correction(reference_time, satellite_id.name(),
+                                               correction.delta, correction.dot_delta);
+#endif
+
         VERBOSEF("orbit: %3s %+f %+f %+f", satellite_id.name(), radial, along_track, cross_track);
     }
 }
@@ -462,6 +496,8 @@ void CorrectionData::add_correction(long                                 gnss_id
         reference_time.add_seconds(update_interval * 0.5);
     }
 
+    VERBOSEF("epoch: %s", epoch_time.rtklib_time_string().c_str());
+
     auto& list = clock->ssr_ClockCorrectionList_r15.list;
     for (int i = 0; i < list.count; i++) {
         auto satellite = list.array[i];
@@ -483,6 +519,10 @@ void CorrectionData::add_correction(long                                 gnss_id
         clock_correction.c1             = c1;
         clock_correction.c2             = c2;
 
+#ifdef DATA_TRACING
+        datatrace::report_ssr_clock_correction(reference_time, satellite_id.name(), c0, c1, c2);
+#endif
+
         VERBOSEF("clock: %3s %+f %+f %+f", satellite_id.name(), c0, c1, c2);
     }
 }
@@ -499,6 +539,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
     }
+
+    VERBOSEF("epoch: %s", epoch_time.rtklib_time_string().c_str());
 
     auto& list = code_bias->ssr_CodeBiasSatList_r15.list;
     for (int i = 0; i < list.count; i++) {
@@ -545,6 +587,8 @@ void CorrectionData::add_correction(long                          gnss_id,
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
     }
+
+    VERBOSEF("epoch: %s", epoch_time.rtklib_time_string().c_str());
 
     auto& list = phase_bias->ssr_PhaseBiasSatList_r16.list;
     for (int i = 0; i < list.count; i++) {
@@ -598,6 +642,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         mLatestCorrectionTime = epoch_time;
     }
 
+    VERBOSEF("epoch: %s", epoch_time.rtklib_time_string().c_str());
+
     auto& list = stec->stec_SatList_r16.list;
     for (int i = 0; i < list.count; i++) {
         auto satellite = list.array[i];
@@ -622,6 +668,13 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         poly.reference_point_latitude  = correction_point_set.reference_point_latitude;
         poly.reference_point_longitude = correction_point_set.reference_point_longitude;
 
+#ifdef DATA_TRACING
+        datatrace::report_ssr_ionospheric_polynomial(
+            epoch_time, satellite_id.name(), c00, c01, c10, c11,
+            correction_point_set.reference_point_latitude,
+            correction_point_set.reference_point_longitude);
+#endif
+
         VERBOSEF("stec: %3s %+f %+f %+f %+f", satellite_id.name(), c00, c01, c10, c11);
     }
 }
@@ -645,6 +698,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
     }
+
+    VERBOSEF("epoch: %s", epoch_time.rtklib_time_string().c_str());
 
     auto grid_it = mGrid.find(satellite_gnss);
     if (grid_it == mGrid.end()) {
@@ -701,6 +756,11 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
             grid_point->tropospheric_wet  = wet;
             grid_point->tropospheric_dry  = dry;
 
+#ifdef DATA_TRACING
+            datatrace::report_ssr_tropospheric_grid(epoch_time, grid_point->absolute_index,
+                                                    grid_point->position, wet, dry);
+#endif
+
             VERBOSEF("  wet: %+f dry: %+f", wet, dry);
         }
 
@@ -722,6 +782,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
                 grid_point->ionospheric_valid                  = true;
                 grid_point->ionospheric_residual[satellite_id] = ionospheric;
+
+#ifdef DATA_TRACING
+                datatrace::report_ssr_ionospheric_grid(epoch_time, grid_point->absolute_index,
+                                                       grid_point->position, satellite_id.name(),
+                                                       ionospheric);
+#endif
 
                 VERBOSEF("  ionospheric: %3s %+f", satellite_id.name(), ionospheric);
             }

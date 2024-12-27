@@ -303,7 +303,8 @@ public:
         // 2024/09/09 12:12:46.000000000000 1725883929
         // 2024/10/01 12:10:42.000000000000 1727784605
         // 2024/12/05 07:24:27.000000000000 1733383430
-        if (t.timestamp().seconds() != 1733383430) {
+        // 2024/12/05 07:25:20.000000000000 1733383483
+        if (t.timestamp().seconds() != 1733383483) {
             printf("----------- SKIPING ----------------\n");
             return;
         }
@@ -532,6 +533,8 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
     auto& generator = evaluator->generator();
 
     generator.set_iod_consistency_check(globals.iod_consistency_check);
+    generator.set_rtoc(globals.rtoc);
+    generator.set_ocit(globals.ocit);
 
 #if TRIMBLE_TEST
     // Trimble Test Reference
@@ -629,8 +632,10 @@ void tokoro_initialize(System& system, ssr_example::SsrGlobals const& globals,
     rs->set_antenna_phase_variation_correction(globals.antenna_phase_variation_correction);
     rs->set_tropospheric_height_correction(globals.tropospheric_height_correction);
 
+    rs->set_negative_phase_windup(globals.negative_phase_windup);
+
 #if TRIMBLE_TEST
-#if 0
+#if 1
     rs->include_satellite(SatelliteId::from_gps_prn(7));
     rs->include_satellite(SatelliteId::from_gps_prn(9));
     //rs->include_satellite(SatelliteId::from_gps_prn(13));

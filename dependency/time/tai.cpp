@@ -37,6 +37,10 @@ Timestamp Tai::difference(Tai const& other) const {
     return tm - other.tm;
 }
 
+double Tai::difference_seconds(Tai const& other) const {
+    return tm.full_seconds() - other.tm.full_seconds();
+}
+
 Tai Tai::now() {
     return Tai{Utc::now()};
 }

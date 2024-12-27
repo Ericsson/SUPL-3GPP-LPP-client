@@ -69,6 +69,7 @@ public:
     void set_phase_range_rate(bool enabled) { mPhaseRangeRate = enabled; }
     void set_reference_station_id(int id) { mRtcmReferenceStationId = id; }
     void set_msm_type(int type) { mRtcmMsmType = type; }
+    void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
 
     // TODO(ewasjon): REMOVE: for testing only
     NODISCARD double g04_l1_ca() const NOEXCEPT;
@@ -103,6 +104,7 @@ private:
     bool   mPhaseRangeRate;
     int    mRtcmReferenceStationId;
     int    mRtcmMsmType;
+    bool   mNegativePhaseWindup;
 
     std::vector<Satellite>          mSatellites;
     std::unordered_set<SatelliteId> mSatelliteIncludeSet;
@@ -124,6 +126,8 @@ public:
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
 
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
+    void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
+    void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
 
     std::shared_ptr<ReferenceStation>
     define_reference_station(ReferenceStationConfig const& config) NOEXCEPT;
@@ -149,6 +153,8 @@ private:
     std::unique_ptr<CorrectionPointSet> mCorrectionPointSet;
 
     bool mIodConsistencyCheck;
+    bool mUseReceptionTimeForOrbitAndClockCorrections;
+    bool mUseOrbitCorrectionInIteration;
 
     friend struct Satellite;
     friend class ReferenceStation;
