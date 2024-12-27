@@ -30,13 +30,4 @@ static void process_lpp_rtcm(Config const& config, lpp::Message message) {
 
 void process_assistance_data(Config const& config, lpp::Message message) {
     INFOF("received assistance data");
-
-    switch (config.output_format) {
-    case OutputFormat::RTCM: process_rtcm(config, std::move(message)); break;
-    case OutputFormat::SPARTN_OLD: process_spartn_old(config, std::move(message)); break;
-    case OutputFormat::SPARTN: process_spartn(config, std::move(message)); break;
-    case OutputFormat::XER: process_xer(config, std::move(message)); break;
-    case OutputFormat::UPER: process_uper(config, std::move(message)); break;
-    case OutputFormat::LPP_RTCM: process_lpp_rtcm(config, std::move(message)); break;
-    }
 }

@@ -111,8 +111,14 @@ enum class BaudRate {
 class SerialInput : public Input {
 public:
     EXPLICIT SerialInput(std::string device, BaudRate baud_rate, DataBits data_bits,
-                            StopBits stop_bits, ParityBit parity_bit) NOEXCEPT;
+                         StopBits stop_bits, ParityBit parity_bit) NOEXCEPT;
     ~SerialInput() NOEXCEPT override;
+
+    NODISCARD std::string const& device() const NOEXCEPT { return mDevice; }
+    NODISCARD BaudRate           baud_rate() const NOEXCEPT { return mBaudRate; }
+    NODISCARD DataBits           data_bits() const NOEXCEPT { return mDataBits; }
+    NODISCARD StopBits           stop_bits() const NOEXCEPT { return mStopBits; }
+    NODISCARD ParityBit          parity_bit() const NOEXCEPT { return mParityBit; }
 
 protected:
     NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;
@@ -135,10 +141,16 @@ private:
 class SerialOutput : public Output {
 public:
     EXPLICIT SerialOutput(std::string device, BaudRate baud_rate, DataBits data_bits,
-                             StopBits stop_bits, ParityBit parity_bit) NOEXCEPT;
+                          StopBits stop_bits, ParityBit parity_bit) NOEXCEPT;
     ~SerialOutput() NOEXCEPT override;
 
     void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
+
+    NODISCARD std::string const& device() const NOEXCEPT { return mDevice; }
+    NODISCARD BaudRate           baud_rate() const NOEXCEPT { return mBaudRate; }
+    NODISCARD DataBits           data_bits() const NOEXCEPT { return mDataBits; }
+    NODISCARD StopBits           stop_bits() const NOEXCEPT { return mStopBits; }
+    NODISCARD ParityBit          parity_bit() const NOEXCEPT { return mParityBit; }
 
 protected:
     void open();

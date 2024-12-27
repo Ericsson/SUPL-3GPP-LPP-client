@@ -1,31 +1,54 @@
 #include <args.hpp>
+#include <format/ctrl/cid.hpp>
+#include <format/ctrl/identity.hpp>
+#include <format/ctrl/parser.hpp>
+#include <format/lpp/uper_parser.hpp>
+#include <format/nmea/message.hpp>
+#include <format/nmea/parser.hpp>
+#include <format/ubx/message.hpp>
+#include <format/ubx/parser.hpp>
 #include <loglet/loglet.hpp>
 #include <lpp/assistance_data.hpp>
 #include <lpp/client.hpp>
 #include <lpp/session.hpp>
 #include <scheduler/scheduler.hpp>
-#include <sys/eventfd.h>
+#include <streamline/system.hpp>
+
 #include <thread>
 #include <unistd.h>
+
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
+#endif
+
+#include "processor/control.hpp"
+#include "processor/lpp.hpp"
 
 #include "client.hpp"
 
 #define LOGLET_CURRENT_MODULE "client"
 
-lpp::PeriodicSessionHandle gAssistanceDataSession{};
-Config                     gConfig;
+struct Client {
+    Config                                                config;
+    scheduler::Scheduler                                  scheduler;
+    streamline::System                                    stream;
+    std::vector<std::unique_ptr<format::nmea::Parser>>    nmea_parsers;
+    std::vector<std::unique_ptr<format::ubx::Parser>>     ubx_parsers;
+    std::vector<std::unique_ptr<format::ctrl::Parser>>    ctrl_parsers;
+    std::vector<std::unique_ptr<format::lpp::UperParser>> lpp_uper_parsers;
+};
 
-static void client_connected(lpp::Client& client) {
+lpp::PeriodicSessionHandle gAssistanceDataSession{};
+
+static void client_connected(Client& program, lpp::Client& client) {
     gAssistanceDataSession = client.request_assistance_data({
-        gConfig.assistance_data_type,
-        gConfig.cell,
+        program.config.assistance_data.type,
+        program.config.assistance_data.cell,
         [](lpp::Client& client, lpp::Message message) {
             INFOF("received message (non-periodic)");
-            process_assistance_data(gConfig, std::move(message));
         },
         [](lpp::Client& client, lpp::PeriodicSessionHandle session, lpp::Message message) {
             INFOF("received message (periodic)");
-            process_assistance_data(gConfig, std::move(message));
         },
         [](lpp::Client& client, lpp::PeriodicSessionHandle session) {
             INFOF("start of assistance data");
@@ -36,10 +59,10 @@ static void client_connected(lpp::Client& client) {
     });
 }
 
-static void client_initialize(lpp::Client& client) {
-    client.on_connected = [](lpp::Client& client) {
+static void client_initialize(Client& program, lpp::Client& client) {
+    client.on_connected = [&program](lpp::Client& client) {
         INFOF("connected to LPP server");
-        client_connected(client);
+        client_connected(program, client);
     };
 
     client.on_disconnected = [](lpp::Client& client) {
@@ -62,8 +85,156 @@ static void client_initialize(lpp::Client& client) {
     };
 }
 
+static void initialize_inputs(Client& client, InputConfig const& config) {
+    for (auto const& input : config.inputs) {
+        format::nmea::Parser*    nmea{};
+        format::ubx::Parser*     ubx{};
+        format::ctrl::Parser*    ctrl{};
+        format::lpp::UperParser* lpp_uper{};
+
+        if ((input.format & INPUT_FORMAT_NMEA) != 0) nmea = new format::nmea::Parser{};
+        if ((input.format & INPUT_FORMAT_UBX) != 0) ubx = new format::ubx::Parser{};
+        if ((input.format & INPUT_FORMAT_CTRL) != 0) ctrl = new format::ctrl::Parser{};
+        if ((input.format & INPUT_FORMAT_LPP) != 0) lpp_uper = new format::lpp::UperParser{};
+
+        DEBUGF("input  %p: %s%s%s%s", input.interface.get(),
+               (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
+               (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
+               (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
+               (input.format & INPUT_FORMAT_LPP) ? "lpp " : "");
+
+        if (!nmea && !ubx && !ctrl && !lpp_uper) {
+            WARNF("-- skipping input %p, no format specified", input.interface.get());
+            continue;
+        }
+
+        if (nmea) client.nmea_parsers.push_back(std::unique_ptr<format::nmea::Parser>(nmea));
+        if (ubx) client.ubx_parsers.push_back(std::unique_ptr<format::ubx::Parser>(ubx));
+        if (ctrl) client.ctrl_parsers.push_back(std::unique_ptr<format::ctrl::Parser>(ctrl));
+        if (lpp_uper)
+            client.lpp_uper_parsers.push_back(std::unique_ptr<format::lpp::UperParser>(lpp_uper));
+
+        input.interface->schedule(client.scheduler);
+        input.interface->callback = [&client, nmea, ubx, ctrl,
+                                     lpp_uper](io::Input&, uint8_t* buffer, size_t count) {
+            if (nmea) {
+                nmea->append(buffer, count);
+                for (;;) {
+                    auto message = nmea->try_parse();
+                    if (!message) break;
+                    client.stream.push(std::move(message));
+                }
+            }
+
+            if (ubx) {
+                ubx->append(buffer, count);
+                for (;;) {
+                    auto message = ubx->try_parse();
+                    if (!message) break;
+                    client.stream.push(std::move(message));
+                }
+            }
+
+            if (ctrl) {
+                ctrl->append(buffer, count);
+                for (;;) {
+                    auto message = ctrl->try_parse();
+                    if (!message) break;
+                    client.stream.push(std::move(message));
+                }
+            }
+
+            if (lpp_uper) {
+                lpp_uper->append(buffer, count);
+                for (;;) {
+                    auto message = lpp_uper->try_parse();
+                    if (!message) break;
+                    XDEBUGF("lpp/msg", "create %p", message);
+                    auto lpp_message = lpp::Message{message};
+                    client.stream.push(std::move(lpp_message));
+                }
+            }
+        };
+    }
+}
+
+static void initialize_outputs(Client& client, OutputConfig const& config) {
+    VSCOPE_FUNCTION();
+
+    bool lpp_xer_output  = false;
+    bool lpp_uper_output = false;
+    bool nmea_output     = false;
+    bool ubx_output      = false;
+    bool ctrl_output     = false;
+    bool spartn_output   = false;
+    bool lpp_rf_output   = false;
+    for (auto& output : config.outputs) {
+        DEBUGF("output %p: %s%s%s%s%s%s%s", output.interface.get(),
+               (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
+               (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
+               (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
+               (output.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
+               (output.format & OUTPUT_FORMAT_LPP_XER) ? "lpp-xer " : "",
+               (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
+               (output.format & OUTPUT_FORMAT_LPP_RTCM_FRAME) ? "lpp-rf " : "");
+
+        if ((output.format & OUTPUT_FORMAT_LPP_XER) != 0) lpp_xer_output = true;
+        if ((output.format & OUTPUT_FORMAT_LPP_UPER) != 0) lpp_uper_output = true;
+        if ((output.format & OUTPUT_FORMAT_NMEA) != 0) nmea_output = true;
+        if ((output.format & OUTPUT_FORMAT_UBX) != 0) ubx_output = true;
+        if ((output.format & OUTPUT_FORMAT_CTRL) != 0) ctrl_output = true;
+        if ((output.format & OUTPUT_FORMAT_SPARTN) != 0) spartn_output = true;
+        if ((output.format & OUTPUT_FORMAT_LPP_RTCM_FRAME) != 0) lpp_rf_output = true;
+    }
+
+    if (lpp_xer_output) client.stream.add_inspector<LppXerOutput>(config);
+    if (lpp_uper_output) client.stream.add_inspector<LppUperOutput>(config);
+    // if (nmea_output) client.stream.add_inspector<NmeaOutput>(config);
+    // if (ubx_output) client.stream.add_inspector<UbxOutput>(config);
+    if (ctrl_output) client.stream.add_inspector<CtrlOutput>(config);
+}
+
 int main(int argc, char** argv) {
+#if defined(FORCE_LOG_LEVEL_VERBOSE)
     loglet::set_level(loglet::Level::Verbose);
+#elif defined(FORCE_LOG_LEVEL_DEBUG)
+    loglet::set_level(loglet::Level::Debug);
+#elif defined(FORCE_LOG_LEVEL_INFO)
+    loglet::set_level(loglet::Level::Info);
+#elif defined(FORCE_LOG_LEVEL_WARNING)
+    loglet::set_level(loglet::Level::Warning);
+#elif defined(FORCE_LOG_LEVEL_ERROR)
+    loglet::set_level(loglet::Level::Error);
+#endif
+
+    INFOF("S3LP Client (" CLIENT_VERSION ")");
+
+    Client program{};
+    if (!config::parse(argc, argv, &program.config)) {
+        return 1;
+    }
+
+    loglet::set_level(program.config.logging.log_level);
+    for (auto const& [module, level] : program.config.logging.module_levels) {
+        loglet::set_module_level(module.c_str(), level);
+    }
+
+#ifdef DATA_TRACING
+    if (program.config.data_tracing.enabled) {
+        datatrace::initialize(program.config.data_tracing.device,
+                              program.config.data_tracing.server, program.config.data_tracing.port,
+                              program.config.data_tracing.username,
+                              program.config.data_tracing.password);
+    }
+#endif
+
+    initialize_inputs(program, program.config.input);
+    initialize_outputs(program, program.config.output);
+
+    program.scheduler.execute();
+
+    return 0;
+
     loglet::disable_module("sched");
     loglet::disable_module("supl");
     loglet::disable_module("lpp/s");
@@ -71,8 +242,8 @@ int main(int argc, char** argv) {
     // loglet::disable_module("lpp/ad");
     // loglet::disable_module("lpp/ps");
 
-    gConfig.cell          = supl::Cell::lte(240, 1, 1, 3);
-    gConfig.output_format = OutputFormat::RTCM;
+    // gConfig.cell          = supl::Cell::lte(240, 1, 1, 3);
+    // gConfig.output_format = OutputFormat::RTCM;
 
     lpp::Client client{
         supl::Identity::msisdn(919825098250),
@@ -80,10 +251,9 @@ int main(int argc, char** argv) {
         5431,
     };
 
-    client_initialize(client);
+    client_initialize(program, client);
 
-    scheduler::Scheduler scheduler{};
-    client.schedule(&scheduler);
+    client.schedule(&program.scheduler);
 
 #if 0
 
@@ -145,7 +315,7 @@ int main(int argc, char** argv) {
     session.schedule(&scheduler);
 #endif
 
-    scheduler.execute();
+    program.scheduler.execute();
 #if 0
     double test = 0;
 

@@ -21,6 +21,10 @@ public:
                           Duration tick_interval) NOEXCEPT;
     ~FileInput() NOEXCEPT override;
 
+    NODISCARD std::string const& path() const NOEXCEPT { return mPath; }
+    NODISCARD size_t bytes_per_tick() const NOEXCEPT { return mBytesPerTick; }
+    NODISCARD Duration tick_interval() const NOEXCEPT { return mTickInterval; }
+
 protected:
     NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;
     NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;
@@ -45,6 +49,11 @@ public:
     ~FileOutput() NOEXCEPT override;
 
     void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
+
+    NODISCARD std::string const& path() const NOEXCEPT { return mPath; }
+    NODISCARD bool truncate() const NOEXCEPT { return mTruncate; }
+    NODISCARD bool append() const NOEXCEPT { return mAppend; }
+    NODISCARD bool create() const NOEXCEPT { return mCreate; }
 
 protected:
     void open();

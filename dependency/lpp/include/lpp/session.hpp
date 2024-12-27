@@ -149,6 +149,10 @@ public:
     // Called when a message was received for a transaction
     std::function<void(Session&, TransactionHandle const&, Message)> on_message;
 
+    static Message              decode_lpp_message(uint8_t const* data, size_t size);
+    static std::vector<uint8_t> encode_lpp_message(Message const& message);
+    static std::string          encode_lpp_message_xer(Message const& message);
+
 protected:
     void switch_state(State state);
     void process();
@@ -180,10 +184,8 @@ protected:
     void server_end_transaction(TransactionHandle const& handle);
     void client_end_transaction(TransactionHandle const& handle);
 
-    void                 process_supl_pos(supl::POS const& pos);
-    void                 process_lpp_payload(supl::Payload const& payload);
-    Message              decode_lpp_message(uint8_t const* data, size_t size);
-    std::vector<uint8_t> encode_lpp_message(Message const& message);
+    void process_supl_pos(supl::POS const& pos);
+    void process_lpp_payload(supl::Payload const& payload);
 
 private:
     State          mState;

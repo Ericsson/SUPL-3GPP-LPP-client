@@ -21,6 +21,8 @@
 #include "LPP-TransactionID.h"
 #pragma GCC diagnostic pop
 
+#include <sstream>
+
 #define LOGLET_CURRENT_MODULE "lpp/s"
 
 namespace lpp {
@@ -320,7 +322,7 @@ NextState Session::state_posinit() {
     SCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
-    auto cell         = supl::Cell::lte(240, 1, 1, 0);
+    auto cell = supl::Cell::lte(240, 1, 1, 0);
 
     supl::SETCapabilities capabilities{};
     capabilities.posTechnology                         = {};
@@ -713,7 +715,6 @@ TransactionData* Session::find_transaction(TransactionHandle const& handle) {
 
 Message Session::decode_lpp_message(uint8_t const* data, size_t size) {
     SCOPE_FUNCTION();
-    ASSERT(mSession != nullptr, "session is null");
 
     // NOTE: Increase default max stack size to handle large messages.
     // TODO(ewasjon): Is this correct?
@@ -738,7 +739,6 @@ Message Session::decode_lpp_message(uint8_t const* data, size_t size) {
 
 std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
     SCOPE_FUNCTION();
-    ASSERT(mSession != nullptr, "session is null");
 
 #if 0
     xer_fprint(stdout, &asn_DEF_LPP_Message, message.get());
@@ -758,6 +758,23 @@ std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
     auto pdu_len = (result.encoded + 7) >> 3;
     buffer.resize(pdu_len);
     return buffer;
+}
+
+std::string Session::encode_lpp_message_xer(Message const& message) {
+    SCOPE_FUNCTION();
+
+    std::stringstream buffer;
+    xer_encode(
+        &asn_DEF_LPP_Message, message.get(), XER_F_BASIC,
+        [](void const* text_buffer, size_t text_size, void* app_key) -> int {
+            auto string_stream = static_cast<std::ostream*>(app_key);
+            string_stream->write(static_cast<char const*>(text_buffer),
+                                 static_cast<std::streamsize>(text_size));
+            return 0;
+        },
+        &buffer);
+    auto xer_message = buffer.str();
+    return xer_message;
 }
 
 }  // namespace lpp

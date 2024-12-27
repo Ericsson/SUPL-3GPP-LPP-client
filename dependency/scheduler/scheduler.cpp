@@ -142,7 +142,7 @@ void Scheduler::execute() NOEXCEPT {
         }
 
         // Wait for a file descriptor to become ready.
-        DEBUGF("waiting for events (%d file descriptors)", mEpollCount);
+        VERBOSEF("waiting for events (%d file descriptors)", mEpollCount);
         auto nfds = ::epoll_pwait(mEpollFd, events, 16, -1, nullptr);
         VERBOSEF("::epoll_pwait(%d, %p, 16, -1, nullptr) = %d", mEpollFd, events, nfds);
         if (nfds == -1) {
@@ -189,7 +189,7 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
 
         // Wait for a file descriptor to become ready. Even if the mEpollCount is 0, we still need
         // to wait for the timeout to expire.
-        DEBUGF("waiting for events (%d file descriptors, %d ms)", mEpollCount, timeout_ms);
+        VERBOSEF("waiting for events (%d file descriptors, %d ms)", mEpollCount, timeout_ms);
         auto nfds = ::epoll_pwait(mEpollFd, events, 16, timeout_ms, nullptr);
         VERBOSEF("::epoll_pwait(%d, %p, 16, -1, nullptr) = %d", mEpollFd, events, nfds);
         if (nfds == -1) {
@@ -228,7 +228,7 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
         }
 
         // Wait for a file descriptor to become ready.
-        DEBUGF("waiting for events (%d file descriptors, while)", mEpollCount);
+        VERBOSEF("waiting for events (%d file descriptors, while)", mEpollCount);
         auto nfds = ::epoll_pwait(mEpollFd, events, 16, -1, nullptr);
         VERBOSEF("::epoll_pwait(%d, %p, 16, -1, nullptr) = %d", mEpollFd, events, nfds);
         if (nfds == -1) {

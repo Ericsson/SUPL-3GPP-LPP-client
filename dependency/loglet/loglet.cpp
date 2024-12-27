@@ -68,7 +68,7 @@ Module& get_or_add_module(char const* reference) {
 
 void uninitialize() {
     sScopes.clear();
-    for(auto it = sModules.begin(); it != sModules.end();) {
+    for (auto it = sModules.begin(); it != sModules.end();) {
         delete[] it->second.name;
         it = sModules.erase(it);
     }
@@ -151,12 +151,13 @@ void log(char const* module, Level level, char const* message) {
     auto start_color = level_to_color(level);
     auto stop_color  = COLOR_RESET;
 
-    printf("%s %s %s: [%6s] ", start_color, level_to_string(level), buffer, module);
-    for (size_t i = 0; i < sScopes.size(); i++) {
-        printf("  ");
+    auto file = stdout;
+    if (level == Level::Error || level == Level::Warning) {
+        file = stderr;
     }
-    printf("%s%s\n", message, stop_color);
-    fflush(stdout);
+
+    fprintf(file, "%s %s %s: [%10s] %*s%s%s\n", start_color, level_to_string(level), buffer, module,
+            static_cast<int>(sScopes.size() * 2), "", message, stop_color);
 }
 
 void logf(char const* module, Level level, char const* format, ...) {
