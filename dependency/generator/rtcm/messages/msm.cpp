@@ -18,7 +18,6 @@
 using namespace generator::rtcm;
 
 static void epoch_time(Encoder& encoder, ts::Tai const& time, GenericGnssId gnss) {
-    printf("epoch_time: %s\n", time.rtklib_time_string().c_str());
     switch (gnss) {
     case GenericGnssId::GPS: {
         auto tow          = ts::Gps(time).time_of_week();
@@ -27,7 +26,7 @@ static void epoch_time(Encoder& encoder, ts::Tai const& time, GenericGnssId gnss
     } break;
     case GenericGnssId::GLONASS: {
         auto glo          = ts::Glo(time);
-        auto dow          = glo.days() % 7;
+        auto dow          = glo.day_of_week();
         auto tow          = glo.time_of_day();
         auto milliseconds = tow.full_seconds() * 1000;
         encoder.u8(3, static_cast<uint8_t>(dow));
