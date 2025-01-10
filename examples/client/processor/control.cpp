@@ -2,23 +2,31 @@
 
 #include <format/ctrl/cid.hpp>
 #include <format/ctrl/identity.hpp>
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "p/ctrl"
 
 void CtrlPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+    VSCOPE_FUNCTION();
     message->print();
 }
 
 void CtrlOutput::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+    VSCOPE_FUNCTION();
     auto payload = message->payload();
     auto data    = reinterpret_cast<uint8_t const*>(payload.data());
     auto size    = payload.size();
     for (auto const& output : mConfig.outputs) {
-        if ((output.format & OUTPUT_FORMAT_CTRL) != 0) {
-            output.interface->write(data, size);
+        if (!output.ctrl_support()) continue;
+        if (output.print) {
+            XINFOF(OUTPUT_PRINT_MODULE, "ctrl: %zd bytes", size);
         }
+        output.interface->write(data, size);
     }
 }
 
 void CtrlEvents::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+    VSCOPE_FUNCTION();
     if (on_cell_id) {
         auto cell_id = dynamic_cast<format::ctrl::CellId*>(message.get());
         if (cell_id) {

@@ -1,0 +1,329 @@
+#if defined(INCLUDE_GENERATOR_TOKORO)
+#include "tokoro.hpp"
+
+#include <generator/rtcm/generator.hpp>
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "p/tkr"
+
+void TokoroEphemerisUbx::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
+    VSCOPE_FUNCTION();
+    auto words = format::nav::Words::from_sfrbx_l1ca(sfrbx->words());
+
+    format::nav::gps::lnav::Subframe subframe{};
+    if (!format::nav::gps::lnav::Subframe::decode(words, subframe)) {
+        WARNF("failed to decode GPS LNAV subframe");
+        return;
+    }
+
+    ephemeris::GpsEphemeris ephemeris{};
+    if (!mGpsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) {
+        return;
+    }
+
+    mTokoro.process_ephemeris(ephemeris);
+}
+
+void TokoroEphemerisUbx::handle_gps(format::ubx::RxmSfrbx* sfrbx) {
+    VSCOPE_FUNCTION();
+    if (sfrbx->sig_id() == 0) {
+        handle_gps_lnav(sfrbx);
+    } else {
+        VERBOSEF("unsupported GPS signal id %d", sfrbx->sig_id());
+    }
+}
+
+void TokoroEphemerisUbx::handle_gal_inav(format::ubx::RxmSfrbx* sfrbx) {
+    VSCOPE_FUNCTION();
+    auto words = format::nav::Words::from_sfrbx_e5b(sfrbx->words());
+
+    format::nav::gal::InavWord word{};
+    if (!format::nav::gal::InavWord::decode(words, word)) {
+        WARNF("failed to decode GAL INAV word");
+        return;
+    }
+
+    ephemeris::GalEphemeris ephemeris{};
+    if (!mGalCollector.process(sfrbx->sv_id(), word, ephemeris)) return;
+
+    mTokoro.process_ephemeris(ephemeris);
+}
+
+void TokoroEphemerisUbx::handle_gal(format::ubx::RxmSfrbx* sfrbx) {
+    VSCOPE_FUNCTION();
+    if (sfrbx->sig_id() == 5) {
+        handle_gal_inav(sfrbx);
+    } else {
+        VERBOSEF("unsupported GAL signal id %d", sfrbx->sig_id());
+    }
+}
+
+void TokoroEphemerisUbx::handle_bds_d1(format::ubx::RxmSfrbx* sfrbx) {
+    VSCOPE_FUNCTION();
+    auto words = format::nav::Words::from_sfrbx_bds_d1(sfrbx->words());
+
+    format::nav::D1Subframe subframe{};
+    if (!format::nav::D1Subframe::decode(words, sfrbx->sv_id(), subframe)) {
+        WARNF("failed to decode BDS D1 subframe");
+        return;
+    }
+
+    ephemeris::BdsEphemeris ephemeris{};
+    if (!mBdsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) return;
+
+    mTokoro.process_ephemeris(ephemeris);
+}
+
+void TokoroEphemerisUbx::handle_bds(format::ubx::RxmSfrbx* sfrbx) {
+    VSCOPE_FUNCTION();
+    if (sfrbx->sig_id() == 0) {
+        handle_bds_d1(sfrbx);
+    } else {
+        VERBOSEF("unsupported BDS signal id %d", sfrbx->sig_id());
+    }
+}
+
+void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message) {
+    VSCOPE_FUNCTION();
+    auto ptr = message.get();
+    if (!ptr) return;
+
+    auto sfrbx = dynamic_cast<format::ubx::RxmSfrbx*>(ptr);
+    if (!sfrbx) return;
+
+    if (sfrbx->gnss_id() == 0) {
+        handle_gps(sfrbx);
+    } else if (sfrbx->gnss_id() == 2) {
+        handle_gal(sfrbx);
+    } else if (sfrbx->gnss_id() == 3) {
+        handle_bds(sfrbx);
+    }
+}
+
+//
+//
+//
+
+void TokoroLocation::inspect(streamline::System&, DataType const& location) {
+    VSCOPE_FUNCTION();
+    TODOF("TokoroLocation");
+}
+
+//
+//
+//
+
+Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
+               scheduler::Scheduler& scheduler)
+    : mOutput(output), mConfig(config), mScheduler(scheduler) {
+    VSCOPE_FUNCTION();
+    mGenerator = std::unique_ptr<generator::tokoro::Generator>(new generator::tokoro::Generator{});
+    mReferenceStation = nullptr;
+    mPeriodicTask     = nullptr;
+
+    mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
+    mGenerator->set_rtoc(mConfig.rtoc);
+    mGenerator->set_ocit(mConfig.ocit);
+
+    if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
+        // Nothing to do, the generator will generate when assistance data is received
+    } else if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStep ||
+               mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepAligned) {
+        // Setup a periodic timer to generate every time step
+        auto interval = std::chrono::milliseconds(static_cast<int>(mConfig.time_step * 1000.0));
+        mPeriodicTask =
+            std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
+        mPeriodicTask->callback = [this]() {
+            ASSERT(mGenerator, "generator is null");
+            if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepAligned) {
+                generate(mGenerator->last_correction_data_time());
+            } else if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStep) {
+                generate(ts::Tai::now());
+            } else {
+                WARNF("unsupported generation strategy");
+            }
+        };
+
+        if (!mPeriodicTask->schedule(mScheduler)) {
+            WARNF("failed to schedule periodic task");
+        }
+    } else {
+        WARNF("unsupported generation strategy");
+    }
+}
+
+Tokoro::~Tokoro() {
+    VSCOPE_FUNCTION();
+}
+
+void Tokoro::update_location_information(lpp::LocationInformation location_information) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    mLastLocation = std::move(location_information.location);
+}
+
+void Tokoro::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    mGenerator->process_ephemeris(ephemeris);
+}
+
+void Tokoro::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    mGenerator->process_ephemeris(ephemeris);
+}
+
+void Tokoro::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    mGenerator->process_ephemeris(ephemeris);
+}
+
+void Tokoro::vrs_mode_fixed() {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    if (!mReferenceStation) {
+        mReferenceStation =
+            mGenerator->define_reference_station(generator::tokoro::ReferenceStationConfig{
+                Float3{
+                    mConfig.fixed_itrf_x,
+                    mConfig.fixed_itrf_y,
+                    mConfig.fixed_itrf_z,
+                },
+                Float3{
+                    mConfig.fixed_rtcm_x,
+                    mConfig.fixed_rtcm_y,
+                    mConfig.fixed_rtcm_z,
+                },
+                mConfig.generate_gps,
+                mConfig.generate_glonass,
+                mConfig.generate_galileo,
+                mConfig.generate_beidou,
+            });
+    }
+}
+
+void Tokoro::vrs_mode_dynamic() {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+
+    if (mConfig.dynamic_distance_threshold <= 0) {
+        // No threshold, generate a new VRS every time
+        mReferenceStation.reset();
+    } else if (mLastUsedLocation.has_value() && mLastLocation.has_value()) {
+        auto const& current_shape = mLastLocation.const_value();
+        auto const& last_shape    = mLastUsedLocation.const_value();
+
+        auto current_position = generator::tokoro::llh_to_ecef(
+            Float3{current_shape.latitude(), current_shape.longitude(), current_shape.altitude()},
+            generator::tokoro::ellipsoid::WGS84);
+        auto last_position = generator::tokoro::llh_to_ecef(
+            Float3{last_shape.latitude(), last_shape.longitude(), last_shape.altitude()},
+            generator::tokoro::ellipsoid::WGS84);
+
+        auto distance_km = (current_position - last_position).length() / 1000.0;
+        if (distance_km > mConfig.dynamic_distance_threshold) {
+            // We have moved far enough to generate a new VRS, discard the last VRS and let the code
+            // below generate a new one.
+            mReferenceStation.reset();
+        }
+    }
+
+    if (!mReferenceStation) {
+        if (!mLastLocation.has_value()) {
+            WARNF("must have a rough location to generate a VRS");
+            return;
+        }
+
+        // We don't track which coordinate system the location is in, however, that doesn't matter
+        // because (1) we only need a rough location and (2) the it will probably be in WGS84, which
+        // is aligned with ITRF current, and that's what we use for the reference station.
+        auto const& last_location_shape = mLastLocation.const_value();
+        auto        location            = generator::tokoro::llh_to_ecef(
+            Float3{
+                last_location_shape.latitude(),
+                last_location_shape.longitude(),
+                last_location_shape.altitude(),
+            },
+            generator::tokoro::ellipsoid::WGS84);
+
+        mReferenceStation =
+            mGenerator->define_reference_station(generator::tokoro::ReferenceStationConfig{
+                location,
+                location,
+                mConfig.generate_gps,
+                mConfig.generate_glonass,
+                mConfig.generate_galileo,
+                mConfig.generate_beidou,
+            });
+
+        mLastUsedLocation = mLastLocation;
+    }
+}
+
+void Tokoro::generate(ts::Tai const& generation_time) {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    if (mConfig.vrs_mode == TokoroConfig::VrsMode::Fixed) {
+        vrs_mode_fixed();
+    } else if (mConfig.vrs_mode == TokoroConfig::VrsMode::Dynamic) {
+        vrs_mode_dynamic();
+    } else {
+        WARNF("unsupported VRS mode");
+        return;
+    }
+
+    if (!mReferenceStation) {
+        WARNF("reference station is null");
+        return;
+    }
+
+    mReferenceStation->set_shaprio_correction(mConfig.shapiro_correction);
+    mReferenceStation->set_antenna_phase_variation_correction(
+        mConfig.antenna_phase_variation_correction);
+    mReferenceStation->set_earth_solid_tides_correction(mConfig.earth_solid_tides_correction);
+    mReferenceStation->set_phase_windup_correction(mConfig.phase_windup_correction);
+    mReferenceStation->set_tropospheric_height_correction(mConfig.tropospheric_height_correction);
+    mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
+
+    mReferenceStation->generate(generation_time);
+
+    auto messages = mReferenceStation->produce();
+    INFOF("generated %d RTCM messages", messages.size());
+    LOGLET_DINDENT_SCOPE();
+    for (auto& submessage : messages) {
+        auto buffer = submessage.data().data();
+        auto size   = submessage.data().size();
+        DEBUGF("message: %4u: %zu bytes", submessage.id(), size);
+
+        // TODO(ewasjon): These message should be passed back into the system
+        for (auto const& output : mOutput.outputs) {
+            if (!output.rtcm_support()) continue;
+            if (output.print) {
+                XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), size);
+            }
+
+            output.interface->write(buffer, size);
+        }
+    }
+}
+
+void Tokoro::inspect(streamline::System&, DataType const& message) {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+
+    if (!message) {
+        return;
+    }
+
+    auto new_assistance_data = mGenerator->process_lpp(*message.get());
+    if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
+        if (new_assistance_data) {
+            generate(mGenerator->last_correction_data_time());
+        } else {
+            DEBUGF("skipping generation, no new assistance data");
+        }
+    }
+}
+
+#endif

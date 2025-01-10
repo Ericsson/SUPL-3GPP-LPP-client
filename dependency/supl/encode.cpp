@@ -31,13 +31,13 @@
 namespace supl {
 
 // NOTE: Empty encode used for determine the final length of the ULP/PDU.
-static int encode_to_length_cb(const void* , size_t , void* ) {
+static int encode_to_length_cb(void const*, size_t, void*) {
     return 0;
 }
 
-static asn_enc_rval_t uper_encode_to_length(const asn_TYPE_descriptor_t* td,
-                                            const asn_per_constraints_t* constraints,
-                                            const void*                  sptr) {
+static asn_enc_rval_t uper_encode_to_length(asn_TYPE_descriptor_t const* td,
+                                            asn_per_constraints_t const* constraints,
+                                            void const*                  sptr) {
     return uper_encode(td, constraints, sptr, encode_to_length_cb, NULL);
 }
 
@@ -110,7 +110,7 @@ static OCTET_STRING binary_encoded_octet(size_t max_length, int64_t from) {
     return octet;
 }
 
-static OCTET_STRING octet_string_from(const uint8_t* data, size_t size) {
+static OCTET_STRING octet_string_from(uint8_t const* data, size_t size) {
     OCTET_STRING octet{};
     octet.size = size;
     octet.buf  = (uint8_t*)calloc(1, octet.size);
@@ -177,7 +177,7 @@ static SLPAddress encode_slp_address(Identity identity) {
         SLPAddress result{};
         result.present = SLPAddress_PR_fQDN;
         result.choice.fQDN =
-            octet_string_from(reinterpret_cast<const uint8_t*>(identity.data.fQDN.data()),
+            octet_string_from(reinterpret_cast<uint8_t const*>(identity.data.fQDN.data()),
                               static_cast<int>(identity.data.fQDN.size()));
         return result;
     }
@@ -279,7 +279,7 @@ static void encode_session(ULP_PDU* pdu, Session::SET& set, Session::SLP& slp) {
     }
 }
 
-static ::SETCapabilities encode_setcapabilities(const supl::SETCapabilities& sETCapabilities) {
+static ::SETCapabilities encode_setcapabilities(supl::SETCapabilities const& sETCapabilities) {
     ::PosProtocol posProtocol{};
     posProtocol.ver2_PosProtocol_extension = helper::asn1_allocate<Ver2_PosProtocol_extension>();
 
@@ -329,14 +329,14 @@ static ::SETCapabilities encode_setcapabilities(const supl::SETCapabilities& sET
     return result;
 }
 
-static ::LocationId encode_locationid(const supl::LocationID& locationID) {
+static ::LocationId encode_locationid(supl::LocationID const& locationID) {
     ::LocationId result{};
     result.cellInfo = encode_cellinfo(locationID.cell);
     result.status   = Status_current;
     return result;
 }
 
-static ::PosPayLoad encode_pospayload(const std::vector<supl::Payload>& payloads) {
+static ::PosPayLoad encode_pospayload(std::vector<supl::Payload> const& payloads) {
     auto lpppayload =
         helper::asn1_allocate<Ver2_PosPayLoad_extension::Ver2_PosPayLoad_extension__lPPPayload>();
     asn_sequence_empty(&lpppayload->list);
@@ -356,7 +356,7 @@ static ::PosPayLoad encode_pospayload(const std::vector<supl::Payload>& payloads
 }
 
 EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, const START& message) {
-    SCOPE_FUNCTIONF("START");
+    VSCOPE_FUNCTIONF("START");
 
     auto ulp_pdu = create_message(UlpMessage_PR_msSUPLSTART, version);
     SUPL_DEFER {
@@ -375,7 +375,7 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, con
 
 EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
                       const POSINIT& message) {
-    SCOPE_FUNCTIONF("POSINIT");
+    VSCOPE_FUNCTIONF("POSINIT");
 
     auto ulp_pdu = create_message(UlpMessage_PR_msSUPLPOSINIT, version);
     SUPL_DEFER {
@@ -393,7 +393,7 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
 }
 
 EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, const POS& message) {
-    SCOPE_FUNCTIONF("POS");
+    VSCOPE_FUNCTIONF("POS");
 
     auto ulp_pdu = create_message(UlpMessage_PR_msSUPLPOS, version);
     SUPL_DEFER {

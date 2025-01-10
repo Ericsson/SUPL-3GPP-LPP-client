@@ -42,6 +42,7 @@ static std::vector<std::string> split(std::string const& str, char delim) {
 #include "config/output.cpp"
 #ifdef INCLUDE_GENERATOR_RTCM
 #include "config/lpp2rtcm.cpp"
+#include "config/lpp2frame_rtcm.cpp"
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
 #include "config/lpp2spartn.cpp"
@@ -53,7 +54,7 @@ static std::vector<std::string> split(std::string const& str, char delim) {
 #include "config/data_tracing.cpp"
 #endif
 
-static void dump(Config* config) {
+void dump(Config* config) {
     DEBUGF("config:");
     LOGLET_DINDENT_SCOPE();
 
@@ -105,6 +106,11 @@ static void dump(Config* config) {
         LOGLET_DINDENT_SCOPE();
         lpp2rtcm::dump(config->lpp2rtcm);
     }
+    {
+        DEBUGF("lpp2frame-rtcm:");
+        LOGLET_DINDENT_SCOPE();
+        lpp2frame_rtcm::dump(config->lpp2frame_rtcm);
+    }
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
@@ -139,7 +145,7 @@ static void dump(Config* config) {
 }
 
 bool parse(int argc, char** argv, Config* config) {
-    args::ArgumentParser parser("S3LP Client (" CLIENT_VERSION ")");
+    args::ArgumentParser parser("S3LC Client (" CLIENT_VERSION ")");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
@@ -174,6 +180,7 @@ bool parse(int argc, char** argv, Config* config) {
     gnss::setup();
 #ifdef INCLUDE_GENERATOR_RTCM
     lpp2rtcm::setup();
+    lpp2frame_rtcm::setup();
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     lpp2spartn::setup();
@@ -190,7 +197,7 @@ bool parse(int argc, char** argv, Config* config) {
     try {
         parser.ParseCLI(argc, argv);
         if (version) {
-            std::cout << "S3LP Client (" << CLIENT_VERSION << ")" << std::endl;
+            std::cout << "S3LC Client (" << CLIENT_VERSION << ")" << std::endl;
             return true;
         }
 
@@ -203,6 +210,7 @@ bool parse(int argc, char** argv, Config* config) {
         gnss::parse(config);
 #ifdef INCLUDE_GENERATOR_RTCM
         lpp2rtcm::parse(config);
+        lpp2frame_rtcm::parse(config);
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
         lpp2spartn::parse(config);
@@ -240,8 +248,6 @@ bool parse(int argc, char** argv, Config* config) {
         config->tokoro.generate_galileo &= config->gnss.galileo;
         config->tokoro.generate_beidou &= config->gnss.beidou;
 #endif
-
-        dump(config);
 
         return true;
     } catch (args::ValidationError const& e) {

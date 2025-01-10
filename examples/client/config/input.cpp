@@ -26,16 +26,10 @@ static args::ValueFlagList<std::string> gArgs{
     "    reconnect=<true|false>\n"
     "  tcp-server:\n"
     "    port=<port>\n"
-    "  udp-client:\n"
-    "    host=<host>\n"
-    "    port=<port>\n"
     "  udp-server:\n"
     "    port=<port>\n"
     "  unix-socket:\n"
     "    path=<path>\n"
-    "  i2c:\n"
-    "    device=<device>\n"
-    "    address=<address>\n"
     "\n"
     "Formats:\n"
     "  all, ubx, nmea, rtcm, ctrl, lpp-uper\n",
@@ -273,9 +267,7 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
         }
     }
 
-    // TODO(ewasjon): Implement reconnect
-
-    auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, port));
+    auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, port, reconnect));
     return {format, print, std::move(input)};
 }
 
@@ -302,36 +294,6 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
 
     auto input = std::unique_ptr<io::Input>(new io::TcpServerInput("0.0.0.0", port));
     return {format, print, std::move(input)};
-}
-
-static InputInterface
-parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto print  = parse_bool_option(options, "udp-client", "print", false);
-    if (options.find("host") == options.end()) {
-        throw args::RequiredError("--input udp-client: missing `host` option");
-    }
-    if (options.find("port") == options.end()) {
-        throw args::RequiredError("--input udp-client: missing `port` option");
-    }
-
-    auto host = options.at("host");
-    auto port = 0;
-    try {
-        port = std::stoi(options.at("port"));
-    } catch (...) {
-        throw args::ParseError("--input udp-client: `port` must be an integer, got `" +
-                               options.at("port") + "'");
-    }
-
-    if (port < 0 || port > 65535) {
-        throw args::ParseError("--input udp-client: `port` must be in the range [0, 65535], got `" +
-                               std::to_string(port) + "'");
-    }
-
-    // TODO(ewasjon): Implement
-    throw args::RequiredError("Not implemented");
-    return {};
 }
 
 static InputInterface
@@ -374,30 +336,6 @@ parse_unix_socket(std::unordered_map<std::string, std::string> const& options) {
     return {};
 }
 
-static InputInterface parse_i2c(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto print  = parse_bool_option(options, "i2c", "print", false);
-    if (options.find("device") == options.end()) {
-        throw args::RequiredError("--input i2c: missing `device` option");
-    }
-    if (options.find("address") == options.end()) {
-        throw args::RequiredError("--input i2c: missing `address` option");
-    }
-
-    auto device  = options.at("device");
-    auto address = 0;
-    try {
-        address = std::stoi(options.at("address"));
-    } catch (...) {
-        throw args::ParseError("--input i2c: `address` must be an integer, got `" +
-                               options.at("address") + "'");
-    }
-
-    // TODO: Implement
-    throw args::RequiredError("Not implemented");
-    return {};
-}
-
 static InputInterface parse_interface(std::string const& source) {
     std::unordered_map<std::string, std::string> options;
 
@@ -415,10 +353,8 @@ static InputInterface parse_interface(std::string const& source) {
     if (parts[0] == "serial") return parse_serial(options);
     if (parts[0] == "tcp-client") return parse_tcp_client(options);
     if (parts[0] == "tcp-server") return parse_tcp_server(options);
-    if (parts[0] == "udp-client") return parse_udp_client(options);
     if (parts[0] == "udp-server") return parse_udp_server(options);
     if (parts[0] == "unix-socket") return parse_unix_socket(options);
-    if (parts[0] == "i2c") return parse_i2c(options);
     throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");
 }
 

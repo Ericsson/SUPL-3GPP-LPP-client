@@ -1,19 +1,12 @@
 #include <args.hpp>
 #include <format/ctrl/cid.hpp>
 #include <format/ctrl/identity.hpp>
-#include <format/ctrl/parser.hpp>
-#include <format/lpp/uper_parser.hpp>
-#include <format/nmea/message.hpp>
-#include <format/nmea/parser.hpp>
-#include <format/ubx/message.hpp>
-#include <format/ubx/parser.hpp>
+
 #include <loglet/loglet.hpp>
 #include <lpp/assistance_data.hpp>
-#include <lpp/client.hpp>
-#include <lpp/session.hpp>
-#include <scheduler/scheduler.hpp>
-#include <streamline/system.hpp>
+#include <lpp/messages/provide_location_information.hpp>
 
+#include <arpa/inet.h>
 #include <thread>
 #include <unistd.h>
 
@@ -22,70 +15,114 @@
 #endif
 
 #include "processor/control.hpp"
+#include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
+#include "processor/nmea.hpp"
+#include "processor/ubx.hpp"
+
+#if defined(INCLUDE_GENERATOR_RTCM)
+#include "processor/lpp2frame_rtcm.hpp"
+#include "processor/lpp2rtcm.hpp"
+#endif
+
+#if defined(INCLUDE_GENERATOR_SPARTN)
+#include "processor/lpp2spartn.hpp"
+#endif
+
+#if defined(INCLUDE_GENERATOR_TOKORO)
+#include "processor/tokoro.hpp"
+#endif
 
 #include "client.hpp"
 
 #define LOGLET_CURRENT_MODULE "client"
 
-struct Client {
-    Config                                                config;
-    scheduler::Scheduler                                  scheduler;
-    streamline::System                                    stream;
-    std::vector<std::unique_ptr<format::nmea::Parser>>    nmea_parsers;
-    std::vector<std::unique_ptr<format::ubx::Parser>>     ubx_parsers;
-    std::vector<std::unique_ptr<format::ctrl::Parser>>    ctrl_parsers;
-    std::vector<std::unique_ptr<format::lpp::UperParser>> lpp_uper_parsers;
-};
+static void client_connected(Program& program, lpp::Client& client) {
+    if (!program.cell) {
+        ERRORF("internal error: no cell information");
+        return;
+    }
 
-lpp::PeriodicSessionHandle gAssistanceDataSession{};
-
-static void client_connected(Client& program, lpp::Client& client) {
-    gAssistanceDataSession = client.request_assistance_data({
+    program.assistance_data_session = client.request_assistance_data({
         program.config.assistance_data.type,
-        program.config.assistance_data.cell,
-        [](lpp::Client& client, lpp::Message message) {
-            INFOF("received message (non-periodic)");
+        *program.cell.get(),
+        [&program](lpp::Client&, lpp::Message message) {
+            INFOF("provide assistance data (non-periodic)");
+            program.stream.push(std::move(message));
         },
-        [](lpp::Client& client, lpp::PeriodicSessionHandle session, lpp::Message message) {
-            INFOF("received message (periodic)");
+        [&program](lpp::Client&, lpp::PeriodicSessionHandle, lpp::Message message) {
+            INFOF("provide assistance data (periodic)");
+            program.stream.push(std::move(message));
         },
-        [](lpp::Client& client, lpp::PeriodicSessionHandle session) {
-            INFOF("start of assistance data");
+        [](lpp::Client&, lpp::PeriodicSessionHandle) {
+            INFOF("request assistance data (started)");
         },
-        [](lpp::Client& client, lpp::PeriodicSessionHandle session) {
-            INFOF("end of assistance data");
+        [](lpp::Client&, lpp::PeriodicSessionHandle) {
+            INFOF("request assistance data (ended)");
         },
     });
+
+    if (program.config.location_information.unsolicited) {
+        TODOF("unsolicited location information");
+    }
 }
 
-static void client_initialize(Client& program, lpp::Client& client) {
+static void client_initialize(Program& program, lpp::Client& client) {
     client.on_connected = [&program](lpp::Client& client) {
         INFOF("connected to LPP server");
         client_connected(program, client);
     };
 
-    client.on_disconnected = [](lpp::Client& client) {
+    client.on_disconnected = [](lpp::Client&) {
         INFOF("disconnected from LPP server");
         // TODO: reconnect
     };
 
-    client.on_request_location_information = [](lpp::Client&                  client,
-                                                lpp::TransactionHandle const& transaction,
-                                                lpp::Message const&           message) {
-        INFOF("received request location information");
+    client.on_request_location_information = [](lpp::Client&, lpp::TransactionHandle const&,
+                                                lpp::Message const&) {
+        INFOF("request location information");
         return false;
     };
 
-    client.on_provide_location_information = [](lpp::Client&                               client,
-                                                lpp::LocationInformationDelivery const&    delivery,
-                                                lpp::messages::ProvideLocationInformation& data) {
-        INFOF("providing location information");
-        return false;
-    };
+    client.on_provide_location_information =
+        [&program](lpp::Client& client, lpp::LocationInformationDelivery const& delivery,
+                   lpp::messages::ProvideLocationInformation& data) {
+            INFOF("provide location information");
+
+            if (program.config.location_information.fake.enabled) {
+                DEBUGF("using simulated location information");
+
+                lpp::LocationInformation info{};
+                info.time     = ts::Tai::now();
+                info.location = lpp::LocationShape::ha_ellipsoid_altitude_with_uncertainty(
+                    program.config.location_information.fake.latitude,
+                    program.config.location_information.fake.longitude,
+                    program.config.location_information.fake.altitude,
+                    lpp::HorizontalAccuracy::to_ellipse_68(1, 1, 0),
+                    lpp::VerticalAccuracy::from_1sigma(1));
+
+                program.latest_location_information           = info;
+                program.latest_location_information_submitted = false;
+            }
+
+            if (program.latest_location_information.has_value()) {
+                if (program.latest_location_information_submitted) {
+                    DEBUGF("location information already submitted");
+                    return false;
+                }
+
+                data.location_information = program.latest_location_information.const_value();
+                data.gnss_metrics         = program.latest_gnss_metrics;
+                program.latest_location_information_submitted = true;
+                return true;
+            }
+
+            DEBUGF("no location information available");
+            return false;
+        };
 }
 
-static void initialize_inputs(Client& client, InputConfig const& config) {
+static void initialize_inputs(Program& program, InputConfig const& config) {
     for (auto const& input : config.inputs) {
         format::nmea::Parser*    nmea{};
         format::ubx::Parser*     ubx{};
@@ -108,21 +145,21 @@ static void initialize_inputs(Client& client, InputConfig const& config) {
             continue;
         }
 
-        if (nmea) client.nmea_parsers.push_back(std::unique_ptr<format::nmea::Parser>(nmea));
-        if (ubx) client.ubx_parsers.push_back(std::unique_ptr<format::ubx::Parser>(ubx));
-        if (ctrl) client.ctrl_parsers.push_back(std::unique_ptr<format::ctrl::Parser>(ctrl));
+        if (nmea) program.nmea_parsers.push_back(std::unique_ptr<format::nmea::Parser>(nmea));
+        if (ubx) program.ubx_parsers.push_back(std::unique_ptr<format::ubx::Parser>(ubx));
+        if (ctrl) program.ctrl_parsers.push_back(std::unique_ptr<format::ctrl::Parser>(ctrl));
         if (lpp_uper)
-            client.lpp_uper_parsers.push_back(std::unique_ptr<format::lpp::UperParser>(lpp_uper));
+            program.lpp_uper_parsers.push_back(std::unique_ptr<format::lpp::UperParser>(lpp_uper));
 
-        input.interface->schedule(client.scheduler);
-        input.interface->callback = [&client, nmea, ubx, ctrl,
+        input.interface->schedule(program.scheduler);
+        input.interface->callback = [&program, nmea, ubx, ctrl,
                                      lpp_uper](io::Input&, uint8_t* buffer, size_t count) {
             if (nmea) {
                 nmea->append(buffer, count);
                 for (;;) {
                     auto message = nmea->try_parse();
                     if (!message) break;
-                    client.stream.push(std::move(message));
+                    program.stream.push(std::move(message));
                 }
             }
 
@@ -131,7 +168,7 @@ static void initialize_inputs(Client& client, InputConfig const& config) {
                 for (;;) {
                     auto message = ubx->try_parse();
                     if (!message) break;
-                    client.stream.push(std::move(message));
+                    program.stream.push(std::move(message));
                 }
             }
 
@@ -140,7 +177,7 @@ static void initialize_inputs(Client& client, InputConfig const& config) {
                 for (;;) {
                     auto message = ctrl->try_parse();
                     if (!message) break;
-                    client.stream.push(std::move(message));
+                    program.stream.push(std::move(message));
                 }
             }
 
@@ -151,14 +188,14 @@ static void initialize_inputs(Client& client, InputConfig const& config) {
                     if (!message) break;
                     XDEBUGF("lpp/msg", "create %p", message);
                     auto lpp_message = lpp::Message{message};
-                    client.stream.push(std::move(lpp_message));
+                    program.stream.push(std::move(lpp_message));
                 }
             }
         };
     }
 }
 
-static void initialize_outputs(Client& client, OutputConfig const& config) {
+static void initialize_outputs(Program& program, OutputConfig const& config) {
     VSCOPE_FUNCTION();
 
     bool lpp_xer_output  = false;
@@ -166,32 +203,155 @@ static void initialize_outputs(Client& client, OutputConfig const& config) {
     bool nmea_output     = false;
     bool ubx_output      = false;
     bool ctrl_output     = false;
-    bool spartn_output   = false;
-    bool lpp_rf_output   = false;
+    // TODO(ewasjon): bool spartn_output   = false;
+    // TODO(ewasjon): bool rtcm_output   = false;
     for (auto& output : config.outputs) {
         DEBUGF("output %p: %s%s%s%s%s%s%s", output.interface.get(),
                (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
+               (output.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
                (output.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
                (output.format & OUTPUT_FORMAT_LPP_XER) ? "lpp-xer " : "",
-               (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (output.format & OUTPUT_FORMAT_LPP_RTCM_FRAME) ? "lpp-rf " : "");
+               (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "");
 
         if ((output.format & OUTPUT_FORMAT_LPP_XER) != 0) lpp_xer_output = true;
         if ((output.format & OUTPUT_FORMAT_LPP_UPER) != 0) lpp_uper_output = true;
         if ((output.format & OUTPUT_FORMAT_NMEA) != 0) nmea_output = true;
         if ((output.format & OUTPUT_FORMAT_UBX) != 0) ubx_output = true;
         if ((output.format & OUTPUT_FORMAT_CTRL) != 0) ctrl_output = true;
-        if ((output.format & OUTPUT_FORMAT_SPARTN) != 0) spartn_output = true;
-        if ((output.format & OUTPUT_FORMAT_LPP_RTCM_FRAME) != 0) lpp_rf_output = true;
+        // TODO(ewasjon): if ((output.format & OUTPUT_FORMAT_SPARTN) != 0) spartn_output = true;
+        // TODO(ewasjon): if ((output.format & OUTPUT_FORMAT_RTCM) != 0) rtcm_output = true;
     }
 
-    if (lpp_xer_output) client.stream.add_inspector<LppXerOutput>(config);
-    if (lpp_uper_output) client.stream.add_inspector<LppUperOutput>(config);
-    // if (nmea_output) client.stream.add_inspector<NmeaOutput>(config);
-    // if (ubx_output) client.stream.add_inspector<UbxOutput>(config);
-    if (ctrl_output) client.stream.add_inspector<CtrlOutput>(config);
+    if (lpp_xer_output) program.stream.add_inspector<LppXerOutput>(config);
+    if (lpp_uper_output) program.stream.add_inspector<LppUperOutput>(config);
+    if (nmea_output) program.stream.add_inspector<NmeaOutput>(config);
+    if (ubx_output) program.stream.add_inspector<UbxOutput>(config);
+    if (ctrl_output) program.stream.add_inspector<CtrlOutput>(config);
+}
+
+static void setup_location_stream(Program& program) {
+    if (program.config.location_information.use_ubx_location) {
+        if (program.ubx_parsers.empty()) {
+            WARNF("location from UBX enabled but no UBX input is configured");
+        }
+
+        DEBUGF("location from UBX enabled");
+        program.stream.add_inspector<UbxLocation>(program.config.location_information);
+    }
+
+    if (program.config.location_information.use_nmea_location) {
+        if (program.nmea_parsers.empty()) {
+            WARNF("location from NMEA enabled but no NMEA input is configured");
+        }
+
+        DEBUGF("location from NMEA enabled");
+        program.stream.add_consumer<NmeaLocation>(program.config.location_information);
+    }
+
+    if (program.config.location_information.use_ubx_location ||
+        program.config.location_information.use_nmea_location) {
+        program.stream.add_inspector<LocationCollector>(program);
+        program.stream.add_inspector<MetricsCollector>(program);
+    } else {
+        WARNF("location information requires UBX or NMEA location");
+    }
+}
+
+static void setup_control_stream(Program& program) {
+    if (program.ctrl_parsers.empty()) {
+        DEBUGF("no input with control messages, control messages will be ignored");
+        return;
+    }
+
+    auto ctrl_events = program.stream.add_inspector<CtrlEvents>();
+    if (!ctrl_events) {
+        WARNF("failed to create control events inspector, control messages will be ignored");
+        return;
+    }
+
+    ctrl_events->on_cell_id = [&program](format::ctrl::CellId const& cell) {
+        supl::Cell new_cell{};
+        if (cell.is_nr()) {
+            new_cell = supl::Cell::nr(cell.mcc(), cell.mnc(), cell.tac(), cell.cell());
+        } else {
+            new_cell = supl::Cell::lte(cell.mcc(), cell.mnc(), cell.tac(), cell.cell());
+        }
+
+        auto cell_changed = !program.cell || (*program.cell.get() != new_cell);
+        program.cell.reset(new supl::Cell(new_cell));
+
+        if (new_cell.type == supl::Cell::Type::GSM) {
+            WARNF("GSM is not supported");
+        } else if (new_cell.type == supl::Cell::Type::LTE) {
+            INFOF("cell: LTE %" PRIi64 ":%" PRIi64 ":%" PRIi64 ":%" PRIu64 " %s",
+                  new_cell.data.lte.mcc, new_cell.data.lte.mnc, new_cell.data.lte.tac,
+                  new_cell.data.lte.ci, cell_changed ? "(changed)" : "");
+        } else if (new_cell.type == supl::Cell::Type::NR) {
+            INFOF("cell: NR %" PRIi64 ":%" PRIi64 ":%" PRIi64 ":%" PRIu64 " %s",
+                  new_cell.data.nr.mcc, new_cell.data.nr.mnc, new_cell.data.nr.tac,
+                  new_cell.data.nr.ci, cell_changed ? "(changed)" : "");
+        } else {
+            WARNF("unsupported cell type");
+        }
+
+        if (cell_changed && program.cell) {
+            if (!program.assistance_data_session.is_valid()) {
+                WARNF("cell id received, but no assistance data session is active (this is normal "
+                      "if you're waiting for the cell at startup)");
+                return;
+            } else if (!program.client) {
+                WARNF("cell id received, but no client is active (--ls-disable is set)");
+                return;
+            }
+
+            if (!program.client->update_assistance_data(program.assistance_data_session,
+                                                        *program.cell.get())) {
+                WARNF("failed to update assistance data with new cell");
+            }
+        }
+    };
+
+    ctrl_events->on_identity_imsi = [&program](format::ctrl::IdentityImsi const& identity) {
+        if (program.identity) {
+            WARNF("identity already set, ignoring new identity");
+            return;
+        }
+
+        program.identity = std::unique_ptr<supl::Identity>(
+            new supl::Identity(supl::Identity::imsi(identity.imsi())));
+    };
+}
+
+static void setup_lpp2osr(Program& program) {
+#if defined(INCLUDE_GENERATOR_RTCM)
+    if (program.config.lpp2rtcm.enabled) {
+        program.stream.add_inspector<Lpp2Rtcm>(program.config.output, program.config.lpp2rtcm);
+    }
+
+    if (program.config.lpp2frame_rtcm.enabled) {
+        program.stream.add_inspector<Lpp2FrameRtcm>(program.config.output,
+                                                    program.config.lpp2frame_rtcm);
+    }
+#endif
+}
+
+static void setup_lpp2spartn(Program& program) {
+#if defined(INCLUDE_GENERATOR_SPARTN)
+    if (program.config.lpp2spartn.enabled) {
+        program.stream.add_inspector<Lpp2Spartn>(program.config.output, program.config.lpp2spartn);
+    }
+#endif
+}
+
+static void setup_tokoro(Program& program) {
+#if defined(INCLUDE_GENERATOR_TOKORO)
+    if (program.config.tokoro.enabled) {
+        program.stream.add_inspector<Tokoro>(program.config.output, program.config.tokoro,
+                                             program.scheduler);
+    }
+#endif
 }
 
 int main(int argc, char** argv) {
@@ -207,17 +367,26 @@ int main(int argc, char** argv) {
     loglet::set_level(loglet::Level::Error);
 #endif
 
-    INFOF("S3LP Client (" CLIENT_VERSION ")");
+    INFOF("S3LC Client (" CLIENT_VERSION ")");
 
-    Client program{};
-    if (!config::parse(argc, argv, &program.config)) {
+    Config config{};
+    if (!config::parse(argc, argv, &config)) {
         return 1;
     }
 
-    loglet::set_level(program.config.logging.log_level);
-    for (auto const& [module, level] : program.config.logging.module_levels) {
+    loglet::set_level(config.logging.log_level);
+    #if !defined(DEBUG)
+#error "DEBUG must be defined"
+    #endif
+    VERBOSEF("verbose logging enabled");
+    for (auto const& [module, level] : config.logging.module_levels) {
         loglet::set_module_level(module.c_str(), level);
     }
+
+    config::dump(&config);
+
+    Program program{};
+    program.config = std::move(config);
 
 #ifdef DATA_TRACING
     if (program.config.data_tracing.enabled) {
@@ -228,138 +397,84 @@ int main(int argc, char** argv) {
     }
 #endif
 
+    program.stream = streamline::System{program.scheduler};
+
     initialize_inputs(program, program.config.input);
     initialize_outputs(program, program.config.output);
 
-    program.scheduler.execute();
+    setup_location_stream(program);
+    setup_control_stream(program);
 
-    return 0;
+    setup_lpp2osr(program);
+    setup_lpp2spartn(program);
+    setup_tokoro(program);
 
-    loglet::disable_module("sched");
-    loglet::disable_module("supl");
-    loglet::disable_module("lpp/s");
-    // loglet::disable_module("lpp/c");
-    // loglet::disable_module("lpp/ad");
-    // loglet::disable_module("lpp/ps");
+    if (program.config.location_server.enabled) {
+        if (program.config.identity.wait_for_identity) {
+            INFOF("waiting for identity");
 
-    // gConfig.cell          = supl::Cell::lte(240, 1, 1, 3);
-    // gConfig.output_format = OutputFormat::RTCM;
-
-    lpp::Client client{
-        supl::Identity::msisdn(919825098250),
-        "129.192.83.118",
-        5431,
-    };
-
-    client_initialize(program, client);
-
-    client.schedule(&program.scheduler);
-
-#if 0
-
-    lpp::Session session{
-        lpp::VERSION_16_4_0,
-        supl::Identity::msisdn(919825098250),
-    };
-
-    session.on_connected = [](lpp::Session& session) {
-        INFOF("connected to LPP server");
-    };
-
-    session.on_disconnected = [](lpp::Session& session) {
-        INFOF("disconnected from LPP server");
-    };
-
-    session.on_established = [](lpp::Session& session) {
-        INFOF("established with LPP server");
-
-        transaction = session.create_transaction();
-
-        auto request_assistance_data =
-            lpp::create_request_assistance_data(lpp::RequestAssistanceData{
-                .cell                       = supl::Cell::lte(240, 1, 1, 3),
-                .periodic_session_id        = 1,
-                .periodic_session_initiator = false,
-                .gps                        = true,
-                .glonass                    = true,
-                .galileo                    = true,
-                .bds                        = false,
-                .rtk_observations           = 1,
-                .rtk_residuals              = 1,
-                .rtk_bias_information       = 1,
-                .rtk_reference_station_info = 1,
-            });
-        transaction->send(request_assistance_data);
-    };
-
-    session.on_begin_transaction = [](lpp::Session&                 session,
-                                      const lpp::TransactionHandle& transaction) {
-        INFOF("(%s%ld) transaction started", transaction.is_client() ? "C" : "S", transaction.id());
-    };
-
-    session.on_end_transaction = [](lpp::Session&                 session,
-                                    const lpp::TransactionHandle& transaction) {
-        INFOF("(%s%ld) transaction ended", transaction.is_client() ? "C" : "S", transaction.id());
-    };
-
-    session.on_message = [](lpp::Session& session, const lpp::TransactionHandle& transaction,
-                            lpp::Message message) {
-        INFOF("(%s%ld) received message", transaction.is_client() ? "C" : "S", transaction.id());
-    };
-
-    if (!session.connect("129.192.83.118", 5431)) {
-        ERRORF("failed to connect to LPP server");
-        return 1;
-    }
-
-    session.schedule(&scheduler);
-#endif
-
-    program.scheduler.execute();
-#if 0
-    double test = 0;
-
-    // create eventfd for testing
-    int eventfd = ::eventfd(0, EFD_NONBLOCK);
-    if (eventfd == -1) {
-        std::cerr << "Failed to create eventfd" << std::endl;
-        return 1;
-    }
-
-    // create thread for testing
-    std::thread thread([eventfd]() {
-        uint64_t value = 1;
-        while (true) {
-            std::this_thread::sleep_for(std::chrono::seconds(2));
-            if (::write(eventfd, &value, sizeof(value)) == -1) {
-                std::cerr << "Failed to write to eventfd" << std::endl;
+            if (program.config.identity.imsi || program.config.identity.msisdn ||
+                program.config.identity.ipv4) {
+                WARNF("identity from command line will be ignored");
             }
-            value += 1;
+
+            if (program.ctrl_parsers.empty()) {
+                ERRORF("no input with control messages, cannot wait for identity");
+                return 1;
+            }
+
+            program.scheduler.execute_while([&program] {
+                return program.identity == nullptr;
+            });
         }
-    });
 
-    Scheduler scheduler{};
+        if (!program.identity) {
+            if (program.config.identity.imsi) {
+                program.identity = std::unique_ptr<supl::Identity>(
+                    new supl::Identity(supl::Identity::imsi(*program.config.identity.imsi)));
+            } else if (program.config.identity.msisdn) {
+                program.identity = std::unique_ptr<supl::Identity>(
+                    new supl::Identity(supl::Identity::msisdn(*program.config.identity.msisdn)));
+            } else if (program.config.identity.ipv4) {
+                uint8_t ipv4[4];
+                if (inet_pton(AF_INET, program.config.identity.ipv4->c_str(), ipv4) != 1) {
+                    ERRORF("invalid IPv4 address: %s", program.config.identity.ipv4->c_str());
+                    return 1;
+                }
 
-    auto io_task     = new IoTask(eventfd);
-    io_task->on_read = [&test](int fd) {
-        uint64_t value;
-        if (::read(fd, &value, sizeof(value)) == -1) {
-            std::cerr << "Failed to read from eventfd" << std::endl;
+                program.identity =
+                    std::unique_ptr<supl::Identity>(new supl::Identity(supl::Identity::ipv4(ipv4)));
+            } else {
+                ERRORF("you must provide an identity to connect to the location server");
+                return 1;
+            }
         }
-        test += value;
-        std::cout << "test: " << test << std::endl;
-    };
-    scheduler.schedule(io_task);
 
-    scheduler.schedule(new PeriodicCallbackTask(
-        std::chrono::seconds(1), [&test](std::chrono::steady_clock::duration difference) {
-            test += 1;
-            std::cout << "test: " << test << ", difference: "
-                      << std::chrono::duration_cast<std::chrono::microseconds>(difference).count()
-                      << "us" << std::endl;
-        }));
+        if (program.config.assistance_data.wait_for_cell) {
+            INFOF("waiting for cell information");
+            if (program.ctrl_parsers.empty()) {
+                ERRORF("no input with control messages, cannot wait for cell information");
+                return 1;
+            }
 
-    scheduler.execute_forever();
-#endif
+            program.scheduler.execute_while([&program] {
+                return !program.cell;
+            });
+        } else {
+            program.cell.reset(new supl::Cell{program.config.assistance_data.cell});
+        }
+
+        auto client = new lpp::Client{
+            *program.identity,
+            program.config.location_server.host,
+            program.config.location_server.port,
+        };
+        program.client.reset(client);
+
+        client_initialize(program, *client);
+        client->schedule(&program.scheduler);
+    }
+
+    program.scheduler.execute();
     return 0;
 }

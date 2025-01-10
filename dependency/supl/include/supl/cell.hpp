@@ -70,4 +70,29 @@ struct Cell {
     }
 };
 
+inline bool operator==(Cell const& lhs, Cell const& rhs) {
+    if (lhs.type != rhs.type) return false;
+
+    switch (lhs.type) {
+    case Cell::Type::GSM:
+        return lhs.data.gsm.mcc == rhs.data.gsm.mcc && lhs.data.gsm.mnc == rhs.data.gsm.mnc &&
+               lhs.data.gsm.lac == rhs.data.gsm.lac && lhs.data.gsm.ci == rhs.data.gsm.ci;
+    case Cell::Type::LTE:
+        return lhs.data.lte.mcc == rhs.data.lte.mcc && lhs.data.lte.mnc == rhs.data.lte.mnc &&
+               lhs.data.lte.tac == rhs.data.lte.tac && lhs.data.lte.ci == rhs.data.lte.ci;
+    case Cell::Type::NR:
+        return lhs.data.nr.mcc == rhs.data.nr.mcc && lhs.data.nr.mnc == rhs.data.nr.mnc &&
+               lhs.data.nr.tac == rhs.data.nr.tac && lhs.data.nr.ci == rhs.data.nr.ci;
+    default: return false;
+    }
+
+#if defined(COMPILER_CANNOT_DEDUCE_UNREACHABLE)
+    return false;
+#endif
+}
+
+inline bool operator!=(Cell const& lhs, Cell const& rhs) {
+    return !(lhs == rhs);
+}
+
 }  // namespace supl

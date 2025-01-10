@@ -74,5 +74,5 @@ TabWidth:        4
 UseTab:          false
 InsertNewlineAtEOF: true
 QualifierAlignment: Right
-RemoveSemicolon: true
+RemoveSemicolon: false
 ...

@@ -120,7 +120,7 @@ public:
     Generator() NOEXCEPT;
     ~Generator() NOEXCEPT;
 
-    void process_lpp(LPP_Message const& lpp_message) NOEXCEPT;
+    bool process_lpp(LPP_Message const& lpp_message) NOEXCEPT;
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;

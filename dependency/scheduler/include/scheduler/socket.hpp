@@ -117,7 +117,7 @@ private:
 
 class TcpConnectTask {
 public:
-    EXPLICIT TcpConnectTask(std::string host, uint16_t port) NOEXCEPT;
+    EXPLICIT TcpConnectTask(std::string host, uint16_t port, bool should_reconnect) NOEXCEPT;
     ~TcpConnectTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;

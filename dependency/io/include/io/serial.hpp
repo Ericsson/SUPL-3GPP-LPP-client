@@ -25,6 +25,16 @@ enum class DataBits {
     EIGHT,
 };
 
+inline const char* data_bits_to_string(DataBits data_bits) NOEXCEPT {
+    switch (data_bits) {
+        case DataBits::FIVE: return "5";
+        case DataBits::SIX: return "6";
+        case DataBits::SEVEN: return "7";
+        case DataBits::EIGHT: return "8";
+    }
+    return "unknown";
+}
+
 /// Stop bits.
 enum class StopBits {
     /// One stop bit.
@@ -32,6 +42,14 @@ enum class StopBits {
     /// Two stop bits.
     TWO,
 };
+
+inline const char* stop_bits_to_string(StopBits stop_bits) NOEXCEPT {
+    switch (stop_bits) {
+        case StopBits::ONE: return "1";
+        case StopBits::TWO: return "2";
+    }
+    return "unknown";
+}
 
 /// Parity bit.
 enum class ParityBit {
@@ -42,6 +60,15 @@ enum class ParityBit {
     /// Even parity bit.
     EVEN,
 };
+
+inline const char* parity_bit_to_string(ParityBit parity_bit) NOEXCEPT {
+    switch (parity_bit) {
+        case ParityBit::NONE: return "none";
+        case ParityBit::ODD: return "odd";
+        case ParityBit::EVEN: return "even";
+    }
+    return "unknown";
+}
 
 /// Baud rates.
 enum class BaudRate {
@@ -106,6 +133,42 @@ enum class BaudRate {
     /// 4000000 baud.
     BR4000000,
 };
+
+inline const char* baud_rate_to_string(BaudRate baud_rate) NOEXCEPT {
+    switch (baud_rate) {
+        case BaudRate::BR50: return "50";
+        case BaudRate::BR75: return "75";
+        case BaudRate::BR110: return "110";
+        case BaudRate::BR134: return "134";
+        case BaudRate::BR150: return "150";
+        case BaudRate::BR200: return "200";
+        case BaudRate::BR300: return "300";
+        case BaudRate::BR600: return "600";
+        case BaudRate::BR1200: return "1200";
+        case BaudRate::BR1800: return "1800";
+        case BaudRate::BR2400: return "2400";
+        case BaudRate::BR4800: return "4800";
+        case BaudRate::BR9600: return "9600";
+        case BaudRate::BR19200: return "19200";
+        case BaudRate::BR38400: return "38400";
+        case BaudRate::BR57600: return "57600";
+        case BaudRate::BR115200: return "115200";
+        case BaudRate::BR230400: return "230400";
+        case BaudRate::BR460800: return "460800";
+        case BaudRate::BR500000: return "500000";
+        case BaudRate::BR576000: return "576000";
+        case BaudRate::BR921600: return "921600";
+        case BaudRate::BR1000000: return "1000000";
+        case BaudRate::BR1152000: return "1152000";
+        case BaudRate::BR1500000: return "1500000";
+        case BaudRate::BR2000000: return "2000000";
+        case BaudRate::BR2500000: return "2500000";
+        case BaudRate::BR3000000: return "3000000";
+        case BaudRate::BR3500000: return "3500000";
+        case BaudRate::BR4000000: return "4000000";
+    }
+    return "unknown";
+}
 
 /// Input from a serial port.
 class SerialInput : public Input {

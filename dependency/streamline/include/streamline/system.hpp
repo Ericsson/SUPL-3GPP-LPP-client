@@ -11,6 +11,8 @@
 #include <loglet/loglet.hpp>
 #include <scheduler/scheduler.hpp>
 
+#define LOGLET_CURRENT_MODULE "smtl"
+
 namespace streamline {
 class System {
 public:
@@ -19,15 +21,15 @@ public:
 
     ~System() { cancel(); }
 
-    System(System const&) = delete;
-    System(System&&)      = delete;
+    System(System const&)            = delete;
+    System(System&&)                 = delete;
     System& operator=(System const&) = delete;
 
     System& operator=(System&& other) {
         if (this != &other) {
             cancel();
-            mScheduler = other.mScheduler;
-            mQueues    = std::move(other.mQueues);
+            mScheduler       = other.mScheduler;
+            mQueues          = std::move(other.mQueues);
             other.mScheduler = nullptr;
         }
         return *this;
@@ -36,10 +38,10 @@ public:
     template <typename Consumer, typename... Args>
     void add_consumer(Args&&... args) {
         using DataType = typename Consumer::DataType;
-        XVERBOSEF("smtl", "add consumer %s (%s)", typeid(Consumer).name(), typeid(DataType).name());
+        DEBUGF("add consumer %s (%s)", typeid(Consumer).name(), typeid(DataType).name());
 
         if (!mScheduler) {
-            XWARNF("smtl", "invalid system state");
+            WARNF("invalid system state");
             return;
         }
 
@@ -53,11 +55,10 @@ public:
     template <typename Inspector, typename... Args>
     Inspector* add_inspector(Args&&... args) {
         using DataType = typename Inspector::DataType;
-        XVERBOSEF("smtl", "add inspector %s (%s)", typeid(Inspector).name(),
-                  typeid(DataType).name());
+        DEBUGF("add inspector %s (%s)", typeid(Inspector).name(), typeid(DataType).name());
 
         if (!mScheduler) {
-            XWARNF("smtl", "invalid system state");
+            WARNF("invalid system state");
             return nullptr;
         }
 
@@ -73,9 +74,9 @@ public:
 
     template <typename DataType>
     void push(DataType&& data) {
-        XVERBOSEF("smtl", "push %s", typeid(DataType).name());
+        DEBUGF("push %s", typeid(DataType).name());
         if (!mScheduler) {
-            XWARNF("smtl", "invalid system state");
+            WARNF("invalid system state");
             return;
         }
 
@@ -98,7 +99,7 @@ protected:
     QueueTask<DataType>* get_or_create_queue() {
         auto it = mQueues.find(std::type_index(typeid(DataType)));
         if (it == mQueues.end()) {
-            XVERBOSEF("smtl", "created queue for %s", typeid(DataType).name());
+            VERBOSEF("created queue for %s", typeid(DataType).name());
             auto queue = std::shared_ptr<QueueTask<DataType>>(new QueueTask<DataType>(*this));
             queue->schedule(mScheduler);
             mQueues[std::type_index(typeid(DataType))] = std::move(queue);
@@ -123,3 +124,5 @@ private:
     std::unordered_map<std::type_index, std::shared_ptr<void>> mQueues;
 };
 }  // namespace streamline
+
+#undef LOGLET_CURRENT_MODULE

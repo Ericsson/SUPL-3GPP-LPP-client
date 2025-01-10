@@ -477,33 +477,35 @@ Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCE
     return std::make_shared<ReferenceStation>(*this, config);
 }
 
-void Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
+bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
     VSCOPE_FUNCTION();
 
-    if (!lpp_message.lpp_MessageBody) return;
+    if (!lpp_message.lpp_MessageBody) return false;
 
     auto& body = *lpp_message.lpp_MessageBody;
-    if (body.present != LPP_MessageBody_PR_c1) return;
-    if (body.choice.c1.present != LPP_MessageBody__c1_PR_provideAssistanceData) return;
+    if (body.present != LPP_MessageBody_PR_c1) return false;
+    if (body.choice.c1.present != LPP_MessageBody__c1_PR_provideAssistanceData) return false;
 
     auto& pad = body.choice.c1.choice.provideAssistanceData;
-    if (pad.criticalExtensions.present != ProvideAssistanceData__criticalExtensions_PR_c1) return;
+    if (pad.criticalExtensions.present != ProvideAssistanceData__criticalExtensions_PR_c1)
+        return false;
     if (pad.criticalExtensions.choice.c1.present !=
         ProvideAssistanceData__criticalExtensions__c1_PR_provideAssistanceData_r9)
-        return;
+        return false;
 
     auto& message = pad.criticalExtensions.choice.c1.choice.provideAssistanceData_r9;
     find_correction_point_set(message);
 
     if (!mCorrectionPointSet) {
         WARNF("no correction point set found");
-        return;
+        return false;
     }
 
     mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
+    return true;
 }
 
 void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT {

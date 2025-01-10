@@ -20,7 +20,7 @@ static args::Flag gAssistedGnss{
 #endif
 
 static args::ValueFlag<std::string> gType{
-    gGroup, "type", "Assistance data type: OSR, SSR", {"ad-type"}, args::Options::Single,
+    gGroup, "type", "Type of assistance data to request", {"ad-type"}, args::Options::Single,
 };
 
 static args::Group          gCellInformation{gGroup, "Cell Information:"};
@@ -110,6 +110,8 @@ static args::ValueFlag<long> gSsrGridded{
 };
 
 static void setup() {
+    gType.HelpChoices({"osr", "ssr"});
+
     gOsrObservations.HelpDefault("1");
     gOsrResiduals.HelpDefault("1");
     gOsrBiasInformation.HelpDefault("1");
@@ -161,7 +163,7 @@ static void parse(Config* config) {
     } else {
         if (!gMcc || !gMnc || !gTac || !gCi) {
             throw args::RequiredError(
-                "cell information is required, use `--ad-mcc`, `--ad-mnc`, `--ad-tac`, `--ad-ci`");
+                "cell information is required, use `--mcc`, `--mnc`, `--tac`, `--ci`");
         }
 
         if (gIsNr) {
@@ -177,9 +179,9 @@ static void parse(Config* config) {
     if (gBds) ad.beidou = false;
 
     if (gType) {
-        if (gType.Get() == "OSR") {
+        if (gType.Get() == "OSR" || gType.Get() == "osr") {
             ad.type = lpp::RequestAssistanceData::Type::OSR;
-        } else if (gType.Get() == "SSR") {
+        } else if (gType.Get() == "SSR" || gType.Get() == "ssr") {
             ad.type = lpp::RequestAssistanceData::Type::SSR;
         } else {
             throw args::ParseError("invalid assistance data type: " + gType.Get());
@@ -233,15 +235,15 @@ static void dump(AssistanceDataConfig const& config) {
         if (config.cell.type == supl::Cell::Type::GSM) {
             auto const& cell = config.cell.data.gsm;
             DEBUGF("cell: GSM %" PRIi64 "-%" PRIi64 "-%" PRIi64 "-%" PRIu64, cell.mcc, cell.mnc,
-                  cell.lac, cell.ci);
+                   cell.lac, cell.ci);
         } else if (config.cell.type == supl::Cell::Type::LTE) {
             auto const& cell = config.cell.data.lte;
             DEBUGF("cell: LTE %" PRIi64 "-%" PRIi64 "-%" PRIi64 "-%" PRIu64, cell.mcc, cell.mnc,
-                  cell.tac, cell.ci);
+                   cell.tac, cell.ci);
         } else if (config.cell.type == supl::Cell::Type::NR) {
             auto const& cell = config.cell.data.nr;
             DEBUGF("cell: NR %" PRIi64 "-%" PRIi64 "-%" PRIi64 "-%" PRIu64, cell.mcc, cell.mnc,
-                  cell.tac, cell.ci);
+                   cell.tac, cell.ci);
         } else {
             DEBUGF("cell: unknown");
         }

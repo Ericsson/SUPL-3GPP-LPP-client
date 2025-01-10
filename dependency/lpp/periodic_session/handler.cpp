@@ -39,7 +39,7 @@ PeriodicSession::~PeriodicSession() {
 }
 
 void PeriodicSession::message(TransactionHandle const& transaction, Message message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     // Check if the transaction is a request transaction
     auto it = mRequestTransactions.find(transaction);
@@ -70,7 +70,7 @@ void PeriodicSession::message(TransactionHandle const& transaction, Message mess
 }
 
 void PeriodicSession::end(TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto it = mRequestTransactions.find(transaction);
     if (it != mRequestTransactions.end()) {
@@ -97,7 +97,7 @@ void PeriodicSession::periodic_begin(TransactionHandle const&) {}
 void PeriodicSession::periodic_ended(TransactionHandle const&) {}
 
 bool PeriodicSession::send_new_request(Message message) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     if (!mSession) return false;
 
     auto transaction = mSession->create_transaction();
@@ -112,7 +112,7 @@ bool PeriodicSession::send_new_request(Message message) {
 }
 
 void PeriodicSession::register_request(TransactionHandle const& transaction) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     mRequestTransactions[transaction] = std::chrono::steady_clock::now();
     if (mClient) {
         mClient->mRequestTransactions[transaction] = mHandle;
@@ -120,7 +120,7 @@ void PeriodicSession::register_request(TransactionHandle const& transaction) {
 }
 
 void PeriodicSession::unregister_request(TransactionHandle const& transaction) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     auto it = mRequestTransactions.find(transaction);
     if (it != mRequestTransactions.end()) {
         mRequestTransactions.erase(it);
@@ -132,7 +132,7 @@ void PeriodicSession::unregister_request(TransactionHandle const& transaction) {
 }
 
 void PeriodicSession::check_active_requests() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     std::vector<TransactionHandle> to_remove;
 

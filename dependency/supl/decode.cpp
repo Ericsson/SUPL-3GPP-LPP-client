@@ -27,6 +27,8 @@
 
 #include <loglet/loglet.hpp>
 
+#define LOGLET_CURRENT_MODULE "supl/decode"
+
 namespace supl {
 
 static Identity decode_identity(IPAddress& ip_address) {
@@ -49,6 +51,8 @@ static Identity decode_identity(IPAddress& ip_address) {
 }
 
 static Identity decode_identity(SETId& set_id) {
+    VSCOPE_FUNCTION();
+
     switch (set_id.present) {
     case SETId_PR_msisdn: {
         auto input = set_id.choice.msisdn;
@@ -67,6 +71,7 @@ static Identity decode_identity(SETId& set_id) {
             }
         }
 
+        VERBOSEF("msisdn: %" PRIi64, msisdn);
         return Identity::msisdn(msisdn);
     }
 
@@ -77,16 +82,17 @@ static Identity decode_identity(SETId& set_id) {
         int64_t imsi = 0;
         for (size_t i = 0; i < input.size; i++) {
             auto byte   = input.buf[i];
-            auto first  = (byte >> 8) & 0xF;
+            auto first  = (byte >> 4) & 0xF;
             auto second = (byte >> 0) & 0xF;
             if (first != 0xF) {
                 imsi = 10 * imsi + first;
             }
             if (second != 0xF) {
-                imsi = 10 * imsi + first;
+                imsi = 10 * imsi + second;
             }
         }
 
+        VERBOSEF("imsi: %" PRIi64, imsi);
         return Identity::imsi(imsi);
     }
 
@@ -100,6 +106,7 @@ static Identity decode_identity(SETId& set_id) {
     case SETId_PR_mdn:
     case SETId_PR_NOTHING:
         // TODO: Unsupported
+        WARNF("unsupported identity type: %d", set_id.present);
         return Identity::unknown();
     }
 
@@ -125,6 +132,8 @@ static Identity decode_identity(SLPAddress_t& slp_address) {
 }
 
 static bool decode_session(Session::SET& set, Session::SLP& slp, ULP_PDU* pdu) {
+    VSCOPE_FUNCTION();
+
     if (!pdu) {
         return false;
     }
@@ -149,6 +158,8 @@ static bool decode_session(Session::SET& set, Session::SLP& slp, ULP_PDU* pdu) {
 }
 
 bool decode_response(Session::SET& set, Session::SLP& slp, RESPONSE& response, ULP_PDU* pdu) {
+    VSCOPE_FUNCTION();
+
     if (!pdu) {
         return false;
     }

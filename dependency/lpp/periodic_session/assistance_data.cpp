@@ -14,30 +14,30 @@ AssistanceDataHandler::AssistanceDataHandler(Client* client, Session* session,
                                              PeriodicSessionHandle handle,
                                              RequestAssistanceData data)
     : PeriodicSession(client, session, handle), mData(data) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 }
 
 AssistanceDataHandler::~AssistanceDataHandler() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 }
 
 void AssistanceDataHandler::request_response(TransactionHandle const& transaction,
                                              Message                  message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     if (mData.on_non_periodic) {
         mData.on_non_periodic(*mClient, std::move(message));
     }
 }
 
 void AssistanceDataHandler::periodic_begin(TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     if (mData.on_started) {
         mData.on_started(*mClient, mHandle);
     }
 }
 
 void AssistanceDataHandler::periodic_ended(TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     if (mData.on_ended) {
         mData.on_ended(*mClient, mHandle);
     }
@@ -45,14 +45,14 @@ void AssistanceDataHandler::periodic_ended(TransactionHandle const& transaction)
 
 void AssistanceDataHandler::periodic_message(TransactionHandle const& transaction,
                                              Message                  message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     if (mData.on_periodic) {
         mData.on_periodic(*mClient, mHandle, std::move(message));
     }
 }
 
 bool AssistanceDataHandler::request_assistance_data() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     messages::RequestAssistanceData message_description{};
     message_description.cell             = mData.cell;
@@ -94,7 +94,7 @@ bool AssistanceDataHandler::request_assistance_data() {
 }
 
 bool AssistanceDataHandler::update_assistance_data(supl::Cell cell) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     messages::RequestAssistanceData message_description{};
     message_description.cell             = cell;

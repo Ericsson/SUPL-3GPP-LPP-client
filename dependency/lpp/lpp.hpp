@@ -1,14 +1,6 @@
 #pragma once
 #include <loglet/loglet.hpp>
 
-#define SCOPE_FUNCTION()                                                                           \
-    DEBUGF("%s()", LOGLET_CURRENT_FUNCTION);                                                       \
-    LOGLET_DINDENT_SCOPE()
-
-#define SCOPE_FUNCTIONF(fmt, ...)                                                                  \
-    DEBUGF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                 \
-    LOGLET_DINDENT_SCOPE()
-
 // Defer Macro
 // https://gist.github.com/win-t/125f9e75c0a0f4a74a951478d27ccb4f
 template <typename F>
@@ -27,8 +19,8 @@ public:
         if (!moved) func();
     }
 
-    DeferFinalizer(const DeferFinalizer&)            = delete;
-    DeferFinalizer& operator=(const DeferFinalizer&) = delete;
+    DeferFinalizer(DeferFinalizer const&)            = delete;
+    DeferFinalizer& operator=(DeferFinalizer const&) = delete;
     DeferFinalizer& operator=(DeferFinalizer&&)      = delete;
 };
 

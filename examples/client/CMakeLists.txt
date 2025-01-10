@@ -1,10 +1,16 @@
 
 add_executable(example_client 
     "main.cpp" 
-    "assistance_data.cpp" 
     "config.cpp"
     "processor/lpp.cpp"
     "processor/control.cpp"
+    "processor/location_information.cpp"
+    "processor/ubx.cpp"
+    "processor/nmea.cpp"
+    "processor/lpp2rtcm.cpp"
+    "processor/lpp2frame_rtcm.cpp"
+    "processor/lpp2spartn.cpp"
+    "processor/tokoro.cpp"
 )
 add_executable(examples::client ALIAS example_client)
 

@@ -9,15 +9,33 @@ namespace lpp {
 
 class Client;
 struct RequestAssistanceData {
-    enum class Type { OSR, SSR, AGNSS };
+    enum class Type {
+        /// @brief Request OSR specific assistance data.
+        OSR,
+        /// @brief Request SSR specific assistance data.
+        SSR,
+        /// @brief Request A-GNSS specific assistance data.
+        AGNSS,
+    };
 
-    Type       type;
+    /// @brief The type of assistance data to request.
+    Type type;
+
+    /// @brief The cell information to use for the request.
     supl::Cell cell;
 
-    std::function<void(Client&, Message)>                        on_non_periodic;
+    /// @brief Callback for non-periodic assistance data.
+    /// @note This will be called _before_ the `on_started` callback.
+    std::function<void(Client&, Message)> on_non_periodic;
+
+    /// @brief Callback for periodic assistance data.
     std::function<void(Client&, PeriodicSessionHandle, Message)> on_periodic;
-    std::function<void(Client&, PeriodicSessionHandle)>          on_started;
-    std::function<void(Client&, PeriodicSessionHandle)>          on_ended;
+
+    /// @brief Callback for when a periodic session is started. Called after `on_non_periodic`.
+    std::function<void(Client&, PeriodicSessionHandle)> on_started;
+
+    /// @brief Callback for when a periodic session is ended.
+    std::function<void(Client&, PeriodicSessionHandle)> on_ended;
 };
 
 }  // namespace lpp

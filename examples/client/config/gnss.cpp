@@ -30,7 +30,11 @@ static args::Flag gBds{
 static void setup() {}
 
 static void parse(Config* config) {
-    auto& gnss = config->gnss;
+    auto& gnss   = config->gnss;
+    gnss.gps     = true;
+    gnss.glonass = true;
+    gnss.galileo = true;
+    gnss.beidou  = true;
 
     if (gGps) gnss.gps = false;
     if (gGlonass) gnss.glonass = false;

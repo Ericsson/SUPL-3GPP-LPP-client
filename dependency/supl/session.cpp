@@ -26,7 +26,7 @@ namespace supl {
 
 Session::Session(Version version, Identity identity)
     : mVersion(std::move(version)), mState(State::UNKNOWN) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     mReceiveBufferSize   = UPER_DECODE_BUFFER_SIZE;
     mReceiveBufferOffset = 0;
@@ -46,7 +46,7 @@ Session::Session(Version version, Identity identity)
 }
 
 Session::~Session() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     delete[] mReceiveBuffer;
 
     if (mTcpClient) {
@@ -56,7 +56,7 @@ Session::~Session() {
 }
 
 bool Session::connect(std::string const& ip, uint16_t port) {
-    SCOPE_FUNCTIONF("%s,%d", ip.c_str(), port);
+    VSCOPE_FUNCTIONF("%s,%d", ip.c_str(), port);
 
     if (mState != State::UNKNOWN) {
         WARNF("mState != State::UNKNOWN");
@@ -107,7 +107,7 @@ bool Session::handle_connection() {
 }
 
 void Session::disconnect() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     if (mTcpClient) {
         mSETSession.is_active = false;
         mSLPSession.is_active = false;
@@ -120,7 +120,7 @@ bool Session::is_connected() const {
 }
 
 bool Session::handshake(const START& message) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     if (mState != State::CONNECTED) {
         WARNF("mState != State::CONNECTED");
@@ -137,7 +137,7 @@ bool Session::handshake(const START& message) {
 }
 
 Session::Handshake Session::handle_handshake() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     if (mState != State::WAIT_FOR_HANDSHAKE) {
         WARNF("mState != State::WAIT_FOR_HANDSHAKE");
@@ -161,7 +161,7 @@ Session::Handshake Session::handle_handshake() {
 }
 
 bool Session::send(const START& message) {
-    SCOPE_FUNCTIONF("START");
+    VSCOPE_FUNCTIONF("START");
     if (!is_connected()) {
         WARNF("not connected");
         return false;
@@ -178,7 +178,7 @@ bool Session::send(const START& message) {
 }
 
 bool Session::send(const POSINIT& message) {
-    SCOPE_FUNCTIONF("POSINIT");
+    VSCOPE_FUNCTIONF("POSINIT");
     if (!is_connected()) {
         WARNF("not connected");
         return false;
@@ -195,7 +195,7 @@ bool Session::send(const POSINIT& message) {
 }
 
 bool Session::send(const POS& message) {
-    SCOPE_FUNCTIONF("POS");
+    VSCOPE_FUNCTIONF("POS");
     if (!is_connected()) {
         WARNF("not connected");
         return false;
@@ -226,7 +226,7 @@ void Session::rb_consume(size_t bytes) {
 }
 
 ULP_PDU* Session::parse_receive_buffer() {
-    SCOPE_FUNCTIONF("%zd/%zd", mReceiveBufferOffset, mReceiveBufferSize);
+    VSCOPE_FUNCTIONF("%zd/%zd", mReceiveBufferOffset, mReceiveBufferSize);
     if (mReceiveBufferOffset < 4) {
         return nullptr;
     }
@@ -261,7 +261,7 @@ ULP_PDU* Session::parse_receive_buffer() {
 }
 
 void Session::fill_receive_buffer() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     auto buffer = mReceiveBuffer + mReceiveBufferOffset;
     auto size   = mReceiveBufferSize - mReceiveBufferOffset;
@@ -276,7 +276,7 @@ void Session::fill_receive_buffer() {
 }
 
 ULP_PDU* Session::wait_for_ulp_pdu() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     for (;;) {
         auto ulp_pdu = parse_receive_buffer();
@@ -324,7 +324,7 @@ static bool operator!=(Session::SLP const& A, Session::SLP const& B) {
 }
 
 Session::Received Session::block_receive(RESPONSE* response, END* end, POS* pos) {
-    SCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
+    VSCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
     if (!is_connected()) {
         WARNF("not connected");
         return Received::SESSION_TERMINATED;
@@ -344,7 +344,7 @@ Session::Received Session::block_receive(RESPONSE* response, END* end, POS* pos)
 }
 
 Session::Received Session::try_receive(RESPONSE* response, END* end, POS* pos) {
-    SCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
+    VSCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
     if (!is_connected()) {
         WARNF("not connected");
         return Received::SESSION_TERMINATED;
@@ -363,7 +363,7 @@ Session::Received Session::try_receive(RESPONSE* response, END* end, POS* pos) {
 }
 
 Session::Received Session::parse_message(ULP_PDU* ulp_pdu, RESPONSE* response, END* end, POS* pos) {
-    SCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
+    VSCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
 
     SET      receive_set{};
     SLP      receive_slp{};

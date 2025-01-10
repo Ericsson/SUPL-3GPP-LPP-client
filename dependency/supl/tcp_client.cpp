@@ -45,6 +45,7 @@ static void OpenSSL_cleanup() {
 #endif
 
 TcpClient::TcpClient() : mSocket(-1) {
+    VSCOPE_FUNCTION();
 #if defined(USE_OPENSSL)
     OpenSSL_init();
 
@@ -55,6 +56,7 @@ TcpClient::TcpClient() : mSocket(-1) {
 }
 
 TcpClient::~TcpClient() {
+    VSCOPE_FUNCTION();
     disconnect();
 }
 
@@ -70,7 +72,7 @@ static std::string addr_to_string(const struct sockaddr* addr) {
 }
 
 bool TcpClient::initialize_socket() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     char port_as_string[8];
     snprintf(port_as_string, sizeof(port_as_string), "%i", mPort);
@@ -125,6 +127,7 @@ bool TcpClient::initialize_socket() {
 }
 
 bool TcpClient::connect(std::string const& host, int port, bool use_ssl) {
+    VSCOPE_FUNCTION();
     if (is_disconnected()) {
         return false;
     }
@@ -162,6 +165,7 @@ bool TcpClient::connect(std::string const& host, int port, bool use_ssl) {
 }
 
 bool TcpClient::handle_connection() {
+    VSCOPE_FUNCTION();
     if (!is_connecting()) {
         disconnect();
         return false;
@@ -196,6 +200,7 @@ bool TcpClient::handle_connection() {
 }
 
 bool TcpClient::disconnect() {
+    VSCOPE_FUNCTION();
     if (is_disconnected()) {
         return true;
     }
@@ -220,6 +225,7 @@ bool TcpClient::disconnect() {
 }
 
 int TcpClient::receive(void* buffer, int size) {
+    VSCOPE_FUNCTIONF("%d", size);
     if (!is_connected()) {
         return -1;
     }
@@ -235,6 +241,7 @@ int TcpClient::receive(void* buffer, int size) {
 }
 
 int TcpClient::send(void const* buffer, int size) {
+    VSCOPE_FUNCTIONF("%d", size);
     if (!is_connected()) {
         return -1;
     }
@@ -245,7 +252,7 @@ int TcpClient::send(void const* buffer, int size) {
     else
         return write(mSocket, buffer, size);
 #else
-    return static_cast<int>(::write(mSocket, buffer, static_cast<size_t>(size)));
+    return static_cast<int>(::send(mSocket, buffer, static_cast<size_t>(size), MSG_NOSIGNAL));
 #endif
 }
 

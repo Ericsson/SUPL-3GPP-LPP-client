@@ -20,6 +20,7 @@ struct ProvideLocationInformation;
 struct RequestAssistanceData;
 class PeriodicSession;
 class LocationInformationDelivery;
+struct PeriodicLocationInformationDeliveryDescription;
 class Client {
 public:
     explicit Client(supl::Identity identity, std::string const& host, uint16_t port);
@@ -42,13 +43,15 @@ public:
     std::function<bool(Client&, TransactionHandle const&, Message const&)>
         on_request_location_information;
     // Called every time to get the latest location information to send to the server.
-    std::function<bool(Client&, LocationInformationDelivery const&, messages::ProvideLocationInformation&)>
+    std::function<bool(Client&, LocationInformationDelivery const&,
+                       messages::ProvideLocationInformation&)>
         on_provide_location_information;
     // More advanced callback for providing location information to the server. If you return true,
     // you're responsible for sending the provide location information message yourself. This will
-    // disable the default behavior of the client - that's to call 'on_provide_location_information'
-    // and send the message automatically.
-    std::function<bool(Client&, LocationInformationDelivery const&)> on_provide_location_information_advanced;
+    // disable the default behavior of the client - which is to call
+    // 'on_provide_location_information' and send the message automatically.
+    std::function<bool(Client&, LocationInformationDelivery const&)>
+        on_provide_location_information_advanced;
 
     // Request assistance data from the server
     PeriodicSessionHandle
@@ -59,6 +62,11 @@ public:
     void cancel_assistance_data(PeriodicSessionHandle const& session);
 
     bool is_periodic_session_valid(PeriodicSessionHandle const& session) const;
+
+    bool start_periodic_location_information(
+        TransactionHandle const&                              transaction,
+        PeriodicLocationInformationDeliveryDescription const& description);
+    void stop_periodic_location_information(TransactionHandle const& transaction);
 
     // Schedule the client to run on the given scheduler. Without calling this method, the client
     // will never connect to the server.

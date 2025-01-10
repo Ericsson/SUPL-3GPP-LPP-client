@@ -16,34 +16,20 @@ struct Clone<lpp::Message> {
 
 class LppXerOutput : public streamline::Inspector<lpp::Message> {
 public:
-    LppXerOutput(OutputConfig const& config) : mConfig(config) {}
+    LppXerOutput(OutputConfig const& output) : mOutput(output) {}
 
     void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
 
 private:
-    OutputConfig const& mConfig;
+    OutputConfig const& mOutput;
 };
 
 class LppUperOutput : public streamline::Inspector<lpp::Message> {
 public:
-    LppUperOutput(OutputConfig const& config) : mConfig(config) {}
+    LppUperOutput(OutputConfig const& output) : mOutput(output) {}
 
     void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
 
 private:
-    OutputConfig const& mConfig;
+    OutputConfig const& mOutput;
 };
-
-#ifdef INCLUDE_GENERATOR_RTCM
-class LppRtcmFramedOutput : public streamline::Inspector<lpp::Message> {
-public:
-    LppRtcmFramedOutput(OutputConfig const& config, int lrf_rtcm_id)
-        : mConfig(config), mRtcmId(lrf_rtcm_id) {}
-
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
-
-private:
-    OutputConfig const& mConfig;
-    int                 mRtcmId;
-};
-#endif

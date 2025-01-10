@@ -9,14 +9,6 @@
 
 #define LOGLET_CURRENT_MODULE "sched"
 
-#define SCOPE_FUNCTION()                                                                           \
-    DEBUGF("%s()", LOGLET_CURRENT_FUNCTION);                                                       \
-    LOGLET_DINDENT_SCOPE()
-
-#define SCOPE_FUNCTIONF(fmt, ...)                                                                  \
-    DEBUGF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                 \
-    LOGLET_DINDENT_SCOPE()
-
 namespace scheduler {
 Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1), mInterruptFd(-1), mEpollCount(0) {
     VSCOPE_FUNCTION();

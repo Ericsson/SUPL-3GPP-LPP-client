@@ -41,14 +41,14 @@ static args::Flag gNoBeiDou{
 static args::ValueFlag<std::string> gVrsModeArg{
     gGroup,
     "vrs-mode",
-    "Set VRS mode (fixed or dynamic)",
+    "VRS mode",
     {"tkr-vrs-mode"},
 };
 
 static args::ValueFlag<std::string> gGenStrategyArg{
     gGroup,
     "strategy",
-    "Set generation strategy (assistance, timestep, timestep-aligned)",
+    "Generation strategy",
     {"tkr-gen"},
 };
 
@@ -104,8 +104,8 @@ static args::ValueFlag<double> gFixedRtcmZ{
 static args::ValueFlag<double> gTimeStep{
     gGroup,
     "seconds",
-    "Time step (how often to generate messages) used with\n`--tkr-gen timestep` or\n"
-    "`--tkr-gen timestep-aligned`",
+    "Time step (how often to generate messages) used with\n`--tkr-gen time-step` or\n"
+    "`--tkr-gen time-step-aligned`",
     {"tkr-time-step"},
 };
 
@@ -176,7 +176,7 @@ static void setup() {
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
 
-    gGenStrategyArg.HelpChoices({"assistance", "timestep", "timestep-aligned"});
+    gGenStrategyArg.HelpChoices({"assistance", "time-step", "time-step-aligned"});
     gGenStrategyArg.HelpDefault("assistance");
 
     gTimeStep.HelpDefault("1.0");
@@ -233,15 +233,15 @@ static void parse(Config* config) {
 
     if (gGenStrategyArg) {
         auto s = gGenStrategyArg.Get();
-        if (s == "timestep") {
+        if (s == "time-step") {
             tokoro.generation_strategy = TokoroConfig::GenerationStrategy::TimeStep;
-        } else if (s == "timestep-aligned") {
+        } else if (s == "time-step-aligned") {
             tokoro.generation_strategy = TokoroConfig::GenerationStrategy::TimeStepAligned;
         } else if (s == "assistance") {
             tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
         } else {
-            throw args::ValidationError("--tkr-gen must be 'assistance', 'timestep', or "
-                                        "'timestep-aligned', got `" +
+            throw args::ValidationError("--tkr-gen must be 'assistance', 'time-step', or "
+                                        "'time-step-aligned', got `" +
                                         s + "`");
         }
     }

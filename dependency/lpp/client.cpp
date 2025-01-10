@@ -13,10 +13,10 @@
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wunused-function"
-#include <ProvideAssistanceData-r9-IEs.h>
-#include <RequestLocationInformation-r9-IEs.h>
 #include <CommonIEsRequestLocationInformation.h>
 #include <PeriodicalReportingCriteria.h>
+#include <ProvideAssistanceData-r9-IEs.h>
+#include <RequestLocationInformation-r9-IEs.h>
 #pragma GCC diagnostic pop
 
 #define LOGLET_CURRENT_MODULE "lpp/c"
@@ -24,8 +24,9 @@
 namespace lpp {
 
 Client::Client(supl::Identity identity, std::string const& host, uint16_t port)
-    : mHost(host), mPort(port), mSession{lpp::VERSION_16_4_0, identity}, mScheduler{nullptr} {
-    SCOPE_FUNCTION();
+    : mHost(host), mPort(port), mSession{lpp::VERSION_16_4_0, std::move(identity)},
+      mScheduler{nullptr} {
+    VSCOPE_FUNCTION();
 
     on_capabilities                          = nullptr;
     on_request_location_information          = nullptr;
@@ -72,7 +73,7 @@ Client::Client(supl::Identity identity, std::string const& host, uint16_t port)
 
 PeriodicSessionHandle
 Client::request_assistance_data(RequestAssistanceData const& request_assistance_data) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     PeriodicSessionHandle handle{};
     if (!allocate_periodic_session_handle(handle)) {
@@ -92,7 +93,7 @@ Client::request_assistance_data(RequestAssistanceData const& request_assistance_
 }
 
 bool Client::update_assistance_data(PeriodicSessionHandle const& session, supl::Cell cell) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     auto it = mSessions.find(session);
     if (it == mSessions.end()) {
@@ -110,7 +111,7 @@ bool Client::update_assistance_data(PeriodicSessionHandle const& session, supl::
 }
 
 void Client::cancel_assistance_data(PeriodicSessionHandle const&) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ERRORF("not implemented");
 }
 
@@ -170,7 +171,7 @@ bool Client::deallocate_periodic_session_handle(PeriodicSessionHandle const& han
 }
 
 void Client::process_message(lpp::TransactionHandle const& transaction, lpp::Message message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     if (lpp::is_request_capabilities(message)) {
         process_request_capabilities(transaction, std::move(message));
@@ -195,7 +196,7 @@ void Client::process_message(lpp::TransactionHandle const& transaction, lpp::Mes
 
 void Client::process_request_capabilities(lpp::TransactionHandle const& transaction,
                                           lpp::Message                  message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto capabilities_has_been_handled = false;
     if (on_capabilities) {
@@ -210,14 +211,14 @@ void Client::process_request_capabilities(lpp::TransactionHandle const& transact
 
 void Client::process_request_assistance_data(lpp::TransactionHandle const& transaction,
                                              lpp::Message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     ERRORF("lpp::Client does not support RequestAssistanceData from the location server");
     // TODO(ewasjon): What should we respond with here?
 }
 
 void Client::process_request_location_information(lpp::TransactionHandle const& transaction,
                                                   lpp::Message                  message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto it = mLocationInformationDeliveries.find(transaction);
     if (it != mLocationInformationDeliveries.end()) {
@@ -316,17 +317,13 @@ void Client::process_request_location_information(lpp::TransactionHandle const& 
     // description.velocity_type   = get_velocity_types(common->velocityTypes);
     // description.ha_gnss_metrics = did_request_ha_gnss_metrics(inner);
 
-    auto delivery =
-        std::make_shared<LocationInformationDelivery>(this, &mSession, transaction, description);
-    // TODO(ewasjon): Should we deliver the location information directly or wait for the next
-    // interval?
-    delivery->deliver();
-
-    mLocationInformationDeliveries[transaction] = std::move(delivery);
+    if (!start_periodic_location_information(transaction, description)) {
+        WARNF("failed to start periodic location information");
+    }
 }
 
 void Client::process_provide_capabilities(lpp::TransactionHandle const& transaction, lpp::Message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 }
 
 PeriodicSession* Client::find_by_periodic_session_handle(PeriodicSessionHandle const& handle) {
@@ -358,7 +355,7 @@ PeriodicSession* Client::find_by_periodic_transaction_handle(TransactionHandle c
 
 void Client::process_provide_assistance_data(lpp::TransactionHandle const& transaction,
                                              lpp::Message                  message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto inner = lpp::get_provide_assistance_data(message);
     if (!inner) return;
@@ -385,23 +382,23 @@ void Client::process_provide_assistance_data(lpp::TransactionHandle const& trans
 }
 
 void Client::process_provide_location_information(TransactionHandle const& transaction, Message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 }
 
 void Client::process_abort(TransactionHandle const& transaction, Message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 }
 
 void Client::process_error(TransactionHandle const& transaction, Message) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 }
 
 void Client::process_begin_transaction(lpp::TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 }
 
 void Client::process_end_transaction(lpp::TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto periodic_session = find_by_request_transaction_handle(transaction);
     if (periodic_session) {
@@ -412,6 +409,41 @@ void Client::process_end_transaction(lpp::TransactionHandle const& transaction) 
     if (periodic_session) {
         periodic_session->end(transaction);
     }
+
+    mLocationInformationDeliveries.erase(transaction);
+}
+
+bool Client::start_periodic_location_information(
+    TransactionHandle const&                              transaction,
+    PeriodicLocationInformationDeliveryDescription const& description) {
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+
+    auto it = mLocationInformationDeliveries.find(transaction);
+    if (it != mLocationInformationDeliveries.end()) {
+        WARNF("location information delivery already exists for transaction");
+        return false;
+    }
+
+    auto delivery =
+        std::make_shared<LocationInformationDelivery>(this, &mSession, transaction, description);
+    // TODO(ewasjon): Should we deliver the location information directly or wait for the next
+    // interval?
+    delivery->deliver();
+
+    mLocationInformationDeliveries[transaction] = std::move(delivery);
+    return true;
+}
+
+void Client::stop_periodic_location_information(TransactionHandle const& transaction) {
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+
+    auto it = mLocationInformationDeliveries.find(transaction);
+    if (it == mLocationInformationDeliveries.end()) {
+        WARNF("location information delivery does not exist for transaction");
+        return;
+    }
+
+    ERRORF("todo: stop periodic location information");
 }
 
 }  // namespace lpp

@@ -437,7 +437,7 @@ bool SocketTask::cancel() NOEXCEPT {
 //
 //
 
-TcpConnectTask::TcpConnectTask(std::string host, uint16_t port) NOEXCEPT
+TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reconnect) NOEXCEPT
     : mState(STATE_UNSCEDULED),
       mScheduler{nullptr},
       mIsScheduled{false},
@@ -447,7 +447,7 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port) NOEXCEPT
       mReconnectTimeout{std::chrono::seconds{10}} {
     VSCOPE_FUNCTION();
     mConnected       = false;
-    mShouldReconnect = true;
+    mShouldReconnect = should_reconnect;
 
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
@@ -581,7 +581,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
             VERBOSEF("connection in progress");
             mState = STATE_CONNECTING;
         } else {
-            WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
             mState = STATE_ERROR;
             return false;
         }
@@ -687,10 +687,10 @@ void TcpConnectTask::error() NOEXCEPT {
     }
 
     if (mState == STATE_CONNECTING) {
-        WARNF("connection failed");
+        WARNF("connection failed: %s:%u", mHost.c_str(), mPort);
         disconnect();
     } else if (mState == STATE_CONNECTED) {
-        WARNF("connection lost");
+        WARNF("connection lost: %s:%u", mHost.c_str(), mPort);
         disconnect();
     } else {
         WARNF("unexpected state: %s", state_to_string(mState));

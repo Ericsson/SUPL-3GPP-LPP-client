@@ -35,7 +35,7 @@ LocationInformationDelivery::~LocationInformationDelivery() {
 }
 
 void LocationInformationDelivery::deliver() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mClient, "client is null");
 
     if (mClient->on_provide_location_information_advanced) {

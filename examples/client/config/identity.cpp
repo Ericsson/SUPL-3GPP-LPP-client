@@ -6,14 +6,7 @@ static args::Flag  gWaitForIdentity{
     gGroup,
     "identity-wait",
     "Wait for the identity to be provided via the control interface",
-     {"identity-wait"},
-    args::Options::Single,
-};
-static args::Flag gUseSuplIdentityFix{
-    gGroup,
-    "identity-supl-fix",
-    "Switch the order of the digits in the identity",
-    {"identity-supl-fix"},
+     {"wait-for-identity"},
     args::Options::Single,
 };
 static args::ValueFlag<unsigned long long> gMsisdn{
@@ -30,7 +23,6 @@ static void setup() {}
 
 static void parse(Config* config) {
     if (gWaitForIdentity) config->identity.wait_for_identity = true;
-    if (gUseSuplIdentityFix) config->identity.use_supl_identity_fix = true;
 
     if (!config->location_server.enabled) {
         VERBOSEF("identity is only required when connecting to the location server\n");
@@ -59,7 +51,6 @@ static void parse(Config* config) {
 
 static void dump(IdentityConfig const& config) {
     DEBUGF("wait_for_identity: %s", config.wait_for_identity ? "true" : "false");
-    DEBUGF("use_supl_identity_fix: %s", config.use_supl_identity_fix ? "true" : "false");
 
     if (config.msisdn) {
         DEBUGF("msisdn: %llu", *config.msisdn);

@@ -794,7 +794,7 @@ parse_input_tcp_client(std::unordered_map<std::string, std::string> const& optio
     }
 
     auto input =
-        std::unique_ptr<io::Input>(new io::TcpClientInput(host, static_cast<uint16_t>(port)));
+        std::unique_ptr<io::Input>(new io::TcpClientInput(host, static_cast<uint16_t>(port), true));
     return {format, std::move(input)};
 }
 
@@ -1226,7 +1226,7 @@ static UbloxResult ublox_parse_tcp() {
     }
 
     auto input = std::unique_ptr<io::Input>(
-        new io::TcpClientInput(gUbloxTcpIpAddress.Get(), gUbloxTcpPort.Get()));
+        new io::TcpClientInput(gUbloxTcpIpAddress.Get(), gUbloxTcpPort.Get(), true));
     return UbloxResult{std::move(input), nullptr};
 }
 
@@ -1367,7 +1367,7 @@ static NmeaResult nmea_parse_tcp_client() {
     }
 
     auto input = std::unique_ptr<io::Input>(
-        new io::TcpClientInput(gNmeaTcpIpAddress.Get(), gNmeaTcpPort.Get()));
+        new io::TcpClientInput(gNmeaTcpIpAddress.Get(), gNmeaTcpPort.Get(), true));
     return NmeaResult{std::move(input), nullptr};
 }
 
@@ -1563,7 +1563,7 @@ static std::unique_ptr<io::Input> control_parse_tcp() {
     }
 
     return std::unique_ptr<io::Input>(
-        new io::TcpClientInput(gControlTcpIpAddress.Get(), gControlTcpPort.Get()));
+        new io::TcpClientInput(gControlTcpIpAddress.Get(), gControlTcpPort.Get(), true));
 }
 
 static std::unique_ptr<io::Input> control_parse_stdin() {

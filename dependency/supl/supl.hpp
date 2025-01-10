@@ -4,14 +4,6 @@
 
 #define LOGLET_CURRENT_MODULE "supl"
 
-#define SCOPE_FUNCTION()                                                                           \
-    DEBUGF("%s()", LOGLET_CURRENT_FUNCTION);                                                       \
-    LOGLET_DINDENT_SCOPE()
-
-#define SCOPE_FUNCTIONF(fmt, ...)                                                                  \
-    DEBUGF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                 \
-    LOGLET_DINDENT_SCOPE()
-
 #include <memory>
 
 // Defer Macro

@@ -99,15 +99,15 @@ void SessionTask::event(struct epoll_event* event) {
 }
 
 Session::Session(Version version, supl::Identity identity)
-    : mState(State::UNKNOWN), mVersion(version), mIdentity(identity), mSession(nullptr),
+    : mState(State::UNKNOWN), mVersion(version), mIdentity(std::move(identity)), mSession(nullptr),
       mTransactionId(1), mGenerationId(1), mSequenceNumber(0), mScheduler(nullptr), mTask(this, -1),
       mNextReadState(State::UNKNOWN), mNextWriteState(State::UNKNOWN),
       mNextErrorState(State::UNKNOWN) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 }
 
 Session::~Session() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     if (mScheduler) {
         mTask.cancel();
     }
@@ -136,7 +136,7 @@ static char const* state_to_string(State state) {
 }
 
 void Session::connect(std::string const& host, uint16_t port) {
-    SCOPE_FUNCTIONF("%s, %d", host.c_str(), port);
+    VSCOPE_FUNCTIONF("%s, %d", host.c_str(), port);
 
     if (mState != State::UNKNOWN) {
         ERRORF("invalid state: %s", state_to_string(mState));
@@ -149,13 +149,13 @@ void Session::connect(std::string const& host, uint16_t port) {
 }
 
 void Session::switch_state(State state) {
-    SCOPE_FUNCTIONF("%s -> %s", state_to_string(mState), state_to_string(state));
+    VSCOPE_FUNCTIONF("%s -> %s", state_to_string(mState), state_to_string(state));
     mState = state;
 }
 
 void Session::process() {
     for (;;) {
-        SCOPE_FUNCTIONF("%s", state_to_string(mState));
+        VSCOPE_FUNCTIONF("%s", state_to_string(mState));
 
         if (mState == State::EXIT) {
             return;
@@ -204,31 +204,31 @@ void Session::process() {
 }
 
 void Session::process_read() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     switch_state(mNextReadState);
     process();
 }
 
 void Session::process_write() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     switch_state(mNextWriteState);
     process();
 }
 
 void Session::process_error() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     switch_state(mNextErrorState);
     process();
 }
 
 NextState Session::state_unknown() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     UNREACHABLE();
     return NextState::make().next(State::DISCONNECTED);
 }
 
 NextState Session::state_connect() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     if (mSession) {
         return NextState::make().next(State::DISCONNECTED);
@@ -244,7 +244,7 @@ NextState Session::state_connect() {
 }
 
 NextState Session::state_connecting() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     if (!mSession->handle_connection()) {
         ERRORF("failed to establish connection to %s:%d", mConnectionHost.c_str(), mConnectionPort);
@@ -255,28 +255,28 @@ NextState Session::state_connecting() {
 }
 
 NextState Session::state_connection_failed() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     return NextState::make().next(State::DISCONNECTED);
 }
 
 NextState Session::state_disconnected() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     // TODO: Reconnect
     return NextState::make().next(State::EXIT);
 }
 
 NextState Session::state_error() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     return NextState::make().next(State::DISCONNECTED);
 }
 
 NextState Session::state_connected() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     return NextState::make().next(State::SUPL_HANDSHAKE_SEND);
 }
 
 NextState Session::state_handshake_send() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
     auto cell = supl::Cell::lte(240, 1, 1, 0);
@@ -305,7 +305,7 @@ NextState Session::state_handshake_send() {
 }
 
 NextState Session::state_handshake_recv() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
     auto result = mSession->handle_handshake();
@@ -319,7 +319,7 @@ NextState Session::state_handshake_recv() {
 }
 
 NextState Session::state_posinit() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
     auto cell = supl::Cell::lte(240, 1, 1, 0);
@@ -344,7 +344,7 @@ NextState Session::state_posinit() {
 }
 
 NextState Session::state_established() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     if (on_established) {
         on_established(*this);
@@ -354,7 +354,7 @@ NextState Session::state_established() {
 }
 
 NextState Session::state_message() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
     mSession->fill_receive_buffer();
@@ -378,7 +378,7 @@ NextState Session::state_message() {
 }
 
 void Session::schedule(scheduler::Scheduler* scheduler) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(scheduler != nullptr, "scheduler is null");
 
     mScheduler = scheduler;
@@ -386,7 +386,7 @@ void Session::schedule(scheduler::Scheduler* scheduler) {
 }
 
 void Session::cancel() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mScheduler != nullptr, "scheduler is null");
 
     switch_state(State::EXIT);
@@ -400,7 +400,7 @@ void Session::cancel() {
 }
 
 TransactionHandle Session::create_transaction(bool single_side_endable) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
     auto transaction = allocate_transaction();
@@ -418,13 +418,13 @@ TransactionHandle Session::create_transaction(bool single_side_endable) {
 }
 
 void Session::delete_transaction(TransactionHandle const& transaction) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     client_end_transaction(transaction);
 }
 
 bool Session::add_transaction(TransactionHandle const& transaction, bool single_side_endable) {
-    SCOPE_FUNCTIONF("%s,sse=%s", transaction.to_string().c_str(),
-                    single_side_endable ? "true" : "false");
+    VSCOPE_FUNCTIONF("%s,sse=%s", transaction.to_string().c_str(),
+                     single_side_endable ? "true" : "false");
     ASSERT(mSession != nullptr, "session is null");
 
     if (transaction.id() < 0 || transaction.id() > 255) {
@@ -456,7 +456,7 @@ bool Session::add_transaction(TransactionHandle const& transaction, bool single_
 }
 
 bool Session::remove_transaction(TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto it = mTransactions.find(transaction);
     if (it == mTransactions.end()) {
@@ -485,7 +485,7 @@ bool Session::remove_transaction(TransactionHandle const& transaction) {
 }
 
 void Session::server_end_transaction(TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto it = mTransactions.find(transaction);
     if (it == mTransactions.end()) {
@@ -508,7 +508,7 @@ void Session::server_end_transaction(TransactionHandle const& transaction) {
 }
 
 void Session::client_end_transaction(TransactionHandle const& transaction) {
-    SCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     auto it = mTransactions.find(transaction);
     if (it == mTransactions.end()) {
@@ -525,7 +525,7 @@ void Session::client_end_transaction(TransactionHandle const& transaction) {
 }
 
 TransactionHandle Session::allocate_transaction() {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     auto generation_id = mGenerationId;
     for (long i = 0; i < 255; i++) {
@@ -543,7 +543,7 @@ TransactionHandle Session::allocate_transaction() {
 }
 
 void Session::send(TransactionHandle const& handle, Message& message) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
     // Ensure that the message doesn't already have a transactionID set and that endTransaction
@@ -606,7 +606,7 @@ void Session::send(TransactionHandle const& handle, Message& message) {
 }
 
 void Session::send_with_end(TransactionHandle const& handle, Message& message) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     auto transaction = find_transaction(handle);
     if (!transaction) return;
@@ -616,14 +616,14 @@ void Session::send_with_end(TransactionHandle const& handle, Message& message) {
 }
 
 void Session::abort(TransactionHandle const& handle) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     auto message = create_abort();
     send_with_end(handle, message);
 }
 
 void Session::process_supl_pos(supl::POS const& pos) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     for (auto const& payload : pos.payloads) {
         switch (payload.type) {
@@ -637,7 +637,7 @@ void Session::process_supl_pos(supl::POS const& pos) {
 }
 
 void Session::process_lpp_payload(supl::Payload const& payload) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
     ASSERT(payload.type == supl::Payload::Type::LPP, "invalid payload type");
 
@@ -692,7 +692,7 @@ void Session::process_lpp_payload(supl::Payload const& payload) {
 }
 
 TransactionData* Session::find_transaction(LPP_TransactionID const& transaction_id) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     auto id        = transaction_id.transactionNumber;
     auto initiator = transaction_id.initiator == Initiator_targetDevice ? Initiator::TargetDevice :
@@ -703,7 +703,7 @@ TransactionData* Session::find_transaction(LPP_TransactionID const& transaction_
 }
 
 TransactionData* Session::find_transaction(TransactionHandle const& handle) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     auto it = mTransactions.find(handle);
     if (it == mTransactions.end()) {
@@ -714,7 +714,7 @@ TransactionData* Session::find_transaction(TransactionHandle const& handle) {
 }
 
 Message Session::decode_lpp_message(uint8_t const* data, size_t size) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     // NOTE: Increase default max stack size to handle large messages.
     // TODO(ewasjon): Is this correct?
@@ -738,7 +738,7 @@ Message Session::decode_lpp_message(uint8_t const* data, size_t size) {
 }
 
 std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
 #if 0
     xer_fprint(stdout, &asn_DEF_LPP_Message, message.get());
@@ -761,7 +761,7 @@ std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
 }
 
 std::string Session::encode_lpp_message_xer(Message const& message) {
-    SCOPE_FUNCTION();
+    VSCOPE_FUNCTION();
 
     std::stringstream buffer;
     xer_encode(

@@ -32,24 +32,33 @@ struct IdentityConfig {
     std::unique_ptr<std::string>        ipv4;
 };
 
-using OutputFormat                                         = uint64_t;
-constexpr static OutputFormat OUTPUT_FORMAT_NONE           = 0;
-constexpr static OutputFormat OUTPUT_FORMAT_UBX            = 1;
-constexpr static OutputFormat OUTPUT_FORMAT_NMEA           = 2;
-constexpr static OutputFormat OUTPUT_FORMAT_RTCM           = 4;
-constexpr static OutputFormat OUTPUT_FORMAT_CTRL           = 8;
-constexpr static OutputFormat OUTPUT_FORMAT_LPP_XER        = 16;
-constexpr static OutputFormat OUTPUT_FORMAT_LPP_UPER       = 32;
-constexpr static OutputFormat OUTPUT_FORMAT_LPP_RTCM_FRAME = 64;
-constexpr static OutputFormat OUTPUT_FORMAT_SPARTN         = 128;
+#define OUTPUT_PRINT_MODULE "output"
+using OutputFormat                                   = uint64_t;
+constexpr static OutputFormat OUTPUT_FORMAT_NONE     = 0;
+constexpr static OutputFormat OUTPUT_FORMAT_UBX      = 1;
+constexpr static OutputFormat OUTPUT_FORMAT_NMEA     = 2;
+constexpr static OutputFormat OUTPUT_FORMAT_RTCM     = 4;
+constexpr static OutputFormat OUTPUT_FORMAT_CTRL     = 8;
+constexpr static OutputFormat OUTPUT_FORMAT_LPP_XER  = 16;
+constexpr static OutputFormat OUTPUT_FORMAT_LPP_UPER = 32;
+constexpr static OutputFormat OUTPUT_FORMAT_UNUSED64 = 64;
+constexpr static OutputFormat OUTPUT_FORMAT_SPARTN   = 128;
 constexpr static OutputFormat OUTPUT_FORMAT_ALL =
     OUTPUT_FORMAT_UBX | OUTPUT_FORMAT_NMEA | OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_CTRL |
-    OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_LPP_RTCM_FRAME |
-    OUTPUT_FORMAT_SPARTN;
+    OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_SPARTN;
 
 struct OutputInterface {
     OutputFormat                format;
     std::unique_ptr<io::Output> interface;
+    bool                        print;
+
+    inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
+    inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
+    inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
+    inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
+    inline bool lpp_xer_support() const { return (format & OUTPUT_FORMAT_LPP_XER) != 0; }
+    inline bool lpp_uper_support() const { return (format & OUTPUT_FORMAT_LPP_UPER) != 0; }
+    inline bool spartn_support() const { return (format & OUTPUT_FORMAT_SPARTN) != 0; }
 };
 
 struct OutputConfig {
@@ -165,6 +174,11 @@ struct Lpp2RtcmConfig {
     bool    generate_beidou;
     MsmType msm_type;
 };
+
+struct Lpp2FrameRtcmConfig {
+    bool enabled;
+    int  rtcm_message_id;
+};
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
@@ -232,7 +246,7 @@ struct TokoroConfig {
 
     VrsMode            vrs_mode;
     GenerationStrategy generation_strategy;
-    double             dynamic_distance_threshold;  // <= 0.0 means no threshold (update every time)
+    double dynamic_distance_threshold;  // in km, <= 0.0 means no threshold (update every time)
 
     double fixed_itrf_x;
     double fixed_itrf_y;
@@ -264,7 +278,8 @@ struct Config {
     InputConfig               input;
     GnssConfig                gnss;
 #ifdef INCLUDE_GENERATOR_RTCM
-    Lpp2RtcmConfig lpp2rtcm;
+    Lpp2RtcmConfig      lpp2rtcm;
+    Lpp2FrameRtcmConfig lpp2frame_rtcm;
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     Lpp2SpartnConfig lpp2spartn;
@@ -280,4 +295,5 @@ struct Config {
 
 namespace config {
 bool parse(int argc, char** argv, Config* config);
+void dump(Config* config);
 }  // namespace config

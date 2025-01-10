@@ -14,7 +14,7 @@
     } else {                                                                                       \
         snprintf(_loglet_buffer, sizeof(_loglet_buffer), "invalid");                               \
     }                                                                                              \
-    SCOPE_FUNCTIONF("%s", _loglet_buffer)
+    VSCOPE_FUNCTIONF("%s", _loglet_buffer)
 
 namespace lpp {
 

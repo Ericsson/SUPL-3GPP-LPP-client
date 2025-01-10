@@ -42,7 +42,8 @@ static args::ValueFlagList<std::string> gModules{
 static void setup() {}
 
 static void parse(Config* config) {
-    auto& logging = config->logging;
+    auto& logging     = config->logging;
+    logging.log_level = loglet::Level::Info;
 
     if (gVerbose) {
         logging.log_level = loglet::Level::Verbose;

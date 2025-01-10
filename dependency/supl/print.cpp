@@ -219,6 +219,10 @@ void Printer::value(const ::UlpMessage& x) {
     switch (x.present) {
     case UlpMessage_PR_msSUPLINIT: field("ms-suplinit", x.choice.msSUPLINIT); break;
     case UlpMessage_PR_msSUPLSTART: field("ms-suplstart", x.choice.msSUPLSTART); break;
+    case UlpMessage_PR_msSUPLPOS: field("type", "ms-suplpos"); break;
+    case UlpMessage_PR_msSUPLPOSINIT: field("type", "ms-suplposinit"); break;
+    case UlpMessage_PR_msSUPLEND: field("type", "ms-suplend"); break;
+    case UlpMessage_PR_msSUPLRESPONSE: field("type", "ms-suplresponse"); break;
     default: field("type", "unsupported");
     }
     pop('}');

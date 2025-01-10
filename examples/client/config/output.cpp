@@ -23,18 +23,30 @@ static args::ValueFlagList<std::string> gArgs{
     "  tcp-client:\n"
     "    host=<host>\n"
     "    port=<port>\n"
+    "    path=<path>\n"
     "  udp-client:\n"
     "    host=<host>\n"
     "    port=<port>\n"
+    "    path=<path>\n"
     "\n"
     "Formats:\n"
-    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper, lpp-rf\n"
+    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper\n"
     "Examples:\n"
     "  --output file:path=/tmp/output,format=ubx+nmea",
     {"output"},
 };
 
 static void setup() {}
+
+static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,
+                              std::string const& type, std::string const& key, bool default_value) {
+    if (options.find(key) == options.end()) return default_value;
+    auto value = options.at(key);
+    if (value == "true") return true;
+    if (value == "false") return false;
+    throw args::ValidationError("--output " + type + ": `" + key + "` must be a boolean, got `" +
+                                value + "'");
+}
 
 static OutputFormat parse_format(std::string const& str) {
     if (str == "all") return OUTPUT_FORMAT_ALL;
@@ -45,7 +57,6 @@ static OutputFormat parse_format(std::string const& str) {
     if (str == "spartn") return OUTPUT_FORMAT_SPARTN;
     if (str == "lpp-xer") return OUTPUT_FORMAT_LPP_XER;
     if (str == "lpp-uper") return OUTPUT_FORMAT_LPP_UPER;
-    if (str == "lpp-rf") return OUTPUT_FORMAT_LPP_RTCM_FRAME;
     throw args::ValidationError("--output format: invalid format, got `" + str + "`");
 }
 
@@ -81,12 +92,14 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
 
 static OutputInterface parse_stdout(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto print  = parse_bool_option(options, "stdin", "print", false);
     auto output = std::unique_ptr<io::Output>(new io::StdoutOutput());
-    return {format, std::move(output)};
+    return {format, std::move(output), print};
 }
 
 static OutputInterface parse_file(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto print  = parse_bool_option(options, "file", "print", false);
     if (options.find("path") == options.end()) {
         throw args::ValidationError("--output file: missing `path` option");
     }
@@ -105,7 +118,7 @@ static OutputInterface parse_file(std::unordered_map<std::string, std::string> c
         }
     }
     auto output = std::unique_ptr<io::Output>(new io::FileOutput(path, truncate, append, true));
-    return {format, std::move(output)};
+    return {format, std::move(output), print};
 }
 
 static io::BaudRate parse_baudrate(std::string const& str) {
@@ -188,6 +201,7 @@ static io::ParityBit parse_paritybit(std::string const& str) {
 
 static OutputInterface parse_serial(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto print  = parse_bool_option(options, "serial", "print", false);
     if (options.find("device") == options.end()) {
         throw args::RequiredError("--output serial: missing `device` option");
     }
@@ -212,55 +226,94 @@ static OutputInterface parse_serial(std::unordered_map<std::string, std::string>
     auto device = options.at("device");
     auto output = std::unique_ptr<io::Output>(
         new io::SerialOutput(device, baud_rate, data_bits, stop_bits, parity_bit));
-    return {format, std::move(output)};
+    return {format, std::move(output), print};
 }
 
 static OutputInterface
 parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
-    if (options.find("host") == options.end()) {
-        throw args::RequiredError("--output tcp-client: missing `host` option");
-    }
-    if (options.find("port") == options.end()) {
-        throw args::RequiredError("--output tcp-client: missing `port` option");
+    auto print  = parse_bool_option(options, "tcp", "print", false);
+
+    auto reconnect = true;
+    if (options.find("reconnect") != options.end()) {
+        if (options.at("reconnect") == "true") {
+            reconnect = true;
+        } else if (options.at("reconnect") == "false") {
+            reconnect = false;
+        } else {
+            throw args::ValidationError(
+                "--output udp-client: `reconnect` must be a boolean, got `" +
+                options.at("reconnect") + "'");
+        }
     }
 
-    auto host = options.at("host");
-    auto port = 0;
-    try {
-        port = std::stoi(options.at("port"));
-    } catch (...) {
-        throw args::ParseError("--output tcp-client: `port` must be an integer, got `" +
-                               options.at("port") + "'");
-    }
+    if (options.find("host") != options.end()) {
+        if (options.find("host") == options.end()) {
+            throw args::RequiredError("--output tcp-client: missing `host` option");
+        }
+        if (options.find("port") == options.end()) {
+            throw args::RequiredError("--output tcp-client: missing `port` option");
+        }
+        if (options.find("path") != options.end()) {
+            throw args::RequiredError(
+                "--output tcp-client: `path` cannot be used with `host` and `port`");
+        }
 
-    // TODO(ewasjon): Implement
-    throw args::RequiredError("Not implemented");
-    return {};
+        auto host = options.at("host");
+        auto port = 0;
+        try {
+            port = std::stoi(options.at("port"));
+        } catch (...) {
+            throw args::ParseError("--output tcp-client: `port` must be an integer, got `" +
+                                   options.at("port") + "'");
+        }
+
+        return {format, std::unique_ptr<io::Output>(new io::TcpClientOutput(host, port, reconnect)),
+                print};
+    } else if (options.find("path") != options.end()) {
+        auto path = options.at("path");
+        return {format, std::unique_ptr<io::Output>(new io::TcpClientOutput(path, reconnect)),
+                print};
+    } else {
+        throw args::RequiredError(
+            "--output tcp-client: missing `host` and `port` or `path` option");
+    }
 }
 
 static OutputInterface
 parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
-    if (options.find("host") == options.end()) {
-        throw args::RequiredError("--output udp-client: missing `host` option");
-    }
-    if (options.find("port") == options.end()) {
-        throw args::RequiredError("--output udp-client: missing `port` option");
-    }
+    auto print  = parse_bool_option(options, "udp-client", "print", false);
 
-    auto host = options.at("host");
-    auto port = 0;
-    try {
-        port = std::stoi(options.at("port"));
-    } catch (...) {
-        throw args::ParseError("--output udp-client: `port` must be an integer, got `" +
-                               options.at("port") + "'");
-    }
+    if (options.find("host") != options.end()) {
+        if (options.find("host") == options.end()) {
+            throw args::RequiredError("--output udp-client: missing `host` option");
+        }
+        if (options.find("port") == options.end()) {
+            throw args::RequiredError("--output udp-client: missing `port` option");
+        }
+        if (options.find("path") != options.end()) {
+            throw args::RequiredError(
+                "--output udp-client: `path` cannot be used with `host` and `port`");
+        }
 
-    // TODO(ewasjon): Implement
-    throw args::RequiredError("Not implemented");
-    return {};
+        auto host = options.at("host");
+        auto port = 0;
+        try {
+            port = std::stoi(options.at("port"));
+        } catch (...) {
+            throw args::ParseError("--output udp-client: `port` must be an integer, got `" +
+                                options.at("port") + "'");
+        }
+
+        return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(host, port)), print};
+    } else if (options.find("path") != options.end()) {
+        auto path = options.at("path");
+        return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(path)), print};
+    } else {
+        throw args::RequiredError(
+            "--output udp-client: missing `host` and `port` or `path` option");
+    }
 }
 
 static OutputInterface parse_interface(std::string const& source) {
@@ -300,13 +353,12 @@ static void dump(OutputConfig const& config) {
     for (auto const& output : config.outputs) {
         DEBUGF("%p: %s", output.interface.get(), output_type(output.interface.get()));
         LOGLET_DINDENT_SCOPE();
-        DEBUGF("format: %s%s%s%s%s%s%s%s", (output.format & OUTPUT_FORMAT_UBX) ? "UBX " : "",
+        DEBUGF("format: %s%s%s%s%s%s%s", (output.format & OUTPUT_FORMAT_UBX) ? "UBX " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "NMEA " : "",
                (output.format & OUTPUT_FORMAT_RTCM) ? "RTCM " : "",
                (output.format & OUTPUT_FORMAT_CTRL) ? "CTRL " : "",
                (output.format & OUTPUT_FORMAT_LPP_XER) ? "LPP-XER " : "",
                (output.format & OUTPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
-               (output.format & OUTPUT_FORMAT_LPP_RTCM_FRAME) ? "LPP-RF " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "SPARTN " : "");
 
         auto stdout_output = dynamic_cast<io::StdoutOutput*>(output.interface.get());
@@ -316,6 +368,31 @@ static void dump(OutputConfig const& config) {
         if (file_output) {
             DEBUGF("path: %s", file_output->path().c_str());
             DEBUGF("append: %s", file_output->append() ? "true" : "false");
+            continue;
+        }
+
+        auto serial_output = dynamic_cast<io::SerialOutput*>(output.interface.get());
+        if (serial_output) {
+            DEBUGF("device: %s", serial_output->device().c_str());
+            DEBUGF("baudrate: %s", io::baud_rate_to_string(serial_output->baud_rate()));
+            DEBUGF("data bits: %s", io::data_bits_to_string(serial_output->data_bits()));
+            DEBUGF("stop bits: %s", io::stop_bits_to_string(serial_output->stop_bits()));
+            DEBUGF("parity bit: %s", io::parity_bit_to_string(serial_output->parity_bit()));
+            continue;
+        }
+
+        auto tcp_client_output = dynamic_cast<io::TcpClientOutput*>(output.interface.get());
+        if (tcp_client_output) {
+            DEBUGF("host: %s", tcp_client_output->host().c_str());
+            DEBUGF("port: %d", tcp_client_output->port());
+            DEBUGF("reconnect: %s", tcp_client_output->reconnect() ? "true" : "false");
+            continue;
+        }
+
+        auto udp_client_output = dynamic_cast<io::UdpClientOutput*>(output.interface.get());
+        if (udp_client_output) {
+            DEBUGF("host: %s", udp_client_output->host().c_str());
+            DEBUGF("port: %d", udp_client_output->port());
             continue;
         }
 

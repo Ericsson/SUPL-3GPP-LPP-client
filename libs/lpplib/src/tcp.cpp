@@ -225,7 +225,7 @@ int TCP_Client::send(void* buffer, int size) {
     else
         return write(mSocket, buffer, size);
 #else
-    auto written = ::write(mSocket, buffer, static_cast<size_t>(size));
+    auto written = ::send(mSocket, buffer, static_cast<size_t>(size), MSG_NOSIGNAL);
     if(written <= 0) {
         printf("ERROR: Failed to write to socket: %d %s\n", errno, strerror(errno));
         return -1;
