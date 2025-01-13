@@ -250,11 +250,9 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
     if (options.find("host") != options.end()) {
         if (options.find("host") == options.end()) {
             throw args::RequiredError("--output tcp-client: missing `host` option");
-        }
-        if (options.find("port") == options.end()) {
+        } else if (options.find("port") == options.end()) {
             throw args::RequiredError("--output tcp-client: missing `port` option");
-        }
-        if (options.find("path") != options.end()) {
+        } else if (options.find("path") != options.end()) {
             throw args::RequiredError(
                 "--output tcp-client: `path` cannot be used with `host` and `port`");
         }
@@ -266,6 +264,12 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
         } catch (...) {
             throw args::ParseError("--output tcp-client: `port` must be an integer, got `" +
                                    options.at("port") + "'");
+        }
+
+        if (port < 0 || port > 65535) {
+            throw args::ParseError(
+                "--output tcp-client: `port` must be in the range [0, 65535], got `" +
+                std::to_string(port) + "'");
         }
 
         return {format, std::unique_ptr<io::Output>(new io::TcpClientOutput(host, port, reconnect)),
@@ -303,7 +307,13 @@ parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
             port = std::stoi(options.at("port"));
         } catch (...) {
             throw args::ParseError("--output udp-client: `port` must be an integer, got `" +
-                                options.at("port") + "'");
+                                   options.at("port") + "'");
+        }
+
+        if (port < 0 || port > 65535) {
+            throw args::ParseError(
+                "--output udp-client: `port` must be in the range [0, 65535], got `" +
+                std::to_string(port) + "'");
         }
 
         return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(host, port)), print};

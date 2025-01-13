@@ -16,6 +16,7 @@ namespace io {
 class UdpServerInput : public Input {
 public:
     EXPLICIT UdpServerInput(std::string listen, uint16_t port) NOEXCEPT;
+    EXPLICIT UdpServerInput(std::string path) NOEXCEPT;
     ~UdpServerInput() NOEXCEPT override;
 
 protected:
@@ -23,6 +24,7 @@ protected:
     NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;
 
 private:
+    std::string mPath;
     std::string mListen;
     uint16_t    mPort;
 

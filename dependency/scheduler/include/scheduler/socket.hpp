@@ -18,9 +18,7 @@ public:
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
     NODISCARD bool cancel() NOEXCEPT;
-    NODISCARD bool is_scheduled() const NOEXCEPT {
-        return mScheduler != nullptr;
-    }
+    NODISCARD bool is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
 
     NODISCARD int fd() const NOEXCEPT { return mListenerFd; }
 
@@ -41,6 +39,7 @@ private:
 class TcpListenerTask {
 public:
     EXPLICIT TcpListenerTask(std::string address, uint16_t port) NOEXCEPT;
+    EXPLICIT TcpListenerTask(std::string path) NOEXCEPT;
     ~TcpListenerTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
@@ -53,6 +52,7 @@ public:
     std::function<void(TcpListenerTask&)>                                           on_error;
 
 private:
+    std::string                   mPath;
     std::string                   mAddress;
     uint16_t                      mPort;
     std::unique_ptr<ListenerTask> mListenerTask;
@@ -62,13 +62,12 @@ private:
 class UdpListenerTask {
 public:
     EXPLICIT UdpListenerTask(std::string address, uint16_t port) NOEXCEPT;
+    EXPLICIT UdpListenerTask(std::string path) NOEXCEPT;
     ~UdpListenerTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
     NODISCARD bool cancel() NOEXCEPT;
-    NODISCARD bool is_scheduled() const NOEXCEPT {
-        return mScheduler != nullptr;
-    }
+    NODISCARD bool is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
 
     NODISCARD int fd() const NOEXCEPT { return mListenerFd; }
 
@@ -78,6 +77,7 @@ public:
 private:
     void event(struct epoll_event* event) NOEXCEPT;
 
+    std::string mPath;
     std::string mAddress;
     uint16_t    mPort;
     Scheduler*  mScheduler;
@@ -93,9 +93,7 @@ public:
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
     NODISCARD bool cancel() NOEXCEPT;
-    NODISCARD bool is_scheduled() const NOEXCEPT {
-        return mScheduler != nullptr;
-    }
+    NODISCARD bool is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
 
     NODISCARD int fd() const NOEXCEPT { return mFd; }
 
@@ -118,6 +116,7 @@ private:
 class TcpConnectTask {
 public:
     EXPLICIT TcpConnectTask(std::string host, uint16_t port, bool should_reconnect) NOEXCEPT;
+    EXPLICIT TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT;
     ~TcpConnectTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
@@ -155,6 +154,7 @@ protected:
     bool                    mIsScheduled;
     EpollEvent              mEvent;
     int                     mFd;
+    std::string             mPath;
     std::string             mHost;
     uint16_t                mPort;
     struct sockaddr_storage mAddress;

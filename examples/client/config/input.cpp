@@ -23,12 +23,15 @@ static args::ValueFlagList<std::string> gArgs{
     "  tcp-client:\n"
     "    host=<host>\n"
     "    port=<port>\n"
-    "    reconnect=<true|false>\n"
+    "    reconnect=<bool> (default=true)\n"
+    "    path=<path>\n"
     "  tcp-server:\n"
+    "    listen=<addr> (default=0.0.0.0)\n"
     "    port=<port>\n"
+    "    path=<path>\n"
     "  udp-server:\n"
+    "    listen=<addr> (default=0.0.0.0)\n"
     "    port=<port>\n"
-    "  unix-socket:\n"
     "    path=<path>\n"
     "\n"
     "Formats:\n"
@@ -234,26 +237,6 @@ static InputInterface
 parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
     auto print  = parse_bool_option(options, "tcp-client", "print", false);
-    if (options.find("host") == options.end()) {
-        throw args::RequiredError("--input tcp-client: missing `host` option");
-    }
-    if (options.find("port") == options.end()) {
-        throw args::RequiredError("--input tcp-client: missing `port` option");
-    }
-
-    auto host = options.at("host");
-    auto port = 0;
-    try {
-        port = std::stoi(options.at("port"));
-    } catch (...) {
-        throw args::ParseError("--input tcp-client: `port` must be an integer, got `" +
-                               options.at("port") + "'");
-    }
-
-    if (port < 0 || port > 65535) {
-        throw args::ParseError("--input tcp-client: `port` must be in the range [0, 65535], got `" +
-                               std::to_string(port) + "'");
-    }
 
     auto reconnect = true;
     if (options.find("reconnect") != options.end()) {
@@ -267,73 +250,130 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
         }
     }
 
-    auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, port, reconnect));
-    return {format, print, std::move(input)};
+    if (options.find("host") != options.end()) {
+        if (options.find("host") == options.end()) {
+            throw args::RequiredError("--input tcp-client: missing `host` option");
+        } else if (options.find("port") == options.end()) {
+            throw args::RequiredError("--input tcp-client: missing `port` option");
+        } else if (options.find("path") != options.end()) {
+            throw args::RequiredError(
+                "--input tcp-client: `path` cannot be used with `host` and `port`");
+        }
+
+        auto host = options.at("host");
+        auto port = 0;
+        try {
+            port = std::stoi(options.at("port"));
+        } catch (...) {
+            throw args::ParseError("--input tcp-client: `port` must be an integer, got `" +
+                                   options.at("port") + "'");
+        }
+
+        if (port < 0 || port > 65535) {
+            throw args::ParseError(
+                "--input tcp-client: `port` must be in the range [0, 65535], got `" +
+                std::to_string(port) + "'");
+        }
+
+        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, port, reconnect));
+        return {format, print, std::move(input)};
+    } else if (options.find("path") != options.end()) {
+        auto path  = options.at("path");
+        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(path, reconnect));
+        return {format, print, std::move(input)};
+    } else {
+        throw args::RequiredError("--input tcp-client: missing `host` and `port` or `path` option");
+    }
 }
 
 static InputInterface
 parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
     auto print  = parse_bool_option(options, "tcp-server", "print", false);
-    if (options.find("port") == options.end()) {
-        throw args::RequiredError("--input tcp-server: missing `port` option");
-    }
 
-    auto port = 0;
-    try {
-        port = std::stoi(options.at("port"));
-    } catch (...) {
-        throw args::ParseError("--input tcp-server: `port` must be an integer, got `" +
-                               options.at("port") + "'");
-    }
+    if (options.find("listen") != options.end() || options.find("port") != options.end()) {
+        if (options.find("port") == options.end()) {
+            throw args::RequiredError("--input tcp-server: missing `port` option");
+        } else if (options.find("path") != options.end()) {
+            throw args::RequiredError(
+                "--input tcp-server: `path` cannot be used with `listen` and `port`");
+        }
 
-    if (port < 0 || port > 65535) {
-        throw args::ParseError("--input tcp-server: `port` must be in the range [0, 65535], got `" +
-                               std::to_string(port) + "'");
-    }
+        std::string listen{};
+        if (options.find("listen") == options.end()) {
+            listen = "0.0.0.0";
+        } else {
+            listen = options.at("listen");
+        }
 
-    auto input = std::unique_ptr<io::Input>(new io::TcpServerInput("0.0.0.0", port));
-    return {format, print, std::move(input)};
+        auto port = 0;
+        try {
+            port = std::stoi(options.at("port"));
+        } catch (...) {
+            throw args::ParseError("--input tcp-server: `port` must be an integer, got `" +
+                                   options.at("port") + "'");
+        }
+
+        if (port < 0 || port > 65535) {
+            throw args::ParseError(
+                "--input tcp-server: `port` must be in the range [0, 65535], got `" +
+                std::to_string(port) + "'");
+        }
+
+        auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(listen, port));
+        return {format, print, std::move(input)};
+    } else if (options.find("path") != options.end()) {
+        auto path  = options.at("path");
+        auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(path));
+        return {format, print, std::move(input)};
+    } else {
+        throw args::RequiredError("--input tcp-server: missing `listen` and `port` or `path` option");
+    }
 }
 
 static InputInterface
 parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
     auto print  = parse_bool_option(options, "udp-server", "print", false);
-    if (options.find("port") == options.end()) {
-        throw args::RequiredError("--input udp-server: missing `port` option");
+
+    if (options.find("listen") != options.end() || options.find("port") != options.end()) {
+        if (options.find("port") == options.end()) {
+            throw args::RequiredError("--input udp-server: missing `port` option");
+        } else if (options.find("path") != options.end()) {
+            throw args::RequiredError(
+                "--input udp-server: `path` cannot be used with `listen` and `port`");
+        }
+
+        std::string listen{};
+        if (options.find("listen") == options.end()) {
+            listen = "0.0.0.0";
+        } else {
+            listen = options.at("listen");
+        }
+
+        auto port = 0;
+        try {
+            port = std::stoi(options.at("port"));
+        } catch (...) {
+            throw args::ParseError("--input udp-server: `port` must be an integer, got `" +
+                                   options.at("port") + "'");
+        }
+
+        if (port < 0 || port > 65535) {
+            throw args::ParseError(
+                "--input udp-server: `port` must be in the range [0, 65535], got `" +
+                std::to_string(port) + "'");
+        }
+
+        auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(listen, port));
+        return {format, print, std::move(input)};
+    } else if (options.find("path") != options.end()) {
+        auto path  = options.at("path");
+        auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(path));
+        return {format, print, std::move(input)};
+    } else {
+        throw args::RequiredError("--input udp-server: missing `listen` and `port` or `path` option");
     }
-
-    auto port = 0;
-    try {
-        port = std::stoi(options.at("port"));
-    } catch (...) {
-        throw args::ParseError("--input udp-server: `port` must be an integer, got `" +
-                               options.at("port") + "'");
-    }
-
-    if (port < 0 || port > 65535) {
-        throw args::ParseError("--input udp-server: `port` must be in the range [0, 65535], got `" +
-                               std::to_string(port) + "'");
-    }
-
-    auto input = std::unique_ptr<io::Input>(new io::UdpServerInput("0.0.0.0", port));
-    return {format, print, std::move(input)};
-}
-
-static InputInterface
-parse_unix_socket(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto print  = parse_bool_option(options, "unix-socket", "print", false);
-    if (options.find("path") == options.end()) {
-        throw args::RequiredError("--input unix-socket: missing `path` option");
-    }
-
-    auto path = options.at("path");
-
-    // TODO(ewasjon): Implement
-    throw args::RequiredError("Not implemented");
-    return {};
 }
 
 static InputInterface parse_interface(std::string const& source) {
@@ -354,7 +394,6 @@ static InputInterface parse_interface(std::string const& source) {
     if (parts[0] == "tcp-client") return parse_tcp_client(options);
     if (parts[0] == "tcp-server") return parse_tcp_server(options);
     if (parts[0] == "udp-server") return parse_udp_server(options);
-    if (parts[0] == "unix-socket") return parse_unix_socket(options);
     throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");
 }
 

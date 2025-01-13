@@ -104,7 +104,7 @@ static args::ValueFlag<double> gFixedRtcmZ{
 static args::ValueFlag<double> gTimeStep{
     gGroup,
     "seconds",
-    "Time step (how often to generate messages) used with\n`--tkr-gen time-step` or\n"
+    "Time between each generated message, used with\n`--tkr-gen time-step` or\n"
     "`--tkr-gen time-step-aligned`",
     {"tkr-time-step"},
 };

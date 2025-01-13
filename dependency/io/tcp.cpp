@@ -22,9 +22,16 @@
 
 namespace io {
 TcpServerInput::TcpServerInput(std::string listen, uint16_t port) NOEXCEPT
-    : mListen(std::move(listen)),
+    : mPath{},
+      mListen(std::move(listen)),
       mPort(port) {
     VSCOPE_FUNCTIONF("\"%s\", %u", mListen.c_str(), mPort);
+}
+
+TcpServerInput::TcpServerInput(std::string path) NOEXCEPT : mPath(std::move(path)),
+                                                            mListen{},
+                                                            mPort(0) {
+    VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
 }
 
 TcpServerInput::~TcpServerInput() NOEXCEPT {
@@ -35,7 +42,16 @@ TcpServerInput::~TcpServerInput() NOEXCEPT {
 bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
-    mListenerTask.reset(new scheduler::TcpListenerTask(mListen, mPort));
+    if (!mListen.empty())
+        mListenerTask.reset(new scheduler::TcpListenerTask(mListen, mPort));
+    else if (!mPath.empty())
+        mListenerTask.reset(new scheduler::TcpListenerTask(mPath));
+    else {
+        ERRORF("no listen address or path specified");
+        return false;
+    }
+
+    ASSERT(mListenerTask, "failed to create listener task");
     mListenerTask->on_accept = [this, &scheduler](scheduler::TcpListenerTask&, int data_fd,
                                                   struct sockaddr_storage*, socklen_t) {
         auto it = mClientTasks.begin();
@@ -104,10 +120,18 @@ bool TcpServerInput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
 //
 
 TcpClientInput::TcpClientInput(std::string host, uint16_t port, bool reconnect) NOEXCEPT
-    : mHost(std::move(host)),
+    : mPath{},
+      mHost(std::move(host)),
       mPort(port),
       mReconnect(reconnect) {
     VSCOPE_FUNCTIONF("\"%s\", %u", mHost.c_str(), mPort);
+}
+
+TcpClientInput::TcpClientInput(std::string path, bool reconnect) NOEXCEPT : mPath(std::move(path)),
+                                                                            mHost{},
+                                                                            mPort(0),
+                                                                            mReconnect(reconnect) {
+    VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
 }
 
 TcpClientInput::~TcpClientInput() NOEXCEPT {
@@ -118,7 +142,16 @@ TcpClientInput::~TcpClientInput() NOEXCEPT {
 bool TcpClientInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
-    mConnectTask.reset(new scheduler::TcpConnectTask(mHost, mPort, mReconnect));
+    if (!mHost.empty())
+        mConnectTask.reset(new scheduler::TcpConnectTask(mHost, mPort, mReconnect));
+    else if (!mPath.empty())
+        mConnectTask.reset(new scheduler::TcpConnectTask(mPath, mReconnect));
+    else {
+        ERRORF("no host or path specified");
+        return false;
+    }
+
+    ASSERT(mConnectTask, "failed to create connect task");
     mConnectTask->on_read = [this](scheduler::TcpConnectTask& task) {
         auto result = ::read(task.fd(), mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", task.fd(), mBuffer, sizeof(mBuffer), result);
@@ -160,7 +193,7 @@ TcpClientOutput::TcpClientOutput(std::string host, uint16_t port, bool reconnect
     : mState(State::STATE_INITIAL),
       mHost(std::move(host)),
       mPort(port),
-      mPath(""),
+      mPath(),
       mReconnect(reconnect) {
     VSCOPE_FUNCTIONF("\"%s\", %u", mHost.c_str(), mPort);
     mFd = -1;
@@ -168,7 +201,7 @@ TcpClientOutput::TcpClientOutput(std::string host, uint16_t port, bool reconnect
 
 TcpClientOutput::TcpClientOutput(std::string path, bool reconnect) NOEXCEPT
     : mState(State::STATE_INITIAL),
-      mHost(""),
+      mHost(),
       mPort(0),
       mPath(std::move(path)),
       mReconnect(reconnect) {
@@ -288,8 +321,8 @@ bool TcpClientOutput::connect() NOEXCEPT {
         mAddress.ss_family = AF_UNIX;
 
         auto unix_addr = reinterpret_cast<struct sockaddr_un*>(&mAddress);
-        if (mPath.size() >= sizeof(unix_addr->sun_path)) {
-            ERRORF("path too long");
+        if (mPath.size() + 1 >= sizeof(unix_addr->sun_path)) {
+            ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
             mState = STATE_ERROR;
             return false;
         }
@@ -297,7 +330,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
         memset(unix_addr->sun_path, 0, sizeof(unix_addr->sun_path));
         memcpy(unix_addr->sun_path, mPath.c_str(), mPath.size());
         unix_addr->sun_path[mPath.size()] = '\0';
-        mAddressLength = sizeof(sa_family_t) + mPath.size() + 1;
+        mAddressLength                    = sizeof(sa_family_t) + mPath.size() + 1;
         VERBOSEF("unix socket path: %s", unix_addr->sun_path);
     } else {
         ERRORF("no host or path specified");
@@ -330,7 +363,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
             if (mHost.size() > 0) {
                 WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
             } else if (mPath.size() > 0) {
-                WARNF("connect failed: %s, " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(errno));
+                WARNF("connect failed: \"%s\", " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(errno));
             } else {
                 WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(errno));
             }
@@ -390,7 +423,7 @@ bool TcpClientOutput::connecting() NOEXCEPT {
         if (mHost.size() > 0) {
             WARNF("connection failed: %s:%u, %s", mHost.c_str(), mPort, strerror(error));
         } else if (mPath.size() > 0) {
-            WARNF("connection failed: %s, %s", mPath.c_str(), strerror(error));
+            WARNF("connection failed: \"%s\", %s", mPath.c_str(), strerror(error));
         } else {
             WARNF("connection failed: %s", strerror(error));
         }

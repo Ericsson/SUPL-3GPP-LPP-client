@@ -8,6 +8,7 @@
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/socket.h>
+#include <sys/un.h>
 #include <unistd.h>
 
 #include <loglet/loglet.hpp>
@@ -128,9 +129,17 @@ bool ListenerTask::cancel() NOEXCEPT {
 //
 
 TcpListenerTask::TcpListenerTask(std::string address, uint16_t port) NOEXCEPT
-    : mAddress{std::move(address)},
+    : mPath{},
+      mAddress{std::move(address)},
       mPort{port},
       mListenerTask{nullptr} {
+    VSCOPE_FUNCTION();
+}
+
+TcpListenerTask::TcpListenerTask(std::string path) NOEXCEPT : mPath{std::move(path)},
+                                                              mAddress{},
+                                                              mPort{0},
+                                                              mListenerTask{nullptr} {
     VSCOPE_FUNCTION();
 }
 
@@ -148,33 +157,59 @@ bool TcpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
         return false;
     }
 
-    struct sockaddr_in addr {};
-    addr.sin_family = AF_INET;
-    addr.sin_port   = htons(mPort);
-    auto result     = ::inet_pton(AF_INET, mAddress.c_str(), &addr.sin_addr);
-    VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr.sin_addr, result);
-    if (result <= 0) {
-        ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+    struct sockaddr* addr     = nullptr;
+    socklen_t        addr_len = 0;
+
+    struct sockaddr_in addr_in {};
+    struct sockaddr_un addr_un {};
+    if (!mAddress.empty()) {
+        addr_in.sin_family = AF_INET;
+        addr_in.sin_port   = htons(mPort);
+        auto result        = ::inet_pton(AF_INET, mAddress.c_str(), &addr_in.sin_addr);
+        VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr_in.sin_addr, result);
+        if (result <= 0) {
+            ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            return false;
+        }
+        addr     = reinterpret_cast<struct sockaddr*>(&addr_in);
+        addr_len = sizeof(addr_in);
+    } else if (!mPath.empty()) {
+        addr_un.sun_family = AF_UNIX;
+
+        if (mPath.size() + 1 >= sizeof(addr_un.sun_path)) {
+            ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
+            return false;
+        }
+
+        memset(addr_un.sun_path, 0, sizeof(addr_un.sun_path));
+        memcpy(addr_un.sun_path, mPath.c_str(), mPath.size());
+        addr_un.sun_path[mPath.size()] = '\0';
+        addr                           = reinterpret_cast<struct sockaddr*>(&addr_un);
+        addr_len                       = sizeof(sa_family_t) + mPath.size() + 1;
+    } else {
+        ERRORF("no listen address or path specified");
         return false;
     }
 
-    auto listener_fd = ::socket(AF_INET, SOCK_STREAM, 0);
-    VERBOSEF("::socket(AF_INET, SOCK_STREAM, 0) = %d", listener_fd);
+    ASSERT(addr, "invalid address");
+    ASSERT(addr_len > 0, "invalid address length");
+    auto listener_fd = ::socket(addr->sa_family, SOCK_STREAM, 0);
+    VERBOSEF("::socket(%d, SOCK_STREAM, 0) = %d", addr->sa_family, listener_fd);
     if (listener_fd < 0) {
         ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         return false;
     }
 
-    int enable = 1;
-    result     = ::setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+    int  enable = 1;
+    auto result = ::setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
     VERBOSEF("::setsockopt(%d, SOL_SOCKET, SO_REUSEADDR, %p (%d), %d) = %d", listener_fd, &enable,
              enable, sizeof(enable), result);
     if (result < 0) {
         WARNF("setsockopt failed: " ERRNO_FMT, ERRNO_ARGS(errno));
     }
 
-    result = ::bind(listener_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
-    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, &addr, sizeof(addr), result);
+    result = ::bind(listener_fd, addr, addr_len);
+    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, addr, addr_len, result);
     if (result < 0) {
         ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         ::close(listener_fd);
@@ -223,11 +258,24 @@ bool TcpListenerTask::cancel() NOEXCEPT {
 //
 
 UdpListenerTask::UdpListenerTask(std::string address, uint16_t port) NOEXCEPT
-    : mAddress{std::move(address)},
+    : mPath{},
+      mAddress{std::move(address)},
       mPort{port},
       mScheduler{nullptr},
       mListenerFd{-1} {
     VSCOPE_FUNCTIONF("\"%s\", %u", mAddress.c_str(), mPort);
+
+    mEvent.event = [this](struct epoll_event* event) {
+        this->event(event);
+    };
+}
+
+UdpListenerTask::UdpListenerTask(std::string path) NOEXCEPT : mPath{std::move(path)},
+                                                              mAddress{},
+                                                              mPort{0},
+                                                              mScheduler{nullptr},
+                                                              mListenerFd{-1} {
+    VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
 
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
@@ -269,33 +317,59 @@ bool UdpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
         return false;
     }
 
-    struct sockaddr_in addr {};
-    addr.sin_family = AF_INET;
-    addr.sin_port   = htons(mPort);
-    auto result     = ::inet_pton(AF_INET, mAddress.c_str(), &addr.sin_addr);
-    VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr.sin_addr, result);
-    if (result <= 0) {
-        ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+    struct sockaddr* addr     = nullptr;
+    socklen_t        addr_len = 0;
+
+    struct sockaddr_in addr_in {};
+    struct sockaddr_un addr_un {};
+    if (!mAddress.empty()) {
+        addr_in.sin_family = AF_INET;
+        addr_in.sin_port   = htons(mPort);
+        auto result        = ::inet_pton(AF_INET, mAddress.c_str(), &addr_in.sin_addr);
+        VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr_in.sin_addr, result);
+        if (result <= 0) {
+            ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            return false;
+        }
+        addr     = reinterpret_cast<struct sockaddr*>(&addr_in);
+        addr_len = sizeof(addr_in);
+    } else if (!mPath.empty()) {
+        addr_un.sun_family = AF_UNIX;
+
+        if (mPath.size() + 1 >= sizeof(addr_un.sun_path)) {
+            ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
+            return false;
+        }
+
+        memset(addr_un.sun_path, 0, sizeof(addr_un.sun_path));
+        memcpy(addr_un.sun_path, mPath.c_str(), mPath.size());
+        addr_un.sun_path[mPath.size()] = '\0';
+        addr                           = reinterpret_cast<struct sockaddr*>(&addr_un);
+        addr_len                       = sizeof(sa_family_t) + mPath.size() + 1;
+    } else {
+        ERRORF("no listen address or path specified");
         return false;
     }
 
-    auto listener_fd = ::socket(AF_INET, SOCK_DGRAM, 0);
-    VERBOSEF("::socket(AF_INET, SOCK_DGRAM, 0) = %d", listener_fd);
+    ASSERT(addr, "invalid address");
+    ASSERT(addr_len > 0, "invalid address length");
+    auto listener_fd = ::socket(addr->sa_family, SOCK_DGRAM, 0);
+    VERBOSEF("::socket(%d, SOCK_DGRAM, 0) = %d", addr->sa_family, listener_fd);
     if (listener_fd < 0) {
         ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         return false;
     }
 
-    int enable = 1;
-    result     = ::setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+    int  enable = 1;
+    auto result = ::setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
     VERBOSEF("::setsockopt(%d, SOL_SOCKET, SO_REUSEADDR, %p (%d), %d) = %d", listener_fd, &enable,
              enable, sizeof(enable), result);
     if (result < 0) {
         WARNF("setsockopt failed: " ERRNO_FMT, ERRNO_ARGS(errno));
     }
 
-    result = ::bind(listener_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
-    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, &addr, sizeof(addr), result);
+    result = ::bind(listener_fd, addr, addr_len);
+    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, addr, addr_len, result);
     if (result < 0) {
         ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         ::close(listener_fd);
@@ -442,8 +516,33 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
       mScheduler{nullptr},
       mIsScheduled{false},
       mEvent{},
+      mPath{},
       mHost{std::move(host)},
       mPort{port},
+      mReconnectTimeout{std::chrono::seconds{10}} {
+    VSCOPE_FUNCTION();
+    mConnected       = false;
+    mShouldReconnect = should_reconnect;
+
+    mEvent.event = [this](struct epoll_event* event) {
+        this->event(event);
+    };
+
+    mReconnectTimeout.callback = [this]() {
+        auto scheduler = &mReconnectTimeout.scheduler();
+        mReconnectTimeout.cancel();
+        schedule(*scheduler);
+    };
+}
+
+TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
+    : mState(STATE_UNSCEDULED),
+      mScheduler{nullptr},
+      mIsScheduled{false},
+      mEvent{},
+      mPath{std::move(path)},
+      mHost{},
+      mPort{0},
       mReconnectTimeout{std::chrono::seconds{10}} {
     VSCOPE_FUNCTION();
     mConnected       = false;
@@ -493,69 +592,91 @@ bool TcpConnectTask::connect() NOEXCEPT {
         return false;
     }
 
-    // DNS lookup
-    struct addrinfo* dns_result{};
-    struct addrinfo  hints {};
-    hints.ai_family   = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_protocol = IPPROTO_TCP;
+    if (mHost.size() > 0) {
+        // DNS lookup
+        struct addrinfo* dns_result{};
+        struct addrinfo  hints {};
+        hints.ai_family   = AF_UNSPEC;
+        hints.ai_socktype = SOCK_STREAM;
+        hints.ai_protocol = IPPROTO_TCP;
 
-    char port[16];
-    snprintf(port, sizeof(port), "%u", mPort);
+        char port[16];
+        snprintf(port, sizeof(port), "%u", mPort);
 
-    auto result = ::getaddrinfo(mHost.c_str(), port, &hints, &dns_result);
-    VERBOSEF("::getaddrinfo(\"%s\", nullptr, %p, %p) = %d", mHost.c_str(), &hints, &dns_result,
-             result);
-    if (result != 0) {
-        ERRORF("getaddrinfo failed: %s", gai_strerror(result));
-        mState = STATE_ERROR;
-        return false;
-    }
+        auto result = ::getaddrinfo(mHost.c_str(), port, &hints, &dns_result);
+        VERBOSEF("::getaddrinfo(\"%s\", nullptr, %p, %p) = %d", mHost.c_str(), &hints, &dns_result,
+                 result);
+        if (result != 0) {
+            ERRORF("getaddrinfo failed: %s", gai_strerror(result));
+            mState = STATE_ERROR;
+            return false;
+        }
 
-    // get the first address
-    mAddress       = {};
-    mAddressLength = 0;
-    for (auto addr = dns_result; addr != nullptr; addr = addr->ai_next) {
-        char const* family = "AF_???";
-        switch (addr->ai_family) {
-        case AF_INET: family = "AF_INET"; break;
-        case AF_INET6: family = "AF_INET6"; break;
-        }
-        char const* socket_type = "SOCK_???";
-        switch (addr->ai_socktype) {
-        case SOCK_STREAM: socket_type = "SOCK_STREAM"; break;
-        case SOCK_DGRAM: socket_type = "SOCK_DGRAM"; break;
-        }
-        char const* protocol = "IPPROTO_???";
-        switch (addr->ai_protocol) {
-        case IPPROTO_TCP: protocol = "IPPROTO_TCP"; break;
-        case IPPROTO_UDP: protocol = "IPPROTO_UDP"; break;
-        }
-        char buffer[512];
-        if (addr->ai_family == AF_INET) {
-            auto addr_in = reinterpret_cast<struct sockaddr_in*>(addr->ai_addr);
-            ::inet_ntop(addr->ai_family, &addr_in->sin_addr, buffer, sizeof(buffer));
-        } else if (addr->ai_family == AF_INET6) {
-            auto addr_in6 = reinterpret_cast<struct sockaddr_in6*>(addr->ai_addr);
-            ::inet_ntop(addr->ai_family, &addr_in6->sin6_addr, buffer, sizeof(buffer));
-        } else {
-            buffer[0] = '\0';
-        }
-        VERBOSEF("resolved address: %s %s %s %s", family, socket_type, protocol, buffer);
+        // get the first address
+        mAddress       = {};
+        mAddressLength = 0;
+        for (auto addr = dns_result; addr != nullptr; addr = addr->ai_next) {
+            char const* family = "AF_???";
+            switch (addr->ai_family) {
+            case AF_INET: family = "AF_INET"; break;
+            case AF_INET6: family = "AF_INET6"; break;
+            }
+            char const* socket_type = "SOCK_???";
+            switch (addr->ai_socktype) {
+            case SOCK_STREAM: socket_type = "SOCK_STREAM"; break;
+            case SOCK_DGRAM: socket_type = "SOCK_DGRAM"; break;
+            }
+            char const* protocol = "IPPROTO_???";
+            switch (addr->ai_protocol) {
+            case IPPROTO_TCP: protocol = "IPPROTO_TCP"; break;
+            case IPPROTO_UDP: protocol = "IPPROTO_UDP"; break;
+            }
+            char buffer[512];
+            if (addr->ai_family == AF_INET) {
+                auto addr_in = reinterpret_cast<struct sockaddr_in*>(addr->ai_addr);
+                ::inet_ntop(addr->ai_family, &addr_in->sin_addr, buffer, sizeof(buffer));
+            } else if (addr->ai_family == AF_INET6) {
+                auto addr_in6 = reinterpret_cast<struct sockaddr_in6*>(addr->ai_addr);
+                ::inet_ntop(addr->ai_family, &addr_in6->sin6_addr, buffer, sizeof(buffer));
+            } else {
+                buffer[0] = '\0';
+            }
+            VERBOSEF("resolved address: %s %s %s %s", family, socket_type, protocol, buffer);
 
-        if (mAddressLength == 0) {
-            if (addr->ai_family == AF_INET || addr->ai_family == AF_INET6) {
-                mAddressLength = addr->ai_addrlen;
-                memcpy(&mAddress, addr->ai_addr, mAddressLength);
+            if (mAddressLength == 0) {
+                if (addr->ai_family == AF_INET || addr->ai_family == AF_INET6) {
+                    mAddressLength = addr->ai_addrlen;
+                    memcpy(&mAddress, addr->ai_addr, mAddressLength);
+                }
             }
         }
-    }
 
-    ::freeaddrinfo(dns_result);
-    VERBOSEF("::freeaddrinfo(%p)", dns_result);
+        ::freeaddrinfo(dns_result);
+        VERBOSEF("::freeaddrinfo(%p)", dns_result);
 
-    if (mAddressLength == 0) {
-        ERRORF("failed to resolve address");
+        if (mAddressLength == 0) {
+            ERRORF("failed to resolve address");
+            mState = STATE_ERROR;
+            return false;
+        }
+    } else if (mPath.size() > 0) {
+        // create a socket address for a unix socket
+        mAddress.ss_family = AF_UNIX;
+
+        auto unix_addr = reinterpret_cast<struct sockaddr_un*>(&mAddress);
+        if (mPath.size() + 1 >= sizeof(unix_addr->sun_path)) {
+            ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
+            mState = STATE_ERROR;
+            return false;
+        }
+
+        memset(unix_addr->sun_path, 0, sizeof(unix_addr->sun_path));
+        memcpy(unix_addr->sun_path, mPath.c_str(), mPath.size());
+        unix_addr->sun_path[mPath.size()] = '\0';
+        mAddressLength                    = sizeof(sa_family_t) + mPath.size() + 1;
+        VERBOSEF("unix socket path: %s", unix_addr->sun_path);
+    } else {
+        ERRORF("no host or path specified");
         mState = STATE_ERROR;
         return false;
     }
@@ -573,7 +694,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
     auto fcntl_reslut = ::fcntl(mFd, F_SETFL, fcntl_flags | O_NONBLOCK);
     VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", mFd, fcntl_flags | O_NONBLOCK, fcntl_reslut);
 
-    result = ::connect(mFd, reinterpret_cast<struct sockaddr*>(&mAddress), mAddressLength);
+    auto result = ::connect(mFd, reinterpret_cast<struct sockaddr*>(&mAddress), mAddressLength);
     VERBOSEF("::connect(%d, %p, %d) = %d", mFd, &mAddress, mAddressLength, result);
     if (result < 0) {
         if (errno == EINPROGRESS) {
@@ -581,7 +702,13 @@ bool TcpConnectTask::connect() NOEXCEPT {
             VERBOSEF("connection in progress");
             mState = STATE_CONNECTING;
         } else {
-            WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
+            if (mHost.size() > 0) {
+                WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
+            } else if (mPath.size() > 0) {
+                WARNF("connect failed: \"%s\", " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(errno));
+            } else {
+                WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            }
             mState = STATE_ERROR;
             return false;
         }
@@ -687,10 +814,22 @@ void TcpConnectTask::error() NOEXCEPT {
     }
 
     if (mState == STATE_CONNECTING) {
-        WARNF("connection failed: %s:%u", mHost.c_str(), mPort);
+        if (mHost.size() > 0) {
+            WARNF("connection failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
+        } else if (mPath.size() > 0) {
+            WARNF("connection failed: \"%s\", " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(errno));
+        } else {
+            WARNF("connection failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        }
         disconnect();
     } else if (mState == STATE_CONNECTED) {
-        WARNF("connection lost: %s:%u", mHost.c_str(), mPort);
+        if (mHost.size() > 0) {
+            WARNF("connection lost: %s:%u", mHost.c_str(), mPort);
+        } else if (mPath.size() > 0) {
+            WARNF("connection lost: \"%s\"", mPath.c_str());
+        } else {
+            WARNF("connection lost");
+        }
         disconnect();
     } else {
         WARNF("unexpected state: %s", state_to_string(mState));

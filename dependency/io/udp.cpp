@@ -22,9 +22,16 @@
 
 namespace io {
 UdpServerInput::UdpServerInput(std::string listen, uint16_t port) NOEXCEPT
-    : mListen(std::move(listen)),
+    : mPath{},
+      mListen(std::move(listen)),
       mPort(port) {
     VSCOPE_FUNCTIONF("\"%s\", %u", mListen.c_str(), mPort);
+}
+
+UdpServerInput::UdpServerInput(std::string path) NOEXCEPT : mPath(std::move(path)),
+                                                            mListen{},
+                                                            mPort(0) {
+    VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
 }
 
 UdpServerInput::~UdpServerInput() NOEXCEPT {
@@ -35,7 +42,16 @@ UdpServerInput::~UdpServerInput() NOEXCEPT {
 bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
-    mListenerTask.reset(new scheduler::UdpListenerTask(mListen, mPort));
+    if (!mListen.empty())
+        mListenerTask.reset(new scheduler::UdpListenerTask(mListen, mPort));
+    else if (!mPath.empty())
+        mListenerTask.reset(new scheduler::UdpListenerTask(mPath));
+    else {
+        ERRORF("no listen address or path specified");
+        return false;
+    }
+
+    ASSERT(mListenerTask, "failed to create listener task");
     mListenerTask->on_read = [this](scheduler::UdpListenerTask& task) {
         struct sockaddr_storage addr;
         socklen_t               addr_len = sizeof(addr);
@@ -191,15 +207,15 @@ void UdpClientOutput::open() NOEXCEPT {
         mAddress.ss_family = AF_UNIX;
 
         auto unix_addr = reinterpret_cast<struct sockaddr_un*>(&mAddress);
-        if (mPath.size() >= sizeof(unix_addr->sun_path)) {
-            ERRORF("path too long");
+        if (mPath.size() + 1 >= sizeof(unix_addr->sun_path)) {
+            ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
             return;
         }
 
         memset(unix_addr->sun_path, 0, sizeof(unix_addr->sun_path));
         memcpy(unix_addr->sun_path, mPath.c_str(), mPath.size());
         unix_addr->sun_path[mPath.size()] = '\0';
-        mAddressLength = sizeof(sa_family_t) + mPath.size() + 1;
+        mAddressLength                    = sizeof(sa_family_t) + mPath.size() + 1;
         VERBOSEF("unix socket path: %s", unix_addr->sun_path);
     } else {
         ERRORF("no host or path specified");

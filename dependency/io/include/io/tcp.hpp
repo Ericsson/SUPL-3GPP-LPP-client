@@ -19,6 +19,7 @@ namespace io {
 class TcpServerInput : public Input {
 public:
     EXPLICIT TcpServerInput(std::string listen, uint16_t port) NOEXCEPT;
+    EXPLICIT TcpServerInput(std::string path) NOEXCEPT;
     ~TcpServerInput() NOEXCEPT override;
 
 protected:
@@ -26,6 +27,7 @@ protected:
     NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;
 
 private:
+    std::string mPath;
     std::string mListen;
     uint16_t    mPort;
 
@@ -39,6 +41,7 @@ private:
 class TcpClientInput : public Input {
 public:
     EXPLICIT TcpClientInput(std::string host, uint16_t port, bool reconnect) NOEXCEPT;
+    EXPLICIT TcpClientInput(std::string path, bool reconnect) NOEXCEPT;
     ~TcpClientInput() NOEXCEPT override;
 
 protected:
@@ -46,6 +49,7 @@ protected:
     NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;
 
 private:
+    std::string mPath;
     std::string mHost;
     uint16_t    mPort;
     bool        mReconnect;
