@@ -1,8 +1,8 @@
 #pragma once
 #include <core/core.hpp>
 
-#include <string>
 #include <cstring>
+#include <string>
 
 namespace supl {
 
@@ -18,29 +18,29 @@ struct Identity {
 
     Type type;
     struct {
-        int64_t     msisdn;
-        int64_t     imsi;
+        uint64_t    msisdn;
+        uint64_t    imsi;
         uint8_t     ipv4[4];
         uint8_t     ipv6[16];
         std::string fQDN;
     } data;
 
-    static Identity unknown() { 
+    static Identity unknown() {
         Identity identity{};
         identity.type = Identity::UNKNOWN;
         return identity;
-     }
+    }
 
-    static Identity msisdn(int64_t id) {
+    static Identity msisdn(uint64_t id) {
         Identity identity{};
-        identity.type = Identity::MSISDN;
+        identity.type        = Identity::MSISDN;
         identity.data.msisdn = id;
         return identity;
     }
 
-    static Identity imsi(int64_t id) {
+    static Identity imsi(uint64_t id) {
         Identity identity{};
-        identity.type = Identity::IMSI;
+        identity.type      = Identity::IMSI;
         identity.data.imsi = id;
         return identity;
     }
@@ -61,7 +61,7 @@ struct Identity {
 
     static Identity fQDN(std::string data) {
         Identity identity{};
-        identity.type = Identity::FQDN;
+        identity.type      = Identity::FQDN;
         identity.data.fQDN = std::move(data);
         return identity;
     }

@@ -20,20 +20,20 @@ void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message) NOEXCE
     }
 
     INFOF("framed %d RTCM messages", messages.size());
-    LOGLET_DINDENT_SCOPE();
+    DEBUG_INDENT_SCOPE();
     for (auto& submessage : messages) {
-        auto buffer = submessage.data().data();
-        auto size   = submessage.data().size();
-        DEBUGF("message: %4u: %zu bytes", submessage.id(), size);
+        auto sub_buffer = submessage.data().data();
+        auto sub_size   = submessage.data().size();
+        DEBUGF("message: %4u: %zu bytes", submessage.id(), sub_size);
 
         // TODO(ewasjon): These message should be passed back into the system
         for (auto const& output : mOutput.outputs) {
             if (!output.rtcm_support()) continue;
             if (output.print) {
-                XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), size);
+                XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), sub_size);
             }
 
-            output.interface->write(buffer, size);
+            output.interface->write(sub_buffer, sub_size);
         }
     }
 }

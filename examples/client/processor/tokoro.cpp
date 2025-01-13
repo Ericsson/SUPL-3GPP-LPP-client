@@ -104,7 +104,7 @@ void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message) {
 //
 //
 
-void TokoroLocation::inspect(streamline::System&, DataType const& location) {
+void TokoroLocation::inspect(streamline::System&, UNUSED DataType const& location) {
     VSCOPE_FUNCTION();
     TODOF("TokoroLocation");
 }
@@ -290,7 +290,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
 
     auto messages = mReferenceStation->produce();
     INFOF("generated %d RTCM messages", messages.size());
-    LOGLET_DINDENT_SCOPE();
+    DEBUG_INDENT_SCOPE();
     for (auto& submessage : messages) {
         auto buffer = submessage.data().data();
         auto size   = submessage.data().size();

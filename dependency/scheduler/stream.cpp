@@ -19,7 +19,7 @@ StreamTask::StreamTask(size_t                              block_size,
     mPeriodicTask.callback = [this]() {
         VERBOSEF("stream task: event");
         if (this->callback) {
-            LOGLET_VINDENT_SCOPE();
+            TRACE_INDENT_SCOPE();
             this->callback(write_fd(), mBlockSize);
         }
     };

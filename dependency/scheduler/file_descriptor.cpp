@@ -26,17 +26,17 @@ FileDescriptorTask::FileDescriptorTask() NOEXCEPT : on_read{},
                  (event->events & EPOLLERR) ? "error " : "",
                  (event->events & EPOLLHUP) ? "hup " : "");
         if ((event->events & EPOLLIN) != 0 && this->on_read) {
-            LOGLET_VINDENT_SCOPE();
+            TRACE_INDENT_SCOPE();
             this->on_read(mFd);
         }
 
         if ((event->events & EPOLLOUT) != 0 && this->on_write) {
-            LOGLET_VINDENT_SCOPE();
+            TRACE_INDENT_SCOPE();
             this->on_write(mFd);
         }
 
         if ((event->events & (EPOLLERR | EPOLLHUP)) != 0 && this->on_error) {
-            LOGLET_VINDENT_SCOPE();
+            TRACE_INDENT_SCOPE();
             this->on_error(mFd);
         }
     };

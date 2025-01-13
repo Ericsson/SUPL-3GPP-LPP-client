@@ -34,7 +34,7 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message) {
     }
 
     INFOF("generated %d RTCM messages", messages.size());
-    LOGLET_DINDENT_SCOPE();
+    DEBUG_INDENT_SCOPE();
     for (auto& submessage : messages) {
         auto buffer = submessage.data().data();
         auto size   = submessage.data().size();

@@ -16,7 +16,7 @@
 
 namespace io {
 
-static char const* baud_rate_to_str(BaudRate baud_rate) {
+char const* baud_rate_to_str(BaudRate baud_rate) {
     switch (baud_rate) {
     case BaudRate::BR50: return "50";
     case BaudRate::BR75: return "75";
@@ -48,43 +48,35 @@ static char const* baud_rate_to_str(BaudRate baud_rate) {
     case BaudRate::BR3000000: return "3000000";
     case BaudRate::BR3500000: return "3500000";
     case BaudRate::BR4000000: return "4000000";
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    default: UNREACHABLE(); break;
-#endif
     }
+    UNREACHABLE();
 }
 
-static char const* data_bits_to_str(DataBits data_bits) {
+char const* data_bits_to_str(DataBits data_bits) {
     switch (data_bits) {
     case DataBits::FIVE: return "5";
     case DataBits::SIX: return "6";
     case DataBits::SEVEN: return "7";
     case DataBits::EIGHT: return "8";
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    default: UNREACHABLE(); break;
-#endif
     }
+    UNREACHABLE();
 }
 
-static char const* stop_bits_to_str(StopBits stop_bits) {
+char const* stop_bits_to_str(StopBits stop_bits) {
     switch (stop_bits) {
     case StopBits::ONE: return "1";
     case StopBits::TWO: return "2";
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    default: UNREACHABLE(); break;
-#endif
     }
+    UNREACHABLE();
 }
 
-static char const* parity_bit_to_str(ParityBit parity_bit) {
+char const* parity_bit_to_str(ParityBit parity_bit) {
     switch (parity_bit) {
     case ParityBit::NONE: return "none";
     case ParityBit::ODD: return "odd";
     case ParityBit::EVEN: return "even";
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    default: UNREACHABLE(); break;
-#endif
     }
+    UNREACHABLE();
 }
 
 SerialInput::SerialInput(std::string device, BaudRate baud_rate, DataBits data_bits,
@@ -251,9 +243,10 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     mFdTask->set_fd(mFd);
     mFdTask->on_read = [this](int) {
         auto read_result = ::read(mFd, mBuffer, sizeof(mBuffer));
+        VERBOSEF("::read(%d, %p, %zu) = %d", mFd, mBuffer, sizeof(mBuffer), read_result);
         if (read_result > 0) {
             if (callback) {
-                callback(*this, mBuffer, read_result);
+                callback(*this, mBuffer, static_cast<size_t>(read_result));
             }
         }
     };

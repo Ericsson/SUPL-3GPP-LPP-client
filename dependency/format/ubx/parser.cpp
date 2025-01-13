@@ -39,7 +39,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         }
 
         // skip one byte and try again
-        skip(1);
+        skip(1u);
     }
 
     // check that we have enough data for the header
@@ -51,7 +51,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 
     // read header
     uint8_t buffer[8192];
-    copy_to_buffer(buffer, 6);
+    copy_to_buffer(buffer, 6u);
 
     Decoder header_decoder(buffer, 6);
     header_decoder.skip(2);  // skip frame boundary
@@ -62,7 +62,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto type = (static_cast<uint16_t>(message_class) << 8) | static_cast<uint16_t>(message_id);
     if (length > 8192) {
         // invalid length
-        skip(2);
+        skip(2u);
         VERBOSEF("invalid length");
         return nullptr;
     } else if (buffer_length() < length + 8) {

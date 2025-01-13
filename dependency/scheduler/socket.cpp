@@ -43,7 +43,7 @@ void ListenerTask::event(struct epoll_event* event) NOEXCEPT {
              (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
              (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
              (event->events & EPOLLRDHUP) ? "rdhup " : "");
-    LOGLET_VINDENT_SCOPE();
+    TRACE_INDENT_SCOPE();
 
     if ((event->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
         if (on_error) {
@@ -185,7 +185,7 @@ bool TcpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
         memcpy(addr_un.sun_path, mPath.c_str(), mPath.size());
         addr_un.sun_path[mPath.size()] = '\0';
         addr                           = reinterpret_cast<struct sockaddr*>(&addr_un);
-        addr_len                       = sizeof(sa_family_t) + mPath.size() + 1;
+        addr_len = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
     } else {
         ERRORF("no listen address or path specified");
         return false;
@@ -294,7 +294,7 @@ void UdpListenerTask::event(struct epoll_event* event) NOEXCEPT {
              (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
              (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
              (event->events & EPOLLRDHUP) ? "rdhup " : "");
-    LOGLET_VINDENT_SCOPE();
+    TRACE_INDENT_SCOPE();
 
     if ((event->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
         if (on_error) {
@@ -345,7 +345,7 @@ bool UdpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
         memcpy(addr_un.sun_path, mPath.c_str(), mPath.size());
         addr_un.sun_path[mPath.size()] = '\0';
         addr                           = reinterpret_cast<struct sockaddr*>(&addr_un);
-        addr_len                       = sizeof(sa_family_t) + mPath.size() + 1;
+        addr_len = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
     } else {
         ERRORF("no listen address or path specified");
         return false;
@@ -438,7 +438,7 @@ void SocketTask::event(struct epoll_event* event) NOEXCEPT {
              (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
              (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
              (event->events & EPOLLRDHUP) ? "rdhup " : "");
-    LOGLET_VINDENT_SCOPE();
+    TRACE_INDENT_SCOPE();
 
     if ((event->events & EPOLLIN) != 0) {
         this->read();
@@ -673,7 +673,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
         memset(unix_addr->sun_path, 0, sizeof(unix_addr->sun_path));
         memcpy(unix_addr->sun_path, mPath.c_str(), mPath.size());
         unix_addr->sun_path[mPath.size()] = '\0';
-        mAddressLength                    = sizeof(sa_family_t) + mPath.size() + 1;
+        mAddressLength = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
         VERBOSEF("unix socket path: %s", unix_addr->sun_path);
     } else {
         ERRORF("no host or path specified");
@@ -756,7 +756,7 @@ void TcpConnectTask::event(struct epoll_event* event) NOEXCEPT {
              (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
              (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
              (event->events & EPOLLRDHUP) ? "rdhup " : "");
-    LOGLET_VINDENT_SCOPE();
+    TRACE_INDENT_SCOPE();
 
     if ((event->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
         this->error();

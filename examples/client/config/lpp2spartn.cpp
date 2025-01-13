@@ -401,7 +401,8 @@ static void dump(Lpp2SpartnConfig const& config) {
     DEBUGF("code bias translate: %s", config.code_bias_translate ? "true" : "false");
     DEBUGF("code bias correction shift: %s", config.code_bias_correction_shift ? "true" : "false");
     DEBUGF("phase bias translate: %s", config.phase_bias_translate ? "true" : "false");
-    DEBUGF("phase bias correction shift: %s", config.phase_bias_correction_shift ? "true" : "false");
+    DEBUGF("phase bias correction shift: %s",
+           config.phase_bias_correction_shift ? "true" : "false");
 
     DEBUGF("hydrostatic in zenith: %s", config.hydrostatic_in_zenith ? "true" : "false");
 
@@ -410,8 +411,9 @@ static void dump(Lpp2SpartnConfig const& config) {
         case generator::spartn::StecMethod::Default: return "default";
         case generator::spartn::StecMethod::DiscardC01C10C11: return "discard";
         case generator::spartn::StecMethod::MoveToResiduals: return "residual";
-        default: return "unknown";
         }
+
+        UNREACHABLE();
     }());
     DEBUGF("STEC transform: %s", config.stec_transform ? "true" : "false");
     DEBUGF("STEC invalid to zero: %s", config.stec_invalid_to_zero ? "true" : "false");

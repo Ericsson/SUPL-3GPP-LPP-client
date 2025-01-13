@@ -35,13 +35,11 @@ static void parse(Config* config) {
     }
 
     if (gMsisdn) {
-        config->identity.msisdn =
-            std::unique_ptr<unsigned long long>{new unsigned long long{gMsisdn.Get()}};
+        config->identity.msisdn = std::unique_ptr<uint64_t>{new uint64_t{gMsisdn.Get()}};
     }
 
     if (gImsi) {
-        config->identity.imsi =
-            std::unique_ptr<unsigned long long>{new unsigned long long{gImsi.Get()}};
+        config->identity.imsi = std::unique_ptr<uint64_t>{new uint64_t{gImsi.Get()}};
     }
 
     if (gIpv4) {

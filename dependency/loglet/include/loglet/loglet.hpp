@@ -13,21 +13,10 @@
 #endif
 #endif
 
-#if defined(DISABLE_LOGGING)
-#define LOGLET_XINDENT_SCOPE(module, level)
-#endif
-
-#if !defined(LOGLET_XINDENT_SCOPE)
 #define LOGLET_XINDENT_SCOPE(module, level)                                                        \
     loglet::ScopeFunction LOGLET_NAMEPASTE(loglet_scope_function, __LINE__) {                      \
         level, module                                                                              \
     }
-#endif
-
-#define LOGLET_DINDENT_SCOPE() LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, loglet::Level::Debug)
-#define LOGLET_IINDENT_SCOPE() LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, loglet::Level::Info)
-#define LOGLET_WINDENT_SCOPE() LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, loglet::Level::Warning)
-#define LOGLET_EINDENT_SCOPE() LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, loglet::Level::Error)
 
 #ifdef HAVE_STRERRORNAME_NP
 #define ERRNO_FMT "%3d (%s) %s"
@@ -37,30 +26,106 @@
 #define ERRNO_ARGS(e) e, strerror(e)
 #endif
 
-#ifdef DISABLE_LOGGING
-#define DEBUGF(fmt, ...)
-#define INFOF(fmt, ...)
-#define WARNF(fmt, ...)
-#define ERRORF(fmt, ...)
+#if !defined(DEBUG)
+#ifndef DISABLE_TRACE
+#define DISABLE_TRACE
+#endif
+#ifndef DISABLE_VERBOSE
+#define DISABLE_VERBOSE
+#endif
+#ifndef DISABLE_DEBUG
+#define DISABLE_DEBUG
+#endif
+#endif
 
+#ifdef DISABLE_TRACE
+#define XTRACEF(module, fmt, ...)
+#define TRACEF(fmt, ...)
+#define XTRACE_INDENT_SCOPE(module)
+#define TRACE_INDENT_SCOPE()
+#else
+#define XTRACEF(module, fmt, ...) loglet::tracef(module, fmt, ##__VA_ARGS__)
+#define TRACEF(fmt, ...) XTRACEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
+#define XTRACE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Trace)
+#define TRACE_INDENT_SCOPE() XTRACE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#endif
+
+#ifdef DISABLE_VERBOSE
+#define XVERBOSEF(module, fmt, ...)
+#define VERBOSEF(fmt, ...)
+#define XVERBOSE_INDENT_SCOPE(module)
+#define VERBOSE_INDENT_SCOPE()
+#else
+#define XVERBOSEF(module, fmt, ...) loglet::verbosef(module, fmt, ##__VA_ARGS__)
+#define VERBOSEF(fmt, ...) XVERBOSEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
+#define XVERBOSE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Verbose)
+#define VERBOSE_INDENT_SCOPE() XVERBOSE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#endif
+
+#ifdef DISABLE_DEBUG
 #define XDEBUGF(module, fmt, ...)
-#define XINFOF(module, fmt, ...)
-#define XWARNF(module, fmt, ...)
-#define XERRORF(module, fmt, ...)
+#define DEBUGF(fmt, ...)
+#define XDEBUG_INDENT_SCOPE(module)
+#define DEBUG_INDENT_SCOPE()
+#else
+#define XDEBUGF(module, fmt, ...) loglet::debugf(module, fmt, ##__VA_ARGS__)
+#define DEBUGF(fmt, ...) XDEBUGF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
+#define XDEBUG_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Debug)
+#define DEBUG_INDENT_SCOPE() XDEBUG_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#endif
 
+#ifdef DISABLE_INFO
+#define XINFOF(module, fmt, ...)
+#define INFOF(fmt, ...)
+#define XINFO_INDENT_SCOPE(module)
+#define INFO_INDENT_SCOPE()
+#else
+#define XINFOF(module, fmt, ...) loglet::infof(module, fmt, ##__VA_ARGS__)
+#define INFOF(fmt, ...) XINFOF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
+#define XINFO_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Info)
+#define INFO_INDENT_SCOPE() XINFO_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#endif
+
+#ifdef DISABLE_NOTICE
+#define XNOTICEF(module, fmt, ...)
+#define NOTICEF(fmt, ...)
+#define XNOTICE_INDENT_SCOPE(module)
+#define NOTICE_INDENT_SCOPE()
+#else
+#define XNOTICEF(module, fmt, ...) loglet::noticef(module, fmt, ##__VA_ARGS__)
+#define NOTICEF(fmt, ...) XNOTICEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
+#define XNOTICE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Notice)
+#define NOTICE_INDENT_SCOPE() XNOTICE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#endif
+
+#ifdef DISABLE_WARNING
+#define XWARNF(module, fmt, ...)
+#define WARNF(fmt, ...)
+#define XWARN_INDENT_SCOPE(module)
+#define WARN_INDENT_SCOPE()
+#else
+#define XWARNF(module, fmt, ...) loglet::warnf(module, fmt, ##__VA_ARGS__)
+#define WARNF(fmt, ...) XWARNF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
+#define XWARN_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Warning)
+#define WARN_INDENT_SCOPE() XWARN_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#endif
+
+#ifdef DISABLE_ERROR
+#define XERRORF(module, fmt, ...)
+#define ERRORF(fmt, ...)
+#define XERROR_INDENT_SCOPE(module)
+#define ERROR_INDENT_SCOPE()
+#else
+#define XERRORF(module, fmt, ...) loglet::errorf(module, fmt, ##__VA_ARGS__)
+#define ERRORF(fmt, ...) XERRORF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
+#define XERROR_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Error)
+#define ERROR_INDENT_SCOPE() XERROR_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#endif
+
+#ifdef DISABLE_LOGGING
 #define TODOF(fmt, ...)
 #define XTODOF(module, fmt, ...)
 #else
-#define DEBUGF(fmt, ...) loglet::debugf(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
-#define INFOF(fmt, ...) loglet::infof(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
-#define WARNF(fmt, ...) loglet::warnf(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
-#define ERRORF(fmt, ...) loglet::errorf(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
-
-#define XDEBUGF(module, fmt, ...) loglet::debugf(module, fmt, ##__VA_ARGS__)
-#define XINFOF(module, fmt, ...) loglet::infof(module, fmt, ##__VA_ARGS__)
-#define XWARNF(module, fmt, ...) loglet::warnf(module, fmt, ##__VA_ARGS__)
-#define XERRORF(module, fmt, ...) loglet::errorf(module, fmt, ##__VA_ARGS__)
-
 #define TODOF(fmt, ...)                                                                            \
     loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__,          \
                    ##__VA_ARGS__)
@@ -68,23 +133,20 @@
     loglet::errorf(module, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 
-#if defined(DEBUG)
-#define LOGLET_VINDENT_SCOPE() LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)
-#define VSCOPE_FUNCTION()                                                                          \
-    VERBOSEF("%s()", LOGLET_CURRENT_FUNCTION);                                                     \
-    LOGLET_VINDENT_SCOPE()
-#define VSCOPE_FUNCTIONF(fmt, ...)                                                                 \
-    VERBOSEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                               \
-    LOGLET_VINDENT_SCOPE()
-#define VERBOSEF(fmt, ...) loglet::verbosef(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
-#define XVERBOSEF(module, fmt, ...) loglet::verbosef(module, fmt, ##__VA_ARGS__)
+#ifdef DISABLE_TRACE
+#define FUNCTION_SCOPE()
+#define FUNCTION_SCOPEF(fmt, ...)
 #else
-#define LOGLET_VINDENT_SCOPE()
-#define VSCOPE_FUNCTION()
-#define VSCOPE_FUNCTIONF(fmt, ...)
-#define VERBOSEF(fmt, ...)
-#define XVERBOSEF(module, fmt, ...)
+#define FUNCTION_SCOPE()                                                                           \
+    TRACEF("%s()", LOGLET_CURRENT_FUNCTION);                                                       \
+    TRACE_INDENT_SCOPE()
+#define FUNCTION_SCOPEF(fmt, ...)                                                                  \
+    TRACEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                 \
+    TRACE_INDENT_SCOPE()
 #endif
+
+#define VSCOPE_FUNCTIONF(fmt, ...) FUNCTION_SCOPEF(fmt, ##__VA_ARGS__)
+#define VSCOPE_FUNCTION() FUNCTION_SCOPE()
 
 #define UNREACHABLE()                                                                              \
     do {                                                                                           \
@@ -122,11 +184,13 @@
 namespace loglet {
 
 enum class Level {
-    Verbose  = 0,
-    Debug    = 1,
-    Info     = 2,
-    Warning  = 3,
-    Error    = 4,
+    Trace    = 0,
+    Verbose  = 1,
+    Debug    = 2,
+    Info     = 3,
+    Notice   = 4,
+    Warning  = 5,
+    Error    = 6,
     Disabled = 999,
 };
 
@@ -145,15 +209,19 @@ void log(char const* module, Level level, char const* message);
 void logf(char const* module, Level level, char const* format, ...);
 void vlogf(char const* module, Level level, char const* format, va_list args);
 
+void tracef(char const* module, char const* format, ...);
 void verbosef(char const* module, char const* format, ...);
 void debugf(char const* module, char const* format, ...);
 void infof(char const* module, char const* format, ...);
+void noticef(char const* module, char const* format, ...);
 void warnf(char const* module, char const* format, ...);
 void errorf(char const* module, char const* format, ...);
 
+void vtracef(char const* module, char const* format, va_list args);
 void vverbosef(char const* module, char const* format, va_list args);
 void vdebugf(char const* module, char const* format, va_list args);
 void vinfof(char const* module, char const* format, va_list args);
+void vnoticef(char const* module, char const* format, va_list args);
 void vwarnf(char const* module, char const* format, va_list args);
 void verrorf(char const* module, char const* format, va_list args);
 

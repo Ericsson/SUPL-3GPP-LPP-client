@@ -16,7 +16,7 @@ NODISCARD char const* Parser::name() const NOEXCEPT {
 }
 
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // search for '/'
     for (;;) {
@@ -33,7 +33,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         }
 
         // skip one byte and try again
-        skip(1);
+        skip(1u);
     }
 
     // search for '\r\n'
@@ -91,7 +91,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 
 std::unique_ptr<Message> Parser::parse_cid(std::string const&              message,
                                            std::vector<std::string> const& tokens) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (tokens.size() != 6) {
         WARNF("/CID requires 6 tokens, got %zu", tokens.size());
@@ -125,7 +125,7 @@ std::unique_ptr<Message> Parser::parse_cid(std::string const&              messa
 std::unique_ptr<Message>
 Parser::parse_identity(std::string const&              message,
                        std::vector<std::string> const& tokens) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (tokens.size() < 2) {
         WARNF("/IDENTITY requires at least 2 tokens, got %zu", tokens.size());

@@ -9,7 +9,8 @@
 
 namespace generator::tokoro {
 
-static double interpolate(double const* x, double const* y, int nx, int ny, double xi) {
+// TODO(ewasjon): Investigate ny + DminS
+static double interpolate(double const* x, double const* y, int nx, UNUSED int ny, double xi) {
     int    i;
     double dx;
 
@@ -23,9 +24,10 @@ static double interpolate(double const* x, double const* y, int nx, int ny, doub
 bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
     VSCOPE_FUNCTIONF("%s, %+.8f", time.rtklib_time_string().c_str(), latitude * constant::RAD2DEG);
 
-    auto         latdeg = latitude * constant::RAD2DEG;
-    double const dminN = 28, DminS = 211; /* 28@north hemisphere, 211@south hemisphere */
-    double const interval[] = {15.0, 30.0, 45.0, 60.0, 75.0};
+    auto                latdeg     = latitude * constant::RAD2DEG;
+    double const        dminN      = 28;
+    UNUSED double const DminS      = 211; /* 28@north hemisphere, 211@south hemisphere */
+    double const        interval[] = {15.0, 30.0, 45.0, 60.0, 75.0};
 
     /*Meteorological parameter Average table */
     double const pTave[]  = {1013.25, 1017.25, 1015.75, 1011.75, 1013.00};

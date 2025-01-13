@@ -58,11 +58,11 @@ static Identity decode_identity(SETId& set_id) {
         auto input = set_id.choice.msisdn;
         assert(input.size > 0);
 
-        int64_t msisdn = 0;
+        uint64_t msisdn = 0;
         for (size_t i = 0; i < input.size; i++) {
             auto byte   = input.buf[i];
-            auto first  = (byte >> 4) & 0xF;
-            auto second = (byte >> 0) & 0xF;
+            auto first  = static_cast<uint64_t>((byte >> 4) & 0xF);
+            auto second = static_cast<uint64_t>((byte >> 0) & 0xF);
             if (first != 0xF) {
                 msisdn = 10 * msisdn + first;
             }
@@ -71,7 +71,7 @@ static Identity decode_identity(SETId& set_id) {
             }
         }
 
-        VERBOSEF("msisdn: %" PRIi64, msisdn);
+        VERBOSEF("msisdn: %" PRIu64, msisdn);
         return Identity::msisdn(msisdn);
     }
 
@@ -79,11 +79,11 @@ static Identity decode_identity(SETId& set_id) {
         auto input = set_id.choice.imsi;
         assert(input.size > 0);
 
-        int64_t imsi = 0;
+        uint64_t imsi = 0;
         for (size_t i = 0; i < input.size; i++) {
             auto byte   = input.buf[i];
-            auto first  = (byte >> 4) & 0xF;
-            auto second = (byte >> 0) & 0xF;
+            auto first  = static_cast<uint64_t>((byte >> 4) & 0xF);
+            auto second = static_cast<uint64_t>((byte >> 0) & 0xF);
             if (first != 0xF) {
                 imsi = 10 * imsi + first;
             }
@@ -92,7 +92,7 @@ static Identity decode_identity(SETId& set_id) {
             }
         }
 
-        VERBOSEF("imsi: %" PRIi64, imsi);
+        VERBOSEF("imsi: %" PRIu64, imsi);
         return Identity::imsi(imsi);
     }
 
@@ -174,7 +174,7 @@ bool decode_response(Session::SET& set, Session::SLP& slp, RESPONSE& response, U
 
     print(loglet::Level::Verbose, pdu);
     auto message       = &pdu->message.choice.msSUPLRESPONSE;
-    response.posMethod = (RESPONSE::PosMethod)message->posMethod;
+    response.posMethod = static_cast<RESPONSE::PosMethod>(message->posMethod);
     return true;
 }
 

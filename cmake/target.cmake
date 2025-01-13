@@ -48,6 +48,8 @@ function(setup_target target)
                 "-Wno-global-constructors"
                 "-Wno-exit-time-destructors"
                 "-Wno-padded"
+                "-Wno-switch-default"
+                "-Wno-unsafe-buffer-usage"
             )
         endif()
 

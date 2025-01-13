@@ -105,10 +105,10 @@ struct CorrectionPointSet {
     }
 
     inline double latitude_grid_spacing() const {
-        return latitude_delta * numberOfStepsLatitude_r16;
+        return latitude_delta * static_cast<double>(numberOfStepsLatitude_r16);
     }
     inline double longitude_grid_spacing() const {
-        return longitude_delta * numberOfStepsLongitude_r16;
+        return longitude_delta * static_cast<double>(numberOfStepsLongitude_r16);
     }
 
     std::vector<GridPoint> const& grid_points() const;

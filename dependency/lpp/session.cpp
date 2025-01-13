@@ -176,7 +176,6 @@ void Session::process() {
         case State::ESTABLISHED: result = state_established(); break;
         case State::MESSAGE: result = state_message(); break;
         case State::EXIT: UNREACHABLE();
-        default: ERRORF("invalid state: %s", state_to_string(mState)); UNREACHABLE();
         }
 
         if (!result.schedule) {
@@ -571,15 +570,17 @@ void Session::send(TransactionHandle const& handle, Message& message) {
     }
 
     // Set the transactionID and endTransaction fields
-    auto transaction_id               = (LPP_TransactionID*)calloc(1, sizeof(LPP_TransactionID));
+    auto transaction_id =
+        reinterpret_cast<LPP_TransactionID*>(calloc(1, sizeof(LPP_TransactionID)));
     transaction_id->initiator         = handle.initiator() == Initiator::TargetDevice ?
                                             Initiator_targetDevice :
                                             Initiator_locationServer;
     transaction_id->transactionNumber = handle.id();
     message->transactionID            = transaction_id;
     message->endTransaction           = transaction->client_should_send_end;
-    message->sequenceNumber           = (SequenceNumber_t*)calloc(1, sizeof(SequenceNumber_t));
-    *message->sequenceNumber          = (mSequenceNumber % 255);
+    message->sequenceNumber =
+        reinterpret_cast<SequenceNumber_t*>(calloc(1, sizeof(SequenceNumber_t)));
+    *message->sequenceNumber = (mSequenceNumber % 255);
     mSequenceNumber += 1;
 
     auto lpp_message = encode_lpp_message(message);
@@ -631,7 +632,10 @@ void Session::process_supl_pos(supl::POS const& pos) {
             DEBUGF("lpp payload: %d bytes", payload.data.size());
             process_lpp_payload(payload);
             break;
-        default: WARNF("unsupport payload type"); break;
+        case supl::Payload::Type::NOTHING:
+        case supl::Payload::Type::TIA801:
+        case supl::Payload::Type::RRC:
+        case supl::Payload::Type::RRLP: WARNF("unsupport payload type"); break;
         }
     }
 }
@@ -721,9 +725,9 @@ Message Session::decode_lpp_message(uint8_t const* data, size_t size) {
     asn_codec_ctx_t stack_ctx{};
     stack_ctx.max_stack_size = 1024 * 1024 * 4;
 
-    auto message = (LPP_Message*)nullptr;
-    auto result =
-        uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, (void**)&message, data, size);
+    LPP_Message* message{};
+    auto         result = uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message,
+                                               reinterpret_cast<void**>(&message), data, size);
     if (result.code == RC_FAIL) {
         WARNF("failed to decode uper: %zd bytes consumed", result.consumed);
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, message);
@@ -747,15 +751,19 @@ std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
     std::vector<uint8_t> buffer;
     buffer.resize(1024 * 16);
 
-    auto result = uper_encode_to_buffer(&asn_DEF_LPP_Message, nullptr, message.get(),
-                                        (void*)buffer.data(), buffer.size());
+    auto buffer_size = buffer.size();
+    auto buffer_ptr  = reinterpret_cast<void*>(buffer.data());
+
+    auto result = uper_encode_to_buffer(&asn_DEF_LPP_Message, nullptr, message.get(), buffer_ptr,
+                                        buffer_size);
     if (result.encoded == -1) {
         WARNF("failed to encode uper: %s",
               result.failed_type ? result.failed_type->name : "<unknown>");
         return {};
     }
 
-    auto pdu_len = (result.encoded + 7) >> 3;
+    ASSERT(result.encoded >= 0, "invalid encoded size");
+    auto pdu_len = static_cast<size_t>((result.encoded + 7) >> 3);
     buffer.resize(pdu_len);
     return buffer;
 }

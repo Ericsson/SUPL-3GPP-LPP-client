@@ -52,7 +52,7 @@ static EncodedMessage encode_uper(ULP_PDU* pdu) {
     auto buffer  = new uint8_t[length];
     auto message = EncodedMessage{buffer, length};
 
-    pdu->length = length;
+    pdu->length = static_cast<long>(length);
 
     // Encode PDU as UPER
     result = uper_encode_to_buffer(&asn_DEF_ULP_PDU, nullptr, pdu, buffer, length);
@@ -74,7 +74,7 @@ static EncodedMessage encode_uper(ULP_PDU* pdu) {
 //
 
 static ULP_PDU* create_message(UlpMessage_PR present, Version version) {
-    auto message             = (ULP_PDU*)calloc(1, sizeof(ULP_PDU));
+    auto message             = reinterpret_cast<ULP_PDU*>(calloc(1, sizeof(ULP_PDU)));
     message->length          = 0;
     message->version.maj     = version.major;
     message->version.min     = version.minor;
@@ -84,10 +84,10 @@ static ULP_PDU* create_message(UlpMessage_PR present, Version version) {
     return message;
 }
 
-static OCTET_STRING binary_encoded_octet(size_t max_length, int64_t from) {
+static OCTET_STRING binary_encoded_octet(size_t max_length, uint64_t from) {
     OCTET_STRING octet{};
     octet.size = max_length;
-    octet.buf  = (uint8_t*)calloc(1, octet.size);
+    octet.buf  = reinterpret_cast<uint8_t*>(calloc(1, octet.size));
     memset(octet.buf, 0xFF, octet.size);
 
     auto index = 0;
@@ -113,7 +113,7 @@ static OCTET_STRING binary_encoded_octet(size_t max_length, int64_t from) {
 static OCTET_STRING octet_string_from(uint8_t const* data, size_t size) {
     OCTET_STRING octet{};
     octet.size = size;
-    octet.buf  = (uint8_t*)calloc(1, octet.size);
+    octet.buf  = reinterpret_cast<uint8_t*>(calloc(1, octet.size));
     memcpy(octet.buf, data, size);
     return octet;
 }
@@ -159,8 +159,10 @@ static SETId encode_setid(Identity identity) {
         return result;
     }
 
-    default: UNREACHABLE(); return {};
+    case Identity::Type::UNKNOWN:
+    case Identity::Type::FQDN: break;
     }
+    UNREACHABLE();
 }
 
 static SLPAddress encode_slp_address(Identity identity) {
@@ -175,22 +177,25 @@ static SLPAddress encode_slp_address(Identity identity) {
 
     case Identity::Type::FQDN: {
         SLPAddress result{};
-        result.present = SLPAddress_PR_fQDN;
-        result.choice.fQDN =
-            octet_string_from(reinterpret_cast<uint8_t const*>(identity.data.fQDN.data()),
-                              static_cast<int>(identity.data.fQDN.size()));
+        result.present     = SLPAddress_PR_fQDN;
+        result.choice.fQDN = octet_string_from(
+            reinterpret_cast<uint8_t const*>(identity.data.fQDN.data()), identity.data.fQDN.size());
         return result;
     }
 
-    default: assert(false); return {};
+    case Identity::Type::UNKNOWN:
+    case Identity::Type::MSISDN:
+    case Identity::Type::IMSI: break;
     }
+
+    UNREACHABLE();
 }
 
-static MCC* encode_mcc(int64_t mcc_value) {
+static MCC* encode_mcc(uint64_t mcc_value) {
     assert(mcc_value >= 0 && mcc_value <= 999);
 
     char tmp[8];
-    sprintf(tmp, "%03ld", mcc_value);
+    sprintf(tmp, "%03" PRIu64, mcc_value);
 
     auto mcc = helper::asn1_allocate<MCC>();
     for (size_t i = 0; i < strlen(tmp); i++) {
@@ -202,11 +207,11 @@ static MCC* encode_mcc(int64_t mcc_value) {
     return mcc;
 }
 
-static MNC encode_mnc(int64_t mnc_value) {
+static MNC encode_mnc(uint64_t mnc_value) {
     assert(mnc_value >= 0 && mnc_value <= 999);
 
     char tmp[8];
-    sprintf(tmp, "%02ld", mnc_value);
+    sprintf(tmp, "%02" PRIu64, mnc_value);
 
     MNC mnc{};
     for (size_t i = 0; i < strlen(tmp); i++) {
@@ -218,7 +223,7 @@ static MNC encode_mnc(int64_t mnc_value) {
     return mnc;
 }
 
-static CellGlobalIdEUTRA_t encode_cellGlobalIdEUTRA(int64_t mcc, int64_t mnc, int64_t ci) {
+static CellGlobalIdEUTRA_t encode_cellGlobalIdEUTRA(uint64_t mcc, uint64_t mnc, uint64_t ci) {
     CellIdentity_t cellIdentity{};
     helper::BitStringBuilder{}.integer(0, 28, ci).into_bit_string(28, &cellIdentity);
 
@@ -229,11 +234,12 @@ static CellGlobalIdEUTRA_t encode_cellGlobalIdEUTRA(int64_t mcc, int64_t mnc, in
     return result;
 }
 
-static PhysCellId_t encode_physCellId(int64_t id) {
+static PhysCellId_t encode_physCellId(uint64_t id) {
     return static_cast<long>(id);
 }
 
-static TrackingAreaCode_t encode_trackingAreaCode(int64_t tac) {
+static TrackingAreaCode_t encode_trackingAreaCode(uint64_t tac) {
+    ASSERT(tac >= 0, "invalid tracking area code");
     TrackingAreaCode_t tracking_area_code{};
     helper::BitStringBuilder{}.integer(0, 16, tac).into_bit_string(16, &tracking_area_code);
     return tracking_area_code;
@@ -265,16 +271,16 @@ static CellInfo encode_cellinfo(Cell cell) {
 
 static void encode_session(ULP_PDU* pdu, Session::SET& set, Session::SLP& slp) {
     if (set.is_active) {
-        auto setSessionID           = (SetSessionID*)calloc(1, sizeof(SetSessionID));
-        setSessionID->sessionId     = set.id;
-        setSessionID->setId         = encode_setid(set.identity);
+        auto setSessionID       = reinterpret_cast<SetSessionID*>(calloc(1, sizeof(SetSessionID)));
+        setSessionID->sessionId = set.id;
+        setSessionID->setId     = encode_setid(set.identity);
         pdu->sessionID.setSessionID = setSessionID;
     }
 
     if (slp.is_active) {
-        auto slpSessionID           = (SlpSessionID*)calloc(1, sizeof(SlpSessionID));
-        slpSessionID->sessionID     = octet_string_from(slp.id, 4);
-        slpSessionID->slpId         = encode_slp_address(slp.identity);
+        auto slpSessionID       = reinterpret_cast<SlpSessionID*>(calloc(1, sizeof(SlpSessionID)));
+        slpSessionID->sessionID = octet_string_from(slp.id, 4);
+        slpSessionID->slpId     = encode_slp_address(slp.identity);
         pdu->sessionID.slpSessionID = slpSessionID;
     }
 }
@@ -342,10 +348,10 @@ static ::PosPayLoad encode_pospayload(std::vector<supl::Payload> const& payloads
     asn_sequence_empty(&lpppayload->list);
     for (auto& payload : payloads) {
         auto os   = helper::asn1_allocate<OCTET_STRING>();
-        auto data = (uint8_t*)malloc(payload.data.size());
+        auto data = reinterpret_cast<uint8_t*>(malloc(payload.data.size()));
         memcpy(data, payload.data.data(), payload.data.size());
         os->buf  = data;
-        os->size = (int)payload.data.size();
+        os->size = payload.data.size();
         asn_sequence_add(&lpppayload->list, os);
     }
 

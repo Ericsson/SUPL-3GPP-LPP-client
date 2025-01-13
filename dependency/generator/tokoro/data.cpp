@@ -44,7 +44,7 @@ namespace tokoro {
 bool OrbitCorrection::correction(ts::Tai time, Float3 eph_position, Float3 eph_velocity,
                                  Float3& result, Float3* output_radial, Float3* output_along,
                                  Float3* output_cross, double* output_delta) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto e_along = eph_velocity;
     if (!e_along.normalize()) {
@@ -90,7 +90,7 @@ bool OrbitCorrection::correction(ts::Tai time, Float3 eph_position, Float3 eph_v
 }
 
 double ClockCorrection::correction(ts::Tai time) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     VERBOSEF("t:   %s", ts::Utc{time}.rtklib_time_string().c_str());
     VERBOSEF("t0:  %s", ts::Utc{reference_time}.rtklib_time_string().c_str());
@@ -145,7 +145,7 @@ static double interpolate(double a, double b, double t) {
 }
 
 GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     for (auto& grid_point : mGridPoints) {
         if (!grid_point.valid) {
@@ -170,7 +170,7 @@ GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
 }
 
 GridPoint const* GridData::find_with_absolute_index(long absolute_index) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     for (auto& grid_point : mGridPoints) {
         if (!grid_point.valid) {
@@ -188,7 +188,7 @@ GridPoint const* GridData::find_with_absolute_index(long absolute_index) const N
 
 bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr,
                              GridPoint const*& bl, GridPoint const*& br) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto top_left = find_top_left(llh);
     if (top_left == nullptr) {
@@ -215,7 +215,7 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
 
 bool GridData::ionospheric(SatelliteId sv_id, Float3 llh,
                            double& ionospheric_residual) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // if we're inside 4 points, bilinear interpolation
     GridPoint const* tl = nullptr;
@@ -258,7 +258,7 @@ bool GridData::ionospheric(SatelliteId sv_id, Float3 llh,
 }
 
 bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // if we're inside 4 points, bilinear interpolation
     GridPoint const* tl = nullptr;
@@ -316,7 +316,7 @@ bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) cons
 
 bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
                                   TroposphericCorrection& correction) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (mCorrectionPointSet == nullptr) {
         WARNF("tropospheric correction grid not available");
@@ -340,7 +340,7 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
 
 bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
                                  IonosphericCorrection& correction) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto has_polynomial = false;
     auto has_gridded    = false;
@@ -424,7 +424,7 @@ void CorrectionData::add_correction(long                                 gnss_id
                                     GNSS_SSR_OrbitCorrections_r15 const* orbit) NOEXCEPT {
     if (!orbit) return;
 
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
@@ -481,7 +481,7 @@ void CorrectionData::add_correction(long                                 gnss_id
                                     GNSS_SSR_ClockCorrections_r15 const* clock) NOEXCEPT {
     if (!clock) return;
 
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
@@ -530,7 +530,7 @@ void CorrectionData::add_correction(long                                 gnss_id
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* code_bias) NOEXCEPT {
     if (!code_bias) return;
 
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
@@ -578,7 +578,7 @@ void CorrectionData::add_correction(long                          gnss_id,
                                     GNSS_SSR_PhaseBias_r16 const* phase_bias) NOEXCEPT {
     if (!phase_bias) return;
 
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
@@ -626,7 +626,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
                                     CorrectionPointSet const& correction_point_set) NOEXCEPT {
     if (!stec) return;
 
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (stec->correctionPointSetID_r16 != correction_point_set.set_id) {
         WARNF("correction point set id mismatch");
@@ -683,7 +683,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                                     CorrectionPointSet const& correction_point_set) NOEXCEPT {
     if (!grid) return;
 
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (grid->correctionPointSetID_r16 != correction_point_set.set_id) {
         WARNF("correction point set id mismatch");
@@ -703,8 +703,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
     auto grid_it = mGrid.find(satellite_gnss);
     if (grid_it == mGrid.end()) {
-        auto& grid = mGrid[satellite_gnss];
-        grid.init(correction_point_set);
+        auto& gnss_grid = mGrid[satellite_gnss];
+        gnss_grid.init(correction_point_set);
 
         long array_index    = 0;
         long absolute_index = 0;
@@ -719,7 +719,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                              static_cast<double>(y) * correction_point_set.step_of_latitude;
                 position.y = correction_point_set.reference_point_longitude +
                              static_cast<double>(x) * correction_point_set.step_of_longitude;
-                grid.add_point(array_index, absolute_index, is_valid, position);
+                gnss_grid.add_point(array_index, absolute_index, is_valid, position);
 
                 // only valid grid points are included in the array
                 if (is_valid) {

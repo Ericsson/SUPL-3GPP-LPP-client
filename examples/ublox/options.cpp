@@ -9,6 +9,7 @@
 #pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #pragma GCC diagnostic ignored "-Wshadow-field"
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #include <args.hpp>
 #pragma GCC diagnostic pop
 

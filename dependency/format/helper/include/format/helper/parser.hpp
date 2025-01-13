@@ -11,7 +11,11 @@ public:
     EXPLICIT Parser() NOEXCEPT;
     virtual ~Parser() NOEXCEPT;
 
-    bool append(uint8_t* data, uint16_t length) NOEXCEPT;
+    bool append(uint8_t* data, uint32_t length) NOEXCEPT;
+    bool append(uint8_t* data, size_t length) NOEXCEPT {
+        return append(data, static_cast<uint32_t>(length));
+    }
+
     void clear() NOEXCEPT;
 
     NODISCARD virtual char const* name() const NOEXCEPT = 0;
@@ -22,7 +26,12 @@ public:
 protected:
     NODISCARD uint8_t peek(uint32_t index) const NOEXCEPT;
     NODISCARD void    skip(uint32_t length) NOEXCEPT;
-    void                  copy_to_buffer(uint8_t* data, uint32_t length) NOEXCEPT;
+    NODISCARD void    skip(uint64_t length) NOEXCEPT { skip(static_cast<uint32_t>(length)); }
+
+    void copy_to_buffer(uint8_t* data, uint32_t length) NOEXCEPT;
+    void copy_to_buffer(uint8_t* data, size_t length) NOEXCEPT {
+        copy_to_buffer(data, static_cast<uint32_t>(length));
+    }
 
 private:
     uint8_t* mBuffer;

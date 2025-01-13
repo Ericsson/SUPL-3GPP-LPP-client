@@ -53,8 +53,7 @@ void UbxCfgValget::print() const NOEXCEPT {
                    static_cast<uint64_t>(value.u8()), static_cast<int64_t>(value.u8()));
             break;
         case CfgValue::L:
-        case CfgValue::UNKNOWN:
-        default: printf("???\n"); break;
+        case CfgValue::UNKNOWN: printf("???\n"); break;
         }
     }
 }

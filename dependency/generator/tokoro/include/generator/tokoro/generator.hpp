@@ -67,8 +67,8 @@ public:
     void set_tropospheric_height_correction(bool enabled) { mTropoHeightCorrection = enabled; }
     void set_elevation_mask(double mask) { mElevationMask = mask; }
     void set_phase_range_rate(bool enabled) { mPhaseRangeRate = enabled; }
-    void set_reference_station_id(int id) { mRtcmReferenceStationId = id; }
-    void set_msm_type(int type) { mRtcmMsmType = type; }
+    void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
+    void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
 
     // TODO(ewasjon): REMOVE: for testing only
@@ -91,20 +91,20 @@ private:
     Float3 mRtcmPhysicalGroundPosition;
     bool   mRtcmPhysicalGroundPositionSet;
 
-    bool   mGenerateGps;
-    bool   mGenerateGlo;
-    bool   mGenerateGal;
-    bool   mGenerateBds;
-    bool   mShapiroCorrection;
-    bool   mEarthSolidTidesCorrection;
-    bool   mPhaseWindupCorrection;
-    bool   mAntennaPhaseVariation;
-    bool   mTropoHeightCorrection;
-    double mElevationMask;
-    bool   mPhaseRangeRate;
-    int    mRtcmReferenceStationId;
-    int    mRtcmMsmType;
-    bool   mNegativePhaseWindup;
+    bool     mGenerateGps;
+    bool     mGenerateGlo;
+    bool     mGenerateGal;
+    bool     mGenerateBds;
+    bool     mShapiroCorrection;
+    bool     mEarthSolidTidesCorrection;
+    bool     mPhaseWindupCorrection;
+    bool     mAntennaPhaseVariation;
+    bool     mTropoHeightCorrection;
+    double   mElevationMask;
+    bool     mPhaseRangeRate;
+    uint32_t mRtcmReferenceStationId;
+    uint32_t mRtcmMsmType;
+    bool     mNegativePhaseWindup;
 
     std::vector<Satellite>          mSatellites;
     std::unordered_set<SatelliteId> mSatelliteIncludeSet;

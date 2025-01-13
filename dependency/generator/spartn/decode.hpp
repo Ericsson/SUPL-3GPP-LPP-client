@@ -12,6 +12,9 @@
 
 #include <cmath>
 
+// TODO(ewasjon): Remove this
+#define SPARTN_DEBUG_PRINT 0
+
 namespace decode {
 
 inline double ssrUpdateInterval_r15(long value) {

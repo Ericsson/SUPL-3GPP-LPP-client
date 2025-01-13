@@ -31,8 +31,7 @@ static double unsigned_scale(uint32_t value, double power) {
 }
 
 static bool decode_subframe1(Words const& words, D1Subframe1& subframe) NOEXCEPT {
-    VERBOSEF("decoding subframe1");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     auto sow_msb        = words.u32(18, 8);
     auto sow_lsb        = words.u32(30, 12);
@@ -103,8 +102,7 @@ static bool decode_subframe1(Words const& words, D1Subframe1& subframe) NOEXCEPT
 }
 
 static bool decode_subframe2(Words const& words, D1Subframe2& subframe) NOEXCEPT {
-    VERBOSEF("decoding subframe2");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     auto sow_msb     = words.u32(18, 8);
     auto sow_lsb     = words.u32(30, 12);
@@ -153,8 +151,7 @@ static bool decode_subframe2(Words const& words, D1Subframe2& subframe) NOEXCEPT
 }
 
 static bool decode_subframe3(Words const& words, D1Subframe3& subframe) NOEXCEPT {
-    VERBOSEF("decoding subframe3");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     auto sow_msb       = words.u32(18, 8);
     auto sow_lsb       = words.u32(30, 12);
@@ -203,8 +200,7 @@ static bool decode_subframe3(Words const& words, D1Subframe3& subframe) NOEXCEPT
 }
 
 bool D1Subframe::decode(Words const& words, uint8_t sv_id, D1Subframe& subframe) NOEXCEPT {
-    VERBOSEF("decoding subframe");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     if (words.size() != 300) {
         VERBOSEF("invalid number of words: %zu, expected: 300 bits", words.size());
@@ -341,7 +337,7 @@ bool D1Collector::process(uint8_t prn, D1Subframe const& subframe,
 
         // [3GPP TS 37.355]: In the case of broadcasted BDS B1I/B3I ephemeris, the iod contains 11
         // MSB bits of the toe as defined in [23], [50].
-        ephemeris.lpp_iod = static_cast<uint32_t>(ephemeris.toe) >> 9;
+        ephemeris.lpp_iod = static_cast<uint16_t>(static_cast<uint32_t>(ephemeris.toe) >> 9);
 
         internal_ephemeris.subframe1 = false;
         internal_ephemeris.subframe2 = false;

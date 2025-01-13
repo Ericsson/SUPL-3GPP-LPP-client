@@ -263,7 +263,8 @@ static void initialize_outputs(OutputOptions const& outputs) {
         case osr_example::MsmType::MSM5: gFilter.msm.force_msm5 = true; break;
         case osr_example::MsmType::MSM6: gFilter.msm.force_msm6 = true; break;
         case osr_example::MsmType::MSM7: gFilter.msm.force_msm7 = true; break;
-        case osr_example::MsmType::ANY: break;
+        case osr_example::MsmType::ANY:
+        default: break;
         }
 
         printf("  msm support:       ");

@@ -23,17 +23,17 @@ static args::ValueFlag<std::string> gType{
     gGroup, "type", "Type of assistance data to request", {"ad-type"}, args::Options::Single,
 };
 
-static args::Group          gCellInformation{gGroup, "Cell Information:"};
-static args::ValueFlag<int> gMcc{
+static args::Group               gCellInformation{gGroup, "Cell Information:"};
+static args::ValueFlag<uint64_t> gMcc{
     gCellInformation, "mcc", "Mobile Country Code", {'c', "mcc"}, args::Options::Single,
 };
-static args::ValueFlag<int> gMnc{
+static args::ValueFlag<uint64_t> gMnc{
     gCellInformation, "mnc", "Mobile Network Code", {'n', "mnc"}, args::Options::Single,
 };
-static args::ValueFlag<int> gTac{
+static args::ValueFlag<uint64_t> gTac{
     gCellInformation, "tac", "Tracking Area Code", {'t', "lac", "tac"}, args::Options::Single,
 };
-static args::ValueFlag<unsigned long long> gCi{
+static args::ValueFlag<uint64_t> gCi{
     gCellInformation, "ci", "Cell Identity", {'i', "ci"}, args::Options::Single,
 };
 static args::Flag gIsNr{

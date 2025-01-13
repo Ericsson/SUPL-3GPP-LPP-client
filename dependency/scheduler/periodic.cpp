@@ -24,7 +24,7 @@ PeriodicTask::PeriodicTask(std::chrono::steady_clock::duration duration) NOEXCEP
         if ((event->events & EPOLLIN) == 0) return;
 
         VERBOSEF("periodic task: event");
-        LOGLET_VINDENT_SCOPE();
+        TRACE_INDENT_SCOPE();
 
         uint64_t expirations = 0;
         auto     result      = ::read(mTimerFd, &expirations, sizeof(expirations));

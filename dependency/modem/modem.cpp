@@ -14,8 +14,7 @@ Modem::Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> outpu
 
     mInput->callback = [this](io::Input&, uint8_t* buffer, size_t count) {
         VERBOSEF("received %zu bytes", count);
-        // TODO(ewasjon): Handle count > 2^16
-        mParser.append(buffer, static_cast<uint16_t>(count));
+        mParser.append(buffer, static_cast<uint32_t>(count));
         mParser.process();
 
         while (!mCallbacks.empty()) {

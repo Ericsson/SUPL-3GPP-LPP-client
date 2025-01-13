@@ -16,7 +16,6 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
     auto z = ecef.z;
 
     auto a  = ellipsoid.semi_major_axis;
-    auto b  = ellipsoid.semi_minor_axis;
     auto e2 = ellipsoid.eccentricity_sq;
 
     auto lon = std::atan2(y, x);
@@ -173,8 +172,9 @@ static ItrfParameter const& itrf2020_to_parameter(Itrf to) {
     case Itrf::ITRF1990: return ITRF_2020_to_90_PARAMETER;
     case Itrf::ITRF1989: return ITRF_2020_to_89_PARAMETER;
     case Itrf::ITRF1988: return ITRF_2020_to_88_PARAMETER;
-    default: CORE_UNREACHABLE(); return ITRF_2020_to_2020_PARAMETER;
     }
+
+    XUNREACHABLE("tkr/coord");
 }
 
 static Float3 itrf2020_to(Itrf to, double epoch, Float3 position) {
@@ -214,8 +214,9 @@ Float3 itrf_transform(Itrf from, Itrf to, double epoch, Float3 position) {
         return itrf2020_to(to, epoch, itrf2020_from(Itrf::ITRF1989, epoch, position));
     case Itrf::ITRF1988:
         return itrf2020_to(to, epoch, itrf2020_from(Itrf::ITRF1988, epoch, position));
-    default: CORE_UNREACHABLE(); return position;
     }
+
+    XUNREACHABLE("tkr/coord");
 }
 
 static ItrfParameter ITRF89_TO_ETRF89_PARAMETER = {

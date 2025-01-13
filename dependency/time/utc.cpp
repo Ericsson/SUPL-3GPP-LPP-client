@@ -242,8 +242,8 @@ double Utc::julian_date(double ut1_utc) const {
     }
 
     double jd = 0.0;
-    jd += floor(365.25 * y);
-    jd += floor(30.6001 * (m + 1));
+    jd += floor(365.25 * static_cast<double>(y));
+    jd += floor(30.6001 * static_cast<double>(m + 1));
     jd += static_cast<double>(d);
     jd += static_cast<double>(epoch.hour) / 24.0;
     jd += static_cast<double>(epoch.minutes) / 1440.0;

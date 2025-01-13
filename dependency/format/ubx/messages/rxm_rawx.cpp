@@ -50,20 +50,20 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
 
     std::vector<raw::RxmRawxMeasurement> measurements;
     for (uint8_t i = 0; i < num_meas; i++) {
-        auto pr_mes    = decoder.R8();
-        auto cp_mes    = decoder.R8();
-        auto do_mes    = decoder.R4();
-        auto gnss_id   = decoder.U1();
-        auto sv_id     = decoder.U1();
-        auto sig_id    = decoder.U1();
-        auto freq_id   = decoder.U1();
-        auto locktime  = decoder.U2();
-        auto cno       = decoder.U1();
-        auto pr_stdev  = decoder.X1();
-        auto cp_stdev  = decoder.X1();
-        auto do_stdev  = decoder.X1();
-        auto trk_stat  = decoder.X1();
-        auto reserved0 = decoder.U1();
+        auto pr_mes         = decoder.R8();
+        auto cp_mes         = decoder.R8();
+        auto do_mes         = decoder.R4();
+        auto gnss_id        = decoder.U1();
+        auto sv_id          = decoder.U1();
+        auto sig_id         = decoder.U1();
+        auto freq_id        = decoder.U1();
+        auto locktime       = decoder.U2();
+        auto cno            = decoder.U1();
+        auto pr_stdev       = decoder.X1();
+        auto cp_stdev       = decoder.X1();
+        auto do_stdev       = decoder.X1();
+        auto trk_stat       = decoder.X1();
+        auto meas_reserved0 = decoder.U1();
         if (decoder.error()) {
             return nullptr;
         }
@@ -85,7 +85,7 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
         measurement.trk_stat.cp_valid     = (trk_stat >> 1) & 0x01;
         measurement.trk_stat.half_cyc     = (trk_stat >> 2) & 0x01;
         measurement.trk_stat.sub_half_cyc = (trk_stat >> 3) & 0x01;
-        measurement.reserved0             = reserved0;
+        measurement.reserved0             = meas_reserved0;
         measurements.push_back(measurement);
     }
 

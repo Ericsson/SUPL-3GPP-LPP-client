@@ -1,4 +1,17 @@
+
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #include <args.hpp>
+#pragma GCC diagnostic pop
+
 #include <format/ctrl/cid.hpp>
 #include <format/ctrl/identity.hpp>
 
@@ -67,25 +80,25 @@ static void client_connected(Program& program, lpp::Client& client) {
     }
 }
 
-static void client_initialize(Program& program, lpp::Client& client) {
-    client.on_connected = [&program](lpp::Client& client) {
+static void client_initialize(Program& program, lpp::Client&) {
+    program.client->on_connected = [&program](lpp::Client& client) {
         INFOF("connected to LPP server");
         client_connected(program, client);
     };
 
-    client.on_disconnected = [](lpp::Client&) {
+    program.client->on_disconnected = [](lpp::Client&) {
         INFOF("disconnected from LPP server");
         // TODO: reconnect
     };
 
-    client.on_request_location_information = [](lpp::Client&, lpp::TransactionHandle const&,
-                                                lpp::Message const&) {
-        INFOF("request location information");
-        return false;
-    };
+    program.client->on_request_location_information =
+        [](lpp::Client&, lpp::TransactionHandle const&, lpp::Message const&) {
+            INFOF("request location information");
+            return false;
+        };
 
-    client.on_provide_location_information =
-        [&program](lpp::Client& client, lpp::LocationInformationDelivery const& delivery,
+    program.client->on_provide_location_information =
+        [&program](lpp::Client&, lpp::LocationInformationDelivery const&,
                    lpp::messages::ProvideLocationInformation& data) {
             INFOF("provide location information");
 
@@ -492,8 +505,8 @@ int main(int argc, char** argv) {
                 throw args::ValidationError("`imsi` must be at least 6 digits long");
             }
 
-            auto mcc = (imsi / (int64_t)std::pow(10, digits - 3)) % 1000;
-            auto mnc = (imsi / (int64_t)std::pow(10, digits - 6)) % 1000;
+            auto mcc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 3))) % 1000;
+            auto mnc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 6))) % 1000;
 
             // h-slp.%03d.%03d.pub.3gppnetwork.org
             char buffer[256];

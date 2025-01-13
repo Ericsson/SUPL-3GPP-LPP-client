@@ -272,7 +272,7 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        return {format, std::unique_ptr<io::Output>(new io::TcpClientOutput(host, port, reconnect)),
+        return {format, std::unique_ptr<io::Output>(new io::TcpClientOutput(host, static_cast<uint16_t>(port), reconnect)),
                 print};
     } else if (options.find("path") != options.end()) {
         auto path = options.at("path");
@@ -316,7 +316,7 @@ parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(host, port)), print};
+        return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(host, static_cast<uint16_t>(port))), print};
     } else if (options.find("path") != options.end()) {
         auto path = options.at("path");
         return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(path)), print};
@@ -362,7 +362,7 @@ static char const* output_type(io::Output* output) {
 static void dump(OutputConfig const& config) {
     for (auto const& output : config.outputs) {
         DEBUGF("%p: %s", output.interface.get(), output_type(output.interface.get()));
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         DEBUGF("format: %s%s%s%s%s%s%s", (output.format & OUTPUT_FORMAT_UBX) ? "UBX " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "NMEA " : "",
                (output.format & OUTPUT_FORMAT_RTCM) ? "RTCM " : "",
@@ -384,10 +384,10 @@ static void dump(OutputConfig const& config) {
         auto serial_output = dynamic_cast<io::SerialOutput*>(output.interface.get());
         if (serial_output) {
             DEBUGF("device: %s", serial_output->device().c_str());
-            DEBUGF("baudrate: %s", io::baud_rate_to_string(serial_output->baud_rate()));
-            DEBUGF("data bits: %s", io::data_bits_to_string(serial_output->data_bits()));
-            DEBUGF("stop bits: %s", io::stop_bits_to_string(serial_output->stop_bits()));
-            DEBUGF("parity bit: %s", io::parity_bit_to_string(serial_output->parity_bit()));
+            DEBUGF("baudrate: %s", io::baud_rate_to_str(serial_output->baud_rate()));
+            DEBUGF("data bits: %s", io::data_bits_to_str(serial_output->data_bits()));
+            DEBUGF("stop bits: %s", io::stop_bits_to_str(serial_output->stop_bits()));
+            DEBUGF("parity bit: %s", io::parity_bit_to_str(serial_output->parity_bit()));
             continue;
         }
 

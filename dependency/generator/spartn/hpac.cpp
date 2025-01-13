@@ -22,6 +22,9 @@
 #include <algorithm>
 #include <cmath>
 
+// TODO(ewasjon): Remove this
+#define SPARTN_DEBUG_PRINT 0
+
 namespace generator {
 namespace spartn {
 
@@ -34,8 +37,8 @@ void CorrectionPointSet::calculate_grid_points() {
             auto      i = x * (numberOfStepsLongitude_r16 + 1) + y;
             GridPoint grid_point{};
             grid_point.id        = relative_id;
-            grid_point.latitude  = reference_point_latitude - latitude_delta * x;
-            grid_point.longitude = reference_point_longitude + longitude_delta * y;
+            grid_point.latitude  = reference_point_latitude - latitude_delta * static_cast<double>(x);
+            grid_point.longitude = reference_point_longitude + longitude_delta * static_cast<double>(y);
             if (has_grid_point(i)) {
                 relative_id++;
             } else {
@@ -534,9 +537,9 @@ compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
     return result;
 }
 
-static int
+static uint8_t
 compute_troposphere_residual_field_size(std::vector<TroposphereResidual> const& residuals) {
-    int residual_field_size = 0;
+    uint8_t residual_field_size = 0;
     for (auto tr : residuals) {
         if (tr.invalid) continue;
         if (within_range(-0.124, 0.124, tr.residual))
@@ -633,7 +636,7 @@ static void troposphere_data_block(MessageBuilder&     builder,
                                                    add_hydrostatic_residual_to_wet_residual);
 
     // Compute the residual field size for all grid points
-    auto residual_field_size = 0;
+    uint8_t residual_field_size = 0;
     if (calculate_sf051) {
         residual_field_size = compute_troposphere_residual_field_size(residuals);
     } else {
@@ -684,7 +687,7 @@ static int compute_equation_type(std::vector<HpacSatellite>& satellites) {
 
 static StecParameters
 ionosphere_data_block_1(MessageBuilder& builder, CorrectionPointSet& correction_point_set,
-                        HpacCorrections& corrections, HpacSatellite const& satellite,
+                        UNUSED HpacCorrections& corrections, HpacSatellite const& satellite,
                         int equation_type, int sf055_override, int sf055_default,
                         bool stec_transform, bool sign_flip_c00, bool sign_flip_c01,
                         bool sign_flip_c10, bool sign_flip_c11) {

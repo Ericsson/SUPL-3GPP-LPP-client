@@ -6,7 +6,6 @@ add_library(dependency_generator_tokoro STATIC
     "observation.cpp"
 
     "models/helper.cpp"
-    "models/gpt.cpp"
     "models/mops.cpp"
     "models/geoid.cpp"
     "models/shapiro.cpp"

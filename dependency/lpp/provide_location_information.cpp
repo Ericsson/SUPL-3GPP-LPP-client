@@ -80,6 +80,7 @@ static long encode_confidence(double confidence) {
 }
 
 static LocationCoordinates_t* location_coordinates_haepue(LocationShape const& shape) {
+    VSCOPE_FUNCTION();
     auto location_coordinates = ALLOC_ZERO(LocationCoordinates_t);
     location_coordinates->present =
         LocationCoordinates_PR_highAccuracyEllipsoidPointWithUncertaintyEllipse_v1510;
@@ -99,6 +100,7 @@ static LocationCoordinates_t* location_coordinates_haepue(LocationShape const& s
 }
 
 static LocationCoordinates_t* location_coordinates_haepaue(LocationShape const& shape) {
+    VSCOPE_FUNCTION();
     auto location_coordinates = ALLOC_ZERO(LocationCoordinates_t);
     location_coordinates->present =
         LocationCoordinates_PR_highAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_v1510;
@@ -228,8 +230,9 @@ static Velocity_t* velocity(VelocityShape const& shape) {
 
 static CommonIEsProvideLocationInformation*
 common_ies_provide_location_information(ProvideLocationInformation const& data) {
-    auto message = ALLOC_ZERO(CommonIEsProvideLocationInformation);
+    VSCOPE_FUNCTION();
 
+    auto message = ALLOC_ZERO(CommonIEsProvideLocationInformation);
     if (data.location_information.has_value()) {
         auto const& location_information = data.location_information.const_value();
 
@@ -255,6 +258,14 @@ static HA_GNSS_Metrics_r17* lpp_ha_gnss_metrics_r17(HaGnssMetrics const& metrics
     element->nrOfUsedSatellites_r17 = metrics.number_of_satellites;
 
     switch (metrics.fix_quality) {
+    case FixQuality::INVALID:
+    case FixQuality::STANDALONE:
+    case FixQuality::DGPS_FIX:
+    case FixQuality::PPS_FIX:
+    case FixQuality::DEAD_RECKONING:
+    case FixQuality::MANUAL_INPUT:
+    case FixQuality::SIMULATION:
+    case FixQuality::WAAS_FIX: break;
     case FixQuality::RTK_FIX: {
         element->fixType_r17  = ALLOC_ZERO(long);
         *element->fixType_r17 = HA_GNSS_Metrics_r17__fixType_r17_carrier_phase_fix;
@@ -263,7 +274,6 @@ static HA_GNSS_Metrics_r17* lpp_ha_gnss_metrics_r17(HaGnssMetrics const& metrics
         element->fixType_r17  = ALLOC_ZERO(long);
         *element->fixType_r17 = HA_GNSS_Metrics_r17__fixType_r17_carrier_phase_float;
     } break;
-    default: break;
     }
 
     if (metrics.age_of_corrections.has_value()) {
@@ -316,7 +326,7 @@ static GNSS_LocationInformation* gnss_location_information(ProvideLocationInform
     mrt.gnss_TOD_msec = msec % (3600 * 1000);
 
     if (nfrac > 0) {
-        mrt.gnss_TOD_frac = ALLOC_ZERO(long);
+        mrt.gnss_TOD_frac  = ALLOC_ZERO(long);
         *mrt.gnss_TOD_frac = static_cast<long>(nfrac);
     }
 

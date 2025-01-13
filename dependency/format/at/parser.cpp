@@ -23,7 +23,7 @@ std::string const& Parser::peek_line() const NOEXCEPT {
 }
 
 std::string Parser::skip_line() NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (mLines.empty()) {
         // no lines to skip
@@ -37,7 +37,7 @@ std::string Parser::skip_line() NOEXCEPT {
 }
 
 void Parser::process() NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     while (buffer_length() > 0) {
         VERBOSEF("trying to parse next line");
@@ -52,7 +52,7 @@ void Parser::process() NOEXCEPT {
 }
 
 bool Parser::process_line(std::string& line) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     line.clear();
 

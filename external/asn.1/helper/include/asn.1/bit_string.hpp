@@ -1,5 +1,14 @@
 #pragma once
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <BIT_STRING.h>
+#pragma GCC diagnostic pop
+
 #include <asn.1/helper.hpp>
 #include <string>
 
@@ -16,7 +25,7 @@ public:
     bool get_bit(ssize_t) const;
     void set_integer(size_t, size_t, size_t);
 
-    int64_t     as_int64() const;
+    int64_t as_int64() const;
 #if 0
     std::string as_string() const;
 #endif
@@ -37,8 +46,8 @@ public:
         return bit_string;
     }
 
-    static const BitString* from(const BIT_STRING_s* inner) {
-        auto bit_string = reinterpret_cast<const BitString*>(inner);
+    static BitString const* from(BIT_STRING_s const* inner) {
+        auto bit_string = reinterpret_cast<BitString const*>(inner);
         return bit_string;
     }
 

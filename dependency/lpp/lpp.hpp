@@ -1,6 +1,8 @@
 #pragma once
 #include <loglet/loglet.hpp>
 
+// TODO(ewasjon): Remove this
+#if 0
 // Defer Macro
 // https://gist.github.com/win-t/125f9e75c0a0f4a74a951478d27ccb4f
 template <typename F>
@@ -34,3 +36,4 @@ struct {
 #define TOKENPASTE(x, y) x##y
 #define TOKENPASTE2(x, y) TOKENPASTE(x, y)
 #define LPP_DEFER auto TOKENPASTE2(__deferred_lambda_call, __COUNTER__) = deferrer << [&]
+#endif

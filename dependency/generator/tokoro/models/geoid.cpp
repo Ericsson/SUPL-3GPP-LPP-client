@@ -7627,24 +7627,26 @@ static double embedded_geoid_height(double latitude, double longitude) {
     }
     a  = (longitude - embedded::range[0]) / dlon;
     b  = (latitude - embedded::range[2]) / dlat;
-    i1 = (int)a;
+    i1 = static_cast<int>(a);
     a -= i1;
     i2 = i1 < 360 ? i1 + 1 : i1;
-    j1 = (int)b;
+    j1 = static_cast<int>(b);
     b -= j1;
     j2   = j1 < 180 ? j1 + 1 : j1;
-    y[0] = embedded::geoid[i1][j1];
-    y[1] = embedded::geoid[i2][j1];
-    y[2] = embedded::geoid[i1][j2];
-    y[3] = embedded::geoid[i2][j2];
+    y[0] = static_cast<double>(embedded::geoid[i1][j1]);
+    y[1] = static_cast<double>(embedded::geoid[i2][j1]);
+    y[2] = static_cast<double>(embedded::geoid[i1][j2]);
+    y[3] = static_cast<double>(embedded::geoid[i2][j2]);
     return interpb(y, a, b);
 }
 
 double Geoid::height(double latitude, double longitude, Model model) {
     switch (model) {
     case Model::EMBEDDED: return embedded_geoid_height(latitude, longitude);
-    default: return 0.0;
     }
+
+    UNREACHABLE();
+    return 0.0;
 }
 
 }  // namespace generator::tokoro

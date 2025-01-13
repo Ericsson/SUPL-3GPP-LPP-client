@@ -1,5 +1,6 @@
 #pragma once
 #include <core/core.hpp>
+#include <loglet/loglet.hpp>
 
 namespace supl {
 
@@ -14,30 +15,30 @@ struct Cell {
     Type type;
     union {
         struct {
-            int64_t mcc;
-            int64_t mnc;
-            int64_t lac;
-            int64_t ci;
+            uint64_t mcc;
+            uint64_t mnc;
+            uint64_t lac;
+            uint64_t ci;
         } gsm;
 
         struct {
-            int64_t mcc;
-            int64_t mnc;
-            int64_t ci;
-            int64_t tac;
-            int64_t phys_id;
+            uint64_t mcc;
+            uint64_t mnc;
+            uint64_t ci;
+            uint64_t tac;
+            uint64_t phys_id;
         } lte;
 
         struct {
-            int64_t mcc;
-            int64_t mnc;
-            int64_t ci;
-            int64_t tac;
-            int64_t phys_id;
+            uint64_t mcc;
+            uint64_t mnc;
+            uint64_t ci;
+            uint64_t tac;
+            uint64_t phys_id;
         } nr;
     } data;
 
-    static Cell gsm(int64_t mcc, int64_t mnc, int64_t lac, int64_t ci) {
+    static Cell gsm(uint64_t mcc, uint64_t mnc, uint64_t lac, uint64_t ci) {
         Cell cell{};
         cell.type         = Type::GSM;
         cell.data.gsm.mcc = mcc;
@@ -47,7 +48,7 @@ struct Cell {
         return cell;
     }
 
-    static Cell lte(int64_t mcc, int64_t mnc, int64_t tac, int64_t ci, int64_t phys_id = 0) {
+    static Cell lte(uint64_t mcc, uint64_t mnc, uint64_t tac, uint64_t ci, uint64_t phys_id = 0) {
         Cell cell{};
         cell.type             = Type::LTE;
         cell.data.lte.mcc     = mcc;
@@ -58,7 +59,7 @@ struct Cell {
         return cell;
     }
 
-    static Cell nr(int64_t mcc, int64_t mnc, int64_t tac, int64_t ci, int64_t phys_id = 0) {
+    static Cell nr(uint64_t mcc, uint64_t mnc, uint64_t tac, uint64_t ci, uint64_t phys_id = 0) {
         Cell cell{};
         cell.type            = Type::NR;
         cell.data.nr.mcc     = mcc;
@@ -83,12 +84,11 @@ inline bool operator==(Cell const& lhs, Cell const& rhs) {
     case Cell::Type::NR:
         return lhs.data.nr.mcc == rhs.data.nr.mcc && lhs.data.nr.mnc == rhs.data.nr.mnc &&
                lhs.data.nr.tac == rhs.data.nr.tac && lhs.data.nr.ci == rhs.data.nr.ci;
-    default: return false;
+    case Cell::Type::UNKNOWN: break;
     }
 
-#if defined(COMPILER_CANNOT_DEDUCE_UNREACHABLE)
+    XUNREACHABLE("supl");
     return false;
-#endif
 }
 
 inline bool operator!=(Cell const& lhs, Cell const& rhs) {

@@ -73,13 +73,13 @@ periodic_assistance_data_request(PeriodicSessionHandle const& periodic_session) 
     return message;
 }
 
-static void mcc_list(MCC* mcc, int64_t mcc_value) {
-    if (mcc_value < 0 || mcc_value > 999) {
+static void mcc_list(MCC* mcc, uint64_t mcc_value) {
+    if (mcc_value > 999) {
         mcc_value = 999;
     }
 
     char tmp[8];
-    sprintf(tmp, "%" PRId64, mcc_value);
+    sprintf(tmp, "%" PRIu64, mcc_value);
 
     for (size_t i = 0; i < strlen(tmp); i++) {
         auto d = ALLOC_ZERO(MCC_MNC_Digit_t);
@@ -88,13 +88,13 @@ static void mcc_list(MCC* mcc, int64_t mcc_value) {
     }
 }
 
-static void mnc_list(MNC* mnc, int64_t mnc_value) {
-    if (mnc_value < 0 || mnc_value > 999) {
+static void mnc_list(MNC* mnc, uint64_t mnc_value) {
+    if (mnc_value > 999) {
         mnc_value = 999;
     }
 
     char tmp[8];
-    sprintf(tmp, "%02" PRId64, mnc_value);
+    sprintf(tmp, "%02" PRIu64, mnc_value);
 
     for (size_t i = 0; i < strlen(tmp); i++) {
         auto d = ALLOC_ZERO(MCC_MNC_Digit_t);
@@ -109,11 +109,15 @@ static NCGI_r15* ncgi_primary_cell_id(supl::Cell const& cell) {
     }
 
     auto message = ALLOC_ZERO(NCGI_r15);
-    mcc_list((MCC*)&message->mcc_r15, cell.data.nr.mcc);
-    mnc_list((MNC*)&message->mnc_r15, cell.data.nr.mnc);
+    auto mcc     = reinterpret_cast<MCC*>(&message->mcc_r15);
+    auto mnc     = reinterpret_cast<MNC*>(&message->mnc_r15);
 
+    mcc_list(mcc, cell.data.nr.mcc);
+    mnc_list(mnc, cell.data.nr.mnc);
+
+    ASSERT(cell.data.nr.ci > 0, "cell id <= 0");
     helper::BitStringBuilder{}
-        .integer(0, 36, cell.data.nr.ci)
+        .integer(0, 36, static_cast<uint64_t>(cell.data.nr.ci))
         .into_bit_string(36, &message->nr_cellidentity_r15);
     return message;
 }
@@ -124,11 +128,14 @@ static ECGI* ecgi_primary_cell_id(supl::Cell const& cell) {
     }
 
     auto message = ALLOC_ZERO(ECGI);
-    mcc_list((MCC*)&message->mcc, cell.data.lte.mcc);
-    mnc_list((MNC*)&message->mnc, cell.data.lte.mnc);
+    auto mcc     = reinterpret_cast<MCC*>(&message->mcc);
+    auto mnc     = reinterpret_cast<MNC*>(&message->mnc);
+    mcc_list(mcc, cell.data.lte.mcc);
+    mnc_list(mnc, cell.data.lte.mnc);
 
+    ASSERT(cell.data.lte.ci > 0, "cell id <= 0");
     helper::BitStringBuilder{}
-        .integer(0, 28, cell.data.lte.ci)
+        .integer(0, 28, static_cast<uint64_t>(cell.data.lte.ci))
         .into_bit_string(28, &message->cellidentity);
     return message;
 }

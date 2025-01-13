@@ -44,7 +44,7 @@ static void parse(Config* config) {
         dt.password = gPassword.Get();
 
         if (gPort) {
-            dt.port = gPort.Get();
+            dt.port = static_cast<uint16_t>(gPort.Get());
         }
     }
 }

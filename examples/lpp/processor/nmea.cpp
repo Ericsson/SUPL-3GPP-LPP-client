@@ -126,6 +126,7 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
     case format::nmea::GgaFixQuality::DeadReckoning:
         metrics.fix_quality = FixQuality::DEAD_RECKONING;
         break;
+    default: metrics.fix_quality = FixQuality::INVALID; break;
     }
     system.push(std::move(metrics));
 }

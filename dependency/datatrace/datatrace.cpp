@@ -26,7 +26,7 @@ static std::string gDevice;
 
 void initialize(std::string const& device, std::string const& server, int port,
                 std::string const& username, std::string const& password) {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
     ::mosquitto_lib_init();
     VERBOSEF("::mosquitto_lib_init()");
 
@@ -69,7 +69,7 @@ void initialize(std::string const& device, std::string const& server, int port,
 }
 
 void finalize() {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
     ASSERT(gMosq != nullptr, "mosq is null");
 
     ::mosquitto_lib_cleanup();
@@ -88,7 +88,7 @@ void replace_all(std::string& str, std::string const& from, std::string const& t
 void report_observation(ts::Tai const& time, std::string const& satellite,
                         std::string const& signal, Observation const& obs) {
     if (gMosq == nullptr) return;
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto signal_copy = signal;
     replace_all(signal_copy, "+", "");
@@ -134,29 +134,30 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
         ss << ",\"carrier_to_noise_ratio\":" << obs.carrier_to_noise_ratio.value;
     if (obs.phase_lock_time.valid) ss << ",\"phase_lock_time\":" << obs.phase_lock_time.value;
 
-    if(obs.orbit_radial_axis.valid) {
+    if (obs.orbit_radial_axis.valid) {
         ss << ",\"orbit_radial_axis_x\":" << obs.orbit_radial_axis.value.x;
         ss << ",\"orbit_radial_axis_y\":" << obs.orbit_radial_axis.value.y;
         ss << ",\"orbit_radial_axis_z\":" << obs.orbit_radial_axis.value.z;
     }
-    if(obs.orbit_cross_axis.valid) {
+    if (obs.orbit_cross_axis.valid) {
         ss << ",\"orbit_cross_axis_x\":" << obs.orbit_cross_axis.value.x;
         ss << ",\"orbit_cross_axis_y\":" << obs.orbit_cross_axis.value.y;
         ss << ",\"orbit_cross_axis_z\":" << obs.orbit_cross_axis.value.z;
     }
-    if(obs.orbit_along_axis.valid) {
+    if (obs.orbit_along_axis.valid) {
         ss << ",\"orbit_along_axis_x\":" << obs.orbit_along_axis.value.x;
         ss << ",\"orbit_along_axis_y\":" << obs.orbit_along_axis.value.y;
         ss << ",\"orbit_along_axis_z\":" << obs.orbit_along_axis.value.z;
     }
-    if(obs.orbit_delta_t.valid) ss << ",\"orbit_delta_t\":" << obs.orbit_delta_t.value;
+    if (obs.orbit_delta_t.valid) ss << ",\"orbit_delta_t\":" << obs.orbit_delta_t.value;
     ss << "}";
 
     auto ss_data = ss.str();
-    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
-                                       ss_data.c_str(), 0, false);
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
     VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_data.size(), result);
+             topic.c_str(), ss_size, result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish observation: %s", mosquitto_strerror(result));
         return;
@@ -165,7 +166,7 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
 
 void report_satellite(ts::Tai const& time, std::string const& satellite, Satellite const& sat) {
     if (gMosq == nullptr) return;
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto topic    = "datatrace/sat/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -187,7 +188,7 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
     if (sat.elevation.valid) ss << ",\"elevation\":" << sat.elevation.value;
     if (sat.azimuth.valid) ss << ",\"azimuth\":" << sat.azimuth.value;
     if (sat.iod.valid) ss << ",\"iod\":" << sat.iod.value;
-    if(sat.eph_position.valid) {
+    if (sat.eph_position.valid) {
         ss << ",\"eph_pos_x\":" << sat.eph_position.value.x;
         ss << ",\"eph_pos_y\":" << sat.eph_position.value.y;
         ss << ",\"eph_pos_z\":" << sat.eph_position.value.z;
@@ -195,10 +196,11 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
     ss << "}";
 
     auto ss_data = ss.str();
-    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
-                                       ss_data.c_str(), 0, false);
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
     VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_data.size(), result);
+             topic.c_str(), ss_size, result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish satellite: %s", mosquitto_strerror(result));
         return;
@@ -208,7 +210,7 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
 void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satellite,
                                  Option<Float3> delta, Option<Float3> dot_delta) {
     if (gMosq == nullptr) return;
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto topic    = "datatrace/ssr/orbit/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -230,10 +232,11 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
     ss << "}";
 
     auto ss_data = ss.str();
-    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
-                                       ss_data.c_str(), 0, false);
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
     VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_data.size(), result);
+             topic.c_str(), ss_size, result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish ssr orbit correction: %s", mosquitto_strerror(result));
         return;
@@ -243,7 +246,7 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
 void report_ssr_clock_correction(ts::Tai const& time, std::string const& satellite,
                                  Option<double> c0, Option<double> c1, Option<double> c2) {
     if (gMosq == nullptr) return;
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto topic    = "datatrace/ssr/clock/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -258,10 +261,11 @@ void report_ssr_clock_correction(ts::Tai const& time, std::string const& satelli
     ss << "}";
 
     auto ss_data = ss.str();
-    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
-                                       ss_data.c_str(), 0, false);
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
     VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_data.size(), result);
+             topic.c_str(), ss_size, result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish ssr clock correction: %s", mosquitto_strerror(result));
         return;
@@ -273,7 +277,7 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
                                        Option<double> c11, Option<double> reference_point_latitude,
                                        Option<double> reference_point_longitude) {
     if (gMosq == nullptr) return;
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto topic    = "datatrace/ssr/iono_poly/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -293,21 +297,22 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
     ss << "}";
 
     auto ss_data = ss.str();
-    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
-                                       ss_data.c_str(), 0, false);
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
     VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_data.size(), result);
+             topic.c_str(), ss_size, result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish ssr ionospheric polynomial: %s", mosquitto_strerror(result));
         return;
     }
 }
 
-void report_ssr_tropospheric_grid(ts::Tai const& time, int grid_point_id,
+void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
                                   Option<Float3> position_llh, Option<double> tropo_wet,
                                   Option<double> tropo_dry) {
     if (gMosq == nullptr) return;
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto topic =
         "datatrace/ssr/tropo_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/v1";
@@ -326,21 +331,22 @@ void report_ssr_tropospheric_grid(ts::Tai const& time, int grid_point_id,
     ss << "}";
 
     auto ss_data = ss.str();
-    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
-                                       ss_data.c_str(), 0, false);
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
     VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_data.size(), result);
+             topic.c_str(), ss_size, result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish ssr tropospheric grid: %s", mosquitto_strerror(result));
         return;
     }
 }
 
-void report_ssr_ionospheric_grid(ts::Tai const& time, int grid_point_id,
+void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
                                  Option<Float3> position_llh, std::string const& satellite,
                                  Option<double> residual) {
     if (gMosq == nullptr) return;
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto topic = "datatrace/ssr/iono_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/" +
                  satellite + "/v1";
@@ -358,10 +364,11 @@ void report_ssr_ionospheric_grid(ts::Tai const& time, int grid_point_id,
     ss << "}";
 
     auto ss_data = ss.str();
-    auto result  = ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_data.size(),
-                                       ss_data.c_str(), 0, false);
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
     VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_data.size(), result);
+             topic.c_str(), ss_size, result);
     if (result != MOSQ_ERR_SUCCESS) {
         WARNF("failed to publish ssr ionospheric grid: %s", mosquitto_strerror(result));
         return;

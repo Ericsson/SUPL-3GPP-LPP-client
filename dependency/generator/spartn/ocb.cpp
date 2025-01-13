@@ -704,7 +704,7 @@ void Generator::generate_ocb(uint16_t iod) {
                 auto along  = decode::delta_AlongTrack_r15(orbit.delta_AlongTrack_r15);
                 auto cross  = decode::delta_CrossTrack_r15(orbit.delta_CrossTrack_r15);
 
-                if(mFlipOrbitCorrection) {
+                if (mFlipOrbitCorrection) {
                     radial *= -1;
                     cross *= -1;
                 }
@@ -794,7 +794,9 @@ void Generator::generate_ocb(uint16_t iod) {
                     auto  quality = decode::ssr_URA_r16(ura.ssr_URA_r16);
                     if (quality.invalid) {
                         uint8_t ura_value =
-                            mUraDefault < 0 ? 0 : (mUraDefault > 7 ? 7 : mUraDefault);
+                            mUraDefault < 0 ?
+                                0 :
+                                (mUraDefault > 7 ? 7 : static_cast<uint8_t>(mUraDefault));
                         builder.sf024_raw(ura_value);
 #ifdef SPARTN_DEBUG_PRINT
                         printf("    sf024: %d (%u) [default/invalid]\n", mUraDefault, ura_value);
@@ -806,7 +808,9 @@ void Generator::generate_ocb(uint16_t iod) {
 #endif
                     }
                 } else {
-                    uint8_t ura_value = mUraDefault < 0 ? 0 : (mUraDefault > 7 ? 7 : mUraDefault);
+                    uint8_t ura_value =
+                        mUraDefault < 0 ? 0 :
+                                          (mUraDefault > 7 ? 7 : static_cast<uint8_t>(mUraDefault));
                     builder.sf024_raw(ura_value);
 #ifdef SPARTN_DEBUG_PRINT
                     printf("    sf024: %d (%u) [default/missing]\n", mUraDefault, ura_value);

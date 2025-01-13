@@ -65,7 +65,7 @@ void Lpp2Spartn::inspect(streamline::System&, DataType const& message) {
         WARNF("no SPARTN messages generated, check that you're using `--ad-type ssr`");
     } else {
         INFOF("generated %zu SPARTN messages", messages.size());
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         for (auto& msg : messages) {
             auto data = msg.build();
             DEBUGF("message: %02X %02X: %zu bytes", msg.message_type(), msg.message_subtype(),

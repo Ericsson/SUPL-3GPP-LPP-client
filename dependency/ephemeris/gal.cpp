@@ -140,7 +140,7 @@ double GalEphemeris::calculate_clock_bias(ts::Gst const& time, double e_k) const
 
 double GalEphemeris::calculate_relativistic_correction(Float3 const& position,
                                                        Float3 const& velocity) const NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto r_v = dot_product(position, velocity);
     VERBOSEF("r_v: %+.14f", r_v);

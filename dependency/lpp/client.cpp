@@ -270,7 +270,7 @@ void Client::process_request_location_information(lpp::TransactionHandle const& 
     case PeriodicalReportingCriteria__reportingAmount_ra64: reporting_amount = 64; break;
     case PeriodicalReportingCriteria__reportingAmount_ra_Infinity: reporting_amount = 0; break;
     default: WARNF("unknown reporting amount"); return;
-    };
+    }
 
     std::chrono::seconds reporting_interval{1};
     switch (periodical_reporting->reportingInterval) {
@@ -305,7 +305,7 @@ void Client::process_request_location_information(lpp::TransactionHandle const& 
         reporting_interval = std::chrono::seconds{64};
         break;
     default: WARNF("unknown reporting interval"); return;
-    };
+    }
 
     PeriodicLocationInformationDeliveryDescription description{};
     description.reporting_amount_unlimited = reporting_amount_unlimited;

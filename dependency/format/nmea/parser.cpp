@@ -28,7 +28,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         }
 
         // skip one byte and try again
-        skip(1);
+        skip(1u);
     }
 
     // search for '\r\n'
@@ -142,7 +142,7 @@ ChecksumResult Parser::checksum(std::string const& buffer) {
         } else {
             return ChecksumResult::INVALID_VALUE;
         }
-    } catch (std::exception const& e) {
+    } catch (...) {
         return ChecksumResult::INVALID_VALUE;
     }
 }

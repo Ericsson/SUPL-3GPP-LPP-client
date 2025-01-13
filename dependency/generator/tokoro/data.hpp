@@ -190,13 +190,14 @@ struct GridData {
         mDeltaLongitude         = correction_point_set.step_of_longitude;
         mNumberOfStepsLatitude  = correction_point_set.number_of_steps_latitude;
         mNumberOfStepsLongitude = correction_point_set.number_of_steps_longitude;
-        mGridPoints.resize((mNumberOfStepsLatitude + 1) * (mNumberOfStepsLongitude + 1));
+        auto grid_point_count   = (mNumberOfStepsLatitude + 1) * (mNumberOfStepsLongitude + 1);
+        mGridPoints.resize(static_cast<size_t>(grid_point_count));
     }
 
     void add_point(long array_index, long absolute_index, bool valid, Float3 llh) {
         assert(absolute_index >= 0);
         assert(absolute_index < static_cast<long>(mGridPoints.size()));
-        auto& grid_point             = mGridPoints[absolute_index];
+        auto& grid_point             = mGridPoints[static_cast<size_t>(absolute_index)];
         grid_point.valid             = valid;
         grid_point.position          = llh;
         grid_point.array_index       = array_index;

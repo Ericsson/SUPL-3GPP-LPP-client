@@ -6,7 +6,18 @@
 #include <unistd.h>
 #include <vector>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #include <args.hpp>
+#pragma GCC diagnostic pop
+
 #include <loglet/loglet.hpp>
 
 #define LOGLET_CURRENT_MODULE "ctrl-toggle"
@@ -102,7 +113,8 @@ struct Config {
                     break;
                 }
 
-                usleep(1000 * config.update_ms);
+                auto ms = 1000 * config.update_ms;
+                usleep(static_cast<__useconds_t>(ms));
             }
         }
 

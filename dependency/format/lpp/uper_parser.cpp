@@ -41,9 +41,9 @@ LPP_Message* UperParser::try_parse() NOEXCEPT {
     buffer.resize(buffer_length());
     copy_to_buffer(buffer.data(), buffer.size());
 
-    auto message = (LPP_Message*)nullptr;
-    auto result  = uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, (void**)&message,
-                                        buffer.data(), buffer.size());
+    LPP_Message* message{};
+    auto         result = uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, reinterpret_cast<void**>(&message),
+                                               buffer.data(), buffer.size());
     if (result.code == RC_FAIL) {
         VERBOSEF("failed to decode uper: %zd bytes consumed (buffer %u)", result.consumed,
                  buffer_length());

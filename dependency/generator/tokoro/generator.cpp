@@ -113,7 +113,7 @@ double ReferenceStation::g07_l1_ca() const NOEXCEPT {
 }
 
 void ReferenceStation::initialize_satellites() NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // GPS
     if (mGenerateGps) {
@@ -148,7 +148,7 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
 }
 
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto correction_data = *mGenerator.mCorrectionData;
 
@@ -170,7 +170,7 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 }
 
 bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (mGenerator.mCorrectionData == nullptr) {
         WARNF("no correction data available");
@@ -334,7 +334,7 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
 }
 
 std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     std::vector<rtcm::Message> messages;
 
@@ -350,7 +350,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         rtcm::generate_1006(reference_station, mGenerateGps, mGenerateGlo, mGenerateGal));
 
     if (mRtcmPhysicalGroundPositionSet) {
-        auto physical_reference_station_id = 4095;
+        auto physical_reference_station_id = 4095u;
         if (mRtcmReferenceStationId > 1) {
             physical_reference_station_id = mRtcmReferenceStationId - 1;
         }
@@ -478,7 +478,7 @@ Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCE
 }
 
 bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     if (!lpp_message.lpp_MessageBody) return false;
 
@@ -634,12 +634,12 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto& list = it->second;
 
         auto gps_time = ts::Gps(time);
-        WARNF("searching: %s %u", sv_id.name(), iod);
+        VERBOSEF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
-            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
-                  ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
-                  ephemeris.is_valid(gps_time) ? " [time]" : "",
-                  ephemeris.lpp_iod == iod ? " [iod]" : "");
+            VERBOSEF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
+                     ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
+                     ephemeris.is_valid(gps_time) ? " [time]" : "",
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
@@ -657,12 +657,12 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto& list = it->second;
 
         auto gal_time = ts::Gst(time);
-        WARNF("searching: %s %u", sv_id.name(), iod);
+        VERBOSEF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
-            WARNF("  %4u %8.0f %8.0f | %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
-                  ephemeris.toc, ephemeris.lpp_iod, ephemeris.iod_nav,
-                  ephemeris.is_valid(gal_time) ? " [time]" : "",
-                  ephemeris.lpp_iod == iod ? " [iod]" : "");
+            VERBOSEF("  %4u %8.0f %8.0f | %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
+                     ephemeris.toc, ephemeris.lpp_iod, ephemeris.iod_nav,
+                     ephemeris.is_valid(gal_time) ? " [time]" : "",
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gal_time)) continue;
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
@@ -677,13 +677,12 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto& list = it->second;
 
         auto bds_time = ts::Bdt(time);
-        WARNF("searching: %s %u", sv_id.name(), iod);
+        VERBOSEF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
-            auto eph_time = ts::Bdt::from_week_tow(ephemeris.week_number, ephemeris.toe, 0);
-            WARNF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
-                  ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
-                  ephemeris.is_valid(bds_time) ? " [time]" : "",
-                  ephemeris.lpp_iod == iod ? " [iod]" : "");
+            VERBOSEF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
+                     ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
+                     ephemeris.is_valid(bds_time) ? " [time]" : "",
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(bds_time)) continue;
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);

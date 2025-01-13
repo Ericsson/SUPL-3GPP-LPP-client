@@ -80,10 +80,10 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
                                        Option<double> c00, Option<double> c01, Option<double> c10,
                                        Option<double> c11, Option<double> reference_point_latitude,
                                        Option<double> reference_point_longitude);
-void report_ssr_tropospheric_grid(ts::Tai const& time, int grid_point_id,
+void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
                                   Option<Float3> position_llh, Option<double> tropo_wet,
                                   Option<double> tropo_dry);
-void report_ssr_ionospheric_grid(ts::Tai const& time, int grid_point_id,
+void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
                                  Option<Float3> position_llh, std::string const& satellite,
                                  Option<double> residual);
 

@@ -241,7 +241,7 @@ public:
     inline uint8_t sf024(double ure) {
         if (ure < 0.0) return sf024_raw(0);
         double  values[] = {0.01, 0.02, 0.05, 0.1, 0.3, 1.0, 2.0};
-        uint8_t index    = find_closest(0.0, 2.0, values, 7, ure);
+        uint8_t index    = find_closest<uint8_t>(0.0, 2.0, values, 7, ure);
         return sf024_raw(index + 1);
     }
 
@@ -371,7 +371,7 @@ public:
     inline uint8_t sf042(double quality) {
         if (quality < 0.0) return sf042_raw(0);
         double  values[] = {0.01, 0.02, 0.04, 0.08, 0.16, 0.32, 0.64};
-        uint8_t index    = find_closest(0.0, 0.64, values, 7, quality);
+        uint8_t index    = find_closest<uint8_t>(0.0, 0.64, values, 7, quality);
         return sf042_raw(index + 1);
     }
 
@@ -437,7 +437,7 @@ public:
         if (quality < 0.0) return sf055_raw(0);
         double  values[] = {0.03, 0.05, 0.07,  0.14,  0.28,  0.56,   1.12,  2.24,
                             4.48, 8.96, 17.92, 35.84, 71.68, 143.36, 287.52};
-        uint8_t index    = find_closest(0.0, 287.52, values, 15, quality);
+        uint8_t index    = find_closest<uint8_t>(0.0, 287.52, values, 15, quality);
         return sf055_raw(index + 1);
     }
 

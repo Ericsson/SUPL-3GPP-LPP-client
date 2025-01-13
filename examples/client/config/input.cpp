@@ -275,7 +275,7 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, port, reconnect));
+        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, static_cast<uint16_t>(port), reconnect));
         return {format, print, std::move(input)};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
@@ -320,7 +320,7 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(listen, port));
+        auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
         return {format, print, std::move(input)};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
@@ -365,7 +365,7 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(listen, port));
+        auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
         return {format, print, std::move(input)};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
@@ -413,73 +413,10 @@ static char const* input_type(io::Input* input) {
     return "unknown";
 }
 
-static char const* baud_rate_to_str(io::BaudRate baud_rate) {
-    switch (baud_rate) {
-    case io::BaudRate::BR50: return "50";
-    case io::BaudRate::BR75: return "75";
-    case io::BaudRate::BR110: return "110";
-    case io::BaudRate::BR134: return "134";
-    case io::BaudRate::BR150: return "150";
-    case io::BaudRate::BR200: return "200";
-    case io::BaudRate::BR300: return "300";
-    case io::BaudRate::BR600: return "600";
-    case io::BaudRate::BR1200: return "1200";
-    case io::BaudRate::BR1800: return "1800";
-    case io::BaudRate::BR2400: return "2400";
-    case io::BaudRate::BR4800: return "4800";
-    case io::BaudRate::BR9600: return "9600";
-    case io::BaudRate::BR19200: return "19200";
-    case io::BaudRate::BR38400: return "38400";
-    case io::BaudRate::BR57600: return "57600";
-    case io::BaudRate::BR115200: return "115200";
-    case io::BaudRate::BR230400: return "230400";
-    case io::BaudRate::BR460800: return "460800";
-    case io::BaudRate::BR500000: return "500000";
-    case io::BaudRate::BR576000: return "576000";
-    case io::BaudRate::BR921600: return "921600";
-    case io::BaudRate::BR1000000: return "1000000";
-    case io::BaudRate::BR1152000: return "1152000";
-    case io::BaudRate::BR1500000: return "1500000";
-    case io::BaudRate::BR2000000: return "2000000";
-    case io::BaudRate::BR2500000: return "2500000";
-    case io::BaudRate::BR3000000: return "3000000";
-    case io::BaudRate::BR3500000: return "3500000";
-    case io::BaudRate::BR4000000: return "4000000";
-    }
-    return "unknown";
-}
-
-static char const* data_bits_to_str(io::DataBits data_bits) {
-    switch (data_bits) {
-    case io::DataBits::FIVE: return "5";
-    case io::DataBits::SIX: return "6";
-    case io::DataBits::SEVEN: return "7";
-    case io::DataBits::EIGHT: return "8";
-    }
-    return "unknown";
-}
-
-static char const* stop_bits_to_str(io::StopBits stop_bits) {
-    switch (stop_bits) {
-    case io::StopBits::ONE: return "1";
-    case io::StopBits::TWO: return "2";
-    }
-    return "unknown";
-}
-
-static char const* parity_bit_to_str(io::ParityBit parity_bit) {
-    switch (parity_bit) {
-    case io::ParityBit::NONE: return "none";
-    case io::ParityBit::ODD: return "odd";
-    case io::ParityBit::EVEN: return "even";
-    }
-    return "unknown";
-}
-
 static void dump(InputConfig const& config) {
     for (auto const& input : config.inputs) {
         DEBUGF("%p: %s", input.interface.get(), input_type(input.interface.get()));
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         DEBUGF("format: %s%s%s%s%s", (input.format & INPUT_FORMAT_UBX) ? "UBX " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "NMEA " : "",
                (input.format & INPUT_FORMAT_RTCM) ? "RTCM " : "",
@@ -498,10 +435,10 @@ static void dump(InputConfig const& config) {
         auto serial_input = dynamic_cast<io::SerialInput*>(input.interface.get());
         if (serial_input) {
             DEBUGF("device: \"%s\"", serial_input->device().c_str());
-            DEBUGF("baudrate: %s", baud_rate_to_str(serial_input->baud_rate()));
-            DEBUGF("data: %s", data_bits_to_str(serial_input->data_bits()));
-            DEBUGF("stop: %s", stop_bits_to_str(serial_input->stop_bits()));
-            DEBUGF("parity: %s", parity_bit_to_str(serial_input->parity_bit()));
+            DEBUGF("baudrate: %s", io::baud_rate_to_str(serial_input->baud_rate()));
+            DEBUGF("data: %s", io::data_bits_to_str(serial_input->data_bits()));
+            DEBUGF("stop: %s", io::stop_bits_to_str(serial_input->stop_bits()));
+            DEBUGF("parity: %s", io::parity_bit_to_str(serial_input->parity_bit()));
             continue;
         }
 

@@ -8,10 +8,6 @@
 
 #define LOGLET_CURRENT_MODULE "tokoro/phw"
 
-#define SATELLITE_BASIS_SUN 1
-#define SATELLITE_BASIS_VELOCITY 0
-#define SATELLITE_BASIS_YAW 0
-
 namespace generator {
 namespace tokoro {
 

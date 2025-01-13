@@ -27,9 +27,9 @@ struct IdentityConfig {
     bool wait_for_identity;
     bool use_supl_identity_fix;
 
-    std::unique_ptr<unsigned long long> msisdn;
-    std::unique_ptr<unsigned long long> imsi;
-    std::unique_ptr<std::string>        ipv4;
+    std::unique_ptr<uint64_t>    msisdn;
+    std::unique_ptr<uint64_t>    imsi;
+    std::unique_ptr<std::string> ipv4;
 };
 
 #define OUTPUT_PRINT_MODULE "output"

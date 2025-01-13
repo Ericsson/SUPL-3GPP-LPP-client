@@ -20,7 +20,6 @@
 #include <loglet/loglet.hpp>
 
 #define UPER_DECODE_BUFFER_SIZE (64 * 1024)
-#define UPER_DECODE_THRESHOLD (64 * 1024)
 
 namespace supl {
 
@@ -173,7 +172,7 @@ bool Session::send(const START& message) {
         return false;
     }
 
-    auto sent = mTcpClient->send(encoded_message.data(), encoded_message.size());
+    auto sent = mTcpClient->send(encoded_message.data(), static_cast<int>(encoded_message.size()));
     return static_cast<size_t>(sent) == encoded_message.size();
 }
 
@@ -190,7 +189,7 @@ bool Session::send(const POSINIT& message) {
         return false;
     }
 
-    auto sent = mTcpClient->send(encoded_message.data(), encoded_message.size());
+    auto sent = mTcpClient->send(encoded_message.data(), static_cast<int>(encoded_message.size()));
     return static_cast<size_t>(sent) == encoded_message.size();
 }
 
@@ -207,7 +206,7 @@ bool Session::send(const POS& message) {
         return false;
     }
 
-    auto sent = mTcpClient->send(encoded_message.data(), encoded_message.size());
+    auto sent = mTcpClient->send(encoded_message.data(), static_cast<int>(encoded_message.size()));
     return static_cast<size_t>(sent) == encoded_message.size();
 }
 
@@ -231,17 +230,17 @@ ULP_PDU* Session::parse_receive_buffer() {
         return nullptr;
     }
 
-    auto ulp_pdu = (ULP_PDU*)nullptr;
-    auto size    = mReceiveBufferOffset;
-    auto buffer  = mReceiveBuffer;
+    ULP_PDU* ulp_pdu{};
+    auto     size   = mReceiveBufferOffset;
+    auto     buffer = mReceiveBuffer;
 
     // NOTE: Increase default max stack size to handle large messages.
     // TODO(ewasjon): Is this correct?
     asn_codec_ctx_t stack_ctx{};
     stack_ctx.max_stack_size = 1024 * 1024 * 4;
 
-    auto result =
-        uper_decode_complete(&stack_ctx, &asn_DEF_ULP_PDU, (void**)&ulp_pdu, buffer, size);
+    auto result = uper_decode_complete(&stack_ctx, &asn_DEF_ULP_PDU,
+                                       reinterpret_cast<void**>(&ulp_pdu), buffer, size);
     DEBUGF("uper_decode_complete(): %s %zd",
            (result.code == RC_FAIL ? "RC_FAIL" : (result.code == RC_WMORE ? "RC_WMORE" : "RC_OK")),
            result.consumed);
@@ -265,14 +264,14 @@ void Session::fill_receive_buffer() {
 
     auto buffer = mReceiveBuffer + mReceiveBufferOffset;
     auto size   = mReceiveBufferSize - mReceiveBufferOffset;
-    auto bytes  = mTcpClient->receive(buffer, size);
+    auto bytes  = mTcpClient->receive(buffer, static_cast<int>(size));
     if (bytes <= 0) {
         WARNF("receive failed");
         return;
     }
 
     VERBOSEF("received %zd bytes", bytes);
-    mReceiveBufferOffset += bytes;
+    mReceiveBufferOffset += static_cast<size_t>(bytes);
 }
 
 ULP_PDU* Session::wait_for_ulp_pdu() {

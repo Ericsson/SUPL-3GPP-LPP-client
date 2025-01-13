@@ -15,6 +15,7 @@
 #pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #pragma GCC diagnostic ignored "-Wshadow-field"
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #include <args.hpp>
 #pragma GCC diagnostic pop
 
@@ -56,59 +57,59 @@ static std::vector<std::string> split(std::string const& str, char delim) {
 
 void dump(Config* config) {
     DEBUGF("config:");
-    LOGLET_DINDENT_SCOPE();
+    DEBUG_INDENT_SCOPE();
 
     {
         DEBUGF("location server:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         ls::dump(config->location_server);
     }
 
     {
         DEBUGF("identity:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         identity::dump(config->identity);
     }
 
     {
         DEBUGF("assistance data:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         ad::dump(config->assistance_data);
     }
 
     {
         DEBUGF("location information:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         li::dump(config->location_information);
     }
 
     {
         DEBUGF("input:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         input::dump(config->input);
     }
 
     {
         DEBUGF("output:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         output::dump(config->output);
     }
 
     {
         DEBUGF("gnss:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         gnss::dump(config->gnss);
     }
 
 #ifdef INCLUDE_GENERATOR_RTCM
     {
         DEBUGF("lpp2rtcm:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         lpp2rtcm::dump(config->lpp2rtcm);
     }
     {
         DEBUGF("lpp2frame-rtcm:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         lpp2frame_rtcm::dump(config->lpp2frame_rtcm);
     }
 #endif
@@ -116,7 +117,7 @@ void dump(Config* config) {
 #ifdef INCLUDE_GENERATOR_SPARTN
     {
         DEBUGF("lpp2spartn:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         lpp2spartn::dump(config->lpp2spartn);
     }
 #endif
@@ -124,21 +125,21 @@ void dump(Config* config) {
 #ifdef INCLUDE_GENERATOR_TOKORO
     {
         DEBUGF("tokoro:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         tokoro::dump(config->tokoro);
     }
 #endif
 
     {
         DEBUGF("logging:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         logging::dump(config->logging);
     }
 
 #ifdef DATA_TRACING
     {
         DEBUGF("data tracing:");
-        LOGLET_DINDENT_SCOPE();
+        DEBUG_INDENT_SCOPE();
         data_tracing::dump(config->data_tracing);
     }
 #endif

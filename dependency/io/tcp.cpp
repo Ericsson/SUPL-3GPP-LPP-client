@@ -162,7 +162,7 @@ bool TcpClientInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
 
         if (callback) {
-            callback(*this, mBuffer, result);
+            callback(*this, mBuffer, static_cast<size_t>(result));
         }
     };
 
@@ -330,7 +330,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
         memset(unix_addr->sun_path, 0, sizeof(unix_addr->sun_path));
         memcpy(unix_addr->sun_path, mPath.c_str(), mPath.size());
         unix_addr->sun_path[mPath.size()] = '\0';
-        mAddressLength                    = sizeof(sa_family_t) + mPath.size() + 1;
+        mAddressLength = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
         VERBOSEF("unix socket path: %s", unix_addr->sun_path);
     } else {
         ERRORF("no host or path specified");
@@ -413,7 +413,8 @@ bool TcpClientOutput::connecting() NOEXCEPT {
         // get socket error
         int       error      = 0;
         socklen_t error_size = sizeof(error);
-        auto      result     = ::getsockopt(mFd, SOL_SOCKET, SO_ERROR, &error, &error_size);
+
+        result = ::getsockopt(mFd, SOL_SOCKET, SO_ERROR, &error, &error_size);
         VERBOSEF("::getsockopt(%d, SOL_SOCKET, SO_ERROR, %p, %p) = %d", mFd, &error, &error_size,
                  result);
         if (result >= 0) {
@@ -447,7 +448,6 @@ char const* TcpClientOutput::state_to_string(State state) const NOEXCEPT {
     case State::STATE_DISCONNECTED: return "STATE_DISCONNECTED";
     case State::STATE_ERROR: return "STATE_ERROR";
     case State::STATE_RECONNECT: return "STATE_RECONNECT";
-    default: return "UNKNOWN";
     }
 }
 

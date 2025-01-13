@@ -16,8 +16,6 @@
 
 #define LOGLET_CURRENT_MODULE "tokoro"
 
-#define ORBIT_CORRECTED_IN_ITERATION 0
-
 namespace generator {
 namespace tokoro {
 
@@ -427,7 +425,7 @@ double Satellite::average_code_range() const NOEXCEPT {
     for (auto const& observation : mObservations) {
         sum += observation.code_range();
     }
-    return sum / mObservations.size();
+    return sum / static_cast<double>(mObservations.size());
 }
 
 double Satellite::average_phase_range_rate() const NOEXCEPT {
@@ -436,7 +434,7 @@ double Satellite::average_phase_range_rate() const NOEXCEPT {
     for (auto const& observation : mObservations) {
         sum += observation.phase_range_rate();
     }
-    return sum / mObservations.size();
+    return sum / static_cast<double>(mObservations.size());
 }
 
 void Satellite::remove_discarded_observations() NOEXCEPT {

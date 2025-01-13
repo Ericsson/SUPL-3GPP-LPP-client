@@ -10,12 +10,12 @@
 #pragma GCC diagnostic ignored "-Wunused-function"
 #include <KeyIdentity.h>
 #include <MAC.h>
-#include <ULP-PDU.h>
-#include <Version.h>
+#include <MCC.h>
+#include <MNC.h>
 #include <SetSessionID.h>
 #include <SlpSessionID.h>
-#include <MNC.h>
-#include <MCC.h>
+#include <ULP-PDU.h>
+#include <Version.h>
 #pragma GCC diagnostic pop
 
 #define LOGLET_CURRENT_MODULE "supl/print"
@@ -29,7 +29,7 @@ public:
         mPreviousField = false;
     }
 
-    const char* c_str() const { return mBuffer.c_str(); }
+    char const* c_str() const { return mBuffer.c_str(); }
 
     void push(char ch) {
         mBuffer.push_back(ch);
@@ -53,14 +53,14 @@ public:
         }
     }
 
-    void append(const char* data) { mBuffer += std::string{data}; }
+    void append(char const* data) { mBuffer += std::string{data}; }
 
-    void vappendf(const char* fmt, va_list args) {
+    void vappendf(char const* fmt, va_list args) {
         vsnprintf(mTempBuffer, sizeof(mTempBuffer), fmt, args);
         append(mTempBuffer);
     }
 
-    void appendf(const char* fmt, ...) {
+    void appendf(char const* fmt, ...) {
         va_list args;
         va_start(args, fmt);
         vappendf(fmt, args);
@@ -68,52 +68,52 @@ public:
     }
 
     void value(long value) { appendf("%ld", value); }
-    void value(const char* value) { appendf("\"%s\"", value); }
+    void value(char const* value) { appendf("\"%s\"", value); }
 
-    void value(const ::ULP_PDU& value);
-    void value(const ::Version& value);
-    void value(const ::SessionID& value);
-    void value(const ::SetSessionID& value);
-    void value(const ::SETId& value);
-    void value(const ::OCTET_STRING& value);
-    void value(const ::IPAddress& value);
-    void value(const ::SlpSessionID& value);
-    void value(const ::SLPAddress& value);
-    void value(const ::UlpMessage& value);
-    void value(const ::SUPLINIT& value);
-    void value(const ::PosMethod& value);
-    void value(const ::Notification& value);
-    void value(const ::QoP& value);
-    void value(const ::SLPMode& value);
-    void value(const ::BIT_STRING_s& value);
-    void value(const ::Ver2_SUPL_INIT_extension& value);
-    void value(const ::SUPLSTART& value);
-    void value(const ::SETCapabilities& value);
-    void value(const ::LocationId& value);
-    void value(const ::Ver2_SUPL_START_extension& value);
+    void value(::ULP_PDU const& value);
+    void value(::Version const& value);
+    void value(::SessionID const& value);
+    void value(::SetSessionID const& value);
+    void value(::SETId const& value);
+    void value(::OCTET_STRING const& value);
+    void value(::IPAddress const& value);
+    void value(::SlpSessionID const& value);
+    void value(::SLPAddress const& value);
+    void value(::UlpMessage const& value);
+    void value(::SUPLINIT const& value);
+    void value(::PosMethod const& value);
+    void value(::Notification const& value);
+    void value(::QoP const& value);
+    void value(::SLPMode const& value);
+    void value(::BIT_STRING_s const& value);
+    void value(::Ver2_SUPL_INIT_extension const& value);
+    void value(::SUPLSTART const& value);
+    void value(::SETCapabilities const& value);
+    void value(::LocationId const& value);
+    void value(::Ver2_SUPL_START_extension const& value);
 
-    void value(const ::PosTechnology& x);
-    void value(const ::Ver2_PosTechnology_extension& x);
-    void value(const ::PrefMethod& x);
-    void value(const ::PosProtocol& x);
-    void value(const ::Ver2_PosProtocol_extension& x);
-    void value(const ::CellInfo& x);
-    void value(const ::GsmCellInformation& x);
-    void value(const ::NMR& x);
-    void value(const ::WcdmaCellInformation& x);
-    void value(const ::CdmaCellInformation& x);
+    void value(::PosTechnology const& x);
+    void value(::Ver2_PosTechnology_extension const& x);
+    void value(::PrefMethod const& x);
+    void value(::PosProtocol const& x);
+    void value(::Ver2_PosProtocol_extension const& x);
+    void value(::CellInfo const& x);
+    void value(::GsmCellInformation const& x);
+    void value(::NMR const& x);
+    void value(::WcdmaCellInformation const& x);
+    void value(::CdmaCellInformation const& x);
 
-    void value(const ::Ver2_CellInfo_extension& x);
-    void value(const ::LteCellInformation& x);
-    void value(const ::CellGlobalIdEUTRA& x);
-    void value(const ::PLMN_Identity& x);
-    void value(const ::MCC& x);
-    void value(const ::MNC& x);
-    void value(const ::MeasResultListEUTRA& x);
-    void value(const ::Ver2_SETCapabilities_extension& x);
+    void value(::Ver2_CellInfo_extension const& x);
+    void value(::LteCellInformation const& x);
+    void value(::CellGlobalIdEUTRA const& x);
+    void value(::PLMN_Identity const& x);
+    void value(::MCC const& x);
+    void value(::MNC const& x);
+    void value(::MeasResultListEUTRA const& x);
+    void value(::Ver2_SETCapabilities_extension const& x);
 
     template <typename T>
-    void field(const char* field_name, const T& field_value) {
+    void field(char const* field_name, T const& field_value) {
         if (mPreviousField) {
             mBuffer.push_back(',');
             newline();
@@ -125,7 +125,7 @@ public:
     }
 
     template <typename T>
-    void field_opt(const char* field_name, const T* field_value) {
+    void field_opt(char const* field_name, T const* field_value) {
         if (field_value) {
             field(field_name, *field_value);
         }
@@ -138,7 +138,7 @@ private:
     bool        mPreviousField;
 };
 
-void Printer::value(const ::ULP_PDU& x) {
+void Printer::value(::ULP_PDU const& x) {
     push('{');
     field("length", x.length);
     field("version", x.version);
@@ -147,7 +147,7 @@ void Printer::value(const ::ULP_PDU& x) {
     pop('}');
 }
 
-void Printer::value(const ::Version& x) {
+void Printer::value(::Version const& x) {
     push('{');
     field("maj", x.maj);
     field("min", x.min);
@@ -155,32 +155,38 @@ void Printer::value(const ::Version& x) {
     pop('}');
 }
 
-void Printer::value(const ::SessionID& x) {
+void Printer::value(::SessionID const& x) {
     push('{');
     field_opt("set-session-id", x.setSessionID);
     field_opt("slp-session-id", x.slpSessionID);
     pop('}');
 }
 
-void Printer::value(const ::SetSessionID& x) {
+void Printer::value(::SetSessionID const& x) {
     push('{');
     field("session-id", x.sessionId);
     field("set-id", x.setId);
     pop('}');
 }
 
-void Printer::value(const ::SETId& x) {
+void Printer::value(::SETId const& x) {
     push('{');
-    switch (x.present) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x.present)) {
+    case SETId_PR_NOTHING: field("type", "nothing"); break;
     case SETId_PR_msisdn: field("msisdn", x.choice.msisdn); break;
     case SETId_PR_imsi: field("imsi", x.choice.imsi); break;
     case SETId_PR_iPAddress: field("ip-address", x.choice.iPAddress); break;
+    case SETId_PR_mdn:
+    case SETId_PR_min:
+    case SETId_PR_nai:
     default: field("type", "unsupported");
     }
     pop('}');
 }
 
-void Printer::value(const ::OCTET_STRING& x) {
+void Printer::value(::OCTET_STRING const& x) {
     append("OCTET STRING \"");
     for (size_t i = 0; i < x.size; i++) {
         appendf("%02X", x.buf[i]);
@@ -188,9 +194,12 @@ void Printer::value(const ::OCTET_STRING& x) {
     append("\"");
 }
 
-void Printer::value(const ::IPAddress& x) {
+void Printer::value(::IPAddress const& x) {
     push('{');
-    switch (x.present) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x.present)) {
+    case IPAddress_PR_NOTHING: field("type", "nothing"); break;
     case IPAddress_PR_ipv4Address: field("ipv4-address", x.choice.ipv4Address); break;
     case IPAddress_PR_ipv6Address: field("ipv6-address", x.choice.ipv6Address); break;
     default: field("type", "unsupported");
@@ -198,37 +207,52 @@ void Printer::value(const ::IPAddress& x) {
     pop('}');
 }
 
-void Printer::value(const ::SlpSessionID& x) {
+void Printer::value(::SlpSessionID const& x) {
     push('{');
     field("session-id", x.sessionID);
     field("slp-id", x.slpId);
     pop('}');
 }
 
-void Printer::value(const ::SLPAddress& x) {
+void Printer::value(::SLPAddress const& x) {
     push('{');
-    switch (x.present) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x.present)) {
+    case SLPAddress_PR_NOTHING: field("type", "nothing"); break;
     case SLPAddress_PR_iPAddress: field("ip-address", x.choice.iPAddress); break;
-    default: field("type", "unsupported");
+    case SLPAddress_PR_fQDN: field("type", "unsupported"); break;
     }
     pop('}');
 }
 
-void Printer::value(const ::UlpMessage& x) {
+void Printer::value(::UlpMessage const& x) {
     push('{');
-    switch (x.present) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x.present)) {
+    case UlpMessage_PR_NOTHING: field("type", "nothing"); break;
     case UlpMessage_PR_msSUPLINIT: field("ms-suplinit", x.choice.msSUPLINIT); break;
     case UlpMessage_PR_msSUPLSTART: field("ms-suplstart", x.choice.msSUPLSTART); break;
     case UlpMessage_PR_msSUPLPOS: field("type", "ms-suplpos"); break;
     case UlpMessage_PR_msSUPLPOSINIT: field("type", "ms-suplposinit"); break;
     case UlpMessage_PR_msSUPLEND: field("type", "ms-suplend"); break;
     case UlpMessage_PR_msSUPLRESPONSE: field("type", "ms-suplresponse"); break;
+    case UlpMessage_PR_msSUPLAUTHREQ:
+    case UlpMessage_PR_msSUPLAUTHRESP:
+    case UlpMessage_PR_msSUPLTRIGGEREDSTART:
+    case UlpMessage_PR_msSUPLTRIGGEREDRESPONSE:
+    case UlpMessage_PR_msSUPLTRIGGEREDSTOP:
+    case UlpMessage_PR_msSUPLNOTIFY:
+    case UlpMessage_PR_msSUPLNOTIFYRESPONSE:
+    case UlpMessage_PR_msSUPLSETINIT:
+    case UlpMessage_PR_msSUPLREPORT:
     default: field("type", "unsupported");
     }
     pop('}');
 }
 
-void Printer::value(const ::SUPLINIT& x) {
+void Printer::value(::SUPLINIT const& x) {
     push('{');
     field("pos-method", x.posMethod);
     field_opt("notification", x.notification);
@@ -241,8 +265,10 @@ void Printer::value(const ::SUPLINIT& x) {
     pop('}');
 }
 
-void Printer::value(const ::PosMethod& x) {
-    switch (x) {
+void Printer::value(::PosMethod const& x) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x)) {
     case PosMethod_agpsSETassisted: value("agpsSETassisted"); break;
     case PosMethod_agpsSETbased: value("agpsSETbased"); break;
     case PosMethod_agpsSETassistedpref: value("agpsSETassistedpref"); break;
@@ -264,31 +290,33 @@ void Printer::value(const ::PosMethod& x) {
     }
 }
 
-void Printer::value(const ::Notification&) {
+void Printer::value(::Notification const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::QoP&) {
+void Printer::value(::QoP const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::SLPMode& x) {
-    switch (x) {
+void Printer::value(::SLPMode const& x) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x)) {
     case SLPMode_proxy: value("proxy"); break;
     case SLPMode_nonProxy: value("nonProxy"); break;
     default: appendf("unsupported (%d)", x);
     }
 }
 
-void Printer::value(const ::BIT_STRING_s&) {
+void Printer::value(::BIT_STRING_s const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::Ver2_SUPL_INIT_extension&) {
+void Printer::value(::Ver2_SUPL_INIT_extension const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::SUPLSTART& x) {
+void Printer::value(::SUPLSTART const& x) {
     push('{');
     field("set-capabilities", x.sETCapabilities);
     field("location-id", x.locationId);
@@ -297,7 +325,7 @@ void Printer::value(const ::SUPLSTART& x) {
     pop('}');
 }
 
-void Printer::value(const ::SETCapabilities& x) {
+void Printer::value(::SETCapabilities const& x) {
     push('{');
     field("pos-technology", x.posTechnology);
     field("pref-method", x.prefMethod);
@@ -306,7 +334,7 @@ void Printer::value(const ::SETCapabilities& x) {
     pop('}');
 }
 
-void Printer::value(const ::PosTechnology& x) {
+void Printer::value(::PosTechnology const& x) {
     push('{');
     field("agps-set-assisted", x.agpsSETassisted);
     field("agps-set-based", x.agpsSETBased);
@@ -319,12 +347,14 @@ void Printer::value(const ::PosTechnology& x) {
     pop('}');
 }
 
-void Printer::value(const ::Ver2_PosTechnology_extension&) {
+void Printer::value(::Ver2_PosTechnology_extension const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::PrefMethod& x) {
-    switch (x) {
+void Printer::value(::PrefMethod const& x) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x)) {
     case PrefMethod_agpsSETassistedPreferred: value("agpsSETassisted"); break;
     case PrefMethod_agpsSETBasedPreferred: value("agpsSETBased"); break;
     case PrefMethod_noPreference: value("noPreference"); break;
@@ -332,7 +362,7 @@ void Printer::value(const ::PrefMethod& x) {
     }
 }
 
-void Printer::value(const ::PosProtocol& x) {
+void Printer::value(::PosProtocol const& x) {
     push('{');
     field("tia801", x.tia801);
     field("rrlp", x.rrlp);
@@ -341,21 +371,23 @@ void Printer::value(const ::PosProtocol& x) {
     pop('}');
 }
 
-void Printer::value(const ::Ver2_PosProtocol_extension&) {
+void Printer::value(::Ver2_PosProtocol_extension const&) {
     push('{');
 
     pop('}');
 }
 
-void Printer::value(const ::LocationId& x) {
+void Printer::value(::LocationId const& x) {
     push('{');
     field("cell-info", x.cellInfo);
     field("status", x.status);
     pop('}');
 }
 
-void Printer::value(const ::CellInfo& x) {
-    switch (x.present) {
+void Printer::value(::CellInfo const& x) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x.present)) {
     case CellInfo_PR_gsmCell: value(x.choice.gsmCell); break;
     case CellInfo_PR_wcdmaCell: value(x.choice.wcdmaCell); break;
     case CellInfo_PR_cdmaCell: value(x.choice.cdmaCell); break;
@@ -364,7 +396,7 @@ void Printer::value(const ::CellInfo& x) {
     }
 }
 
-void Printer::value(const ::GsmCellInformation& x) {
+void Printer::value(::GsmCellInformation const& x) {
     push('{');
     field("ref-mcc", x.refMCC);
     field("ref-mnc", x.refMNC);
@@ -375,26 +407,28 @@ void Printer::value(const ::GsmCellInformation& x) {
     pop('}');
 }
 
-void Printer::value(const ::NMR&) {
+void Printer::value(::NMR const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::WcdmaCellInformation&) {
+void Printer::value(::WcdmaCellInformation const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::CdmaCellInformation&) {
+void Printer::value(::CdmaCellInformation const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::Ver2_CellInfo_extension& x) {
-    switch (x.present) {
+void Printer::value(::Ver2_CellInfo_extension const& x) {
+    // NOTE(ewasjon): switch on the integer value of the enum to be explicit that the actual enum
+    // might not contain all variants
+    switch (static_cast<long>(x.present)) {
     case Ver2_CellInfo_extension_PR_lteCell: value(x.choice.lteCell); break;
     default: field("type", "unsupported");
     }
 }
 
-void Printer::value(const ::LteCellInformation& x) {
+void Printer::value(::LteCellInformation const& x) {
     push('{');
     field("cell-global-id-eutra", x.cellGlobalIdEUTRA);
     field("phys-cell-id", x.physCellId);
@@ -406,21 +440,21 @@ void Printer::value(const ::LteCellInformation& x) {
     pop('}');
 }
 
-void Printer::value(const ::CellGlobalIdEUTRA& x) {
+void Printer::value(::CellGlobalIdEUTRA const& x) {
     push('{');
     field("plmn-identity", x.plmn_Identity);
     field("cell-identity", x.cellIdentity);
     pop('}');
 }
 
-void Printer::value(const ::PLMN_Identity& x) {
+void Printer::value(::PLMN_Identity const& x) {
     push('{');
     field_opt("mcc", x.mcc);
     field("mnc", x.mnc);
     pop('}');
 }
 
-void Printer::value(const ::MCC& x) {
+void Printer::value(::MCC const& x) {
     push('[');
     for (auto i = 0; i < x.list.count; i++) {
         if (x.list.array[i]) {
@@ -430,7 +464,7 @@ void Printer::value(const ::MCC& x) {
     pop(']');
 }
 
-void Printer::value(const ::MNC& x) {
+void Printer::value(::MNC const& x) {
     push('[');
     for (auto i = 0; i < x.list.count; i++) {
         if (x.list.array[i]) {
@@ -440,15 +474,15 @@ void Printer::value(const ::MNC& x) {
     pop(']');
 }
 
-void Printer::value(const ::MeasResultListEUTRA&) {
+void Printer::value(::MeasResultListEUTRA const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::Ver2_SETCapabilities_extension&) {
+void Printer::value(::Ver2_SETCapabilities_extension const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(const ::Ver2_SUPL_START_extension&) {
+void Printer::value(::Ver2_SUPL_START_extension const&) {
     appendf("{ /* unsupported */ }");
 }
 

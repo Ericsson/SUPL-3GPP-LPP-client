@@ -215,7 +215,7 @@ void UdpClientOutput::open() NOEXCEPT {
         memset(unix_addr->sun_path, 0, sizeof(unix_addr->sun_path));
         memcpy(unix_addr->sun_path, mPath.c_str(), mPath.size());
         unix_addr->sun_path[mPath.size()] = '\0';
-        mAddressLength                    = sizeof(sa_family_t) + mPath.size() + 1;
+        mAddressLength = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
         VERBOSEF("unix socket path: %s", unix_addr->sun_path);
     } else {
         ERRORF("no host or path specified");

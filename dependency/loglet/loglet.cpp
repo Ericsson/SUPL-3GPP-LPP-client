@@ -118,9 +118,11 @@ void pop_indent() {
 
 static char const* level_to_string(Level level) {
     switch (level) {
+    case Level::Trace: return "T";
     case Level::Verbose: return "V";
     case Level::Debug: return "D";
     case Level::Info: return "I";
+    case Level::Notice: return "N";
     case Level::Warning: return "W";
     case Level::Error: return "E";
     case Level::Disabled: CORE_UNREACHABLE();
@@ -129,9 +131,11 @@ static char const* level_to_string(Level level) {
 
 static char const* level_to_color(Level level) {
     switch (level) {
+    case Level::Trace: return COLOR_BLUE;
     case Level::Verbose: return COLOR_CYAN;
     case Level::Debug: return COLOR_GREEN;
     case Level::Info: return COLOR_WHITE;
+    case Level::Notice: return COLOR_UNDERLINE COLOR_MAGENTA;
     case Level::Warning: return COLOR_UNDERLINE COLOR_YELLOW;
     case Level::Error: return COLOR_BOLD COLOR_RED;
     case Level::Disabled: CORE_UNREACHABLE();
@@ -173,6 +177,10 @@ void vlogf(char const* module, Level level, char const* format, va_list args) {
     log(module, level, buffer);
 }
 
+void vtracef(char const* module, char const* format, va_list args) {
+    vlogf(module, Level::Trace, format, args);
+}
+
 void vverbosef(char const* module, char const* format, va_list args) {
     vlogf(module, Level::Verbose, format, args);
 }
@@ -185,12 +193,23 @@ void vinfof(char const* module, char const* format, va_list args) {
     vlogf(module, Level::Info, format, args);
 }
 
+void vnoticef(char const* module, char const* format, va_list args) {
+    vlogf(module, Level::Notice, format, args);
+}
+
 void vwarnf(char const* module, char const* format, va_list args) {
     vlogf(module, Level::Warning, format, args);
 }
 
 void verrorf(char const* module, char const* format, va_list args) {
     vlogf(module, Level::Error, format, args);
+}
+
+void tracef(char const* module, char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vtracef(module, format, args);
+    va_end(args);
 }
 
 void verbosef(char const* module, char const* format, ...) {
@@ -211,6 +230,13 @@ void infof(char const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vinfof(module, format, args);
+    va_end(args);
+}
+
+void noticef(char const* module, char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    vnoticef(module, format, args);
     va_end(args);
 }
 

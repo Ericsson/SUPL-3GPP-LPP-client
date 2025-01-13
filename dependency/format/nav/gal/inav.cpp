@@ -32,8 +32,7 @@ static double unsigned_scale(uint32_t value, double power) {
 }
 
 static bool decode_word_1(Words const& words, InavWord& word) NOEXCEPT {
-    VERBOSEF("decoding word type 1");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     // clang-format off
     uint32_t i = 6;
@@ -57,8 +56,7 @@ static bool decode_word_1(Words const& words, InavWord& word) NOEXCEPT {
 }
 
 static bool decode_word_2(Words const& words, InavWord& word) NOEXCEPT {
-    VERBOSEF("decoding word type 2");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     // clang-format off
     uint32_t i = 6;
@@ -82,8 +80,7 @@ static bool decode_word_2(Words const& words, InavWord& word) NOEXCEPT {
 }
 
 static bool decode_word_3(Words const& words, InavWord& word) NOEXCEPT {
-    VERBOSEF("decoding word type 3");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     // clang-format off
     uint32_t i = 6;
@@ -111,8 +108,7 @@ static bool decode_word_3(Words const& words, InavWord& word) NOEXCEPT {
 }
 
 static bool decode_word_4(Words const& words, InavWord& word) NOEXCEPT {
-    VERBOSEF("decoding word type 4");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     // clang-format off
     uint32_t i = 6;
@@ -142,8 +138,7 @@ static bool decode_word_4(Words const& words, InavWord& word) NOEXCEPT {
 }
 
 static bool decode_word_5(Words const& words, InavWord& word) NOEXCEPT {
-    VERBOSEF("decoding word type 5");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     // clang-format off
     uint32_t i = 6;
@@ -193,8 +188,7 @@ static bool decode_word_5(Words const& words, InavWord& word) NOEXCEPT {
 }
 
 bool InavWord::decode(Words const& words, InavWord& word) NOEXCEPT {
-    VERBOSEF("decoding INAV word");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     if (words.size() != 256) {
         VERBOSEF("invalid number of words: %zu, expected: 256 bits", words.size());
@@ -309,7 +303,8 @@ bool InavEphemerisCollector::process(uint8_t prn, InavWord const& word,
         ephemeris.cic       = w4.cic;
         ephemeris.cis       = w4.cis;
 
-        // [3GPP TS 37.355]: In the case of broadcasted Galileo ephemeris, the iod contains the IOD index as described in [8]. 
+        // [3GPP TS 37.355]: In the case of broadcasted Galileo ephemeris, the iod contains the IOD
+        // index as described in [8].
         ephemeris.lpp_iod = ephemeris.iod_nav;
 
         internal_ephemeris.word1 = false;

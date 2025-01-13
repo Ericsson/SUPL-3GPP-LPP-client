@@ -16,9 +16,9 @@ LocationInformationDelivery::LocationInformationDelivery(
     PeriodicLocationInformationDeliveryDescription description)
     : mClient(client), mSession(session), mTransaction(std::move(transaction)),
       mCoordinateType{description.coordinate_type}, mVelocityType{description.velocity_type},
+      mReportingInterval{description.reporting_interval},
       mReportingAmount{description.reporting_amount},
       mReportingAmountUnlimited{description.reporting_amount_unlimited},
-      mReportingInterval{description.reporting_interval},
       mPeriodicTask{description.reporting_interval} {
     mPeriodicTask.callback = [this]() {
         deliver();

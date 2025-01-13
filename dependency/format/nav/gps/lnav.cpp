@@ -64,11 +64,12 @@ static bool decode_subframe1(Words const& words, Subframe1& subframe) {
     auto af1            = words.u16(248, 16);
     auto af0            = words.u32(270, 22);
 
-    subframe.week_number   = week_number;
-    subframe.ca_or_p_on_l2 = ca_or_p_on_l2;
-    subframe.ura_index     = ura_index;
-    subframe.sv_health     = sv_health;
-    subframe.iodc = (static_cast<uint32_t>(iodc_msb) << 8) | static_cast<uint32_t>(iodc_lsb);
+    subframe.week_number    = week_number;
+    subframe.ca_or_p_on_l2  = ca_or_p_on_l2;
+    subframe.ura_index      = ura_index;
+    subframe.sv_health      = sv_health;
+    subframe.iodc           = static_cast<uint16_t>((static_cast<uint32_t>(iodc_msb) << 8) |
+                                                    static_cast<uint32_t>(iodc_lsb));
     subframe.l2_p_data_flag = l2_p_data_flag;
     subframe.tgd            = signed_scale(8, tgd, -31);
     subframe.toc            = unsigned_scale(toc, 4);
@@ -167,8 +168,7 @@ static bool decode_subframe3(Words const& words, Subframe3& subframe) {
 }
 
 bool Subframe::decode(Words const& words, Subframe& subframe) NOEXCEPT {
-    VERBOSEF("decoding subframe");
-    LOGLET_VINDENT_SCOPE();
+    FUNCTION_SCOPE();
 
     if (words.size() != 300) {
         VERBOSEF("invalid number of words: %zu, expected: 300 bits", words.size());
@@ -310,7 +310,8 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         ephemeris.omega_dot         = sf3.omega_dot;
         ephemeris.idot              = sf3.idot;
 
-        // [3GPP TS 37.355]: In the case of broadcasted GPS NAV ephemeris, the iod contains the IODC as described in [4].
+        // [3GPP TS 37.355]: In the case of broadcasted GPS NAV ephemeris, the iod contains the IODC
+        // as described in [4].
         ephemeris.lpp_iod = ephemeris.iode;
 
         internal_ephemeris.subframe1 = false;

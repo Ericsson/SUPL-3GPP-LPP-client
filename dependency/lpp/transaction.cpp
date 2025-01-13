@@ -6,31 +6,25 @@
 #include <loglet/loglet.hpp>
 
 #define LOGLET_CURRENT_MODULE "lpp/t"
-#define SCOPE_TRANSACTION()                                                                        \
-    char _loglet_buffer[64];                                                                       \
-    if (mHandle.is_valid()) {                                                                      \
-        snprintf(_loglet_buffer, sizeof(_loglet_buffer), "%s%ld", mHandle.is_client() ? "C" : "S", \
-                 mHandle.id());                                                                    \
-    } else {                                                                                       \
-        snprintf(_loglet_buffer, sizeof(_loglet_buffer), "invalid");                               \
-    }                                                                                              \
-    VSCOPE_FUNCTIONF("%s", _loglet_buffer)
 
 namespace lpp {
 
 void TransactionHandle::send(Message& message) {
+    VSCOPE_FUNCTION();
     if (mSession != nullptr) {
         mSession->send(*this, message);
     }
 }
 
 void TransactionHandle::send_with_end(Message& message) {
+    VSCOPE_FUNCTION();
     if (mSession != nullptr) {
         mSession->send_with_end(*this, message);
     }
 }
 
 void TransactionHandle::abort() {
+    VSCOPE_FUNCTION();
     if (mSession != nullptr) {
         mSession->abort(*this);
     }

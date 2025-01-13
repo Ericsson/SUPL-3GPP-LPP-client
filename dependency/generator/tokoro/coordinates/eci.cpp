@@ -8,6 +8,9 @@
 
 #define LOGLET_CURRENT_MODULE "tokoro"
 
+// TODO(ewasjon): Remove this
+#define EXTRA_VERBOSE 0
+
 namespace generator {
 namespace tokoro {
 

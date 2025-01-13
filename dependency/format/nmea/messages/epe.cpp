@@ -1,6 +1,9 @@
 #include "epe.hpp"
 #include "helper.hpp"
 
+// TODO(ewasjon): Remove this
+#define RECEIVER_DEBUG 0
+
 namespace format {
 namespace nmea {
 

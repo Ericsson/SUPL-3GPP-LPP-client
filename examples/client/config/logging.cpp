@@ -86,9 +86,11 @@ static void parse(Config* config) {
 
 static char const* level_to_string(loglet::Level level) {
     switch (level) {
+    case loglet::Level::Trace: return "trace";
     case loglet::Level::Verbose: return "verbose";
     case loglet::Level::Debug: return "debug";
     case loglet::Level::Info: return "info";
+    case loglet::Level::Notice: return "notice";
     case loglet::Level::Warning: return "warning";
     case loglet::Level::Error: return "error";
     case loglet::Level::Disabled: return "disabled";

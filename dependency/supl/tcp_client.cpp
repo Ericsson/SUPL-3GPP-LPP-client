@@ -62,8 +62,10 @@ TcpClient::~TcpClient() {
 
 static std::string addr_to_string(const struct sockaddr* addr) {
     char host[1024];
-    auto result =
-        getnameinfo(addr, sizeof(struct sockaddr), host, sizeof(host), nullptr, 0, NI_NUMERICHOST);
+    auto result = ::getnameinfo(addr, sizeof(struct sockaddr), host, sizeof(host), nullptr, 0,
+                                NI_NUMERICHOST);
+    VERBOSEF("::getnameinfo(%p, %zu, %p, %zu, %p, %d, NI_NUMERICHOST) = %d", addr,
+             sizeof(struct sockaddr), host, sizeof(host), nullptr, 0, result);
     if (result != 0) {
         return "unknown";
     } else {
@@ -76,7 +78,6 @@ bool TcpClient::initialize_socket() {
 
     char port_as_string[8];
     snprintf(port_as_string, sizeof(port_as_string), "%i", mPort);
-
     VERBOSEF("connecting to %s:%s", mHost.c_str(), port_as_string);
 
     struct addrinfo hint;
@@ -84,7 +85,9 @@ bool TcpClient::initialize_socket() {
     hint.ai_socktype = SOCK_STREAM;
 
     struct addrinfo *ailist, *aip;
-    auto             result = getaddrinfo(mHost.c_str(), port_as_string, &hint, &ailist);
+    auto             result = ::getaddrinfo(mHost.c_str(), port_as_string, &hint, &ailist);
+    VERBOSEF("::getaddrinfo(\"%s\", \"%s\", %p, %p) = %d", mHost.c_str(), port_as_string, &hint,
+             &ailist, result);
     if (result != 0) {
         WARNF("failed to get address info: \"%s\" %d (%s)", mHost.c_str(), result,
               gai_strerror(result));
@@ -92,11 +95,13 @@ bool TcpClient::initialize_socket() {
     }
 
     SUPL_DEFER {
-        freeaddrinfo(ailist);
+        ::freeaddrinfo(ailist);
+        VERBOSEF("::freeaddrinfo(%p)", ailist);
     };
 
     for (aip = ailist; aip; aip = aip->ai_next) {
         auto fd = socket(aip->ai_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
+        VERBOSEF("::socket(%d, SOCK_STREAM | SOCK_NONBLOCK, 0) = %d", aip->ai_family, fd);
         if (fd < 0) {
             WARNF("failed to create socket: %d (%s)", errno, strerror(errno));
             continue;
@@ -106,6 +111,7 @@ bool TcpClient::initialize_socket() {
 
         auto addr_str = addr_to_string(aip->ai_addr);
         result        = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
+        VERBOSEF("::connect(%d, %p, %d) = %d", fd, aip->ai_addr, aip->ai_addrlen, result);
         if (result != 0) {
             if (errno == EINPROGRESS) {
                 VERBOSEF("connection inprogress to %s", addr_str.c_str());
@@ -116,6 +122,7 @@ bool TcpClient::initialize_socket() {
             WARNF("failed to connect to %s: %d (%s)", addr_str.c_str(), errno, strerror(errno));
             VERBOSEF("closing socket %d", fd);
             close(fd);
+            VERBOSEF("::close(%d)", fd);
             continue;
         } else {
             mSocket = fd;
@@ -173,9 +180,11 @@ bool TcpClient::handle_connection() {
     }
 
     // check that the connection was successful
-    int       error = 0;
-    socklen_t len   = sizeof(error);
-    if (getsockopt(mSocket, SOL_SOCKET, SO_ERROR, &error, &len) < 0) {
+    int       error  = 0;
+    socklen_t len    = sizeof(error);
+    auto      result = ::getsockopt(mSocket, SOL_SOCKET, SO_ERROR, &error, &len);
+    VERBOSEF("::getsockopt(%d, SOL_SOCKET, SO_ERROR, %p, %p) = %d", mSocket, &error, &len, result);
+    if (result < 0) {
         disconnect();
         return false;
     }
@@ -220,6 +229,7 @@ bool TcpClient::disconnect() {
 
     VERBOSEF("closing socket %d", mSocket);
     close(mSocket);
+    VERBOSEF("::close(%d)", mSocket);
     mSocket = -1;
     mState  = State::DISCONNECTED;
     return true;
@@ -237,7 +247,9 @@ int TcpClient::receive(void* buffer, int size) {
     else
         return read(mSocket, buffer, size);
 #else
-    return static_cast<int>(::read(mSocket, buffer, static_cast<size_t>(size)));
+    auto result = ::read(mSocket, buffer, static_cast<size_t>(size));
+    VERBOSEF("::read(%d, %p, %d) = %d", mSocket, buffer, size, result);
+    return static_cast<int>(result);
 #endif
 }
 
@@ -253,7 +265,9 @@ int TcpClient::send(void const* buffer, int size) {
     else
         return write(mSocket, buffer, size);
 #else
-    return static_cast<int>(::send(mSocket, buffer, static_cast<size_t>(size), MSG_NOSIGNAL));
+    auto result = ::send(mSocket, buffer, static_cast<size_t>(size), MSG_NOSIGNAL);
+    VERBOSEF("::send(%d, %p, %d, MSG_NOSIGNAL) = %d", mSocket, buffer, size, result);
+    return static_cast<int>(result);
 #endif
 }
 
