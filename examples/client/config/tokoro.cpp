@@ -112,28 +112,28 @@ static args::ValueFlag<double> gTimeStep{
 static args::Flag gShapiroCorrection{
     gGroup,
     "tkr-no-shapiro-correction",
-    "Disable Shapiro correction",
+    "Disable shapiro correction",
     {"tkr-no-sc"},
 };
 
 static args::Flag gPhaseWindupCorrection{
     gGroup,
-    "tkr-phase-windup-correction",
-    "Enable phase windup correction",
-    {"tkr-pwc"},
+    "tkr-no-phase-windup-correction",
+    "Disable phase windup correction",
+    {"tkr-no-pwc"},
 };
 
 static args::Flag gEarthSolidTidesCorrection{
     gGroup,
     "tkr-no-earth-solid-tides-correction",
-    "Enable Earth solid tides correction",
+    "Disable earth solid tides correction",
     {"tkr-no-estc"},
 };
 
 static args::Flag gAntennaPhaseVariationCorrection{
     gGroup,
     "tkr-no-antenna-phase-variation-correction",
-    "Enable antenna phase variation correction",
+    "Disable antenna phase variation correction",
     {"tkr-no-apvc"},
 };
 
@@ -147,14 +147,14 @@ static args::Flag gTroposphericHeightCorrection{
 static args::Flag gIodConsistencyCheck{
     gGroup,
     "tkr-no-iod-consistency-check",
-    "Disable IOD consistency check",
+    "Disable Issue of Data consistency check for ephemeris",
     {"tkr-no-icc"},
 };
 
 static args::Flag gRtOC{
     gGroup,
     "rtoc",
-    "Enable reception time in orbit and clock corrections",
+    "Use reception time in orbit correction instead of transmission time",
     {"tkr-rtoc"},
 };
 
