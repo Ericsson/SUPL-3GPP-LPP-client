@@ -368,12 +368,16 @@ static void setup_tokoro(Program& program) {
 }
 
 int main(int argc, char** argv) {
-#if defined(FORCE_LOG_LEVEL_VERBOSE)
+#if defined(FORCE_LOG_LEVEL_TRACE)
+    loglet::set_level(loglet::Level::Trace);
+#elif defined(FORCE_LOG_LEVEL_VERBOSE)
     loglet::set_level(loglet::Level::Verbose);
 #elif defined(FORCE_LOG_LEVEL_DEBUG)
     loglet::set_level(loglet::Level::Debug);
 #elif defined(FORCE_LOG_LEVEL_INFO)
     loglet::set_level(loglet::Level::Info);
+#elif defined(FORCE_LOG_LEVEL_NOTICE)
+    loglet::set_level(loglet::Level::Notice);
 #elif defined(FORCE_LOG_LEVEL_WARNING)
     loglet::set_level(loglet::Level::Warning);
 #elif defined(FORCE_LOG_LEVEL_ERROR)
@@ -388,10 +392,6 @@ int main(int argc, char** argv) {
     }
 
     loglet::set_level(config.logging.log_level);
-#if !defined(DEBUG)
-#error "DEBUG must be defined"
-#endif
-    VERBOSEF("verbose logging enabled");
     for (auto const& [module, level] : config.logging.module_levels) {
         loglet::set_module_level(module.c_str(), level);
     }

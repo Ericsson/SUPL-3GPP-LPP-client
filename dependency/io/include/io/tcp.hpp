@@ -22,6 +22,10 @@ public:
     EXPLICIT TcpServerInput(std::string path) NOEXCEPT;
     ~TcpServerInput() NOEXCEPT override;
 
+    NODISCARD std::string const& listen() const NOEXCEPT { return mListen; }
+    NODISCARD uint16_t           port() const NOEXCEPT { return mPort; }
+    NODISCARD std::string const& path() const NOEXCEPT { return mPath; }
+
 protected:
     NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;
     NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;
@@ -43,6 +47,11 @@ public:
     EXPLICIT TcpClientInput(std::string host, uint16_t port, bool reconnect) NOEXCEPT;
     EXPLICIT TcpClientInput(std::string path, bool reconnect) NOEXCEPT;
     ~TcpClientInput() NOEXCEPT override;
+
+    NODISCARD std::string const& host() const NOEXCEPT { return mHost; }
+    NODISCARD uint16_t           port() const NOEXCEPT { return mPort; }
+    NODISCARD std::string const& path() const NOEXCEPT { return mPath; }
+    NODISCARD bool               reconnect() const NOEXCEPT { return mReconnect; }
 
 protected:
     NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;

@@ -40,8 +40,8 @@ Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1), mInterruptFd(-1), mEpollCount(0)
         return;
     }
 
-    DEBUGF("epoll_fd: %d", mEpollFd);
-    DEBUGF("interrupt_fd: %d", mInterruptFd);
+    VERBOSEF("epoll_fd: %d", mEpollFd);
+    VERBOSEF("interrupt_fd: %d", mInterruptFd);
 }
 
 Scheduler::~Scheduler() NOEXCEPT {

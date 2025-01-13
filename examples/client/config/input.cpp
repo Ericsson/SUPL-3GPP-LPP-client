@@ -275,7 +275,8 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, static_cast<uint16_t>(port), reconnect));
+        auto input = std::unique_ptr<io::Input>(
+            new io::TcpClientInput(host, static_cast<uint16_t>(port), reconnect));
         return {format, print, std::move(input)};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
@@ -320,14 +321,16 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
+        auto input =
+            std::unique_ptr<io::Input>(new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
         return {format, print, std::move(input)};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
         auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(path));
         return {format, print, std::move(input)};
     } else {
-        throw args::RequiredError("--input tcp-server: missing `listen` and `port` or `path` option");
+        throw args::RequiredError(
+            "--input tcp-server: missing `listen` and `port` or `path` option");
     }
 }
 
@@ -365,14 +368,16 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
+        auto input =
+            std::unique_ptr<io::Input>(new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
         return {format, print, std::move(input)};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
         auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(path));
         return {format, print, std::move(input)};
     } else {
-        throw args::RequiredError("--input udp-server: missing `listen` and `port` or `path` option");
+        throw args::RequiredError(
+            "--input udp-server: missing `listen` and `port` or `path` option");
     }
 }
 
@@ -439,6 +444,40 @@ static void dump(InputConfig const& config) {
             DEBUGF("data: %s", io::data_bits_to_str(serial_input->data_bits()));
             DEBUGF("stop: %s", io::stop_bits_to_str(serial_input->stop_bits()));
             DEBUGF("parity: %s", io::parity_bit_to_str(serial_input->parity_bit()));
+            continue;
+        }
+
+        auto tcp_client_input = dynamic_cast<io::TcpClientInput*>(input.interface.get());
+        if (tcp_client_input) {
+            if (tcp_client_input->path().empty()) {
+                DEBUGF("host: \"%s\"", tcp_client_input->host().c_str());
+                DEBUGF("port: %u", tcp_client_input->port());
+            } else {
+                DEBUGF("path: \"%s\"", tcp_client_input->path().c_str());
+            }
+            DEBUGF("reconnect: %s", tcp_client_input->reconnect() ? "true" : "false");
+            continue;
+        }
+
+        auto tcp_server_input = dynamic_cast<io::TcpServerInput*>(input.interface.get());
+        if (tcp_server_input) {
+            if (tcp_server_input->path().empty()) {
+                DEBUGF("listen: \"%s\"", tcp_server_input->listen().c_str());
+                DEBUGF("port: %u", tcp_server_input->port());
+            } else {
+                DEBUGF("path: \"%s\"", tcp_server_input->path().c_str());
+            }
+            continue;
+        }
+
+        auto udp_server_input = dynamic_cast<io::UdpServerInput*>(input.interface.get());
+        if (udp_server_input) {
+            if (udp_server_input->path().empty()) {
+                DEBUGF("listen: \"%s\"", udp_server_input->listen().c_str());
+                DEBUGF("port: %u", udp_server_input->port());
+            } else {
+                DEBUGF("path: \"%s\"", udp_server_input->path().c_str());
+            }
             continue;
         }
 

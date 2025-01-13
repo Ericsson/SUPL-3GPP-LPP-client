@@ -131,8 +131,8 @@ static char const* level_to_string(Level level) {
 
 static char const* level_to_color(Level level) {
     switch (level) {
-    case Level::Trace: return COLOR_BLUE;
-    case Level::Verbose: return COLOR_CYAN;
+    case Level::Trace: return COLOR_CYAN;
+    case Level::Verbose: return COLOR_BLUE;
     case Level::Debug: return COLOR_GREEN;
     case Level::Info: return COLOR_WHITE;
     case Level::Notice: return COLOR_UNDERLINE COLOR_MAGENTA;
@@ -150,7 +150,7 @@ void log(char const* module, Level level, char const* message) {
     auto        now   = std::chrono::system_clock::now();
     std::time_t now_c = std::chrono::system_clock::to_time_t(now);
     char        buffer[64];
-    strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", std::localtime(&now_c));
+    strftime(buffer, sizeof(buffer), "%y%m%d %H:%M:%S", std::localtime(&now_c));
 
     auto start_color = level_to_color(level);
     auto stop_color  = COLOR_RESET;
@@ -160,7 +160,7 @@ void log(char const* module, Level level, char const* message) {
         file = stderr;
     }
 
-    fprintf(file, "%s %s %s: [%10s] %*s%s%s\n", start_color, level_to_string(level), buffer, module,
+    fprintf(file, "%s%s%s[%10s] %*s%s%s\n", start_color, level_to_string(level), buffer, module,
             static_cast<int>(sScopes.size() * 2), "", message, stop_color);
 }
 

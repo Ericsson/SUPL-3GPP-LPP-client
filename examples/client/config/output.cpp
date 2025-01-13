@@ -356,6 +356,8 @@ static char const* output_type(io::Output* output) {
     if (dynamic_cast<io::StdoutOutput*>(output)) return "stdout";
     if (dynamic_cast<io::FileOutput*>(output)) return "file";
     if (dynamic_cast<io::SerialOutput*>(output)) return "serial";
+    if (dynamic_cast<io::TcpClientOutput*>(output)) return "tcp-client";
+    if (dynamic_cast<io::UdpClientOutput*>(output)) return "udp-client";
     return "unknown";
 }
 
@@ -393,16 +395,24 @@ static void dump(OutputConfig const& config) {
 
         auto tcp_client_output = dynamic_cast<io::TcpClientOutput*>(output.interface.get());
         if (tcp_client_output) {
-            DEBUGF("host: %s", tcp_client_output->host().c_str());
-            DEBUGF("port: %d", tcp_client_output->port());
+            if(tcp_client_output->host().empty()) {
+                DEBUGF("path: %s", tcp_client_output->path().c_str());
+            } else {
+                DEBUGF("host: %s", tcp_client_output->host().c_str());
+                DEBUGF("port: %d", tcp_client_output->port());
+            }
             DEBUGF("reconnect: %s", tcp_client_output->reconnect() ? "true" : "false");
             continue;
         }
 
         auto udp_client_output = dynamic_cast<io::UdpClientOutput*>(output.interface.get());
         if (udp_client_output) {
-            DEBUGF("host: %s", udp_client_output->host().c_str());
-            DEBUGF("port: %d", udp_client_output->port());
+            if(udp_client_output->host().empty()) {
+                DEBUGF("path: %s", udp_client_output->path().c_str());
+            } else {
+                DEBUGF("host: %s", udp_client_output->host().c_str());
+                DEBUGF("port: %d", udp_client_output->port());
+            }
             continue;
         }
 

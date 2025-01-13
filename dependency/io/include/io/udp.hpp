@@ -19,6 +19,10 @@ public:
     EXPLICIT UdpServerInput(std::string path) NOEXCEPT;
     ~UdpServerInput() NOEXCEPT override;
 
+    NODISCARD std::string const& listen() const NOEXCEPT { return mListen; }
+    NODISCARD uint16_t           port() const NOEXCEPT { return mPort; }
+    NODISCARD std::string const& path() const NOEXCEPT { return mPath; }
+
 protected:
     NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;
     NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;

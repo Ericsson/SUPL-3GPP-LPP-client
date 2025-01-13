@@ -2,11 +2,17 @@
 namespace logging {
 
 static args::Group gGroup{"Logging:"};
-static args::Flag  gVerbose{
+static args::Flag  gTrace{
+    gGroup,
+    "trace",
+    "Set log level to trace",
+     {"trace"},
+};
+static args::Flag gVerbose{
     gGroup,
     "verbose",
     "Set log level to verbose",
-     {"verbose"},
+    {"verbose"},
 };
 static args::Flag gDebug{
     gGroup,
@@ -19,6 +25,12 @@ static args::Flag gInfo{
     "info",
     "Set log level to info",
     {"info"},
+};
+static args::Flag gNotice{
+    gGroup,
+    "notice",
+    "Set log level to notice",
+    {"notice"},
 };
 static args::Flag gWarning{
     gGroup,
@@ -45,12 +57,16 @@ static void parse(Config* config) {
     auto& logging     = config->logging;
     logging.log_level = loglet::Level::Info;
 
-    if (gVerbose) {
+    if (gTrace) {
+        logging.log_level = loglet::Level::Trace;
+    } else if (gVerbose) {
         logging.log_level = loglet::Level::Verbose;
     } else if (gDebug) {
         logging.log_level = loglet::Level::Debug;
     } else if (gInfo) {
         logging.log_level = loglet::Level::Info;
+    } else if (gNotice) {
+        logging.log_level = loglet::Level::Notice;
     } else if (gWarning) {
         logging.log_level = loglet::Level::Warning;
     } else if (gError) {
@@ -64,12 +80,16 @@ static void parse(Config* config) {
         }
 
         auto level = loglet::Level::Disabled;
-        if (parts[1] == "verbose") {
+        if (parts[1] == "trace") {
+            level = loglet::Level::Trace;
+        } else if (parts[1] == "verbose") {
             level = loglet::Level::Verbose;
         } else if (parts[1] == "debug") {
             level = loglet::Level::Debug;
         } else if (parts[1] == "info") {
             level = loglet::Level::Info;
+        } else if (parts[1] == "notice") {
+            level = loglet::Level::Notice;
         } else if (parts[1] == "warning") {
             level = loglet::Level::Warning;
         } else if (parts[1] == "error") {

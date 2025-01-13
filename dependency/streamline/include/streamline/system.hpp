@@ -37,8 +37,9 @@ public:
 
     template <typename Consumer, typename... Args>
     void add_consumer(Args&&... args) {
+        FUNCTION_SCOPE();
         using DataType = typename Consumer::DataType;
-        DEBUGF("add consumer %s (%s)", typeid(Consumer).name(), typeid(DataType).name());
+        VERBOSEF("add consumer %s (%s)", typeid(Consumer).name(), typeid(DataType).name());
 
         if (!mScheduler) {
             WARNF("invalid system state");
@@ -54,8 +55,9 @@ public:
 
     template <typename Inspector, typename... Args>
     Inspector* add_inspector(Args&&... args) {
+        FUNCTION_SCOPE();
         using DataType = typename Inspector::DataType;
-        DEBUGF("add inspector %s (%s)", typeid(Inspector).name(), typeid(DataType).name());
+        VERBOSEF("add inspector %s (%s)", typeid(Inspector).name(), typeid(DataType).name());
 
         if (!mScheduler) {
             WARNF("invalid system state");
@@ -74,7 +76,8 @@ public:
 
     template <typename DataType>
     void push(DataType&& data) {
-        DEBUGF("push %s", typeid(DataType).name());
+        FUNCTION_SCOPE();
+        VERBOSEF("push %s", typeid(DataType).name());
         if (!mScheduler) {
             WARNF("invalid system state");
             return;
@@ -87,6 +90,7 @@ public:
     }
 
     void cancel() {
+        FUNCTION_SCOPE();
         for (auto& it : mQueues) {
             auto queue = static_cast<QueueTaskBase*>(it.second.get());
             queue->cancel();
@@ -97,6 +101,7 @@ public:
 protected:
     template <typename DataType>
     QueueTask<DataType>* get_or_create_queue() {
+        FUNCTION_SCOPE();
         auto it = mQueues.find(std::type_index(typeid(DataType)));
         if (it == mQueues.end()) {
             VERBOSEF("created queue for %s", typeid(DataType).name());
@@ -112,6 +117,7 @@ protected:
 
     template <typename DataType>
     QueueTask<DataType>* get_queue() {
+        FUNCTION_SCOPE();
         auto it = mQueues.find(std::type_index(typeid(DataType)));
         if (it != mQueues.end()) {
             return static_cast<QueueTask<DataType>*>(it->second.get());
