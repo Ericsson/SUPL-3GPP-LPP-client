@@ -86,7 +86,8 @@ bool TcpClient::initialize_socket() {
     struct addrinfo *ailist, *aip;
     auto             result = getaddrinfo(mHost.c_str(), port_as_string, &hint, &ailist);
     if (result != 0) {
-        WARNF("failed to get address info: %d (%s)", result, gai_strerror(result));
+        WARNF("failed to get address info: \"%s\" %d (%s)", mHost.c_str(), result,
+              gai_strerror(result));
         return false;
     }
 

@@ -42,16 +42,26 @@ static void parse(Config* config) {
         return;
     }
 
-    if (!gHost)
-        throw args::RequiredError("`--ls-host` is required, if you want to run without connecting "
-                                  "to the location server use `--ls-disable`");
-    if (!gPort) throw args::RequiredError("`--ls-port` is required with `--ls-host`");
+    if (gSlpHostCell) {
+        ls.slp_host_cell = true;
 
-    ls.host = gHost.Get();
-    ls.port = gPort.Get();
+        if (gHost) throw args::RequiredError("`--ls-host` cannot be used with `--slp-host-cell`");
+        if (gPort) throw args::RequiredError("`--ls-port` cannot be used with `--slp-host-cell`");
+    } else if (gSlpHostImsi) {
+        ls.slp_host_imsi = true;
 
-    if (gSlpHostCell) ls.slp_host_cell = true;
-    if (gSlpHostImsi) ls.slp_host_imsi = true;
+        if (gHost) throw args::RequiredError("`--ls-host` cannot be used with `--slp-host-imsi`");
+        if (gPort) throw args::RequiredError("`--ls-port` cannot be used with `--slp-host-imsi`");
+    } else {
+        if (!gHost)
+            throw args::RequiredError(
+                "`--ls-host` is required, if you want to run without connecting "
+                "to the location server use `--ls-disable`");
+        if (!gPort) throw args::RequiredError("`--ls-port` is required with `--ls-host`");
+
+        ls.host = gHost.Get();
+        ls.port = gPort.Get();
+    }
 }
 
 static void dump(LocationServerConfig const& config) {

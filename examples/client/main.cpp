@@ -375,9 +375,9 @@ int main(int argc, char** argv) {
     }
 
     loglet::set_level(config.logging.log_level);
-    #if !defined(DEBUG)
+#if !defined(DEBUG)
 #error "DEBUG must be defined"
-    #endif
+#endif
     VERBOSEF("verbose logging enabled");
     for (auto const& [module, level] : config.logging.module_levels) {
         loglet::set_module_level(module.c_str(), level);
@@ -462,6 +462,45 @@ int main(int argc, char** argv) {
             });
         } else {
             program.cell.reset(new supl::Cell{program.config.assistance_data.cell});
+        }
+
+        if (program.config.location_server.slp_host_cell) {
+            if (!program.cell) {
+                ERRORF("cell information is required when using --slp-host-cell");
+                return 1;
+            }
+
+            // h-slp.%03d.%03d.pub.3gppnetwork.org
+            char buffer[256];
+            snprintf(buffer, sizeof(buffer),
+                     "h-slp.%03" PRIi64 ".%03" PRIi64 ".pub.3gppnetwork.org",
+                     program.cell->data.nr.mcc, program.cell->data.nr.mnc);
+            program.config.location_server.host = buffer;
+            INFOF("generated host: \"%s\"", program.config.location_server.host.c_str());
+        } else if (program.config.location_server.slp_host_imsi) {
+            if (!program.identity) {
+                ERRORF("identity information is required when using --slp-host-imsi");
+                return 1;
+            } else if (program.identity->type != supl::Identity::Type::IMSI) {
+                ERRORF("identity must be of type IMSI when using --slp-host-imsi");
+                return 1;
+            }
+
+            auto imsi   = program.identity->data.imsi;
+            auto digits = std::to_string(imsi).size();
+            if (digits < 6) {
+                throw args::ValidationError("`imsi` must be at least 6 digits long");
+            }
+
+            auto mcc = (imsi / (int64_t)std::pow(10, digits - 3)) % 1000;
+            auto mnc = (imsi / (int64_t)std::pow(10, digits - 6)) % 1000;
+
+            // h-slp.%03d.%03d.pub.3gppnetwork.org
+            char buffer[256];
+            snprintf(buffer, sizeof(buffer),
+                     "h-slp.%03" PRIi64 ".%03" PRIi64 ".pub.3gppnetwork.org", mcc, mnc);
+            program.config.location_server.host = buffer;
+            INFOF("generated host: \"%s\"", program.config.location_server.host.c_str());
         }
 
         auto client = new lpp::Client{
