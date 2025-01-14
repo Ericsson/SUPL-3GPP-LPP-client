@@ -19,14 +19,15 @@ Parser::~Parser() NOEXCEPT {
     }
 }
 
-bool Parser::append(uint8_t* data, uint32_t length) NOEXCEPT {
-    if (length > mBufferCapacity) {
+bool Parser::append(uint8_t* data, size_t length) NOEXCEPT {
+    auto length32 = static_cast<uint32_t>(length);
+    if (length32 > mBufferCapacity) {
         // TODO(ewasjon): report error
         return false;
     }
 
     // copy data to buffer
-    for (uint32_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length32; i++) {
         mBuffer[mBufferWrite] = data[i];
         mBufferWrite          = (mBufferWrite + 1) % mBufferCapacity;
         if (mBufferWrite == mBufferRead) {
