@@ -15,8 +15,6 @@
 #include "PosSRS-TxFrequencyHoppingRRC-Connected-r18.h"
 #include "PosSRS-TxFrequencyHoppingRRC-Inactive-r18.h"
 #include "PosSRS-BWA-RRC-Inactive-r18.h"
-#include "PosSRS-BWA-RRC-Connected-r18.h"
-#include "PosSRS-BWA-IndependentCA-RRC-Connected-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -464,7 +462,7 @@ asn_TYPE_descriptor_t asn_DEF_posSRS_TxFH_WithTimeWindow_r18_24 = {
 };
 
 static asn_TYPE_member_t asn_MBR_ext3_13[] = {
-	{ ATF_POINTER, 10, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_Preconfigured_RRC_InactiveInitialUL_BWP_r18),
+	{ ATF_POINTER, 8, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_Preconfigured_RRC_InactiveInitialUL_BWP_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_posSRS_Preconfigured_RRC_InactiveInitialUL_BWP_r18_14,
@@ -481,7 +479,7 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-Preconfigured-RRC-InactiveInitialUL-BWP-r18"
 		},
-	{ ATF_POINTER, 9, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_Preconfigured_RRC_InactiveOutsideInitialUL_BWP_r18),
+	{ ATF_POINTER, 7, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_Preconfigured_RRC_InactiveOutsideInitialUL_BWP_r18),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_posSRS_Preconfigured_RRC_InactiveOutsideInitialUL_BWP_r18_16,
@@ -498,7 +496,7 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-Preconfigured-RRC-InactiveOutsideInitialUL-BWP-r18"
 		},
-	{ ATF_POINTER, 8, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_ValidityAreaRRC_InactiveInitialUL_BWP_r18),
+	{ ATF_POINTER, 6, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_ValidityAreaRRC_InactiveInitialUL_BWP_r18),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_posSRS_ValidityAreaRRC_InactiveInitialUL_BWP_r18_18,
@@ -515,7 +513,7 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-ValidityAreaRRC-InactiveInitialUL-BWP-r18"
 		},
-	{ ATF_POINTER, 7, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_ValidityAreaRRC_InactiveOutsideInitialUL_BWP_r18),
+	{ ATF_POINTER, 5, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_ValidityAreaRRC_InactiveOutsideInitialUL_BWP_r18),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_posSRS_ValidityAreaRRC_InactiveOutsideInitialUL_BWP_r18_20,
@@ -532,7 +530,7 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-ValidityAreaRRC-InactiveOutsideInitialUL-BWP-r18"
 		},
-	{ ATF_POINTER, 6, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_TxFH_RRC_Connected_r18),
+	{ ATF_POINTER, 4, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_TxFH_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PosSRS_TxFrequencyHoppingRRC_Connected_r18,
@@ -549,7 +547,7 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-TxFH-RRC-Connected-r18"
 		},
-	{ ATF_POINTER, 5, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_TxFH_RRC_Inactive_r18),
+	{ ATF_POINTER, 3, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_TxFH_RRC_Inactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PosSRS_TxFrequencyHoppingRRC_Inactive_r18,
@@ -566,7 +564,7 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-TxFH-RRC-Inactive-r18"
 		},
-	{ ATF_POINTER, 4, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_TxFH_WithTimeWindow_r18),
+	{ ATF_POINTER, 2, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_TxFH_WithTimeWindow_r18),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_posSRS_TxFH_WithTimeWindow_r18_24,
@@ -583,7 +581,7 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-TxFH-WithTimeWindow-r18"
 		},
-	{ ATF_POINTER, 3, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_BWA_RRC_Inactive_r18),
+	{ ATF_POINTER, 1, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_BWA_RRC_Inactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PosSRS_BWA_RRC_Inactive_r18,
@@ -600,42 +598,8 @@ static asn_TYPE_member_t asn_MBR_ext3_13[] = {
 		0, 0, /* No default value */
 		"posSRS-BWA-RRC-Inactive-r18"
 		},
-	{ ATF_POINTER, 2, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_BWA_RRC_Connected_r18),
-		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PosSRS_BWA_RRC_Connected_r18,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"posSRS-BWA-RRC-Connected-r18"
-		},
-	{ ATF_POINTER, 1, offsetof(struct SRS_CapabilityPerBand_r16__ext3, posSRS_BWA_IndependentCA_RRC_Connected_r18),
-		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_PosSRS_BWA_IndependentCA_RRC_Connected_r18,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"posSRS-BWA-IndependentCA-RRC-Connected-r18"
-		},
 };
-static const int asn_MAP_ext3_oms_13[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+static const int asn_MAP_ext3_oms_13[] = { 0, 1, 2, 3, 4, 5, 6, 7 };
 static const ber_tlv_tag_t asn_DEF_ext3_tags_13[] = {
 	(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
@@ -648,17 +612,15 @@ static const asn_TYPE_tag2member_t asn_MAP_ext3_tag2el_13[] = {
     { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* posSRS-TxFH-RRC-Connected-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* posSRS-TxFH-RRC-Inactive-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* posSRS-TxFH-WithTimeWindow-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* posSRS-BWA-RRC-Inactive-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* posSRS-BWA-RRC-Connected-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* posSRS-BWA-IndependentCA-RRC-Connected-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 } /* posSRS-BWA-RRC-Inactive-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext3_specs_13 = {
 	sizeof(struct SRS_CapabilityPerBand_r16__ext3),
 	offsetof(struct SRS_CapabilityPerBand_r16__ext3, _asn_ctx),
 	asn_MAP_ext3_tag2el_13,
-	10,	/* Count of tags in the map */
+	8,	/* Count of tags in the map */
 	asn_MAP_ext3_oms_13,	/* Optional members */
-	10, 0,	/* Root/Additions */
+	8, 0,	/* Root/Additions */
 	-1,	/* First extension addition */
 };
 static /* Use -fall-defs-global to expose */
@@ -682,7 +644,7 @@ asn_TYPE_descriptor_t asn_DEF_ext3_13 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_ext3_13,
-	10,	/* Elements count */
+	8,	/* Elements count */
 	&asn_SPC_ext3_specs_13	/* Additional specs */
 };
 

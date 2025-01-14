@@ -1,3 +1,5 @@
+-- Extract from 37355-i40.docx, 3GPP TS 37.355 V18.4.0 (2024-12)
+
 LPP-PDU-Definitions DEFINITIONS AUTOMATIC TAGS ::= BEGIN
 
 LPP-Message ::= SEQUENCE {
@@ -572,7 +574,8 @@ Local3dPointWithUncertaintyEllipsoid-r18 ::= SEQUENCE {
     uncertaintySemiMinor-r18 INTEGER (0..127),
     orientationMajorAxis-r18 INTEGER (0..179),
     uncertaintyAltitude-r18 INTEGER (0..127),
-    confidence-r18 INTEGER (0..100)
+    confidence-r18 INTEGER (0..100),
+    vConfidence-r18 INTEGER (0..100) OPTIONAL -- Need ON
 }
 
 LocationCoordinateTypes ::= SEQUENCE {
@@ -625,6 +628,23 @@ PeriodicSessionID-r15 ::= SEQUENCE {
 }
 
 UpdateCapabilities-r15 ::= BIT STRING {primaryCellID-r15 (0)} (SIZE (1..8))
+
+PeriodicReportingIntervalMsSupport-r18 ::= SEQUENCE {
+    minPeriodicReportingIntervalMs-r18 ENUMERATED {
+                       ms1,
+                       ms10,
+                       ms100,
+                       ...
+                   },
+    ...
+}
+
+PeriodicReportingIntervalMsSupportPerMode-r18 ::= SEQUENCE {
+    minPeriodicReportingIntervalMs1-Supported-r18 PositioningModes OPTIONAL,
+    minPeriodicReportingIntervalMs10-Supported-r18 PositioningModes OPTIONAL,
+    minPeriodicReportingIntervalMs100-Supported-r18 PositioningModes OPTIONAL,
+    ...
+}
 
 Polygon ::= SEQUENCE (SIZE (3..15)) OF PolygonPoints
 
@@ -749,6 +769,9 @@ CommonIEsRequestLocationInformation ::= SEQUENCE {
     [[
     scheduledLocationTime-r17 ScheduledLocationTime-r17 OPTIONAL, -- Need ON
     targetIntegrityRisk-r17 TargetIntegrityRisk-r17 OPTIONAL -- Need ON
+    ]],
+    [[
+    periodicalReportingExt-r18 PeriodicalReportingCriteriaExt-r18 OPTIONAL -- Need ON
     ]]
 }
 
@@ -784,6 +807,20 @@ PeriodicalReportingCriteria ::= SEQUENCE {
                        ri32,
                        ri64
                    }
+}
+
+PeriodicalReportingCriteriaExt-r18 ::= SEQUENCE {
+    reportingAmount-r18 ENUMERATED {
+                       ra2,
+                       ra4,
+                       ra8,
+                       ra16,
+                       ra32,
+                       ra64,
+                       ra-Infinity
+                   }  DEFAULT ra-Infinity,
+    reportingIntervalMs-r18 INTEGER (1..999),
+    ...
 }
 
 TriggeredReportingCriteria ::= SEQUENCE {
@@ -1043,7 +1080,8 @@ LCS-GCS-TranslationParameter-r16 ::= SEQUENCE {
 
 LocalOrigin-r18 ::= SEQUENCE {
     coordinateID-r18 VisibleString (SIZE (1..256)),
-    point-r18      Ellipsoid-Point OPTIONAL,
+    point-r18      HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid-r15 OPTIONAL, -- Need ON
+    horizAxesOrientation-r18 INTEGER (0..3599) OPTIONAL, -- Need ON
     ...
 }
 
@@ -1103,9 +1141,10 @@ NR-AdditionalPath-r16 ::= SEQUENCE {
     ]]
 }
 
-NR-AggregatedDL-PRS-ResourceSetID-Element-r18 ::= SEQUENCE {
-    dl-PRS-ID-r18  INTEGER (0..255),
-    nr-DL-PRS-ResourceSetID-r18 NR-DL-PRS-ResourceSetID-r16,
+NR-AggregatedDL-PRS-ResourceInfo-Element-r18 ::= SEQUENCE {
+    aggregatedDL-PRS-ID-r18 INTEGER (0..255) OPTIONAL,
+    nr-DL-PRS-ResourceSetID-r18 NR-DL-PRS-ResourceSetID-r16 OPTIONAL,
+    nr-DL-PRS-ResourceID-r18 NR-DL-PRS-ResourceID-r16 OPTIONAL,
     ...
 }
 
@@ -1458,7 +1497,15 @@ NR-DL-PRS-MeasurementTimeWindowsConfig-r18 ::= SEQUENCE (SIZE (1..2)) OF NR-DL-P
 
 NR-DL-PRS-MeasurementTimeWindowsConfigElement-r18 ::= SEQUENCE {
     nr-StartSFN-TimeWindow-r18 INTEGER (0..1023),
-    nr-PeriodicityAndSlotOffsetTimeWindow-r18 NR-DL-PRS-Periodicity-and-ResourceSetSlotOffset-r16 OPTIONAL, -- Need ON
+    nr-PeriodicOrOneShotTimeWindow-r18 CHOICE {
+        nr-PeriodicityAndSlotOffsetTimeWindow-r18 NR-DL-PRS-Periodicity-and-ResourceSetSlotOffset-r16,
+        nr-OneShotSlotOffsetTimeWindow-r18 CHOICE {
+            scs15-r18      INTEGER (0..10239),
+            scs30-r18      INTEGER (0..20479),
+            scs60-r18      INTEGER (0..40959),
+            scs120-r18     INTEGER (0..81919)
+        }
+    } OPTIONAL, -- Need ON
     nr-SymbolOffsetTimeWindow-r18 INTEGER (0..13) OPTIONAL, -- Need ON
     nr-DurationTimeWindow-r18 ENUMERATED {
                        n1,
@@ -1470,8 +1517,16 @@ NR-DL-PRS-MeasurementTimeWindowsConfigElement-r18 ::= SEQUENCE {
                        n16,
                        ...
                    },
-    nr-SelectedDL-PRS-FrequencyLayerIndex-r18 INTEGER (0..nrMaxFreqLayers-1-r16),
-    nr-SelectedDL-PRS-IndexListPerFreq-r18 SEQUENCE (SIZE (1..nrMaxTRPsPerFreq-r16)) OF NR-SelectedDL-PRS-IndexPerTRP-r18 OPTIONAL, --Need OP
+    nr-SelectedDL-PRS-FrequencyLayerIndex-r18 INTEGER (0..nrMaxFreqLayers-1-r16) OPTIONAL, -- Need ON
+    nr-SelectedDL-PRS-IndexListPerFreq-r18 SEQUENCE (SIZE (1..nrMaxTRPsPerFreq-r16)) OF NR-SelectedDL-PRS-IndexPerTRP-r18 OPTIONAL, -- Need OP
+    nr-MeasurementsToPerformInTimeWindow-r18 BIT STRING {
+                       rstd (0),
+                       ueRxTx (1),
+                       rsrp (2),
+                       rsrpp (3),
+                       rscp (4),
+                       rscpd (5)
+                   } (SIZE (1..16)) OPTIONAL, -- Need ON
     ...
 }
 
@@ -1920,8 +1975,8 @@ PRS-ProcessingCapabilityPerBand-r16 ::= SEQUENCE {
     } OPTIONAL,
     prs-BWA-TwoContiguousIntrabandInMG-RRC-Connected-r18 PRS-BWA-TwoContiguousIntrabandInMG-r18 OPTIONAL,
     prs-BWA-ThreeContiguousIntrabandInMG-RRC-Connected-r18 PRS-BWA-ThreeContiguousIntrabandInMG-r18 OPTIONAL,
-    prs-BWA-TwoContiguousIntrabandInMG-RRC-IdleAndInactive-r18 PRS-BWA-TwoContiguousIntrabandInMG-r18 OPTIONAL,
-    prs-BWA-ThreeContiguousIntrabandInMG-RRC-IdleAndInactive-r18 PRS-BWA-ThreeContiguousIntrabandInMG-r18 OPTIONAL,
+    prs-BWA-TwoContiguousIntraband-RRC-IdleAndInactive-r18 PRS-BWA-TwoContiguousIntrabandInMG-r18 OPTIONAL,
+    prs-BWA-ThreeContiguousIntraband-RRC-IdleAndInactive-r18 PRS-BWA-ThreeContiguousIntrabandInMG-r18 OPTIONAL,
     reducedNumOfSampleInMeasurementWithPRS-BWA-RRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
     reducedNumOfSampleInMeasurementWithPRS-BWA-RRC-IdleAndInactive-r18 ENUMERATED {supported} OPTIONAL,
     dl-PRS-MeasurementWithRxFH-RRC-Inactive-r18 ENUMERATED {supported} OPTIONAL,
@@ -1929,8 +1984,7 @@ PRS-ProcessingCapabilityPerBand-r16 ::= SEQUENCE {
     reducedNumOfSampleForMeasurementWithFH-RRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
     reducedNumOfSampleForMeasurementWithFH-RRC-IdleAndInactive-r18 ENUMERATED {supported} OPTIONAL,
     supportOfPRS-BWA-WithTwoPFL-Combination-r18 ENUMERATED {supported} OPTIONAL,
-    dl-PRS-MeasurementWithRxFH-RRC-Connected-r18 DL-PRS-MeasurementWithRxFH-RRC-Connected-r18 OPTIONAL,
-    supportOfPRS-MeasurementRRC-Idle-r18 ENUMERATED {supported} OPTIONAL
+    dl-PRS-MeasurementWithRxFH-RRC-Connected-r18 DL-PRS-MeasurementWithRxFH-RRC-Connected-r18 OPTIONAL
     ]]
 }
 
@@ -2426,12 +2480,12 @@ DL-PRS-MeasurementWithRxFH-RRC-Connected-r18 ::= SEQUENCE {
                            ms1280
                        }
     } OPTIONAL,
-    rf-RxRetunTimeFR1-r18 ENUMERATED {
+    rf-RxRetuneTimeFR1-r18 ENUMERATED {
                        n70,
                        n140,
                        n210
                    }  OPTIONAL,
-    rf-RxRetunTimeFR2-r18 ENUMERATED {
+    rf-RxRetuneTimeFR2-r18 ENUMERATED {
                        n35,
                        n70,
                        n140
@@ -2796,7 +2850,9 @@ NR-PositionCalculationAssistance-r16 ::= SEQUENCE {
 }
 
 NR-IntegrityParametersTRP-LocationInfo-r18 ::= SEQUENCE {
-    trp-ErrorCorrelationTime-r18 INTEGER (0..255),
+    trp-ErrorCorrelationTime-r18 INTEGER (0..255) OPTIONAL, -- Need ON
+    dl-PRS-ResourceSetARP-ErrorCorrelationTime-r18 INTEGER (0..255) OPTIONAL, -- Need ON
+    dl-PRS-ResourceARP-ErrorCorrelationTime-r18 INTEGER (0..255) OPTIONAL, -- Need ON
     ...
 }
 
@@ -2838,8 +2894,12 @@ NR-PRU-RSCP-MeasElement-r18 ::= SEQUENCE {
         perResource    LOS-NLOS-Indicator-r17
     } OPTIONAL, -- Need ON
     nr-RSCP-r18    INTEGER (0..3599) OPTIONAL, -- Need ON
+    nr-DL-PRS-RSRP-Result-r18 INTEGER (0..126) OPTIONAL, -- Need ON
+    nr-DL-PRS-FirstPathRSRP-Result-r18 INTEGER (0..126) OPTIONAL, -- Need ON
     nr-PhaseQuality-r18 NR-PhaseQuality-r18 OPTIONAL, -- Need ON
     nr-PRU-RSCP-AddSampleMeasurements-r18 SEQUENCE (SIZE (1..nrNumOfSamples-1-r18)) OF NR-RSCP-AdditionalMeasurements-r18 OPTIONAL, -- Need ON
+    nr-PRU-RSRP-AddSampleMeasurements-r18 SEQUENCE (SIZE (1..nrNumOfSamples-1-r18)) OF INTEGER (0..61) OPTIONAL, -- Need ON
+    nr-PRU-FirstPathRSRP-ResultDiff-AddSampleMeasurements-r18 SEQUENCE (SIZE (1..nrNumOfSamples-1-r18)) OF INTEGER (0..61) OPTIONAL, -- Need ON
     nr-PRU-RSCP-AdditionalMeasurements-r18 NR-PRU-RSCP-AdditionalMeasurements-r18 OPTIONAL, -- Need ON
     ...
 }
@@ -2849,7 +2909,11 @@ NR-PRU-RSCP-AdditionalMeasurements-r18 ::= SEQUENCE (SIZE (1..3)) OF NR-PRU-RSCP
 NR-PRU-RSCP-AdditionalMeasurementElement-r18 ::= SEQUENCE {
     nr-DL-PRS-ResourceID-r18 NR-DL-PRS-ResourceID-r16 OPTIONAL, -- Need ON
     nr-DL-PRS-ResourceSetID-r18 NR-DL-PRS-ResourceSetID-r16 OPTIONAL, -- Need ON
+    nr-DL-PRS-RSRP-ResultDiff-r18 INTEGER (0..61) OPTIONAL, -- Need ON
+    nr-DL-PRS-FirstPathRSRP-ResultDiff-r18 INTEGER (0..61) OPTIONAL, -- Need ON
     nr-PRU-RSCP-AdditionalMeasurementsList-r18 SEQUENCE (SIZE (1..nrNumOfSamples-r18)) OF NR-RSCP-AdditionalMeasurements-r18 OPTIONAL, -- Need ON
+    nr-PRU-RSRPDiff-AdditionalMeasurementsList-r18 SEQUENCE (SIZE (1..nrNumOfSamples-r18)) OF INTEGER (0..61) OPTIONAL, -- Need ON
+    nr-PRU-FirstPathRSRP-ResultDiff-AdditionalMeasurementsList-r18 SEQUENCE (SIZE (1..nrNumOfSamples-r18)) OF INTEGER (0..61) OPTIONAL, -- Need ON
     ...
 }
 
@@ -3193,9 +3257,7 @@ SRS-CapabilityPerBand-r16 ::= SEQUENCE {
     posSRS-TxFH-RRC-Connected-r18 PosSRS-TxFrequencyHoppingRRC-Connected-r18 OPTIONAL,
     posSRS-TxFH-RRC-Inactive-r18 PosSRS-TxFrequencyHoppingRRC-Inactive-r18 OPTIONAL,
     posSRS-TxFH-WithTimeWindow-r18 ENUMERATED {supported} OPTIONAL,
-    posSRS-BWA-RRC-Inactive-r18 PosSRS-BWA-RRC-Inactive-r18 OPTIONAL,
-    posSRS-BWA-RRC-Connected-r18 PosSRS-BWA-RRC-Connected-r18 OPTIONAL,
-    posSRS-BWA-IndependentCA-RRC-Connected-r18 PosSRS-BWA-IndependentCA-RRC-Connected-r18 OPTIONAL
+    posSRS-BWA-RRC-Inactive-r18 PosSRS-BWA-RRC-Inactive-r18 OPTIONAL
     ]]
 }
 
@@ -3268,7 +3330,11 @@ SRS-PosResourcesPerBand-r16 ::= SEQUENCE {
                        n32,
                        n64
                    }  OPTIONAL,
-    ...
+    ...,
+    [[
+    posSRS-BWA-RRC-Connected-r18 PosSRS-BWA-RRC-Connected-r18 OPTIONAL,
+    posSRS-BWA-IndependentCA-RRC-Connected-r18 PosSRS-BWA-IndependentCA-RRC-Connected-r18 OPTIONAL
+    ]]
 }
 
 PosSRS-RRC-Inactive-InInitialUL-BWP-r17 ::= SEQUENCE {
@@ -3498,12 +3564,12 @@ PosSRS-TxFrequencyHoppingRRC-Connected-r18 ::= SEQUENCE {
                        n5,
                        n6
                    }  OPTIONAL,
-    rf-TxRetunTimeFR1-r18 ENUMERATED {
+    rf-TxRetuneTimeFR1-r18 ENUMERATED {
                        n70,
                        n140,
                        n210
                    }  OPTIONAL,
-    rf-TxRetunTimeFR2-r18 ENUMERATED {
+    rf-TxRetuneTimeFR2-r18 ENUMERATED {
                        n35,
                        n70,
                        n140
@@ -3572,12 +3638,12 @@ PosSRS-TxFrequencyHoppingRRC-Inactive-r18 ::= SEQUENCE {
                        n5,
                        n6
                    }  OPTIONAL,
-    rf-TxRetunTimeFR1-r18 ENUMERATED {
+    rf-TxRetuneTimeFR1-r18 ENUMERATED {
                        n70,
                        n140,
                        n210
                    }  OPTIONAL,
-    rf-TxRetunTimeFR2-r18 ENUMERATED {
+    rf-TxRetuneTimeFR2-r18 ENUMERATED {
                        n35,
                        n70,
                        n140
@@ -3622,11 +3688,16 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        two,
                        three,
                        twoandthree
-                   }  OPTIONAL,
+                   },
     maximumAggregatedBW-TwoCarriersFR1-r18 ENUMERATED {
+                       mhz20,
+                       mhz40,
+                       mhz50,
                        mhz80,
                        mhz100,
                        mhz160,
+                       mhz180,
+                       mhz190,
                        mhz200
                    }  OPTIONAL,
     maximumAggregatedBW-TwoCarriersFR2-r18 ENUMERATED {
@@ -3642,12 +3713,14 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        mhz100,
                        mhz160,
                        mhz200,
+                       mhz240,
                        mhz300
                    }  OPTIONAL,
     maximumAggregatedBW-ThreeCarriersFR2-r18 ENUMERATED {
                        mhz50,
                        mhz100,
                        mhz200,
+                       mhz300,
                        mhz400,
                        mhz600,
                        mhz800,
@@ -3661,7 +3734,7 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        n8,
                        n12,
                        n16
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourcePeriodic-r18 ENUMERATED {
                        n1,
                        n2,
@@ -3670,7 +3743,7 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceAperiodic-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3680,7 +3753,7 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceSemi-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3690,7 +3763,7 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourcePeriodicPerSlot-r18 ENUMERATED {
                        n1,
                        n2,
@@ -3702,7 +3775,7 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceAperiodicPerSlot-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3715,7 +3788,7 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceSemiPerSlot-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3728,8 +3801,7 @@ PosSRS-BWA-RRC-Connected-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
-                   }  OPTIONAL,
-    supportOfSameSRS-PowerReduction-r18 ENUMERATED {supported} OPTIONAL,
+                   },
     ...
 }
 
@@ -3738,11 +3810,16 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        two,
                        three,
                        twoandthree
-                   }  OPTIONAL,
+                   },
     maximumAggregatedBW-TwoCarriersFR1-r18 ENUMERATED {
+                       mhz20,
+                       mhz40,
+                       mhz50,
                        mhz80,
                        mhz100,
                        mhz160,
+                       mhz180,
+                       mhz190,
                        mhz200
                    }  OPTIONAL,
     maximumAggregatedBW-TwoCarriersFR2-r18 ENUMERATED {
@@ -3758,12 +3835,14 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        mhz100,
                        mhz160,
                        mhz200,
+                       mhz240,
                        mhz300
                    }  OPTIONAL,
     maximumAggregatedBW-ThreeCarriersFR2-r18 ENUMERATED {
                        mhz50,
                        mhz100,
                        mhz200,
+                       mhz300,
                        mhz400,
                        mhz600,
                        mhz800,
@@ -3777,7 +3856,7 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        n8,
                        n12,
                        n16
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourcePeriodic-r18 ENUMERATED {
                        n1,
                        n2,
@@ -3786,7 +3865,7 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceAperiodic-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3796,7 +3875,7 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceSemi-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3806,7 +3885,7 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourcePeriodicPerSlot-r18 ENUMERATED {
                        n1,
                        n2,
@@ -3818,7 +3897,7 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceAperiodicPerSlot-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3831,7 +3910,7 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceSemiPerSlot-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3844,14 +3923,21 @@ PosSRS-BWA-IndependentCA-RRC-Connected-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
-                   }  OPTIONAL,
-    supportOfSameSRS-PowerReduction-r18 ENUMERATED {supported} OPTIONAL,
+                   },
     guardPeriod-r18 ENUMERATED {
-                       ms0,
-                       ms30,
-                       ms100,
-                       ms140,
-                       ms200
+                       n0,
+                       n30,
+                       n100,
+                       n140,
+                       n200
+                   },
+    powerClassForTwoAggregatedCarriers-r18 ENUMERATED {
+                       pc2,
+                       pc3
+                   }  OPTIONAL,
+    powerClassForThreeAggregatedCarriers-r18 ENUMERATED {
+                       pc2,
+                       pc3
                    }  OPTIONAL,
     ...
 }
@@ -3861,11 +3947,16 @@ PosSRS-BWA-RRC-Inactive-r18 ::= SEQUENCE {
                        two,
                        three,
                        twoandthree
-                   }  OPTIONAL,
+                   },
     maximumAggregatedBW-TwoCarriersFR1-r18 ENUMERATED {
+                       mhz20,
+                       mhz40,
+                       mhz50,
                        mhz80,
                        mhz100,
                        mhz160,
+                       mhz180,
+                       mhz190,
                        mhz200
                    }  OPTIONAL,
     maximumAggregatedBW-TwoCarriersFR2-r18 ENUMERATED {
@@ -3881,12 +3972,14 @@ PosSRS-BWA-RRC-Inactive-r18 ::= SEQUENCE {
                        mhz100,
                        mhz160,
                        mhz200,
+                       mhz240,
                        mhz300
                    }  OPTIONAL,
     maximumAggregatedBW-ThreeCarriersFR2-r18 ENUMERATED {
                        mhz50,
                        mhz100,
                        mhz200,
+                       mhz300,
                        mhz400,
                        mhz600,
                        mhz800,
@@ -3900,7 +3993,7 @@ PosSRS-BWA-RRC-Inactive-r18 ::= SEQUENCE {
                        n8,
                        n12,
                        n16
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourcePeriodic-r18 ENUMERATED {
                        n1,
                        n2,
@@ -3909,7 +4002,7 @@ PosSRS-BWA-RRC-Inactive-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceSemi-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3919,7 +4012,7 @@ PosSRS-BWA-RRC-Inactive-r18 ::= SEQUENCE {
                        n16,
                        n32,
                        n64
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourcePeriodicPerSlot-r18 ENUMERATED {
                        n1,
                        n2,
@@ -3931,7 +4024,7 @@ PosSRS-BWA-RRC-Inactive-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
-                   }  OPTIONAL,
+                   },
     maximumAggregatedResourceSemiPerSlot-r18 ENUMERATED {
                        n0,
                        n1,
@@ -3944,14 +4037,21 @@ PosSRS-BWA-RRC-Inactive-r18 ::= SEQUENCE {
                        n10,
                        n12,
                        n14
+                   },
+    guardPeriod-r18 ENUMERATED {
+                       n0,
+                       n30,
+                       n100,
+                       n140,
+                       n200
+                   },
+    powerClassForTwoAggregatedCarriers-r18 ENUMERATED {
+                       pc2,
+                       pc3
                    }  OPTIONAL,
-    supportOfSameSRS-PowerReduction-r18 ENUMERATED {supported} OPTIONAL,
-    guardPerid-r18 ENUMERATED {
-                       ms0,
-                       ms30,
-                       ms100,
-                       ms140,
-                       ms200
+    powerClassForThreeAggregatedCarriers-r18 ENUMERATED {
+                       pc2,
+                       pc3
                    }  OPTIONAL,
     ...
 }
@@ -4619,7 +4719,8 @@ OTDOA-ProvideCapabilities ::= SEQUENCE {
                    }  OPTIONAL,
     motionMeasurements-r15 ENUMERATED {supported} OPTIONAL,
     interRAT-RSTDmeasurement-r15 ENUMERATED {supported} OPTIONAL,
-    scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupport-r17 OPTIONAL
+    scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupport-r17 OPTIONAL,
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupport-r18 OPTIONAL
 }
 
 maxBands       INTEGER ::= 64
@@ -5679,7 +5780,10 @@ AlmanacNavIC-AlmanacSet-r16 ::= SEQUENCE {
     navic-AlmMo-r16 INTEGER (-8388608..8388607),
     navic-Almaf0-r16 INTEGER (-1024..1023),
     navic-Almaf1-r16 INTEGER (-1024..1023),
-    ...
+    ...,
+    [[
+    navicL5-i0-r16 INTEGER (-8388608..8388607) OPTIONAL -- Need ON
+    ]]
 }
 
 GNSS-UTC-Model ::= CHOICE {
@@ -6152,7 +6256,7 @@ STEC-IntegrityParameters-r17 ::= SEQUENCE {
     probOnsetIonoFault-r17 INTEGER (0..255),
     meanIonoFaultDuration-r17 INTEGER (1..256),
     ionoRangeErrorCorrelationTime-r17 INTEGER (1..255) OPTIONAL, -- Need OR
-    ionoRangeRateErrorCorrelationTime-r17 INTEGER (1..255) OPTIONAL, -- Cond Integrity 2
+    ionoRangeRateErrorCorrelationTime-r17 INTEGER (1..255) OPTIONAL, -- Cond Integrity2
     ...
 }
 
@@ -6391,7 +6495,7 @@ A-GNSS-RequestAssistanceData ::= SEQUENCE {
 }
 
 GNSS-CommonAssistDataReq ::= SEQUENCE {
-    gnss-ReferenceTimeReq GNSS-ReferenceTimeReq OPTIONAL, -- Cond RefTim eReq
+    gnss-ReferenceTimeReq GNSS-ReferenceTimeReq OPTIONAL, -- Cond RefTimeReq
     gnss-ReferenceLocationReq GNSS-ReferenceLocationReq OPTIONAL, -- Cond RefLocReq
     gnss-IonosphericModelReq GNSS-IonosphericModelReq OPTIONAL, -- Cond IonoModReq
     gnss-EarthOrientationParametersReq GNSS-EarthOrientationParametersReq OPTIONAL, -- Cond EOPReq
@@ -6953,6 +7057,9 @@ A-GNSS-ProvideCapabilities ::= SEQUENCE {
     ]],
     [[
     scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupportPerMode-r17 OPTIONAL
+    ]],
+    [[
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupportPerMode-r18 OPTIONAL
     ]]
 }
 
@@ -7132,7 +7239,8 @@ GNSS-AlmanacSupport ::= SEQUENCE {
                        model-4 (3),
                        model-5 (4),
                        model-6 (5),
-                       model-7 (6)
+                       model-7 (6),
+                       model-8-v16e0 (7)
                    } (SIZE (1..8)) OPTIONAL,
     ...
 }
@@ -7468,6 +7576,9 @@ ECID-ProvideCapabilities ::= SEQUENCE {
     ]],
     [[
     scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupport-r17 OPTIONAL
+    ]],
+    [[
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupport-r18 OPTIONAL
     ]]
 }
 
@@ -7557,6 +7668,9 @@ TBS-ProvideCapabilities-r13 ::= SEQUENCE {
     ]],
     [[
     scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupportPerMode-r17 OPTIONAL
+    ]],
+    [[
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupportPerMode-r18 OPTIONAL
     ]]
 }
 
@@ -7761,6 +7875,9 @@ Sensor-ProvideCapabilities-r13 ::= SEQUENCE {
     ]],
     [[
     scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupportPerMode-r17 OPTIONAL
+    ]],
+    [[
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupportPerMode-r18 OPTIONAL
     ]]
 }
 
@@ -7916,6 +8033,9 @@ WLAN-ProvideCapabilities-r13 ::= SEQUENCE {
     ]],
     [[
     scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupportPerMode-r17 OPTIONAL
+    ]],
+    [[
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupportPerMode-r18 OPTIONAL
     ]]
 }
 
@@ -8106,7 +8226,7 @@ BT-SuggestedAoA-Config-r18 ::= SEQUENCE {
     tx-Power-r18   INTEGER (-127..20) OPTIONAL, -- Need ON
     cte-Length-r18 INTEGER (2..20) OPTIONAL, -- Need ON
     cte-Count-r18  INTEGER (1..16) OPTIONAL, -- Need ON
-    tx-PHY-M2-r18  ENUMERATED {m2} OPTIONAL, -- Need ON
+    tx-PHY-M2-r18  ENUMERATED {m2} OPTIONAL, -- Need OP
     ...
 }
 
@@ -8132,7 +8252,8 @@ BT-ProvideCapabilities-r13 ::= SEQUENCE {
     bt-AoA-r18     ENUMERATED {
                        request-only,
                        suggestion
-                   }  OPTIONAL
+                   }  OPTIONAL,
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupportPerMode-r18 OPTIONAL
     ]]
 }
 
@@ -8184,7 +8305,7 @@ BT-BeaconInfoElement-r18 ::= SEQUENCE {
     bt-BeaconLocation-r18 RelativeLocation-r16 OPTIONAL, -- Need OP
     bt-LCS-GCS-TranslationParameter-r18 LCS-GCS-TranslationParameter-r16 OPTIONAL, -- Cond NotSameAsPrev1
     bt-antArrayConfig-r18 BT-AntArrayConfig-r18 OPTIONAL, -- Cond NotSameAsPrev2
-    bt-antElementList-r18 SEQUENCE (SIZE (2..maxBT-BeaconAntElt-r18)) OF BT-AntElement-r18 OPTIONAL, -- Cond NotSameA sPrev3
+    bt-antElementList-r18 SEQUENCE (SIZE (2..maxBT-BeaconAntElt-r18)) OF BT-AntElement-r18 OPTIONAL, -- Cond NotSameAsPrev3
     bt-antSwitchingPattern-r18 SEQUENCE (SIZE (2..maxBT-BeaconAntElt-r18)) OF BT-AntSwitchElement-r18 OPTIONAL, -- Cond NotSameAsPrev4
     bt-AoD-TransmConfig-r18 BT-AoD-TransmConfig-r18 OPTIONAL, -- Cond NotSameAsPrev5
     ...
@@ -8224,8 +8345,8 @@ BT-AoD-TransmConfig-r18 ::= SEQUENCE {
     secondAdvInterval-r18 INTEGER (6..65535),
     cte-Length-r18 INTEGER (2..20),
     cte-Count-r18  INTEGER (1..16),
-    cte-Type2us-r18 NULL OPTIONAL, -- Need OP
-    tx-PHY-M2-r18  NULL OPTIONAL, -- Need OP
+    cte-Type2us-r18 ENUMERATED {true} OPTIONAL, -- Need OP
+    tx-PHY-M2-r18  ENUMERATED {true} OPTIONAL, -- Need OP
     ...
 }
 
@@ -8344,6 +8465,9 @@ NR-ECID-ProvideCapabilities-r16 ::= SEQUENCE {
     [[
     ten-ms-unit-ResponseTime-r17 ENUMERATED {supported} OPTIONAL,
     scheduledLocationRequestSupported-r17 ScheduledLocationTimeSupport-r17 OPTIONAL
+    ]],
+    [[
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupport-r18 OPTIONAL
     ]]
 }
 
@@ -8494,9 +8618,9 @@ NR-DL-TDOA-MeasElement-r16 ::= SEQUENCE {
     nr-DL-TDOA-AdditionalMeasurementsExt-r17 NR-DL-TDOA-AdditionalMeasurementsExt-r17 OPTIONAL
     ]],
     [[
-    nr-RSTD-BasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
-    nr-AggregatedDL-PRS-ResourceSetID-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceSetID-Element-r18 OPTIONAL,
-    nr-RSCPD-r18   INTEGER (0..61565) OPTIONAL,
+    nr-MeasBasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
+    nr-AggregatedDL-PRS-ResourceInfo-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceInfo-Element-r18 OPTIONAL,
+    nr-RSCPD-r18   INTEGER (0..3599) OPTIONAL,
     nr-PhaseQuality-r18 NR-PhaseQuality-r18 OPTIONAL,
     nr-RSCPD-AddMeasurementSamples-r18 SEQUENCE (SIZE (1..nrNumOfSamples-1-r18)) OF NR-RSCPD-AdditionalMeasurementSamplesElement-r18 OPTIONAL,
     nr-ReportDL-PRS-MeasBasedOnSingleOrMultiHopRx-r18 ENUMERATED {
@@ -8540,8 +8664,8 @@ NR-DL-TDOA-AdditionalMeasurementElement-r16 ::= SEQUENCE {
     nr-AdditionalPathListExt-r17 NR-AdditionalPathListExt-r17 OPTIONAL
     ]],
     [[
-    nr-RSTD-BasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
-    nr-AggregatedDL-PRS-ResourceSetID-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceSetID-Element-r18 OPTIONAL,
+    nr-MeasBasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
+    nr-AggregatedDL-PRS-ResourceInfo-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceInfo-Element-r18 OPTIONAL,
     nr-RSCPD-r18   INTEGER (0..3599) OPTIONAL,
     nr-PhaseQuality-r18 NR-PhaseQuality-r18 OPTIONAL,
     nr-RSCPD-AdditionalMeasurementsAddSamples-r18 SEQUENCE (SIZE (1..nrNumOfSamples-1-r18)) OF NR-RSCPD-AdditionalMeasurementSamplesElement-r18 OPTIONAL,
@@ -8577,7 +8701,7 @@ NR-DL-TDOA-RequestLocationInformation-r16 ::= SEQUENCE {
     nr-RequestedMeasurements-r16 BIT STRING {
                        prsrsrpReq (0),
                        firstPathRsrpReq-r17 (1),
-                       jointMeasurementsReq-r18 (2)
+                       dl-PRS-RSCPD-Request-r18 (2)
                    } (SIZE (1..8)),
     nr-AssistanceAvailability-r16 BOOLEAN,
     nr-DL-TDOA-ReportConfig-r16 NR-DL-TDOA-ReportConfig-r16 OPTIONAL, -- Need ON
@@ -8595,7 +8719,9 @@ NR-DL-TDOA-RequestLocationInformation-r16 ::= SEQUENCE {
     multiMeasInSameReport-r17 ENUMERATED {requested} OPTIONAL -- Need ON
     ]],
     [[
-    nr-DL-PRS-JointMeasurementRequestedPFL-List-r18 SEQUENCE (SIZE (2..3)) OF INTEGER (0..nrMaxFreqLayers-1-r16) OPTIONAL, -- Need ON
+    nr-DL-PRS-JointMeasurementRequest-r18 SEQUENCE {
+        nr-DL-PRS-JointMeasurementRequestedPFL-List-r18 SEQUENCE (SIZE (2..3)) OF INTEGER (0..nrMaxFreqLayers-1-r16) OPTIONAL -- Need ON
+    } OPTIONAL, -- Need ON
     nr-DL-PRS-RxHoppingRequest-r18 SEQUENCE {
         nr-DL-PRS-RxHoppingTotalBandwidth-r18 CHOICE {
             fr1            ENUMERATED {
@@ -8610,8 +8736,7 @@ NR-DL-TDOA-RequestLocationInformation-r16 ::= SEQUENCE {
                                mhz400
                            }
         } OPTIONAL -- Need ON
-    } OPTIONAL, -- Need ON
-    nr-DL-PRS-RSCPD-Request-r18 ENUMERATED {requested} OPTIONAL -- Need ON
+    } OPTIONAL -- Need ON
     ]]
 }
 
@@ -8696,7 +8821,6 @@ NR-DL-TDOA-ProvideCapabilities-r16 ::= SEQUENCE {
     ]],
     [[
     locationCoordinateTypes-r18 LocationCoordinateTypes OPTIONAL,
-    symbolTimeStampSupport-r18 ENUMERATED {supported} OPTIONAL,
     periodicAssistanceData-r18 BIT STRING {
                        solicited (0),
                        unsolicited (1)
@@ -8709,7 +8833,8 @@ NR-DL-TDOA-ProvideCapabilities-r16 ::= SEQUENCE {
                        integrityParaBeamInfoSup (4),
                        integrityParaRTD-InfoSup (5)
                    } (SIZE (1..8)) OPTIONAL,
-    nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18 ENUMERATED {supported} OPTIONAL
+    nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18 ENUMERATED {supported} OPTIONAL,
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupportPerMode-r18 OPTIONAL
     ]]
 }
 
@@ -8734,11 +8859,9 @@ DL-TDOA-MeasCapabilityPerBand-r17 ::= SEQUENCE {
     supportOfDL-PRS-BWA-RRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
     supportOfDL-PRS-BWA-RRC-Inactive-r18 ENUMERATED {supported} OPTIONAL,
     supportOfDL-PRS-BWA-RRC-Idle-r18 ENUMERATED {supported} OPTIONAL,
-    nr-DL-PRS-RSCPD-ReportingRRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
+    nr-DL-PRS-RSCPD-RRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
     assocSingleRSTD-WithUpToNsampleRSCPD-r18 ENUMERATED {supported} OPTIONAL,
     nr-DL-PRS-RSCPD-MeasurementRRC-Idle-r18 ENUMERATED {supported} OPTIONAL,
-    supportOfLegacyMeasurementInTimeWindow-r18 ENUMERATED {supported} OPTIONAL,
-    supportOfRSCPD-MeasurementInTimeWindow-r18 ENUMERATED {supported} OPTIONAL,
     supportOfUE-basedCarrierPhasePositioning-r18 ENUMERATED {supported} OPTIONAL,
     supportOfSymbolTimeStampForRSCPD-r18 ENUMERATED {supported} OPTIONAL,
     supportOfFinerTimingReportGranularityForPRS-Meas-r18 ENUMERATED {
@@ -8748,7 +8871,17 @@ DL-TDOA-MeasCapabilityPerBand-r17 ::= SEQUENCE {
                        minus4,
                        minus5,
                        minus6
-                   }  OPTIONAL
+                   }  OPTIONAL,
+    supportOfMeasurementsInTimeWindow-r18 BIT STRING {
+                       rstd (0),
+                       rsrp (1),
+                       rsrpp (2),
+                       rscpd (3)
+                   } (SIZE (1..8)) OPTIONAL,
+    supportOfPRS-MeasurementRRC-Idle-r18 ENUMERATED {supported} OPTIONAL
+    ]],
+    [[
+    nr-DL-PRS-RSCPD-RRC-Inactive-r18 ENUMERATED {supported} OPTIONAL
     ]]
 }
 
@@ -8875,6 +9008,12 @@ NR-DL-AoD-MeasElement-r16 ::= SEQUENCE {
         perResource-r17 LOS-NLOS-Indicator-r17
     } OPTIONAL,
     nr-DL-AoD-AdditionalMeasurementsExt-r17 NR-DL-AoD-AdditionalMeasurementsExt-r17 OPTIONAL
+    ]],
+    [[
+    nr-ReportDL-PRS-MeasBasedOnSingleOrMultiHopRx-r18 ENUMERATED {
+                       singleHop,
+                       multipleHop
+                   }  OPTIONAL
     ]]
 }
 
@@ -8899,7 +9038,13 @@ NR-DL-AoD-AdditionalMeasurementElement-r17 ::= SEQUENCE {
     nr-DL-PRS-RxBeamIndex-r17 INTEGER (1..8) OPTIONAL,
     nr-DL-PRS-FirstPathRSRP-ResultDiff-r17 INTEGER (0..61) OPTIONAL, -- Cond rsrpp
     nr-los-nlos-IndicatorPerResource-r17 LOS-NLOS-Indicator-r17 OPTIONAL,
-    ...
+    ...,
+    [[
+    nr-ReportDL-PRS-MeasBasedOnSingleOrMultiHopRx-r18 ENUMERATED {
+                       singleHop,
+                       multipleHop
+                   }  OPTIONAL
+    ]]
 }
 
 NR-DL-AoD-LocationInformation-r16 ::= SEQUENCE {
@@ -8923,19 +9068,20 @@ NR-DL-AoD-RequestLocationInformation-r16 ::= SEQUENCE {
     multiMeasInSameReport-r17 ENUMERATED {requested} OPTIONAL -- Need ON
     ]],
     [[
-    nr-DL-PRS-RxHoppingRequest-r18 ENUMERATED {requested} OPTIONAL, -- Need ON
-    nr-DL-PRS-RxHoppingTotalBandwidth-r18 CHOICE {
-        fr1            ENUMERATED {
-                           mhz40,
-                           mhz50,
-                           mhz80,
-                           mhz100
-                       },
-        fr2            ENUMERATED {
-                           mhz100,
-                           mhz200,
-                           mhz400
-                       }
+    nr-DL-PRS-RxHoppingRequest-r18 SEQUENCE {
+        nr-DL-PRS-RxHoppingTotalBandwidth-r18 CHOICE {
+            fr1            ENUMERATED {
+                               mhz40,
+                               mhz50,
+                               mhz80,
+                               mhz100
+                           },
+            fr2            ENUMERATED {
+                               mhz100,
+                               mhz200,
+                               mhz400
+                           }
+        } OPTIONAL -- Need ON
     } OPTIONAL -- Need ON
     ]]
 }
@@ -9025,7 +9171,7 @@ NR-DL-AoD-ProvideCapabilities-r16 ::= SEQUENCE {
                        integrityParaRTD-InfoSup (5),
                        integrityBeamAntInfoSup (6)
                    } (SIZE (1..8)) OPTIONAL,
-    nr-DL-AoD-OnDemandPRS-ForBWA-Support-r18 ENUMERATED {supported} OPTIONAL
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupportPerMode-r18 OPTIONAL
     ]]
 }
 
@@ -9063,7 +9209,11 @@ DL-AoD-MeasCapabilityPerBand-r16 ::= SEQUENCE {
     dl-PRS-MeasRRC-Inactive-r17 ENUMERATED {supported} OPTIONAL
     ]],
     [[
-    supportOfLegacyMeasurementInTimeWindow-r18 ENUMERATED {supported} OPTIONAL
+    supportOfMeasurementsInTimeWindow-r18 BIT STRING {
+                       rsrp (0),
+                       rsrpp (1)
+                   } (SIZE (1..8)) OPTIONAL,
+    supportOfPRS-MeasurementRRC-Idle-r18 ENUMERATED {supported} OPTIONAL
     ]]
 }
 
@@ -9204,8 +9354,8 @@ NR-Multi-RTT-MeasElement-r16 ::= SEQUENCE {
     nr-Multi-RTT-AdditionalMeasurementsExt-r17 NR-Multi-RTT-AdditionalMeasurementsExt-r17 OPTIONAL
     ]],
     [[
-    nr-UE-RxTxTimeDiffBasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
-    nr-AggregatedDL-PRS-ResourceSetID-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceSetID-Element-r18 OPTIONAL,
+    nr-MeasBasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
+    nr-AggregatedDL-PRS-ResourceInfo-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceInfo-Element-r18 OPTIONAL,
     nr-RSCP-r18    INTEGER (0..3599) OPTIONAL,
     nr-PhaseQuality-r18 NR-PhaseQuality-r18 OPTIONAL,
     nr-RSCP-AddSampleMeasurements-r18 SEQUENCE (SIZE (1..nrNumOfSamples-1-r18)) OF NR-RSCP-AdditionalMeasurements-r18 OPTIONAL,
@@ -9251,8 +9401,8 @@ NR-Multi-RTT-AdditionalMeasurementElement-r16 ::= SEQUENCE {
     nr-AdditionalPathListExt-r17 NR-AdditionalPathListExt-r17 OPTIONAL
     ]],
     [[
-    nr-UE-RxTxTimeDiffBasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
-    nr-AggregatedDL-PRS-ResourceSetID-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceSetID-Element-r18 OPTIONAL,
+    nr-MeasBasedOnAggregatedResources-r18 ENUMERATED {true} OPTIONAL,
+    nr-AggregatedDL-PRS-ResourceInfo-List-r18 SEQUENCE (SIZE (2..3)) OF NR-AggregatedDL-PRS-ResourceInfo-Element-r18 OPTIONAL,
     nr-RSCP-r18    INTEGER (0..3599) OPTIONAL,
     nr-PhaseQuality-r18 NR-PhaseQuality-r18 OPTIONAL,
     nr-RSCP-AdditionalMeasurementsAddSample-r18 SEQUENCE (SIZE (1..nrNumOfSamples-1-r18)) OF NR-RSCP-AdditionalMeasurements-r18 OPTIONAL,
@@ -9307,7 +9457,7 @@ NR-Multi-RTT-RequestLocationInformation-r16 ::= SEQUENCE {
     nr-RequestedMeasurements-r16 BIT STRING {
                        prsrsrpReq (0),
                        firstPathRsrpReq-r17 (1),
-                       jointMeasurementsReq-r18 (2)
+                       dl-PRS-RSCP-Request-r18 (2)
                    } (SIZE (1..8)),
     nr-AssistanceAvailability-r16 BOOLEAN,
     nr-Multi-RTT-ReportConfig-r16 NR-Multi-RTT-ReportConfig-r16,
@@ -9369,9 +9519,13 @@ NR-Multi-RTT-RequestLocationInformation-r16 ::= SEQUENCE {
         } OPTIONAL -- Need ON
     } OPTIONAL, -- Need ON
     timingReportingGranularityFactorExt-r18 INTEGER (-6..-1) OPTIONAL, -- Need ON
-    nr-DL-PRS-JointMeasurementRequestedPFL-List-r18 SEQUENCE (SIZE (2..3)) OF INTEGER (0..nrMaxFreqLayers-1-r16) OPTIONAL, -- Need ON
-    nr-DL-PRS-RSCP-Request-r18 ENUMERATED {requested} OPTIONAL, -- Need ON
+    nr-DL-PRS-JointMeasurementRequest-r18 SEQUENCE {
+        nr-DL-PRS-JointMeasurementRequestedPFL-List-r18 SEQUENCE (SIZE (2..3)) OF INTEGER (0..nrMaxFreqLayers-1-r16) OPTIONAL -- Need ON
+    } OPTIONAL, -- Need ON
     nr-DL-PRS-MeasurementTimeWindowsConfig-r18 NR-DL-PRS-MeasurementTimeWindowsConfig-r18 OPTIONAL -- Need ON
+    ]],
+    [[
+    nr-NTN-UE-RxTxMeasurementsRequest-r18 ENUMERATED {requested} OPTIONAL -- Need ON
     ]]
 }
 
@@ -9423,8 +9577,8 @@ NR-Multi-RTT-ProvideCapabilities-r16 ::= SEQUENCE {
     posMeasGapSupport-r17 ENUMERATED {supported} OPTIONAL
     ]],
     [[
-    symbolTimeStampSupport-r18 ENUMERATED {supported} OPTIONAL,
-    nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18 ENUMERATED {supported} OPTIONAL
+    nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18 ENUMERATED {supported} OPTIONAL,
+    periodicReportingIntervalMsSupport-r18 PeriodicReportingIntervalMsSupport-r18 OPTIONAL
     ]]
 }
 
@@ -9451,11 +9605,9 @@ Multi-RTT-MeasCapabilityPerBand-r17 ::= SEQUENCE {
     supportOfDL-PRS-BWA-RRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
     supportOfDL-PRS-BWA-RRC-Inactive-r18 ENUMERATED {supported} OPTIONAL,
     nr-NTN-MeasAndReport-r18 ENUMERATED {supported} OPTIONAL,
-    nr-DL-PRS-RSCP-ReportingRRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
-    nr-DL-PRS-RSCP-ReportingRRC-Inactive-r18 ENUMERATED {supported} OPTIONAL,
-    supportOfLegacyMeasurementInTimeWindow-r18 ENUMERATED {supported} OPTIONAL,
+    nr-DL-PRS-RSCP-RRC-Connected-r18 ENUMERATED {supported} OPTIONAL,
+    nr-DL-PRS-RSCP-RRC-Inactive-r18 ENUMERATED {supported} OPTIONAL,
     assocSingleRx-Tx-WithUpToNsampleRSCP-r18 ENUMERATED {supported} OPTIONAL,
-    supportOfRSCP-MeasurementInTimeWindow-r18 ENUMERATED {supported} OPTIONAL,
     supportOfSymbolTimeStampForRSCP-r18 ENUMERATED {supported} OPTIONAL,
     supportOfFinerTimingReportGranularityForPRS-Meas-r18 ENUMERATED {
                        minus1,
@@ -9464,7 +9616,13 @@ Multi-RTT-MeasCapabilityPerBand-r17 ::= SEQUENCE {
                        minus4,
                        minus5,
                        minus6
-                   }  OPTIONAL
+                   }  OPTIONAL,
+    supportOfMeasurementsInTimeWindow-r18 BIT STRING {
+                       rx-tx (0),
+                       rsrp (1),
+                       rsrpp (2),
+                       rscp (3)
+                   } (SIZE (1..8)) OPTIONAL
     ]]
 }
 

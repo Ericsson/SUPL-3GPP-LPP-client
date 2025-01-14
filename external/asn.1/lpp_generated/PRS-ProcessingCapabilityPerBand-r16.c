@@ -221,10 +221,6 @@ memb_prs_ProcessingCapabilityOutsideMGinPPW_r17_constraint_110(const asn_TYPE_de
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
  */
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_fr1_constr_4 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 3,  3,  0,  6 }	/* (0..6) */,
@@ -563,13 +559,6 @@ static asn_per_constraints_t asn_PER_type_reducedNumOfSampleForMeasurementWithFH
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_supportOfPRS_BWA_WithTwoPFL_Combination_r18_constr_394 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfPRS_MeasurementRRC_Idle_r18_constr_397 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
@@ -4414,51 +4403,8 @@ asn_TYPE_descriptor_t asn_DEF_supportOfPRS_BWA_WithTwoPFL_Combination_r18_394 = 
 	&asn_SPC_supportOfPRS_BWA_WithTwoPFL_Combination_r18_specs_394	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_value2enum_397[] = {
-	{ 0,	9,	"supported" }
-};
-static const unsigned int asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_enum2value_397[] = {
-	0	/* supported(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_supportOfPRS_MeasurementRRC_Idle_r18_specs_397 = {
-	asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_value2enum_397,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_enum2value_397,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_397[] = {
-	(ASN_TAG_CLASS_CONTEXT | (15 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_397 = {
-	"supportOfPRS-MeasurementRRC-Idle-r18",
-	"supportOfPRS-MeasurementRRC-Idle-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_397,
-	sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_397)
-		/sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_397[0]) - 1, /* 1 */
-	asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_397,	/* Same as above */
-	sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_397)
-		/sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_397[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfPRS_MeasurementRRC_Idle_r18_constr_397,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfPRS_MeasurementRRC_Idle_r18_specs_397	/* Additional specs */
-};
-
 static asn_TYPE_member_t asn_MBR_ext4_227[] = {
-	{ ATF_POINTER, 16, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, maxNumOfOneSymbolPRS_ResProcessedPerSlot_RRC_Inactive_r18),
+	{ ATF_POINTER, 15, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, maxNumOfOneSymbolPRS_ResProcessedPerSlot_RRC_Inactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		0,
 		&asn_DEF_maxNumOfOneSymbolPRS_ResProcessedPerSlot_RRC_Inactive_r18_228,
@@ -4475,7 +4421,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"maxNumOfOneSymbolPRS-ResProcessedPerSlot-RRC-Inactive-r18"
 		},
-	{ ATF_POINTER, 15, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, maxNumOfOneSymbolPRS_ResProcessedPerSlot_RRC_Connected_r18),
+	{ ATF_POINTER, 14, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, maxNumOfOneSymbolPRS_ResProcessedPerSlot_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		0,
 		&asn_DEF_maxNumOfOneSymbolPRS_ResProcessedPerSlot_RRC_Connected_r18_278,
@@ -4492,7 +4438,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"maxNumOfOneSymbolPRS-ResProcessedPerSlot-RRC-Connected-r18"
 		},
-	{ ATF_POINTER, 14, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, ppw_maxNumOfOneSymbolPRS_ResProcessedPerSlot_r18),
+	{ ATF_POINTER, 13, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, ppw_maxNumOfOneSymbolPRS_ResProcessedPerSlot_r18),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		0,
 		&asn_DEF_ppw_maxNumOfOneSymbolPRS_ResProcessedPerSlot_r18_328,
@@ -4509,7 +4455,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"ppw-maxNumOfOneSymbolPRS-ResProcessedPerSlot-r18"
 		},
-	{ ATF_POINTER, 13, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_TwoContiguousIntrabandInMG_RRC_Connected_r18),
+	{ ATF_POINTER, 12, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_TwoContiguousIntrabandInMG_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PRS_BWA_TwoContiguousIntrabandInMG_r18,
@@ -4526,7 +4472,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"prs-BWA-TwoContiguousIntrabandInMG-RRC-Connected-r18"
 		},
-	{ ATF_POINTER, 12, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_ThreeContiguousIntrabandInMG_RRC_Connected_r18),
+	{ ATF_POINTER, 11, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_ThreeContiguousIntrabandInMG_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PRS_BWA_ThreeContiguousIntrabandInMG_r18,
@@ -4543,7 +4489,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"prs-BWA-ThreeContiguousIntrabandInMG-RRC-Connected-r18"
 		},
-	{ ATF_POINTER, 11, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_TwoContiguousIntrabandInMG_RRC_IdleAndInactive_r18),
+	{ ATF_POINTER, 10, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_TwoContiguousIntraband_RRC_IdleAndInactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PRS_BWA_TwoContiguousIntrabandInMG_r18,
@@ -4558,9 +4504,9 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"prs-BWA-TwoContiguousIntrabandInMG-RRC-IdleAndInactive-r18"
+		"prs-BWA-TwoContiguousIntraband-RRC-IdleAndInactive-r18"
 		},
-	{ ATF_POINTER, 10, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_ThreeContiguousIntrabandInMG_RRC_IdleAndInactive_r18),
+	{ ATF_POINTER, 9, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, prs_BWA_ThreeContiguousIntraband_RRC_IdleAndInactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PRS_BWA_ThreeContiguousIntrabandInMG_r18,
@@ -4575,9 +4521,9 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"prs-BWA-ThreeContiguousIntrabandInMG-RRC-IdleAndInactive-r18"
+		"prs-BWA-ThreeContiguousIntraband-RRC-IdleAndInactive-r18"
 		},
-	{ ATF_POINTER, 9, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_Connected_r18),
+	{ ATF_POINTER, 8, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_Connected_r18_382,
@@ -4594,7 +4540,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"reducedNumOfSampleInMeasurementWithPRS-BWA-RRC-Connected-r18"
 		},
-	{ ATF_POINTER, 8, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_IdleAndInactive_r18),
+	{ ATF_POINTER, 7, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_IdleAndInactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_IdleAndInactive_r18_384,
@@ -4611,7 +4557,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"reducedNumOfSampleInMeasurementWithPRS-BWA-RRC-IdleAndInactive-r18"
 		},
-	{ ATF_POINTER, 7, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, dl_PRS_MeasurementWithRxFH_RRC_Inactive_r18),
+	{ ATF_POINTER, 6, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, dl_PRS_MeasurementWithRxFH_RRC_Inactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_dl_PRS_MeasurementWithRxFH_RRC_Inactive_r18_386,
@@ -4628,7 +4574,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"dl-PRS-MeasurementWithRxFH-RRC-Inactive-r18"
 		},
-	{ ATF_POINTER, 6, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, dl_PRS_MeasurementWithRxFH_RRC_Idle_r18),
+	{ ATF_POINTER, 5, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, dl_PRS_MeasurementWithRxFH_RRC_Idle_r18),
 		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_dl_PRS_MeasurementWithRxFH_RRC_Idle_r18_388,
@@ -4645,7 +4591,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"dl-PRS-MeasurementWithRxFH-RRC-Idle-r18"
 		},
-	{ ATF_POINTER, 5, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleForMeasurementWithFH_RRC_Connected_r18),
+	{ ATF_POINTER, 4, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleForMeasurementWithFH_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_reducedNumOfSampleForMeasurementWithFH_RRC_Connected_r18_390,
@@ -4662,7 +4608,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"reducedNumOfSampleForMeasurementWithFH-RRC-Connected-r18"
 		},
-	{ ATF_POINTER, 4, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleForMeasurementWithFH_RRC_IdleAndInactive_r18),
+	{ ATF_POINTER, 3, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, reducedNumOfSampleForMeasurementWithFH_RRC_IdleAndInactive_r18),
 		(ASN_TAG_CLASS_CONTEXT | (12 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_reducedNumOfSampleForMeasurementWithFH_RRC_IdleAndInactive_r18_392,
@@ -4679,7 +4625,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"reducedNumOfSampleForMeasurementWithFH-RRC-IdleAndInactive-r18"
 		},
-	{ ATF_POINTER, 3, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, supportOfPRS_BWA_WithTwoPFL_Combination_r18),
+	{ ATF_POINTER, 2, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, supportOfPRS_BWA_WithTwoPFL_Combination_r18),
 		(ASN_TAG_CLASS_CONTEXT | (13 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_supportOfPRS_BWA_WithTwoPFL_Combination_r18_394,
@@ -4696,7 +4642,7 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"supportOfPRS-BWA-WithTwoPFL-Combination-r18"
 		},
-	{ ATF_POINTER, 2, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, dl_PRS_MeasurementWithRxFH_RRC_Connected_r18),
+	{ ATF_POINTER, 1, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, dl_PRS_MeasurementWithRxFH_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (14 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18,
@@ -4713,25 +4659,8 @@ static asn_TYPE_member_t asn_MBR_ext4_227[] = {
 		0, 0, /* No default value */
 		"dl-PRS-MeasurementWithRxFH-RRC-Connected-r18"
 		},
-	{ ATF_POINTER, 1, offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, supportOfPRS_MeasurementRRC_Idle_r18),
-		(ASN_TAG_CLASS_CONTEXT | (15 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_397,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"supportOfPRS-MeasurementRRC-Idle-r18"
-		},
 };
-static const int asn_MAP_ext4_oms_227[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 };
+static const int asn_MAP_ext4_oms_227[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14 };
 static const ber_tlv_tag_t asn_DEF_ext4_tags_227[] = {
 	(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
@@ -4742,8 +4671,8 @@ static const asn_TYPE_tag2member_t asn_MAP_ext4_tag2el_227[] = {
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* ppw-maxNumOfOneSymbolPRS-ResProcessedPerSlot-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* prs-BWA-TwoContiguousIntrabandInMG-RRC-Connected-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* prs-BWA-ThreeContiguousIntrabandInMG-RRC-Connected-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* prs-BWA-TwoContiguousIntrabandInMG-RRC-IdleAndInactive-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* prs-BWA-ThreeContiguousIntrabandInMG-RRC-IdleAndInactive-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* prs-BWA-TwoContiguousIntraband-RRC-IdleAndInactive-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* prs-BWA-ThreeContiguousIntraband-RRC-IdleAndInactive-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* reducedNumOfSampleInMeasurementWithPRS-BWA-RRC-Connected-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* reducedNumOfSampleInMeasurementWithPRS-BWA-RRC-IdleAndInactive-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* dl-PRS-MeasurementWithRxFH-RRC-Inactive-r18 */
@@ -4751,16 +4680,15 @@ static const asn_TYPE_tag2member_t asn_MAP_ext4_tag2el_227[] = {
     { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 }, /* reducedNumOfSampleForMeasurementWithFH-RRC-Connected-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (12 << 2)), 12, 0, 0 }, /* reducedNumOfSampleForMeasurementWithFH-RRC-IdleAndInactive-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (13 << 2)), 13, 0, 0 }, /* supportOfPRS-BWA-WithTwoPFL-Combination-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (14 << 2)), 14, 0, 0 }, /* dl-PRS-MeasurementWithRxFH-RRC-Connected-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (15 << 2)), 15, 0, 0 } /* supportOfPRS-MeasurementRRC-Idle-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (14 << 2)), 14, 0, 0 } /* dl-PRS-MeasurementWithRxFH-RRC-Connected-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext4_specs_227 = {
 	sizeof(struct PRS_ProcessingCapabilityPerBand_r16__ext4),
 	offsetof(struct PRS_ProcessingCapabilityPerBand_r16__ext4, _asn_ctx),
 	asn_MAP_ext4_tag2el_227,
-	16,	/* Count of tags in the map */
+	15,	/* Count of tags in the map */
 	asn_MAP_ext4_oms_227,	/* Optional members */
-	16, 0,	/* Root/Additions */
+	15, 0,	/* Root/Additions */
 	-1,	/* First extension addition */
 };
 static /* Use -fall-defs-global to expose */
@@ -4784,7 +4712,7 @@ asn_TYPE_descriptor_t asn_DEF_ext4_227 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_ext4_227,
-	16,	/* Elements count */
+	15,	/* Elements count */
 	&asn_SPC_ext4_specs_227	/* Additional specs */
 };
 

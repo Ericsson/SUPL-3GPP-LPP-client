@@ -21,6 +21,7 @@
 #include "LOS-NLOS-Indicator-r17.h"
 #include <constr_CHOICE.h>
 #include <constr_SEQUENCE.h>
+#include <NativeEnumerated.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -32,6 +33,10 @@ typedef enum NR_DL_AoD_MeasElement_r16__ext1__nr_los_nlos_Indicator_r17_PR {
 	NR_DL_AoD_MeasElement_r16__ext1__nr_los_nlos_Indicator_r17_PR_perTRP_r17,
 	NR_DL_AoD_MeasElement_r16__ext1__nr_los_nlos_Indicator_r17_PR_perResource_r17
 } NR_DL_AoD_MeasElement_r16__ext1__nr_los_nlos_Indicator_r17_PR;
+typedef enum NR_DL_AoD_MeasElement_r16__ext2__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18 {
+	NR_DL_AoD_MeasElement_r16__ext2__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_singleHop	= 0,
+	NR_DL_AoD_MeasElement_r16__ext2__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_multipleHop	= 1
+} e_NR_DL_AoD_MeasElement_r16__ext2__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18;
 
 /* Forward declarations */
 struct NCGI_r15;
@@ -71,15 +76,22 @@ typedef struct NR_DL_AoD_MeasElement_r16 {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext1;
+	struct NR_DL_AoD_MeasElement_r16__ext2 {
+		long	*nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext2;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
 } NR_DL_AoD_MeasElement_r16_t;
 
 /* Implementation */
+/* extern asn_TYPE_descriptor_t asn_DEF_nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_20;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_DL_AoD_MeasElement_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_DL_AoD_MeasElement_r16_specs_1;
-extern asn_TYPE_member_t asn_MBR_NR_DL_AoD_MeasElement_r16_1[11];
+extern asn_TYPE_member_t asn_MBR_NR_DL_AoD_MeasElement_r16_1[12];
 
 #ifdef __cplusplus
 }

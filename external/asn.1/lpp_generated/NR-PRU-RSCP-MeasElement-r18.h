@@ -61,6 +61,8 @@ typedef struct NR_PRU_RSCP_MeasElement_r18 {
 		asn_struct_ctx_t _asn_ctx;
 	} *nr_los_nlos_Indicator_r18;
 	long	*nr_RSCP_r18;	/* OPTIONAL */
+	long	*nr_DL_PRS_RSRP_Result_r18;	/* OPTIONAL */
+	long	*nr_DL_PRS_FirstPathRSRP_Result_r18;	/* OPTIONAL */
 	struct NR_PhaseQuality_r18	*nr_PhaseQuality_r18;	/* OPTIONAL */
 	struct NR_PRU_RSCP_MeasElement_r18__nr_PRU_RSCP_AddSampleMeasurements_r18 {
 		A_SEQUENCE_OF(struct NR_RSCP_AdditionalMeasurements_r18) list;
@@ -68,6 +70,18 @@ typedef struct NR_PRU_RSCP_MeasElement_r18 {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *nr_PRU_RSCP_AddSampleMeasurements_r18;
+	struct NR_PRU_RSCP_MeasElement_r18__nr_PRU_RSRP_AddSampleMeasurements_r18 {
+		A_SEQUENCE_OF(long) list;
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *nr_PRU_RSRP_AddSampleMeasurements_r18;
+	struct NR_PRU_RSCP_MeasElement_r18__nr_PRU_FirstPathRSRP_ResultDiff_AddSampleMeasurements_r18 {
+		A_SEQUENCE_OF(long) list;
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *nr_PRU_FirstPathRSRP_ResultDiff_AddSampleMeasurements_r18;
 	struct NR_PRU_RSCP_AdditionalMeasurements_r18	*nr_PRU_RSCP_AdditionalMeasurements_r18;	/* OPTIONAL */
 	/*
 	 * This type is extensible,
@@ -81,7 +95,7 @@ typedef struct NR_PRU_RSCP_MeasElement_r18 {
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_NR_PRU_RSCP_MeasElement_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_PRU_RSCP_MeasElement_r18_specs_1;
-extern asn_TYPE_member_t asn_MBR_NR_PRU_RSCP_MeasElement_r18_1[12];
+extern asn_TYPE_member_t asn_MBR_NR_PRU_RSCP_MeasElement_r18_1[16];
 
 #ifdef __cplusplus
 }

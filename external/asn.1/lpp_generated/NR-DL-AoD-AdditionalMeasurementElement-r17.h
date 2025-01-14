@@ -16,11 +16,18 @@
 #include "NR-DL-PRS-ResourceSetID-r16.h"
 #include "NR-TimeStamp-r16.h"
 #include <NativeInteger.h>
+#include <NativeEnumerated.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Dependencies */
+typedef enum NR_DL_AoD_AdditionalMeasurementElement_r17__ext1__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18 {
+	NR_DL_AoD_AdditionalMeasurementElement_r17__ext1__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_singleHop	= 0,
+	NR_DL_AoD_AdditionalMeasurementElement_r17__ext1__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_multipleHop	= 1
+} e_NR_DL_AoD_AdditionalMeasurementElement_r17__ext1__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18;
 
 /* Forward declarations */
 struct LOS_NLOS_Indicator_r17;
@@ -38,15 +45,22 @@ typedef struct NR_DL_AoD_AdditionalMeasurementElement_r17 {
 	 * This type is extensible,
 	 * possible extensions are below.
 	 */
+	struct NR_DL_AoD_AdditionalMeasurementElement_r17__ext1 {
+		long	*nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext1;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
 } NR_DL_AoD_AdditionalMeasurementElement_r17_t;
 
 /* Implementation */
+/* extern asn_TYPE_descriptor_t asn_DEF_nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_11;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_DL_AoD_AdditionalMeasurementElement_r17;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_DL_AoD_AdditionalMeasurementElement_r17_specs_1;
-extern asn_TYPE_member_t asn_MBR_NR_DL_AoD_AdditionalMeasurementElement_r17_1[7];
+extern asn_TYPE_member_t asn_MBR_NR_DL_AoD_AdditionalMeasurementElement_r17_1[8];
 
 #ifdef __cplusplus
 }

@@ -14,6 +14,7 @@
 /* Including external dependencies */
 #include "NR-DL-PRS-ResourceID-r16.h"
 #include "NR-DL-PRS-ResourceSetID-r16.h"
+#include <NativeInteger.h>
 #include <asn_SEQUENCE_OF.h>
 #include <constr_SEQUENCE_OF.h>
 #include <constr_SEQUENCE.h>
@@ -29,12 +30,26 @@ struct NR_RSCP_AdditionalMeasurements_r18;
 typedef struct NR_PRU_RSCP_AdditionalMeasurementElement_r18 {
 	NR_DL_PRS_ResourceID_r16_t	*nr_DL_PRS_ResourceID_r18;	/* OPTIONAL */
 	NR_DL_PRS_ResourceSetID_r16_t	*nr_DL_PRS_ResourceSetID_r18;	/* OPTIONAL */
+	long	*nr_DL_PRS_RSRP_ResultDiff_r18;	/* OPTIONAL */
+	long	*nr_DL_PRS_FirstPathRSRP_ResultDiff_r18;	/* OPTIONAL */
 	struct NR_PRU_RSCP_AdditionalMeasurementElement_r18__nr_PRU_RSCP_AdditionalMeasurementsList_r18 {
 		A_SEQUENCE_OF(struct NR_RSCP_AdditionalMeasurements_r18) list;
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *nr_PRU_RSCP_AdditionalMeasurementsList_r18;
+	struct NR_PRU_RSCP_AdditionalMeasurementElement_r18__nr_PRU_RSRPDiff_AdditionalMeasurementsList_r18 {
+		A_SEQUENCE_OF(long) list;
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *nr_PRU_RSRPDiff_AdditionalMeasurementsList_r18;
+	struct NR_PRU_RSCP_AdditionalMeasurementElement_r18__nr_PRU_FirstPathRSRP_ResultDiff_AdditionalMeasurementsList_r18 {
+		A_SEQUENCE_OF(long) list;
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *nr_PRU_FirstPathRSRP_ResultDiff_AdditionalMeasurementsList_r18;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -47,7 +62,7 @@ typedef struct NR_PRU_RSCP_AdditionalMeasurementElement_r18 {
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_NR_PRU_RSCP_AdditionalMeasurementElement_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_PRU_RSCP_AdditionalMeasurementElement_r18_specs_1;
-extern asn_TYPE_member_t asn_MBR_NR_PRU_RSCP_AdditionalMeasurementElement_r18_1[3];
+extern asn_TYPE_member_t asn_MBR_NR_PRU_RSCP_AdditionalMeasurementElement_r18_1[7];
 
 #ifdef __cplusplus
 }

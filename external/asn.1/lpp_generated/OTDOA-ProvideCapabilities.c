@@ -8,6 +8,7 @@
 #include "OTDOA-ProvideCapabilities.h"
 
 #include "ScheduledLocationTimeSupport-r17.h"
+#include "PeriodicReportingIntervalMsSupport-r18.h"
 #include "SupportedBandEUTRA.h"
 #include "SupportedBandEUTRA-v9a0.h"
 /*
@@ -1240,7 +1241,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"otdoa-Mode"
 		},
-	{ ATF_POINTER, 21, offsetof(struct OTDOA_ProvideCapabilities, supportedBandListEUTRA),
+	{ ATF_POINTER, 22, offsetof(struct OTDOA_ProvideCapabilities, supportedBandListEUTRA),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		0,
 		&asn_DEF_supportedBandListEUTRA_7,
@@ -1257,7 +1258,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"supportedBandListEUTRA"
 		},
-	{ ATF_POINTER, 20, offsetof(struct OTDOA_ProvideCapabilities, supportedBandListEUTRA_v9a0),
+	{ ATF_POINTER, 21, offsetof(struct OTDOA_ProvideCapabilities, supportedBandListEUTRA_v9a0),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		0,
 		&asn_DEF_supportedBandListEUTRA_v9a0_9,
@@ -1274,7 +1275,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"supportedBandListEUTRA-v9a0"
 		},
-	{ ATF_POINTER, 19, offsetof(struct OTDOA_ProvideCapabilities, interFreqRSTDmeasurement_r10),
+	{ ATF_POINTER, 20, offsetof(struct OTDOA_ProvideCapabilities, interFreqRSTDmeasurement_r10),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_interFreqRSTDmeasurement_r10_11,
@@ -1291,7 +1292,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"interFreqRSTDmeasurement-r10"
 		},
-	{ ATF_POINTER, 18, offsetof(struct OTDOA_ProvideCapabilities, additionalNeighbourCellInfoList_r10),
+	{ ATF_POINTER, 19, offsetof(struct OTDOA_ProvideCapabilities, additionalNeighbourCellInfoList_r10),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_additionalNeighbourCellInfoList_r10_13,
@@ -1308,7 +1309,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"additionalNeighbourCellInfoList-r10"
 		},
-	{ ATF_POINTER, 17, offsetof(struct OTDOA_ProvideCapabilities, prs_id_r14),
+	{ ATF_POINTER, 18, offsetof(struct OTDOA_ProvideCapabilities, prs_id_r14),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_prs_id_r14_15,
@@ -1325,7 +1326,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"prs-id-r14"
 		},
-	{ ATF_POINTER, 16, offsetof(struct OTDOA_ProvideCapabilities, tp_separation_via_muting_r14),
+	{ ATF_POINTER, 17, offsetof(struct OTDOA_ProvideCapabilities, tp_separation_via_muting_r14),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_tp_separation_via_muting_r14_17,
@@ -1342,7 +1343,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"tp-separation-via-muting-r14"
 		},
-	{ ATF_POINTER, 15, offsetof(struct OTDOA_ProvideCapabilities, additional_prs_config_r14),
+	{ ATF_POINTER, 16, offsetof(struct OTDOA_ProvideCapabilities, additional_prs_config_r14),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_additional_prs_config_r14_19,
@@ -1359,7 +1360,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"additional-prs-config-r14"
 		},
-	{ ATF_POINTER, 14, offsetof(struct OTDOA_ProvideCapabilities, prs_based_tbs_r14),
+	{ ATF_POINTER, 15, offsetof(struct OTDOA_ProvideCapabilities, prs_based_tbs_r14),
 		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_prs_based_tbs_r14_21,
@@ -1376,7 +1377,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"prs-based-tbs-r14"
 		},
-	{ ATF_POINTER, 13, offsetof(struct OTDOA_ProvideCapabilities, additionalPathsReport_r14),
+	{ ATF_POINTER, 14, offsetof(struct OTDOA_ProvideCapabilities, additionalPathsReport_r14),
 		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_additionalPathsReport_r14_23,
@@ -1393,7 +1394,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"additionalPathsReport-r14"
 		},
-	{ ATF_POINTER, 12, offsetof(struct OTDOA_ProvideCapabilities, densePrsConfig_r14),
+	{ ATF_POINTER, 13, offsetof(struct OTDOA_ProvideCapabilities, densePrsConfig_r14),
 		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_densePrsConfig_r14_25,
@@ -1410,7 +1411,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"densePrsConfig-r14"
 		},
-	{ ATF_POINTER, 11, offsetof(struct OTDOA_ProvideCapabilities, maxSupportedPrsBandwidth_r14),
+	{ ATF_POINTER, 12, offsetof(struct OTDOA_ProvideCapabilities, maxSupportedPrsBandwidth_r14),
 		(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_maxSupportedPrsBandwidth_r14_27,
@@ -1427,7 +1428,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"maxSupportedPrsBandwidth-r14"
 		},
-	{ ATF_POINTER, 10, offsetof(struct OTDOA_ProvideCapabilities, prsOccGroup_r14),
+	{ ATF_POINTER, 11, offsetof(struct OTDOA_ProvideCapabilities, prsOccGroup_r14),
 		(ASN_TAG_CLASS_CONTEXT | (12 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_prsOccGroup_r14_35,
@@ -1444,7 +1445,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"prsOccGroup-r14"
 		},
-	{ ATF_POINTER, 9, offsetof(struct OTDOA_ProvideCapabilities, prsFrequencyHopping_r14),
+	{ ATF_POINTER, 10, offsetof(struct OTDOA_ProvideCapabilities, prsFrequencyHopping_r14),
 		(ASN_TAG_CLASS_CONTEXT | (13 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_prsFrequencyHopping_r14_37,
@@ -1461,7 +1462,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"prsFrequencyHopping-r14"
 		},
-	{ ATF_POINTER, 8, offsetof(struct OTDOA_ProvideCapabilities, maxSupportedPrsConfigs_r14),
+	{ ATF_POINTER, 9, offsetof(struct OTDOA_ProvideCapabilities, maxSupportedPrsConfigs_r14),
 		(ASN_TAG_CLASS_CONTEXT | (14 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_maxSupportedPrsConfigs_r14_39,
@@ -1478,7 +1479,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"maxSupportedPrsConfigs-r14"
 		},
-	{ ATF_POINTER, 7, offsetof(struct OTDOA_ProvideCapabilities, periodicalReporting_r14),
+	{ ATF_POINTER, 8, offsetof(struct OTDOA_ProvideCapabilities, periodicalReporting_r14),
 		(ASN_TAG_CLASS_CONTEXT | (15 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_periodicalReporting_r14_42,
@@ -1495,7 +1496,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"periodicalReporting-r14"
 		},
-	{ ATF_POINTER, 6, offsetof(struct OTDOA_ProvideCapabilities, multiPrbNprs_r14),
+	{ ATF_POINTER, 7, offsetof(struct OTDOA_ProvideCapabilities, multiPrbNprs_r14),
 		(ASN_TAG_CLASS_CONTEXT | (16 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_multiPrbNprs_r14_44,
@@ -1512,7 +1513,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"multiPrbNprs-r14"
 		},
-	{ ATF_POINTER, 5, offsetof(struct OTDOA_ProvideCapabilities, idleStateForMeasurements_r14),
+	{ ATF_POINTER, 6, offsetof(struct OTDOA_ProvideCapabilities, idleStateForMeasurements_r14),
 		(ASN_TAG_CLASS_CONTEXT | (17 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_idleStateForMeasurements_r14_46,
@@ -1529,7 +1530,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"idleStateForMeasurements-r14"
 		},
-	{ ATF_POINTER, 4, offsetof(struct OTDOA_ProvideCapabilities, numberOfRXantennas_r14),
+	{ ATF_POINTER, 5, offsetof(struct OTDOA_ProvideCapabilities, numberOfRXantennas_r14),
 		(ASN_TAG_CLASS_CONTEXT | (18 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_numberOfRXantennas_r14_48,
@@ -1546,7 +1547,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"numberOfRXantennas-r14"
 		},
-	{ ATF_POINTER, 3, offsetof(struct OTDOA_ProvideCapabilities, motionMeasurements_r15),
+	{ ATF_POINTER, 4, offsetof(struct OTDOA_ProvideCapabilities, motionMeasurements_r15),
 		(ASN_TAG_CLASS_CONTEXT | (19 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_motionMeasurements_r15_51,
@@ -1563,7 +1564,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"motionMeasurements-r15"
 		},
-	{ ATF_POINTER, 2, offsetof(struct OTDOA_ProvideCapabilities, interRAT_RSTDmeasurement_r15),
+	{ ATF_POINTER, 3, offsetof(struct OTDOA_ProvideCapabilities, interRAT_RSTDmeasurement_r15),
 		(ASN_TAG_CLASS_CONTEXT | (20 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_interRAT_RSTDmeasurement_r15_53,
@@ -1580,7 +1581,7 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"interRAT-RSTDmeasurement-r15"
 		},
-	{ ATF_POINTER, 1, offsetof(struct OTDOA_ProvideCapabilities, scheduledLocationRequestSupported_r17),
+	{ ATF_POINTER, 2, offsetof(struct OTDOA_ProvideCapabilities, scheduledLocationRequestSupported_r17),
 		(ASN_TAG_CLASS_CONTEXT | (21 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_ScheduledLocationTimeSupport_r17,
@@ -1597,8 +1598,25 @@ asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"scheduledLocationRequestSupported-r17"
 		},
+	{ ATF_POINTER, 1, offsetof(struct OTDOA_ProvideCapabilities, periodicReportingIntervalMsSupport_r18),
+		(ASN_TAG_CLASS_CONTEXT | (22 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicReportingIntervalMsSupport_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicReportingIntervalMsSupport-r18"
+		},
 };
-static const int asn_MAP_OTDOA_ProvideCapabilities_oms_1[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21 };
+static const int asn_MAP_OTDOA_ProvideCapabilities_oms_1[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22 };
 static const ber_tlv_tag_t asn_DEF_OTDOA_ProvideCapabilities_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -1624,15 +1642,16 @@ static const asn_TYPE_tag2member_t asn_MAP_OTDOA_ProvideCapabilities_tag2el_1[] 
     { (ASN_TAG_CLASS_CONTEXT | (18 << 2)), 18, 0, 0 }, /* numberOfRXantennas-r14 */
     { (ASN_TAG_CLASS_CONTEXT | (19 << 2)), 19, 0, 0 }, /* motionMeasurements-r15 */
     { (ASN_TAG_CLASS_CONTEXT | (20 << 2)), 20, 0, 0 }, /* interRAT-RSTDmeasurement-r15 */
-    { (ASN_TAG_CLASS_CONTEXT | (21 << 2)), 21, 0, 0 } /* scheduledLocationRequestSupported-r17 */
+    { (ASN_TAG_CLASS_CONTEXT | (21 << 2)), 21, 0, 0 }, /* scheduledLocationRequestSupported-r17 */
+    { (ASN_TAG_CLASS_CONTEXT | (22 << 2)), 22, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_OTDOA_ProvideCapabilities_specs_1 = {
 	sizeof(struct OTDOA_ProvideCapabilities),
 	offsetof(struct OTDOA_ProvideCapabilities, _asn_ctx),
 	asn_MAP_OTDOA_ProvideCapabilities_tag2el_1,
-	22,	/* Count of tags in the map */
+	23,	/* Count of tags in the map */
 	asn_MAP_OTDOA_ProvideCapabilities_oms_1,	/* Optional members */
-	0, 21,	/* Root/Additions */
+	0, 22,	/* Root/Additions */
 	1,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_OTDOA_ProvideCapabilities = {
@@ -1655,7 +1674,7 @@ asn_TYPE_descriptor_t asn_DEF_OTDOA_ProvideCapabilities = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_OTDOA_ProvideCapabilities_1,
-	22,	/* Elements count */
+	23,	/* Elements count */
 	&asn_SPC_OTDOA_ProvideCapabilities_specs_1	/* Additional specs */
 };
 

@@ -46,8 +46,6 @@ struct PosSRS_SP_RRC_Inactive_InInitialUL_BWP_r17;
 struct PosSRS_TxFrequencyHoppingRRC_Connected_r18;
 struct PosSRS_TxFrequencyHoppingRRC_Inactive_r18;
 struct PosSRS_BWA_RRC_Inactive_r18;
-struct PosSRS_BWA_RRC_Connected_r18;
-struct PosSRS_BWA_IndependentCA_RRC_Connected_r18;
 
 /* SRS-CapabilityPerBand-r16 */
 typedef struct SRS_CapabilityPerBand_r16 {
@@ -82,8 +80,6 @@ typedef struct SRS_CapabilityPerBand_r16 {
 		struct PosSRS_TxFrequencyHoppingRRC_Inactive_r18	*posSRS_TxFH_RRC_Inactive_r18;	/* OPTIONAL */
 		long	*posSRS_TxFH_WithTimeWindow_r18;	/* OPTIONAL */
 		struct PosSRS_BWA_RRC_Inactive_r18	*posSRS_BWA_RRC_Inactive_r18;	/* OPTIONAL */
-		struct PosSRS_BWA_RRC_Connected_r18	*posSRS_BWA_RRC_Connected_r18;	/* OPTIONAL */
-		struct PosSRS_BWA_IndependentCA_RRC_Connected_r18	*posSRS_BWA_IndependentCA_RRC_Connected_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;

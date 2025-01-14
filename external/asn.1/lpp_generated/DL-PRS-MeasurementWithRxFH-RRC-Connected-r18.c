@@ -75,14 +75,14 @@ static asn_per_constraints_t asn_PER_type_processingDurationT3_r18_constr_37 CC_
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_rf_RxRetunTimeFR1_r18_constr_48 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_rf_RxRetuneTimeFR1_r18_constr_48 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  2 }	/* (0..2) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_rf_RxRetunTimeFR2_r18_constr_52 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_rf_RxRetuneTimeFR2_r18_constr_52 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  2 }	/* (0..2) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
@@ -457,98 +457,98 @@ asn_TYPE_descriptor_t asn_DEF_processingDuration_r18_17 = {
 	&asn_SPC_processingDuration_r18_specs_17	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_rf_RxRetunTimeFR1_r18_value2enum_48[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_rf_RxRetuneTimeFR1_r18_value2enum_48[] = {
 	{ 0,	3,	"n70" },
 	{ 1,	4,	"n140" },
 	{ 2,	4,	"n210" }
 };
-static const unsigned int asn_MAP_rf_RxRetunTimeFR1_r18_enum2value_48[] = {
+static const unsigned int asn_MAP_rf_RxRetuneTimeFR1_r18_enum2value_48[] = {
 	1,	/* n140(1) */
 	2,	/* n210(2) */
 	0	/* n70(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_rf_RxRetunTimeFR1_r18_specs_48 = {
-	asn_MAP_rf_RxRetunTimeFR1_r18_value2enum_48,	/* "tag" => N; sorted by tag */
-	asn_MAP_rf_RxRetunTimeFR1_r18_enum2value_48,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_rf_RxRetuneTimeFR1_r18_specs_48 = {
+	asn_MAP_rf_RxRetuneTimeFR1_r18_value2enum_48,	/* "tag" => N; sorted by tag */
+	asn_MAP_rf_RxRetuneTimeFR1_r18_enum2value_48,	/* N => "tag"; sorted by N */
 	3,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_rf_RxRetunTimeFR1_r18_tags_48[] = {
+static const ber_tlv_tag_t asn_DEF_rf_RxRetuneTimeFR1_r18_tags_48[] = {
 	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_rf_RxRetunTimeFR1_r18_48 = {
-	"rf-RxRetunTimeFR1-r18",
-	"rf-RxRetunTimeFR1-r18",
+asn_TYPE_descriptor_t asn_DEF_rf_RxRetuneTimeFR1_r18_48 = {
+	"rf-RxRetuneTimeFR1-r18",
+	"rf-RxRetuneTimeFR1-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_rf_RxRetunTimeFR1_r18_tags_48,
-	sizeof(asn_DEF_rf_RxRetunTimeFR1_r18_tags_48)
-		/sizeof(asn_DEF_rf_RxRetunTimeFR1_r18_tags_48[0]) - 1, /* 1 */
-	asn_DEF_rf_RxRetunTimeFR1_r18_tags_48,	/* Same as above */
-	sizeof(asn_DEF_rf_RxRetunTimeFR1_r18_tags_48)
-		/sizeof(asn_DEF_rf_RxRetunTimeFR1_r18_tags_48[0]), /* 2 */
+	asn_DEF_rf_RxRetuneTimeFR1_r18_tags_48,
+	sizeof(asn_DEF_rf_RxRetuneTimeFR1_r18_tags_48)
+		/sizeof(asn_DEF_rf_RxRetuneTimeFR1_r18_tags_48[0]) - 1, /* 1 */
+	asn_DEF_rf_RxRetuneTimeFR1_r18_tags_48,	/* Same as above */
+	sizeof(asn_DEF_rf_RxRetuneTimeFR1_r18_tags_48)
+		/sizeof(asn_DEF_rf_RxRetuneTimeFR1_r18_tags_48[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_rf_RxRetunTimeFR1_r18_constr_48,
+		&asn_PER_type_rf_RxRetuneTimeFR1_r18_constr_48,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_rf_RxRetunTimeFR1_r18_specs_48	/* Additional specs */
+	&asn_SPC_rf_RxRetuneTimeFR1_r18_specs_48	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_rf_RxRetunTimeFR2_r18_value2enum_52[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_rf_RxRetuneTimeFR2_r18_value2enum_52[] = {
 	{ 0,	3,	"n35" },
 	{ 1,	3,	"n70" },
 	{ 2,	4,	"n140" }
 };
-static const unsigned int asn_MAP_rf_RxRetunTimeFR2_r18_enum2value_52[] = {
+static const unsigned int asn_MAP_rf_RxRetuneTimeFR2_r18_enum2value_52[] = {
 	2,	/* n140(2) */
 	0,	/* n35(0) */
 	1	/* n70(1) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_rf_RxRetunTimeFR2_r18_specs_52 = {
-	asn_MAP_rf_RxRetunTimeFR2_r18_value2enum_52,	/* "tag" => N; sorted by tag */
-	asn_MAP_rf_RxRetunTimeFR2_r18_enum2value_52,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_rf_RxRetuneTimeFR2_r18_specs_52 = {
+	asn_MAP_rf_RxRetuneTimeFR2_r18_value2enum_52,	/* "tag" => N; sorted by tag */
+	asn_MAP_rf_RxRetuneTimeFR2_r18_enum2value_52,	/* N => "tag"; sorted by N */
 	3,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_rf_RxRetunTimeFR2_r18_tags_52[] = {
+static const ber_tlv_tag_t asn_DEF_rf_RxRetuneTimeFR2_r18_tags_52[] = {
 	(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_rf_RxRetunTimeFR2_r18_52 = {
-	"rf-RxRetunTimeFR2-r18",
-	"rf-RxRetunTimeFR2-r18",
+asn_TYPE_descriptor_t asn_DEF_rf_RxRetuneTimeFR2_r18_52 = {
+	"rf-RxRetuneTimeFR2-r18",
+	"rf-RxRetuneTimeFR2-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_rf_RxRetunTimeFR2_r18_tags_52,
-	sizeof(asn_DEF_rf_RxRetunTimeFR2_r18_tags_52)
-		/sizeof(asn_DEF_rf_RxRetunTimeFR2_r18_tags_52[0]) - 1, /* 1 */
-	asn_DEF_rf_RxRetunTimeFR2_r18_tags_52,	/* Same as above */
-	sizeof(asn_DEF_rf_RxRetunTimeFR2_r18_tags_52)
-		/sizeof(asn_DEF_rf_RxRetunTimeFR2_r18_tags_52[0]), /* 2 */
+	asn_DEF_rf_RxRetuneTimeFR2_r18_tags_52,
+	sizeof(asn_DEF_rf_RxRetuneTimeFR2_r18_tags_52)
+		/sizeof(asn_DEF_rf_RxRetuneTimeFR2_r18_tags_52[0]) - 1, /* 1 */
+	asn_DEF_rf_RxRetuneTimeFR2_r18_tags_52,	/* Same as above */
+	sizeof(asn_DEF_rf_RxRetuneTimeFR2_r18_tags_52)
+		/sizeof(asn_DEF_rf_RxRetuneTimeFR2_r18_tags_52[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_rf_RxRetunTimeFR2_r18_constr_52,
+		&asn_PER_type_rf_RxRetuneTimeFR2_r18_constr_52,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_rf_RxRetunTimeFR2_r18_specs_52	/* Additional specs */
+	&asn_SPC_rf_RxRetuneTimeFR2_r18_specs_52	/* Additional specs */
 };
 
 static const asn_INTEGER_enum_map_t asn_MAP_numOfOverlappingPRB_r18_value2enum_56[] = {
@@ -669,10 +669,10 @@ asn_TYPE_member_t asn_MBR_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"processingDuration-r18"
 		},
-	{ ATF_POINTER, 3, offsetof(struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18, rf_RxRetunTimeFR1_r18),
+	{ ATF_POINTER, 3, offsetof(struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18, rf_RxRetuneTimeFR1_r18),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_rf_RxRetunTimeFR1_r18_48,
+		&asn_DEF_rf_RxRetuneTimeFR1_r18_48,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -684,12 +684,12 @@ asn_TYPE_member_t asn_MBR_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"rf-RxRetunTimeFR1-r18"
+		"rf-RxRetuneTimeFR1-r18"
 		},
-	{ ATF_POINTER, 2, offsetof(struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18, rf_RxRetunTimeFR2_r18),
+	{ ATF_POINTER, 2, offsetof(struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18, rf_RxRetuneTimeFR2_r18),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_rf_RxRetunTimeFR2_r18_52,
+		&asn_DEF_rf_RxRetuneTimeFR2_r18_52,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -701,7 +701,7 @@ asn_TYPE_member_t asn_MBR_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"rf-RxRetunTimeFR2-r18"
+		"rf-RxRetuneTimeFR2-r18"
 		},
 	{ ATF_POINTER, 1, offsetof(struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18, numOfOverlappingPRB_r18),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
@@ -730,8 +730,8 @@ static const asn_TYPE_tag2member_t asn_MAP_DL_PRS_MeasurementWithRxFH_RRC_Connec
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* maximumPRS-BandwidthAcrossAllHopsFR2-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* maximumFH-Hops-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* processingDuration-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* rf-RxRetunTimeFR1-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* rf-RxRetunTimeFR2-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* rf-RxRetuneTimeFR1-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* rf-RxRetuneTimeFR2-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 } /* numOfOverlappingPRB-r18 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18_specs_1 = {

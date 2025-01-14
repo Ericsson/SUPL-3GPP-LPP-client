@@ -13,6 +13,7 @@
 
 /* Including external dependencies */
 #include <VisibleString.h>
+#include <NativeInteger.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -20,12 +21,13 @@ extern "C" {
 #endif
 
 /* Forward declarations */
-struct Ellipsoid_Point;
+struct HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_r15;
 
 /* LocalOrigin-r18 */
 typedef struct LocalOrigin_r18 {
 	VisibleString_t	 coordinateID_r18;
-	struct Ellipsoid_Point	*point_r18;	/* OPTIONAL */
+	struct HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid_r15	*point_r18;	/* OPTIONAL */
+	long	*horizAxesOrientation_r18;	/* OPTIONAL */
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -38,7 +40,7 @@ typedef struct LocalOrigin_r18 {
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_LocalOrigin_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_LocalOrigin_r18_specs_1;
-extern asn_TYPE_member_t asn_MBR_LocalOrigin_r18_1[2];
+extern asn_TYPE_member_t asn_MBR_LocalOrigin_r18_1[3];
 
 #ifdef __cplusplus
 }

@@ -66,6 +66,10 @@ typedef enum SRS_PosResourcesPerBand_r16__maxNumberSP_SRS_PosResourcesPerBWP_r16
 	SRS_PosResourcesPerBand_r16__maxNumberSP_SRS_PosResourcesPerBWP_r16_n64	= 6
 } e_SRS_PosResourcesPerBand_r16__maxNumberSP_SRS_PosResourcesPerBWP_r16;
 
+/* Forward declarations */
+struct PosSRS_BWA_RRC_Connected_r18;
+struct PosSRS_BWA_IndependentCA_RRC_Connected_r18;
+
 /* SRS-PosResourcesPerBand-r16 */
 typedef struct SRS_PosResourcesPerBand_r16 {
 	FreqBandIndicatorNR_r16_t	 freqBandIndicatorNR_r16;
@@ -78,6 +82,13 @@ typedef struct SRS_PosResourcesPerBand_r16 {
 	 * This type is extensible,
 	 * possible extensions are below.
 	 */
+	struct SRS_PosResourcesPerBand_r16__ext1 {
+		struct PosSRS_BWA_RRC_Connected_r18	*posSRS_BWA_RRC_Connected_r18;	/* OPTIONAL */
+		struct PosSRS_BWA_IndependentCA_RRC_Connected_r18	*posSRS_BWA_IndependentCA_RRC_Connected_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext1;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -91,7 +102,7 @@ typedef struct SRS_PosResourcesPerBand_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_maxNumberSP_SRS_PosResourcesPerBWP_r16_34;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_SRS_PosResourcesPerBand_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_SRS_PosResourcesPerBand_r16_specs_1;
-extern asn_TYPE_member_t asn_MBR_SRS_PosResourcesPerBand_r16_1[6];
+extern asn_TYPE_member_t asn_MBR_SRS_PosResourcesPerBand_r16_1[7];
 
 #ifdef __cplusplus
 }

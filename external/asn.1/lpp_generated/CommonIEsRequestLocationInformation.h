@@ -31,6 +31,7 @@ struct LocationCoordinateTypes;
 struct VelocityTypes;
 struct MessageSizeLimitNB_r14;
 struct ScheduledLocationTime_r17;
+struct PeriodicalReportingCriteriaExt_r18;
 
 /* CommonIEsRequestLocationInformation */
 typedef struct CommonIEsRequestLocationInformation {
@@ -65,6 +66,12 @@ typedef struct CommonIEsRequestLocationInformation {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext3;
+	struct CommonIEsRequestLocationInformation__ext4 {
+		struct PeriodicalReportingCriteriaExt_r18	*periodicalReportingExt_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext4;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -73,7 +80,7 @@ typedef struct CommonIEsRequestLocationInformation {
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_CommonIEsRequestLocationInformation;
 extern asn_SEQUENCE_specifics_t asn_SPC_CommonIEsRequestLocationInformation_specs_1;
-extern asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[11];
+extern asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[12];
 
 #ifdef __cplusplus
 }

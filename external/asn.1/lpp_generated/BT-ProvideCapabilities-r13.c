@@ -9,6 +9,7 @@
 
 #include "PositioningModes.h"
 #include "ScheduledLocationTimeSupportPerMode-r17.h"
+#include "PeriodicReportingIntervalMsSupportPerMode-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -336,7 +337,7 @@ asn_TYPE_descriptor_t asn_DEF_bt_AoA_r18_17 = {
 };
 
 static asn_TYPE_member_t asn_MBR_ext3_16[] = {
-	{ ATF_POINTER, 1, offsetof(struct BT_ProvideCapabilities_r13__ext3, bt_AoA_r18),
+	{ ATF_POINTER, 2, offsetof(struct BT_ProvideCapabilities_r13__ext3, bt_AoA_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_bt_AoA_r18_17,
@@ -353,22 +354,40 @@ static asn_TYPE_member_t asn_MBR_ext3_16[] = {
 		0, 0, /* No default value */
 		"bt-AoA-r18"
 		},
+	{ ATF_POINTER, 1, offsetof(struct BT_ProvideCapabilities_r13__ext3, periodicReportingIntervalMsSupport_r18),
+		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicReportingIntervalMsSupportPerMode_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicReportingIntervalMsSupport-r18"
+		},
 };
-static const int asn_MAP_ext3_oms_16[] = { 0 };
+static const int asn_MAP_ext3_oms_16[] = { 0, 1 };
 static const ber_tlv_tag_t asn_DEF_ext3_tags_16[] = {
 	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static const asn_TYPE_tag2member_t asn_MAP_ext3_tag2el_16[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* bt-AoA-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* bt-AoA-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext3_specs_16 = {
 	sizeof(struct BT_ProvideCapabilities_r13__ext3),
 	offsetof(struct BT_ProvideCapabilities_r13__ext3, _asn_ctx),
 	asn_MAP_ext3_tag2el_16,
-	1,	/* Count of tags in the map */
+	2,	/* Count of tags in the map */
 	asn_MAP_ext3_oms_16,	/* Optional members */
-	1, 0,	/* Root/Additions */
+	2, 0,	/* Root/Additions */
 	-1,	/* First extension addition */
 };
 static /* Use -fall-defs-global to expose */
@@ -392,7 +411,7 @@ asn_TYPE_descriptor_t asn_DEF_ext3_16 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_ext3_16,
-	1,	/* Elements count */
+	2,	/* Elements count */
 	&asn_SPC_ext3_specs_16	/* Additional specs */
 };
 

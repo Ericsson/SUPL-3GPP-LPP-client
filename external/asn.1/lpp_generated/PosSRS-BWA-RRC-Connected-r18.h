@@ -26,10 +26,15 @@ typedef enum PosSRS_BWA_RRC_Connected_r18__numOfCarriersIntraBandContiguous_r18 
 	PosSRS_BWA_RRC_Connected_r18__numOfCarriersIntraBandContiguous_r18_twoandthree	= 2
 } e_PosSRS_BWA_RRC_Connected_r18__numOfCarriersIntraBandContiguous_r18;
 typedef enum PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18 {
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz80	= 0,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz100	= 1,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz160	= 2,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz200	= 3
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz20	= 0,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz40	= 1,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz50	= 2,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz80	= 3,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz100	= 4,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz160	= 5,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz180	= 6,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz190	= 7,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18_mhz200	= 8
 } e_PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR1_r18;
 typedef enum PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR2_r18 {
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_TwoCarriersFR2_r18_mhz50	= 0,
@@ -44,17 +49,19 @@ typedef enum PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_r18_mhz100	= 1,
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_r18_mhz160	= 2,
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_r18_mhz200	= 3,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_r18_mhz300	= 4
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_r18_mhz240	= 4,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_r18_mhz300	= 5
 } e_PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR1_r18;
 typedef enum PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18 {
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz50	= 0,
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz100	= 1,
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz200	= 2,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz400	= 3,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz600	= 4,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz800	= 5,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz1000	= 6,
-	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz1200	= 7
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz300	= 3,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz400	= 4,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz600	= 5,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz800	= 6,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz1000	= 7,
+	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18_mhz1200	= 8
 } e_PosSRS_BWA_RRC_Connected_r18__maximumAggregatedBW_ThreeCarriersFR2_r18;
 typedef enum PosSRS_BWA_RRC_Connected_r18__maximumAggregatedResourceSet_r18 {
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedResourceSet_r18_n1	= 0,
@@ -131,25 +138,21 @@ typedef enum PosSRS_BWA_RRC_Connected_r18__maximumAggregatedResourceSemiPerSlot_
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedResourceSemiPerSlot_r18_n12	= 9,
 	PosSRS_BWA_RRC_Connected_r18__maximumAggregatedResourceSemiPerSlot_r18_n14	= 10
 } e_PosSRS_BWA_RRC_Connected_r18__maximumAggregatedResourceSemiPerSlot_r18;
-typedef enum PosSRS_BWA_RRC_Connected_r18__supportOfSameSRS_PowerReduction_r18 {
-	PosSRS_BWA_RRC_Connected_r18__supportOfSameSRS_PowerReduction_r18_supported	= 0
-} e_PosSRS_BWA_RRC_Connected_r18__supportOfSameSRS_PowerReduction_r18;
 
 /* PosSRS-BWA-RRC-Connected-r18 */
 typedef struct PosSRS_BWA_RRC_Connected_r18 {
-	long	*numOfCarriersIntraBandContiguous_r18;	/* OPTIONAL */
+	long	 numOfCarriersIntraBandContiguous_r18;
 	long	*maximumAggregatedBW_TwoCarriersFR1_r18;	/* OPTIONAL */
 	long	*maximumAggregatedBW_TwoCarriersFR2_r18;	/* OPTIONAL */
 	long	*maximumAggregatedBW_ThreeCarriersFR1_r18;	/* OPTIONAL */
 	long	*maximumAggregatedBW_ThreeCarriersFR2_r18;	/* OPTIONAL */
-	long	*maximumAggregatedResourceSet_r18;	/* OPTIONAL */
-	long	*maximumAggregatedResourcePeriodic_r18;	/* OPTIONAL */
-	long	*maximumAggregatedResourceAperiodic_r18;	/* OPTIONAL */
-	long	*maximumAggregatedResourceSemi_r18;	/* OPTIONAL */
-	long	*maximumAggregatedResourcePeriodicPerSlot_r18;	/* OPTIONAL */
-	long	*maximumAggregatedResourceAperiodicPerSlot_r18;	/* OPTIONAL */
-	long	*maximumAggregatedResourceSemiPerSlot_r18;	/* OPTIONAL */
-	long	*supportOfSameSRS_PowerReduction_r18;	/* OPTIONAL */
+	long	 maximumAggregatedResourceSet_r18;
+	long	 maximumAggregatedResourcePeriodic_r18;
+	long	 maximumAggregatedResourceAperiodic_r18;
+	long	 maximumAggregatedResourceSemi_r18;
+	long	 maximumAggregatedResourcePeriodicPerSlot_r18;
+	long	 maximumAggregatedResourceAperiodicPerSlot_r18;
+	long	 maximumAggregatedResourceSemiPerSlot_r18;
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -162,20 +165,19 @@ typedef struct PosSRS_BWA_RRC_Connected_r18 {
 /* Implementation */
 /* extern asn_TYPE_descriptor_t asn_DEF_numOfCarriersIntraBandContiguous_r18_2;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_TwoCarriersFR1_r18_6;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_11;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_18;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_24;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSet_r18_33;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodic_r18_40;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodic_r18_48;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemi_r18_57;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_66;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_77;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_89;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfSameSRS_PowerReduction_r18_101;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_16;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_23;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_30;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSet_r18_40;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodic_r18_47;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodic_r18_55;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemi_r18_64;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_73;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_84;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_96;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_PosSRS_BWA_RRC_Connected_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_PosSRS_BWA_RRC_Connected_r18_specs_1;
-extern asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[13];
+extern asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[12];
 
 #ifdef __cplusplus
 }

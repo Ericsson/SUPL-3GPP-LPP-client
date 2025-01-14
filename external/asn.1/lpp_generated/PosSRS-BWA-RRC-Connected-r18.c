@@ -55,10 +55,6 @@
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
  */
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_numOfCarriersIntraBandContiguous_r18_constr_2 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  2 }	/* (0..2) */,
@@ -68,84 +64,77 @@ static asn_per_constraints_t asn_PER_type_numOfCarriersIntraBandContiguous_r18_c
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_maximumAggregatedBW_TwoCarriersFR1_r18_constr_6 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 2,  2,  0,  3 }	/* (0..3) */,
+	{ APC_CONSTRAINED,	 4,  4,  0,  8 }	/* (0..8) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedBW_TwoCarriersFR2_r18_constr_11 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedBW_TwoCarriersFR2_r18_constr_16 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 3,  3,  0,  5 }	/* (0..5) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedBW_ThreeCarriersFR1_r18_constr_18 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 3,  3,  0,  4 }	/* (0..4) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedBW_ThreeCarriersFR2_r18_constr_24 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 3,  3,  0,  7 }	/* (0..7) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceSet_r18_constr_33 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedBW_ThreeCarriersFR1_r18_constr_23 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 3,  3,  0,  5 }	/* (0..5) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedResourcePeriodic_r18_constr_40 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedBW_ThreeCarriersFR2_r18_constr_30 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 4,  4,  0,  8 }	/* (0..8) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceSet_r18_constr_40 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 3,  3,  0,  5 }	/* (0..5) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_type_maximumAggregatedResourcePeriodic_r18_constr_47 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 3,  3,  0,  6 }	/* (0..6) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceAperiodic_r18_constr_48 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceAperiodic_r18_constr_55 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 3,  3,  0,  7 }	/* (0..7) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceSemi_r18_constr_57 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceSemi_r18_constr_64 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 3,  3,  0,  7 }	/* (0..7) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedResourcePeriodicPerSlot_r18_constr_66 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedResourcePeriodicPerSlot_r18_constr_73 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 4,  4,  0,  9 }	/* (0..9) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceAperiodicPerSlot_r18_constr_77 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceAperiodicPerSlot_r18_constr_84 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 4,  4,  0,  10 }	/* (0..10) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceSemiPerSlot_r18_constr_89 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_maximumAggregatedResourceSemiPerSlot_r18_constr_96 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 4,  4,  0,  10 }	/* (0..10) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfSameSRS_PowerReduction_r18_constr_101 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
@@ -198,21 +187,31 @@ asn_TYPE_descriptor_t asn_DEF_numOfCarriersIntraBandContiguous_r18_2 = {
 };
 
 static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_TwoCarriersFR1_r18_value2enum_6[] = {
-	{ 0,	5,	"mhz80" },
-	{ 1,	6,	"mhz100" },
-	{ 2,	6,	"mhz160" },
-	{ 3,	6,	"mhz200" }
+	{ 0,	5,	"mhz20" },
+	{ 1,	5,	"mhz40" },
+	{ 2,	5,	"mhz50" },
+	{ 3,	5,	"mhz80" },
+	{ 4,	6,	"mhz100" },
+	{ 5,	6,	"mhz160" },
+	{ 6,	6,	"mhz180" },
+	{ 7,	6,	"mhz190" },
+	{ 8,	6,	"mhz200" }
 };
 static const unsigned int asn_MAP_maximumAggregatedBW_TwoCarriersFR1_r18_enum2value_6[] = {
-	1,	/* mhz100(1) */
-	2,	/* mhz160(2) */
-	3,	/* mhz200(3) */
-	0	/* mhz80(0) */
+	4,	/* mhz100(4) */
+	5,	/* mhz160(5) */
+	6,	/* mhz180(6) */
+	7,	/* mhz190(7) */
+	0,	/* mhz20(0) */
+	8,	/* mhz200(8) */
+	1,	/* mhz40(1) */
+	2,	/* mhz50(2) */
+	3	/* mhz80(3) */
 };
 static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedBW_TwoCarriersFR1_r18_specs_6 = {
 	asn_MAP_maximumAggregatedBW_TwoCarriersFR1_r18_value2enum_6,	/* "tag" => N; sorted by tag */
 	asn_MAP_maximumAggregatedBW_TwoCarriersFR1_r18_enum2value_6,	/* N => "tag"; sorted by N */
-	4,	/* Number of elements in the maps */
+	9,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
@@ -246,7 +245,7 @@ asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_TwoCarriersFR1_r18_6 = {
 	&asn_SPC_maximumAggregatedBW_TwoCarriersFR1_r18_specs_6	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_value2enum_11[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_value2enum_16[] = {
 	{ 0,	5,	"mhz50" },
 	{ 1,	6,	"mhz100" },
 	{ 2,	6,	"mhz200" },
@@ -254,7 +253,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r
 	{ 4,	6,	"mhz600" },
 	{ 5,	6,	"mhz800" }
 };
-static const unsigned int asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_enum2value_11[] = {
+static const unsigned int asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_enum2value_16[] = {
 	1,	/* mhz100(1) */
 	2,	/* mhz200(2) */
 	3,	/* mhz400(3) */
@@ -262,152 +261,156 @@ static const unsigned int asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_enum2va
 	4,	/* mhz600(4) */
 	5	/* mhz800(5) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedBW_TwoCarriersFR2_r18_specs_11 = {
-	asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_value2enum_11,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_enum2value_11,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedBW_TwoCarriersFR2_r18_specs_16 = {
+	asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_value2enum_16,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedBW_TwoCarriersFR2_r18_enum2value_16,	/* N => "tag"; sorted by N */
 	6,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_11[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_16[] = {
 	(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_11 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_16 = {
 	"maximumAggregatedBW-TwoCarriersFR2-r18",
 	"maximumAggregatedBW-TwoCarriersFR2-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_11,
-	sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_11)
-		/sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_11[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_11,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_11)
-		/sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_11[0]), /* 2 */
+	asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_16,
+	sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_16)
+		/sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_16[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_16,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_16)
+		/sizeof(asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_tags_16[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedBW_TwoCarriersFR2_r18_constr_11,
+		&asn_PER_type_maximumAggregatedBW_TwoCarriersFR2_r18_constr_16,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedBW_TwoCarriersFR2_r18_specs_11	/* Additional specs */
+	&asn_SPC_maximumAggregatedBW_TwoCarriersFR2_r18_specs_16	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_value2enum_18[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_value2enum_23[] = {
 	{ 0,	5,	"mhz80" },
 	{ 1,	6,	"mhz100" },
 	{ 2,	6,	"mhz160" },
 	{ 3,	6,	"mhz200" },
-	{ 4,	6,	"mhz300" }
+	{ 4,	6,	"mhz240" },
+	{ 5,	6,	"mhz300" }
 };
-static const unsigned int asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_enum2value_18[] = {
+static const unsigned int asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_enum2value_23[] = {
 	1,	/* mhz100(1) */
 	2,	/* mhz160(2) */
 	3,	/* mhz200(3) */
-	4,	/* mhz300(4) */
+	4,	/* mhz240(4) */
+	5,	/* mhz300(5) */
 	0	/* mhz80(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedBW_ThreeCarriersFR1_r18_specs_18 = {
-	asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_value2enum_18,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_enum2value_18,	/* N => "tag"; sorted by N */
-	5,	/* Number of elements in the maps */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedBW_ThreeCarriersFR1_r18_specs_23 = {
+	asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_value2enum_23,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedBW_ThreeCarriersFR1_r18_enum2value_23,	/* N => "tag"; sorted by N */
+	6,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_18[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_23[] = {
 	(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_18 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_23 = {
 	"maximumAggregatedBW-ThreeCarriersFR1-r18",
 	"maximumAggregatedBW-ThreeCarriersFR1-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_18,
-	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_18)
-		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_18[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_18,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_18)
-		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_18[0]), /* 2 */
+	asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_23,
+	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_23)
+		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_23[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_23,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_23)
+		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_tags_23[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedBW_ThreeCarriersFR1_r18_constr_18,
+		&asn_PER_type_maximumAggregatedBW_ThreeCarriersFR1_r18_constr_23,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedBW_ThreeCarriersFR1_r18_specs_18	/* Additional specs */
+	&asn_SPC_maximumAggregatedBW_ThreeCarriersFR1_r18_specs_23	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_value2enum_24[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_value2enum_30[] = {
 	{ 0,	5,	"mhz50" },
 	{ 1,	6,	"mhz100" },
 	{ 2,	6,	"mhz200" },
-	{ 3,	6,	"mhz400" },
-	{ 4,	6,	"mhz600" },
-	{ 5,	6,	"mhz800" },
-	{ 6,	7,	"mhz1000" },
-	{ 7,	7,	"mhz1200" }
+	{ 3,	6,	"mhz300" },
+	{ 4,	6,	"mhz400" },
+	{ 5,	6,	"mhz600" },
+	{ 6,	6,	"mhz800" },
+	{ 7,	7,	"mhz1000" },
+	{ 8,	7,	"mhz1200" }
 };
-static const unsigned int asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_enum2value_24[] = {
+static const unsigned int asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_enum2value_30[] = {
 	1,	/* mhz100(1) */
-	6,	/* mhz1000(6) */
-	7,	/* mhz1200(7) */
+	7,	/* mhz1000(7) */
+	8,	/* mhz1200(8) */
 	2,	/* mhz200(2) */
-	3,	/* mhz400(3) */
+	3,	/* mhz300(3) */
+	4,	/* mhz400(4) */
 	0,	/* mhz50(0) */
-	4,	/* mhz600(4) */
-	5	/* mhz800(5) */
+	5,	/* mhz600(5) */
+	6	/* mhz800(6) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedBW_ThreeCarriersFR2_r18_specs_24 = {
-	asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_value2enum_24,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_enum2value_24,	/* N => "tag"; sorted by N */
-	8,	/* Number of elements in the maps */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedBW_ThreeCarriersFR2_r18_specs_30 = {
+	asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_value2enum_30,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedBW_ThreeCarriersFR2_r18_enum2value_30,	/* N => "tag"; sorted by N */
+	9,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_24[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_30[] = {
 	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_24 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_30 = {
 	"maximumAggregatedBW-ThreeCarriersFR2-r18",
 	"maximumAggregatedBW-ThreeCarriersFR2-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_24,
-	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_24)
-		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_24[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_24,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_24)
-		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_24[0]), /* 2 */
+	asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_30,
+	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_30)
+		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_30[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_30,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_30)
+		/sizeof(asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_tags_30[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedBW_ThreeCarriersFR2_r18_constr_24,
+		&asn_PER_type_maximumAggregatedBW_ThreeCarriersFR2_r18_constr_30,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedBW_ThreeCarriersFR2_r18_specs_24	/* Additional specs */
+	&asn_SPC_maximumAggregatedBW_ThreeCarriersFR2_r18_specs_30	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSet_r18_value2enum_33[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSet_r18_value2enum_40[] = {
 	{ 0,	2,	"n1" },
 	{ 1,	2,	"n2" },
 	{ 2,	2,	"n4" },
@@ -415,7 +418,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSet_r18_val
 	{ 4,	3,	"n12" },
 	{ 5,	3,	"n16" }
 };
-static const unsigned int asn_MAP_maximumAggregatedResourceSet_r18_enum2value_33[] = {
+static const unsigned int asn_MAP_maximumAggregatedResourceSet_r18_enum2value_40[] = {
 	0,	/* n1(0) */
 	4,	/* n12(4) */
 	5,	/* n16(5) */
@@ -423,44 +426,44 @@ static const unsigned int asn_MAP_maximumAggregatedResourceSet_r18_enum2value_33
 	2,	/* n4(2) */
 	3	/* n8(3) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceSet_r18_specs_33 = {
-	asn_MAP_maximumAggregatedResourceSet_r18_value2enum_33,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedResourceSet_r18_enum2value_33,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceSet_r18_specs_40 = {
+	asn_MAP_maximumAggregatedResourceSet_r18_value2enum_40,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedResourceSet_r18_enum2value_40,	/* N => "tag"; sorted by N */
 	6,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceSet_r18_tags_33[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceSet_r18_tags_40[] = {
 	(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSet_r18_33 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSet_r18_40 = {
 	"maximumAggregatedResourceSet-r18",
 	"maximumAggregatedResourceSet-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedResourceSet_r18_tags_33,
-	sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_33)
-		/sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_33[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedResourceSet_r18_tags_33,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_33)
-		/sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_33[0]), /* 2 */
+	asn_DEF_maximumAggregatedResourceSet_r18_tags_40,
+	sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_40)
+		/sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_40[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedResourceSet_r18_tags_40,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_40)
+		/sizeof(asn_DEF_maximumAggregatedResourceSet_r18_tags_40[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedResourceSet_r18_constr_33,
+		&asn_PER_type_maximumAggregatedResourceSet_r18_constr_40,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedResourceSet_r18_specs_33	/* Additional specs */
+	&asn_SPC_maximumAggregatedResourceSet_r18_specs_40	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourcePeriodic_r18_value2enum_40[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourcePeriodic_r18_value2enum_47[] = {
 	{ 0,	2,	"n1" },
 	{ 1,	2,	"n2" },
 	{ 2,	2,	"n4" },
@@ -469,7 +472,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourcePeriodic_r1
 	{ 5,	3,	"n32" },
 	{ 6,	3,	"n64" }
 };
-static const unsigned int asn_MAP_maximumAggregatedResourcePeriodic_r18_enum2value_40[] = {
+static const unsigned int asn_MAP_maximumAggregatedResourcePeriodic_r18_enum2value_47[] = {
 	0,	/* n1(0) */
 	4,	/* n16(4) */
 	1,	/* n2(1) */
@@ -478,44 +481,44 @@ static const unsigned int asn_MAP_maximumAggregatedResourcePeriodic_r18_enum2val
 	6,	/* n64(6) */
 	3	/* n8(3) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourcePeriodic_r18_specs_40 = {
-	asn_MAP_maximumAggregatedResourcePeriodic_r18_value2enum_40,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedResourcePeriodic_r18_enum2value_40,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourcePeriodic_r18_specs_47 = {
+	asn_MAP_maximumAggregatedResourcePeriodic_r18_value2enum_47,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedResourcePeriodic_r18_enum2value_47,	/* N => "tag"; sorted by N */
 	7,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_40[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_47[] = {
 	(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodic_r18_40 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodic_r18_47 = {
 	"maximumAggregatedResourcePeriodic-r18",
 	"maximumAggregatedResourcePeriodic-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_40,
-	sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_40)
-		/sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_40[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_40,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_40)
-		/sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_40[0]), /* 2 */
+	asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_47,
+	sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_47)
+		/sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_47[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_47,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_47)
+		/sizeof(asn_DEF_maximumAggregatedResourcePeriodic_r18_tags_47[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedResourcePeriodic_r18_constr_40,
+		&asn_PER_type_maximumAggregatedResourcePeriodic_r18_constr_47,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedResourcePeriodic_r18_specs_40	/* Additional specs */
+	&asn_SPC_maximumAggregatedResourcePeriodic_r18_specs_47	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceAperiodic_r18_value2enum_48[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceAperiodic_r18_value2enum_55[] = {
 	{ 0,	2,	"n0" },
 	{ 1,	2,	"n1" },
 	{ 2,	2,	"n2" },
@@ -525,7 +528,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceAperiodic_r
 	{ 6,	3,	"n32" },
 	{ 7,	3,	"n64" }
 };
-static const unsigned int asn_MAP_maximumAggregatedResourceAperiodic_r18_enum2value_48[] = {
+static const unsigned int asn_MAP_maximumAggregatedResourceAperiodic_r18_enum2value_55[] = {
 	0,	/* n0(0) */
 	1,	/* n1(1) */
 	5,	/* n16(5) */
@@ -535,44 +538,44 @@ static const unsigned int asn_MAP_maximumAggregatedResourceAperiodic_r18_enum2va
 	7,	/* n64(7) */
 	4	/* n8(4) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceAperiodic_r18_specs_48 = {
-	asn_MAP_maximumAggregatedResourceAperiodic_r18_value2enum_48,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedResourceAperiodic_r18_enum2value_48,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceAperiodic_r18_specs_55 = {
+	asn_MAP_maximumAggregatedResourceAperiodic_r18_value2enum_55,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedResourceAperiodic_r18_enum2value_55,	/* N => "tag"; sorted by N */
 	8,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_48[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_55[] = {
 	(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodic_r18_48 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodic_r18_55 = {
 	"maximumAggregatedResourceAperiodic-r18",
 	"maximumAggregatedResourceAperiodic-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_48,
-	sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_48)
-		/sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_48[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_48,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_48)
-		/sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_48[0]), /* 2 */
+	asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_55,
+	sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_55)
+		/sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_55[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_55,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_55)
+		/sizeof(asn_DEF_maximumAggregatedResourceAperiodic_r18_tags_55[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedResourceAperiodic_r18_constr_48,
+		&asn_PER_type_maximumAggregatedResourceAperiodic_r18_constr_55,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedResourceAperiodic_r18_specs_48	/* Additional specs */
+	&asn_SPC_maximumAggregatedResourceAperiodic_r18_specs_55	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSemi_r18_value2enum_57[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSemi_r18_value2enum_64[] = {
 	{ 0,	2,	"n0" },
 	{ 1,	2,	"n1" },
 	{ 2,	2,	"n2" },
@@ -582,7 +585,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSemi_r18_va
 	{ 6,	3,	"n32" },
 	{ 7,	3,	"n64" }
 };
-static const unsigned int asn_MAP_maximumAggregatedResourceSemi_r18_enum2value_57[] = {
+static const unsigned int asn_MAP_maximumAggregatedResourceSemi_r18_enum2value_64[] = {
 	0,	/* n0(0) */
 	1,	/* n1(1) */
 	5,	/* n16(5) */
@@ -592,44 +595,44 @@ static const unsigned int asn_MAP_maximumAggregatedResourceSemi_r18_enum2value_5
 	7,	/* n64(7) */
 	4	/* n8(4) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceSemi_r18_specs_57 = {
-	asn_MAP_maximumAggregatedResourceSemi_r18_value2enum_57,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedResourceSemi_r18_enum2value_57,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceSemi_r18_specs_64 = {
+	asn_MAP_maximumAggregatedResourceSemi_r18_value2enum_64,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedResourceSemi_r18_enum2value_64,	/* N => "tag"; sorted by N */
 	8,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceSemi_r18_tags_57[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceSemi_r18_tags_64[] = {
 	(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemi_r18_57 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemi_r18_64 = {
 	"maximumAggregatedResourceSemi-r18",
 	"maximumAggregatedResourceSemi-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedResourceSemi_r18_tags_57,
-	sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_57)
-		/sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_57[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedResourceSemi_r18_tags_57,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_57)
-		/sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_57[0]), /* 2 */
+	asn_DEF_maximumAggregatedResourceSemi_r18_tags_64,
+	sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_64)
+		/sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_64[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedResourceSemi_r18_tags_64,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_64)
+		/sizeof(asn_DEF_maximumAggregatedResourceSemi_r18_tags_64[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedResourceSemi_r18_constr_57,
+		&asn_PER_type_maximumAggregatedResourceSemi_r18_constr_64,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedResourceSemi_r18_specs_57	/* Additional specs */
+	&asn_SPC_maximumAggregatedResourceSemi_r18_specs_64	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_value2enum_66[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_value2enum_73[] = {
 	{ 0,	2,	"n1" },
 	{ 1,	2,	"n2" },
 	{ 2,	2,	"n3" },
@@ -641,7 +644,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourcePeriodicPer
 	{ 8,	3,	"n12" },
 	{ 9,	3,	"n14" }
 };
-static const unsigned int asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_enum2value_66[] = {
+static const unsigned int asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_enum2value_73[] = {
 	0,	/* n1(0) */
 	7,	/* n10(7) */
 	8,	/* n12(8) */
@@ -653,44 +656,44 @@ static const unsigned int asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_e
 	5,	/* n6(5) */
 	6	/* n8(6) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourcePeriodicPerSlot_r18_specs_66 = {
-	asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_value2enum_66,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_enum2value_66,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourcePeriodicPerSlot_r18_specs_73 = {
+	asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_value2enum_73,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedResourcePeriodicPerSlot_r18_enum2value_73,	/* N => "tag"; sorted by N */
 	10,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_66[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_73[] = {
 	(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_66 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_73 = {
 	"maximumAggregatedResourcePeriodicPerSlot-r18",
 	"maximumAggregatedResourcePeriodicPerSlot-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_66,
-	sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_66)
-		/sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_66[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_66,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_66)
-		/sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_66[0]), /* 2 */
+	asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_73,
+	sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_73)
+		/sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_73[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_73,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_73)
+		/sizeof(asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_tags_73[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedResourcePeriodicPerSlot_r18_constr_66,
+		&asn_PER_type_maximumAggregatedResourcePeriodicPerSlot_r18_constr_73,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedResourcePeriodicPerSlot_r18_specs_66	/* Additional specs */
+	&asn_SPC_maximumAggregatedResourcePeriodicPerSlot_r18_specs_73	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_value2enum_77[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_value2enum_84[] = {
 	{ 0,	2,	"n0" },
 	{ 1,	2,	"n1" },
 	{ 2,	2,	"n2" },
@@ -703,7 +706,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceAperiodicPe
 	{ 9,	3,	"n12" },
 	{ 10,	3,	"n14" }
 };
-static const unsigned int asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_enum2value_77[] = {
+static const unsigned int asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_enum2value_84[] = {
 	0,	/* n0(0) */
 	1,	/* n1(1) */
 	8,	/* n10(8) */
@@ -716,44 +719,44 @@ static const unsigned int asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_
 	6,	/* n6(6) */
 	7	/* n8(7) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceAperiodicPerSlot_r18_specs_77 = {
-	asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_value2enum_77,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_enum2value_77,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceAperiodicPerSlot_r18_specs_84 = {
+	asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_value2enum_84,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedResourceAperiodicPerSlot_r18_enum2value_84,	/* N => "tag"; sorted by N */
 	11,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_77[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_84[] = {
 	(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_77 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_84 = {
 	"maximumAggregatedResourceAperiodicPerSlot-r18",
 	"maximumAggregatedResourceAperiodicPerSlot-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_77,
-	sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_77)
-		/sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_77[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_77,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_77)
-		/sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_77[0]), /* 2 */
+	asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_84,
+	sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_84)
+		/sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_84[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_84,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_84)
+		/sizeof(asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_tags_84[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedResourceAperiodicPerSlot_r18_constr_77,
+		&asn_PER_type_maximumAggregatedResourceAperiodicPerSlot_r18_constr_84,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedResourceAperiodicPerSlot_r18_specs_77	/* Additional specs */
+	&asn_SPC_maximumAggregatedResourceAperiodicPerSlot_r18_specs_84	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_value2enum_89[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_value2enum_96[] = {
 	{ 0,	2,	"n0" },
 	{ 1,	2,	"n1" },
 	{ 2,	2,	"n2" },
@@ -766,7 +769,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_maximumAggregatedResourceSemiPerSlot
 	{ 9,	3,	"n12" },
 	{ 10,	3,	"n14" }
 };
-static const unsigned int asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_enum2value_89[] = {
+static const unsigned int asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_enum2value_96[] = {
 	0,	/* n0(0) */
 	1,	/* n1(1) */
 	8,	/* n10(8) */
@@ -779,88 +782,45 @@ static const unsigned int asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_enum2
 	6,	/* n6(6) */
 	7	/* n8(7) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceSemiPerSlot_r18_specs_89 = {
-	asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_value2enum_89,	/* "tag" => N; sorted by tag */
-	asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_enum2value_89,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_maximumAggregatedResourceSemiPerSlot_r18_specs_96 = {
+	asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_value2enum_96,	/* "tag" => N; sorted by tag */
+	asn_MAP_maximumAggregatedResourceSemiPerSlot_r18_enum2value_96,	/* N => "tag"; sorted by N */
 	11,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_89[] = {
+static const ber_tlv_tag_t asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_96[] = {
 	(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_89 = {
+asn_TYPE_descriptor_t asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_96 = {
 	"maximumAggregatedResourceSemiPerSlot-r18",
 	"maximumAggregatedResourceSemiPerSlot-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_89,
-	sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_89)
-		/sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_89[0]) - 1, /* 1 */
-	asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_89,	/* Same as above */
-	sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_89)
-		/sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_89[0]), /* 2 */
+	asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_96,
+	sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_96)
+		/sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_96[0]) - 1, /* 1 */
+	asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_96,	/* Same as above */
+	sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_96)
+		/sizeof(asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_tags_96[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_maximumAggregatedResourceSemiPerSlot_r18_constr_89,
+		&asn_PER_type_maximumAggregatedResourceSemiPerSlot_r18_constr_96,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_maximumAggregatedResourceSemiPerSlot_r18_specs_89	/* Additional specs */
-};
-
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfSameSRS_PowerReduction_r18_value2enum_101[] = {
-	{ 0,	9,	"supported" }
-};
-static const unsigned int asn_MAP_supportOfSameSRS_PowerReduction_r18_enum2value_101[] = {
-	0	/* supported(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_supportOfSameSRS_PowerReduction_r18_specs_101 = {
-	asn_MAP_supportOfSameSRS_PowerReduction_r18_value2enum_101,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfSameSRS_PowerReduction_r18_enum2value_101,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_supportOfSameSRS_PowerReduction_r18_tags_101[] = {
-	(ASN_TAG_CLASS_CONTEXT | (12 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfSameSRS_PowerReduction_r18_101 = {
-	"supportOfSameSRS-PowerReduction-r18",
-	"supportOfSameSRS-PowerReduction-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfSameSRS_PowerReduction_r18_tags_101,
-	sizeof(asn_DEF_supportOfSameSRS_PowerReduction_r18_tags_101)
-		/sizeof(asn_DEF_supportOfSameSRS_PowerReduction_r18_tags_101[0]) - 1, /* 1 */
-	asn_DEF_supportOfSameSRS_PowerReduction_r18_tags_101,	/* Same as above */
-	sizeof(asn_DEF_supportOfSameSRS_PowerReduction_r18_tags_101)
-		/sizeof(asn_DEF_supportOfSameSRS_PowerReduction_r18_tags_101[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfSameSRS_PowerReduction_r18_constr_101,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfSameSRS_PowerReduction_r18_specs_101	/* Additional specs */
+	&asn_SPC_maximumAggregatedResourceSemiPerSlot_r18_specs_96	/* Additional specs */
 };
 
 asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
-	{ ATF_POINTER, 13, offsetof(struct PosSRS_BWA_RRC_Connected_r18, numOfCarriersIntraBandContiguous_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, numOfCarriersIntraBandContiguous_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_numOfCarriersIntraBandContiguous_r18_2,
@@ -877,7 +837,7 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"numOfCarriersIntraBandContiguous-r18"
 		},
-	{ ATF_POINTER, 12, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_TwoCarriersFR1_r18),
+	{ ATF_POINTER, 4, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_TwoCarriersFR1_r18),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_maximumAggregatedBW_TwoCarriersFR1_r18_6,
@@ -894,10 +854,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedBW-TwoCarriersFR1-r18"
 		},
-	{ ATF_POINTER, 11, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_TwoCarriersFR2_r18),
+	{ ATF_POINTER, 3, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_TwoCarriersFR2_r18),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_11,
+		&asn_DEF_maximumAggregatedBW_TwoCarriersFR2_r18_16,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -911,10 +871,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedBW-TwoCarriersFR2-r18"
 		},
-	{ ATF_POINTER, 10, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_ThreeCarriersFR1_r18),
+	{ ATF_POINTER, 2, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_ThreeCarriersFR1_r18),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_18,
+		&asn_DEF_maximumAggregatedBW_ThreeCarriersFR1_r18_23,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -928,10 +888,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedBW-ThreeCarriersFR1-r18"
 		},
-	{ ATF_POINTER, 9, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_ThreeCarriersFR2_r18),
+	{ ATF_POINTER, 1, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedBW_ThreeCarriersFR2_r18),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_24,
+		&asn_DEF_maximumAggregatedBW_ThreeCarriersFR2_r18_30,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -945,10 +905,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedBW-ThreeCarriersFR2-r18"
 		},
-	{ ATF_POINTER, 8, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceSet_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceSet_r18),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedResourceSet_r18_33,
+		&asn_DEF_maximumAggregatedResourceSet_r18_40,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -962,10 +922,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedResourceSet-r18"
 		},
-	{ ATF_POINTER, 7, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourcePeriodic_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourcePeriodic_r18),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedResourcePeriodic_r18_40,
+		&asn_DEF_maximumAggregatedResourcePeriodic_r18_47,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -979,10 +939,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedResourcePeriodic-r18"
 		},
-	{ ATF_POINTER, 6, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceAperiodic_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceAperiodic_r18),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedResourceAperiodic_r18_48,
+		&asn_DEF_maximumAggregatedResourceAperiodic_r18_55,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -996,10 +956,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedResourceAperiodic-r18"
 		},
-	{ ATF_POINTER, 5, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceSemi_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceSemi_r18),
 		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedResourceSemi_r18_57,
+		&asn_DEF_maximumAggregatedResourceSemi_r18_64,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1013,10 +973,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedResourceSemi-r18"
 		},
-	{ ATF_POINTER, 4, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourcePeriodicPerSlot_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourcePeriodicPerSlot_r18),
 		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_66,
+		&asn_DEF_maximumAggregatedResourcePeriodicPerSlot_r18_73,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1030,10 +990,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedResourcePeriodicPerSlot-r18"
 		},
-	{ ATF_POINTER, 3, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceAperiodicPerSlot_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceAperiodicPerSlot_r18),
 		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_77,
+		&asn_DEF_maximumAggregatedResourceAperiodicPerSlot_r18_84,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1047,10 +1007,10 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedResourceAperiodicPerSlot-r18"
 		},
-	{ ATF_POINTER, 2, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceSemiPerSlot_r18),
+	{ ATF_NOFLAGS, 0, offsetof(struct PosSRS_BWA_RRC_Connected_r18, maximumAggregatedResourceSemiPerSlot_r18),
 		(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_89,
+		&asn_DEF_maximumAggregatedResourceSemiPerSlot_r18_96,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1064,25 +1024,8 @@ asn_TYPE_member_t asn_MBR_PosSRS_BWA_RRC_Connected_r18_1[] = {
 		0, 0, /* No default value */
 		"maximumAggregatedResourceSemiPerSlot-r18"
 		},
-	{ ATF_POINTER, 1, offsetof(struct PosSRS_BWA_RRC_Connected_r18, supportOfSameSRS_PowerReduction_r18),
-		(ASN_TAG_CLASS_CONTEXT | (12 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfSameSRS_PowerReduction_r18_101,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"supportOfSameSRS-PowerReduction-r18"
-		},
 };
-static const int asn_MAP_PosSRS_BWA_RRC_Connected_r18_oms_1[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12 };
+static const int asn_MAP_PosSRS_BWA_RRC_Connected_r18_oms_1[] = { 1, 2, 3, 4 };
 static const ber_tlv_tag_t asn_DEF_PosSRS_BWA_RRC_Connected_r18_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -1098,17 +1041,16 @@ static const asn_TYPE_tag2member_t asn_MAP_PosSRS_BWA_RRC_Connected_r18_tag2el_1
     { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* maximumAggregatedResourceSemi-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* maximumAggregatedResourcePeriodicPerSlot-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* maximumAggregatedResourceAperiodicPerSlot-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 }, /* maximumAggregatedResourceSemiPerSlot-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (12 << 2)), 12, 0, 0 } /* supportOfSameSRS-PowerReduction-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 } /* maximumAggregatedResourceSemiPerSlot-r18 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_PosSRS_BWA_RRC_Connected_r18_specs_1 = {
 	sizeof(struct PosSRS_BWA_RRC_Connected_r18),
 	offsetof(struct PosSRS_BWA_RRC_Connected_r18, _asn_ctx),
 	asn_MAP_PosSRS_BWA_RRC_Connected_r18_tag2el_1,
-	13,	/* Count of tags in the map */
+	12,	/* Count of tags in the map */
 	asn_MAP_PosSRS_BWA_RRC_Connected_r18_oms_1,	/* Optional members */
-	13, 0,	/* Root/Additions */
-	13,	/* First extension addition */
+	4, 0,	/* Root/Additions */
+	12,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_PosSRS_BWA_RRC_Connected_r18 = {
 	"PosSRS-BWA-RRC-Connected-r18",
@@ -1130,7 +1072,7 @@ asn_TYPE_descriptor_t asn_DEF_PosSRS_BWA_RRC_Connected_r18 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_PosSRS_BWA_RRC_Connected_r18_1,
-	13,	/* Elements count */
+	12,	/* Elements count */
 	&asn_SPC_PosSRS_BWA_RRC_Connected_r18_specs_1	/* Additional specs */
 };
 

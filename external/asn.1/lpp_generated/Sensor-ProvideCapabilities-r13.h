@@ -40,6 +40,7 @@ typedef enum Sensor_ProvideCapabilities_r13__ext3__adjustmentSupported_r16 {
 struct Sensor_AssistanceDataSupportList_r14;
 struct PositioningModes;
 struct ScheduledLocationTimeSupportPerMode_r17;
+struct PeriodicReportingIntervalMsSupportPerMode_r18;
 
 /* Sensor-ProvideCapabilities-r13 */
 typedef struct Sensor_ProvideCapabilities_r13 {
@@ -74,6 +75,12 @@ typedef struct Sensor_ProvideCapabilities_r13 {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext4;
+	struct Sensor_ProvideCapabilities_r13__ext5 {
+		struct PeriodicReportingIntervalMsSupportPerMode_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext5;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -85,7 +92,7 @@ typedef struct Sensor_ProvideCapabilities_r13 {
 /* extern asn_TYPE_descriptor_t asn_DEF_adjustmentSupported_r16_16;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_Sensor_ProvideCapabilities_r13;
 extern asn_SEQUENCE_specifics_t asn_SPC_Sensor_ProvideCapabilities_r13_specs_1;
-extern asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[5];
+extern asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[6];
 
 #ifdef __cplusplus
 }

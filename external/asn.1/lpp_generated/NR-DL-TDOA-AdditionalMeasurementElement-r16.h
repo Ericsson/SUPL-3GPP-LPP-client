@@ -44,9 +44,9 @@ typedef enum NR_DL_TDOA_AdditionalMeasurementElement_r16__nr_RSTD_ResultDiff_r16
 	NR_DL_TDOA_AdditionalMeasurementElement_r16__nr_RSTD_ResultDiff_r16_PR_kMinus2_r18,
 	NR_DL_TDOA_AdditionalMeasurementElement_r16__nr_RSTD_ResultDiff_r16_PR_kMinus1_r18
 } NR_DL_TDOA_AdditionalMeasurementElement_r16__nr_RSTD_ResultDiff_r16_PR;
-typedef enum NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_RSTD_BasedOnAggregatedResources_r18 {
-	NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_RSTD_BasedOnAggregatedResources_r18_true	= 0
-} e_NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_RSTD_BasedOnAggregatedResources_r18;
+typedef enum NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_MeasBasedOnAggregatedResources_r18 {
+	NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_MeasBasedOnAggregatedResources_r18_true	= 0
+} e_NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_MeasBasedOnAggregatedResources_r18;
 typedef enum NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18 {
 	NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_singleHop	= 0,
 	NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_multipleHop	= 1
@@ -57,7 +57,7 @@ struct NR_AdditionalPathList_r16;
 struct LOS_NLOS_Indicator_r17;
 struct NR_AdditionalPathListExt_r17;
 struct NR_PhaseQuality_r18;
-struct NR_AggregatedDL_PRS_ResourceSetID_Element_r18;
+struct NR_AggregatedDL_PRS_ResourceInfo_Element_r18;
 struct NR_RSCPD_AdditionalMeasurementSamplesElement_r18;
 
 /* NR-DL-TDOA-AdditionalMeasurementElement-r16 */
@@ -106,13 +106,13 @@ typedef struct NR_DL_TDOA_AdditionalMeasurementElement_r16 {
 		asn_struct_ctx_t _asn_ctx;
 	} *ext1;
 	struct NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2 {
-		long	*nr_RSTD_BasedOnAggregatedResources_r18;	/* OPTIONAL */
-		struct NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_AggregatedDL_PRS_ResourceSetID_List_r18 {
-			A_SEQUENCE_OF(struct NR_AggregatedDL_PRS_ResourceSetID_Element_r18) list;
+		long	*nr_MeasBasedOnAggregatedResources_r18;	/* OPTIONAL */
+		struct NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_AggregatedDL_PRS_ResourceInfo_List_r18 {
+			A_SEQUENCE_OF(struct NR_AggregatedDL_PRS_ResourceInfo_Element_r18) list;
 			
 			/* Context for parsing across buffer boundaries */
 			asn_struct_ctx_t _asn_ctx;
-		} *nr_AggregatedDL_PRS_ResourceSetID_List_r18;
+		} *nr_AggregatedDL_PRS_ResourceInfo_List_r18;
 		long	*nr_RSCPD_r18;	/* OPTIONAL */
 		struct NR_PhaseQuality_r18	*nr_PhaseQuality_r18;	/* OPTIONAL */
 		struct NR_DL_TDOA_AdditionalMeasurementElement_r16__ext2__nr_RSCPD_AdditionalMeasurementsAddSamples_r18 {
@@ -132,7 +132,7 @@ typedef struct NR_DL_TDOA_AdditionalMeasurementElement_r16 {
 } NR_DL_TDOA_AdditionalMeasurementElement_r16_t;
 
 /* Implementation */
-/* extern asn_TYPE_descriptor_t asn_DEF_nr_RSTD_BasedOnAggregatedResources_r18_29;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_nr_MeasBasedOnAggregatedResources_r18_29;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_37;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_DL_TDOA_AdditionalMeasurementElement_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_DL_TDOA_AdditionalMeasurementElement_r16_specs_1;

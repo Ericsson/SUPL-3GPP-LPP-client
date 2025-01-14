@@ -36,6 +36,7 @@ struct LocationCoordinateTypes;
 struct VelocityTypes;
 struct PositioningModes;
 struct ScheduledLocationTimeSupportPerMode_r17;
+struct PeriodicReportingIntervalMsSupportPerMode_r18;
 
 /* A-GNSS-ProvideCapabilities */
 typedef struct A_GNSS_ProvideCapabilities {
@@ -66,6 +67,12 @@ typedef struct A_GNSS_ProvideCapabilities {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext3;
+	struct A_GNSS_ProvideCapabilities__ext4 {
+		struct PeriodicReportingIntervalMsSupportPerMode_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext4;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -75,7 +82,7 @@ typedef struct A_GNSS_ProvideCapabilities {
 /* extern asn_TYPE_descriptor_t asn_DEF_idleStateForMeasurements_r14_9;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_A_GNSS_ProvideCapabilities;
 extern asn_SEQUENCE_specifics_t asn_SPC_A_GNSS_ProvideCapabilities_specs_1;
-extern asn_TYPE_member_t asn_MBR_A_GNSS_ProvideCapabilities_1[7];
+extern asn_TYPE_member_t asn_MBR_A_GNSS_ProvideCapabilities_1[8];
 
 #ifdef __cplusplus
 }

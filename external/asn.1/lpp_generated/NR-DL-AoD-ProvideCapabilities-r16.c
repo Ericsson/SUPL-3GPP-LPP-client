@@ -11,6 +11,7 @@
 #include "NR-On-Demand-DL-PRS-Support-r17.h"
 #include "ScheduledLocationTimeSupportPerMode-r17.h"
 #include "LocationCoordinateTypes.h"
+#include "PeriodicReportingIntervalMsSupportPerMode-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -122,10 +123,6 @@ memb_nr_DL_PRS_ExpectedAoD_or_AoA_Sup_r17_constraint_9(const asn_TYPE_descriptor
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
  */
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
 static int
 memb_nr_IntegrityAssistanceSupport_r18_constraint_49(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
@@ -215,13 +212,6 @@ static asn_per_constraints_t asn_PER_type_posMeasGapSupport_r17_constr_44 CC_NOT
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_multiLocationEstimateInSameMeasReport_r17_constr_47 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_constr_59 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
@@ -1092,49 +1082,6 @@ asn_TYPE_descriptor_t asn_DEF_ext3_46 = {
 	&asn_SPC_ext3_specs_46	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_value2enum_59[] = {
-	{ 0,	9,	"supported" }
-};
-static const unsigned int asn_MAP_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_enum2value_59[] = {
-	0	/* supported(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_specs_59 = {
-	asn_MAP_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_value2enum_59,	/* "tag" => N; sorted by tag */
-	asn_MAP_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_enum2value_59,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_tags_59[] = {
-	(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_59 = {
-	"nr-DL-AoD-OnDemandPRS-ForBWA-Support-r18",
-	"nr-DL-AoD-OnDemandPRS-ForBWA-Support-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_tags_59,
-	sizeof(asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_tags_59)
-		/sizeof(asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_tags_59[0]) - 1, /* 1 */
-	asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_tags_59,	/* Same as above */
-	sizeof(asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_tags_59)
-		/sizeof(asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_tags_59[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_constr_59,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_specs_59	/* Additional specs */
-};
-
 static asn_TYPE_member_t asn_MBR_ext4_49[] = {
 	{ ATF_POINTER, 3, offsetof(struct NR_DL_AoD_ProvideCapabilities_r16__ext4, locationCoordinateTypes_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -1170,10 +1117,10 @@ static asn_TYPE_member_t asn_MBR_ext4_49[] = {
 		0, 0, /* No default value */
 		"nr-IntegrityAssistanceSupport-r18"
 		},
-	{ ATF_POINTER, 1, offsetof(struct NR_DL_AoD_ProvideCapabilities_r16__ext4, nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18),
+	{ ATF_POINTER, 1, offsetof(struct NR_DL_AoD_ProvideCapabilities_r16__ext4, periodicReportingIntervalMsSupport_r18),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_59,
+		&asn_DEF_PeriodicReportingIntervalMsSupportPerMode_r18,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1185,7 +1132,7 @@ static asn_TYPE_member_t asn_MBR_ext4_49[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"nr-DL-AoD-OnDemandPRS-ForBWA-Support-r18"
+		"periodicReportingIntervalMsSupport-r18"
 		},
 };
 static const int asn_MAP_ext4_oms_49[] = { 0, 1, 2 };
@@ -1196,7 +1143,7 @@ static const ber_tlv_tag_t asn_DEF_ext4_tags_49[] = {
 static const asn_TYPE_tag2member_t asn_MAP_ext4_tag2el_49[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* locationCoordinateTypes-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* nr-IntegrityAssistanceSupport-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* nr-DL-AoD-OnDemandPRS-ForBWA-Support-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext4_specs_49 = {
 	sizeof(struct NR_DL_AoD_ProvideCapabilities_r16__ext4),

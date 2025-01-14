@@ -21,7 +21,9 @@ extern "C" {
 
 /* NR-IntegrityParametersTRP-LocationInfo-r18 */
 typedef struct NR_IntegrityParametersTRP_LocationInfo_r18 {
-	long	 trp_ErrorCorrelationTime_r18;
+	long	*trp_ErrorCorrelationTime_r18;	/* OPTIONAL */
+	long	*dl_PRS_ResourceSetARP_ErrorCorrelationTime_r18;	/* OPTIONAL */
+	long	*dl_PRS_ResourceARP_ErrorCorrelationTime_r18;	/* OPTIONAL */
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -34,7 +36,7 @@ typedef struct NR_IntegrityParametersTRP_LocationInfo_r18 {
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_NR_IntegrityParametersTRP_LocationInfo_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_IntegrityParametersTRP_LocationInfo_r18_specs_1;
-extern asn_TYPE_member_t asn_MBR_NR_IntegrityParametersTRP_LocationInfo_r18_1[1];
+extern asn_TYPE_member_t asn_MBR_NR_IntegrityParametersTRP_LocationInfo_r18_1[3];
 
 #ifdef __cplusplus
 }

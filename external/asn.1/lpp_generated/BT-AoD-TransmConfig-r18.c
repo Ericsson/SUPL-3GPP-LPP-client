@@ -7,6 +7,14 @@
 
 #include "BT-AoD-TransmConfig-r18.h"
 
+/*
+ * This type is implemented using NativeEnumerated,
+ * so here we adjust the DEF accordingly.
+ */
+/*
+ * This type is implemented using NativeEnumerated,
+ * so here we adjust the DEF accordingly.
+ */
 static int
 memb_primaryAdvInterval_r18_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
@@ -108,6 +116,20 @@ memb_cte_Count_r18_constraint_1(const asn_TYPE_descriptor_t *td, const void *spt
 }
 
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_type_cte_Type2us_r18_constr_6 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_type_tx_PHY_M2_r18_constr_8 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_memb_primaryAdvInterval_r18_constr_2 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 15,  15,  32,  16777 }	/* (32..16777) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
@@ -135,6 +157,92 @@ static asn_per_constraints_t asn_PER_memb_cte_Count_r18_constr_5 CC_NOTUSED = {
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+static const asn_INTEGER_enum_map_t asn_MAP_cte_Type2us_r18_value2enum_6[] = {
+	{ 0,	4,	"true" }
+};
+static const unsigned int asn_MAP_cte_Type2us_r18_enum2value_6[] = {
+	0	/* true(0) */
+};
+static const asn_INTEGER_specifics_t asn_SPC_cte_Type2us_r18_specs_6 = {
+	asn_MAP_cte_Type2us_r18_value2enum_6,	/* "tag" => N; sorted by tag */
+	asn_MAP_cte_Type2us_r18_enum2value_6,	/* N => "tag"; sorted by N */
+	1,	/* Number of elements in the maps */
+	0,	/* Enumeration is not extensible */
+	1,	/* Strict enumeration */
+	0,	/* Native long size */
+	0
+};
+static const ber_tlv_tag_t asn_DEF_cte_Type2us_r18_tags_6[] = {
+	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_cte_Type2us_r18_6 = {
+	"cte-Type2us-r18",
+	"cte-Type2us-r18",
+	&asn_OP_NativeEnumerated,
+	asn_DEF_cte_Type2us_r18_tags_6,
+	sizeof(asn_DEF_cte_Type2us_r18_tags_6)
+		/sizeof(asn_DEF_cte_Type2us_r18_tags_6[0]) - 1, /* 1 */
+	asn_DEF_cte_Type2us_r18_tags_6,	/* Same as above */
+	sizeof(asn_DEF_cte_Type2us_r18_tags_6)
+		/sizeof(asn_DEF_cte_Type2us_r18_tags_6[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		&asn_PER_type_cte_Type2us_r18_constr_6,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		NativeEnumerated_constraint
+	},
+	0, 0,	/* Defined elsewhere */
+	&asn_SPC_cte_Type2us_r18_specs_6	/* Additional specs */
+};
+
+static const asn_INTEGER_enum_map_t asn_MAP_tx_PHY_M2_r18_value2enum_8[] = {
+	{ 0,	4,	"true" }
+};
+static const unsigned int asn_MAP_tx_PHY_M2_r18_enum2value_8[] = {
+	0	/* true(0) */
+};
+static const asn_INTEGER_specifics_t asn_SPC_tx_PHY_M2_r18_specs_8 = {
+	asn_MAP_tx_PHY_M2_r18_value2enum_8,	/* "tag" => N; sorted by tag */
+	asn_MAP_tx_PHY_M2_r18_enum2value_8,	/* N => "tag"; sorted by N */
+	1,	/* Number of elements in the maps */
+	0,	/* Enumeration is not extensible */
+	1,	/* Strict enumeration */
+	0,	/* Native long size */
+	0
+};
+static const ber_tlv_tag_t asn_DEF_tx_PHY_M2_r18_tags_8[] = {
+	(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_tx_PHY_M2_r18_8 = {
+	"tx-PHY-M2-r18",
+	"tx-PHY-M2-r18",
+	&asn_OP_NativeEnumerated,
+	asn_DEF_tx_PHY_M2_r18_tags_8,
+	sizeof(asn_DEF_tx_PHY_M2_r18_tags_8)
+		/sizeof(asn_DEF_tx_PHY_M2_r18_tags_8[0]) - 1, /* 1 */
+	asn_DEF_tx_PHY_M2_r18_tags_8,	/* Same as above */
+	sizeof(asn_DEF_tx_PHY_M2_r18_tags_8)
+		/sizeof(asn_DEF_tx_PHY_M2_r18_tags_8[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		&asn_PER_type_tx_PHY_M2_r18_constr_8,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		NativeEnumerated_constraint
+	},
+	0, 0,	/* Defined elsewhere */
+	&asn_SPC_tx_PHY_M2_r18_specs_8	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_BT_AoD_TransmConfig_r18_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct BT_AoD_TransmConfig_r18, primaryAdvInterval_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -207,7 +315,7 @@ asn_TYPE_member_t asn_MBR_BT_AoD_TransmConfig_r18_1[] = {
 	{ ATF_POINTER, 2, offsetof(struct BT_AoD_TransmConfig_r18, cte_Type2us_r18),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_NULL,
+		&asn_DEF_cte_Type2us_r18_6,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -224,7 +332,7 @@ asn_TYPE_member_t asn_MBR_BT_AoD_TransmConfig_r18_1[] = {
 	{ ATF_POINTER, 1, offsetof(struct BT_AoD_TransmConfig_r18, tx_PHY_M2_r18),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_NULL,
+		&asn_DEF_tx_PHY_M2_r18_8,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)

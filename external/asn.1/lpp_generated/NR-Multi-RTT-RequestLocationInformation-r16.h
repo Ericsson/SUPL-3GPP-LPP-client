@@ -35,7 +35,7 @@ typedef enum NR_Multi_RTT_RequestLocationInformation_r16__nr_UE_RxTxTimeDiffMeas
 typedef enum NR_Multi_RTT_RequestLocationInformation_r16__nr_RequestedMeasurements_r16 {
 	NR_Multi_RTT_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_prsrsrpReq	= 0,
 	NR_Multi_RTT_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_firstPathRsrpReq_r17	= 1,
-	NR_Multi_RTT_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_jointMeasurementsReq_r18	= 2
+	NR_Multi_RTT_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_dl_PRS_RSCP_Request_r18	= 2
 } e_NR_Multi_RTT_RequestLocationInformation_r16__nr_RequestedMeasurements_r16;
 typedef enum NR_Multi_RTT_RequestLocationInformation_r16__additionalPaths_r16 {
 	NR_Multi_RTT_RequestLocationInformation_r16__additionalPaths_r16_requested	= 0
@@ -104,9 +104,9 @@ typedef enum NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHopp
 	NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz200	= 1,
 	NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz400	= 2
 } e_NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2;
-typedef enum NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_RSCP_Request_r18 {
-	NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_RSCP_Request_r18_requested	= 0
-} e_NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_RSCP_Request_r18;
+typedef enum NR_Multi_RTT_RequestLocationInformation_r16__ext3__nr_NTN_UE_RxTxMeasurementsRequest_r18 {
+	NR_Multi_RTT_RequestLocationInformation_r16__ext3__nr_NTN_UE_RxTxMeasurementsRequest_r18_requested	= 0
+} e_NR_Multi_RTT_RequestLocationInformation_r16__ext3__nr_NTN_UE_RxTxMeasurementsRequest_r18;
 
 /* Forward declarations */
 struct NR_DL_PRS_MeasurementTimeWindowsConfig_r18;
@@ -163,18 +163,28 @@ typedef struct NR_Multi_RTT_RequestLocationInformation_r16 {
 			asn_struct_ctx_t _asn_ctx;
 		} *nr_DL_PRS_RxHoppingRequest_r18;
 		long	*timingReportingGranularityFactorExt_r18;	/* OPTIONAL */
-		struct NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18 {
-			A_SEQUENCE_OF(long) list;
+		struct NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18 {
+			struct NR_Multi_RTT_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18 {
+				A_SEQUENCE_OF(long) list;
+				
+				/* Context for parsing across buffer boundaries */
+				asn_struct_ctx_t _asn_ctx;
+			} *nr_DL_PRS_JointMeasurementRequestedPFL_List_r18;
 			
 			/* Context for parsing across buffer boundaries */
 			asn_struct_ctx_t _asn_ctx;
-		} *nr_DL_PRS_JointMeasurementRequestedPFL_List_r18;
-		long	*nr_DL_PRS_RSCP_Request_r18;	/* OPTIONAL */
+		} *nr_DL_PRS_JointMeasurementRequest_r18;
 		struct NR_DL_PRS_MeasurementTimeWindowsConfig_r18	*nr_DL_PRS_MeasurementTimeWindowsConfig_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext2;
+	struct NR_Multi_RTT_RequestLocationInformation_r16__ext3 {
+		long	*nr_NTN_UE_RxTxMeasurementsRequest_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext3;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -193,10 +203,10 @@ typedef struct NR_Multi_RTT_RequestLocationInformation_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_lowerRxBeamSweepingFactor_FR2_r17_48;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_fr1_53;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_fr2_58;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCP_Request_r18_65;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_nr_NTN_UE_RxTxMeasurementsRequest_r18_68;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_Multi_RTT_RequestLocationInformation_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_Multi_RTT_RequestLocationInformation_r16_specs_1;
-extern asn_TYPE_member_t asn_MBR_NR_Multi_RTT_RequestLocationInformation_r16_1[7];
+extern asn_TYPE_member_t asn_MBR_NR_Multi_RTT_RequestLocationInformation_r16_1[8];
 
 #ifdef __cplusplus
 }

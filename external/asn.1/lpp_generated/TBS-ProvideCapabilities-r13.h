@@ -40,6 +40,7 @@ typedef enum TBS_ProvideCapabilities_r13__ext1__mbs_IdleStateForMeasurements_r14
 struct MBS_AssistanceDataSupportList_r14;
 struct PositioningModes;
 struct ScheduledLocationTimeSupportPerMode_r17;
+struct PeriodicReportingIntervalMsSupportPerMode_r18;
 
 /* TBS-ProvideCapabilities-r13 */
 typedef struct TBS_ProvideCapabilities_r13 {
@@ -63,6 +64,12 @@ typedef struct TBS_ProvideCapabilities_r13 {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext2;
+	struct TBS_ProvideCapabilities_r13__ext3 {
+		struct PeriodicReportingIntervalMsSupportPerMode_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext3;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -72,7 +79,7 @@ typedef struct TBS_ProvideCapabilities_r13 {
 /* extern asn_TYPE_descriptor_t asn_DEF_mbs_IdleStateForMeasurements_r14_15;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_TBS_ProvideCapabilities_r13;
 extern asn_SEQUENCE_specifics_t asn_SPC_TBS_ProvideCapabilities_r13_specs_1;
-extern asn_TYPE_member_t asn_MBR_TBS_ProvideCapabilities_r13_1[3];
+extern asn_TYPE_member_t asn_MBR_TBS_ProvideCapabilities_r13_1[4];
 
 #ifdef __cplusplus
 }

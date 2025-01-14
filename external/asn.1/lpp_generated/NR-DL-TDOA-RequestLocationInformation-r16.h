@@ -34,7 +34,7 @@ typedef enum NR_DL_TDOA_RequestLocationInformation_r16__nr_DL_PRS_RstdMeasuremen
 typedef enum NR_DL_TDOA_RequestLocationInformation_r16__nr_RequestedMeasurements_r16 {
 	NR_DL_TDOA_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_prsrsrpReq	= 0,
 	NR_DL_TDOA_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_firstPathRsrpReq_r17	= 1,
-	NR_DL_TDOA_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_jointMeasurementsReq_r18	= 2
+	NR_DL_TDOA_RequestLocationInformation_r16__nr_RequestedMeasurements_r16_dl_PRS_RSCPD_Request_r18	= 2
 } e_NR_DL_TDOA_RequestLocationInformation_r16__nr_RequestedMeasurements_r16;
 typedef enum NR_DL_TDOA_RequestLocationInformation_r16__additionalPaths_r16 {
 	NR_DL_TDOA_RequestLocationInformation_r16__additionalPaths_r16_requested	= 0
@@ -67,9 +67,6 @@ typedef enum NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppin
 	NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz200	= 1,
 	NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz400	= 2
 } e_NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2;
-typedef enum NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RSCPD_Request_r18 {
-	NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RSCPD_Request_r18_requested	= 0
-} e_NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RSCPD_Request_r18;
 
 /* Forward declarations */
 struct NR_DL_TDOA_ReportConfig_r16;
@@ -106,12 +103,17 @@ typedef struct NR_DL_TDOA_RequestLocationInformation_r16 {
 		asn_struct_ctx_t _asn_ctx;
 	} *ext1;
 	struct NR_DL_TDOA_RequestLocationInformation_r16__ext2 {
-		struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18 {
-			A_SEQUENCE_OF(long) list;
+		struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18 {
+			struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18 {
+				A_SEQUENCE_OF(long) list;
+				
+				/* Context for parsing across buffer boundaries */
+				asn_struct_ctx_t _asn_ctx;
+			} *nr_DL_PRS_JointMeasurementRequestedPFL_List_r18;
 			
 			/* Context for parsing across buffer boundaries */
 			asn_struct_ctx_t _asn_ctx;
-		} *nr_DL_PRS_JointMeasurementRequestedPFL_List_r18;
+		} *nr_DL_PRS_JointMeasurementRequest_r18;
 		struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18 {
 			struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18 {
 				NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR present;
@@ -127,7 +129,6 @@ typedef struct NR_DL_TDOA_RequestLocationInformation_r16 {
 			/* Context for parsing across buffer boundaries */
 			asn_struct_ctx_t _asn_ctx;
 		} *nr_DL_PRS_RxHoppingRequest_r18;
-		long	*nr_DL_PRS_RSCPD_Request_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
@@ -144,9 +145,8 @@ typedef struct NR_DL_TDOA_RequestLocationInformation_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_additionalPathsExt_r17_20;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_additionalPathsDL_PRS_RSRP_Request_r17_22;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_multiMeasInSameReport_r17_24;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_fr1_31;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_fr2_36;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_Request_r18_40;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_fr1_32;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_fr2_37;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_DL_TDOA_RequestLocationInformation_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_DL_TDOA_RequestLocationInformation_r16_specs_1;
 extern asn_TYPE_member_t asn_MBR_NR_DL_TDOA_RequestLocationInformation_r16_1[7];

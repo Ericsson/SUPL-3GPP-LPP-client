@@ -69,15 +69,13 @@ typedef enum NR_DL_AoD_ProvideCapabilities_r16__ext4__nr_IntegrityAssistanceSupp
 	NR_DL_AoD_ProvideCapabilities_r16__ext4__nr_IntegrityAssistanceSupport_r18_integrityParaRTD_InfoSup	= 5,
 	NR_DL_AoD_ProvideCapabilities_r16__ext4__nr_IntegrityAssistanceSupport_r18_integrityBeamAntInfoSup	= 6
 } e_NR_DL_AoD_ProvideCapabilities_r16__ext4__nr_IntegrityAssistanceSupport_r18;
-typedef enum NR_DL_AoD_ProvideCapabilities_r16__ext4__nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18 {
-	NR_DL_AoD_ProvideCapabilities_r16__ext4__nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_supported	= 0
-} e_NR_DL_AoD_ProvideCapabilities_r16__ext4__nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18;
 
 /* Forward declarations */
 struct PositioningModes;
 struct NR_On_Demand_DL_PRS_Support_r17;
 struct ScheduledLocationTimeSupportPerMode_r17;
 struct LocationCoordinateTypes;
+struct PeriodicReportingIntervalMsSupportPerMode_r18;
 
 /* NR-DL-AoD-ProvideCapabilities-r16 */
 typedef struct NR_DL_AoD_ProvideCapabilities_r16 {
@@ -152,7 +150,7 @@ typedef struct NR_DL_AoD_ProvideCapabilities_r16 {
 	struct NR_DL_AoD_ProvideCapabilities_r16__ext4 {
 		struct LocationCoordinateTypes	*locationCoordinateTypes_r18;	/* OPTIONAL */
 		BIT_STRING_t	*nr_IntegrityAssistanceSupport_r18;	/* OPTIONAL */
-		long	*nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18;	/* OPTIONAL */
+		struct PeriodicReportingIntervalMsSupportPerMode_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
@@ -169,7 +167,6 @@ typedef struct NR_DL_AoD_ProvideCapabilities_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_mg_ActivationRequest_r17_41;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_posMeasGapSupport_r17_44;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_multiLocationEstimateInSameMeasReport_r17_47;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_AoD_OnDemandPRS_ForBWA_Support_r18_59;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_DL_AoD_ProvideCapabilities_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_DL_AoD_ProvideCapabilities_r16_specs_1;
 extern asn_TYPE_member_t asn_MBR_NR_DL_AoD_ProvideCapabilities_r16_1[10];

@@ -9,6 +9,7 @@
 
 #include "NR-On-Demand-DL-PRS-Support-r17.h"
 #include "ScheduledLocationTimeSupport-r17.h"
+#include "PeriodicReportingIntervalMsSupport-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -128,10 +129,6 @@ memb_nr_UE_RxTx_TEG_ID_ReportingSupport_r17_constraint_12(const asn_TYPE_descrip
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
  */
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_additionalPathsReport_r16_constr_7 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
@@ -203,14 +200,7 @@ static asn_per_constraints_t asn_PER_type_posMeasGapSupport_r17_constr_40 CC_NOT
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_symbolTimeStampSupport_r18_constr_43 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_constr_45 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_constr_43 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
@@ -943,114 +933,54 @@ asn_TYPE_descriptor_t asn_DEF_ext2_39 = {
 	&asn_SPC_ext2_specs_39	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_symbolTimeStampSupport_r18_value2enum_43[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_value2enum_43[] = {
 	{ 0,	9,	"supported" }
 };
-static const unsigned int asn_MAP_symbolTimeStampSupport_r18_enum2value_43[] = {
+static const unsigned int asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_enum2value_43[] = {
 	0	/* supported(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_symbolTimeStampSupport_r18_specs_43 = {
-	asn_MAP_symbolTimeStampSupport_r18_value2enum_43,	/* "tag" => N; sorted by tag */
-	asn_MAP_symbolTimeStampSupport_r18_enum2value_43,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_specs_43 = {
+	asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_value2enum_43,	/* "tag" => N; sorted by tag */
+	asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_enum2value_43,	/* N => "tag"; sorted by N */
 	1,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_symbolTimeStampSupport_r18_tags_43[] = {
+static const ber_tlv_tag_t asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_43[] = {
 	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_symbolTimeStampSupport_r18_43 = {
-	"symbolTimeStampSupport-r18",
-	"symbolTimeStampSupport-r18",
+asn_TYPE_descriptor_t asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_43 = {
+	"nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18",
+	"nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_symbolTimeStampSupport_r18_tags_43,
-	sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_43)
-		/sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_43[0]) - 1, /* 1 */
-	asn_DEF_symbolTimeStampSupport_r18_tags_43,	/* Same as above */
-	sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_43)
-		/sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_43[0]), /* 2 */
+	asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_43,
+	sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_43)
+		/sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_43[0]) - 1, /* 1 */
+	asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_43,	/* Same as above */
+	sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_43)
+		/sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_43[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_symbolTimeStampSupport_r18_constr_43,
+		&asn_PER_type_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_constr_43,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_symbolTimeStampSupport_r18_specs_43	/* Additional specs */
-};
-
-static const asn_INTEGER_enum_map_t asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_value2enum_45[] = {
-	{ 0,	9,	"supported" }
-};
-static const unsigned int asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_enum2value_45[] = {
-	0	/* supported(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_specs_45 = {
-	asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_value2enum_45,	/* "tag" => N; sorted by tag */
-	asn_MAP_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_enum2value_45,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_45[] = {
-	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_45 = {
-	"nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18",
-	"nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_45,
-	sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_45)
-		/sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_45[0]) - 1, /* 1 */
-	asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_45,	/* Same as above */
-	sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_45)
-		/sizeof(asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_tags_45[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_constr_45,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_specs_45	/* Additional specs */
+	&asn_SPC_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_specs_43	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_ext3_42[] = {
-	{ ATF_POINTER, 2, offsetof(struct NR_Multi_RTT_ProvideCapabilities_r16__ext3, symbolTimeStampSupport_r18),
+	{ ATF_POINTER, 2, offsetof(struct NR_Multi_RTT_ProvideCapabilities_r16__ext3, nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_symbolTimeStampSupport_r18_43,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"symbolTimeStampSupport-r18"
-		},
-	{ ATF_POINTER, 1, offsetof(struct NR_Multi_RTT_ProvideCapabilities_r16__ext3, nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18),
-		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_45,
+		&asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_43,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1064,6 +994,23 @@ static asn_TYPE_member_t asn_MBR_ext3_42[] = {
 		0, 0, /* No default value */
 		"nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18"
 		},
+	{ ATF_POINTER, 1, offsetof(struct NR_Multi_RTT_ProvideCapabilities_r16__ext3, periodicReportingIntervalMsSupport_r18),
+		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicReportingIntervalMsSupport_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicReportingIntervalMsSupport-r18"
+		},
 };
 static const int asn_MAP_ext3_oms_42[] = { 0, 1 };
 static const ber_tlv_tag_t asn_DEF_ext3_tags_42[] = {
@@ -1071,8 +1018,8 @@ static const ber_tlv_tag_t asn_DEF_ext3_tags_42[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static const asn_TYPE_tag2member_t asn_MAP_ext3_tag2el_42[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* symbolTimeStampSupport-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* nr-MultiRTT-OnDemandPRS-ForBWA-Support-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext3_specs_42 = {
 	sizeof(struct NR_Multi_RTT_ProvideCapabilities_r16__ext3),

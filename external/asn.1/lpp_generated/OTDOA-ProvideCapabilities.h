@@ -97,6 +97,7 @@ typedef enum OTDOA_ProvideCapabilities__interRAT_RSTDmeasurement_r15 {
 
 /* Forward declarations */
 struct ScheduledLocationTimeSupport_r17;
+struct PeriodicReportingIntervalMsSupport_r18;
 struct SupportedBandEUTRA;
 struct SupportedBandEUTRA_v9a0;
 
@@ -138,6 +139,7 @@ typedef struct OTDOA_ProvideCapabilities {
 	long	*motionMeasurements_r15;	/* OPTIONAL */
 	long	*interRAT_RSTDmeasurement_r15;	/* OPTIONAL */
 	struct ScheduledLocationTimeSupport_r17	*scheduledLocationRequestSupported_r17;	/* OPTIONAL */
+	struct PeriodicReportingIntervalMsSupport_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -164,7 +166,7 @@ typedef struct OTDOA_ProvideCapabilities {
 /* extern asn_TYPE_descriptor_t asn_DEF_interRAT_RSTDmeasurement_r15_53;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_OTDOA_ProvideCapabilities;
 extern asn_SEQUENCE_specifics_t asn_SPC_OTDOA_ProvideCapabilities_specs_1;
-extern asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[22];
+extern asn_TYPE_member_t asn_MBR_OTDOA_ProvideCapabilities_1[23];
 
 #ifdef __cplusplus
 }

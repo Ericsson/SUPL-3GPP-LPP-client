@@ -38,16 +38,16 @@ typedef enum PosSRS_TxFrequencyHoppingRRC_Connected_r18__maximumTxFH_Hops_r18 {
 	PosSRS_TxFrequencyHoppingRRC_Connected_r18__maximumTxFH_Hops_r18_n5	= 3,
 	PosSRS_TxFrequencyHoppingRRC_Connected_r18__maximumTxFH_Hops_r18_n6	= 4
 } e_PosSRS_TxFrequencyHoppingRRC_Connected_r18__maximumTxFH_Hops_r18;
-typedef enum PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR1_r18 {
-	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR1_r18_n70	= 0,
-	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR1_r18_n140	= 1,
-	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR1_r18_n210	= 2
-} e_PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR1_r18;
-typedef enum PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR2_r18 {
-	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR2_r18_n35	= 0,
-	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR2_r18_n70	= 1,
-	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR2_r18_n140	= 2
-} e_PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetunTimeFR2_r18;
+typedef enum PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR1_r18 {
+	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR1_r18_n70	= 0,
+	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR1_r18_n140	= 1,
+	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR1_r18_n210	= 2
+} e_PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR1_r18;
+typedef enum PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR2_r18 {
+	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR2_r18_n35	= 0,
+	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR2_r18_n70	= 1,
+	PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR2_r18_n140	= 2
+} e_PosSRS_TxFrequencyHoppingRRC_Connected_r18__rf_TxRetuneTimeFR2_r18;
 typedef enum PosSRS_TxFrequencyHoppingRRC_Connected_r18__switchTimeBetweenActiveBWP_FrequencyHop_r18 {
 	PosSRS_TxFrequencyHoppingRRC_Connected_r18__switchTimeBetweenActiveBWP_FrequencyHop_r18_n100	= 0,
 	PosSRS_TxFrequencyHoppingRRC_Connected_r18__switchTimeBetweenActiveBWP_FrequencyHop_r18_n140	= 1,
@@ -96,8 +96,8 @@ typedef struct PosSRS_TxFrequencyHoppingRRC_Connected_r18 {
 	long	*maximumSRS_BandwidthAcrossAllHopsFR1_r18;	/* OPTIONAL */
 	long	*maximumSRS_BandwidthAcrossAllHopsFR2_r18;	/* OPTIONAL */
 	long	*maximumTxFH_Hops_r18;	/* OPTIONAL */
-	long	*rf_TxRetunTimeFR1_r18;	/* OPTIONAL */
-	long	*rf_TxRetunTimeFR2_r18;	/* OPTIONAL */
+	long	*rf_TxRetuneTimeFR1_r18;	/* OPTIONAL */
+	long	*rf_TxRetuneTimeFR2_r18;	/* OPTIONAL */
 	long	*switchTimeBetweenActiveBWP_FrequencyHop_r18;	/* OPTIONAL */
 	long	*numOfOverlappingPRB_r18;	/* OPTIONAL */
 	long	*maximumSRS_ResourcePeriodic_r18;	/* OPTIONAL */
@@ -116,8 +116,8 @@ typedef struct PosSRS_TxFrequencyHoppingRRC_Connected_r18 {
 /* extern asn_TYPE_descriptor_t asn_DEF_maximumSRS_BandwidthAcrossAllHopsFR1_r18_2;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_maximumSRS_BandwidthAcrossAllHopsFR2_r18_7;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_maximumTxFH_Hops_r18_11;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_rf_TxRetunTimeFR1_r18_17;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_rf_TxRetunTimeFR2_r18_21;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_rf_TxRetuneTimeFR1_r18_17;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_rf_TxRetuneTimeFR2_r18_21;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_switchTimeBetweenActiveBWP_FrequencyHop_r18_25;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_numOfOverlappingPRB_r18_31;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_maximumSRS_ResourcePeriodic_r18_36;	// (Use -fall-defs-global to expose) */

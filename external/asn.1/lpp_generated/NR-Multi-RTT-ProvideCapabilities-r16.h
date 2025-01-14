@@ -61,9 +61,6 @@ typedef enum NR_Multi_RTT_ProvideCapabilities_r16__ext1__mg_ActivationRequest_r1
 typedef enum NR_Multi_RTT_ProvideCapabilities_r16__ext2__posMeasGapSupport_r17 {
 	NR_Multi_RTT_ProvideCapabilities_r16__ext2__posMeasGapSupport_r17_supported	= 0
 } e_NR_Multi_RTT_ProvideCapabilities_r16__ext2__posMeasGapSupport_r17;
-typedef enum NR_Multi_RTT_ProvideCapabilities_r16__ext3__symbolTimeStampSupport_r18 {
-	NR_Multi_RTT_ProvideCapabilities_r16__ext3__symbolTimeStampSupport_r18_supported	= 0
-} e_NR_Multi_RTT_ProvideCapabilities_r16__ext3__symbolTimeStampSupport_r18;
 typedef enum NR_Multi_RTT_ProvideCapabilities_r16__ext3__nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18 {
 	NR_Multi_RTT_ProvideCapabilities_r16__ext3__nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_supported	= 0
 } e_NR_Multi_RTT_ProvideCapabilities_r16__ext3__nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18;
@@ -71,6 +68,7 @@ typedef enum NR_Multi_RTT_ProvideCapabilities_r16__ext3__nr_MultiRTT_OnDemandPRS
 /* Forward declarations */
 struct NR_On_Demand_DL_PRS_Support_r17;
 struct ScheduledLocationTimeSupport_r17;
+struct PeriodicReportingIntervalMsSupport_r18;
 
 /* NR-Multi-RTT-ProvideCapabilities-r16 */
 typedef struct NR_Multi_RTT_ProvideCapabilities_r16 {
@@ -126,8 +124,8 @@ typedef struct NR_Multi_RTT_ProvideCapabilities_r16 {
 		asn_struct_ctx_t _asn_ctx;
 	} *ext2;
 	struct NR_Multi_RTT_ProvideCapabilities_r16__ext3 {
-		long	*symbolTimeStampSupport_r18;	/* OPTIONAL */
 		long	*nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18;	/* OPTIONAL */
+		struct PeriodicReportingIntervalMsSupport_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
@@ -145,8 +143,7 @@ typedef struct NR_Multi_RTT_ProvideCapabilities_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_multiMeasInSameMeasReport_r17_35;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_mg_ActivationRequest_r17_37;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_posMeasGapSupport_r17_40;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_symbolTimeStampSupport_r18_43;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_45;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_nr_MultiRTT_OnDemandPRS_ForBWA_Support_r18_43;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_Multi_RTT_ProvideCapabilities_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_Multi_RTT_ProvideCapabilities_r16_specs_1;
 extern asn_TYPE_member_t asn_MBR_NR_Multi_RTT_ProvideCapabilities_r16_1[10];

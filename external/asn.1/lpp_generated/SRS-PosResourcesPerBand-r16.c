@@ -7,6 +7,8 @@
 
 #include "SRS-PosResourcesPerBand-r16.h"
 
+#include "PosSRS-BWA-RRC-Connected-r18.h"
+#include "PosSRS-BWA-IndependentCA-RRC-Connected-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -335,6 +337,85 @@ asn_TYPE_descriptor_t asn_DEF_maxNumberSP_SRS_PosResourcesPerBWP_r16_34 = {
 	&asn_SPC_maxNumberSP_SRS_PosResourcesPerBWP_r16_specs_34	/* Additional specs */
 };
 
+static asn_TYPE_member_t asn_MBR_ext1_43[] = {
+	{ ATF_POINTER, 2, offsetof(struct SRS_PosResourcesPerBand_r16__ext1, posSRS_BWA_RRC_Connected_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PosSRS_BWA_RRC_Connected_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"posSRS-BWA-RRC-Connected-r18"
+		},
+	{ ATF_POINTER, 1, offsetof(struct SRS_PosResourcesPerBand_r16__ext1, posSRS_BWA_IndependentCA_RRC_Connected_r18),
+		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PosSRS_BWA_IndependentCA_RRC_Connected_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"posSRS-BWA-IndependentCA-RRC-Connected-r18"
+		},
+};
+static const int asn_MAP_ext1_oms_43[] = { 0, 1 };
+static const ber_tlv_tag_t asn_DEF_ext1_tags_43[] = {
+	(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_ext1_tag2el_43[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* posSRS-BWA-RRC-Connected-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* posSRS-BWA-IndependentCA-RRC-Connected-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_ext1_specs_43 = {
+	sizeof(struct SRS_PosResourcesPerBand_r16__ext1),
+	offsetof(struct SRS_PosResourcesPerBand_r16__ext1, _asn_ctx),
+	asn_MAP_ext1_tag2el_43,
+	2,	/* Count of tags in the map */
+	asn_MAP_ext1_oms_43,	/* Optional members */
+	2, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_ext1_43 = {
+	"ext1",
+	"ext1",
+	&asn_OP_SEQUENCE,
+	asn_DEF_ext1_tags_43,
+	sizeof(asn_DEF_ext1_tags_43)
+		/sizeof(asn_DEF_ext1_tags_43[0]) - 1, /* 1 */
+	asn_DEF_ext1_tags_43,	/* Same as above */
+	sizeof(asn_DEF_ext1_tags_43)
+		/sizeof(asn_DEF_ext1_tags_43[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_ext1_43,
+	2,	/* Elements count */
+	&asn_SPC_ext1_specs_43	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_SRS_PosResourcesPerBand_r16_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct SRS_PosResourcesPerBand_r16, freqBandIndicatorNR_r16),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -404,7 +485,7 @@ asn_TYPE_member_t asn_MBR_SRS_PosResourcesPerBand_r16_1[] = {
 		0, 0, /* No default value */
 		"maxNumberPeriodicSRS-PosResourcesPerBWP-r16"
 		},
-	{ ATF_POINTER, 2, offsetof(struct SRS_PosResourcesPerBand_r16, maxNumberAP_SRS_PosResourcesPerBWP_r16),
+	{ ATF_POINTER, 3, offsetof(struct SRS_PosResourcesPerBand_r16, maxNumberAP_SRS_PosResourcesPerBWP_r16),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_maxNumberAP_SRS_PosResourcesPerBWP_r16_26,
@@ -421,7 +502,7 @@ asn_TYPE_member_t asn_MBR_SRS_PosResourcesPerBand_r16_1[] = {
 		0, 0, /* No default value */
 		"maxNumberAP-SRS-PosResourcesPerBWP-r16"
 		},
-	{ ATF_POINTER, 1, offsetof(struct SRS_PosResourcesPerBand_r16, maxNumberSP_SRS_PosResourcesPerBWP_r16),
+	{ ATF_POINTER, 2, offsetof(struct SRS_PosResourcesPerBand_r16, maxNumberSP_SRS_PosResourcesPerBWP_r16),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_maxNumberSP_SRS_PosResourcesPerBWP_r16_34,
@@ -438,8 +519,25 @@ asn_TYPE_member_t asn_MBR_SRS_PosResourcesPerBand_r16_1[] = {
 		0, 0, /* No default value */
 		"maxNumberSP-SRS-PosResourcesPerBWP-r16"
 		},
+	{ ATF_POINTER, 1, offsetof(struct SRS_PosResourcesPerBand_r16, ext1),
+		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
+		0,
+		&asn_DEF_ext1_43,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"ext1"
+		},
 };
-static const int asn_MAP_SRS_PosResourcesPerBand_r16_oms_1[] = { 4, 5 };
+static const int asn_MAP_SRS_PosResourcesPerBand_r16_oms_1[] = { 4, 5, 6 };
 static const ber_tlv_tag_t asn_DEF_SRS_PosResourcesPerBand_r16_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -449,15 +547,16 @@ static const asn_TYPE_tag2member_t asn_MAP_SRS_PosResourcesPerBand_r16_tag2el_1[
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* maxNumberSRS-PosResourcesPerBWP-r16 */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* maxNumberPeriodicSRS-PosResourcesPerBWP-r16 */
     { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* maxNumberAP-SRS-PosResourcesPerBWP-r16 */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 } /* maxNumberSP-SRS-PosResourcesPerBWP-r16 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* maxNumberSP-SRS-PosResourcesPerBWP-r16 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 } /* ext1 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_SRS_PosResourcesPerBand_r16_specs_1 = {
 	sizeof(struct SRS_PosResourcesPerBand_r16),
 	offsetof(struct SRS_PosResourcesPerBand_r16, _asn_ctx),
 	asn_MAP_SRS_PosResourcesPerBand_r16_tag2el_1,
-	6,	/* Count of tags in the map */
+	7,	/* Count of tags in the map */
 	asn_MAP_SRS_PosResourcesPerBand_r16_oms_1,	/* Optional members */
-	2, 0,	/* Root/Additions */
+	2, 1,	/* Root/Additions */
 	6,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_SRS_PosResourcesPerBand_r16 = {
@@ -480,7 +579,7 @@ asn_TYPE_descriptor_t asn_DEF_SRS_PosResourcesPerBand_r16 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_SRS_PosResourcesPerBand_r16_1,
-	6,	/* Elements count */
+	7,	/* Elements count */
 	&asn_SPC_SRS_PosResourcesPerBand_r16_specs_1	/* Additional specs */
 };
 

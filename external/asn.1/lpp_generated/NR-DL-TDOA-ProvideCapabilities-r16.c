@@ -11,6 +11,7 @@
 #include "NR-On-Demand-DL-PRS-Support-r17.h"
 #include "ScheduledLocationTimeSupportPerMode-r17.h"
 #include "LocationCoordinateTypes.h"
+#include "PeriodicReportingIntervalMsSupportPerMode-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -114,10 +115,6 @@ memb_nr_DL_PRS_ExpectedAoD_or_AoA_Sup_r17_constraint_11(const asn_TYPE_descripto
 	}
 }
 
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -256,28 +253,21 @@ static asn_per_constraints_t asn_PER_type_multiLocationEstimateInSameMeasReport_
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_symbolTimeStampSupport_r18_constr_52 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_constr_62 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_constr_64 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_memb_periodicAssistanceData_r18_constr_54 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_memb_periodicAssistanceData_r18_constr_52 CC_NOTUSED = {
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	{ APC_CONSTRAINED,	 3,  3,  1,  8 }	/* (SIZE(1..8)) */,
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_memb_nr_IntegrityAssistanceSupport_r18_constr_57 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_memb_nr_IntegrityAssistanceSupport_r18_constr_55 CC_NOTUSED = {
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	{ APC_CONSTRAINED,	 3,  3,  1,  8 }	/* (SIZE(1..8)) */,
 	0, 0	/* No PER value map */
@@ -1123,90 +1113,47 @@ asn_TYPE_descriptor_t asn_DEF_ext3_47 = {
 	&asn_SPC_ext3_specs_47	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_symbolTimeStampSupport_r18_value2enum_52[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_value2enum_62[] = {
 	{ 0,	9,	"supported" }
 };
-static const unsigned int asn_MAP_symbolTimeStampSupport_r18_enum2value_52[] = {
+static const unsigned int asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_enum2value_62[] = {
 	0	/* supported(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_symbolTimeStampSupport_r18_specs_52 = {
-	asn_MAP_symbolTimeStampSupport_r18_value2enum_52,	/* "tag" => N; sorted by tag */
-	asn_MAP_symbolTimeStampSupport_r18_enum2value_52,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_specs_62 = {
+	asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_value2enum_62,	/* "tag" => N; sorted by tag */
+	asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_enum2value_62,	/* N => "tag"; sorted by N */
 	1,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_symbolTimeStampSupport_r18_tags_52[] = {
-	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+static const ber_tlv_tag_t asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_62[] = {
+	(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_symbolTimeStampSupport_r18_52 = {
-	"symbolTimeStampSupport-r18",
-	"symbolTimeStampSupport-r18",
+asn_TYPE_descriptor_t asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_62 = {
+	"nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18",
+	"nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_symbolTimeStampSupport_r18_tags_52,
-	sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_52)
-		/sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_52[0]) - 1, /* 1 */
-	asn_DEF_symbolTimeStampSupport_r18_tags_52,	/* Same as above */
-	sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_52)
-		/sizeof(asn_DEF_symbolTimeStampSupport_r18_tags_52[0]), /* 2 */
+	asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_62,
+	sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_62)
+		/sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_62[0]) - 1, /* 1 */
+	asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_62,	/* Same as above */
+	sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_62)
+		/sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_62[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_symbolTimeStampSupport_r18_constr_52,
+		&asn_PER_type_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_constr_62,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_symbolTimeStampSupport_r18_specs_52	/* Additional specs */
-};
-
-static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_value2enum_64[] = {
-	{ 0,	9,	"supported" }
-};
-static const unsigned int asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_enum2value_64[] = {
-	0	/* supported(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_specs_64 = {
-	asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_value2enum_64,	/* "tag" => N; sorted by tag */
-	asn_MAP_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_enum2value_64,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_64[] = {
-	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_64 = {
-	"nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18",
-	"nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_64,
-	sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_64)
-		/sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_64[0]) - 1, /* 1 */
-	asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_64,	/* Same as above */
-	sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_64)
-		/sizeof(asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_tags_64[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_constr_64,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_specs_64	/* Additional specs */
+	&asn_SPC_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_specs_62	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_ext4_50[] = {
@@ -1227,24 +1174,24 @@ static asn_TYPE_member_t asn_MBR_ext4_50[] = {
 		0, 0, /* No default value */
 		"locationCoordinateTypes-r18"
 		},
-	{ ATF_POINTER, 4, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, symbolTimeStampSupport_r18),
+	{ ATF_POINTER, 4, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, periodicAssistanceData_r18),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_symbolTimeStampSupport_r18_52,
+		&asn_DEF_BIT_STRING,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 			0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
+			&asn_PER_memb_periodicAssistanceData_r18_constr_52,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
+			memb_periodicAssistanceData_r18_constraint_50
 		},
 		0, 0, /* No default value */
-		"symbolTimeStampSupport-r18"
+		"periodicAssistanceData-r18"
 		},
-	{ ATF_POINTER, 3, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, periodicAssistanceData_r18),
+	{ ATF_POINTER, 3, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, nr_IntegrityAssistanceSupport_r18),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_BIT_STRING,
@@ -1254,34 +1201,17 @@ static asn_TYPE_member_t asn_MBR_ext4_50[] = {
 			0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			&asn_PER_memb_periodicAssistanceData_r18_constr_54,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			memb_periodicAssistanceData_r18_constraint_50
-		},
-		0, 0, /* No default value */
-		"periodicAssistanceData-r18"
-		},
-	{ ATF_POINTER, 2, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, nr_IntegrityAssistanceSupport_r18),
-		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_BIT_STRING,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			&asn_PER_memb_nr_IntegrityAssistanceSupport_r18_constr_57,
+			&asn_PER_memb_nr_IntegrityAssistanceSupport_r18_constr_55,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 			memb_nr_IntegrityAssistanceSupport_r18_constraint_50
 		},
 		0, 0, /* No default value */
 		"nr-IntegrityAssistanceSupport-r18"
 		},
-	{ ATF_POINTER, 1, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18),
-		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+	{ ATF_POINTER, 2, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18),
+		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_64,
+		&asn_DEF_nr_DL_TDOA_OnDemandPRS_ForBWA_Support_r18_62,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1295,6 +1225,23 @@ static asn_TYPE_member_t asn_MBR_ext4_50[] = {
 		0, 0, /* No default value */
 		"nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18"
 		},
+	{ ATF_POINTER, 1, offsetof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4, periodicReportingIntervalMsSupport_r18),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicReportingIntervalMsSupportPerMode_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicReportingIntervalMsSupport-r18"
+		},
 };
 static const int asn_MAP_ext4_oms_50[] = { 0, 1, 2, 3, 4 };
 static const ber_tlv_tag_t asn_DEF_ext4_tags_50[] = {
@@ -1303,10 +1250,10 @@ static const ber_tlv_tag_t asn_DEF_ext4_tags_50[] = {
 };
 static const asn_TYPE_tag2member_t asn_MAP_ext4_tag2el_50[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* locationCoordinateTypes-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* symbolTimeStampSupport-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* periodicAssistanceData-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* nr-IntegrityAssistanceSupport-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* periodicAssistanceData-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* nr-IntegrityAssistanceSupport-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* nr-DL-TDOA-OnDemandPRS-ForBWA-Support-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext4_specs_50 = {
 	sizeof(struct NR_DL_TDOA_ProvideCapabilities_r16__ext4),

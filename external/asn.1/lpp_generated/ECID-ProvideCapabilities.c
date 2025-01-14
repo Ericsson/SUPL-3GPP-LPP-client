@@ -8,6 +8,7 @@
 #include "ECID-ProvideCapabilities.h"
 
 #include "ScheduledLocationTimeSupport-r17.h"
+#include "PeriodicReportingIntervalMsSupport-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -481,6 +482,67 @@ asn_TYPE_descriptor_t asn_DEF_ext3_19 = {
 	&asn_SPC_ext3_specs_19	/* Additional specs */
 };
 
+static asn_TYPE_member_t asn_MBR_ext4_21[] = {
+	{ ATF_POINTER, 1, offsetof(struct ECID_ProvideCapabilities__ext4, periodicReportingIntervalMsSupport_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicReportingIntervalMsSupport_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicReportingIntervalMsSupport-r18"
+		},
+};
+static const int asn_MAP_ext4_oms_21[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_ext4_tags_21[] = {
+	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_ext4_tag2el_21[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_ext4_specs_21 = {
+	sizeof(struct ECID_ProvideCapabilities__ext4),
+	offsetof(struct ECID_ProvideCapabilities__ext4, _asn_ctx),
+	asn_MAP_ext4_tag2el_21,
+	1,	/* Count of tags in the map */
+	asn_MAP_ext4_oms_21,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_ext4_21 = {
+	"ext4",
+	"ext4",
+	&asn_OP_SEQUENCE,
+	asn_DEF_ext4_tags_21,
+	sizeof(asn_DEF_ext4_tags_21)
+		/sizeof(asn_DEF_ext4_tags_21[0]) - 1, /* 1 */
+	asn_DEF_ext4_tags_21,	/* Same as above */
+	sizeof(asn_DEF_ext4_tags_21)
+		/sizeof(asn_DEF_ext4_tags_21[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_ext4_21,
+	1,	/* Elements count */
+	&asn_SPC_ext4_specs_21	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_ECID_ProvideCapabilities_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct ECID_ProvideCapabilities, ecid_MeasSupported),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -499,7 +561,7 @@ asn_TYPE_member_t asn_MBR_ECID_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"ecid-MeasSupported"
 		},
-	{ ATF_POINTER, 3, offsetof(struct ECID_ProvideCapabilities, ext1),
+	{ ATF_POINTER, 4, offsetof(struct ECID_ProvideCapabilities, ext1),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		0,
 		&asn_DEF_ext1_9,
@@ -516,7 +578,7 @@ asn_TYPE_member_t asn_MBR_ECID_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"ext1"
 		},
-	{ ATF_POINTER, 2, offsetof(struct ECID_ProvideCapabilities, ext2),
+	{ ATF_POINTER, 3, offsetof(struct ECID_ProvideCapabilities, ext2),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		0,
 		&asn_DEF_ext2_12,
@@ -533,7 +595,7 @@ asn_TYPE_member_t asn_MBR_ECID_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"ext2"
 		},
-	{ ATF_POINTER, 1, offsetof(struct ECID_ProvideCapabilities, ext3),
+	{ ATF_POINTER, 2, offsetof(struct ECID_ProvideCapabilities, ext3),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		0,
 		&asn_DEF_ext3_19,
@@ -550,8 +612,25 @@ asn_TYPE_member_t asn_MBR_ECID_ProvideCapabilities_1[] = {
 		0, 0, /* No default value */
 		"ext3"
 		},
+	{ ATF_POINTER, 1, offsetof(struct ECID_ProvideCapabilities, ext4),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		0,
+		&asn_DEF_ext4_21,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"ext4"
+		},
 };
-static const int asn_MAP_ECID_ProvideCapabilities_oms_1[] = { 1, 2, 3 };
+static const int asn_MAP_ECID_ProvideCapabilities_oms_1[] = { 1, 2, 3, 4 };
 static const ber_tlv_tag_t asn_DEF_ECID_ProvideCapabilities_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -559,15 +638,16 @@ static const asn_TYPE_tag2member_t asn_MAP_ECID_ProvideCapabilities_tag2el_1[] =
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* ecid-MeasSupported */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ext1 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* ext2 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* ext3 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* ext3 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* ext4 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_ECID_ProvideCapabilities_specs_1 = {
 	sizeof(struct ECID_ProvideCapabilities),
 	offsetof(struct ECID_ProvideCapabilities, _asn_ctx),
 	asn_MAP_ECID_ProvideCapabilities_tag2el_1,
-	4,	/* Count of tags in the map */
+	5,	/* Count of tags in the map */
 	asn_MAP_ECID_ProvideCapabilities_oms_1,	/* Optional members */
-	0, 3,	/* Root/Additions */
+	0, 4,	/* Root/Additions */
 	1,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_ECID_ProvideCapabilities = {
@@ -590,7 +670,7 @@ asn_TYPE_descriptor_t asn_DEF_ECID_ProvideCapabilities = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_ECID_ProvideCapabilities_1,
-	4,	/* Elements count */
+	5,	/* Elements count */
 	&asn_SPC_ECID_ProvideCapabilities_specs_1	/* Additional specs */
 };
 

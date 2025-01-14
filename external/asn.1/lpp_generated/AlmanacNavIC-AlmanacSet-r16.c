@@ -8,6 +8,31 @@
 #include "AlmanacNavIC-AlmanacSet-r16.h"
 
 static int
+memb_navicL5_i0_r16_constraint_13(const asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	long value;
+	
+	if(!sptr) {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	value = *(const long *)sptr;
+	
+	if((value >= -8388608L && value <= 8388607L)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
+static int
 memb_navic_AlmToa_r16_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	long value;
@@ -233,6 +258,13 @@ memb_navic_Almaf1_r16_constraint_1(const asn_TYPE_descriptor_t *td, const void *
 }
 
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_memb_navicL5_i0_r16_constr_14 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 24, -1, -8388608,  8388607 }	/* (-8388608..8388607) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_memb_navic_AlmToa_r16_constr_3 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 16,  16,  0,  65535 }	/* (0..65535) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
@@ -295,6 +327,67 @@ static asn_per_constraints_t asn_PER_memb_navic_Almaf1_r16_constr_11 CC_NOTUSED 
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+static asn_TYPE_member_t asn_MBR_ext1_13[] = {
+	{ ATF_POINTER, 1, offsetof(struct AlmanacNavIC_AlmanacSet_r16__ext1, navicL5_i0_r16),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_NativeInteger,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			&asn_PER_memb_navicL5_i0_r16_constr_14,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			memb_navicL5_i0_r16_constraint_13
+		},
+		0, 0, /* No default value */
+		"navicL5-i0-r16"
+		},
+};
+static const int asn_MAP_ext1_oms_13[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_ext1_tags_13[] = {
+	(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_ext1_tag2el_13[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* navicL5-i0-r16 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_ext1_specs_13 = {
+	sizeof(struct AlmanacNavIC_AlmanacSet_r16__ext1),
+	offsetof(struct AlmanacNavIC_AlmanacSet_r16__ext1, _asn_ctx),
+	asn_MAP_ext1_tag2el_13,
+	1,	/* Count of tags in the map */
+	asn_MAP_ext1_oms_13,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_ext1_13 = {
+	"ext1",
+	"ext1",
+	&asn_OP_SEQUENCE,
+	asn_DEF_ext1_tags_13,
+	sizeof(asn_DEF_ext1_tags_13)
+		/sizeof(asn_DEF_ext1_tags_13[0]) - 1, /* 1 */
+	asn_DEF_ext1_tags_13,	/* Same as above */
+	sizeof(asn_DEF_ext1_tags_13)
+		/sizeof(asn_DEF_ext1_tags_13[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_ext1_13,
+	1,	/* Elements count */
+	&asn_SPC_ext1_specs_13	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_AlmanacNavIC_AlmanacSet_r16_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct AlmanacNavIC_AlmanacSet_r16, svID_r16),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -466,8 +559,25 @@ asn_TYPE_member_t asn_MBR_AlmanacNavIC_AlmanacSet_r16_1[] = {
 		0, 0, /* No default value */
 		"navic-Almaf1-r16"
 		},
+	{ ATF_POINTER, 1, offsetof(struct AlmanacNavIC_AlmanacSet_r16, ext1),
+		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
+		0,
+		&asn_DEF_ext1_13,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"ext1"
+		},
 };
-static const int asn_MAP_AlmanacNavIC_AlmanacSet_r16_oms_1[] = { 1 };
+static const int asn_MAP_AlmanacNavIC_AlmanacSet_r16_oms_1[] = { 1, 10 };
 static const ber_tlv_tag_t asn_DEF_AlmanacNavIC_AlmanacSet_r16_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -481,15 +591,16 @@ static const asn_TYPE_tag2member_t asn_MAP_AlmanacNavIC_AlmanacSet_r16_tag2el_1[
     { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* navic-AlmOmega-r16 */
     { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* navic-AlmMo-r16 */
     { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* navic-Almaf0-r16 */
-    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 } /* navic-Almaf1-r16 */
+    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* navic-Almaf1-r16 */
+    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 } /* ext1 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_AlmanacNavIC_AlmanacSet_r16_specs_1 = {
 	sizeof(struct AlmanacNavIC_AlmanacSet_r16),
 	offsetof(struct AlmanacNavIC_AlmanacSet_r16, _asn_ctx),
 	asn_MAP_AlmanacNavIC_AlmanacSet_r16_tag2el_1,
-	10,	/* Count of tags in the map */
+	11,	/* Count of tags in the map */
 	asn_MAP_AlmanacNavIC_AlmanacSet_r16_oms_1,	/* Optional members */
-	1, 0,	/* Root/Additions */
+	1, 1,	/* Root/Additions */
 	10,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_AlmanacNavIC_AlmanacSet_r16 = {
@@ -512,7 +623,7 @@ asn_TYPE_descriptor_t asn_DEF_AlmanacNavIC_AlmanacSet_r16 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_AlmanacNavIC_AlmanacSet_r16_1,
-	10,	/* Elements count */
+	11,	/* Elements count */
 	&asn_SPC_AlmanacNavIC_AlmanacSet_r16_specs_1	/* Additional specs */
 };
 

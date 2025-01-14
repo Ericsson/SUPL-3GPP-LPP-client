@@ -27,7 +27,8 @@ typedef enum GNSS_AlmanacSupport__almanacModel {
 	GNSS_AlmanacSupport__almanacModel_model_4	= 3,
 	GNSS_AlmanacSupport__almanacModel_model_5	= 4,
 	GNSS_AlmanacSupport__almanacModel_model_6	= 5,
-	GNSS_AlmanacSupport__almanacModel_model_7	= 6
+	GNSS_AlmanacSupport__almanacModel_model_7	= 6,
+	GNSS_AlmanacSupport__almanacModel_model_8_v16e0	= 7
 } e_GNSS_AlmanacSupport__almanacModel;
 
 /* GNSS-AlmanacSupport */

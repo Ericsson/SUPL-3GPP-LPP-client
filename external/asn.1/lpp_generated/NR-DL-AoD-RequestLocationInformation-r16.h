@@ -26,25 +26,22 @@ extern "C" {
 typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext1__multiMeasInSameReport_r17 {
 	NR_DL_AoD_RequestLocationInformation_r16__ext1__multiMeasInSameReport_r17_requested	= 0
 } e_NR_DL_AoD_RequestLocationInformation_r16__ext1__multiMeasInSameReport_r17;
-typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18 {
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18_requested	= 0
-} e_NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18;
-typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR {
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR_NOTHING,	/* No components present */
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR_fr1,
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR_fr2
-} NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR;
-typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1 {
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz40	= 0,
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz50	= 1,
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz80	= 2,
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz100	= 3
-} e_NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1;
-typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2 {
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz100	= 0,
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz200	= 1,
-	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz400	= 2
-} e_NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2;
+typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR {
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR_NOTHING,	/* No components present */
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR_fr1,
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR_fr2
+} NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR;
+typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1 {
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz40	= 0,
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz50	= 1,
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz80	= 2,
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1_mhz100	= 3
+} e_NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr1;
+typedef enum NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2 {
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz100	= 0,
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz200	= 1,
+	NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2_mhz400	= 2
+} e_NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18__fr2;
 
 /* NR-DL-AoD-RequestLocationInformation-r16 */
 typedef struct NR_DL_AoD_RequestLocationInformation_r16 {
@@ -61,17 +58,21 @@ typedef struct NR_DL_AoD_RequestLocationInformation_r16 {
 		asn_struct_ctx_t _asn_ctx;
 	} *ext1;
 	struct NR_DL_AoD_RequestLocationInformation_r16__ext2 {
-		long	*nr_DL_PRS_RxHoppingRequest_r18;	/* OPTIONAL */
-		struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18 {
-			NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR present;
-			union NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18_u {
-				long	 fr1;
-				long	 fr2;
-			} choice;
+		struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18 {
+			struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18 {
+				NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_PR present;
+				union NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18_u {
+					long	 fr1;
+					long	 fr2;
+				} choice;
+				
+				/* Context for parsing across buffer boundaries */
+				asn_struct_ctx_t _asn_ctx;
+			} *nr_DL_PRS_RxHoppingTotalBandwidth_r18;
 			
 			/* Context for parsing across buffer boundaries */
 			asn_struct_ctx_t _asn_ctx;
-		} *nr_DL_PRS_RxHoppingTotalBandwidth_r18;
+		} *nr_DL_PRS_RxHoppingRequest_r18;
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
@@ -83,9 +84,8 @@ typedef struct NR_DL_AoD_RequestLocationInformation_r16 {
 
 /* Implementation */
 /* extern asn_TYPE_descriptor_t asn_DEF_multiMeasInSameReport_r17_6;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_9;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_fr1_12;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_fr2_17;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_fr1_11;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_fr2_16;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_DL_AoD_RequestLocationInformation_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_DL_AoD_RequestLocationInformation_r16_specs_1;
 extern asn_TYPE_member_t asn_MBR_NR_DL_AoD_RequestLocationInformation_r16_1[4];

@@ -13,12 +13,20 @@
 
 /* Including external dependencies */
 #include <NativeInteger.h>
-#include <NULL.h>
+#include <NativeEnumerated.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/* Dependencies */
+typedef enum BT_AoD_TransmConfig_r18__cte_Type2us_r18 {
+	BT_AoD_TransmConfig_r18__cte_Type2us_r18_true	= 0
+} e_BT_AoD_TransmConfig_r18__cte_Type2us_r18;
+typedef enum BT_AoD_TransmConfig_r18__tx_PHY_M2_r18 {
+	BT_AoD_TransmConfig_r18__tx_PHY_M2_r18_true	= 0
+} e_BT_AoD_TransmConfig_r18__tx_PHY_M2_r18;
 
 /* BT-AoD-TransmConfig-r18 */
 typedef struct BT_AoD_TransmConfig_r18 {
@@ -26,8 +34,8 @@ typedef struct BT_AoD_TransmConfig_r18 {
 	long	 secondAdvInterval_r18;
 	long	 cte_Length_r18;
 	long	 cte_Count_r18;
-	NULL_t	*cte_Type2us_r18;	/* OPTIONAL */
-	NULL_t	*tx_PHY_M2_r18;	/* OPTIONAL */
+	long	*cte_Type2us_r18;	/* OPTIONAL */
+	long	*tx_PHY_M2_r18;	/* OPTIONAL */
 	/*
 	 * This type is extensible,
 	 * possible extensions are below.
@@ -38,6 +46,8 @@ typedef struct BT_AoD_TransmConfig_r18 {
 } BT_AoD_TransmConfig_r18_t;
 
 /* Implementation */
+/* extern asn_TYPE_descriptor_t asn_DEF_cte_Type2us_r18_6;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_tx_PHY_M2_r18_8;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_BT_AoD_TransmConfig_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_BT_AoD_TransmConfig_r18_specs_1;
 extern asn_TYPE_member_t asn_MBR_BT_AoD_TransmConfig_r18_1[6];

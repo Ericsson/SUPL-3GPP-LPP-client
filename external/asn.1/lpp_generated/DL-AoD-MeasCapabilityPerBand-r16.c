@@ -27,6 +27,37 @@
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
  */
+static int
+memb_supportOfMeasurementsInTimeWindow_r18_constraint_18(const asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const BIT_STRING_t *st = (const BIT_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	if(st->size > 0) {
+		/* Size in bits */
+		size = 8 * st->size - (st->bits_unused & 0x07);
+	} else {
+		size = 0;
+	}
+	
+	if((size >= 1UL && size <= 8UL)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_simul_NR_DL_AoD_DL_TDOA_r16_constr_3 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
@@ -56,9 +87,16 @@ static asn_per_constraints_t asn_PER_type_dl_PRS_MeasRRC_Inactive_r17_constr_16 
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfLegacyMeasurementInTimeWindow_r18_constr_19 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_supportOfPRS_MeasurementRRC_Idle_r18_constr_22 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_memb_supportOfMeasurementsInTimeWindow_r18_constr_19 CC_NOTUSED = {
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	{ APC_CONSTRAINED,	 3,  3,  1,  8 }	/* (SIZE(1..8)) */,
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
@@ -323,54 +361,71 @@ asn_TYPE_descriptor_t asn_DEF_ext1_8 = {
 	&asn_SPC_ext1_specs_8	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_value2enum_19[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_value2enum_22[] = {
 	{ 0,	9,	"supported" }
 };
-static const unsigned int asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_enum2value_19[] = {
+static const unsigned int asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_enum2value_22[] = {
 	0	/* supported(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_supportOfLegacyMeasurementInTimeWindow_r18_specs_19 = {
-	asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_value2enum_19,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_enum2value_19,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_supportOfPRS_MeasurementRRC_Idle_r18_specs_22 = {
+	asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_value2enum_22,	/* "tag" => N; sorted by tag */
+	asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_enum2value_22,	/* N => "tag"; sorted by N */
 	1,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_19[] = {
-	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+static const ber_tlv_tag_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_22[] = {
+	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_19 = {
-	"supportOfLegacyMeasurementInTimeWindow-r18",
-	"supportOfLegacyMeasurementInTimeWindow-r18",
+asn_TYPE_descriptor_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_22 = {
+	"supportOfPRS-MeasurementRRC-Idle-r18",
+	"supportOfPRS-MeasurementRRC-Idle-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_19,
-	sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_19)
-		/sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_19[0]) - 1, /* 1 */
-	asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_19,	/* Same as above */
-	sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_19)
-		/sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_19[0]), /* 2 */
+	asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_22,
+	sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_22)
+		/sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_22[0]) - 1, /* 1 */
+	asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_22,	/* Same as above */
+	sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_22)
+		/sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_22[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfLegacyMeasurementInTimeWindow_r18_constr_19,
+		&asn_PER_type_supportOfPRS_MeasurementRRC_Idle_r18_constr_22,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfLegacyMeasurementInTimeWindow_r18_specs_19	/* Additional specs */
+	&asn_SPC_supportOfPRS_MeasurementRRC_Idle_r18_specs_22	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_ext2_18[] = {
-	{ ATF_POINTER, 1, offsetof(struct DL_AoD_MeasCapabilityPerBand_r16__ext2, supportOfLegacyMeasurementInTimeWindow_r18),
+	{ ATF_POINTER, 2, offsetof(struct DL_AoD_MeasCapabilityPerBand_r16__ext2, supportOfMeasurementsInTimeWindow_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_19,
+		&asn_DEF_BIT_STRING,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			&asn_PER_memb_supportOfMeasurementsInTimeWindow_r18_constr_19,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			memb_supportOfMeasurementsInTimeWindow_r18_constraint_18
+		},
+		0, 0, /* No default value */
+		"supportOfMeasurementsInTimeWindow-r18"
+		},
+	{ ATF_POINTER, 1, offsetof(struct DL_AoD_MeasCapabilityPerBand_r16__ext2, supportOfPRS_MeasurementRRC_Idle_r18),
+		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_22,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -382,24 +437,25 @@ static asn_TYPE_member_t asn_MBR_ext2_18[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"supportOfLegacyMeasurementInTimeWindow-r18"
+		"supportOfPRS-MeasurementRRC-Idle-r18"
 		},
 };
-static const int asn_MAP_ext2_oms_18[] = { 0 };
+static const int asn_MAP_ext2_oms_18[] = { 0, 1 };
 static const ber_tlv_tag_t asn_DEF_ext2_tags_18[] = {
 	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static const asn_TYPE_tag2member_t asn_MAP_ext2_tag2el_18[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* supportOfLegacyMeasurementInTimeWindow-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* supportOfMeasurementsInTimeWindow-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* supportOfPRS-MeasurementRRC-Idle-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext2_specs_18 = {
 	sizeof(struct DL_AoD_MeasCapabilityPerBand_r16__ext2),
 	offsetof(struct DL_AoD_MeasCapabilityPerBand_r16__ext2, _asn_ctx),
 	asn_MAP_ext2_tag2el_18,
-	1,	/* Count of tags in the map */
+	2,	/* Count of tags in the map */
 	asn_MAP_ext2_oms_18,	/* Optional members */
-	1, 0,	/* Root/Additions */
+	2, 0,	/* Root/Additions */
 	-1,	/* First extension addition */
 };
 static /* Use -fall-defs-global to expose */
@@ -423,7 +479,7 @@ asn_TYPE_descriptor_t asn_DEF_ext2_18 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_ext2_18,
-	1,	/* Elements count */
+	2,	/* Elements count */
 	&asn_SPC_ext2_specs_18	/* Additional specs */
 };
 

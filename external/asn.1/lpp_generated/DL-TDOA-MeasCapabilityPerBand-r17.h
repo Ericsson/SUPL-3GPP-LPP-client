@@ -14,6 +14,7 @@
 /* Including external dependencies */
 #include "FreqBandIndicatorNR-r16.h"
 #include <NativeEnumerated.h>
+#include <BIT_STRING.h>
 #include <constr_SEQUENCE.h>
 
 #ifdef __cplusplus
@@ -36,21 +37,15 @@ typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfDL_PRS_BWA_RRC_In
 typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfDL_PRS_BWA_RRC_Idle_r18 {
 	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfDL_PRS_BWA_RRC_Idle_r18_supported	= 0
 } e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfDL_PRS_BWA_RRC_Idle_r18;
-typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18 {
-	DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_supported	= 0
-} e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18;
+typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_RRC_Connected_r18 {
+	DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_RRC_Connected_r18_supported	= 0
+} e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_RRC_Connected_r18;
 typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__assocSingleRSTD_WithUpToNsampleRSCPD_r18 {
 	DL_TDOA_MeasCapabilityPerBand_r17__ext1__assocSingleRSTD_WithUpToNsampleRSCPD_r18_supported	= 0
 } e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__assocSingleRSTD_WithUpToNsampleRSCPD_r18;
 typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r18 {
 	DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r18_supported	= 0
 } e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r18;
-typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfLegacyMeasurementInTimeWindow_r18 {
-	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfLegacyMeasurementInTimeWindow_r18_supported	= 0
-} e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfLegacyMeasurementInTimeWindow_r18;
-typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfRSCPD_MeasurementInTimeWindow_r18 {
-	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfRSCPD_MeasurementInTimeWindow_r18_supported	= 0
-} e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfRSCPD_MeasurementInTimeWindow_r18;
 typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfUE_basedCarrierPhasePositioning_r18 {
 	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfUE_basedCarrierPhasePositioning_r18_supported	= 0
 } e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfUE_basedCarrierPhasePositioning_r18;
@@ -65,6 +60,18 @@ typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfFinerTimingReport
 	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfFinerTimingReportGranularityForPRS_Meas_r18_minus5	= 4,
 	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfFinerTimingReportGranularityForPRS_Meas_r18_minus6	= 5
 } e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfFinerTimingReportGranularityForPRS_Meas_r18;
+typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfMeasurementsInTimeWindow_r18 {
+	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfMeasurementsInTimeWindow_r18_rstd	= 0,
+	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfMeasurementsInTimeWindow_r18_rsrp	= 1,
+	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfMeasurementsInTimeWindow_r18_rsrpp	= 2,
+	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfMeasurementsInTimeWindow_r18_rscpd	= 3
+} e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfMeasurementsInTimeWindow_r18;
+typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfPRS_MeasurementRRC_Idle_r18 {
+	DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfPRS_MeasurementRRC_Idle_r18_supported	= 0
+} e_DL_TDOA_MeasCapabilityPerBand_r17__ext1__supportOfPRS_MeasurementRRC_Idle_r18;
+typedef enum DL_TDOA_MeasCapabilityPerBand_r17__ext2__nr_DL_PRS_RSCPD_RRC_Inactive_r18 {
+	DL_TDOA_MeasCapabilityPerBand_r17__ext2__nr_DL_PRS_RSCPD_RRC_Inactive_r18_supported	= 0
+} e_DL_TDOA_MeasCapabilityPerBand_r17__ext2__nr_DL_PRS_RSCPD_RRC_Inactive_r18;
 
 /* DL-TDOA-MeasCapabilityPerBand-r17 */
 typedef struct DL_TDOA_MeasCapabilityPerBand_r17 {
@@ -79,18 +86,24 @@ typedef struct DL_TDOA_MeasCapabilityPerBand_r17 {
 		long	*supportOfDL_PRS_BWA_RRC_Connected_r18;	/* OPTIONAL */
 		long	*supportOfDL_PRS_BWA_RRC_Inactive_r18;	/* OPTIONAL */
 		long	*supportOfDL_PRS_BWA_RRC_Idle_r18;	/* OPTIONAL */
-		long	*nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18;	/* OPTIONAL */
+		long	*nr_DL_PRS_RSCPD_RRC_Connected_r18;	/* OPTIONAL */
 		long	*assocSingleRSTD_WithUpToNsampleRSCPD_r18;	/* OPTIONAL */
 		long	*nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r18;	/* OPTIONAL */
-		long	*supportOfLegacyMeasurementInTimeWindow_r18;	/* OPTIONAL */
-		long	*supportOfRSCPD_MeasurementInTimeWindow_r18;	/* OPTIONAL */
 		long	*supportOfUE_basedCarrierPhasePositioning_r18;	/* OPTIONAL */
 		long	*supportOfSymbolTimeStampForRSCPD_r18;	/* OPTIONAL */
 		long	*supportOfFinerTimingReportGranularityForPRS_Meas_r18;	/* OPTIONAL */
+		BIT_STRING_t	*supportOfMeasurementsInTimeWindow_r18;	/* OPTIONAL */
+		long	*supportOfPRS_MeasurementRRC_Idle_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext1;
+	struct DL_TDOA_MeasCapabilityPerBand_r17__ext2 {
+		long	*nr_DL_PRS_RSCPD_RRC_Inactive_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext2;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -102,17 +115,17 @@ typedef struct DL_TDOA_MeasCapabilityPerBand_r17 {
 /* extern asn_TYPE_descriptor_t asn_DEF_supportOfDL_PRS_BWA_RRC_Connected_r18_9;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_supportOfDL_PRS_BWA_RRC_Inactive_r18_11;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_supportOfDL_PRS_BWA_RRC_Idle_r18_13;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_15;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_15;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_assocSingleRSTD_WithUpToNsampleRSCPD_r18_17;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r18_19;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_21;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_23;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_25;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_27;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_29;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_21;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_23;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_25;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_37;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_40;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_DL_TDOA_MeasCapabilityPerBand_r17;
 extern asn_SEQUENCE_specifics_t asn_SPC_DL_TDOA_MeasCapabilityPerBand_r17_specs_1;
-extern asn_TYPE_member_t asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1[4];
+extern asn_TYPE_member_t asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1[5];
 
 #ifdef __cplusplus
 }

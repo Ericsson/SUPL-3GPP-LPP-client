@@ -14,6 +14,7 @@
 #include "VelocityTypes.h"
 #include "MessageSizeLimitNB-r14.h"
 #include "ScheduledLocationTime-r17.h"
+#include "PeriodicalReportingCriteriaExt-r18.h"
 static asn_TYPE_member_t asn_MBR_ext1_11[] = {
 	{ ATF_POINTER, 1, offsetof(struct CommonIEsRequestLocationInformation__ext1, messageSizeLimitNB_r14),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -215,6 +216,67 @@ asn_TYPE_descriptor_t asn_DEF_ext3_15 = {
 	&asn_SPC_ext3_specs_15	/* Additional specs */
 };
 
+static asn_TYPE_member_t asn_MBR_ext4_18[] = {
+	{ ATF_POINTER, 1, offsetof(struct CommonIEsRequestLocationInformation__ext4, periodicalReportingExt_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicalReportingCriteriaExt_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicalReportingExt-r18"
+		},
+};
+static const int asn_MAP_ext4_oms_18[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_ext4_tags_18[] = {
+	(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_ext4_tag2el_18[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* periodicalReportingExt-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_ext4_specs_18 = {
+	sizeof(struct CommonIEsRequestLocationInformation__ext4),
+	offsetof(struct CommonIEsRequestLocationInformation__ext4, _asn_ctx),
+	asn_MAP_ext4_tag2el_18,
+	1,	/* Count of tags in the map */
+	asn_MAP_ext4_oms_18,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_ext4_18 = {
+	"ext4",
+	"ext4",
+	&asn_OP_SEQUENCE,
+	asn_DEF_ext4_tags_18,
+	sizeof(asn_DEF_ext4_tags_18)
+		/sizeof(asn_DEF_ext4_tags_18[0]) - 1, /* 1 */
+	asn_DEF_ext4_tags_18,	/* Same as above */
+	sizeof(asn_DEF_ext4_tags_18)
+		/sizeof(asn_DEF_ext4_tags_18[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_ext4_18,
+	1,	/* Elements count */
+	&asn_SPC_ext4_specs_18	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct CommonIEsRequestLocationInformation, locationInformationType),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -233,7 +295,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"locationInformationType"
 		},
-	{ ATF_POINTER, 10, offsetof(struct CommonIEsRequestLocationInformation, triggeredReporting),
+	{ ATF_POINTER, 11, offsetof(struct CommonIEsRequestLocationInformation, triggeredReporting),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_TriggeredReportingCriteria,
@@ -250,7 +312,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"triggeredReporting"
 		},
-	{ ATF_POINTER, 9, offsetof(struct CommonIEsRequestLocationInformation, periodicalReporting),
+	{ ATF_POINTER, 10, offsetof(struct CommonIEsRequestLocationInformation, periodicalReporting),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_PeriodicalReportingCriteria,
@@ -267,7 +329,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"periodicalReporting"
 		},
-	{ ATF_POINTER, 8, offsetof(struct CommonIEsRequestLocationInformation, additionalInformation),
+	{ ATF_POINTER, 9, offsetof(struct CommonIEsRequestLocationInformation, additionalInformation),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_AdditionalInformation,
@@ -284,7 +346,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"additionalInformation"
 		},
-	{ ATF_POINTER, 7, offsetof(struct CommonIEsRequestLocationInformation, qos),
+	{ ATF_POINTER, 8, offsetof(struct CommonIEsRequestLocationInformation, qos),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_QoS,
@@ -301,7 +363,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"qos"
 		},
-	{ ATF_POINTER, 6, offsetof(struct CommonIEsRequestLocationInformation, environment),
+	{ ATF_POINTER, 7, offsetof(struct CommonIEsRequestLocationInformation, environment),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_Environment,
@@ -318,7 +380,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"environment"
 		},
-	{ ATF_POINTER, 5, offsetof(struct CommonIEsRequestLocationInformation, locationCoordinateTypes),
+	{ ATF_POINTER, 6, offsetof(struct CommonIEsRequestLocationInformation, locationCoordinateTypes),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_LocationCoordinateTypes,
@@ -335,7 +397,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"locationCoordinateTypes"
 		},
-	{ ATF_POINTER, 4, offsetof(struct CommonIEsRequestLocationInformation, velocityTypes),
+	{ ATF_POINTER, 5, offsetof(struct CommonIEsRequestLocationInformation, velocityTypes),
 		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_VelocityTypes,
@@ -352,7 +414,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"velocityTypes"
 		},
-	{ ATF_POINTER, 3, offsetof(struct CommonIEsRequestLocationInformation, ext1),
+	{ ATF_POINTER, 4, offsetof(struct CommonIEsRequestLocationInformation, ext1),
 		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		0,
 		&asn_DEF_ext1_11,
@@ -369,7 +431,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"ext1"
 		},
-	{ ATF_POINTER, 2, offsetof(struct CommonIEsRequestLocationInformation, ext2),
+	{ ATF_POINTER, 3, offsetof(struct CommonIEsRequestLocationInformation, ext2),
 		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
 		0,
 		&asn_DEF_ext2_13,
@@ -386,7 +448,7 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"ext2"
 		},
-	{ ATF_POINTER, 1, offsetof(struct CommonIEsRequestLocationInformation, ext3),
+	{ ATF_POINTER, 2, offsetof(struct CommonIEsRequestLocationInformation, ext3),
 		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
 		0,
 		&asn_DEF_ext3_15,
@@ -403,8 +465,25 @@ asn_TYPE_member_t asn_MBR_CommonIEsRequestLocationInformation_1[] = {
 		0, 0, /* No default value */
 		"ext3"
 		},
+	{ ATF_POINTER, 1, offsetof(struct CommonIEsRequestLocationInformation, ext4),
+		(ASN_TAG_CLASS_CONTEXT | (11 << 2)),
+		0,
+		&asn_DEF_ext4_18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"ext4"
+		},
 };
-static const int asn_MAP_CommonIEsRequestLocationInformation_oms_1[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
+static const int asn_MAP_CommonIEsRequestLocationInformation_oms_1[] = { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11 };
 static const ber_tlv_tag_t asn_DEF_CommonIEsRequestLocationInformation_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -419,15 +498,16 @@ static const asn_TYPE_tag2member_t asn_MAP_CommonIEsRequestLocationInformation_t
     { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* velocityTypes */
     { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* ext1 */
     { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* ext2 */
-    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 } /* ext3 */
+    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 }, /* ext3 */
+    { (ASN_TAG_CLASS_CONTEXT | (11 << 2)), 11, 0, 0 } /* ext4 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_CommonIEsRequestLocationInformation_specs_1 = {
 	sizeof(struct CommonIEsRequestLocationInformation),
 	offsetof(struct CommonIEsRequestLocationInformation, _asn_ctx),
 	asn_MAP_CommonIEsRequestLocationInformation_tag2el_1,
-	11,	/* Count of tags in the map */
+	12,	/* Count of tags in the map */
 	asn_MAP_CommonIEsRequestLocationInformation_oms_1,	/* Optional members */
-	7, 3,	/* Root/Additions */
+	7, 4,	/* Root/Additions */
 	8,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_CommonIEsRequestLocationInformation = {
@@ -450,7 +530,7 @@ asn_TYPE_descriptor_t asn_DEF_CommonIEsRequestLocationInformation = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_CommonIEsRequestLocationInformation_1,
-	11,	/* Elements count */
+	12,	/* Elements count */
 	&asn_SPC_CommonIEsRequestLocationInformation_specs_1	/* Additional specs */
 };
 

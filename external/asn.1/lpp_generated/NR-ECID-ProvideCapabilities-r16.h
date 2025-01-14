@@ -39,6 +39,7 @@ typedef enum NR_ECID_ProvideCapabilities_r16__ext1__ten_ms_unit_ResponseTime_r17
 
 /* Forward declarations */
 struct ScheduledLocationTimeSupport_r17;
+struct PeriodicReportingIntervalMsSupport_r18;
 
 /* NR-ECID-ProvideCapabilities-r16 */
 typedef struct NR_ECID_ProvideCapabilities_r16 {
@@ -56,6 +57,12 @@ typedef struct NR_ECID_ProvideCapabilities_r16 {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext1;
+	struct NR_ECID_ProvideCapabilities_r16__ext2 {
+		struct PeriodicReportingIntervalMsSupport_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext2;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -67,7 +74,7 @@ typedef struct NR_ECID_ProvideCapabilities_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_ten_ms_unit_ResponseTime_r17_13;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_NR_ECID_ProvideCapabilities_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_NR_ECID_ProvideCapabilities_r16_specs_1;
-extern asn_TYPE_member_t asn_MBR_NR_ECID_ProvideCapabilities_r16_1[4];
+extern asn_TYPE_member_t asn_MBR_NR_ECID_ProvideCapabilities_r16_1[5];
 
 #ifdef __cplusplus
 }

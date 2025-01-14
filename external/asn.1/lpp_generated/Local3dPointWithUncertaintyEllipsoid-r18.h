@@ -47,6 +47,7 @@ typedef struct Local3dPointWithUncertaintyEllipsoid_r18 {
 	long	 orientationMajorAxis_r18;
 	long	 uncertaintyAltitude_r18;
 	long	 confidence_r18;
+	long	*vConfidence_r18;	/* OPTIONAL */
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -56,7 +57,7 @@ typedef struct Local3dPointWithUncertaintyEllipsoid_r18 {
 /* extern asn_TYPE_descriptor_t asn_DEF_cartesianCoordinatesUnits_r18_3;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_Local3dPointWithUncertaintyEllipsoid_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_Local3dPointWithUncertaintyEllipsoid_r18_specs_1;
-extern asn_TYPE_member_t asn_MBR_Local3dPointWithUncertaintyEllipsoid_r18_1[10];
+extern asn_TYPE_member_t asn_MBR_Local3dPointWithUncertaintyEllipsoid_r18_1[11];
 
 #ifdef __cplusplus
 }

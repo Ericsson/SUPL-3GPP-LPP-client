@@ -43,6 +43,7 @@ typedef enum ECID_ProvideCapabilities__ext2__idleStateForMeasurements_r14 {
 
 /* Forward declarations */
 struct ScheduledLocationTimeSupport_r17;
+struct PeriodicReportingIntervalMsSupport_r18;
 
 /* ECID-ProvideCapabilities */
 typedef struct ECID_ProvideCapabilities {
@@ -71,6 +72,12 @@ typedef struct ECID_ProvideCapabilities {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *ext3;
+	struct ECID_ProvideCapabilities__ext4 {
+		struct PeriodicReportingIntervalMsSupport_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext4;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -83,7 +90,7 @@ typedef struct ECID_ProvideCapabilities {
 /* extern asn_TYPE_descriptor_t asn_DEF_idleStateForMeasurements_r14_17;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_ECID_ProvideCapabilities;
 extern asn_SEQUENCE_specifics_t asn_SPC_ECID_ProvideCapabilities_specs_1;
-extern asn_TYPE_member_t asn_MBR_ECID_ProvideCapabilities_1[4];
+extern asn_TYPE_member_t asn_MBR_ECID_ProvideCapabilities_1[5];
 
 #ifdef __cplusplus
 }

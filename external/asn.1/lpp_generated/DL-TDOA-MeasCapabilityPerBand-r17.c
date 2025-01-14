@@ -55,6 +55,37 @@
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
  */
+static int
+memb_supportOfMeasurementsInTimeWindow_r18_constraint_8(const asn_TYPE_descriptor_t *td, const void *sptr,
+			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
+	const BIT_STRING_t *st = (const BIT_STRING_t *)sptr;
+	size_t size;
+	
+	if(!sptr) {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: value not given (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+	
+	if(st->size > 0) {
+		/* Size in bits */
+		size = 8 * st->size - (st->bits_unused & 0x07);
+	} else {
+		size = 0;
+	}
+	
+	if((size >= 1UL && size <= 8UL)) {
+		/* Constraint check succeeded */
+		return 0;
+	} else {
+		ASN__CTFAIL(app_key, td, sptr,
+			"%s: constraint failed (%s:%d)",
+			td->name, __FILE__, __LINE__);
+		return -1;
+	}
+}
+
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -95,7 +126,7 @@ static asn_per_constraints_t asn_PER_type_supportOfDL_PRS_BWA_RRC_Idle_r18_const
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_constr_15 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RSCPD_RRC_Connected_r18_constr_15 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
@@ -116,36 +147,43 @@ static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r1
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfLegacyMeasurementInTimeWindow_r18_constr_21 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_supportOfUE_basedCarrierPhasePositioning_r18_constr_21 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfRSCPD_MeasurementInTimeWindow_r18_constr_23 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_supportOfSymbolTimeStampForRSCPD_r18_constr_23 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfUE_basedCarrierPhasePositioning_r18_constr_25 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfSymbolTimeStampForRSCPD_r18_constr_27 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_supportOfFinerTimingReportGranularityForPRS_Meas_r18_constr_29 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_supportOfFinerTimingReportGranularityForPRS_Meas_r18_constr_25 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 3,  3,  0,  5 }	/* (0..5) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_type_supportOfPRS_MeasurementRRC_Idle_r18_constr_37 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_memb_supportOfMeasurementsInTimeWindow_r18_constr_32 CC_NOTUSED = {
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	{ APC_CONSTRAINED,	 3,  3,  1,  8 }	/* (SIZE(1..8)) */,
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RSCPD_RRC_Inactive_r18_constr_40 CC_NOTUSED = {
+	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
@@ -365,47 +403,47 @@ asn_TYPE_descriptor_t asn_DEF_supportOfDL_PRS_BWA_RRC_Idle_r18_13 = {
 	&asn_SPC_supportOfDL_PRS_BWA_RRC_Idle_r18_specs_13	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_value2enum_15[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_PRS_RSCPD_RRC_Connected_r18_value2enum_15[] = {
 	{ 0,	9,	"supported" }
 };
-static const unsigned int asn_MAP_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_enum2value_15[] = {
+static const unsigned int asn_MAP_nr_DL_PRS_RSCPD_RRC_Connected_r18_enum2value_15[] = {
 	0	/* supported(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_specs_15 = {
-	asn_MAP_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_value2enum_15,	/* "tag" => N; sorted by tag */
-	asn_MAP_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_enum2value_15,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_nr_DL_PRS_RSCPD_RRC_Connected_r18_specs_15 = {
+	asn_MAP_nr_DL_PRS_RSCPD_RRC_Connected_r18_value2enum_15,	/* "tag" => N; sorted by tag */
+	asn_MAP_nr_DL_PRS_RSCPD_RRC_Connected_r18_enum2value_15,	/* N => "tag"; sorted by N */
 	1,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_tags_15[] = {
+static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_tags_15[] = {
 	(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_15 = {
-	"nr-DL-PRS-RSCPD-ReportingRRC-Connected-r18",
-	"nr-DL-PRS-RSCPD-ReportingRRC-Connected-r18",
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_15 = {
+	"nr-DL-PRS-RSCPD-RRC-Connected-r18",
+	"nr-DL-PRS-RSCPD-RRC-Connected-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_tags_15,
-	sizeof(asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_tags_15)
-		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_tags_15[0]) - 1, /* 1 */
-	asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_tags_15,	/* Same as above */
-	sizeof(asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_tags_15)
-		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_tags_15[0]), /* 2 */
+	asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_tags_15,
+	sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_tags_15)
+		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_tags_15[0]) - 1, /* 1 */
+	asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_tags_15,	/* Same as above */
+	sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_tags_15)
+		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_tags_15[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_constr_15,
+		&asn_PER_type_nr_DL_PRS_RSCPD_RRC_Connected_r18_constr_15,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_specs_15	/* Additional specs */
+	&asn_SPC_nr_DL_PRS_RSCPD_RRC_Connected_r18_specs_15	/* Additional specs */
 };
 
 static const asn_INTEGER_enum_map_t asn_MAP_assocSingleRSTD_WithUpToNsampleRSCPD_r18_value2enum_17[] = {
@@ -494,179 +532,93 @@ asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r18_19 = {
 	&asn_SPC_nr_DL_PRS_RSCPD_MeasurementRRC_Idle_r18_specs_19	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_value2enum_21[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_value2enum_21[] = {
 	{ 0,	9,	"supported" }
 };
-static const unsigned int asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_enum2value_21[] = {
+static const unsigned int asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_enum2value_21[] = {
 	0	/* supported(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_supportOfLegacyMeasurementInTimeWindow_r18_specs_21 = {
-	asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_value2enum_21,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfLegacyMeasurementInTimeWindow_r18_enum2value_21,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_supportOfUE_basedCarrierPhasePositioning_r18_specs_21 = {
+	asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_value2enum_21,	/* "tag" => N; sorted by tag */
+	asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_enum2value_21,	/* N => "tag"; sorted by N */
 	1,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_21[] = {
+static const ber_tlv_tag_t asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_21[] = {
 	(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_21 = {
-	"supportOfLegacyMeasurementInTimeWindow-r18",
-	"supportOfLegacyMeasurementInTimeWindow-r18",
+asn_TYPE_descriptor_t asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_21 = {
+	"supportOfUE-basedCarrierPhasePositioning-r18",
+	"supportOfUE-basedCarrierPhasePositioning-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_21,
-	sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_21)
-		/sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_21[0]) - 1, /* 1 */
-	asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_21,	/* Same as above */
-	sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_21)
-		/sizeof(asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_tags_21[0]), /* 2 */
+	asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_21,
+	sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_21)
+		/sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_21[0]) - 1, /* 1 */
+	asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_21,	/* Same as above */
+	sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_21)
+		/sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_21[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfLegacyMeasurementInTimeWindow_r18_constr_21,
+		&asn_PER_type_supportOfUE_basedCarrierPhasePositioning_r18_constr_21,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfLegacyMeasurementInTimeWindow_r18_specs_21	/* Additional specs */
+	&asn_SPC_supportOfUE_basedCarrierPhasePositioning_r18_specs_21	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfRSCPD_MeasurementInTimeWindow_r18_value2enum_23[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_value2enum_23[] = {
 	{ 0,	9,	"supported" }
 };
-static const unsigned int asn_MAP_supportOfRSCPD_MeasurementInTimeWindow_r18_enum2value_23[] = {
+static const unsigned int asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_enum2value_23[] = {
 	0	/* supported(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_supportOfRSCPD_MeasurementInTimeWindow_r18_specs_23 = {
-	asn_MAP_supportOfRSCPD_MeasurementInTimeWindow_r18_value2enum_23,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfRSCPD_MeasurementInTimeWindow_r18_enum2value_23,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_supportOfSymbolTimeStampForRSCPD_r18_specs_23 = {
+	asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_value2enum_23,	/* "tag" => N; sorted by tag */
+	asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_enum2value_23,	/* N => "tag"; sorted by N */
 	1,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_tags_23[] = {
+static const ber_tlv_tag_t asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_23[] = {
 	(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_23 = {
-	"supportOfRSCPD-MeasurementInTimeWindow-r18",
-	"supportOfRSCPD-MeasurementInTimeWindow-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_tags_23,
-	sizeof(asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_tags_23)
-		/sizeof(asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_tags_23[0]) - 1, /* 1 */
-	asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_tags_23,	/* Same as above */
-	sizeof(asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_tags_23)
-		/sizeof(asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_tags_23[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfRSCPD_MeasurementInTimeWindow_r18_constr_23,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfRSCPD_MeasurementInTimeWindow_r18_specs_23	/* Additional specs */
-};
-
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_value2enum_25[] = {
-	{ 0,	9,	"supported" }
-};
-static const unsigned int asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_enum2value_25[] = {
-	0	/* supported(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_supportOfUE_basedCarrierPhasePositioning_r18_specs_25 = {
-	asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_value2enum_25,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfUE_basedCarrierPhasePositioning_r18_enum2value_25,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_25[] = {
-	(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_25 = {
-	"supportOfUE-basedCarrierPhasePositioning-r18",
-	"supportOfUE-basedCarrierPhasePositioning-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_25,
-	sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_25)
-		/sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_25[0]) - 1, /* 1 */
-	asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_25,	/* Same as above */
-	sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_25)
-		/sizeof(asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_tags_25[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfUE_basedCarrierPhasePositioning_r18_constr_25,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfUE_basedCarrierPhasePositioning_r18_specs_25	/* Additional specs */
-};
-
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_value2enum_27[] = {
-	{ 0,	9,	"supported" }
-};
-static const unsigned int asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_enum2value_27[] = {
-	0	/* supported(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_supportOfSymbolTimeStampForRSCPD_r18_specs_27 = {
-	asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_value2enum_27,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfSymbolTimeStampForRSCPD_r18_enum2value_27,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_27[] = {
-	(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_27 = {
+asn_TYPE_descriptor_t asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_23 = {
 	"supportOfSymbolTimeStampForRSCPD-r18",
 	"supportOfSymbolTimeStampForRSCPD-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_27,
-	sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_27)
-		/sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_27[0]) - 1, /* 1 */
-	asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_27,	/* Same as above */
-	sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_27)
-		/sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_27[0]), /* 2 */
+	asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_23,
+	sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_23)
+		/sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_23[0]) - 1, /* 1 */
+	asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_23,	/* Same as above */
+	sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_23)
+		/sizeof(asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_tags_23[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfSymbolTimeStampForRSCPD_r18_constr_27,
+		&asn_PER_type_supportOfSymbolTimeStampForRSCPD_r18_constr_23,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfSymbolTimeStampForRSCPD_r18_specs_27	/* Additional specs */
+	&asn_SPC_supportOfSymbolTimeStampForRSCPD_r18_specs_23	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_value2enum_29[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_value2enum_25[] = {
 	{ 0,	6,	"minus1" },
 	{ 1,	6,	"minus2" },
 	{ 2,	6,	"minus3" },
@@ -674,7 +626,7 @@ static const asn_INTEGER_enum_map_t asn_MAP_supportOfFinerTimingReportGranularit
 	{ 4,	6,	"minus5" },
 	{ 5,	6,	"minus6" }
 };
-static const unsigned int asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_enum2value_29[] = {
+static const unsigned int asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_enum2value_25[] = {
 	0,	/* minus1(0) */
 	1,	/* minus2(1) */
 	2,	/* minus3(2) */
@@ -682,41 +634,84 @@ static const unsigned int asn_MAP_supportOfFinerTimingReportGranularityForPRS_Me
 	4,	/* minus5(4) */
 	5	/* minus6(5) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_supportOfFinerTimingReportGranularityForPRS_Meas_r18_specs_29 = {
-	asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_value2enum_29,	/* "tag" => N; sorted by tag */
-	asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_enum2value_29,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_supportOfFinerTimingReportGranularityForPRS_Meas_r18_specs_25 = {
+	asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_value2enum_25,	/* "tag" => N; sorted by tag */
+	asn_MAP_supportOfFinerTimingReportGranularityForPRS_Meas_r18_enum2value_25,	/* N => "tag"; sorted by N */
 	6,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_29[] = {
-	(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
+static const ber_tlv_tag_t asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_25[] = {
+	(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_29 = {
+asn_TYPE_descriptor_t asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_25 = {
 	"supportOfFinerTimingReportGranularityForPRS-Meas-r18",
 	"supportOfFinerTimingReportGranularityForPRS-Meas-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_29,
-	sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_29)
-		/sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_29[0]) - 1, /* 1 */
-	asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_29,	/* Same as above */
-	sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_29)
-		/sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_29[0]), /* 2 */
+	asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_25,
+	sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_25)
+		/sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_25[0]) - 1, /* 1 */
+	asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_25,	/* Same as above */
+	sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_25)
+		/sizeof(asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_tags_25[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_supportOfFinerTimingReportGranularityForPRS_Meas_r18_constr_29,
+		&asn_PER_type_supportOfFinerTimingReportGranularityForPRS_Meas_r18_constr_25,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_supportOfFinerTimingReportGranularityForPRS_Meas_r18_specs_29	/* Additional specs */
+	&asn_SPC_supportOfFinerTimingReportGranularityForPRS_Meas_r18_specs_25	/* Additional specs */
+};
+
+static const asn_INTEGER_enum_map_t asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_value2enum_37[] = {
+	{ 0,	9,	"supported" }
+};
+static const unsigned int asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_enum2value_37[] = {
+	0	/* supported(0) */
+};
+static const asn_INTEGER_specifics_t asn_SPC_supportOfPRS_MeasurementRRC_Idle_r18_specs_37 = {
+	asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_value2enum_37,	/* "tag" => N; sorted by tag */
+	asn_MAP_supportOfPRS_MeasurementRRC_Idle_r18_enum2value_37,	/* N => "tag"; sorted by N */
+	1,	/* Number of elements in the maps */
+	0,	/* Enumeration is not extensible */
+	1,	/* Strict enumeration */
+	0,	/* Native long size */
+	0
+};
+static const ber_tlv_tag_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_37[] = {
+	(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_37 = {
+	"supportOfPRS-MeasurementRRC-Idle-r18",
+	"supportOfPRS-MeasurementRRC-Idle-r18",
+	&asn_OP_NativeEnumerated,
+	asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_37,
+	sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_37)
+		/sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_37[0]) - 1, /* 1 */
+	asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_37,	/* Same as above */
+	sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_37)
+		/sizeof(asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_tags_37[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		&asn_PER_type_supportOfPRS_MeasurementRRC_Idle_r18_constr_37,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		NativeEnumerated_constraint
+	},
+	0, 0,	/* Defined elsewhere */
+	&asn_SPC_supportOfPRS_MeasurementRRC_Idle_r18_specs_37	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_ext1_8[] = {
@@ -771,10 +766,10 @@ static asn_TYPE_member_t asn_MBR_ext1_8[] = {
 		0, 0, /* No default value */
 		"supportOfDL-PRS-BWA-RRC-Idle-r18"
 		},
-	{ ATF_POINTER, 8, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18),
+	{ ATF_POINTER, 8, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, nr_DL_PRS_RSCPD_RRC_Connected_r18),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_nr_DL_PRS_RSCPD_ReportingRRC_Connected_r18_15,
+		&asn_DEF_nr_DL_PRS_RSCPD_RRC_Connected_r18_15,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -786,7 +781,7 @@ static asn_TYPE_member_t asn_MBR_ext1_8[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"nr-DL-PRS-RSCPD-ReportingRRC-Connected-r18"
+		"nr-DL-PRS-RSCPD-RRC-Connected-r18"
 		},
 	{ ATF_POINTER, 7, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, assocSingleRSTD_WithUpToNsampleRSCPD_r18),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
@@ -822,44 +817,10 @@ static asn_TYPE_member_t asn_MBR_ext1_8[] = {
 		0, 0, /* No default value */
 		"nr-DL-PRS-RSCPD-MeasurementRRC-Idle-r18"
 		},
-	{ ATF_POINTER, 5, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfLegacyMeasurementInTimeWindow_r18),
+	{ ATF_POINTER, 5, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfUE_basedCarrierPhasePositioning_r18),
 		(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_21,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"supportOfLegacyMeasurementInTimeWindow-r18"
-		},
-	{ ATF_POINTER, 4, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfRSCPD_MeasurementInTimeWindow_r18),
-		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfRSCPD_MeasurementInTimeWindow_r18_23,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"supportOfRSCPD-MeasurementInTimeWindow-r18"
-		},
-	{ ATF_POINTER, 3, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfUE_basedCarrierPhasePositioning_r18),
-		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_25,
+		&asn_DEF_supportOfUE_basedCarrierPhasePositioning_r18_21,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -873,10 +834,10 @@ static asn_TYPE_member_t asn_MBR_ext1_8[] = {
 		0, 0, /* No default value */
 		"supportOfUE-basedCarrierPhasePositioning-r18"
 		},
-	{ ATF_POINTER, 2, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfSymbolTimeStampForRSCPD_r18),
-		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
+	{ ATF_POINTER, 4, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfSymbolTimeStampForRSCPD_r18),
+		(ASN_TAG_CLASS_CONTEXT | (7 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_27,
+		&asn_DEF_supportOfSymbolTimeStampForRSCPD_r18_23,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -890,10 +851,10 @@ static asn_TYPE_member_t asn_MBR_ext1_8[] = {
 		0, 0, /* No default value */
 		"supportOfSymbolTimeStampForRSCPD-r18"
 		},
-	{ ATF_POINTER, 1, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfFinerTimingReportGranularityForPRS_Meas_r18),
-		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
+	{ ATF_POINTER, 3, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfFinerTimingReportGranularityForPRS_Meas_r18),
+		(ASN_TAG_CLASS_CONTEXT | (8 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_29,
+		&asn_DEF_supportOfFinerTimingReportGranularityForPRS_Meas_r18_25,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -907,6 +868,40 @@ static asn_TYPE_member_t asn_MBR_ext1_8[] = {
 		0, 0, /* No default value */
 		"supportOfFinerTimingReportGranularityForPRS-Meas-r18"
 		},
+	{ ATF_POINTER, 2, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfMeasurementsInTimeWindow_r18),
+		(ASN_TAG_CLASS_CONTEXT | (9 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_BIT_STRING,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			&asn_PER_memb_supportOfMeasurementsInTimeWindow_r18_constr_32,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			memb_supportOfMeasurementsInTimeWindow_r18_constraint_8
+		},
+		0, 0, /* No default value */
+		"supportOfMeasurementsInTimeWindow-r18"
+		},
+	{ ATF_POINTER, 1, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1, supportOfPRS_MeasurementRRC_Idle_r18),
+		(ASN_TAG_CLASS_CONTEXT | (10 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_37,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"supportOfPRS-MeasurementRRC-Idle-r18"
+		},
 };
 static const int asn_MAP_ext1_oms_8[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 static const ber_tlv_tag_t asn_DEF_ext1_tags_8[] = {
@@ -917,14 +912,14 @@ static const asn_TYPE_tag2member_t asn_MAP_ext1_tag2el_8[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* supportOfDL-PRS-BWA-RRC-Connected-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* supportOfDL-PRS-BWA-RRC-Inactive-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* supportOfDL-PRS-BWA-RRC-Idle-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* nr-DL-PRS-RSCPD-ReportingRRC-Connected-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* nr-DL-PRS-RSCPD-RRC-Connected-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* assocSingleRSTD-WithUpToNsampleRSCPD-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 }, /* nr-DL-PRS-RSCPD-MeasurementRRC-Idle-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* supportOfLegacyMeasurementInTimeWindow-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* supportOfRSCPD-MeasurementInTimeWindow-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* supportOfUE-basedCarrierPhasePositioning-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* supportOfSymbolTimeStampForRSCPD-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 } /* supportOfFinerTimingReportGranularityForPRS-Meas-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (6 << 2)), 6, 0, 0 }, /* supportOfUE-basedCarrierPhasePositioning-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (7 << 2)), 7, 0, 0 }, /* supportOfSymbolTimeStampForRSCPD-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (8 << 2)), 8, 0, 0 }, /* supportOfFinerTimingReportGranularityForPRS-Meas-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (9 << 2)), 9, 0, 0 }, /* supportOfMeasurementsInTimeWindow-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (10 << 2)), 10, 0, 0 } /* supportOfPRS-MeasurementRRC-Idle-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext1_specs_8 = {
 	sizeof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext1),
@@ -960,6 +955,110 @@ asn_TYPE_descriptor_t asn_DEF_ext1_8 = {
 	&asn_SPC_ext1_specs_8	/* Additional specs */
 };
 
+static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_PRS_RSCPD_RRC_Inactive_r18_value2enum_40[] = {
+	{ 0,	9,	"supported" }
+};
+static const unsigned int asn_MAP_nr_DL_PRS_RSCPD_RRC_Inactive_r18_enum2value_40[] = {
+	0	/* supported(0) */
+};
+static const asn_INTEGER_specifics_t asn_SPC_nr_DL_PRS_RSCPD_RRC_Inactive_r18_specs_40 = {
+	asn_MAP_nr_DL_PRS_RSCPD_RRC_Inactive_r18_value2enum_40,	/* "tag" => N; sorted by tag */
+	asn_MAP_nr_DL_PRS_RSCPD_RRC_Inactive_r18_enum2value_40,	/* N => "tag"; sorted by N */
+	1,	/* Number of elements in the maps */
+	0,	/* Enumeration is not extensible */
+	1,	/* Strict enumeration */
+	0,	/* Native long size */
+	0
+};
+static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_tags_40[] = {
+	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_40 = {
+	"nr-DL-PRS-RSCPD-RRC-Inactive-r18",
+	"nr-DL-PRS-RSCPD-RRC-Inactive-r18",
+	&asn_OP_NativeEnumerated,
+	asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_tags_40,
+	sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_tags_40)
+		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_tags_40[0]) - 1, /* 1 */
+	asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_tags_40,	/* Same as above */
+	sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_tags_40)
+		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_tags_40[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		&asn_PER_type_nr_DL_PRS_RSCPD_RRC_Inactive_r18_constr_40,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		NativeEnumerated_constraint
+	},
+	0, 0,	/* Defined elsewhere */
+	&asn_SPC_nr_DL_PRS_RSCPD_RRC_Inactive_r18_specs_40	/* Additional specs */
+};
+
+static asn_TYPE_member_t asn_MBR_ext2_39[] = {
+	{ ATF_POINTER, 1, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext2, nr_DL_PRS_RSCPD_RRC_Inactive_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_nr_DL_PRS_RSCPD_RRC_Inactive_r18_40,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"nr-DL-PRS-RSCPD-RRC-Inactive-r18"
+		},
+};
+static const int asn_MAP_ext2_oms_39[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_ext2_tags_39[] = {
+	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_ext2_tag2el_39[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* nr-DL-PRS-RSCPD-RRC-Inactive-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_ext2_specs_39 = {
+	sizeof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext2),
+	offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17__ext2, _asn_ctx),
+	asn_MAP_ext2_tag2el_39,
+	1,	/* Count of tags in the map */
+	asn_MAP_ext2_oms_39,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_ext2_39 = {
+	"ext2",
+	"ext2",
+	&asn_OP_SEQUENCE,
+	asn_DEF_ext2_tags_39,
+	sizeof(asn_DEF_ext2_tags_39)
+		/sizeof(asn_DEF_ext2_tags_39[0]) - 1, /* 1 */
+	asn_DEF_ext2_tags_39,	/* Same as above */
+	sizeof(asn_DEF_ext2_tags_39)
+		/sizeof(asn_DEF_ext2_tags_39[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_ext2_39,
+	1,	/* Elements count */
+	&asn_SPC_ext2_specs_39	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, freqBandIndicatorNR_r17),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -978,7 +1077,7 @@ asn_TYPE_member_t asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1[] = {
 		0, 0, /* No default value */
 		"freqBandIndicatorNR-r17"
 		},
-	{ ATF_POINTER, 3, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, supportOfDL_PRS_FirstPathRSRP_r17),
+	{ ATF_POINTER, 4, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, supportOfDL_PRS_FirstPathRSRP_r17),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_supportOfDL_PRS_FirstPathRSRP_r17_3,
@@ -995,7 +1094,7 @@ asn_TYPE_member_t asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1[] = {
 		0, 0, /* No default value */
 		"supportOfDL-PRS-FirstPathRSRP-r17"
 		},
-	{ ATF_POINTER, 2, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, dl_PRS_MeasRRC_Inactive_r17),
+	{ ATF_POINTER, 3, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, dl_PRS_MeasRRC_Inactive_r17),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
 		&asn_DEF_dl_PRS_MeasRRC_Inactive_r17_5,
@@ -1012,7 +1111,7 @@ asn_TYPE_member_t asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1[] = {
 		0, 0, /* No default value */
 		"dl-PRS-MeasRRC-Inactive-r17"
 		},
-	{ ATF_POINTER, 1, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, ext1),
+	{ ATF_POINTER, 2, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, ext1),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		0,
 		&asn_DEF_ext1_8,
@@ -1029,8 +1128,25 @@ asn_TYPE_member_t asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1[] = {
 		0, 0, /* No default value */
 		"ext1"
 		},
+	{ ATF_POINTER, 1, offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, ext2),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		0,
+		&asn_DEF_ext2_39,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"ext2"
+		},
 };
-static const int asn_MAP_DL_TDOA_MeasCapabilityPerBand_r17_oms_1[] = { 1, 2, 3 };
+static const int asn_MAP_DL_TDOA_MeasCapabilityPerBand_r17_oms_1[] = { 1, 2, 3, 4 };
 static const ber_tlv_tag_t asn_DEF_DL_TDOA_MeasCapabilityPerBand_r17_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -1038,15 +1154,16 @@ static const asn_TYPE_tag2member_t asn_MAP_DL_TDOA_MeasCapabilityPerBand_r17_tag
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* freqBandIndicatorNR-r17 */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* supportOfDL-PRS-FirstPathRSRP-r17 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* dl-PRS-MeasRRC-Inactive-r17 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* ext1 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* ext1 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* ext2 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_DL_TDOA_MeasCapabilityPerBand_r17_specs_1 = {
 	sizeof(struct DL_TDOA_MeasCapabilityPerBand_r17),
 	offsetof(struct DL_TDOA_MeasCapabilityPerBand_r17, _asn_ctx),
 	asn_MAP_DL_TDOA_MeasCapabilityPerBand_r17_tag2el_1,
-	4,	/* Count of tags in the map */
+	5,	/* Count of tags in the map */
 	asn_MAP_DL_TDOA_MeasCapabilityPerBand_r17_oms_1,	/* Optional members */
-	2, 1,	/* Root/Additions */
+	2, 2,	/* Root/Additions */
 	3,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_DL_TDOA_MeasCapabilityPerBand_r17 = {
@@ -1069,7 +1186,7 @@ asn_TYPE_descriptor_t asn_DEF_DL_TDOA_MeasCapabilityPerBand_r17 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_DL_TDOA_MeasCapabilityPerBand_r17_1,
-	4,	/* Elements count */
+	5,	/* Elements count */
 	&asn_SPC_DL_TDOA_MeasCapabilityPerBand_r17_specs_1	/* Additional specs */
 };
 

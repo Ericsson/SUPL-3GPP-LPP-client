@@ -33,7 +33,7 @@
  * so here we adjust the DEF accordingly.
  */
 static int
-memb_NativeInteger_constraint_27(const asn_TYPE_descriptor_t *td, const void *sptr,
+memb_NativeInteger_constraint_28(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	long value;
 	
@@ -57,20 +57,8 @@ memb_NativeInteger_constraint_27(const asn_TYPE_descriptor_t *td, const void *sp
 	}
 }
 
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
 static int
-memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constraint_26(const asn_TYPE_descriptor_t *td, const void *sptr,
+memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constraint_27(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	size_t size;
 	
@@ -95,6 +83,14 @@ memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constraint_26(const asn_TYP
 	}
 }
 
+/*
+ * This type is implemented using NativeEnumerated,
+ * so here we adjust the DEF accordingly.
+ */
+/*
+ * This type is implemented using NativeEnumerated,
+ * so here we adjust the DEF accordingly.
+ */
 static int
 memb_nr_RequestedMeasurements_r16_constraint_1(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
@@ -169,51 +165,44 @@ static asn_per_constraints_t asn_PER_type_multiMeasInSameReport_r17_constr_24 CC
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_memb_Member_constr_28 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_memb_Member_constr_29 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  3 }	/* (0..3) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_27 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_28 CC_NOTUSED = {
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	{ APC_CONSTRAINED,	 1,  1,  2,  3 }	/* (SIZE(2..3)) */,
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_fr1_constr_31 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_28 CC_NOTUSED = {
+	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
+	{ APC_CONSTRAINED,	 1,  1,  2,  3 }	/* (SIZE(2..3)) */,
+	0, 0	/* No PER value map */
+};
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+static asn_per_constraints_t asn_PER_type_fr1_constr_32 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  3 }	/* (0..3) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_fr2_constr_36 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_fr2_constr_37 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  2 }	/* (0..2) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_30 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_31 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 1,  1,  0,  1 }	/* (0..1) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RSCPD_Request_r18_constr_40 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_27 CC_NOTUSED = {
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	{ APC_CONSTRAINED,	 1,  1,  2,  3 }	/* (SIZE(2..3)) */,
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
@@ -692,7 +681,7 @@ asn_TYPE_descriptor_t asn_DEF_ext1_13 = {
 	&asn_SPC_ext1_specs_13	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_27[] = {
+static asn_TYPE_member_t asn_MBR_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_28[] = {
 	{ ATF_POINTER, 0, 0,
 		(ASN_TAG_CLASS_UNIVERSAL | (2 << 2)),
 		0,
@@ -703,149 +692,210 @@ static asn_TYPE_member_t asn_MBR_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18
 			0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			&asn_PER_memb_Member_constr_28,
+			&asn_PER_memb_Member_constr_29,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			memb_NativeInteger_constraint_27
+			memb_NativeInteger_constraint_28
 		},
 		0, 0, /* No default value */
 		""
 		},
 };
-static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_27[] = {
+static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_28[] = {
 	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
-static asn_SET_OF_specifics_t asn_SPC_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_specs_27 = {
-	sizeof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18),
-	offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18, _asn_ctx),
+static asn_SET_OF_specifics_t asn_SPC_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_specs_28 = {
+	sizeof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18),
+	offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18__nr_DL_PRS_JointMeasurementRequestedPFL_List_r18, _asn_ctx),
 	0,	/* XER encoding is XMLDelimitedItemList */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_27 = {
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_28 = {
 	"nr-DL-PRS-JointMeasurementRequestedPFL-List-r18",
 	"nr-DL-PRS-JointMeasurementRequestedPFL-List-r18",
 	&asn_OP_SEQUENCE_OF,
-	asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_27,
-	sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_27)
-		/sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_27[0]) - 1, /* 1 */
-	asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_27,	/* Same as above */
-	sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_27)
-		/sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_27[0]), /* 2 */
+	asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_28,
+	sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_28)
+		/sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_28[0]) - 1, /* 1 */
+	asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_28,	/* Same as above */
+	sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_28)
+		/sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_tags_28[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_27,
+		&asn_PER_type_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_28,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		SEQUENCE_OF_constraint
 	},
-	asn_MBR_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_27,
+	asn_MBR_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_28,
 	1,	/* Single element */
-	&asn_SPC_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_specs_27	/* Additional specs */
+	&asn_SPC_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_specs_28	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_fr1_value2enum_31[] = {
+static asn_TYPE_member_t asn_MBR_nr_DL_PRS_JointMeasurementRequest_r18_27[] = {
+	{ ATF_POINTER, 1, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18, nr_DL_PRS_JointMeasurementRequestedPFL_List_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		0,
+		&asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_28,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			&asn_PER_memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_28,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constraint_27
+		},
+		0, 0, /* No default value */
+		"nr-DL-PRS-JointMeasurementRequestedPFL-List-r18"
+		},
+};
+static const int asn_MAP_nr_DL_PRS_JointMeasurementRequest_r18_oms_27[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_tags_27[] = {
+	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_JointMeasurementRequest_r18_tag2el_27[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* nr-DL-PRS-JointMeasurementRequestedPFL-List-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_nr_DL_PRS_JointMeasurementRequest_r18_specs_27 = {
+	sizeof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18),
+	offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_JointMeasurementRequest_r18, _asn_ctx),
+	asn_MAP_nr_DL_PRS_JointMeasurementRequest_r18_tag2el_27,
+	1,	/* Count of tags in the map */
+	asn_MAP_nr_DL_PRS_JointMeasurementRequest_r18_oms_27,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_27 = {
+	"nr-DL-PRS-JointMeasurementRequest-r18",
+	"nr-DL-PRS-JointMeasurementRequest-r18",
+	&asn_OP_SEQUENCE,
+	asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_tags_27,
+	sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_tags_27)
+		/sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_tags_27[0]) - 1, /* 1 */
+	asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_tags_27,	/* Same as above */
+	sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_tags_27)
+		/sizeof(asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_tags_27[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_nr_DL_PRS_JointMeasurementRequest_r18_27,
+	1,	/* Elements count */
+	&asn_SPC_nr_DL_PRS_JointMeasurementRequest_r18_specs_27	/* Additional specs */
+};
+
+static const asn_INTEGER_enum_map_t asn_MAP_fr1_value2enum_32[] = {
 	{ 0,	5,	"mhz40" },
 	{ 1,	5,	"mhz50" },
 	{ 2,	5,	"mhz80" },
 	{ 3,	6,	"mhz100" }
 };
-static const unsigned int asn_MAP_fr1_enum2value_31[] = {
+static const unsigned int asn_MAP_fr1_enum2value_32[] = {
 	3,	/* mhz100(3) */
 	0,	/* mhz40(0) */
 	1,	/* mhz50(1) */
 	2	/* mhz80(2) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_fr1_specs_31 = {
-	asn_MAP_fr1_value2enum_31,	/* "tag" => N; sorted by tag */
-	asn_MAP_fr1_enum2value_31,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_fr1_specs_32 = {
+	asn_MAP_fr1_value2enum_32,	/* "tag" => N; sorted by tag */
+	asn_MAP_fr1_enum2value_32,	/* N => "tag"; sorted by N */
 	4,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_fr1_tags_31[] = {
+static const ber_tlv_tag_t asn_DEF_fr1_tags_32[] = {
 	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_fr1_31 = {
+asn_TYPE_descriptor_t asn_DEF_fr1_32 = {
 	"fr1",
 	"fr1",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_fr1_tags_31,
-	sizeof(asn_DEF_fr1_tags_31)
-		/sizeof(asn_DEF_fr1_tags_31[0]) - 1, /* 1 */
-	asn_DEF_fr1_tags_31,	/* Same as above */
-	sizeof(asn_DEF_fr1_tags_31)
-		/sizeof(asn_DEF_fr1_tags_31[0]), /* 2 */
+	asn_DEF_fr1_tags_32,
+	sizeof(asn_DEF_fr1_tags_32)
+		/sizeof(asn_DEF_fr1_tags_32[0]) - 1, /* 1 */
+	asn_DEF_fr1_tags_32,	/* Same as above */
+	sizeof(asn_DEF_fr1_tags_32)
+		/sizeof(asn_DEF_fr1_tags_32[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_fr1_constr_31,
+		&asn_PER_type_fr1_constr_32,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_fr1_specs_31	/* Additional specs */
+	&asn_SPC_fr1_specs_32	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_fr2_value2enum_36[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_fr2_value2enum_37[] = {
 	{ 0,	6,	"mhz100" },
 	{ 1,	6,	"mhz200" },
 	{ 2,	6,	"mhz400" }
 };
-static const unsigned int asn_MAP_fr2_enum2value_36[] = {
+static const unsigned int asn_MAP_fr2_enum2value_37[] = {
 	0,	/* mhz100(0) */
 	1,	/* mhz200(1) */
 	2	/* mhz400(2) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_fr2_specs_36 = {
-	asn_MAP_fr2_value2enum_36,	/* "tag" => N; sorted by tag */
-	asn_MAP_fr2_enum2value_36,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_fr2_specs_37 = {
+	asn_MAP_fr2_value2enum_37,	/* "tag" => N; sorted by tag */
+	asn_MAP_fr2_enum2value_37,	/* N => "tag"; sorted by N */
 	3,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_fr2_tags_36[] = {
+static const ber_tlv_tag_t asn_DEF_fr2_tags_37[] = {
 	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_fr2_36 = {
+asn_TYPE_descriptor_t asn_DEF_fr2_37 = {
 	"fr2",
 	"fr2",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_fr2_tags_36,
-	sizeof(asn_DEF_fr2_tags_36)
-		/sizeof(asn_DEF_fr2_tags_36[0]) - 1, /* 1 */
-	asn_DEF_fr2_tags_36,	/* Same as above */
-	sizeof(asn_DEF_fr2_tags_36)
-		/sizeof(asn_DEF_fr2_tags_36[0]), /* 2 */
+	asn_DEF_fr2_tags_37,
+	sizeof(asn_DEF_fr2_tags_37)
+		/sizeof(asn_DEF_fr2_tags_37[0]) - 1, /* 1 */
+	asn_DEF_fr2_tags_37,	/* Same as above */
+	sizeof(asn_DEF_fr2_tags_37)
+		/sizeof(asn_DEF_fr2_tags_37[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_fr2_constr_36,
+		&asn_PER_type_fr2_constr_37,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_fr2_specs_36	/* Additional specs */
+	&asn_SPC_fr2_specs_37	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_30[] = {
+static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_31[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, choice.fr1),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_fr1_31,
+		&asn_DEF_fr1_32,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -862,7 +912,7 @@ static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_30[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, choice.fr2),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_fr2_36,
+		&asn_DEF_fr2_37,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -877,22 +927,22 @@ static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_30[] = {
 		"fr2"
 		},
 };
-static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_30[] = {
+static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_31[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* fr1 */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* fr2 */
 };
-static asn_CHOICE_specifics_t asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_30 = {
+static asn_CHOICE_specifics_t asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_31 = {
 	sizeof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18),
 	offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, _asn_ctx),
 	offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, present),
 	sizeof(((struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18 *)0)->present),
-	asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_30,
+	asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_31,
 	2,	/* Count of tags in the map */
 	0, 0,
 	-1	/* Extensions start */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_30 = {
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_31 = {
 	"nr-DL-PRS-RxHoppingTotalBandwidth-r18",
 	"nr-DL-PRS-RxHoppingTotalBandwidth-r18",
 	&asn_OP_CHOICE,
@@ -905,20 +955,20 @@ asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_30 = {
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_30,
+		&asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_31,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		CHOICE_constraint
 	},
-	asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_30,
+	asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_31,
 	2,	/* Elements count */
-	&asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_30	/* Additional specs */
+	&asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_31	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingRequest_r18_29[] = {
+static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingRequest_r18_30[] = {
 	{ ATF_POINTER, 1, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18, nr_DL_PRS_RxHoppingTotalBandwidth_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		+1,	/* EXPLICIT tag at current level */
-		&asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_30,
+		&asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_31,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -933,34 +983,34 @@ static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingRequest_r18_29[] = {
 		"nr-DL-PRS-RxHoppingTotalBandwidth-r18"
 		},
 };
-static const int asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_oms_29[] = { 0 };
-static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_29[] = {
+static const int asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_oms_30[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_30[] = {
 	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
-static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_tag2el_29[] = {
+static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_tag2el_30[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* nr-DL-PRS-RxHoppingTotalBandwidth-r18 */
 };
-static asn_SEQUENCE_specifics_t asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_29 = {
+static asn_SEQUENCE_specifics_t asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_30 = {
 	sizeof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18),
 	offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18, _asn_ctx),
-	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_tag2el_29,
+	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_tag2el_30,
 	1,	/* Count of tags in the map */
-	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_oms_29,	/* Optional members */
+	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_oms_30,	/* Optional members */
 	1, 0,	/* Root/Additions */
 	-1,	/* First extension addition */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_29 = {
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_30 = {
 	"nr-DL-PRS-RxHoppingRequest-r18",
 	"nr-DL-PRS-RxHoppingRequest-r18",
 	&asn_OP_SEQUENCE,
-	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_29,
-	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_29)
-		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_29[0]) - 1, /* 1 */
-	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_29,	/* Same as above */
-	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_29)
-		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_29[0]), /* 2 */
+	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_30,
+	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_30)
+		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_30[0]) - 1, /* 1 */
+	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_30,	/* Same as above */
+	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_30)
+		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_30[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
@@ -970,76 +1020,33 @@ asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_29 = {
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		SEQUENCE_constraint
 	},
-	asn_MBR_nr_DL_PRS_RxHoppingRequest_r18_29,
+	asn_MBR_nr_DL_PRS_RxHoppingRequest_r18_30,
 	1,	/* Elements count */
-	&asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_29	/* Additional specs */
-};
-
-static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_PRS_RSCPD_Request_r18_value2enum_40[] = {
-	{ 0,	9,	"requested" }
-};
-static const unsigned int asn_MAP_nr_DL_PRS_RSCPD_Request_r18_enum2value_40[] = {
-	0	/* requested(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_nr_DL_PRS_RSCPD_Request_r18_specs_40 = {
-	asn_MAP_nr_DL_PRS_RSCPD_Request_r18_value2enum_40,	/* "tag" => N; sorted by tag */
-	asn_MAP_nr_DL_PRS_RSCPD_Request_r18_enum2value_40,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RSCPD_Request_r18_tags_40[] = {
-	(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RSCPD_Request_r18_40 = {
-	"nr-DL-PRS-RSCPD-Request-r18",
-	"nr-DL-PRS-RSCPD-Request-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_nr_DL_PRS_RSCPD_Request_r18_tags_40,
-	sizeof(asn_DEF_nr_DL_PRS_RSCPD_Request_r18_tags_40)
-		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_Request_r18_tags_40[0]) - 1, /* 1 */
-	asn_DEF_nr_DL_PRS_RSCPD_Request_r18_tags_40,	/* Same as above */
-	sizeof(asn_DEF_nr_DL_PRS_RSCPD_Request_r18_tags_40)
-		/sizeof(asn_DEF_nr_DL_PRS_RSCPD_Request_r18_tags_40[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_PRS_RSCPD_Request_r18_constr_40,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_nr_DL_PRS_RSCPD_Request_r18_specs_40	/* Additional specs */
+	&asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_30	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_ext2_26[] = {
-	{ ATF_POINTER, 3, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2, nr_DL_PRS_JointMeasurementRequestedPFL_List_r18),
+	{ ATF_POINTER, 2, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2, nr_DL_PRS_JointMeasurementRequest_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		0,
-		&asn_DEF_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_27,
+		&asn_DEF_nr_DL_PRS_JointMeasurementRequest_r18_27,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 			0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			&asn_PER_memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constr_27,
+			0,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			memb_nr_DL_PRS_JointMeasurementRequestedPFL_List_r18_constraint_26
+			0
 		},
 		0, 0, /* No default value */
-		"nr-DL-PRS-JointMeasurementRequestedPFL-List-r18"
+		"nr-DL-PRS-JointMeasurementRequest-r18"
 		},
-	{ ATF_POINTER, 2, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2, nr_DL_PRS_RxHoppingRequest_r18),
+	{ ATF_POINTER, 1, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2, nr_DL_PRS_RxHoppingRequest_r18),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		0,
-		&asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_29,
+		&asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_30,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1053,41 +1060,23 @@ static asn_TYPE_member_t asn_MBR_ext2_26[] = {
 		0, 0, /* No default value */
 		"nr-DL-PRS-RxHoppingRequest-r18"
 		},
-	{ ATF_POINTER, 1, offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2, nr_DL_PRS_RSCPD_Request_r18),
-		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_nr_DL_PRS_RSCPD_Request_r18_40,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"nr-DL-PRS-RSCPD-Request-r18"
-		},
 };
-static const int asn_MAP_ext2_oms_26[] = { 0, 1, 2 };
+static const int asn_MAP_ext2_oms_26[] = { 0, 1 };
 static const ber_tlv_tag_t asn_DEF_ext2_tags_26[] = {
 	(ASN_TAG_CLASS_CONTEXT | (6 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static const asn_TYPE_tag2member_t asn_MAP_ext2_tag2el_26[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* nr-DL-PRS-JointMeasurementRequestedPFL-List-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* nr-DL-PRS-RxHoppingRequest-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 } /* nr-DL-PRS-RSCPD-Request-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* nr-DL-PRS-JointMeasurementRequest-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* nr-DL-PRS-RxHoppingRequest-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext2_specs_26 = {
 	sizeof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2),
 	offsetof(struct NR_DL_TDOA_RequestLocationInformation_r16__ext2, _asn_ctx),
 	asn_MAP_ext2_tag2el_26,
-	3,	/* Count of tags in the map */
+	2,	/* Count of tags in the map */
 	asn_MAP_ext2_oms_26,	/* Optional members */
-	3, 0,	/* Root/Additions */
+	2, 0,	/* Root/Additions */
 	-1,	/* First extension addition */
 };
 static /* Use -fall-defs-global to expose */
@@ -1111,7 +1100,7 @@ asn_TYPE_descriptor_t asn_DEF_ext2_26 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_ext2_26,
-	3,	/* Elements count */
+	2,	/* Elements count */
 	&asn_SPC_ext2_specs_26	/* Additional specs */
 };
 

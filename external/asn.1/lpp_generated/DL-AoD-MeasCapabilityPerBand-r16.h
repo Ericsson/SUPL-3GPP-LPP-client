@@ -15,6 +15,7 @@
 #include "FreqBandIndicatorNR-r16.h"
 #include <NativeEnumerated.h>
 #include <constr_SEQUENCE.h>
+#include <BIT_STRING.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -38,9 +39,13 @@ typedef enum DL_AoD_MeasCapabilityPerBand_r16__ext1__maxDL_PRS_FirstPathRSRP_Mea
 typedef enum DL_AoD_MeasCapabilityPerBand_r16__ext1__dl_PRS_MeasRRC_Inactive_r17 {
 	DL_AoD_MeasCapabilityPerBand_r16__ext1__dl_PRS_MeasRRC_Inactive_r17_supported	= 0
 } e_DL_AoD_MeasCapabilityPerBand_r16__ext1__dl_PRS_MeasRRC_Inactive_r17;
-typedef enum DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfLegacyMeasurementInTimeWindow_r18 {
-	DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfLegacyMeasurementInTimeWindow_r18_supported	= 0
-} e_DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfLegacyMeasurementInTimeWindow_r18;
+typedef enum DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfMeasurementsInTimeWindow_r18 {
+	DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfMeasurementsInTimeWindow_r18_rsrp	= 0,
+	DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfMeasurementsInTimeWindow_r18_rsrpp	= 1
+} e_DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfMeasurementsInTimeWindow_r18;
+typedef enum DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfPRS_MeasurementRRC_Idle_r18 {
+	DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfPRS_MeasurementRRC_Idle_r18_supported	= 0
+} e_DL_AoD_MeasCapabilityPerBand_r16__ext2__supportOfPRS_MeasurementRRC_Idle_r18;
 
 /* DL-AoD-MeasCapabilityPerBand-r16 */
 typedef struct DL_AoD_MeasCapabilityPerBand_r16 {
@@ -59,7 +64,8 @@ typedef struct DL_AoD_MeasCapabilityPerBand_r16 {
 		asn_struct_ctx_t _asn_ctx;
 	} *ext1;
 	struct DL_AoD_MeasCapabilityPerBand_r16__ext2 {
-		long	*supportOfLegacyMeasurementInTimeWindow_r18;	/* OPTIONAL */
+		BIT_STRING_t	*supportOfMeasurementsInTimeWindow_r18;	/* OPTIONAL */
+		long	*supportOfPRS_MeasurementRRC_Idle_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
@@ -74,7 +80,7 @@ typedef struct DL_AoD_MeasCapabilityPerBand_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_simul_NR_DL_AoD_Multi_RTT_r16_5;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_maxDL_PRS_FirstPathRSRP_MeasPerTRP_r17_9;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_dl_PRS_MeasRRC_Inactive_r17_16;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfLegacyMeasurementInTimeWindow_r18_19;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_22;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_DL_AoD_MeasCapabilityPerBand_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_DL_AoD_MeasCapabilityPerBand_r16_specs_1;
 extern asn_TYPE_member_t asn_MBR_DL_AoD_MeasCapabilityPerBand_r16_1[5];

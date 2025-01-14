@@ -19,10 +19,6 @@
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
  */
-/*
- * This type is implemented using NativeEnumerated,
- * so here we adjust the DEF accordingly.
- */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
 static asn_per_constraints_t asn_PER_type_multiMeasInSameReport_r17_constr_6 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
@@ -31,28 +27,21 @@ static asn_per_constraints_t asn_PER_type_multiMeasInSameReport_r17_constr_6 CC_
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RxHoppingRequest_r18_constr_9 CC_NOTUSED = {
-	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_fr1_constr_12 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_fr1_constr_11 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  3 }	/* (0..3) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_fr2_constr_17 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_fr2_constr_16 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 2,  2,  0,  2 }	/* (0..2) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_11 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_10 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 1,  1,  0,  1 }	/* (0..1) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
@@ -162,150 +151,107 @@ asn_TYPE_descriptor_t asn_DEF_ext1_5 = {
 	&asn_SPC_ext1_specs_5	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_value2enum_9[] = {
-	{ 0,	9,	"requested" }
-};
-static const unsigned int asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_enum2value_9[] = {
-	0	/* requested(0) */
-};
-static const asn_INTEGER_specifics_t asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_9 = {
-	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_value2enum_9,	/* "tag" => N; sorted by tag */
-	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_enum2value_9,	/* N => "tag"; sorted by N */
-	1,	/* Number of elements in the maps */
-	0,	/* Enumeration is not extensible */
-	1,	/* Strict enumeration */
-	0,	/* Native long size */
-	0
-};
-static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9[] = {
-	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
-	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
-};
-static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_9 = {
-	"nr-DL-PRS-RxHoppingRequest-r18",
-	"nr-DL-PRS-RxHoppingRequest-r18",
-	&asn_OP_NativeEnumerated,
-	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9,
-	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9)
-		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9[0]) - 1, /* 1 */
-	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9,	/* Same as above */
-	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9)
-		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9[0]), /* 2 */
-	{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-		0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_PRS_RxHoppingRequest_r18_constr_9,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		NativeEnumerated_constraint
-	},
-	0, 0,	/* Defined elsewhere */
-	&asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_9	/* Additional specs */
-};
-
-static const asn_INTEGER_enum_map_t asn_MAP_fr1_value2enum_12[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_fr1_value2enum_11[] = {
 	{ 0,	5,	"mhz40" },
 	{ 1,	5,	"mhz50" },
 	{ 2,	5,	"mhz80" },
 	{ 3,	6,	"mhz100" }
 };
-static const unsigned int asn_MAP_fr1_enum2value_12[] = {
+static const unsigned int asn_MAP_fr1_enum2value_11[] = {
 	3,	/* mhz100(3) */
 	0,	/* mhz40(0) */
 	1,	/* mhz50(1) */
 	2	/* mhz80(2) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_fr1_specs_12 = {
-	asn_MAP_fr1_value2enum_12,	/* "tag" => N; sorted by tag */
-	asn_MAP_fr1_enum2value_12,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_fr1_specs_11 = {
+	asn_MAP_fr1_value2enum_11,	/* "tag" => N; sorted by tag */
+	asn_MAP_fr1_enum2value_11,	/* N => "tag"; sorted by N */
 	4,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_fr1_tags_12[] = {
+static const ber_tlv_tag_t asn_DEF_fr1_tags_11[] = {
 	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_fr1_12 = {
+asn_TYPE_descriptor_t asn_DEF_fr1_11 = {
 	"fr1",
 	"fr1",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_fr1_tags_12,
-	sizeof(asn_DEF_fr1_tags_12)
-		/sizeof(asn_DEF_fr1_tags_12[0]) - 1, /* 1 */
-	asn_DEF_fr1_tags_12,	/* Same as above */
-	sizeof(asn_DEF_fr1_tags_12)
-		/sizeof(asn_DEF_fr1_tags_12[0]), /* 2 */
+	asn_DEF_fr1_tags_11,
+	sizeof(asn_DEF_fr1_tags_11)
+		/sizeof(asn_DEF_fr1_tags_11[0]) - 1, /* 1 */
+	asn_DEF_fr1_tags_11,	/* Same as above */
+	sizeof(asn_DEF_fr1_tags_11)
+		/sizeof(asn_DEF_fr1_tags_11[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_fr1_constr_12,
+		&asn_PER_type_fr1_constr_11,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_fr1_specs_12	/* Additional specs */
+	&asn_SPC_fr1_specs_11	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_fr2_value2enum_17[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_fr2_value2enum_16[] = {
 	{ 0,	6,	"mhz100" },
 	{ 1,	6,	"mhz200" },
 	{ 2,	6,	"mhz400" }
 };
-static const unsigned int asn_MAP_fr2_enum2value_17[] = {
+static const unsigned int asn_MAP_fr2_enum2value_16[] = {
 	0,	/* mhz100(0) */
 	1,	/* mhz200(1) */
 	2	/* mhz400(2) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_fr2_specs_17 = {
-	asn_MAP_fr2_value2enum_17,	/* "tag" => N; sorted by tag */
-	asn_MAP_fr2_enum2value_17,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_fr2_specs_16 = {
+	asn_MAP_fr2_value2enum_16,	/* "tag" => N; sorted by tag */
+	asn_MAP_fr2_enum2value_16,	/* N => "tag"; sorted by N */
 	3,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_fr2_tags_17[] = {
+static const ber_tlv_tag_t asn_DEF_fr2_tags_16[] = {
 	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_fr2_17 = {
+asn_TYPE_descriptor_t asn_DEF_fr2_16 = {
 	"fr2",
 	"fr2",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_fr2_tags_17,
-	sizeof(asn_DEF_fr2_tags_17)
-		/sizeof(asn_DEF_fr2_tags_17[0]) - 1, /* 1 */
-	asn_DEF_fr2_tags_17,	/* Same as above */
-	sizeof(asn_DEF_fr2_tags_17)
-		/sizeof(asn_DEF_fr2_tags_17[0]), /* 2 */
+	asn_DEF_fr2_tags_16,
+	sizeof(asn_DEF_fr2_tags_16)
+		/sizeof(asn_DEF_fr2_tags_16[0]) - 1, /* 1 */
+	asn_DEF_fr2_tags_16,	/* Same as above */
+	sizeof(asn_DEF_fr2_tags_16)
+		/sizeof(asn_DEF_fr2_tags_16[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_fr2_constr_17,
+		&asn_PER_type_fr2_constr_16,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_fr2_specs_17	/* Additional specs */
+	&asn_SPC_fr2_specs_16	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_11[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18, choice.fr1),
+static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_10[] = {
+	{ ATF_NOFLAGS, 0, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, choice.fr1),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_fr1_12,
+		&asn_DEF_fr1_11,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -319,10 +265,10 @@ static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_11[] = {
 		0, 0, /* No default value */
 		"fr1"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18, choice.fr2),
+	{ ATF_NOFLAGS, 0, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, choice.fr2),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_fr2_17,
+		&asn_DEF_fr2_16,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -337,22 +283,22 @@ static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_11[] = {
 		"fr2"
 		},
 };
-static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_11[] = {
+static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_10[] = {
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* fr1 */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* fr2 */
 };
-static asn_CHOICE_specifics_t asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_11 = {
-	sizeof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18),
-	offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18, _asn_ctx),
-	offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18, present),
-	sizeof(((struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingTotalBandwidth_r18 *)0)->present),
-	asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_11,
+static asn_CHOICE_specifics_t asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_10 = {
+	sizeof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18),
+	offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, _asn_ctx),
+	offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18, present),
+	sizeof(((struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18__nr_DL_PRS_RxHoppingTotalBandwidth_r18 *)0)->present),
+	asn_MAP_nr_DL_PRS_RxHoppingTotalBandwidth_r18_tag2el_10,
 	2,	/* Count of tags in the map */
 	0, 0,
 	-1	/* Extensions start */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_11 = {
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_10 = {
 	"nr-DL-PRS-RxHoppingTotalBandwidth-r18",
 	"nr-DL-PRS-RxHoppingTotalBandwidth-r18",
 	&asn_OP_CHOICE,
@@ -365,37 +311,20 @@ asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_11 = {
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_11,
+		&asn_PER_type_nr_DL_PRS_RxHoppingTotalBandwidth_r18_constr_10,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		CHOICE_constraint
 	},
-	asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_11,
+	asn_MBR_nr_DL_PRS_RxHoppingTotalBandwidth_r18_10,
 	2,	/* Elements count */
-	&asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_11	/* Additional specs */
+	&asn_SPC_nr_DL_PRS_RxHoppingTotalBandwidth_r18_specs_10	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_ext2_8[] = {
-	{ ATF_POINTER, 2, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2, nr_DL_PRS_RxHoppingRequest_r18),
+static asn_TYPE_member_t asn_MBR_nr_DL_PRS_RxHoppingRequest_r18_9[] = {
+	{ ATF_POINTER, 1, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18, nr_DL_PRS_RxHoppingTotalBandwidth_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
-		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_9,
-		0,
-		{
-#if !defined(ASN_DISABLE_OER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			0,
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			0
-		},
-		0, 0, /* No default value */
-		"nr-DL-PRS-RxHoppingRequest-r18"
-		},
-	{ ATF_POINTER, 1, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2, nr_DL_PRS_RxHoppingTotalBandwidth_r18),
-		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		+1,	/* EXPLICIT tag at current level */
-		&asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_11,
+		&asn_DEF_nr_DL_PRS_RxHoppingTotalBandwidth_r18_10,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -410,22 +339,82 @@ static asn_TYPE_member_t asn_MBR_ext2_8[] = {
 		"nr-DL-PRS-RxHoppingTotalBandwidth-r18"
 		},
 };
-static const int asn_MAP_ext2_oms_8[] = { 0, 1 };
+static const int asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_oms_9[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9[] = {
+	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_tag2el_9[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* nr-DL-PRS-RxHoppingTotalBandwidth-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_9 = {
+	sizeof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18),
+	offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2__nr_DL_PRS_RxHoppingRequest_r18, _asn_ctx),
+	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_tag2el_9,
+	1,	/* Count of tags in the map */
+	asn_MAP_nr_DL_PRS_RxHoppingRequest_r18_oms_9,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_9 = {
+	"nr-DL-PRS-RxHoppingRequest-r18",
+	"nr-DL-PRS-RxHoppingRequest-r18",
+	&asn_OP_SEQUENCE,
+	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9,
+	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9)
+		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9[0]) - 1, /* 1 */
+	asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9,	/* Same as above */
+	sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9)
+		/sizeof(asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_tags_9[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_nr_DL_PRS_RxHoppingRequest_r18_9,
+	1,	/* Elements count */
+	&asn_SPC_nr_DL_PRS_RxHoppingRequest_r18_specs_9	/* Additional specs */
+};
+
+static asn_TYPE_member_t asn_MBR_ext2_8[] = {
+	{ ATF_POINTER, 1, offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2, nr_DL_PRS_RxHoppingRequest_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		0,
+		&asn_DEF_nr_DL_PRS_RxHoppingRequest_r18_9,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"nr-DL-PRS-RxHoppingRequest-r18"
+		},
+};
+static const int asn_MAP_ext2_oms_8[] = { 0 };
 static const ber_tlv_tag_t asn_DEF_ext2_tags_8[] = {
 	(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static const asn_TYPE_tag2member_t asn_MAP_ext2_tag2el_8[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* nr-DL-PRS-RxHoppingRequest-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 } /* nr-DL-PRS-RxHoppingTotalBandwidth-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* nr-DL-PRS-RxHoppingRequest-r18 */
 };
 static asn_SEQUENCE_specifics_t asn_SPC_ext2_specs_8 = {
 	sizeof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2),
 	offsetof(struct NR_DL_AoD_RequestLocationInformation_r16__ext2, _asn_ctx),
 	asn_MAP_ext2_tag2el_8,
-	2,	/* Count of tags in the map */
+	1,	/* Count of tags in the map */
 	asn_MAP_ext2_oms_8,	/* Optional members */
-	2, 0,	/* Root/Additions */
+	1, 0,	/* Root/Additions */
 	-1,	/* First extension addition */
 };
 static /* Use -fall-defs-global to expose */
@@ -449,7 +438,7 @@ asn_TYPE_descriptor_t asn_DEF_ext2_8 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_ext2_8,
-	2,	/* Elements count */
+	1,	/* Elements count */
 	&asn_SPC_ext2_specs_8	/* Additional specs */
 };
 

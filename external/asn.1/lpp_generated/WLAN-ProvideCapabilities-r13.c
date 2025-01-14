@@ -9,6 +9,7 @@
 
 #include "PositioningModes.h"
 #include "ScheduledLocationTimeSupportPerMode-r17.h"
+#include "PeriodicReportingIntervalMsSupportPerMode-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -335,6 +336,67 @@ asn_TYPE_descriptor_t asn_DEF_ext2_17 = {
 	&asn_SPC_ext2_specs_17	/* Additional specs */
 };
 
+static asn_TYPE_member_t asn_MBR_ext3_19[] = {
+	{ ATF_POINTER, 1, offsetof(struct WLAN_ProvideCapabilities_r13__ext3, periodicReportingIntervalMsSupport_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicReportingIntervalMsSupportPerMode_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicReportingIntervalMsSupport-r18"
+		},
+};
+static const int asn_MAP_ext3_oms_19[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_ext3_tags_19[] = {
+	(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_ext3_tag2el_19[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_ext3_specs_19 = {
+	sizeof(struct WLAN_ProvideCapabilities_r13__ext3),
+	offsetof(struct WLAN_ProvideCapabilities_r13__ext3, _asn_ctx),
+	asn_MAP_ext3_tag2el_19,
+	1,	/* Count of tags in the map */
+	asn_MAP_ext3_oms_19,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_ext3_19 = {
+	"ext3",
+	"ext3",
+	&asn_OP_SEQUENCE,
+	asn_DEF_ext3_tags_19,
+	sizeof(asn_DEF_ext3_tags_19)
+		/sizeof(asn_DEF_ext3_tags_19[0]) - 1, /* 1 */
+	asn_DEF_ext3_tags_19,	/* Same as above */
+	sizeof(asn_DEF_ext3_tags_19)
+		/sizeof(asn_DEF_ext3_tags_19[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_ext3_19,
+	1,	/* Elements count */
+	&asn_SPC_ext3_specs_19	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_WLAN_ProvideCapabilities_r13_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct WLAN_ProvideCapabilities_r13, wlan_Modes_r13),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -370,7 +432,7 @@ asn_TYPE_member_t asn_MBR_WLAN_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"wlan-MeasSupported-r13"
 		},
-	{ ATF_POINTER, 2, offsetof(struct WLAN_ProvideCapabilities_r13, ext1),
+	{ ATF_POINTER, 3, offsetof(struct WLAN_ProvideCapabilities_r13, ext1),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		0,
 		&asn_DEF_ext1_10,
@@ -387,7 +449,7 @@ asn_TYPE_member_t asn_MBR_WLAN_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"ext1"
 		},
-	{ ATF_POINTER, 1, offsetof(struct WLAN_ProvideCapabilities_r13, ext2),
+	{ ATF_POINTER, 2, offsetof(struct WLAN_ProvideCapabilities_r13, ext2),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		0,
 		&asn_DEF_ext2_17,
@@ -404,8 +466,25 @@ asn_TYPE_member_t asn_MBR_WLAN_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"ext2"
 		},
+	{ ATF_POINTER, 1, offsetof(struct WLAN_ProvideCapabilities_r13, ext3),
+		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
+		0,
+		&asn_DEF_ext3_19,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"ext3"
+		},
 };
-static const int asn_MAP_WLAN_ProvideCapabilities_r13_oms_1[] = { 2, 3 };
+static const int asn_MAP_WLAN_ProvideCapabilities_r13_oms_1[] = { 2, 3, 4 };
 static const ber_tlv_tag_t asn_DEF_WLAN_ProvideCapabilities_r13_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -413,15 +492,16 @@ static const asn_TYPE_tag2member_t asn_MAP_WLAN_ProvideCapabilities_r13_tag2el_1
     { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* wlan-Modes-r13 */
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* wlan-MeasSupported-r13 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* ext1 */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 } /* ext2 */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* ext2 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* ext3 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_WLAN_ProvideCapabilities_r13_specs_1 = {
 	sizeof(struct WLAN_ProvideCapabilities_r13),
 	offsetof(struct WLAN_ProvideCapabilities_r13, _asn_ctx),
 	asn_MAP_WLAN_ProvideCapabilities_r13_tag2el_1,
-	4,	/* Count of tags in the map */
+	5,	/* Count of tags in the map */
 	asn_MAP_WLAN_ProvideCapabilities_r13_oms_1,	/* Optional members */
-	0, 2,	/* Root/Additions */
+	0, 3,	/* Root/Additions */
 	2,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_WLAN_ProvideCapabilities_r13 = {
@@ -444,7 +524,7 @@ asn_TYPE_descriptor_t asn_DEF_WLAN_ProvideCapabilities_r13 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_WLAN_ProvideCapabilities_r13_1,
-	4,	/* Elements count */
+	5,	/* Elements count */
 	&asn_SPC_WLAN_ProvideCapabilities_r13_specs_1	/* Additional specs */
 };
 

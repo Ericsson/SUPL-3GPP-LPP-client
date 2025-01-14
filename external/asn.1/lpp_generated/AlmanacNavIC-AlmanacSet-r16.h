@@ -36,6 +36,12 @@ typedef struct AlmanacNavIC_AlmanacSet_r16 {
 	 * This type is extensible,
 	 * possible extensions are below.
 	 */
+	struct AlmanacNavIC_AlmanacSet_r16__ext1 {
+		long	*navicL5_i0_r16;	/* OPTIONAL */
+		
+		/* Context for parsing across buffer boundaries */
+		asn_struct_ctx_t _asn_ctx;
+	} *ext1;
 	
 	/* Context for parsing across buffer boundaries */
 	asn_struct_ctx_t _asn_ctx;
@@ -44,7 +50,7 @@ typedef struct AlmanacNavIC_AlmanacSet_r16 {
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_AlmanacNavIC_AlmanacSet_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_AlmanacNavIC_AlmanacSet_r16_specs_1;
-extern asn_TYPE_member_t asn_MBR_AlmanacNavIC_AlmanacSet_r16_1[10];
+extern asn_TYPE_member_t asn_MBR_AlmanacNavIC_AlmanacSet_r16_1[11];
 
 #ifdef __cplusplus
 }

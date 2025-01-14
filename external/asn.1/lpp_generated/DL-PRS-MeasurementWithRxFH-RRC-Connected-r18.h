@@ -70,16 +70,16 @@ typedef enum DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__processingDuration_r1
 	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__processingDuration_r18__processingDurationT3_r18_ms640	= 8,
 	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__processingDuration_r18__processingDurationT3_r18_ms1280	= 9
 } e_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__processingDuration_r18__processingDurationT3_r18;
-typedef enum DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR1_r18 {
-	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR1_r18_n70	= 0,
-	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR1_r18_n140	= 1,
-	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR1_r18_n210	= 2
-} e_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR1_r18;
-typedef enum DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR2_r18 {
-	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR2_r18_n35	= 0,
-	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR2_r18_n70	= 1,
-	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR2_r18_n140	= 2
-} e_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetunTimeFR2_r18;
+typedef enum DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR1_r18 {
+	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR1_r18_n70	= 0,
+	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR1_r18_n140	= 1,
+	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR1_r18_n210	= 2
+} e_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR1_r18;
+typedef enum DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR2_r18 {
+	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR2_r18_n35	= 0,
+	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR2_r18_n70	= 1,
+	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR2_r18_n140	= 2
+} e_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__rf_RxRetuneTimeFR2_r18;
 typedef enum DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__numOfOverlappingPRB_r18 {
 	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__numOfOverlappingPRB_r18_n0	= 0,
 	DL_PRS_MeasurementWithRxFH_RRC_Connected_r18__numOfOverlappingPRB_r18_n1	= 1,
@@ -99,8 +99,8 @@ typedef struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18 {
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
 	} *processingDuration_r18;
-	long	*rf_RxRetunTimeFR1_r18;	/* OPTIONAL */
-	long	*rf_RxRetunTimeFR2_r18;	/* OPTIONAL */
+	long	*rf_RxRetuneTimeFR1_r18;	/* OPTIONAL */
+	long	*rf_RxRetuneTimeFR2_r18;	/* OPTIONAL */
 	long	*numOfOverlappingPRB_r18;	/* OPTIONAL */
 	/*
 	 * This type is extensible,
@@ -117,8 +117,8 @@ typedef struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18 {
 /* extern asn_TYPE_descriptor_t asn_DEF_maximumFH_Hops_r18_11;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_processingPRS_SymbolsDurationN3_r18_18;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_processingDurationT3_r18_37;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_rf_RxRetunTimeFR1_r18_48;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_rf_RxRetunTimeFR2_r18_52;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_rf_RxRetuneTimeFR1_r18_48;	// (Use -fall-defs-global to expose) */
+/* extern asn_TYPE_descriptor_t asn_DEF_rf_RxRetuneTimeFR2_r18_52;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_numOfOverlappingPRB_r18_56;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18;
 extern asn_SEQUENCE_specifics_t asn_SPC_DL_PRS_MeasurementWithRxFH_RRC_Connected_r18_specs_1;

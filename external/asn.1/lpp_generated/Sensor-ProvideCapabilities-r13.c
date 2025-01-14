@@ -10,6 +10,7 @@
 #include "Sensor-AssistanceDataSupportList-r14.h"
 #include "PositioningModes.h"
 #include "ScheduledLocationTimeSupportPerMode-r17.h"
+#include "PeriodicReportingIntervalMsSupportPerMode-r18.h"
 /*
  * This type is implemented using NativeEnumerated,
  * so here we adjust the DEF accordingly.
@@ -490,6 +491,67 @@ asn_TYPE_descriptor_t asn_DEF_ext4_18 = {
 	&asn_SPC_ext4_specs_18	/* Additional specs */
 };
 
+static asn_TYPE_member_t asn_MBR_ext5_20[] = {
+	{ ATF_POINTER, 1, offsetof(struct Sensor_ProvideCapabilities_r13__ext5, periodicReportingIntervalMsSupport_r18),
+		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
+		-1,	/* IMPLICIT tag at current level */
+		&asn_DEF_PeriodicReportingIntervalMsSupportPerMode_r18,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"periodicReportingIntervalMsSupport-r18"
+		},
+};
+static const int asn_MAP_ext5_oms_20[] = { 0 };
+static const ber_tlv_tag_t asn_DEF_ext5_tags_20[] = {
+	(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
+};
+static const asn_TYPE_tag2member_t asn_MAP_ext5_tag2el_20[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 } /* periodicReportingIntervalMsSupport-r18 */
+};
+static asn_SEQUENCE_specifics_t asn_SPC_ext5_specs_20 = {
+	sizeof(struct Sensor_ProvideCapabilities_r13__ext5),
+	offsetof(struct Sensor_ProvideCapabilities_r13__ext5, _asn_ctx),
+	asn_MAP_ext5_tag2el_20,
+	1,	/* Count of tags in the map */
+	asn_MAP_ext5_oms_20,	/* Optional members */
+	1, 0,	/* Root/Additions */
+	-1,	/* First extension addition */
+};
+static /* Use -fall-defs-global to expose */
+asn_TYPE_descriptor_t asn_DEF_ext5_20 = {
+	"ext5",
+	"ext5",
+	&asn_OP_SEQUENCE,
+	asn_DEF_ext5_tags_20,
+	sizeof(asn_DEF_ext5_tags_20)
+		/sizeof(asn_DEF_ext5_tags_20[0]) - 1, /* 1 */
+	asn_DEF_ext5_tags_20,	/* Same as above */
+	sizeof(asn_DEF_ext5_tags_20)
+		/sizeof(asn_DEF_ext5_tags_20[0]), /* 2 */
+	{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+		0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+		SEQUENCE_constraint
+	},
+	asn_MBR_ext5_20,
+	1,	/* Elements count */
+	&asn_SPC_ext5_specs_20	/* Additional specs */
+};
+
 asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[] = {
 	{ ATF_NOFLAGS, 0, offsetof(struct Sensor_ProvideCapabilities_r13, sensor_Modes_r13),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
@@ -508,7 +570,7 @@ asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"sensor-Modes-r13"
 		},
-	{ ATF_POINTER, 4, offsetof(struct Sensor_ProvideCapabilities_r13, ext1),
+	{ ATF_POINTER, 5, offsetof(struct Sensor_ProvideCapabilities_r13, ext1),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		0,
 		&asn_DEF_ext1_7,
@@ -525,7 +587,7 @@ asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"ext1"
 		},
-	{ ATF_POINTER, 3, offsetof(struct Sensor_ProvideCapabilities_r13, ext2),
+	{ ATF_POINTER, 4, offsetof(struct Sensor_ProvideCapabilities_r13, ext2),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		0,
 		&asn_DEF_ext2_12,
@@ -542,7 +604,7 @@ asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"ext2"
 		},
-	{ ATF_POINTER, 2, offsetof(struct Sensor_ProvideCapabilities_r13, ext3),
+	{ ATF_POINTER, 3, offsetof(struct Sensor_ProvideCapabilities_r13, ext3),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		0,
 		&asn_DEF_ext3_15,
@@ -559,7 +621,7 @@ asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"ext3"
 		},
-	{ ATF_POINTER, 1, offsetof(struct Sensor_ProvideCapabilities_r13, ext4),
+	{ ATF_POINTER, 2, offsetof(struct Sensor_ProvideCapabilities_r13, ext4),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		0,
 		&asn_DEF_ext4_18,
@@ -576,8 +638,25 @@ asn_TYPE_member_t asn_MBR_Sensor_ProvideCapabilities_r13_1[] = {
 		0, 0, /* No default value */
 		"ext4"
 		},
+	{ ATF_POINTER, 1, offsetof(struct Sensor_ProvideCapabilities_r13, ext5),
+		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
+		0,
+		&asn_DEF_ext5_20,
+		0,
+		{
+#if !defined(ASN_DISABLE_OER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
+#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
+			0,
+#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
+			0
+		},
+		0, 0, /* No default value */
+		"ext5"
+		},
 };
-static const int asn_MAP_Sensor_ProvideCapabilities_r13_oms_1[] = { 1, 2, 3, 4 };
+static const int asn_MAP_Sensor_ProvideCapabilities_r13_oms_1[] = { 1, 2, 3, 4, 5 };
 static const ber_tlv_tag_t asn_DEF_Sensor_ProvideCapabilities_r13_tags_1[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
@@ -586,15 +665,16 @@ static const asn_TYPE_tag2member_t asn_MAP_Sensor_ProvideCapabilities_r13_tag2el
     { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* ext1 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* ext2 */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* ext3 */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 } /* ext4 */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* ext4 */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 } /* ext5 */
 };
 asn_SEQUENCE_specifics_t asn_SPC_Sensor_ProvideCapabilities_r13_specs_1 = {
 	sizeof(struct Sensor_ProvideCapabilities_r13),
 	offsetof(struct Sensor_ProvideCapabilities_r13, _asn_ctx),
 	asn_MAP_Sensor_ProvideCapabilities_r13_tag2el_1,
-	5,	/* Count of tags in the map */
+	6,	/* Count of tags in the map */
 	asn_MAP_Sensor_ProvideCapabilities_r13_oms_1,	/* Optional members */
-	0, 4,	/* Root/Additions */
+	0, 5,	/* Root/Additions */
 	1,	/* First extension addition */
 };
 asn_TYPE_descriptor_t asn_DEF_Sensor_ProvideCapabilities_r13 = {
@@ -617,7 +697,7 @@ asn_TYPE_descriptor_t asn_DEF_Sensor_ProvideCapabilities_r13 = {
 		SEQUENCE_constraint
 	},
 	asn_MBR_Sensor_ProvideCapabilities_r13_1,
-	5,	/* Elements count */
+	6,	/* Elements count */
 	&asn_SPC_Sensor_ProvideCapabilities_r13_specs_1	/* Additional specs */
 };
 

@@ -446,9 +446,6 @@ typedef enum PRS_ProcessingCapabilityPerBand_r16__ext4__reducedNumOfSampleForMea
 typedef enum PRS_ProcessingCapabilityPerBand_r16__ext4__supportOfPRS_BWA_WithTwoPFL_Combination_r18 {
 	PRS_ProcessingCapabilityPerBand_r16__ext4__supportOfPRS_BWA_WithTwoPFL_Combination_r18_supported	= 0
 } e_PRS_ProcessingCapabilityPerBand_r16__ext4__supportOfPRS_BWA_WithTwoPFL_Combination_r18;
-typedef enum PRS_ProcessingCapabilityPerBand_r16__ext4__supportOfPRS_MeasurementRRC_Idle_r18 {
-	PRS_ProcessingCapabilityPerBand_r16__ext4__supportOfPRS_MeasurementRRC_Idle_r18_supported	= 0
-} e_PRS_ProcessingCapabilityPerBand_r16__ext4__supportOfPRS_MeasurementRRC_Idle_r18;
 
 /* Forward declarations */
 struct PRS_ProcessingCapabilityOutsideMGinPPWperType_r17;
@@ -606,8 +603,8 @@ typedef struct PRS_ProcessingCapabilityPerBand_r16 {
 		} *ppw_maxNumOfOneSymbolPRS_ResProcessedPerSlot_r18;
 		struct PRS_BWA_TwoContiguousIntrabandInMG_r18	*prs_BWA_TwoContiguousIntrabandInMG_RRC_Connected_r18;	/* OPTIONAL */
 		struct PRS_BWA_ThreeContiguousIntrabandInMG_r18	*prs_BWA_ThreeContiguousIntrabandInMG_RRC_Connected_r18;	/* OPTIONAL */
-		struct PRS_BWA_TwoContiguousIntrabandInMG_r18	*prs_BWA_TwoContiguousIntrabandInMG_RRC_IdleAndInactive_r18;	/* OPTIONAL */
-		struct PRS_BWA_ThreeContiguousIntrabandInMG_r18	*prs_BWA_ThreeContiguousIntrabandInMG_RRC_IdleAndInactive_r18;	/* OPTIONAL */
+		struct PRS_BWA_TwoContiguousIntrabandInMG_r18	*prs_BWA_TwoContiguousIntraband_RRC_IdleAndInactive_r18;	/* OPTIONAL */
+		struct PRS_BWA_ThreeContiguousIntrabandInMG_r18	*prs_BWA_ThreeContiguousIntraband_RRC_IdleAndInactive_r18;	/* OPTIONAL */
 		long	*reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_Connected_r18;	/* OPTIONAL */
 		long	*reducedNumOfSampleInMeasurementWithPRS_BWA_RRC_IdleAndInactive_r18;	/* OPTIONAL */
 		long	*dl_PRS_MeasurementWithRxFH_RRC_Inactive_r18;	/* OPTIONAL */
@@ -616,7 +613,6 @@ typedef struct PRS_ProcessingCapabilityPerBand_r16 {
 		long	*reducedNumOfSampleForMeasurementWithFH_RRC_IdleAndInactive_r18;	/* OPTIONAL */
 		long	*supportOfPRS_BWA_WithTwoPFL_Combination_r18;	/* OPTIONAL */
 		struct DL_PRS_MeasurementWithRxFH_RRC_Connected_r18	*dl_PRS_MeasurementWithRxFH_RRC_Connected_r18;	/* OPTIONAL */
-		long	*supportOfPRS_MeasurementRRC_Idle_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;
@@ -673,7 +669,6 @@ typedef struct PRS_ProcessingCapabilityPerBand_r16 {
 /* extern asn_TYPE_descriptor_t asn_DEF_reducedNumOfSampleForMeasurementWithFH_RRC_Connected_r18_390;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_reducedNumOfSampleForMeasurementWithFH_RRC_IdleAndInactive_r18_392;	// (Use -fall-defs-global to expose) */
 /* extern asn_TYPE_descriptor_t asn_DEF_supportOfPRS_BWA_WithTwoPFL_Combination_r18_394;	// (Use -fall-defs-global to expose) */
-/* extern asn_TYPE_descriptor_t asn_DEF_supportOfPRS_MeasurementRRC_Idle_r18_397;	// (Use -fall-defs-global to expose) */
 extern asn_TYPE_descriptor_t asn_DEF_PRS_ProcessingCapabilityPerBand_r16;
 extern asn_SEQUENCE_specifics_t asn_SPC_PRS_ProcessingCapabilityPerBand_r16_specs_1;
 extern asn_TYPE_member_t asn_MBR_PRS_ProcessingCapabilityPerBand_r16_1[9];

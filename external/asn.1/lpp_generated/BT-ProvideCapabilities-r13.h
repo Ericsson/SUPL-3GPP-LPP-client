@@ -41,6 +41,7 @@ typedef enum BT_ProvideCapabilities_r13__ext3__bt_AoA_r18 {
 /* Forward declarations */
 struct PositioningModes;
 struct ScheduledLocationTimeSupportPerMode_r17;
+struct PeriodicReportingIntervalMsSupportPerMode_r18;
 
 /* BT-ProvideCapabilities-r13 */
 typedef struct BT_ProvideCapabilities_r13 {
@@ -65,6 +66,7 @@ typedef struct BT_ProvideCapabilities_r13 {
 	} *ext2;
 	struct BT_ProvideCapabilities_r13__ext3 {
 		long	*bt_AoA_r18;	/* OPTIONAL */
+		struct PeriodicReportingIntervalMsSupportPerMode_r18	*periodicReportingIntervalMsSupport_r18;	/* OPTIONAL */
 		
 		/* Context for parsing across buffer boundaries */
 		asn_struct_ctx_t _asn_ctx;

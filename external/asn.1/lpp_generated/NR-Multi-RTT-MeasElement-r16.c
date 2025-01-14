@@ -15,7 +15,7 @@
 #include "NR-Multi-RTT-AdditionalMeasurementsExt-r17.h"
 #include "NR-PhaseQuality-r18.h"
 #include "NR-NTN-UE-RxTxMeasurements-r18.h"
-#include "NR-AggregatedDL-PRS-ResourceSetID-Element-r18.h"
+#include "NR-AggregatedDL-PRS-ResourceInfo-Element-r18.h"
 #include "NR-RSCP-AdditionalMeasurements-r18.h"
 static int
 memb_k0_r16_constraint_8(const asn_TYPE_descriptor_t *td, const void *sptr,
@@ -351,7 +351,7 @@ memb_nr_DL_PRS_FirstPathRSRP_Result_r17_constraint_28(const asn_TYPE_descriptor_
  * so here we adjust the DEF accordingly.
  */
 static int
-memb_nr_AggregatedDL_PRS_ResourceSetID_List_r18_constraint_36(const asn_TYPE_descriptor_t *td, const void *sptr,
+memb_nr_AggregatedDL_PRS_ResourceInfo_List_r18_constraint_36(const asn_TYPE_descriptor_t *td, const void *sptr,
 			asn_app_constraint_failed_f *ctfailcb, void *app_key) {
 	size_t size;
 	
@@ -583,14 +583,14 @@ static asn_per_constraints_t asn_PER_memb_nr_DL_PRS_FirstPathRSRP_Result_r17_con
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_constr_37 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_MeasBasedOnAggregatedResources_r18_constr_37 CC_NOTUSED = {
 	{ APC_CONSTRAINED,	 0,  0,  0,  0 }	/* (0..0) */,
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	0, 0	/* No PER value map */
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_type_nr_AggregatedDL_PRS_ResourceSetID_List_r18_constr_39 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_type_nr_AggregatedDL_PRS_ResourceInfo_List_r18_constr_39 CC_NOTUSED = {
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	{ APC_CONSTRAINED,	 1,  1,  2,  3 }	/* (SIZE(2..3)) */,
 	0, 0	/* No PER value map */
@@ -611,7 +611,7 @@ static asn_per_constraints_t asn_PER_type_nr_ReportDL_PRS_MeasBasedOnSingleOrMul
 };
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-static asn_per_constraints_t asn_PER_memb_nr_AggregatedDL_PRS_ResourceSetID_List_r18_constr_39 CC_NOTUSED = {
+static asn_per_constraints_t asn_PER_memb_nr_AggregatedDL_PRS_ResourceInfo_List_r18_constr_39 CC_NOTUSED = {
 	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
 	{ APC_CONSTRAINED,	 1,  1,  2,  3 }	/* (SIZE(2..3)) */,
 	0, 0	/* No PER value map */
@@ -1104,54 +1104,54 @@ asn_TYPE_descriptor_t asn_DEF_ext1_28 = {
 	&asn_SPC_ext1_specs_28	/* Additional specs */
 };
 
-static const asn_INTEGER_enum_map_t asn_MAP_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_value2enum_37[] = {
+static const asn_INTEGER_enum_map_t asn_MAP_nr_MeasBasedOnAggregatedResources_r18_value2enum_37[] = {
 	{ 0,	4,	"true" }
 };
-static const unsigned int asn_MAP_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_enum2value_37[] = {
+static const unsigned int asn_MAP_nr_MeasBasedOnAggregatedResources_r18_enum2value_37[] = {
 	0	/* true(0) */
 };
-static const asn_INTEGER_specifics_t asn_SPC_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_specs_37 = {
-	asn_MAP_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_value2enum_37,	/* "tag" => N; sorted by tag */
-	asn_MAP_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_enum2value_37,	/* N => "tag"; sorted by N */
+static const asn_INTEGER_specifics_t asn_SPC_nr_MeasBasedOnAggregatedResources_r18_specs_37 = {
+	asn_MAP_nr_MeasBasedOnAggregatedResources_r18_value2enum_37,	/* "tag" => N; sorted by tag */
+	asn_MAP_nr_MeasBasedOnAggregatedResources_r18_enum2value_37,	/* N => "tag"; sorted by N */
 	1,	/* Number of elements in the maps */
 	0,	/* Enumeration is not extensible */
 	1,	/* Strict enumeration */
 	0,	/* Native long size */
 	0
 };
-static const ber_tlv_tag_t asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_tags_37[] = {
+static const ber_tlv_tag_t asn_DEF_nr_MeasBasedOnAggregatedResources_r18_tags_37[] = {
 	(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (10 << 2))
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_37 = {
-	"nr-UE-RxTxTimeDiffBasedOnAggregatedResources-r18",
-	"nr-UE-RxTxTimeDiffBasedOnAggregatedResources-r18",
+asn_TYPE_descriptor_t asn_DEF_nr_MeasBasedOnAggregatedResources_r18_37 = {
+	"nr-MeasBasedOnAggregatedResources-r18",
+	"nr-MeasBasedOnAggregatedResources-r18",
 	&asn_OP_NativeEnumerated,
-	asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_tags_37,
-	sizeof(asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_tags_37)
-		/sizeof(asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_tags_37[0]) - 1, /* 1 */
-	asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_tags_37,	/* Same as above */
-	sizeof(asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_tags_37)
-		/sizeof(asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_tags_37[0]), /* 2 */
+	asn_DEF_nr_MeasBasedOnAggregatedResources_r18_tags_37,
+	sizeof(asn_DEF_nr_MeasBasedOnAggregatedResources_r18_tags_37)
+		/sizeof(asn_DEF_nr_MeasBasedOnAggregatedResources_r18_tags_37[0]) - 1, /* 1 */
+	asn_DEF_nr_MeasBasedOnAggregatedResources_r18_tags_37,	/* Same as above */
+	sizeof(asn_DEF_nr_MeasBasedOnAggregatedResources_r18_tags_37)
+		/sizeof(asn_DEF_nr_MeasBasedOnAggregatedResources_r18_tags_37[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_constr_37,
+		&asn_PER_type_nr_MeasBasedOnAggregatedResources_r18_constr_37,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		NativeEnumerated_constraint
 	},
 	0, 0,	/* Defined elsewhere */
-	&asn_SPC_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_specs_37	/* Additional specs */
+	&asn_SPC_nr_MeasBasedOnAggregatedResources_r18_specs_37	/* Additional specs */
 };
 
-static asn_TYPE_member_t asn_MBR_nr_AggregatedDL_PRS_ResourceSetID_List_r18_39[] = {
+static asn_TYPE_member_t asn_MBR_nr_AggregatedDL_PRS_ResourceInfo_List_r18_39[] = {
 	{ ATF_POINTER, 0, 0,
 		(ASN_TAG_CLASS_UNIVERSAL | (16 << 2)),
 		0,
-		&asn_DEF_NR_AggregatedDL_PRS_ResourceSetID_Element_r18,
+		&asn_DEF_NR_AggregatedDL_PRS_ResourceInfo_Element_r18,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1166,38 +1166,38 @@ static asn_TYPE_member_t asn_MBR_nr_AggregatedDL_PRS_ResourceSetID_List_r18_39[]
 		""
 		},
 };
-static const ber_tlv_tag_t asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_tags_39[] = {
+static const ber_tlv_tag_t asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_tags_39[] = {
 	(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
-static asn_SET_OF_specifics_t asn_SPC_nr_AggregatedDL_PRS_ResourceSetID_List_r18_specs_39 = {
-	sizeof(struct NR_Multi_RTT_MeasElement_r16__ext2__nr_AggregatedDL_PRS_ResourceSetID_List_r18),
-	offsetof(struct NR_Multi_RTT_MeasElement_r16__ext2__nr_AggregatedDL_PRS_ResourceSetID_List_r18, _asn_ctx),
+static asn_SET_OF_specifics_t asn_SPC_nr_AggregatedDL_PRS_ResourceInfo_List_r18_specs_39 = {
+	sizeof(struct NR_Multi_RTT_MeasElement_r16__ext2__nr_AggregatedDL_PRS_ResourceInfo_List_r18),
+	offsetof(struct NR_Multi_RTT_MeasElement_r16__ext2__nr_AggregatedDL_PRS_ResourceInfo_List_r18, _asn_ctx),
 	0,	/* XER encoding is XMLDelimitedItemList */
 };
 static /* Use -fall-defs-global to expose */
-asn_TYPE_descriptor_t asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_39 = {
-	"nr-AggregatedDL-PRS-ResourceSetID-List-r18",
-	"nr-AggregatedDL-PRS-ResourceSetID-List-r18",
+asn_TYPE_descriptor_t asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_39 = {
+	"nr-AggregatedDL-PRS-ResourceInfo-List-r18",
+	"nr-AggregatedDL-PRS-ResourceInfo-List-r18",
 	&asn_OP_SEQUENCE_OF,
-	asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_tags_39,
-	sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_tags_39)
-		/sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_tags_39[0]) - 1, /* 1 */
-	asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_tags_39,	/* Same as above */
-	sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_tags_39)
-		/sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_tags_39[0]), /* 2 */
+	asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_tags_39,
+	sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_tags_39)
+		/sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_tags_39[0]) - 1, /* 1 */
+	asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_tags_39,	/* Same as above */
+	sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_tags_39)
+		/sizeof(asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_tags_39[0]), /* 2 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_nr_AggregatedDL_PRS_ResourceSetID_List_r18_constr_39,
+		&asn_PER_type_nr_AggregatedDL_PRS_ResourceInfo_List_r18_constr_39,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
 		SEQUENCE_OF_constraint
 	},
-	asn_MBR_nr_AggregatedDL_PRS_ResourceSetID_List_r18_39,
+	asn_MBR_nr_AggregatedDL_PRS_ResourceInfo_List_r18_39,
 	1,	/* Single element */
-	&asn_SPC_nr_AggregatedDL_PRS_ResourceSetID_List_r18_specs_39	/* Additional specs */
+	&asn_SPC_nr_AggregatedDL_PRS_ResourceInfo_List_r18_specs_39	/* Additional specs */
 };
 
 static asn_TYPE_member_t asn_MBR_nr_RSCP_AddSampleMeasurements_r18_43[] = {
@@ -1299,10 +1299,10 @@ asn_TYPE_descriptor_t asn_DEF_nr_ReportDL_PRS_MeasBasedOnSingleOrMultiHopRx_r18_
 };
 
 static asn_TYPE_member_t asn_MBR_ext2_36[] = {
-	{ ATF_POINTER, 7, offsetof(struct NR_Multi_RTT_MeasElement_r16__ext2, nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18),
+	{ ATF_POINTER, 7, offsetof(struct NR_Multi_RTT_MeasElement_r16__ext2, nr_MeasBasedOnAggregatedResources_r18),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_nr_UE_RxTxTimeDiffBasedOnAggregatedResources_r18_37,
+		&asn_DEF_nr_MeasBasedOnAggregatedResources_r18_37,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -1314,24 +1314,24 @@ static asn_TYPE_member_t asn_MBR_ext2_36[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"nr-UE-RxTxTimeDiffBasedOnAggregatedResources-r18"
+		"nr-MeasBasedOnAggregatedResources-r18"
 		},
-	{ ATF_POINTER, 6, offsetof(struct NR_Multi_RTT_MeasElement_r16__ext2, nr_AggregatedDL_PRS_ResourceSetID_List_r18),
+	{ ATF_POINTER, 6, offsetof(struct NR_Multi_RTT_MeasElement_r16__ext2, nr_AggregatedDL_PRS_ResourceInfo_List_r18),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		0,
-		&asn_DEF_nr_AggregatedDL_PRS_ResourceSetID_List_r18_39,
+		&asn_DEF_nr_AggregatedDL_PRS_ResourceInfo_List_r18_39,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 			0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-			&asn_PER_memb_nr_AggregatedDL_PRS_ResourceSetID_List_r18_constr_39,
+			&asn_PER_memb_nr_AggregatedDL_PRS_ResourceInfo_List_r18_constr_39,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-			memb_nr_AggregatedDL_PRS_ResourceSetID_List_r18_constraint_36
+			memb_nr_AggregatedDL_PRS_ResourceInfo_List_r18_constraint_36
 		},
 		0, 0, /* No default value */
-		"nr-AggregatedDL-PRS-ResourceSetID-List-r18"
+		"nr-AggregatedDL-PRS-ResourceInfo-List-r18"
 		},
 	{ ATF_POINTER, 5, offsetof(struct NR_Multi_RTT_MeasElement_r16__ext2, nr_RSCP_r18),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
@@ -1425,8 +1425,8 @@ static const ber_tlv_tag_t asn_DEF_ext2_tags_36[] = {
 	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
 static const asn_TYPE_tag2member_t asn_MAP_ext2_tag2el_36[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* nr-UE-RxTxTimeDiffBasedOnAggregatedResources-r18 */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* nr-AggregatedDL-PRS-ResourceSetID-List-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* nr-MeasBasedOnAggregatedResources-r18 */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* nr-AggregatedDL-PRS-ResourceInfo-List-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* nr-RSCP-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* nr-PhaseQuality-r18 */
     { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* nr-RSCP-AddSampleMeasurements-r18 */
