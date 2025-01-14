@@ -361,8 +361,10 @@ static void setup_lpp2spartn(Program& program) {
 static void setup_tokoro(Program& program) {
 #if defined(INCLUDE_GENERATOR_TOKORO)
     if (program.config.tokoro.enabled) {
-        program.stream.add_inspector<Tokoro>(program.config.output, program.config.tokoro,
-                                             program.scheduler);
+        auto tokoro = program.stream.add_inspector<Tokoro>(
+            program.config.output, program.config.tokoro, program.scheduler);
+        program.stream.add_inspector<TokoroEphemerisUbx>(*tokoro);
+        program.stream.add_inspector<TokoroLocation>(*tokoro);
     }
 #endif
 }
