@@ -104,9 +104,9 @@ void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message) {
 //
 //
 
-void TokoroLocation::inspect(streamline::System&, UNUSED DataType const& location) {
+void TokoroLocation::inspect(streamline::System&, DataType const& location) {
     VSCOPE_FUNCTION();
-    TODOF("TokoroLocation");
+    mTokoro.update_location_information(location);
 }
 
 //
