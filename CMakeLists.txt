@@ -18,7 +18,7 @@ add_definitions(-DCLIENT_VERSION_INT=0x040000)
 find_package(Threads REQUIRED)
 
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
-    add_compile_definitions(DEBUG=1)
+    add_definitions(-DDEBUG=1)
 endif()
 
 add_subdirectory("libs")
