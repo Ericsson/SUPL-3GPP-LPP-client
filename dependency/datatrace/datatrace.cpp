@@ -208,7 +208,8 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
 }
 
 void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satellite,
-                                 Option<Float3> delta, Option<Float3> dot_delta) {
+                                 Option<Float3> delta, Option<Float3> dot_delta,
+                                 Option<long> ssr_iod) {
     if (gMosq == nullptr) return;
     FUNCTION_SCOPE();
 
@@ -229,6 +230,7 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
         ss << ",\"delta_along_rate\":" << dot_delta.value.y;
         ss << ",\"delta_cross_rate\":" << dot_delta.value.z;
     }
+    if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
     auto ss_data = ss.str();
@@ -244,7 +246,8 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
 }
 
 void report_ssr_clock_correction(ts::Tai const& time, std::string const& satellite,
-                                 Option<double> c0, Option<double> c1, Option<double> c2) {
+                                 Option<double> c0, Option<double> c1, Option<double> c2,
+                                 Option<long> ssr_iod) {
     if (gMosq == nullptr) return;
     FUNCTION_SCOPE();
 
@@ -258,6 +261,7 @@ void report_ssr_clock_correction(ts::Tai const& time, std::string const& satelli
     if (c0.valid) ss << ",\"c0\":" << c0.value;
     if (c1.valid) ss << ",\"c1\":" << c1.value;
     if (c2.valid) ss << ",\"c2\":" << c2.value;
+    if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
     auto ss_data = ss.str();
@@ -275,7 +279,9 @@ void report_ssr_clock_correction(ts::Tai const& time, std::string const& satelli
 void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& satellite,
                                        Option<double> c00, Option<double> c01, Option<double> c10,
                                        Option<double> c11, Option<double> reference_point_latitude,
-                                       Option<double> reference_point_longitude) {
+                                       Option<double> reference_point_longitude,
+                                       Option<double> stec_quality_indicator,
+                                       Option<long>   ssr_iod) {
     if (gMosq == nullptr) return;
     FUNCTION_SCOPE();
 
@@ -294,6 +300,9 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
         ss << ",\"reference_point_latitude\":" << reference_point_latitude.value;
     if (reference_point_longitude.valid)
         ss << ",\"reference_point_longitude\":" << reference_point_longitude.value;
+    if (stec_quality_indicator.valid)
+        ss << ",\"stec_quality_indicator\":" << stec_quality_indicator.value;
+    if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
     auto ss_data = ss.str();
@@ -310,7 +319,7 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
 
 void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
                                   Option<Float3> position_llh, Option<double> tropo_wet,
-                                  Option<double> tropo_dry) {
+                                  Option<double> tropo_dry, Option<long> ssr_iod) {
     if (gMosq == nullptr) return;
     FUNCTION_SCOPE();
 
@@ -328,6 +337,7 @@ void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
     }
     if (tropo_wet.valid) ss << ",\"tropo_wet\":" << tropo_wet.value;
     if (tropo_dry.valid) ss << ",\"tropo_dry\":" << tropo_dry.value;
+    if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
     auto ss_data = ss.str();
@@ -344,7 +354,7 @@ void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
 
 void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
                                  Option<Float3> position_llh, std::string const& satellite,
-                                 Option<double> residual) {
+                                 Option<double> residual, Option<long> ssr_iod) {
     if (gMosq == nullptr) return;
     FUNCTION_SCOPE();
 
@@ -361,6 +371,7 @@ void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
         ss << ",\"pos_lon\":" << position_llh.value.y;
     }
     if (residual.valid) ss << ",\"residual\":" << residual.value;
+    if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
     auto ss_data = ss.str();

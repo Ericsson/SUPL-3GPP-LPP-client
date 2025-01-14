@@ -428,6 +428,7 @@ void CorrectionData::add_correction(long                                 gnss_id
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
+    auto ssr_iod    = decode::iod_ssr_r16(orbit->iod_ssr_r15);
     auto epoch_time = decode::epochTime_r15(orbit->epochTime_r15);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
@@ -470,7 +471,7 @@ void CorrectionData::add_correction(long                                 gnss_id
 
 #ifdef DATA_TRACING
         datatrace::report_ssr_orbit_correction(reference_time, satellite_id.name(),
-                                               correction.delta, correction.dot_delta);
+                                               correction.delta, correction.dot_delta, ssr_iod);
 #endif
 
         VERBOSEF("orbit: %3s %+f %+f %+f", satellite_id.name(), radial, along_track, cross_track);
@@ -485,6 +486,7 @@ void CorrectionData::add_correction(long                                 gnss_id
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
+    auto ssr_iod    = decode::iod_ssr_r16(clock->iod_ssr_r15);
     auto epoch_time = decode::epochTime_r15(clock->epochTime_r15);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
@@ -520,7 +522,8 @@ void CorrectionData::add_correction(long                                 gnss_id
         clock_correction.c2             = c2;
 
 #ifdef DATA_TRACING
-        datatrace::report_ssr_clock_correction(reference_time, satellite_id.name(), c0, c1, c2);
+        datatrace::report_ssr_clock_correction(reference_time, satellite_id.name(), c0, c1, c2,
+                                               ssr_iod);
 #endif
 
         VERBOSEF("clock: %3s %+f %+f %+f", satellite_id.name(), c0, c1, c2);
@@ -535,6 +538,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
 
+    auto ssr_iod    = decode::iod_ssr_r16(code_bias->iod_ssr_r15);
     auto epoch_time = decode::epochTime_r15(code_bias->epochTime_r15);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
@@ -583,6 +587,7 @@ void CorrectionData::add_correction(long                          gnss_id,
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
 
+    auto ssr_iod    = decode::iod_ssr_r16(phase_bias->iod_ssr_r16);
     auto epoch_time = decode::epochTime_r15(phase_bias->epochTime_r16);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
@@ -637,6 +642,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
+    auto ssr_iod    = decode::iod_ssr_r16(stec->iod_ssr_r16);
     auto epoch_time = decode::epochTime_r15(stec->epochTime_r16);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
@@ -655,6 +661,9 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
             continue;
         }
 
+        auto stec_quality_indicator =
+            decode::stecQualityIndicator_r16(satellite->stecQualityIndicator_r16);
+
         auto c00 = decode::stec_C00_r16(satellite->stec_C00_r16);
         auto c01 = decode::stec_C01_r16(satellite->stec_C01_r16);
         auto c10 = decode::stec_C10_r16(satellite->stec_C10_r16);
@@ -668,11 +677,22 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         poly.reference_point_latitude  = correction_point_set.reference_point_latitude;
         poly.reference_point_longitude = correction_point_set.reference_point_longitude;
 
+        if (stec_quality_indicator.invalid) {
+            poly.quality_indicator = 9999.0;
+        } else {
+            poly.quality_indicator = stec_quality_indicator.value;
+        }
+
 #ifdef DATA_TRACING
+        datatrace::Option<double> quality_indicator{};
+        if (!stec_quality_indicator.invalid) {
+            quality_indicator = stec_quality_indicator.value;
+        }
+
         datatrace::report_ssr_ionospheric_polynomial(
             epoch_time, satellite_id.name(), c00, c01, c10, c11,
             correction_point_set.reference_point_latitude,
-            correction_point_set.reference_point_longitude);
+            correction_point_set.reference_point_longitude, quality_indicator, ssr_iod);
 #endif
 
         VERBOSEF("stec: %3s %+f %+f %+f %+f", satellite_id.name(), c00, c01, c10, c11);
@@ -694,6 +714,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
+    auto ssr_iod    = decode::iod_ssr_r16(grid->iod_ssr_r16);
     auto epoch_time = decode::epochTime_r15(grid->epochTime_r16);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
@@ -758,7 +779,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
 #ifdef DATA_TRACING
             datatrace::report_ssr_tropospheric_grid(epoch_time, grid_point->absolute_index,
-                                                    grid_point->position, wet, dry);
+                                                    grid_point->position, wet, dry, ssr_iod);
 #endif
 
             VERBOSEF("  wet: %+f dry: %+f", wet, dry);
@@ -786,7 +807,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 #ifdef DATA_TRACING
                 datatrace::report_ssr_ionospheric_grid(epoch_time, grid_point->absolute_index,
                                                        grid_point->position, satellite_id.name(),
-                                                       ionospheric);
+                                                       ionospheric, ssr_iod);
 #endif
 
                 VERBOSEF("  ionospheric: %3s %+f", satellite_id.name(), ionospheric);

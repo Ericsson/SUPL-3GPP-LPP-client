@@ -73,18 +73,21 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
                         std::string const& signal, Observation const& obs);
 
 void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satellite,
-                                 Option<Float3> delta, Option<Float3> dot_delta);
+                                 Option<Float3> delta, Option<Float3> dot_delta,
+                                 Option<long> ssr_iod);
 void report_ssr_clock_correction(ts::Tai const& time, std::string const& satellite,
-                                 Option<double> c0, Option<double> c1, Option<double> c2);
+                                 Option<double> c0, Option<double> c1, Option<double> c2,
+                                 Option<long> ssr_iod);
 void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& satellite,
                                        Option<double> c00, Option<double> c01, Option<double> c10,
                                        Option<double> c11, Option<double> reference_point_latitude,
-                                       Option<double> reference_point_longitude);
+                                       Option<double> reference_point_longitude,
+                                       Option<double> stec_quality_indicator, Option<long> ssr_iod);
 void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
                                   Option<Float3> position_llh, Option<double> tropo_wet,
-                                  Option<double> tropo_dry);
+                                  Option<double> tropo_dry, Option<long> ssr_iod);
 void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
                                  Option<Float3> position_llh, std::string const& satellite,
-                                 Option<double> residual);
+                                 Option<double> residual, Option<long> ssr_iod);
 
 }  // namespace datatrace

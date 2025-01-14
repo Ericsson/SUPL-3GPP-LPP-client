@@ -87,6 +87,10 @@ inline ts::Tai epochTime_r15(GNSS_SystemTime const& src_time) {
     }
 }
 
+inline long iod_ssr_r16(long value) {
+    return value;
+}
+
 static CONSTEXPR double CLOCK_C0_RESOLUTION = 0.0001;
 static CONSTEXPR double CLOCK_C1_RESOLUTION = 0.000001;
 static CONSTEXPR double CLOCK_C2_RESOLUTION = 0.00000002;
@@ -225,6 +229,37 @@ inline double stecResidualCorrection_r16(
         return static_cast<double>(correction.choice.b16_r16) * STEC_RESIDUAL_B16_RESOLUTION;
     case STEC_ResidualSatElement_r16__stecResidualCorrection_r16_PR_NOTHING: CORE_UNREACHABLE();
     }
+}
+
+struct StecQualityIndicator {
+    bool   invalid;
+    double value;
+};
+
+inline StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
+    static CONSTEXPR double QUALITY_INDICATOR[64] = {
+        33.6664, 30.2992, 26.9319, 23.5647, 20.1974, 16.8301, 13.4629, 12.3405, 11.2180,
+        10.0956, 8.9732,  7.8508,  6.7284,  5.6059,  4.4835,  4.1094,  3.7352,  3.3611,
+        2.9870,  2.6128,  2.2387,  1.8645,  1.4904,  1.3657,  1.2410,  1.1163,  0.9915,
+        0.8668,  0.7421,  0.6174,  0.4927,  0.4511,  0.4096,  0.3680,  0.3264,  0.2848,
+        0.2433,  0.2017,  0.1601,  0.1463,  0.1324,  0.1186,  0.1047,  0.0908,  0.0770,
+        0.0631,  0.0493,  0.0447,  0.0400,  0.0354,  0.0308,  0.0262,  0.0216,  0.0169,
+        0.0123,  0.0108,  0.0092,  0.0077,  0.0062,  0.0046,  0.0031,  0.0015,  0,
+    };
+
+    auto value = bit_string.buf[0];
+
+    auto stec_cls = value & 0x7;
+    auto stec_val = (value >> 3) & 0x7;
+    stec_cls      = ((stec_cls & 0x1) << 2) | ((stec_cls & 0x2) << 0) | ((stec_cls & 0x4) >> 2);
+    stec_val      = ((stec_val & 0x1) << 2) | ((stec_val & 0x2) << 0) | ((stec_val & 0x4) >> 2);
+    auto index    = (8 * stec_cls) + stec_val;
+
+    assert(index < 64);
+    return StecQualityIndicator{
+        index == 0,
+        QUALITY_INDICATOR[63 - index],
+    };
 }
 
 }  // namespace decode
