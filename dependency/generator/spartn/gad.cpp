@@ -3,6 +3,9 @@
 #include "generator.hpp"
 #include "message.hpp"
 
+#include <loglet/loglet.hpp>
+#define LOGLET_CURRENT_MODULE "spartn/g"
+
 namespace generator {
 namespace spartn {
 
@@ -11,38 +14,50 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
     if (cps_it == mCorrectionPointSets.end()) return;
     auto& correction_point_set = *(cps_it->second.get());
 
-#ifdef SPARTN_DEBUG_PRINT
-    printf("  grid points: %ld\n", correction_point_set.grid_point_count);
-    printf("  bitmask:     ");
-    for (auto i = 0; i < correction_point_set.grid_point_count; i++) {
-        printf("%d", correction_point_set.has_grid_point(i) ? 1 : 0);
-    }
-    printf("\n");
-    printf("  ref-lat:  %9.6f\n",
-           decode::referencePointLatitude_r16(correction_point_set.referencePointLatitude_r16));
-    printf("  ref-lng: %10.6f\n",
-           decode::referencePointLongitude_r16(correction_point_set.referencePointLongitude_r16));
-    printf("  steps-lat: %ld\n", correction_point_set.numberOfStepsLatitude_r16);
-    printf("  steps-lng: %ld\n", correction_point_set.numberOfStepsLongitude_r16);
-    printf("  delta-lat:  %9.6f\n",
-           decode::stepOfLatitude_r16(correction_point_set.stepOfLatitude_r16));
-    printf("  delta-lng: %10.6f\n",
-           decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16));
+    VERBOSEF("  grid points: %ld", correction_point_set.grid_point_count);
 
-    auto i = 0;
+    char buffer[256];
+    for (auto i = 0; i < correction_point_set.grid_point_count; i++) {
+        if (i < 255) {
+            buffer[i] = correction_point_set.has_grid_point(i) ? '1' : '0';
+        }
+    }
+    buffer[255] = '\0';
+    if (correction_point_set.grid_point_count < 256) {
+        buffer[correction_point_set.grid_point_count] = '\0';
+    }
+    VERBOSEF("  bitmask:  %s", buffer);
+    VERBOSEF("  ref-lat:  %9.6f",
+             decode::referencePointLatitude_r16(correction_point_set.referencePointLatitude_r16));
+    VERBOSEF("  ref-lng: %10.6f",
+             decode::referencePointLongitude_r16(correction_point_set.referencePointLongitude_r16));
+    VERBOSEF("  steps-lat: %ld", correction_point_set.numberOfStepsLatitude_r16);
+    VERBOSEF("  steps-lng: %ld", correction_point_set.numberOfStepsLongitude_r16);
+    VERBOSEF("  delta-lat:  %9.6f",
+             decode::stepOfLatitude_r16(correction_point_set.stepOfLatitude_r16));
+    VERBOSEF("  delta-lng: %10.6f",
+             decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16));
+
+    auto buffer_count = 0;
+
+    auto i           = 0;
     auto grid_points = correction_point_set.grid_points();
     for (auto gp : grid_points) {
         if (gp.id < 0) {
-            printf("-- ");
+            buffer_count += snprintf(buffer + buffer_count, sizeof(buffer) - buffer_count, "-- ");
         } else {
-            printf("%02ld ", gp.id);
+            buffer_count +=
+                snprintf(buffer + buffer_count, sizeof(buffer) - buffer_count, "%02ld ", gp.id);
         }
 
         if (++i % (correction_point_set.numberOfStepsLongitude_r16 + 1) == 0) {
-            printf("\n");
+            VERBOSEF("%s", buffer);
         }
     }
-#endif
+
+    if (buffer_count > 0) {
+        VERBOSEF("%s", buffer);
+    }
 
     auto siou = iod;
     if (mIncreasingSiou) {

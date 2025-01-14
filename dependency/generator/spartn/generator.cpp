@@ -24,6 +24,9 @@
 #include <map>
 #include <unordered_map>
 
+#include <loglet/loglet.hpp>
+#define LOGLET_CURRENT_MODULE "spartn"
+
 namespace generator {
 namespace spartn {
 
@@ -50,7 +53,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     if (!lpp_message) return mMessages;
 
     auto body = lpp_message->lpp_MessageBody;
-    if(!body) return mMessages;
+    if (!body) return mMessages;
     if (body->present != LPP_MessageBody_PR_c1) return mMessages;
     if (body->choice.c1.present != LPP_MessageBody__c1_PR_provideAssistanceData) return mMessages;
 
@@ -71,9 +74,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
 
     auto iods = mCorrectionData->iods();
     for (auto iod : iods) {
-#ifdef SPARTN_DEBUG_PRINT
-        printf("-- iod=%hu\n", iod);
-#endif
+        VERBOSEF("-- iod=%hu", iod);
 
         auto ocb  = mCorrectionData->ocb(iod);
         auto hpac = mCorrectionData->hpac(iod);
@@ -93,17 +94,13 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
             SpartnTime gad_epoch_time{};
             if (mCorrectionData->find_gad_epoch_time(iod, &gad_epoch_time)) {
                 for (auto set_id : set_ids) {
-#ifdef SPARTN_DEBUG_PRINT
-                    printf("GAD: set=%hu, iod=%hu, time=%u\n", set_id, iod,
-                           gad_epoch_time.rounded_seconds);
-#endif
+                    VERBOSEF("GAD: set=%hu, iod=%hu, time=%u", set_id, iod,
+                             gad_epoch_time.rounded_seconds);
 
                     generate_gad(iod, gad_epoch_time.rounded_seconds, set_id);
                 }
             } else {
-#ifdef SPARTN_DEBUG_PRINT
-                printf("GAD: no epoch time for iod=%hu\n", iod);
-#endif
+                VERBOSEF("GAD: no epoch time for iod=%hu", iod);
             }
         }
 
@@ -168,10 +165,8 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
                     bitmask |= static_cast<uint64_t>(array.bitmaskOfGrids_r16->buf[i]);
                 }
                 bitmask >>= array.bitmaskOfGrids_r16->bits_unused;
-#ifdef SPARTN_DEBUG_PRINT
-                printf(" bitmask: %ld bytes, %d bits, 0x%016lX\n", array.bitmaskOfGrids_r16->size,
-                       array.bitmaskOfGrids_r16->bits_unused, bitmask);
-#endif
+                VERBOSEF(" bitmask: %ld bytes, %d bits, 0x%016lX", array.bitmaskOfGrids_r16->size,
+                         array.bitmaskOfGrids_r16->bits_unused, bitmask);
             } else {
                 bitmask = 0xFFFFFFFFFFFFFFFF;
             }

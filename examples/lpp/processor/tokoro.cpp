@@ -175,7 +175,6 @@ static Float3 search(ts::Tai const& t, Float3 const& input, Generator& generator
 
     for (;;) {
         // calculate the gradient to find the direction of the search
-
         auto base = evaluate_error_at(t, p, generator, g04, g05, g07);
         printf("search: %g | %.4f, %.4f, %.4f\n", base, p.x, p.y, p.z);
         if (base < 0.00001) return p;
@@ -187,7 +186,7 @@ static Float3 search(ts::Tai const& t, Float3 const& input, Generator& generator
         auto gx = (base - x);
         auto gy = (base - y);
         auto gz = (base - z);
-        // printf("gradient: %.3f, %.3f, %.3f (%f)\n", gx, gy, gz, Float3{gx, gy, gz}.length());
+
         p             = p + Float3{gx, gy, gz} * step_size;
         auto new_base = evaluate_error_at(t, p, generator, g04, g05, g07);
         if (new_base > base) {

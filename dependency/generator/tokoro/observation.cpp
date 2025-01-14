@@ -402,7 +402,7 @@ void Observation::compute_ranges() NOEXCEPT {
 #if 0
     printf("TRACK-OBS,%s,%s,%g,%u,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,TOTAL,%.14f,%.14f,"
            "TOTAL,%.14f,%."
-           "14f,%.14f,%.14f\n",
+           "14f,%.14f,%.14f",
            mSvId.name(), mSignalId.name(), mFrequency / 1.0e6, mCurrent->eph_iod,
            mCurrent->true_range, clock_bias, clock, code_bias, phase_bias, stec_grid, stec_poly,
            tropo_dry, tropo_wet, shapiro, solid_tides, phase_windup, antenna_phase_variation);

@@ -171,7 +171,6 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 
 bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     FUNCTION_SCOPE();
-
     if (mGenerator.mCorrectionData == nullptr) {
         WARNF("no correction data available");
         return false;
@@ -256,7 +255,7 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
                                               RangeTimeDivision const& rtd,
                                               double                   reference_phase_range_rate,
                                               rtcm::Observations&      observations) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s", observation.signal_id().name());
+    FUNCTION_SCOPEF("%s", observation.signal_id().name());
 
     auto code_range  = observation.code_range();
     auto phase_range = observation.phase_range();
@@ -272,13 +271,6 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
              delta_code_range_ms);
     VERBOSEF("%-15s phase: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_ms,
              delta_phase_range_ms);
-
-#if 0
-        auto reconstructed =
-            (rtd.integer_ms + rtd.rough_range + delta_code_range_ms) / meter_to_cms;
-        VERBOSEF("code_range reconstructed: %.14f == %.14f (%.14f)", code_range, reconstructed,
-                 code_range - reconstructed);
-#endif
 
     rtcm::Signal signal{};
     signal.id                     = observation.signal_id();
@@ -302,7 +294,7 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
 
 void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
                                             rtcm::Observations& observations) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s, observations=%zu", satellite.id().name(),
+    FUNCTION_SCOPEF("%s, observations=%zu", satellite.id().name(),
                      satellite.observations().size());
 
     auto average_code_range = satellite.average_code_range();
@@ -509,6 +501,7 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
 }
 
 void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT {
+    FUNCTION_SCOPE();
     if (!message.a_gnss_ProvideAssistanceData) return;
     if (!message.a_gnss_ProvideAssistanceData->gnss_CommonAssistData) return;
 
@@ -545,14 +538,13 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
         correction_point_set.step_of_latitude          = step_of_latitude;
         correction_point_set.step_of_longitude         = step_of_longitude;
 
-        VERBOSEF("correction point set:");
-        VERBOSEF("  set_id: %u", correction_point_set.set_id);
-        VERBOSEF("  reference_point_latitude:  %.14f",
-                 correction_point_set.reference_point_latitude);
-        VERBOSEF("  reference_point_longitude: %.14f",
-                 correction_point_set.reference_point_longitude);
-        VERBOSEF("  step_of_latitude:  %.14f", correction_point_set.step_of_latitude);
-        VERBOSEF("  step_of_longitude: %.14f", correction_point_set.step_of_longitude);
+        DEBUGF("correction point set:");
+        DEBUGF("  set_id: %u", correction_point_set.set_id);
+        DEBUGF("  reference_point_latitude:  %.14f", correction_point_set.reference_point_latitude);
+        DEBUGF("  reference_point_longitude: %.14f",
+               correction_point_set.reference_point_longitude);
+        DEBUGF("  step_of_latitude:  %.14f", correction_point_set.step_of_latitude);
+        DEBUGF("  step_of_longitude: %.14f", correction_point_set.step_of_longitude);
 
         uint64_t bitmask = 0;
         if (array.bitmaskOfGrids_r16) {
@@ -561,10 +553,8 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
                 bitmask |= static_cast<uint64_t>(array.bitmaskOfGrids_r16->buf[i]);
             }
             bitmask >>= array.bitmaskOfGrids_r16->bits_unused;
-#ifdef SPARTN_DEBUG_PRINT
-            printf(" bitmask: %ld bytes, %d bits, 0x%016lX\n", array.bitmaskOfGrids_r16->size,
+            DEBUGF("  bitmask: %ld bytes, %d bits, 0x%016lX", array.bitmaskOfGrids_r16->size,
                    array.bitmaskOfGrids_r16->bits_unused, bitmask);
-#endif
         } else {
             bitmask = 0xFFFFFFFFFFFFFFFF;
         }
@@ -573,10 +563,12 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
         mCorrectionPointSet.reset(new CorrectionPointSet(correction_point_set));
     } else {
         // TODO(ewasjon): [low-priority] Support list of correction points
+        WARNF("unsupported correction point type");
     }
 }
 
 void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT {
+    FUNCTION_SCOPE();
     if (!message.a_gnss_ProvideAssistanceData) return;
     if (!message.a_gnss_ProvideAssistanceData->gnss_GenericAssistData) return;
 
@@ -589,20 +581,6 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
         if (!element) continue;
 
         auto gnss_id = element->gnss_ID.gnss_id;
-        // if (!mGenerateGps && gnss_id == GNSS_ID__gnss_id_gps) {
-        //     VERBOSEF("skipping GPS");
-        //     continue;
-        // } else if (!mGenerateGal && gnss_id == GNSS_ID__gnss_id_galileo) {
-        //     VERBOSEF("skipping Galileo");
-        //     continue;
-        // } else if (!mGenerateBds && gnss_id == GNSS_ID__gnss_id_bds) {
-        //     VERBOSEF("skipping BeiDou");
-        //     continue;
-        // } else if (!mGenerateGlo && gnss_id == GNSS_ID__gnss_id_glonass) {
-        //     VERBOSEF("skipping GLONASS");
-        //     continue;
-        // }
-
         if (gnss_id != GNSS_ID__gnss_id_gps && gnss_id != GNSS_ID__gnss_id_galileo &&
             gnss_id != GNSS_ID__gnss_id_bds && gnss_id != GNSS_ID__gnss_id_glonass) {
             WARNF("unsupported GNSS ID: %d", gnss_id);
@@ -698,6 +676,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 }
 
 void Generator::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
     auto satellite_id = SatelliteId::from_gps_prn(ephemeris.prn);
     if (!satellite_id.is_valid()) {
         VERBOSEF("invalid satellite id: GPS %d", ephemeris.prn);
@@ -730,6 +709,7 @@ void Generator::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEX
 }
 
 void Generator::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
     auto satellite_id = SatelliteId::from_gal_prn(ephemeris.prn);
     if (!satellite_id.is_valid()) {
         VERBOSEF("invalid satellite id: GAL %d", ephemeris.prn);
@@ -762,6 +742,7 @@ void Generator::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEX
 }
 
 void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
     auto satellite_id = SatelliteId::from_bds_prn(ephemeris.prn);
     if (!satellite_id.is_valid()) {
         VERBOSEF("invalid satellite id: BDS %d", ephemeris.prn);

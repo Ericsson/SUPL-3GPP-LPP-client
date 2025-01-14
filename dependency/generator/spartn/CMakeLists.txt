@@ -17,8 +17,3 @@ target_link_libraries(dependency_generator_spartn2 PUBLIC dependency::loglet)
 target_link_libraries(dependency_generator_spartn2 PUBLIC dependency::core)
 
 setup_target(dependency_generator_spartn2)
-
-if(${SPARTN_DEBUG_PRINT})
-target_compile_definitions(dependency_generator_spartn2 PRIVATE "SPARTN_DEBUG_PRINT=1")
-endif()
-

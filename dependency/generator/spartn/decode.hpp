@@ -12,8 +12,8 @@
 
 #include <cmath>
 
-// TODO(ewasjon): Remove this
-#define SPARTN_DEBUG_PRINT 0
+#include <loglet/loglet.hpp>
+#define LOGLET_CURRENT_MODULE "spartn/decode"
 
 namespace decode {
 
@@ -96,11 +96,9 @@ struct QualityIndicator {
 };
 
 inline QualityIndicator quality_indicator(BIT_STRING_s& bit_string) {
-#if SPARTN_DEBUG_PRINT
-    printf("---------- QUALITY INDICATOR %02X %d %d (%d %d)\n", bit_string.buf[0],
+    TRACEF("QUALITY INDICATOR %02X %d %d (%d %d)", bit_string.buf[0],
            bit_string.buf[0] >> 3, bit_string.buf[0] & 0x7, (bit_string.buf[0] >> 5) & 0x7,
            (bit_string.buf[0] >> 2) & 0x7);
-#endif
     // auto cls     = (bit_string.buf[0] >> 3) & 0x7;
     // auto val     = bit_string.buf[0] & 0x7;
     auto cls     = (bit_string.buf[0] >> 5) & 0x7;
@@ -224,3 +222,5 @@ inline double stecResidualCorrection_r16(
 }
 
 }  // namespace decode
+
+#undef LOGLET_CURRENT_MODULE

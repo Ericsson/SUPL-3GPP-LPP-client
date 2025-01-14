@@ -36,7 +36,6 @@
 #include <map>
 
 #include <loglet/loglet.hpp>
-
 #define LOGLET_CURRENT_MODULE "spartn/g"
 
 namespace generator {
@@ -335,12 +334,10 @@ static Bias bias_from_signal(SystemMapping const* mapping, bool is_phase, long f
             shifted_correction = correction;
         }
 
-#ifdef SPARTN_DEBUG_PRINT
-        printf("        from: %2ld '%-16s' %7.2f\n", from_id, mapping->signal_name(from_id),
-               correction);
-        printf("          to: %2hhu '%-16s' %7.2f\n", to_id, mapping->signal_name(to_id),
-               shifted_correction);
-#endif
+        VERBOSEF("        from: %2ld '%-16s' %7.2f", from_id, mapping->signal_name(from_id),
+                 correction);
+        VERBOSEF("          to: %2hhu '%-16s' %7.2f", to_id, mapping->signal_name(to_id),
+                 shifted_correction);
 
         auto new_bias =
             bias_from_signal(mapping, is_phase, to_id, shifted_correction, continuity_indicator,
@@ -378,9 +375,7 @@ phase_biases(SystemMapping const* mapping, SSR_PhaseBiasSatElement_r16 const& sa
              BiasToSignal* bias_to_signal, bool ignore_l2l, bool translate, bool correction_shift) {
     std::map<uint8_t, Bias> biases_by_type;
 
-#if defined(SPARTN_DEBUG_PRINT)
-    printf("  PHASE BIAS:\n");
-#endif
+    VERBOSEF("  PHASE BIAS:");
     auto& list = satellite.ssr_PhaseBiasSignalList_r16.list;
 
     for (int i = 0; i < list.count; i++) {
@@ -396,48 +391,38 @@ phase_biases(SystemMapping const* mapping, SSR_PhaseBiasSatElement_r16 const& sa
         auto bias = (*bias_to_signal)(mapping, true, signal_id, correction, continuity_indicator,
                                       fix_flag, translate, correction_shift);
         if (bias.signal_id == -1) {
-#if defined(SPARTN_DEBUG_PRINT) && SPARTN_DEBUG_PRINT > 1
-            printf("    ?         %2ld '%-16s' %7.2f%s\n", signal_id,
+            TRACEF("    ?         %2ld '%-16s' %7.2f%s", signal_id,
                    mapping->signal_name(signal_id), correction, fix_flag ? " (fix)" : " (unfixed)");
-#endif
             continue;
         }
 
         if (mapping->gnss_id == GNSS_ID__gnss_id_gps && bias.type == 2 && ignore_l2l) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    -%s (%u)  %2ld '%-16s' %7.2f%s\n",
-                   bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction,
-                   fix_flag ? " (fix)" : " (unfixed)");
-#endif
+            VERBOSEF("    -%s (%u)  %2ld '%-16s' %7.2f%s",
+                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction,
+                     fix_flag ? " (fix)" : " (unfixed)");
             continue;
         }
 
         if (biases_by_type.count(bias.type) == 0) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    +%s (%u)  %2ld '%-16s' %7.2f%s\n",
-                   bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction,
-                   fix_flag ? " (fix)" : " (unfixed)");
-#endif
+            VERBOSEF("    +%s (%u)  %2ld '%-16s' %7.2f%s",
+                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction,
+                     fix_flag ? " (fix)" : " (unfixed)");
             biases_by_type[bias.type] = bias;
         } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
-#ifdef SPARTN_DEBUG_PRINT
             // If the bias is mapped and the new bias is not mapped, then we want to prioritize
             // the "original" bias.
-            printf("    =%s (%u)  %2ld '%-16s' %7.2f%s\n",
-                   bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction,
-                   fix_flag ? " (fix)" : " (unfixed)");
-#endif
+            VERBOSEF("    =%s (%u)  %2ld '%-16s' %7.2f%s",
+                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction,
+                     fix_flag ? " (fix)" : " (unfixed)");
             biases_by_type[bias.type] = bias;
         } else {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    !%s (%u)  %2ld '%-16s' %7.2f%s\n",
-                   bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction,
-                   fix_flag ? " (fix)" : " (unfixed)");
-#endif
+            VERBOSEF("    !%s (%u)  %2ld '%-16s' %7.2f%s",
+                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction,
+                     fix_flag ? " (fix)" : " (unfixed)");
         }
     }
 
@@ -450,9 +435,7 @@ code_biases(SystemMapping const* mapping, SSR_CodeBiasSatElement_r15 const& sate
             BiasToSignal* bias_to_signal, bool ignore_l2l, bool translate, bool correction_shift) {
     std::map<uint8_t, Bias> biases_by_type;
 
-#if defined(SPARTN_DEBUG_PRINT)
-    printf("  CODE BIAS:\n");
-#endif
+    VERBOSEF("  CODE BIAS:");
     auto& list = satellite.ssr_CodeBiasSignalList_r15.list;
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
@@ -464,44 +447,34 @@ code_biases(SystemMapping const* mapping, SSR_CodeBiasSatElement_r15 const& sate
         auto bias = (*bias_to_signal)(mapping, false, signal_id, correction, 0.0, false, translate,
                                       correction_shift);
         if (bias.signal_id == -1) {
-#if defined(SPARTN_DEBUG_PRINT) && SPARTN_DEBUG_PRINT > 1
-            printf("    ?         %2ld '%-16s' %7.2f\n", signal_id, mapping->signal_name(signal_id),
+            TRACEF("    ?         %2ld '%-16s' %7.2f", signal_id, mapping->signal_name(signal_id),
                    correction);
-#endif
             continue;
         }
 
         if (mapping->gnss_id == GNSS_ID__gnss_id_gps && bias.type == 2 && ignore_l2l) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    -%s (%u)  %2ld '%-16s' %7.2f\n",
-                   bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
-#endif
+            VERBOSEF("    -%s (%u)  %2ld '%-16s' %7.2f",
+                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction);
             continue;
         }
 
         if (biases_by_type.count(bias.type) == 0) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    +%s (%u)  %2ld '%-16s' %7.2f\n",
-                   bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
-#endif
+            VERBOSEF("    +%s (%u)  %2ld '%-16s' %7.2f",
+                     bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction);
             biases_by_type[bias.type] = bias;
         } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
-#ifdef SPARTN_DEBUG_PRINT
             // If the bias is mapped and the new bias is not mapped, then we want to prioritize
             // the "original" bias.
-            printf("    =%s (%u)  %2ld '%-16s' %7.2f\n",
-                   bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
-#endif
+            VERBOSEF("    =%s (%u)  %2ld '%-16s' %7.2f",
+                     bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction);
             biases_by_type[bias.type] = bias;
         } else {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    !%s (%u)  %2ld '%-16s' %7.2f\n",
-                   bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
-                   mapping->signal_name(bias.signal_id), bias.correction);
-#endif
+            VERBOSEF("    !%s (%u)  %2ld '%-16s' %7.2f",
+                     bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
+                     mapping->signal_name(bias.signal_id), bias.correction);
         }
     }
 
@@ -631,38 +604,12 @@ void Generator::generate_ocb(uint16_t iod) {
 
         auto satellites = corrections.satellites();
 
-#ifdef SPARTN_DEBUG_PRINT
-        printf("OCB: time=%u, gnss=%ld, iod=%hu\n", epoch_time, gnss_id, iod);
+        VERBOSEF("OCB: time=%u, gnss=%ld, iod=%hu", epoch_time, gnss_id, iod);
         for (auto& satellite : satellites) {
-            printf("  satellite: %4ld  ", satellite.id);
-            if (satellite.orbit) {
-                printf("O");
-            } else {
-                printf("-");
-            }
-            if (satellite.clock) {
-                printf("C");
-            } else {
-                printf("-");
-            }
-            if (satellite.code_bias) {
-                printf("B");
-            } else {
-                printf("-");
-            }
-            if (satellite.phase_bias) {
-                printf("P");
-            } else {
-                printf("-");
-            }
-            if (satellite.ura) {
-                printf("U");
-            } else {
-                printf("-");
-            }
-            printf("\n");
+            VERBOSEF("  satellite: %4ld %s%s%s%s%s", satellite.id, satellite.orbit ? "O" : "-",
+                     satellite.clock ? "C" : "-", satellite.code_bias ? "B" : "-",
+                     satellite.phase_bias ? "P" : "-", satellite.ura ? "U" : "-");
         }
-#endif
 
         auto eos               = (message_id + 1) == messages.size();
         auto yaw_angle_present = false;
@@ -683,9 +630,7 @@ void Generator::generate_ocb(uint16_t iod) {
         builder.satellite_mask(gnss_id, satellites);
 
         for (auto& satellite : satellites) {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("  SATELLITE: %4ld\n", satellite.id);
-#endif
+            VERBOSEF("  SATELLITE: %4ld", satellite.id);
 
             builder.sf013(false /* false = do use this satellite */);
             builder.sf014(satellite.orbit != nullptr, satellite.clock != nullptr,
@@ -713,19 +658,6 @@ void Generator::generate_ocb(uint16_t iod) {
                 builder.sf020(along);
                 builder.sf020(cross);
 
-#ifdef SPARTN_DEBUG_PRINT
-                printf("    ORBIT UPDATE INTERVAL: %f\n", corrections.orbit_update_interval);
-                printf("    RADIAL: %f\n", radial);
-                printf("    ALONG: %f\n", along);
-                printf("    CROSS: %f\n", cross);
-                if (orbit.dot_delta_radial_r15)
-                    printf("    DOT RADIAL: %ld\n", *orbit.dot_delta_radial_r15);
-                if (orbit.dot_delta_AlongTrack_r15)
-                    printf("    DOT ALONG: %ld\n", *orbit.dot_delta_AlongTrack_r15);
-                if (orbit.dot_delta_CrossTrack_r15)
-                    printf("    DOT CROSS: %ld\n", *orbit.dot_delta_CrossTrack_r15);
-#endif
-
                 if (yaw_angle_present) {
                     // NOTE(ewasjon): Yaw angle is assumed to be zero, 3GPP LPP inherits this
                     // assumption from CLAS specification.
@@ -750,13 +682,6 @@ void Generator::generate_ocb(uint16_t iod) {
                 auto c1 = decode::delta_Clock_C1_r15(clock.delta_Clock_C1_r15);
                 auto c2 = decode::delta_Clock_C2_r15(clock.delta_Clock_C2_r15);
 
-#ifdef SPARTN_DEBUG_PRINT
-                printf("    CLOCK UPDATE INTERVAL: %f\n", corrections.clock_update_interval);
-                printf("    C0: %f\n", c0);
-                printf("    C1: %f\n", c1);
-                printf("    C2: %f\n", c2);
-#endif
-
                 // t_0 = epochTime + (0.5 * ssrUpdateInterval)
                 // TODO(ewasjon): [low-priority] Include SSR update interval. This is fine not to
                 // include while we are using t=t0.
@@ -777,18 +702,13 @@ void Generator::generate_ocb(uint16_t iod) {
                     dc *= -1;
                 }
 
-#ifdef SPARTN_DEBUG_PRINT
-                printf("    clock: %f%s\n", dc, mUBloxClockCorrection ? " [u-blox]" : "");
-#endif
-
+                VERBOSEF("    clock: %f%s", dc, mUBloxClockCorrection ? " [u-blox]" : "");
                 builder.sf020(dc);
 
                 if (mUraOverride >= 0) {
                     uint8_t ura_value = mUraOverride > 7 ? 7 : static_cast<uint8_t>(mUraOverride);
                     builder.sf024_raw(ura_value);
-#ifdef SPARTN_DEBUG_PRINT
-                    printf("    sf024: %d (%u) [override]\n", mUraOverride, ura_value);
-#endif
+                    VERBOSEF("    sf024: %d (%u) [override]", mUraOverride, ura_value);
                 } else if (satellite.ura) {
                     auto& ura     = *satellite.ura;
                     auto  quality = decode::ssr_URA_r16(ura.ssr_URA_r16);
@@ -798,23 +718,17 @@ void Generator::generate_ocb(uint16_t iod) {
                                 0 :
                                 (mUraDefault > 7 ? 7 : static_cast<uint8_t>(mUraDefault));
                         builder.sf024_raw(ura_value);
-#ifdef SPARTN_DEBUG_PRINT
-                        printf("    sf024: %d (%u) [default/invalid]\n", mUraDefault, ura_value);
-#endif
+                        VERBOSEF("    sf024: %d (%u) [default/invalid]", mUraDefault, ura_value);
                     } else {
                         auto ura_value = builder.sf024(quality.value);
-#ifdef SPARTN_DEBUG_PRINT
-                        printf("    sf024: %f (%u)\n", quality.value, ura_value);
-#endif
+                        VERBOSEF("    sf024: %f (%u)", quality.value, ura_value);
                     }
                 } else {
                     uint8_t ura_value =
                         mUraDefault < 0 ? 0 :
                                           (mUraDefault > 7 ? 7 : static_cast<uint8_t>(mUraDefault));
                     builder.sf024_raw(ura_value);
-#ifdef SPARTN_DEBUG_PRINT
-                    printf("    sf024: %d (%u) [default/missing]\n", mUraDefault, ura_value);
-#endif
+                    VERBOSEF("    sf024: %d (%u) [default/missing]", mUraDefault, ura_value);
                 }
             }
 

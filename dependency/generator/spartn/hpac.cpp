@@ -22,8 +22,8 @@
 #include <algorithm>
 #include <cmath>
 
-// TODO(ewasjon): Remove this
-#define SPARTN_DEBUG_PRINT 0
+#include <loglet/loglet.hpp>
+#define LOGLET_CURRENT_MODULE "spartn/g"
 
 namespace generator {
 namespace spartn {
@@ -353,19 +353,16 @@ static StecParameters compute_stec_parameters(CorrectionPointSet const&  correct
 
         rx_prime = mx;
         ry_prime = my;
-#if SPARTN_DEBUG_PRINT
-        printf("stec polynomial (%d):\n", equation_type);
-        printf("  C00: %+.6f -> %+.6f\n", c00, c00_prime);
+        VERBOSEF("stec polynomial (%d):", equation_type);
+        VERBOSEF("  C00: %+.6f -> %+.6f", c00, c00_prime);
         if (equation_type >= 1) {
-            printf("  C01: %+.6f -> %+.6f\n", c01, c01_prime);
-            printf("  C10: %+.6f -> %+.6f\n", c10, c10_prime);
+            VERBOSEF("  C01: %+.6f -> %+.6f", c01, c01_prime);
+            VERBOSEF("  C10: %+.6f -> %+.6f", c10, c10_prime);
         }
         if (equation_type >= 2) {
-            printf("  C11: %+.6f -> %+.6f\n", c11, c11_prime);
+            VERBOSEF("  C11: %+.6f -> %+.6f", c11, c11_prime);
         }
-#endif
         if (equation_type == 1 || equation_type == 2) {
-#if SPARTN_DEBUG_PRINT
             for (auto gp : correction_point_set.grid_points()) {
                 auto latitude  = gp.latitude;
                 auto longitude = gp.longitude;
@@ -375,12 +372,11 @@ static StecParameters compute_stec_parameters(CorrectionPointSet const&  correct
                     latitude, longitude, c00_prime, c01_prime, c10_prime, c11_prime, mx, my);
                 auto incorrect_r = StecParameters::compute_residual(latitude, longitude, c00, c01,
                                                                     c10, c11, mx, my);
-                printf("    stec[%2ld] = lpp: %+9.6f, spartn: %+9.6f (%+9.6f), incorrect: %+9.6f "
-                       "(%+9.6f)  (%.4f, %.4f)\n",
+                VERBOSEF("    stec[%2ld] = lpp: %+9.6f, spartn: %+9.6f (%+9.6f), incorrect: %+9.6f "
+                       "(%+9.6f)  (%.4f, %.4f)",
                        gp.id, lpp_r, spartn_r, lpp_r - spartn_r, incorrect_r, incorrect_r - lpp_r,
                        latitude, longitude);
             }
-#endif
         }
     }
 
@@ -498,9 +494,7 @@ compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
                               bool   add_hydrostatic_residual_to_wet_residual) {
     std::vector<TroposphereResidual> result;
 
-#ifdef SPARTN_DEBUG_PRINT
-    printf("  troposphere residuals:\n");
-#endif
+    VERBOSEF("  troposphere residuals:");
 
     auto grid_points = correction_point_set.grid_points();
     for (auto gp : grid_points) {
@@ -522,14 +516,10 @@ compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
                 total_residual = wet_residual;
             }
 
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = %+.6f\n", gp.id, total_residual);
-#endif
+            VERBOSEF("    grid[%2ld] = %+.6f", gp.id, total_residual);
             result.push_back({total_residual, false});
         } else {
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = invalid\n", gp.id);
-#endif
+            VERBOSEF("    grid[%2ld] = invalid", gp.id);
             result.push_back({0.0, true});
         }
     }
@@ -564,9 +554,7 @@ static void troposphere_data_block(MessageBuilder&     builder,
 
     if (sf042_override >= 0) {
         uint8_t value = sf042_override > 7 ? 7 : static_cast<uint8_t>(sf042_override);
-#ifdef SPARTN_DEBUG_PRINT
-        printf("  sf042: %d [override]\n", value);
-#endif
+        VERBOSEF("  sf042: %d [override]", value);
         builder.sf042_raw(value);
     } else if (data.troposphericDelayQualityIndicator_r16) {
         auto quality = decode::troposphericDelayQualityIndicator_r16(
@@ -576,22 +564,16 @@ static void troposphere_data_block(MessageBuilder&     builder,
                                 0 :
                                 (sf042_default > 7 ? 7 : static_cast<uint8_t>(sf042_default));
             builder.sf042_raw(value);
-#ifdef SPARTN_DEBUG_PRINT
-            printf("  sf042: %d (%u) [default/invalid]\n", sf042_default, value);
-#endif
+            VERBOSEF("  sf042: %d (%u) [default/invalid]", sf042_default, value);
         } else {
             auto value = builder.sf042(quality.value);
-#ifdef SPARTN_DEBUG_PRINT
-            printf("  sf042: %f (%u)\n", quality.value, value);
-#endif
+            VERBOSEF("  sf042: %f (%u)", quality.value, value);
         }
     } else {
         uint8_t value =
             sf042_default < 0 ? 0 : (sf042_default > 7 ? 7 : static_cast<uint8_t>(sf042_default));
         builder.sf042_raw(value);
-#ifdef SPARTN_DEBUG_PRINT
-        printf("  sf042: %d (%u) [default/missing]\n", sf042_default, value);
-#endif
+        VERBOSEF("  sf042: %d (%u) [default/missing]", sf042_default, value);
     }
 
     // NOTE(ewasjon): SPARTN have an average hydrostatic delay for all grid points. 3GPP LPP only
@@ -600,9 +582,7 @@ static void troposphere_data_block(MessageBuilder&     builder,
         compute_average_hydrostatic_delay(correction_point_set, corrections);
     hydrostatic_delay_avg = builder.sf043(hydrostatic_delay_avg);
 
-#ifdef SPARTN_DEBUG_PRINT
-    printf("  hydrostatic_delay_avg: %f\n", hydrostatic_delay_avg);
-#endif
+    VERBOSEF("  hydrostatic_delay_avg: %f", hydrostatic_delay_avg);
 
     // NOTE(ewasjon): 3GPP LPP doesn't include a polynomial for the wet delay (zenith delay). Thus,
     // we can set this to a constant value of 0.0. We can also compute the average zenith delay for
@@ -626,9 +606,7 @@ static void troposphere_data_block(MessageBuilder&     builder,
         average_zenith_delay = 0.0;
     }
 
-#ifdef SPARTN_DEBUG_PRINT
-    printf("  average_zenith_delay: %f\n", average_zenith_delay);
-#endif
+    VERBOSEF("  average_zenith_delay: %f", average_zenith_delay);
 
     // Compute the residuals
     auto residuals = compute_troposphere_residuals(correction_point_set, corrections,
@@ -696,9 +674,7 @@ ionosphere_data_block_1(MessageBuilder& builder, CorrectionPointSet& correction_
     if (sf055_override >= 0) {
         uint8_t value = sf055_override > 15 ? 15 : static_cast<uint8_t>(sf055_override);
         builder.sf055_raw(value);
-#ifdef SPARTN_DEBUG_PRINT
-        printf("  sf055: %d (%u) [override]\n", sf055_override, value);
-#endif
+        VERBOSEF("  sf055: %d (%u) [override]", sf055_override, value);
     } else {
         auto q = decode::stecQualityIndicator_r16(element->stecQualityIndicator_r16);
         if (q.invalid) {
@@ -706,14 +682,10 @@ ionosphere_data_block_1(MessageBuilder& builder, CorrectionPointSet& correction_
                                 0 :
                                 (sf055_default > 15 ? 15 : static_cast<uint8_t>(sf055_default));
             builder.sf055_raw(value);
-#ifdef SPARTN_DEBUG_PRINT
-            printf("  sf055: %d (%u) [default/invalid]\n", sf055_default, value);
-#endif
+            VERBOSEF("  sf055: %d (%u) [default/invalid]", sf055_default, value);
         } else {
             auto value = builder.sf055(q.value);
-#ifdef SPARTN_DEBUG_PRINT
-            printf("  sf055: %f (%u)\n", q.value, value);
-#endif
+            VERBOSEF("  sf055: %f (%u)", q.value, value);
         }
     }
 
@@ -803,26 +775,19 @@ static void ionosphere_data_block_2(MessageBuilder&     builder,
     auto residual_field_size = compute_residual_field_size(residuals);
     builder.sf063(residual_field_size);
 
-#ifdef SPARTN_DEBUG_PRINT
-    printf("  residual_field_size=%d\n", residual_field_size);
-#endif
-
+    VERBOSEF("  residual_field_size=%d", residual_field_size);
     for (auto r : residuals) {
         // NOTE(ewasjon): If the residual is invalid and stec_invalid_to_zero is true, we want to
         // set the residual to 0.0. But if stec_method == StecMethod::MoveToResiduals, we want to
         // keep the polynomial residual, thus we use the r.residual value even if it's invalid.
         if (r.invalid && !stec_invalid_to_zero) {
             builder.ionosphere_residual_invalid(residual_field_size);
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = invalid\n", r.id);
-#endif
+            VERBOSEF("    grid[%2ld] = invalid", r.id);
         } else {
             auto residual         = r.residual;
             auto encoded_residual = builder.ionosphere_residual(residual_field_size, residual);
-#ifdef SPARTN_DEBUG_PRINT
-            printf("    grid[%2ld] = %+.4f (%+.4f)%s\n", r.id, encoded_residual,
+            VERBOSEF("    grid[%2ld] = %+.4f (%+.4f)%s", r.id, encoded_residual,
                    residual - encoded_residual, r.invalid ? " [invalid]" : "");
-#endif
         }
     }
 }
@@ -842,19 +807,13 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
         auto it = satellites.begin();
         for (; it != satellites.end();) {
             if (!it->stec) {
-#ifdef SPARTN_DEBUG_PRINT
-                printf("  removed satellite=%u [stec]\n", it->prn());
-#endif
+                VERBOSEF("  removed satellite=%u [stec]", it->prn());
                 it = satellites.erase(it);
             } else if (ocb && !ocb->has_satellite(it->id)) {
-#ifdef SPARTN_DEBUG_PRINT
-                printf("  removed satellite=%u [ocb]\n", it->prn());
-#endif
+                VERBOSEF("  removed satellite=%u [ocb]", it->prn());
                 it = satellites.erase(it);
             } else if (filter_by_residuals && !it->has_all_residuals(correction_point_set)) {
-#ifdef SPARTN_DEBUG_PRINT
-                printf("  removed satellite=%u [residuals]\n", it->prn());
-#endif
+                VERBOSEF("  removed satellite=%u [residuals]", it->prn());
                 it = satellites.erase(it);
             } else {
                 it++;
@@ -873,10 +832,8 @@ static void ionosphere_data_block(MessageBuilder& builder, CorrectionPointSet& c
     builder.satellite_mask(gnss_id, satellites);
 
     for (auto& satellite : satellites) {
-#ifdef SPARTN_DEBUG_PRINT
-        assert(satellite.stec);
-        printf("  satellite=%u\n", satellite.prn());
-#endif
+        ASSERT(satellite.stec, "satellite.stec is null");
+        VERBOSEF("  satellite=%u", satellite.prn());
 
         auto stec_parameters =
             ionosphere_data_block_1(builder, correction_point_set, corrections, satellite,
@@ -934,10 +891,8 @@ void Generator::generate_hpac(uint16_t iod) {
             }
         }
 
-#ifdef SPARTN_DEBUG_PRINT
-        printf("HPAC: time=%u, set=%hu, gnss=%ld, iod=%hu\n", epoch_time, set_id, gnss_id, iod);
-        printf("  area_id=%u\n", correction_point_set.area_id);
-#endif
+        VERBOSEF("HPAC: time=%u, set=%hu, gnss=%ld, iod=%hu", epoch_time, set_id, gnss_id, iod);
+        VERBOSEF("  area_id=%u", correction_point_set.area_id);
 
         auto subtype = subtype_from_gnss_id(gnss_id);
         auto troposphere_block_type =
