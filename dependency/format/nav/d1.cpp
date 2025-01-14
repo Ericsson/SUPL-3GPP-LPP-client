@@ -220,7 +220,7 @@ bool D1Subframe::decode(Words const& words, uint8_t sv_id, D1Subframe& subframe)
     case 1: return decode_subframe1(words, subframe.subframe1);
     case 2: return decode_subframe2(words, subframe.subframe2);
     case 3: return decode_subframe3(words, subframe.subframe3);
-    default: VERBOSEF("unknown subframe id: %u", id); return false;
+    default: VERBOSEF("unknown subframe id: %u", id); return true;
     }
 }
 
@@ -281,6 +281,7 @@ bool D1Collector::process(uint8_t prn, D1Subframe const& subframe,
         break;
     default:
         // Unknown subframe type
+        VERBOSEF("unsupported subframe id: %u", subframe.subframe_id);
         return false;
     }
 

@@ -223,7 +223,7 @@ bool InavWord::decode(Words const& words, InavWord& word) NOEXCEPT {
     case 3: return decode_word_3(data, word);
     case 4: return decode_word_4(data, word);
     case 5: return decode_word_5(data, word);
-    default: return false;
+    default: VERBOSEF("unsupported word: %u", word_type); return true;
     }
 }
 
@@ -255,6 +255,7 @@ bool InavEphemerisCollector::process(uint8_t prn, InavWord const& word,
         break;
     default:
         // Unknown subframe type
+        VERBOSEF("unsupported word type: %u", word.word_type);
         return false;
     }
 

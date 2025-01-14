@@ -51,6 +51,7 @@ static double unsigned_scale(uint32_t value, double power) {
 }
 
 static bool decode_subframe1(Words const& words, Subframe1& subframe) {
+    FUNCTION_SCOPE();
     auto week_number    = words.u16(60, 10);
     auto ca_or_p_on_l2  = words.u8(70, 2);
     auto ura_index      = words.u8(72, 4);
@@ -87,6 +88,7 @@ static bool decode_subframe1(Words const& words, Subframe1& subframe) {
 }
 
 static bool decode_subframe2(Words const& words, Subframe2& subframe) {
+    FUNCTION_SCOPE();
     auto iode              = words.u8(60, 8);
     auto crs               = words.u16(68, 16);
     auto delta_n           = words.u16(90, 16);
@@ -132,6 +134,7 @@ static bool decode_subframe2(Words const& words, Subframe2& subframe) {
 }
 
 static bool decode_subframe3(Words const& words, Subframe3& subframe) {
+    FUNCTION_SCOPE();
     auto cic        = words.u16(60, 16);
     auto omega0_msb = words.u8(76, 8);
     auto omega0_lsb = words.u32(90, 24);
@@ -193,12 +196,13 @@ bool Subframe::decode(Words const& words, Subframe& subframe) NOEXCEPT {
     case 1: return decode_subframe1(words, subframe.subframe1);
     case 2: return decode_subframe2(words, subframe.subframe2);
     case 3: return decode_subframe3(words, subframe.subframe3);
-    default: VERBOSEF("unsupported subframe id: %u", subframe.how.subframe_id); return false;
+    default: VERBOSEF("unsupported subframe id: %u", subframe.how.subframe_id); return true;
     }
 }
 
 bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
                                  ephemeris::GpsEphemeris& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
     auto& internal_ephemeris = mBuffer[prn];
 
     // Process subframe based on its type
@@ -254,6 +258,7 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         break;
     default:
         // Unknown subframe type
+        VERBOSEF("unsupported subframe id: %u", subframe.how.subframe_id);
         return false;
     }
 
@@ -261,18 +266,17 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         internal_ephemeris.subframe3) {
         // Check that the IODEs match
         if (internal_ephemeris.subframe2_data.iode != internal_ephemeris.subframe3_data.iode) {
-            VERBOSEF("IODE mismatch for PRN %u (subframe 2: %u, subframe 3: %u)", prn,
-                     internal_ephemeris.subframe2_data.iode,
-                     internal_ephemeris.subframe3_data.iode);
+            DEBUGF("IODE mismatch for PRN %u (subframe 2: %u, subframe 3: %u)", prn,
+                   internal_ephemeris.subframe2_data.iode, internal_ephemeris.subframe3_data.iode);
             internal_ephemeris.subframe1 = false;
             internal_ephemeris.subframe2 = false;
             internal_ephemeris.subframe3 = false;
             return false;
         }
 
-        VERBOSEF("processing ephemeris for PRN %u (week: %u, IODE: %u)", prn,
-                 internal_ephemeris.subframe1_data.week_number,
-                 internal_ephemeris.subframe2_data.iode);
+        DEBUGF("processing ephemeris for PRN %u (week: %u, IODE: %u)", prn,
+               internal_ephemeris.subframe1_data.week_number,
+               internal_ephemeris.subframe2_data.iode);
 
         auto const& sf1 = internal_ephemeris.subframe1_data;
         auto const& sf2 = internal_ephemeris.subframe2_data;

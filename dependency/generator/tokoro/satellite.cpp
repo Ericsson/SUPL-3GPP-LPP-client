@@ -46,7 +46,7 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     // Find broadcast ephemeris
     ephemeris::Ephemeris eph{};
     if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iod, eph)) {
-        WARNF("ephemeris not found [sv=%s,iod=%u]", mId.name(), mOrbitCorrection.iod);
+        DEBUGF("ephemeris not found [sv=%s,iod=%u]", mId.name(), mOrbitCorrection.iod);
         return;
     }
 
@@ -321,7 +321,7 @@ bool Satellite::find_orbit_correction(CorrectionData const& correction_data) NOE
 
     auto correction = correction_data.orbit_correction(mId);
     if (!correction) {
-        DEBUGF("satellite missing orbit corrections [sv=%s]", mId.name());
+        VERBOSEF("satellite missing orbit corrections [sv=%s]", mId.name());
         return false;
     }
 
@@ -334,7 +334,7 @@ bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOE
 
     auto correction = correction_data.clock_correction(mId);
     if (!correction) {
-        DEBUGF("satellite missing clock corrections [sv=%s]", mId.name());
+        VERBOSEF("satellite missing clock corrections [sv=%s]", mId.name());
         return false;
     }
 

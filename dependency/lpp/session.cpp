@@ -46,7 +46,7 @@ bool SessionTask::schedule(scheduler::Scheduler& scheduler) {
     if (mWriteEnabled) events |= EPOLLOUT;
     if (mErrorEnabled) events |= EPOLLERR;
     if (scheduler.add_epoll_fd(mFd, events, &mEvent)) {
-        DEBUGF("session task: scheduled");
+        VERBOSEF("session task: scheduled");
         mScheduler = &scheduler;
         return true;
     } else {
@@ -62,7 +62,7 @@ bool SessionTask::cancel() {
     }
 
     if (mScheduler->remove_epoll_fd(mFd)) {
-        DEBUGF("session task: cancelled");
+        VERBOSEF("session task: cancelled");
         mScheduler = nullptr;
         return true;
     } else {

@@ -270,7 +270,7 @@ bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) cons
 
         if (!tl->has_tropospheric_data() || !tr->has_tropospheric_data() ||
             !bl->has_tropospheric_data() || !br->has_tropospheric_data()) {
-            WARNF("tropospheric correction not found");
+            VERBOSEF("tropospheric correction not found");
             return false;
         }
 
@@ -331,7 +331,7 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
 
     auto& grid = grid_it->second;
     if (!grid.tropospheric(llh, correction)) {
-        WARNF("tropospheric correction not found");
+        VERBOSEF("tropospheric correction not found");
         return false;
     }
 
