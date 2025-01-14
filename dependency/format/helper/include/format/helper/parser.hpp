@@ -24,10 +24,7 @@ protected:
     NODISCARD void    skip(uint32_t length) NOEXCEPT;
     NODISCARD void    skip(uint64_t length) NOEXCEPT { skip(static_cast<uint32_t>(length)); }
 
-    void copy_to_buffer(uint8_t* data, uint32_t length) NOEXCEPT;
-    void copy_to_buffer(uint8_t* data, size_t length) NOEXCEPT {
-        copy_to_buffer(data, static_cast<uint32_t>(length));
-    }
+    void copy_to_buffer(uint8_t* data, size_t length) NOEXCEPT;
 
 private:
     uint8_t* mBuffer;

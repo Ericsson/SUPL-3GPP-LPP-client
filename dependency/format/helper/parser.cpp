@@ -5,10 +5,7 @@ namespace helper {
 
 static CONSTEXPR uint32_t PARSER_BUFFER_SIZE = 32 * 4096;
 
-Parser::Parser() NOEXCEPT : mBuffer(nullptr),
-                               mBufferCapacity(0),
-                               mBufferRead(0),
-                               mBufferWrite(0) {
+Parser::Parser() NOEXCEPT : mBuffer(nullptr), mBufferCapacity(0), mBufferRead(0), mBufferWrite(0) {
     mBuffer         = new uint8_t[PARSER_BUFFER_SIZE];
     mBufferCapacity = PARSER_BUFFER_SIZE;
 }
@@ -74,13 +71,14 @@ void Parser::skip(uint32_t length) NOEXCEPT {
     mBufferRead = (mBufferRead + length) % mBufferCapacity;
 }
 
-void Parser::copy_to_buffer(uint8_t* data, uint32_t length) NOEXCEPT {
+void Parser::copy_to_buffer(uint8_t* data, size_t length) NOEXCEPT {
+    auto length32  = static_cast<uint32_t>(length);
     auto available = buffer_length();
-    if (length > available) {
-        length = available;
+    if (length32 > available) {
+        length32 = available;
     }
 
-    for (uint32_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length32; i++) {
         data[i] = mBuffer[(mBufferRead + i) % mBufferCapacity];
     }
 }

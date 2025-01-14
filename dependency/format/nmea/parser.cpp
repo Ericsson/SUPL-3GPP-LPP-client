@@ -7,6 +7,10 @@
 
 #include <cstdio>
 
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "nmea"
+
 namespace format {
 namespace nmea {
 
@@ -15,15 +19,19 @@ NODISCARD char const* Parser::name() const NOEXCEPT {
 }
 
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
+    FUNCTION_SCOPE();
+
     // search for '$'
     for (;;) {
         if (buffer_length() < 1) {
             // not enough data to search for '$'
+            VERBOSEF("not enough data to search for '$'");
             return nullptr;
         }
 
         if (peek(0) == '$') {
             // found '$'
+            VERBOSEF("found '$'");
             break;
         }
 
@@ -36,10 +44,12 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     for (;;) {
         if (buffer_length() < length + 2) {
             // not enough data to search for '\r\n'
+            VERBOSEF("not enough data to search for '\\r\\n'");
             return nullptr;
         }
 
         if (peek(length + 0) == '\r' && peek(length + 1) == '\n') {
+            VERBOSEF("found '\\r\\n'");
             // found '\r\n'
             break;
         }
@@ -58,6 +68,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto result = checksum(payload);
     if (result != ChecksumResult::OK) {
         // checksum failed
+        DEBUGF("checksum failed: \"%s\"", payload.c_str());
         return nullptr;
     }
 
@@ -65,6 +76,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto prefix = parse_prefix(reinterpret_cast<uint8_t const*>(payload.data()), length_with_clrf);
     if (prefix.empty()) {
         // invalid prefix
+        VERBOSEF("invalid prefix");
         return nullptr;
     }
 
@@ -73,12 +85,14 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto data_end   = length_with_clrf - 5;
     if (data_start >= data_end) {
         // no data
+        VERBOSEF("no data");
         return nullptr;
     }
 
     auto data_length   = data_end - data_start;
     auto data_payload  = payload.substr(data_start, data_length);
     auto data_checksum = payload.substr(data_end + 1, data_end + 3);
+    DEBUGF("prefix: %s, data: %s", prefix.c_str(), data_payload.c_str());
 
     // parse message
     if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {
@@ -117,12 +131,16 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 }
 
 ChecksumResult Parser::checksum(std::string const& buffer) {
+    FUNCTION_SCOPE();
+
     auto fmt_end = buffer.find_last_of('*');
     if (fmt_end == std::string::npos) {
+        DEBUGF("invalid string: no *");
         return ChecksumResult::INVALID_STRING_NOSTAR;
     }
 
     if (fmt_end + 3 /* *XY */ + 2 /* \r\n */ != buffer.size()) {
+        DEBUGF("invalid string: length");
         return ChecksumResult::INVALID_STRING_LENGTH;
     }
 
@@ -140,14 +158,17 @@ ChecksumResult Parser::checksum(std::string const& buffer) {
         if (expected_checksum == calculated_checksum) {
             return ChecksumResult::OK;
         } else {
+            DEBUGF("invalid value: %02X != %02X", expected_checksum, calculated_checksum);
             return ChecksumResult::INVALID_VALUE;
         }
     } catch (...) {
+        DEBUGF("invalid value: %s", fmt_string.c_str());
         return ChecksumResult::INVALID_VALUE;
     }
 }
 
 std::string Parser::parse_prefix(uint8_t const* data, uint32_t length) const NOEXCEPT {
+    FUNCTION_SCOPE();
     // parse '$XXXXX' until first ',' or '*'
     std::string prefix;
     for (uint32_t i = 0; i < length; i++) {
@@ -160,6 +181,7 @@ std::string Parser::parse_prefix(uint8_t const* data, uint32_t length) const NOE
     }
 
     if (prefix.size() != 6 && prefix.size() != 8) {
+        DEBUGF("invalid prefix: %s", prefix.c_str());
         // All NMEA messages have six characters in their prefix, eg $GPGST, except
         // Quectel's EPE message, that has eight characters: $PQTMEPE.
         return "";
