@@ -59,6 +59,12 @@ static void client_connected(Program& program, lpp::Client& client) {
     program.assistance_data_session = client.request_assistance_data({
         program.config.assistance_data.type,
         *program.cell.get(),
+        {
+            program.config.assistance_data.gps,
+            program.config.assistance_data.glonass,
+            program.config.assistance_data.galileo,
+            program.config.assistance_data.beidou,
+        },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("provide assistance data (non-periodic)");
             program.stream.push(std::move(message));
