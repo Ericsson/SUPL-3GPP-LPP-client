@@ -24,6 +24,14 @@ struct RequestAssistanceData {
     /// @brief The cell information to use for the request.
     supl::Cell cell;
 
+    /// @brief The GNSS systems to request assistance data for.
+    struct {
+        bool gps;
+        bool glonass;
+        bool galileo;
+        bool beidou;
+    } gnss;
+
     /// @brief Callback for non-periodic assistance data.
     /// @note This will be called _before_ the `on_started` callback.
     std::function<void(Client&, Message)> on_non_periodic;

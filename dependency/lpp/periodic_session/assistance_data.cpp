@@ -57,10 +57,10 @@ bool AssistanceDataHandler::request_assistance_data() {
     messages::RequestAssistanceData message_description{};
     message_description.cell             = mData.cell;
     message_description.periodic_session = handle();
-    message_description.gps              = true;
-    message_description.glonass          = true;
-    message_description.galileo          = true;
-    message_description.bds              = false;
+    message_description.gps              = mData.gnss.gps;
+    message_description.glonass          = mData.gnss.glonass;
+    message_description.galileo          = mData.gnss.galileo;
+    message_description.bds              = mData.gnss.beidou;
 
     if (mData.type == RequestAssistanceData::Type::OSR) {
         message_description.rtk_observations           = 1;
