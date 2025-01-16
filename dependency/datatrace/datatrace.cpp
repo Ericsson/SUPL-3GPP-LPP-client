@@ -10,17 +10,6 @@
 
 namespace datatrace {
 
-static void on_connect(struct mosquitto*, void*, int reason_code) {
-    VERBOSEF("on_connect: %s", mosquitto_connack_string(reason_code));
-    if (reason_code != 0) {
-#if LIBMOSQUITTO_MAJOR >= 2
-        ERRORF("connection failed: %s", mosquitto_reason_string(reason_code));
-#else
-        ERRORF("connection failed");
-#endif
-    }
-}
-
 static mosquitto*  gMosq = nullptr;
 static std::string gDevice;
 
@@ -38,9 +27,6 @@ void initialize(std::string const& device, std::string const& server, int port,
     if (gMosq == nullptr) {
         return;
     }
-
-    ::mosquitto_connect_callback_set(gMosq, on_connect);
-    VERBOSEF("::mosquitto_connect_callback_set(%p, %p)", gMosq, on_connect);
 
     auto result = ::mosquitto_username_pw_set(gMosq, username.c_str(), password.c_str());
     VERBOSEF("::mosquitto_username_pw_set(%p, %s, %s) = %d", gMosq, username.c_str(),
@@ -82,6 +68,25 @@ void replace_all(std::string& str, std::string const& from, std::string const& t
     while ((start_pos = str.find(from, start_pos)) != std::string::npos) {
         str.replace(start_pos, from.length(), to);
         start_pos += to.length();
+    }
+}
+
+void publish(std::string const& topic, std::string const& ss_data) {
+    ASSERT(gMosq != nullptr, "mosq is null");
+
+    int count = 0;
+    while (count < 3) {
+        auto ss_size = static_cast<int>(ss_data.size());
+        auto result =
+            ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
+        VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
+                 topic.c_str(), ss_size, result);
+        if (result != MOSQ_ERR_SUCCESS) {
+            DEBUGF("failed to publish (attempt %d): %s", count, mosquitto_strerror(result));
+        } else {
+            break;
+        }
+        count++;
     }
 }
 
@@ -152,16 +157,7 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
     if (obs.orbit_delta_t.valid) ss << ",\"orbit_delta_t\":" << obs.orbit_delta_t.value;
     ss << "}";
 
-    auto ss_data = ss.str();
-    auto ss_size = static_cast<int>(ss_data.size());
-    auto result =
-        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
-    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_size, result);
-    if (result != MOSQ_ERR_SUCCESS) {
-        WARNF("failed to publish observation: %s", mosquitto_strerror(result));
-        return;
-    }
+    publish(topic, ss.str());
 }
 
 void report_satellite(ts::Tai const& time, std::string const& satellite, Satellite const& sat) {
@@ -195,16 +191,7 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
     }
     ss << "}";
 
-    auto ss_data = ss.str();
-    auto ss_size = static_cast<int>(ss_data.size());
-    auto result =
-        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
-    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_size, result);
-    if (result != MOSQ_ERR_SUCCESS) {
-        WARNF("failed to publish satellite: %s", mosquitto_strerror(result));
-        return;
-    }
+    publish(topic, ss.str());
 }
 
 void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satellite,
@@ -233,16 +220,7 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
     if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
-    auto ss_data = ss.str();
-    auto ss_size = static_cast<int>(ss_data.size());
-    auto result =
-        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
-    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_size, result);
-    if (result != MOSQ_ERR_SUCCESS) {
-        WARNF("failed to publish ssr orbit correction: %s", mosquitto_strerror(result));
-        return;
-    }
+    publish(topic, ss.str());
 }
 
 void report_ssr_clock_correction(ts::Tai const& time, std::string const& satellite,
@@ -264,16 +242,7 @@ void report_ssr_clock_correction(ts::Tai const& time, std::string const& satelli
     if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
-    auto ss_data = ss.str();
-    auto ss_size = static_cast<int>(ss_data.size());
-    auto result =
-        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
-    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_size, result);
-    if (result != MOSQ_ERR_SUCCESS) {
-        WARNF("failed to publish ssr clock correction: %s", mosquitto_strerror(result));
-        return;
-    }
+    publish(topic, ss.str());
 }
 
 void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& satellite,
@@ -305,16 +274,7 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
     if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
-    auto ss_data = ss.str();
-    auto ss_size = static_cast<int>(ss_data.size());
-    auto result =
-        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
-    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_size, result);
-    if (result != MOSQ_ERR_SUCCESS) {
-        WARNF("failed to publish ssr ionospheric polynomial: %s", mosquitto_strerror(result));
-        return;
-    }
+    publish(topic, ss.str());
 }
 
 void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
@@ -340,16 +300,7 @@ void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
     if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
-    auto ss_data = ss.str();
-    auto ss_size = static_cast<int>(ss_data.size());
-    auto result =
-        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
-    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_size, result);
-    if (result != MOSQ_ERR_SUCCESS) {
-        WARNF("failed to publish ssr tropospheric grid: %s", mosquitto_strerror(result));
-        return;
-    }
+    publish(topic, ss.str());
 }
 
 void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
@@ -374,16 +325,7 @@ void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
     if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
-    auto ss_data = ss.str();
-    auto ss_size = static_cast<int>(ss_data.size());
-    auto result =
-        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 0, false);
-    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-             topic.c_str(), ss_size, result);
-    if (result != MOSQ_ERR_SUCCESS) {
-        WARNF("failed to publish ssr ionospheric grid: %s", mosquitto_strerror(result));
-        return;
-    }
+    publish(topic, ss.str());
 }
 
 }  // namespace datatrace
