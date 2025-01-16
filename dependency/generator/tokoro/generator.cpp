@@ -460,9 +460,9 @@ std::shared_ptr<ReferenceStation>
 Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCEPT {
     INFOF("define reference station:");
     INFOF("  ground position (itrf): (%f, %f, %f)", config.itrf_ground_position.x,
-          config.itrf_ground_position.x, config.itrf_ground_position.x);
+          config.itrf_ground_position.y, config.itrf_ground_position.z);
     INFOF("  ground position (rtcm): (%f, %f, %f)", config.rtcm_ground_position.x,
-          config.rtcm_ground_position.x, config.rtcm_ground_position.x);
+          config.rtcm_ground_position.y, config.rtcm_ground_position.z);
     INFOF("  gnss: %s%s%s%s", config.generate_gps ? "G" : "-", config.generate_glo ? "R" : "-",
           config.generate_gal ? "E" : "-", config.generate_bds ? "C" : "-");
 
