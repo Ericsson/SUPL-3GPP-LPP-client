@@ -46,6 +46,7 @@ static void OpenSSL_cleanup() {
 
 TcpClient::TcpClient() : mSocket(-1) {
     VSCOPE_FUNCTION();
+    mState = State::DISCONNECTED;
 #if defined(USE_OPENSSL)
     OpenSSL_init();
 
@@ -136,7 +137,8 @@ bool TcpClient::initialize_socket() {
 
 bool TcpClient::connect(std::string const& host, int port, bool use_ssl) {
     VSCOPE_FUNCTION();
-    if (is_disconnected()) {
+    if (!is_disconnected()) {
+        DEBUGF("client is already connected");
         return false;
     }
 
