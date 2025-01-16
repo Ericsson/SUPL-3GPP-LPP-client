@@ -158,6 +158,8 @@ void log(char const* module, Level level, char const* message) {
     auto file = stdout;
     if (level == Level::Error || level == Level::Warning) {
         file = stderr;
+        // flush stdout to ensure that the log messages are in order
+        fflush(stdout);
     }
 
     fprintf(file, "%s%s%s[%10s] %*s%s%s\n", start_color, level_to_string(level), buffer, module,
