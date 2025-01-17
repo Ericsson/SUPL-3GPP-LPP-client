@@ -32,6 +32,10 @@ public:
     NODISCARD Maybe<long> as_msm() const;
 
     NODISCARD bool is_valid() const { return mGnss != Gnss::UNKNOWN && mLppId != -1; }
+    NODISCARD bool is_gps() const { return mGnss == Gnss::GPS; }
+    NODISCARD bool is_galileo() const { return mGnss == Gnss::GALILEO; }
+    NODISCARD bool is_beidou() const { return mGnss == Gnss::BEIDOU; }
+    NODISCARD bool is_glonass() const { return mGnss == Gnss::GLONASS; }
 
     NODISCARD Gnss gnss() const;
     NODISCARD std::string to_string() const;
@@ -42,6 +46,12 @@ public:
     }
 
     inline bool operator!=(SatelliteId const& other) const { return !(*this == other); }
+
+    inline bool operator<(SatelliteId const& other) const {
+        if (mGnss < other.mGnss) return true;
+        if (mGnss > other.mGnss) return false;
+        return mLppId < other.mLppId;
+    }
 
 private:
     explicit SatelliteId(Gnss gnss, int32_t lpp_id) : mGnss(gnss), mLppId(lpp_id) {}

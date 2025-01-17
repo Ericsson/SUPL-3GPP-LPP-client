@@ -60,6 +60,7 @@ public:
     NODISCARD double code_range() const NOEXCEPT;
     NODISCARD double phase_range() const NOEXCEPT;
     NODISCARD double phase_range_rate() const NOEXCEPT { return mPhaseRangeRate; }
+    NODISCARD double wave_length() const NOEXCEPT { return mWavelength; }
 
     NODISCARD double carrier_to_noise_ratio() const NOEXCEPT { return mCarrierToNoiseRatio; }
     NODISCARD double lock_time() const NOEXCEPT { return mLockTime; }

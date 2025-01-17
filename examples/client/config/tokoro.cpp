@@ -172,6 +172,13 @@ static args::Flag gNegativePhaseWindup{
     {"tkr-npw"},
 };
 
+static args::Flag gGenerateRinex{
+    gGroup,
+    "generate-rinex",
+    "Generate RINEX files",
+    {"tkr-generate-rinex"},
+};
+
 static void setup() {
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
@@ -200,6 +207,7 @@ static void parse(Config* config) {
     tokoro.rtoc                               = false;
     tokoro.ocit                               = false;
     tokoro.negative_phase_windup              = false;
+    tokoro.generate_rinex                     = false;
 
     tokoro.vrs_mode                   = TokoroConfig::VrsMode::Dynamic;
     tokoro.dynamic_distance_threshold = 5.0;
@@ -283,6 +291,7 @@ static void parse(Config* config) {
     if (gRtOC) tokoro.rtoc = true;
     if (gOcit) tokoro.ocit = true;
     if (gNegativePhaseWindup) tokoro.negative_phase_windup = true;
+    if (gGenerateRinex) tokoro.generate_rinex = true;
 }
 
 static void dump(TokoroConfig const& config) {
@@ -313,9 +322,9 @@ static void dump(TokoroConfig const& config) {
 
     if (config.vrs_mode == TokoroConfig::VrsMode::Fixed) {
         DEBUGF("fixed ITRF: (%f, %f, %f)", config.fixed_itrf_x, config.fixed_itrf_y,
-              config.fixed_itrf_z);
+               config.fixed_itrf_z);
         DEBUGF("fixed RTCM: (%f, %f, %f)", config.fixed_rtcm_x, config.fixed_rtcm_y,
-              config.fixed_rtcm_z);
+               config.fixed_rtcm_z);
     } else {
         DEBUGF("time step: %f seconds", config.time_step);
     }
@@ -324,13 +333,14 @@ static void dump(TokoroConfig const& config) {
     DEBUGF("phase windup:            %s", config.phase_windup_correction ? "true" : "false");
     DEBUGF("earth solid tides:       %s", config.earth_solid_tides_correction ? "true" : "false");
     DEBUGF("antenna phase variation: %s",
-          config.antenna_phase_variation_correction ? "true" : "false");
+           config.antenna_phase_variation_correction ? "true" : "false");
 
     DEBUGF("tropospheric height:     %s", config.tropospheric_height_correction ? "true" : "false");
     DEBUGF("iod consistency check:   %s", config.iod_consistency_check ? "true" : "false");
     DEBUGF("rtoc:                    %s", config.rtoc ? "true" : "false");
     DEBUGF("ocit:                    %s", config.ocit ? "true" : "false");
     DEBUGF("negative phase windup:   %s", config.negative_phase_windup ? "true" : "false");
+    DEBUGF("generate rinex:          %s", config.generate_rinex ? "true" : "false");
 }
 
 }  // namespace tokoro

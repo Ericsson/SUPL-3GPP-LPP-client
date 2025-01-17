@@ -31,6 +31,7 @@ target_link_libraries(dependency_generator_tokoro PRIVATE asn1::generated::lpp a
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::loglet)
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::core)
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::format::nav)
+target_link_libraries(dependency_generator_tokoro PUBLIC dependency::format::rinex)
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::maths)
 
 if(${DATA_TRACING})

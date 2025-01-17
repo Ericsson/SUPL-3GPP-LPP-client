@@ -85,6 +85,60 @@ Timestamp Gps::difference(Gps const& other) const {
     return tm - other.tm;
 }
 
+constexpr static int64_t MONTH_PER_YEAR = 12;
+constexpr static int64_t DAYS_PER_4YEAR = DAYS_PER_YEAR * 4 + 1 /* leap day */;
+constexpr static std::array<int64_t, 4 * MONTH_PER_YEAR> MONTH_DAYS = {
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,  //
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,  //
+    31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,  //
+    31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+};
+
+constexpr static int64_t GPS_START_YEAR = 1980;
+
+// TODO(ewasjon): this is not really tested very well
+static TimePoint timepoint_from_timestamp(Timestamp time) {
+    time.normalize();
+    auto days = time.seconds() / DAY_IN_SECONDS;
+
+    auto month = 0u;
+    auto day   = days % DAYS_PER_4YEAR;
+    for (; month < MONTH_DAYS.size(); month++) {
+        if (day < MONTH_DAYS[month]) {
+            break;
+        }
+
+        day -= MONTH_DAYS[month];
+    }
+
+    auto year = GPS_START_YEAR;
+    year += 4 * (days / DAYS_PER_4YEAR);
+    year += month / MONTH_PER_YEAR;
+
+    month %= MONTH_PER_YEAR;
+
+    auto tod     = time.seconds() - days * DAY_IN_SECONDS;
+    auto hour    = tod / HOUR_IN_SECONDS;
+    auto toh     = tod - hour * HOUR_IN_SECONDS;
+    auto minutes = toh / MINUTE_IN_SECONDS;
+    auto tom     = toh - minutes * MINUTE_IN_SECONDS;
+    auto seconds = tom;
+
+    TimePoint epoch{};
+    epoch.year    = year;
+    epoch.month   = month + 1;
+    epoch.day     = day + 1;
+    epoch.hour    = hour;
+    epoch.minutes = minutes;
+    epoch.seconds = static_cast<double>(seconds) + time.fraction();
+    return epoch;
+}
+
+TimePoint Gps::to_timepoint() const {
+    return timepoint_from_timestamp(tm);
+}
+
+
 Gps Gps::now() {
     return Gps{Utc::now()};
 }

@@ -266,6 +266,7 @@ struct TokoroConfig {
     bool rtoc;
     bool ocit;
     bool negative_phase_windup;
+    bool generate_rinex;
 };
 #endif
 

@@ -10,6 +10,7 @@
 #include <ephemeris/ephemeris.hpp>
 #include <ephemeris/gal.hpp>
 #include <ephemeris/gps.hpp>
+#include <format/rinex/builder.hpp>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include <generator/tokoro/sv_id.hpp>
@@ -70,6 +71,7 @@ public:
     void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
+    void set_generate_rinex(bool enabled) { mGenerateRinex = enabled; }
 
     // TODO(ewasjon): REMOVE: for testing only
     NODISCARD double g04_l1_ca() const NOEXCEPT;
@@ -105,6 +107,7 @@ private:
     uint32_t mRtcmReferenceStationId;
     uint32_t mRtcmMsmType;
     bool     mNegativePhaseWindup;
+    bool     mGenerateRinex;
 
     std::vector<Satellite>          mSatellites;
     std::unordered_set<SatelliteId> mSatelliteIncludeSet;
@@ -112,7 +115,8 @@ private:
 
     ts::Tai mGenerationTime;
 
-    Generator& mGenerator;
+    format::rinex::Builder mRinexBuilder;
+    Generator&             mGenerator;
 };
 
 class Generator {

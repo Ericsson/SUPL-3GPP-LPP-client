@@ -29,6 +29,8 @@ public:
     NODISCARD double      frequency() const;
     NODISCARD double      wavelength() const;
 
+    NODISCARD std::string to_rinex() const;
+
     inline bool operator==(SignalId const& other) const {
         return mGnss == other.mGnss && mLppId == other.mLppId;
     }
@@ -61,6 +63,21 @@ public:
     static SignalId const GPS_L1_L1C_P;
     static SignalId const GPS_L1_L1C_D_P;
 
+    static SignalId const GLONASS_G1_CA;
+    static SignalId const GLONASS_G2_CA;
+    static SignalId const GLONASS_G3;
+    static SignalId const GLONASS_G1_P;
+    static SignalId const GLONASS_G2_P;
+    static SignalId const GLONASS_G1A_D;
+    static SignalId const GLONASS_G1A_P;
+    static SignalId const GLONASS_G1A_D_P;
+    static SignalId const GLONASS_G2A_I;
+    static SignalId const GLONASS_G2A_P;
+    static SignalId const GLONASS_G2A_I_P;
+    static SignalId const GLONASS_G3_I;
+    static SignalId const GLONASS_G3_Q;
+    static SignalId const GLONASS_G3_I_Q;
+
     static SignalId const GALILEO_E1;
     static SignalId const GALILEO_E5A;
     static SignalId const GALILEO_E5B;
@@ -85,6 +102,22 @@ public:
     static SignalId const GALILEO_E5A_I;
     static SignalId const GALILEO_E5A_Q;
     static SignalId const GALILEO_E5A_I_Q;
+
+    static SignalId const BEIDOU_B1_I;
+    static SignalId const BEIDOU_B1_Q;
+    static SignalId const BEIDOU_B1_I_Q;
+    static SignalId const BEIDOU_B3_I;
+    static SignalId const BEIDOU_B3_Q;
+    static SignalId const BEIDOU_B3_I_Q;
+    static SignalId const BEIDOU_B2_I;
+    static SignalId const BEIDOU_B2_Q;
+    static SignalId const BEIDOU_B2_I_Q;
+    static SignalId const BEIDOU_B1C_D;
+    static SignalId const BEIDOU_B1C_P;
+    static SignalId const BEIDOU_B1C_D_P;
+    static SignalId const BEIDOU_B2A_D;
+    static SignalId const BEIDOU_B2A_P;
+    static SignalId const BEIDOU_B2A_D_P;
 };
 
 namespace std {
