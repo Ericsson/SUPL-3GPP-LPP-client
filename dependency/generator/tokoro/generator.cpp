@@ -77,45 +77,6 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
 
 ReferenceStation::~ReferenceStation() NOEXCEPT = default;
 
-double ReferenceStation::g04_l1_ca() const NOEXCEPT {
-    for (auto& satellite : mSatellites) {
-        if (satellite.id().gnss() == SatelliteId::Gnss::GPS && satellite.id().lpp_id().value == 3) {
-            for (auto& observation : satellite.observations()) {
-                if (observation.signal_id() == SignalId::GPS_L1_CA) {
-                    return observation.code_range();
-                }
-            }
-        }
-    }
-    return 0.0;
-}
-
-double ReferenceStation::g05_l1_ca() const NOEXCEPT {
-    for (auto& satellite : mSatellites) {
-        if (satellite.id().gnss() == SatelliteId::Gnss::GPS && satellite.id().lpp_id().value == 4) {
-            for (auto& observation : satellite.observations()) {
-                if (observation.signal_id() == SignalId::GPS_L1_CA) {
-                    return observation.code_range();
-                }
-            }
-        }
-    }
-    return 0.0;
-}
-
-double ReferenceStation::g07_l1_ca() const NOEXCEPT {
-    for (auto& satellite : mSatellites) {
-        if (satellite.id().gnss() == SatelliteId::Gnss::GPS && satellite.id().lpp_id().value == 6) {
-            for (auto& observation : satellite.observations()) {
-                if (observation.signal_id() == SignalId::GPS_L1_CA) {
-                    return observation.code_range();
-                }
-            }
-        }
-    }
-    return 0.0;
-}
-
 void ReferenceStation::initialize_satellites() NOEXCEPT {
     FUNCTION_SCOPE();
 
