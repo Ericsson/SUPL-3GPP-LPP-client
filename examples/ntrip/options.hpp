@@ -1,7 +1,13 @@
 #pragma once
-#include <interface/interface.hpp>
 #include <memory>
 #include <vector>
+
+#include <io/output.hpp>
+#include <io/file.hpp>
+#include <io/serial.hpp>
+#include <io/tcp.hpp>
+#include <io/udp.hpp>
+#include <io/stdout.hpp>
 
 /// Host options.
 struct HostOptions {
@@ -22,12 +28,13 @@ struct HostOptions {
 
     /// Nmea String
     std::string nmea;
+
+    bool hexdump;
 };
 
 /// Output options.
 struct OutputOptions {
-    /// Interfaces to output data to.
-    std::vector<std::unique_ptr<interface::Interface>> interfaces;
+    std::vector<std::unique_ptr<io::Output>> outputs;
 };
 
 struct Options {

@@ -175,10 +175,12 @@ int main(int argc, char** argv) {
         }
 
         auto length = static_cast<size_t>(bytes);
-        hexdump(temp, length);
+        if (host.hexdump) {
+            hexdump(temp, length);
+        }
 
-        for (auto& interface : output.interfaces) {
-            interface->write(temp, length);
+        for (auto& output : output.outputs) {
+            output->write(reinterpret_cast<uint8_t*>(temp), length);
         }
     }
 

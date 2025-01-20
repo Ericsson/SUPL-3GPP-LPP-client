@@ -12,8 +12,6 @@
 #include <args.hpp>
 #pragma GCC diagnostic pop
 
-using namespace interface;
-
 static args::Group arguments{"Arguments:"};
 
 //
@@ -39,6 +37,7 @@ static args::ValueFlag<std::string> ntrip_password{
 
 static args::ValueFlag<std::string> nmea_string{
     ntrip, "nmea_string", "NMEA String", {"nmea"}, args::Options::Single};
+static args::Flag hexdump_flag{ntrip, "hexdump", "Hexdump", {"hexdump"}, args::Options::Single};
 
 static HostOptions parse_host_options() {
     if (!ntrip_hostname) {
@@ -74,6 +73,11 @@ static HostOptions parse_host_options() {
         nmea = nmea_string.Get();
     }
 
+    bool hexdump = false;
+    if (hexdump_flag) {
+        hexdump = true;
+    }
+
     HostOptions hostOptions;
     hostOptions.hostname   = ntrip_hostname.Get();
     hostOptions.port       = port;
@@ -81,6 +85,7 @@ static HostOptions parse_host_options() {
     hostOptions.username   = username;
     hostOptions.password   = password;
     hostOptions.nmea       = nmea;
+    hostOptions.hexdump    = hexdump;
     return hostOptions;
 }
 
@@ -111,7 +116,7 @@ static args::Group serial_output{
 };
 static args::ValueFlag<std::string> serial_device{
     serial_output, "device", "Device", {"serial"}, args::Options::Single};
-static args::ValueFlag<int> serial_baud_rate{
+static args::ValueFlag<std::string> serial_baud_rate{
     serial_output, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
 static args::ValueFlag<int> serial_data_bits{
     serial_output, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
@@ -119,17 +124,6 @@ static args::ValueFlag<int> serial_stop_bits{
     serial_output, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
 static args::ValueFlag<std::string> serial_parity_bits{
     serial_output, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
-
-static args::Group i2c_output{
-    output,
-    "I2C:",
-    args::Group::Validators::AllOrNone,
-    args::Options::Global,
-};
-static args::ValueFlag<std::string> i2c_device{
-    i2c_output, "device", "Device", {"i2c"}, args::Options::Single};
-static args::ValueFlag<uint8_t> i2c_address{
-    i2c_output, "address", "Address", {"i2c-address"}, args::Options::Single};
 
 static args::Group tcp_output{
     output,
@@ -162,12 +156,53 @@ static args::Group stdout_output{
 static args::Flag stdout_output_flag{
     stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
 
+static io::BaudRate parse_baudrate(std::string const& str) {
+    long baud_rate = 0;
+    try {
+        baud_rate = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("serial_baud_rate must be an integer, got `" + str + "'");
+    }
+
+    if (baud_rate == 50) return io::BaudRate::BR50;
+    if (baud_rate == 75) return io::BaudRate::BR75;
+    if (baud_rate == 110) return io::BaudRate::BR110;
+    if (baud_rate == 134) return io::BaudRate::BR134;
+    if (baud_rate == 150) return io::BaudRate::BR150;
+    if (baud_rate == 200) return io::BaudRate::BR200;
+    if (baud_rate == 300) return io::BaudRate::BR300;
+    if (baud_rate == 600) return io::BaudRate::BR600;
+    if (baud_rate == 1200) return io::BaudRate::BR1200;
+    if (baud_rate == 1800) return io::BaudRate::BR1800;
+    if (baud_rate == 2400) return io::BaudRate::BR2400;
+    if (baud_rate == 4800) return io::BaudRate::BR4800;
+    if (baud_rate == 9600) return io::BaudRate::BR9600;
+    if (baud_rate == 19200) return io::BaudRate::BR19200;
+    if (baud_rate == 38400) return io::BaudRate::BR38400;
+    if (baud_rate == 57600) return io::BaudRate::BR57600;
+    if (baud_rate == 115200) return io::BaudRate::BR115200;
+    if (baud_rate == 230400) return io::BaudRate::BR230400;
+    if (baud_rate == 460800) return io::BaudRate::BR460800;
+    if (baud_rate == 500000) return io::BaudRate::BR500000;
+    if (baud_rate == 576000) return io::BaudRate::BR576000;
+    if (baud_rate == 921600) return io::BaudRate::BR921600;
+    if (baud_rate == 1000000) return io::BaudRate::BR1000000;
+    if (baud_rate == 1152000) return io::BaudRate::BR1152000;
+    if (baud_rate == 1500000) return io::BaudRate::BR1500000;
+    if (baud_rate == 2000000) return io::BaudRate::BR2000000;
+    if (baud_rate == 2500000) return io::BaudRate::BR2500000;
+    if (baud_rate == 3000000) return io::BaudRate::BR3000000;
+    if (baud_rate == 3500000) return io::BaudRate::BR3500000;
+    if (baud_rate == 4000000) return io::BaudRate::BR4000000;
+    throw args::ParseError("serial_baud_rate must be a valid baud rate, got `" + str + "'");
+}
+
 static OutputOptions parse_output_options() {
     OutputOptions output_options{};
 
     if (file_path) {
-        auto interface = interface::Interface::file(file_path.Get(), true);
-        output_options.interfaces.emplace_back(interface);
+        auto file_output = new io::FileOutput(file_path.Get(), true, false, true);
+        output_options.outputs.emplace_back(file_output);
     }
 
     if (serial_device || serial_baud_rate) {
@@ -175,64 +210,47 @@ static OutputOptions parse_output_options() {
             throw args::RequiredError("serial_device");
         }
 
-        uint32_t baud_rate = 115200;
+        auto baud_rate = io::BaudRate::BR115200;
         if (serial_baud_rate) {
-            if (serial_baud_rate.Get() < 0) {
-                throw args::ValidationError("serial_baud_rate must be positive");
-            }
-
-            baud_rate = static_cast<uint32_t>(serial_baud_rate.Get());
+            baud_rate = parse_baudrate(serial_baud_rate.Get());
         }
 
-        auto data_bits = DataBits::EIGHT;
+        auto data_bits = io::DataBits::EIGHT;
         if (serial_data_bits) {
             switch (serial_data_bits.Get()) {
-            case 5: data_bits = DataBits::FIVE; break;
-            case 6: data_bits = DataBits::SIX; break;
-            case 7: data_bits = DataBits::SEVEN; break;
-            case 8: data_bits = DataBits::EIGHT; break;
+            case 5: data_bits = io::DataBits::FIVE; break;
+            case 6: data_bits = io::DataBits::SIX; break;
+            case 7: data_bits = io::DataBits::SEVEN; break;
+            case 8: data_bits = io::DataBits::EIGHT; break;
             default: throw args::ValidationError("Invalid data bits");
             }
         }
 
-        auto stop_bits = StopBits::ONE;
+        auto stop_bits = io::StopBits::ONE;
         if (serial_stop_bits) {
             switch (serial_stop_bits.Get()) {
-            case 1: stop_bits = StopBits::ONE; break;
-            case 2: stop_bits = StopBits::TWO; break;
+            case 1: stop_bits = io::StopBits::ONE; break;
+            case 2: stop_bits = io::StopBits::TWO; break;
             default: throw args::ValidationError("Invalid stop bits");
             }
         }
 
-        auto parity_bit = ParityBit::NONE;
+        auto parity_bit = io::ParityBit::NONE;
         if (serial_parity_bits) {
             if (serial_parity_bits.Get() == "none") {
-                parity_bit = ParityBit::NONE;
+                parity_bit = io::ParityBit::NONE;
             } else if (serial_parity_bits.Get() == "odd") {
-                parity_bit = ParityBit::ODD;
+                parity_bit = io::ParityBit::ODD;
             } else if (serial_parity_bits.Get() == "even") {
-                parity_bit = ParityBit::EVEN;
+                parity_bit = io::ParityBit::EVEN;
             } else {
                 throw args::ValidationError("Invalid parity bits");
             }
         }
 
-        auto interface = interface::Interface::serial(serial_device.Get(), baud_rate, data_bits,
-                                                      stop_bits, parity_bit, false);
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    if (i2c_device || i2c_address) {
-        if (!i2c_device) {
-            throw args::RequiredError("i2c_device");
-        }
-
-        if (!i2c_address) {
-            throw args::RequiredError("i2c_address");
-        }
-
-        auto interface = interface::Interface::i2c(i2c_device.Get(), i2c_address.Get());
-        output_options.interfaces.emplace_back(interface);
+        auto serial_output =
+            new io::SerialOutput(serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit);
+        output_options.outputs.emplace_back(serial_output);
     }
 
     if (tcp_ip_address || tcp_port) {
@@ -244,9 +262,9 @@ static OutputOptions parse_output_options() {
             throw args::RequiredError("tcp_port");
         }
 
-        auto interface =
-            interface::Interface::tcp(tcp_ip_address.Get(), tcp_port.Get(), true /* reconnect */);
-        output_options.interfaces.emplace_back(interface);
+        auto tcp_output = new io::TcpClientOutput(tcp_ip_address.Get(),
+                                                  static_cast<uint16_t>(tcp_port.Get()), true);
+        output_options.outputs.emplace_back(tcp_output);
     }
 
     if (udp_ip_address || udp_port) {
@@ -258,18 +276,14 @@ static OutputOptions parse_output_options() {
             throw args::RequiredError("udp_port");
         }
 
-        auto interface =
-            interface::Interface::udp(udp_ip_address.Get(), udp_port.Get(), true /* reconnect */);
-        output_options.interfaces.emplace_back(interface);
+        auto udp_output =
+            new io::UdpClientOutput(udp_ip_address.Get(), static_cast<uint16_t>(udp_port.Get()));
+        output_options.outputs.emplace_back(udp_output);
     }
 
     if (stdout_output_flag) {
-        auto interface = interface::Interface::stdout();
-        output_options.interfaces.emplace_back(interface);
-    }
-
-    for (auto& interface : output_options.interfaces) {
-        interface->open();
+        auto stdout_output = new io::StdoutOutput();
+        output_options.outputs.emplace_back(stdout_output);
     }
 
     return output_options;
@@ -286,7 +300,6 @@ Options parse_configuration(int argc, char** argv) {
 
     ntrip_port.HelpDefault("2101");
 
-    i2c_address.HelpDefault("66");
     serial_baud_rate.HelpDefault("115200");
 
     serial_data_bits.HelpDefault("8");
