@@ -41,7 +41,7 @@ static args::Group serial_group{
 };
 static args::ValueFlag<std::string> serial_device{
     serial_group, "device", "Device", {"serial"}, args::Options::Single};
-static args::ValueFlag<int> serial_baud_rate{
+static args::ValueFlag<std::string> serial_baud_rate{
     serial_group, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
 static args::ValueFlag<int> serial_data_bits{
     serial_group, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
@@ -50,55 +50,95 @@ static args::ValueFlag<int> serial_stop_bits{
 static args::ValueFlag<std::string> serial_parity_bits{
     serial_group, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
 
-static std::unique_ptr<interface::Interface> parse_serial() {
+static io::BaudRate parse_baudrate(std::string const& str) {
+    long baud_rate = 0;
+    try {
+        baud_rate = std::stol(str);
+    } catch (...) {
+        throw args::ParseError("serial_baud_rate must be an integer, got `" + str + "'");
+    }
+
+    if (baud_rate == 50) return io::BaudRate::BR50;
+    if (baud_rate == 75) return io::BaudRate::BR75;
+    if (baud_rate == 110) return io::BaudRate::BR110;
+    if (baud_rate == 134) return io::BaudRate::BR134;
+    if (baud_rate == 150) return io::BaudRate::BR150;
+    if (baud_rate == 200) return io::BaudRate::BR200;
+    if (baud_rate == 300) return io::BaudRate::BR300;
+    if (baud_rate == 600) return io::BaudRate::BR600;
+    if (baud_rate == 1200) return io::BaudRate::BR1200;
+    if (baud_rate == 1800) return io::BaudRate::BR1800;
+    if (baud_rate == 2400) return io::BaudRate::BR2400;
+    if (baud_rate == 4800) return io::BaudRate::BR4800;
+    if (baud_rate == 9600) return io::BaudRate::BR9600;
+    if (baud_rate == 19200) return io::BaudRate::BR19200;
+    if (baud_rate == 38400) return io::BaudRate::BR38400;
+    if (baud_rate == 57600) return io::BaudRate::BR57600;
+    if (baud_rate == 115200) return io::BaudRate::BR115200;
+    if (baud_rate == 230400) return io::BaudRate::BR230400;
+    if (baud_rate == 460800) return io::BaudRate::BR460800;
+    if (baud_rate == 500000) return io::BaudRate::BR500000;
+    if (baud_rate == 576000) return io::BaudRate::BR576000;
+    if (baud_rate == 921600) return io::BaudRate::BR921600;
+    if (baud_rate == 1000000) return io::BaudRate::BR1000000;
+    if (baud_rate == 1152000) return io::BaudRate::BR1152000;
+    if (baud_rate == 1500000) return io::BaudRate::BR1500000;
+    if (baud_rate == 2000000) return io::BaudRate::BR2000000;
+    if (baud_rate == 2500000) return io::BaudRate::BR2500000;
+    if (baud_rate == 3000000) return io::BaudRate::BR3000000;
+    if (baud_rate == 3500000) return io::BaudRate::BR3500000;
+    if (baud_rate == 4000000) return io::BaudRate::BR4000000;
+    throw args::ParseError("serial_baud_rate must be a valid baud rate, got `" + str + "'");
+}
+
+static void parse_serial(Config& config) {
     if (!serial_device) {
         throw args::ValidationError("serial-device is required");
     }
 
-    uint32_t baud_rate = 115200;
+    auto baud_rate = io::BaudRate::BR115200;
     if (serial_baud_rate) {
-        if (serial_baud_rate.Get() < 0) {
-            throw args::ValidationError("serial-baud-rate must be positive");
-        }
-
-        baud_rate = static_cast<uint32_t>(serial_baud_rate.Get());
+        baud_rate = parse_baudrate(serial_baud_rate.Get());
     }
 
-    auto data_bits = interface::DataBits::EIGHT;
+    auto data_bits = io::DataBits::EIGHT;
     if (serial_data_bits) {
         switch (serial_data_bits.Get()) {
-        case 5: data_bits = interface::DataBits::FIVE; break;
-        case 6: data_bits = interface::DataBits::SIX; break;
-        case 7: data_bits = interface::DataBits::SEVEN; break;
-        case 8: data_bits = interface::DataBits::EIGHT; break;
+        case 5: data_bits = io::DataBits::FIVE; break;
+        case 6: data_bits = io::DataBits::SIX; break;
+        case 7: data_bits = io::DataBits::SEVEN; break;
+        case 8: data_bits = io::DataBits::EIGHT; break;
         default: throw args::ValidationError("invalid serial-data-bits");
         }
     }
 
-    auto stop_bits = interface::StopBits::ONE;
+    auto stop_bits = io::StopBits::ONE;
     if (serial_stop_bits) {
         switch (serial_stop_bits.Get()) {
-        case 1: stop_bits = interface::StopBits::ONE; break;
-        case 2: stop_bits = interface::StopBits::TWO; break;
+        case 1: stop_bits = io::StopBits::ONE; break;
+        case 2: stop_bits = io::StopBits::TWO; break;
         default: throw args::ValidationError("invalid serial-stop-bits");
         }
     }
 
-    auto parity_bit = interface::ParityBit::NONE;
+    auto parity_bit = io::ParityBit::NONE;
     if (serial_parity_bits) {
         if (serial_parity_bits.Get() == "none") {
-            parity_bit = interface::ParityBit::NONE;
+            parity_bit = io::ParityBit::NONE;
         } else if (serial_parity_bits.Get() == "odd") {
-            parity_bit = interface::ParityBit::ODD;
+            parity_bit = io::ParityBit::ODD;
         } else if (serial_parity_bits.Get() == "even") {
-            parity_bit = interface::ParityBit::EVEN;
+            parity_bit = io::ParityBit::EVEN;
         } else {
             throw args::ValidationError("invalid serial-parity-bits");
         }
     }
 
-    return std::unique_ptr<interface::Interface>(interface::Interface::serial(
-        serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit, false));
+    auto device  = serial_device.Get();
+    config.input = std::unique_ptr<io::Input>(
+        new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
+    config.output = std::unique_ptr<io::Output>(
+        new io::SerialOutput(device, baud_rate, data_bits, stop_bits, parity_bit));
 }
 
 Config parse_configuration(int argc, char** argv) {
@@ -149,7 +189,7 @@ Config parse_configuration(int argc, char** argv) {
         Config config{};
         config.port            = port_value;
         config.update_interval = update_interval_value;
-        config.interface       = parse_serial();
+        parse_serial(config);
         return config;
     } catch (args::ValidationError const& e) {
         std::cerr << e.what() << std::endl;

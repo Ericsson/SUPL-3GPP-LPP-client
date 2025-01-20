@@ -5,8 +5,8 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
-#include <interface/interface.hpp>
 #include <modem/modem.hpp>
+#include <scheduler/scheduler.hpp>
 
 static int start_server(int port) {
     auto socket = ::socket(AF_INET, SOCK_STREAM, 0);
@@ -45,23 +45,27 @@ static int start_server(int port) {
 [[noreturn]] static void loop(Config& config) {
     printf("[modem-ctrl]\n");
 
-    auto interface = std::move(config.interface);
-    interface->open();
-    interface->print_info();
+    modem::Modem device{std::move(config.input), std::move(config.output)};
 
-    modem::Device device{std::move(interface)};
-    device.disable_echo();
+    scheduler::Scheduler scheduler{};
+    device.schedule(scheduler);
 
-    auto modes = device.list_creg();
-    if (modes.mode_2) {
-        device.set_creg(2);
-    } else if (modes.mode_1) {
-        device.set_creg(1);
+    device.enable_echo();
+
+    modem::SupportedCregModes creg_modes{};
+    if (!device.list_creg(scheduler, creg_modes)) {
+        printf("ERROR: failed to get CREG modes\n");
     } else {
-        printf("No supported CREG modes\n");
+        if (creg_modes.mode_2) {
+            device.set_creg(2);
+        } else if (creg_modes.mode_1) {
+            device.set_creg(1);
+        } else {
+            printf("ERROR: no supported CREG modes\n");
+        }
     }
 
-    device.set_cops_format(2);
+    device.set_cops(2);
 
     auto socket       = start_server(config.port);
     auto send_command = [&](int client, char const* command) {
@@ -84,8 +88,13 @@ static int start_server(int port) {
             continue;
         }
 
-        device.get_cgmi();
-        auto cimi = device.get_cimi();
+        modem::Cimi cimi{};
+        if(!device.get_cimi(scheduler, cimi)) {
+            printf("ERROR: failed to get CIMI\n");
+            ::close(client);
+            continue;
+        }
+
         char send_buffer[1024];
         snprintf(send_buffer, sizeof(send_buffer), "/IDENTITY,IMSI,%" PRIu64, cimi.imsi);
         if (!send_command(client, send_buffer)) {
@@ -95,31 +104,38 @@ static int start_server(int port) {
 
         auto connected = true;
         while (connected) {
-            auto cops = device.get_cops();
-            auto reg  = device.get_creg();
-            if (cops.format == 2) {
-                printf("OPERATOR: %d:%d %s\n", cops.mcc, cops.mnc,
-                       (cops.act >= 0 && cops.act < 7 ?
-                            "GSM" :
-                            (cops.act >= 7 && cops.act < 11 ? "LTE" : "UNKNOWN")));
-            }
-            if (reg.mode != 0) {
-                printf("CELL: %d:%d %s\n", reg.lac, reg.ci,
-                       (reg.act >= 0 && reg.act < 7 ?
-                            "GSM" :
-                            (reg.act >= 7 && reg.act < 11 ? "LTE" : "UNKNOWN")));
-            }
-            if (reg.mode != 0 && cops.format == 2) {
-                if (reg.is_gsm()) {
-                    snprintf(send_buffer, sizeof(send_buffer), "/CID,G,%d,%d,%d,%d", cops.mcc,
-                             cops.mnc, reg.lac, reg.ci);
-                } else {
-                    snprintf(send_buffer, sizeof(send_buffer), "/CID,L,%d,%d,%d,%d", cops.mcc,
-                             cops.mnc, reg.lac, reg.ci);
+            modem::Cops cops{};
+            modem::Creg reg{};
+
+            auto cops_result = device.get_cops(scheduler, cops);
+            auto reg_result  = device.get_creg(scheduler, reg);
+            if (!cops_result || !reg_result) {
+                printf("ERROR: failed to get COPS or CREG\n");
+            } else {
+                if (cops.format == 2) {
+                    printf("OPERATOR: %d:%d %s\n", cops.mcc, cops.mnc,
+                           (cops.act >= 0 && cops.act < 7 ?
+                                "GSM" :
+                                (cops.act >= 7 && cops.act < 11 ? "LTE" : "UNKNOWN")));
                 }
-                if (!send_command(client, send_buffer)) {
-                    ::close(client);
-                    continue;
+                if (reg.mode != 0) {
+                    printf("CELL: %d:%d %s\n", reg.lac, reg.ci,
+                           (reg.act >= 0 && reg.act < 7 ?
+                                "GSM" :
+                                (reg.act >= 7 && reg.act < 11 ? "LTE" : "UNKNOWN")));
+                }
+                if (reg.mode != 0 && cops.format == 2) {
+                    if (reg.is_gsm()) {
+                        snprintf(send_buffer, sizeof(send_buffer), "/CID,G,%d,%d,%d,%d", cops.mcc,
+                                 cops.mnc, reg.lac, reg.ci);
+                    } else {
+                        snprintf(send_buffer, sizeof(send_buffer), "/CID,L,%d,%d,%d,%d", cops.mcc,
+                                 cops.mnc, reg.lac, reg.ci);
+                    }
+                    if (!send_command(client, send_buffer)) {
+                        ::close(client);
+                        continue;
+                    }
                 }
             }
 

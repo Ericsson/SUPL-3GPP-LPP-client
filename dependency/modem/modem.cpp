@@ -65,6 +65,11 @@ void Modem::enable_echo() {
     mOutput->write(reinterpret_cast<uint8_t const*>("ATE1\r\n"), 6);
 }
 
+void Modem::disable_echo() {
+    VSCOPE_FUNCTION();
+    mOutput->write(reinterpret_cast<uint8_t const*>("ATE0\r\n"), 6);
+}
+
 void Modem::request(std::string const& command, ResponseCallback callback) {
     VSCOPE_FUNCTION();
     if (mOutput) {
