@@ -118,17 +118,6 @@ double BdsEphemeris::calculate_clock_bias(ts::Bdt const& time, double e_k) const
     auto t_k = calculate_elapsed_time_toc(time);
     VERBOSEF("t_k: %+.14f", t_k);
 
-#if 0
-    // TODO(ewasjon): REMOVE
-    // relativistic correction term
-    VERBOSEF("a:   %+.14f", a);
-    VERBOSEF("e:   %+.14f", e);
-    VERBOSEF("e_k: %+.14f", e_k);
-
-    auto t_r = -2.0 * std::sqrt(CONSTANT_MU * a) * e * std::sin(e_k) / (CONSTANT_C * CONSTANT_C);
-    VERBOSEF("t_r: %+.14f", t_r);
-#endif
-
     VERBOSEF("af0: %+.14f", af0);
     VERBOSEF("af1: %+.14f", af1);
     VERBOSEF("af2: %+.14f", af2);
