@@ -8,9 +8,6 @@
 
 #define LOGLET_CURRENT_MODULE "tokoro"
 
-// TODO(ewasjon): Remove this
-#define EXTRA_VERBOSE 0
-
 namespace generator {
 namespace tokoro {
 
@@ -60,28 +57,26 @@ void eci_to_ecef_matrix(ts::Tai const& time, EciEarthParameters const& earth_par
     auto r = n1 * n2;
     auto n = r * n3;
 
-#ifdef EXTRA_VERBOSE
-    VERBOSEF("n1:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[0], n1.m[1], n1.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[3], n1.m[4], n1.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n1.m[6], n1.m[7], n1.m[8]);
-    VERBOSEF("n2:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[0], n2.m[1], n2.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[3], n2.m[4], n2.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n2.m[6], n2.m[7], n2.m[8]);
-    VERBOSEF("n3:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[0], n3.m[1], n3.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[3], n3.m[4], n3.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n3.m[6], n3.m[7], n3.m[8]);
-    VERBOSEF("r:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[0], r.m[1], r.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[3], r.m[4], r.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", r.m[6], r.m[7], r.m[8]);
-    VERBOSEF("n:");
-    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[0], n.m[1], n.m[2]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[3], n.m[4], n.m[5]);
-    VERBOSEF("  %+.14f %+.14f %+.14f", n.m[6], n.m[7], n.m[8]);
-#endif
+    TRACEF("n1:");
+    TRACEF("  %+.14f %+.14f %+.14f", n1.m[0], n1.m[1], n1.m[2]);
+    TRACEF("  %+.14f %+.14f %+.14f", n1.m[3], n1.m[4], n1.m[5]);
+    TRACEF("  %+.14f %+.14f %+.14f", n1.m[6], n1.m[7], n1.m[8]);
+    TRACEF("n2:");
+    TRACEF("  %+.14f %+.14f %+.14f", n2.m[0], n2.m[1], n2.m[2]);
+    TRACEF("  %+.14f %+.14f %+.14f", n2.m[3], n2.m[4], n2.m[5]);
+    TRACEF("  %+.14f %+.14f %+.14f", n2.m[6], n2.m[7], n2.m[8]);
+    TRACEF("n3:");
+    TRACEF("  %+.14f %+.14f %+.14f", n3.m[0], n3.m[1], n3.m[2]);
+    TRACEF("  %+.14f %+.14f %+.14f", n3.m[3], n3.m[4], n3.m[5]);
+    TRACEF("  %+.14f %+.14f %+.14f", n3.m[6], n3.m[7], n3.m[8]);
+    TRACEF("r:");
+    TRACEF("  %+.14f %+.14f %+.14f", r.m[0], r.m[1], r.m[2]);
+    TRACEF("  %+.14f %+.14f %+.14f", r.m[3], r.m[4], r.m[5]);
+    TRACEF("  %+.14f %+.14f %+.14f", r.m[6], r.m[7], r.m[8]);
+    TRACEF("n:");
+    TRACEF("  %+.14f %+.14f %+.14f", n.m[0], n.m[1], n.m[2]);
+    TRACEF("  %+.14f %+.14f %+.14f", n.m[3], n.m[4], n.m[5]);
+    TRACEF("  %+.14f %+.14f %+.14f", n.m[6], n.m[7], n.m[8]);
 
     // Calculate GMST and GAST
     auto gmst = ts::Utc{time}.gmst(ut1_utc);

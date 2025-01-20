@@ -105,7 +105,6 @@ static Identity decode_identity(SETId& set_id) {
     case SETId_PR_min:
     case SETId_PR_mdn:
     case SETId_PR_NOTHING:
-        // TODO: Unsupported
         WARNF("unsupported identity type: %d", set_id.present);
         return Identity::unknown();
     }

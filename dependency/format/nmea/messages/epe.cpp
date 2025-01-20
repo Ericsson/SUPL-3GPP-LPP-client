@@ -1,8 +1,9 @@
 #include "epe.hpp"
 #include "helper.hpp"
 
-// TODO(ewasjon): Remove this
-#define RECEIVER_DEBUG 0
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE "nmea/epe"
 
 namespace format {
 namespace nmea {
@@ -47,9 +48,7 @@ std::unique_ptr<Message> EpeMessage::parse(std::string prefix, std::string const
 
     // check number of tokens
     if (tokens.size() < 6) {
-#if RECEIVER_DEBUG
-        printf("[--EPE] invalid number of tokens: %zu\n", tokens.size());
-#endif
+        DEBUGF("[--EPE] invalid number of tokens: %zu\n", tokens.size());
         return nullptr;
     }
 
@@ -66,9 +65,7 @@ std::unique_ptr<Message> EpeMessage::parse(std::string prefix, std::string const
     if (success) {
         return std::unique_ptr<EpeMessage>(message);
     } else {
-#if RECEIVER_DEBUG
-        printf("[--EPE] failed to parse message\n");
-#endif
+        DEBUGF("[--EPE] failed to parse message\n");
         delete message;
         return nullptr;
     }
