@@ -21,7 +21,6 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-DDEBUG=1)
 endif()
 
-add_subdirectory("libs")
 add_subdirectory("dependency")
 add_subdirectory("external")
 
