@@ -63,7 +63,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
       mGenerateRinex(false),
-      mRinexBuilder(ts::Utc::now().rinex_string() + ".25o", 3.02),
+      mRinexBuilder(ts::Utc::now().rinex_string() + ".25o", 3.04),
       mGenerator(generator) {
     // Initialize the satellite vector to the maximum number of satellites
     // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
@@ -71,6 +71,8 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
 
     // Initialize the satellites
     initialize_satellites();
+
+    mGenerationTime = ts::Tai::now();
 }
 
 ReferenceStation::~ReferenceStation() NOEXCEPT = default;
@@ -175,6 +177,11 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     FUNCTION_SCOPE();
     if (mGenerator.mCorrectionData == nullptr) {
         WARNF("no correction data available");
+        return false;
+    }
+
+    if (reception_time <= mGenerationTime) {
+        VERBOSEF("generation time is not newer than last generation time");
         return false;
     }
 
@@ -370,7 +377,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     msm_gal.time = mGenerationTime;
     msm_bds.time = mGenerationTime;
 
-    if(mGenerateRinex) {
+    if (mGenerateRinex) {
         mRinexBuilder.set_antenna_position(mRtcmGroundPosition);
         mRinexBuilder.set_gps_support(mGenerateGps);
         mRinexBuilder.set_glo_support(mGenerateGlo);

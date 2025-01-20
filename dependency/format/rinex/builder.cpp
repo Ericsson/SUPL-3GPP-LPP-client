@@ -14,6 +14,15 @@ namespace format {
 namespace rinex {
 
 static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds) {
+    auto count = 0;
+    count += gps ? 1 : 0;
+    count += glo ? 1 : 0;
+    count += gal ? 1 : 0;
+    count += bds ? 1 : 0;
+    if (count > 1) {
+        return "M: (MIXED)";
+    }
+
     if (gps) {
         return "G: (GPS)";
     } else if (glo) {
@@ -28,49 +37,76 @@ static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds)
 }
 
 static SignalId GPS_SIGNALS[] = {
-    SignalId::GPS_L1_CA,    SignalId::GPS_L1_P,     SignalId::GPS_L1_Z_TRACKING,
-    SignalId::GPS_L2_C_A,   SignalId::GPS_L2_P,     SignalId::GPS_L2_Z_TRACKING,
-    SignalId::GPS_L2_L2C_M, SignalId::GPS_L2_L2C_L, SignalId::GPS_L2_L2C_M_L,
-    SignalId::GPS_L5_I,     SignalId::GPS_L5_Q,     SignalId::GPS_L5_I_Q,
-    SignalId::GPS_L1_L1C_D, SignalId::GPS_L1_L1C_P, SignalId::GPS_L1_L1C_D_P,
+    SignalId::GPS_L1_CA,
+    // SignalId::GPS_L1_P,
+    // SignalId::GPS_L1_Z_TRACKING,
+    // SignalId::GPS_L2_C_A,
+    // SignalId::GPS_L2_P,
+    SignalId::GPS_L2_Z_TRACKING,
+    // SignalId::GPS_L2_L2C_M,
+    // SignalId::GPS_L2_L2C_L,
+    SignalId::GPS_L2_L2C_M_L,
+    // SignalId::GPS_L5_I,
+    // SignalId::GPS_L5_Q,
+    SignalId::GPS_L5_I_Q,
+    // SignalId::GPS_L1_L1C_D,
+    // SignalId::GPS_L1_L1C_P,
+    // SignalId::GPS_L1_L1C_D_P,
 };
 
 static SignalId GLO_SIGNALS[] = {
-    SignalId::GLONASS_G1_CA,   SignalId::GLONASS_G2_CA, SignalId::GLONASS_G1_P,
-    SignalId::GLONASS_G2_P,    SignalId::GLONASS_G1A_D, SignalId::GLONASS_G1A_P,
-    SignalId::GLONASS_G1A_D_P, SignalId::GLONASS_G2A_I, SignalId::GLONASS_G2A_P,
-    SignalId::GLONASS_G2A_I_P, SignalId::GLONASS_G3_I,  SignalId::GLONASS_G3_Q,
-    SignalId::GLONASS_G3_I_Q,
+    SignalId::GLONASS_G1_CA, SignalId::GLONASS_G2_CA,
+    // SignalId::GLONASS_G1_P,
+    // SignalId::GLONASS_G2_P,
+    // SignalId::GLONASS_G1A_D,
+    // SignalId::GLONASS_G1A_P,
+    // SignalId::GLONASS_G1A_D_P,
+    // SignalId::GLONASS_G2A_I,
+    // SignalId::GLONASS_G2A_P,
+    // SignalId::GLONASS_G2A_I_P,
+    // SignalId::GLONASS_G3_I,
+    // SignalId::GLONASS_G3_Q,
+    // SignalId::GLONASS_G3_I_Q,
 };
 
 static SignalId GAL_SIGNALS[] = {
-    SignalId::GALILEO_E1_C_NO_DATA,
-    SignalId::GALILEO_E1_A,
-    SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL,
+    // SignalId::GALILEO_E1_C_NO_DATA,
+    // SignalId::GALILEO_E1_A,
+    // SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL,
     SignalId::GALILEO_E1_B_C,
-    SignalId::GALILEO_E1_A_B_C,
-    SignalId::GALILEO_E6_C,
-    SignalId::GALILEO_E6_A,
-    SignalId::GALILEO_E6_B,
-    SignalId::GALILEO_E6_B_C,
-    SignalId::GALILEO_E6_A_B_C,
-    SignalId::GALILEO_E5B_I,
-    SignalId::GALILEO_E5B_Q,
+    // SignalId::GALILEO_E1_A_B_C,
+    // SignalId::GALILEO_E6_C,
+    // SignalId::GALILEO_E6_A,
+    // SignalId::GALILEO_E6_B,
+    // SignalId::GALILEO_E6_B_C,
+    // SignalId::GALILEO_E6_A_B_C,
+    // SignalId::GALILEO_E5B_I,
+    // SignalId::GALILEO_E5B_Q,
     SignalId::GALILEO_E5B_I_Q,
-    SignalId::GALILEO_E5_A_B_I,
-    SignalId::GALILEO_E5_A_B_Q,
+    // SignalId::GALILEO_E5_A_B_I,
+    // SignalId::GALILEO_E5_A_B_Q,
     SignalId::GALILEO_E5_A_B_I_Q,
-    SignalId::GALILEO_E5A_I,
-    SignalId::GALILEO_E5A_Q,
+    // SignalId::GALILEO_E5A_I,
+    // SignalId::GALILEO_E5A_Q,
     SignalId::GALILEO_E5A_I_Q,
 };
 
 static SignalId BDS_SIGNALS[] = {
-    SignalId::BEIDOU_B1_I,  SignalId::BEIDOU_B1_Q,  SignalId::BEIDOU_B1_I_Q,
-    SignalId::BEIDOU_B3_I,  SignalId::BEIDOU_B3_Q,  SignalId::BEIDOU_B3_I_Q,
-    SignalId::BEIDOU_B2_I,  SignalId::BEIDOU_B2_Q,  SignalId::BEIDOU_B2_I_Q,
-    SignalId::BEIDOU_B1C_D, SignalId::BEIDOU_B1C_P, SignalId::BEIDOU_B1C_D_P,
-    SignalId::BEIDOU_B2A_D, SignalId::BEIDOU_B2A_P, SignalId::BEIDOU_B2A_D_P,
+    SignalId::BEIDOU_B1_I,
+    // SignalId::BEIDOU_B1_Q,
+    // SignalId::BEIDOU_B1_I_Q,
+    SignalId::BEIDOU_B3_I,
+    // SignalId::BEIDOU_B3_Q,
+    // SignalId::BEIDOU_B3_I_Q,
+    // SignalId::BEIDOU_B2_I,
+    // SignalId::BEIDOU_B2_Q,
+    // SignalId::BEIDOU_B2_I_Q,
+    // SignalId::BEIDOU_B1C_D,
+    // SignalId::BEIDOU_B1C_P,
+    SignalId::BEIDOU_B1C_D_P,
+    // SignalId::BEIDOU_B2A_D,
+    // SignalId::BEIDOU_B2A_P,
+    SignalId::BEIDOU_B2A_D_P,
 };
 
 Builder::Builder(std::string path, double version) NOEXCEPT : mVersion(version),
@@ -81,7 +117,7 @@ Builder::Builder(std::string path, double version) NOEXCEPT : mVersion(version),
 
     mMarkerName   = "Tokoro";
     mMarkerNumber = "0";
-    mMarkerType   = "NONE";
+    mMarkerType   = "GEODETIC";
 
     mObserver = "Tokoro";
     mAgency   = "Tokoro";
@@ -105,32 +141,40 @@ void Builder::generate_observation_order() {
     mGalTypeOrder.clear();
     mBdsTypeOrder.clear();
 
-    for (auto const& signal : GPS_SIGNALS) {
-        mGpsTypeOrder.push_back({ObservationKind::Code, signal});
-        mGpsTypeOrder.push_back({ObservationKind::Phase, signal});
-        // mGpsTypeOrder.push_back({ObservationKind::Doppler, signal});
-        mGpsTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+    if (mGpsSupport) {
+        for (auto const& signal : GPS_SIGNALS) {
+            mGpsTypeOrder.push_back({ObservationKind::Code, signal});
+            mGpsTypeOrder.push_back({ObservationKind::Phase, signal});
+            // mGpsTypeOrder.push_back({ObservationKind::Doppler, signal});
+            mGpsTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+        }
     }
 
-    for (auto const& signal : GLO_SIGNALS) {
-        mGloTypeOrder.push_back({ObservationKind::Code, signal});
-        mGloTypeOrder.push_back({ObservationKind::Phase, signal});
-        // mGloTypeOrder.push_back({ObservationKind::Doppler, signal});
-        mGloTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+    if (mGloSupport) {
+        for (auto const& signal : GLO_SIGNALS) {
+            mGloTypeOrder.push_back({ObservationKind::Code, signal});
+            mGloTypeOrder.push_back({ObservationKind::Phase, signal});
+            // mGloTypeOrder.push_back({ObservationKind::Doppler, signal});
+            mGloTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+        }
     }
 
-    for (auto const& signal : GAL_SIGNALS) {
-        mGalTypeOrder.push_back({ObservationKind::Code, signal});
-        mGalTypeOrder.push_back({ObservationKind::Phase, signal});
-        // mGalTypeOrder.push_back({ObservationKind::Doppler, signal});
-        mGalTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+    if (mGalSupport) {
+        for (auto const& signal : GAL_SIGNALS) {
+            mGalTypeOrder.push_back({ObservationKind::Code, signal});
+            mGalTypeOrder.push_back({ObservationKind::Phase, signal});
+            // mGalTypeOrder.push_back({ObservationKind::Doppler, signal});
+            mGalTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+        }
     }
 
-    for (auto const& signal : BDS_SIGNALS) {
-        mBdsTypeOrder.push_back({ObservationKind::Code, signal});
-        mBdsTypeOrder.push_back({ObservationKind::Phase, signal});
-        // mBdsTypeOrder.push_back({ObservationKind::Doppler, signal});
-        mBdsTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+    if (mBdsSupport) {
+        for (auto const& signal : BDS_SIGNALS) {
+            mBdsTypeOrder.push_back({ObservationKind::Code, signal});
+            mBdsTypeOrder.push_back({ObservationKind::Phase, signal});
+            // mBdsTypeOrder.push_back({ObservationKind::Doppler, signal});
+            mBdsTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+        }
     }
 }
 
@@ -144,10 +188,11 @@ void Builder::header_begin() {
 
     auto date = ts::Utc::now();
 
-    mStream << std::setw(9) << std::left << mVersion                                        //
-            << std::setw(11) << std::left << ""                                             //
-            << std::setw(20) << std::left << "OBSERVATION DATA"                             //
-            << std::setw(20) << std::left << observation_data_type(true, true, true, true)  //
+    mStream << std::setw(9) << std::left << mVersion             //
+            << std::setw(11) << std::left << ""                  //
+            << std::setw(20) << std::left << "OBSERVATION DATA"  //
+            << std::setw(20) << std::left
+            << observation_data_type(mGpsSupport, mGloSupport, mGalSupport, mBdsSupport)  //
             << std::setw(20) << std::left << "RINEX VERSION / TYPE" << std::endl;
 
     mStream << std::setw(20) << std::left << mProgram             //
@@ -155,7 +200,9 @@ void Builder::header_begin() {
             << std::setw(20) << std::left << date.rinex_string()  //
             << std::setw(20) << std::left << "PGM / RUN BY / DATE" << std::endl;
 
-    header_comment("S3LC " + std::string(CLIENT_VERSION));
+    header_comment("************************************************************");
+    header_comment("This file was generated by Tokoro (" CLIENT_VERSION ")");
+    header_comment("************************************************************");
 
     // MARKER NAME
     mStream << std::setw(60) << std::left << mMarkerName  //
@@ -183,7 +230,7 @@ void Builder::header_begin() {
     // ANT # / TYPE
     mStream << std::setw(20) << std::left << mAntennaNumber  //
             << std::setw(20) << std::left << mAntennaType    //
-            << std::setw(20) << std::left << "NONE"          //
+            << std::setw(20) << std::left << ""              //
             << std::setw(20) << std::left << "ANT # / TYPE" << std::endl;
 
     // APPROX POSITION XYZ
@@ -207,14 +254,16 @@ void Builder::header_time_of_first_observation(ts::Tai const& time) {
 
     auto gps_time = ts::Gps{time};
     auto tp       = gps_time.to_timepoint();
-    mStream << std::setw(6) << std::right << tp.year % 100                                      //
-            << std::setw(6) << std::right << tp.month                                           //
-            << std::setw(6) << std::right << tp.day                                             //
-            << std::setw(6) << std::right << tp.hour                                            //
-            << std::setw(6) << std::right << tp.minutes                                         //
-            << std::setw(13) << std::right << std::fixed << std::setprecision(7) << tp.seconds  //
-            << std::setw(4) << std::right << "GPS"                                              //
-            << std::setw(20) << std::left << "TIME OF FIRST OBS" << std::endl;
+    mStream                                                                                 //
+        << std::setw(6) << std::right << tp.year                                            //
+        << std::setw(6) << std::right << tp.month                                           //
+        << std::setw(6) << std::right << tp.day                                             //
+        << std::setw(6) << std::right << tp.hour                                            //
+        << std::setw(6) << std::right << tp.minutes                                         //
+        << std::setw(13) << std::right << std::fixed << std::setprecision(7) << tp.seconds  //
+        << std::setw(8) << std::right << "GPS"                                              //
+        << std::setw(9) << ""                                                               //
+        << std::setw(20) << std::left << "TIME OF FIRST OBS" << std::endl;
 }
 
 void Builder::header_end() {
@@ -301,6 +350,8 @@ void Builder::epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites) {
         header_observation_types();
         header_time_of_first_observation(time);
         header_end();
+
+        mInitialized = true;
     }
 
     std::sort(satellites.begin(), satellites.end(), [](SatelliteId const& a, SatelliteId const& b) {
@@ -312,19 +363,29 @@ void Builder::epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites) {
 
     auto gps_time = ts::Gps{time};
     auto tp       = gps_time.to_timepoint();
-    mStream << "> " << std::setw(4) << tp.year  //
-            << std::setw(3) << tp.month         //
-            << std::setw(3) << tp.day           //
-            << std::setw(3) << tp.hour          //
-            << std::setw(3) << tp.minutes       //
-            << std::setw(11) << std::fixed << std::setprecision(7) << tp.seconds << std::setw(3)
-            << flag  //
-            << std::setw(3) << num_satellites;
+    mStream << "> " << std::setw(4) << tp.year                                                  //
+            << std::setw(3) << std::right << tp.month                                           //
+            << std::setw(3) << std::right << tp.day                                             //
+            << std::setw(3) << std::right << tp.hour                                            //
+            << std::setw(3) << std::right << tp.minutes                                         //
+            << std::setw(11) << std::fixed << std::right << std::setprecision(7) << tp.seconds  //
+            << std::setw(3) << std::right << flag                                               //
+            << std::setw(3) << std::right << num_satellites;
 
-    for (auto const& satellite : satellites) {
-        mStream << std::setw(3) << satellite.to_string();
+    if (mVersion <= 2.99) {
+        size_t i = 0;
+        for (; i < num_satellites; i++) {
+            if (i > 0 && i % 12 == 0) {
+                mStream << std::endl;
+            }
+            mStream << satellites[i].to_string();
+        }
+        if (i % 12 > 0) {
+            mStream << std::endl;
+        }
+    } else {
+        mStream << std::endl;
     }
-    mStream << std::endl;
 }
 
 std::vector<ObservationType> const& Builder::observation_types(SatelliteId const& id) const {
@@ -347,19 +408,29 @@ void Builder::observations(SatelliteId                                        sa
                            std::unordered_map<ObservationType, double> const& observations) {
     VSCOPE_FUNCTION();
 
+    if (mVersion >= 3.00) {
+        mStream << satellite_id.to_string();
+    }
+
     auto& order = observation_types(satellite_id);
     for (auto const& type : order) {
         auto it = observations.find(type);
         if (it == observations.end()) {
-            mStream << std::setw(14) << std::right << std::fixed << std::setprecision(3) << 0.0;
+            mStream << std::setw(14) << std::right << "" << "  ";
+        } else if (type.kind == ObservationKind::Phase) {
+            mStream << std::setw(15) << std::right << std::fixed << std::setprecision(4)
+                    << it->second << " ";
         } else {
             mStream << std::setw(14) << std::right << std::fixed << std::setprecision(3)
-                    << it->second;
+                    << it->second << "  ";
         }
     }
 
     mStream << std::endl;
 }
+
+// G32  23052113.554                        1259.391          37.900    23052119.850 931.909 32.300
+// E12  25450665.795   133744043.105          47.000
 
 }  // namespace rinex
 }  // namespace format
