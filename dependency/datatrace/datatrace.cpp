@@ -147,8 +147,10 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
     if (obs.orbit.valid) ss << ",\"orbit\":" << obs.orbit.value;
     if (obs.code_bias.valid) ss << ",\"code_bias\":" << obs.code_bias.value;
     if (obs.phase_bias.valid) ss << ",\"phase_bias\":" << obs.phase_bias.value;
+    if (obs.stec.valid) ss << ",\"stec\":" << obs.stec.value;
     if (obs.stec_grid.valid) ss << ",\"stec_grid\":" << obs.stec_grid.value;
     if (obs.stec_poly.valid) ss << ",\"stec_poly\":" << obs.stec_poly.value;
+    if (obs.tropo.valid) ss << ",\"tropo\":" << obs.tropo.value;
     if (obs.tropo_dry.valid) ss << ",\"tropo_dry\":" << obs.tropo_dry.value;
     if (obs.tropo_wet.valid) ss << ",\"tropo_wet\":" << obs.tropo_wet.value;
     if (obs.tropo_dry_mapping.valid) ss << ",\"tropo_dry_mapping\":" << obs.tropo_dry_mapping.value;
@@ -157,6 +159,8 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
         ss << ",\"tropo_dry_height_correction\":" << obs.tropo_dry_height_correction.value;
     if (obs.tropo_wet_height_correction.valid)
         ss << ",\"tropo_wet_height_correction\":" << obs.tropo_wet_height_correction.value;
+    if (obs.tropo_model_dry.valid) ss << ",\"tropo_model_dry\":" << obs.tropo_model_dry.value;
+    if (obs.tropo_model_wet.valid) ss << ",\"tropo_model_wet\":" << obs.tropo_model_wet.value;
     if (obs.shapiro.valid) ss << ",\"shapiro\":" << obs.shapiro.value;
     if (obs.earth_solid_tides.valid) ss << ",\"est\":" << obs.earth_solid_tides.value;
     if (obs.phase_windup.valid) ss << ",\"pw\":" << obs.phase_windup.value;
@@ -187,6 +191,7 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
         ss << ",\"orbit_along_axis_z\":" << obs.orbit_along_axis.value.z;
     }
     if (obs.orbit_delta_t.valid) ss << ",\"orbit_delta_t\":" << obs.orbit_delta_t.value;
+    if (obs.eph_iod.valid) ss << ",\"eph_iod\":" << obs.eph_iod.value;
     ss << "}";
 
     publish(topic, ss.str());

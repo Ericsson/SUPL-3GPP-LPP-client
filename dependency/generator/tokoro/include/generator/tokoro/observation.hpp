@@ -2,8 +2,8 @@
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include "models/earth_solid_tides.hpp"
-#include "models/shapiro.hpp"
 #include "models/phase_windup.hpp"
+#include "models/shapiro.hpp"
 
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
@@ -89,6 +89,12 @@ private:
     double mCarrierToNoiseRatio;
     double mLockTime;
     bool   mNegativePhaseWindup;
+
+    bool mRequireCodeBias;
+    bool mRequirePhaseBias;
+    bool mRequireTropospheric;
+    bool mRequireIonospheric;
+    bool mUseTroposphericModel;
 
     Correction        mClockCorrection;
     Correction        mCodeBias;

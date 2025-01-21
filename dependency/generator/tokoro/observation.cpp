@@ -41,6 +41,12 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mLockTime            = 525.0;  // TODO: How do we determine this value?
     mNegativePhaseWindup = false;
 
+    mRequirePhaseBias     = true;
+    mRequireCodeBias      = true;
+    mRequireTropospheric  = true;
+    mRequireIonospheric   = false;
+    mUseTroposphericModel = true;
+
     mClockCorrection       = Correction{satellite.clock_correction(), true};
     mCodeBias              = Correction{0.0, false};
     mPhaseBias             = Correction{0.0, false};
@@ -146,19 +152,20 @@ void Observation::compute_ranges() NOEXCEPT {
 
     // Discard this observation if it is missing important corrections, however, we still want to
     // compute the ranges to report via DATA TRACING.
-    if (!has_phase_bias()) {
-        WARNF("discarded: %s %s - no phase bias", mSvId.name(), mSignalId.name());
-        discard();
-    }
-    if (!has_code_bias()) {
+    if (mRequireCodeBias && !has_code_bias()) {
         WARNF("discarded: %s %s - no code bias", mSvId.name(), mSignalId.name());
         discard();
     }
-    if (!has_tropospheric()) {
+    if (mRequirePhaseBias && !has_phase_bias()) {
+        WARNF("discarded: %s %s - no phase bias", mSvId.name(), mSignalId.name());
+        discard();
+    }
+
+    if (mRequireTropospheric && !has_tropospheric()) {
         WARNF("discarded: %s %s - no tropospheric correction", mSvId.name(), mSignalId.name());
         discard();
     }
-    if (!has_ionospheric()) {
+    if (mRequireIonospheric && !has_ionospheric()) {
         WARNF("discarded: %s %s - no ionospheric correction", mSvId.name(), mSignalId.name());
         discard();
     }
@@ -183,6 +190,7 @@ void Observation::compute_ranges() NOEXCEPT {
     dt_obs.sat_clock                   = clock_bias0;
     dt_obs.phase_lock_time             = mLockTime;
     dt_obs.carrier_to_noise_ratio      = mCarrierToNoiseRatio;
+    dt_obs.eph_iod                     = mCurrent->eph_iod;
 
     dt_obs.orbit_radial_axis = mCurrent->orbit_radial_axis;
     dt_obs.orbit_cross_axis  = mCurrent->orbit_cross_axis;
@@ -256,8 +264,10 @@ void Observation::compute_ranges() NOEXCEPT {
 #endif
     }
 
-    auto tropo_wet = 0.0;
-    auto tropo_dry = 0.0;
+    auto tropo_wet       = 0.0;
+    auto tropo_dry       = 0.0;
+    auto tropo_model_wet = 0.0;
+    auto tropo_model_dry = 0.0;
     if (mTropospheric.valid) {
         tropo_dry = mTropospheric.hydrostatic * mTropospheric.mapping_hydrostatic *
                     tropo_dry_height_correction;
@@ -271,6 +281,14 @@ void Observation::compute_ranges() NOEXCEPT {
         dt_obs.tropo_wet_mapping = mTropospheric.mapping_wet;
         dt_obs.tropo_dry         = tropo_dry;
         dt_obs.tropo_wet         = tropo_wet;
+#endif
+    } else if (mUseTroposphericModel) {
+        // TODO(ewasjon): Compute tropospheric delay using simple model as a fallback
+        VERBOSEF("tropo_dry:    ---");
+        VERBOSEF("tropo_wet:    ---");
+#ifdef DATA_TRACING
+        dt_obs.tropo_dry = tropo_model_dry;
+        dt_obs.tropo_wet = tropo_model_wet;
 #endif
     } else {
         VERBOSEF("tropo_dry:    ---");
@@ -320,13 +338,13 @@ void Observation::compute_ranges() NOEXCEPT {
     if (mCurrent->phase_windup.valid) {
         phase_windup0 = mCurrent->phase_windup.correction_velocity * mWavelength;
         phase_windup1 = mCurrent->phase_windup.correction_velocity * mWavelength;
-        
+
         if (mNext->phase_windup.valid) {
             phase_windup1 = mNext->phase_windup.correction_velocity * mWavelength;
         }
 
         auto negative_factor = 1.0;
-        if(mNegativePhaseWindup) {
+        if (mNegativePhaseWindup) {
             negative_factor = -1.0;
         }
 
@@ -337,9 +355,11 @@ void Observation::compute_ranges() NOEXCEPT {
                  mCurrent->phase_windup.correction_velocity, mWavelength,
                  (phase_windup1 - phase_windup0) / time_delta);
 #ifdef DATA_TRACING
-        dt_obs.phase_windup          = negative_factor * mCurrent->phase_windup.correction_sun * mWavelength;
-        dt_obs.phase_windup_velocity = negative_factor * mCurrent->phase_windup.correction_velocity * mWavelength;
-        dt_obs.phase_windup_angle    = negative_factor * mCurrent->phase_windup.correction_angle * mWavelength;
+        dt_obs.phase_windup = negative_factor * mCurrent->phase_windup.correction_sun * mWavelength;
+        dt_obs.phase_windup_velocity =
+            negative_factor * mCurrent->phase_windup.correction_velocity * mWavelength;
+        dt_obs.phase_windup_angle =
+            negative_factor * mCurrent->phase_windup.correction_angle * mWavelength;
 #endif
     } else {
         VERBOSEF("phase_windup: ---");
@@ -358,13 +378,17 @@ void Observation::compute_ranges() NOEXCEPT {
     }
 
     if (is_valid()) {
-        auto code_correction0 = clock0 + code_bias + stec_grid + stec_poly + tropo_dry + tropo_wet;
-        auto code_correction1 = clock1 + code_bias + stec_grid + stec_poly + tropo_dry + tropo_wet;
+        auto stec0 = stec_grid + stec_poly;
+        auto stec1 = stec_grid + stec_poly;
 
-        auto phase_correction0 =
-            clock0 + phase_bias - stec_grid - stec_poly + tropo_dry + tropo_wet;
-        auto phase_correction1 =
-            clock1 + phase_bias - stec_grid - stec_poly + tropo_dry + tropo_wet;
+        auto tropo0 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;
+        auto tropo1 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;
+
+        auto code_correction0 = clock0 + code_bias + stec0 + tropo0;
+        auto code_correction1 = clock1 + code_bias + stec1 + tropo1;
+
+        auto phase_correction0 = clock0 + phase_bias - stec0 + tropo0;
+        auto phase_correction1 = clock1 + phase_bias - stec1 + tropo1;
 
         auto final_code_correction0 = shapiro0 + earth_solid_tides0;
         auto final_code_correction1 = shapiro1 + earth_solid_tides1;
@@ -397,15 +421,8 @@ void Observation::compute_ranges() NOEXCEPT {
         dt_obs.code_range       = code_result0;
         dt_obs.phase_range      = phase_result0;
         dt_obs.phase_range_rate = phase_rate;
-#endif
-
-#if 0
-    printf("TRACK-OBS,%s,%s,%g,%u,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,%.14f,TOTAL,%.14f,%.14f,"
-           "TOTAL,%.14f,%."
-           "14f,%.14f,%.14f",
-           mSvId.name(), mSignalId.name(), mFrequency / 1.0e6, mCurrent->eph_iod,
-           mCurrent->true_range, clock_bias, clock, code_bias, phase_bias, stec_grid, stec_poly,
-           tropo_dry, tropo_wet, shapiro, solid_tides, phase_windup, antenna_phase_variation);
+        dt_obs.stec             = stec0;
+        dt_obs.tropo            = tropo0;
 #endif
 
         mCodeRange      = code_result0;

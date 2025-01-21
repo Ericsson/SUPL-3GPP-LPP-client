@@ -43,14 +43,18 @@ struct Observation {
     Option<double> clock;
     Option<double> code_bias;
     Option<double> phase_bias;
+    Option<double> stec;
     Option<double> stec_grid;
     Option<double> stec_poly;
+    Option<double> tropo;
     Option<double> tropo_dry;
     Option<double> tropo_wet;
     Option<double> tropo_dry_mapping;
     Option<double> tropo_wet_mapping;
     Option<double> tropo_dry_height_correction;
     Option<double> tropo_wet_height_correction;
+    Option<double> tropo_model_dry;
+    Option<double> tropo_model_wet;
     Option<double> shapiro;
     Option<double> earth_solid_tides;
     Option<double> phase_windup;
@@ -66,6 +70,7 @@ struct Observation {
     Option<Float3> orbit_cross_axis;
     Option<Float3> orbit_along_axis;
     Option<double> orbit_delta_t;
+    Option<long>   eph_iod;
 };
 
 void report_satellite(ts::Tai const& time, std::string const& satellite, Satellite const& sat);
