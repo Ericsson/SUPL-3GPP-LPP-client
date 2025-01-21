@@ -7,6 +7,7 @@
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wunused-function"
+#include <A-GNSS-ProvideAssistanceData.h>
 #include <CommonIEsProvideAssistanceData.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
@@ -25,6 +26,22 @@ void Deleter<LPP_Message>::operator()(LPP_Message* ptr) {
 }
 
 }  // namespace custom
+
+void print(Message const& message) {
+    if (!message) return;
+    xer_fprint(stdout, &asn_DEF_LPP_Message, message.get());
+}
+
+void print(A_GNSS_ProvideAssistanceData* message) {
+    if (!message) return;
+    xer_fprint(stdout, &asn_DEF_A_GNSS_ProvideAssistanceData, message);
+}
+
+void destroy(A_GNSS_ProvideAssistanceData* message) {
+    if (message) {
+        ASN_STRUCT_FREE(asn_DEF_A_GNSS_ProvideAssistanceData, message);
+    }
+}
 
 bool is_request_capabilities(Message const& message) {
     if (!message) return false;

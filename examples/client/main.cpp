@@ -147,19 +147,23 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         format::ubx::Parser*     ubx{};
         format::ctrl::Parser*    ctrl{};
         format::lpp::UperParser* lpp_uper{};
+        format::lpp::UperParser* lpp_uper_pad{};
 
         if ((input.format & INPUT_FORMAT_NMEA) != 0) nmea = new format::nmea::Parser{};
         if ((input.format & INPUT_FORMAT_UBX) != 0) ubx = new format::ubx::Parser{};
         if ((input.format & INPUT_FORMAT_CTRL) != 0) ctrl = new format::ctrl::Parser{};
-        if ((input.format & INPUT_FORMAT_LPP) != 0) lpp_uper = new format::lpp::UperParser{};
+        if ((input.format & INPUT_FORMAT_LPP_UPER) != 0) lpp_uper = new format::lpp::UperParser{};
+        if ((input.format & INPUT_FORMAT_LPP_UPER_PAD) != 0)
+            lpp_uper_pad = new format::lpp::UperParser{};
 
-        DEBUGF("input  %p: %s%s%s%s", input.interface.get(),
+        DEBUGF("input  %p: %s%s%s%s%s", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
-               (input.format & INPUT_FORMAT_LPP) ? "lpp " : "");
+               (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "");
 
-        if (!nmea && !ubx && !ctrl && !lpp_uper) {
+        if (!nmea && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
             WARNF("-- skipping input %p, no format specified", input.interface.get());
             continue;
         }
@@ -169,15 +173,19 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         if (ctrl) program.ctrl_parsers.push_back(std::unique_ptr<format::ctrl::Parser>(ctrl));
         if (lpp_uper)
             program.lpp_uper_parsers.push_back(std::unique_ptr<format::lpp::UperParser>(lpp_uper));
+        if (lpp_uper_pad)
+            program.lpp_uper_parsers.push_back(
+                std::unique_ptr<format::lpp::UperParser>(lpp_uper_pad));
 
         input.interface->schedule(program.scheduler);
-        input.interface->callback = [&program, nmea, ubx, ctrl,
-                                     lpp_uper](io::Input&, uint8_t* buffer, size_t count) {
+        input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper,
+                                     lpp_uper_pad](io::Input&, uint8_t* buffer, size_t count) {
             if (nmea) {
                 nmea->append(buffer, count);
                 for (;;) {
                     auto message = nmea->try_parse();
                     if (!message) break;
+                    if (input.print) message->print();
                     program.stream.push(std::move(message));
                 }
             }
@@ -187,6 +195,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                 for (;;) {
                     auto message = ubx->try_parse();
                     if (!message) break;
+                    if (input.print) message->print();
                     program.stream.push(std::move(message));
                 }
             }
@@ -196,6 +205,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                 for (;;) {
                     auto message = ctrl->try_parse();
                     if (!message) break;
+                    if (input.print) message->print();
                     program.stream.push(std::move(message));
                 }
             }
@@ -205,9 +215,28 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                 for (;;) {
                     auto message = lpp_uper->try_parse();
                     if (!message) break;
+
                     XDEBUGF("lpp/msg", "create %p", message);
                     auto lpp_message = lpp::Message{message};
+
+                    if (input.print) {
+                        lpp::print(lpp_message);
+                    }
                     program.stream.push(std::move(lpp_message));
+                }
+            }
+
+            if (lpp_uper_pad) {
+                lpp_uper_pad->append(buffer, count);
+                for (;;) {
+                    auto message = lpp_uper_pad->try_parse_provide_assistance_data();
+                    if (!message) break;
+
+                    if (input.print) {
+                        lpp::print(message);
+                    }
+
+                    lpp::destroy(message);
                 }
             }
         };

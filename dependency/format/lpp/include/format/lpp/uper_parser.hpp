@@ -6,6 +6,7 @@
 #include <format/helper/parser.hpp>
 
 struct LPP_Message;
+struct A_GNSS_ProvideAssistanceData;
 
 namespace format {
 namespace lpp {
@@ -15,8 +16,9 @@ public:
     EXPLICIT UperParser() NOEXCEPT  = default;
     ~UperParser() NOEXCEPT override = default;
 
-    NODISCARD virtual char const* name() const NOEXCEPT override;
-    NODISCARD LPP_Message*        try_parse() NOEXCEPT;
+    NODISCARD virtual char const*           name() const NOEXCEPT override;
+    NODISCARD LPP_Message*                  try_parse() NOEXCEPT;
+    NODISCARD A_GNSS_ProvideAssistanceData* try_parse_provide_assistance_data() NOEXCEPT;
 };
 
 }  // namespace lpp

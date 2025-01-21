@@ -6,6 +6,7 @@
 struct LPP_Message;
 struct ProvideAssistanceData_r9_IEs;
 struct RequestLocationInformation_r9_IEs;
+struct A_GNSS_ProvideAssistanceData;
 
 namespace lpp {
 
@@ -17,6 +18,10 @@ struct Deleter {
 }  // namespace custom
 
 using Message = std::unique_ptr<LPP_Message, custom::Deleter<LPP_Message>>;
+
+void print(Message const& message);
+void print(A_GNSS_ProvideAssistanceData* message);
+void destroy(A_GNSS_ProvideAssistanceData* message);
 
 bool is_request_capabilities(Message const& message);
 bool is_request_location_information(Message const& message);

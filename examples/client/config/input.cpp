@@ -35,7 +35,7 @@ static args::ValueFlagList<std::string> gArgs{
     "    path=<path>\n"
     "\n"
     "Formats:\n"
-    "  all, ubx, nmea, rtcm, ctrl, lpp-uper\n",
+    "  all, ubx, nmea, rtcm, ctrl, lpp-uper, lpp-uper-pad\n",
     {"input"},
 };
 
@@ -57,7 +57,8 @@ static InputFormat parse_format(std::string const& str) {
     if (str == "nmea") return INPUT_FORMAT_NMEA;
     if (str == "rtcm") return INPUT_FORMAT_RTCM;
     if (str == "ctrl") return INPUT_FORMAT_CTRL;
-    if (str == "lpp-uper") return INPUT_FORMAT_LPP;
+    if (str == "lpp-uper") return INPUT_FORMAT_LPP_UPER;
+    if (str == "lpp-uper-pad") return INPUT_FORMAT_LPP_UPER_PAD;
     throw args::ValidationError("--input format: invalid format, got `" + str + "`");
 }
 
@@ -422,11 +423,13 @@ static void dump(InputConfig const& config) {
     for (auto const& input : config.inputs) {
         DEBUGF("%p: %s", input.interface.get(), input_type(input.interface.get()));
         DEBUG_INDENT_SCOPE();
-        DEBUGF("format: %s%s%s%s%s", (input.format & INPUT_FORMAT_UBX) ? "UBX " : "",
+        DEBUGF("format: %s%s%s%s%s%s", (input.format & INPUT_FORMAT_UBX) ? "UBX " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "NMEA " : "",
                (input.format & INPUT_FORMAT_RTCM) ? "RTCM " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "CTRL " : "",
-               (input.format & INPUT_FORMAT_LPP) ? "LPP " : "");
+               (input.format & INPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "LPP-UPER-PAD " : "");
+
         DEBUGF("print: %s", input.print ? "true" : "false");
         auto stdin_input = dynamic_cast<io::StdinInput*>(input.interface.get());
         if (stdin_input) continue;
