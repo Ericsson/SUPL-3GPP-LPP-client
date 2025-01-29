@@ -71,6 +71,8 @@ struct Observation {
     Option<Float3> orbit_along_axis;
     Option<double> orbit_delta_t;
     Option<long>   eph_iod;
+    Option<double> vtec_mapping;
+    Option<double> stec_height_correction;
 };
 
 void report_satellite(ts::Tai const& time, std::string const& satellite, Satellite const& sat);
@@ -79,7 +81,7 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
 
 void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satellite,
                                  Option<Float3> delta, Option<Float3> dot_delta,
-                                 Option<long> ssr_iod);
+                                 Option<long> ssr_iod, Option<long> eph_iod);
 void report_ssr_clock_correction(ts::Tai const& time, std::string const& satellite,
                                  Option<double> c0, Option<double> c1, Option<double> c2,
                                  Option<long> ssr_iod);
@@ -87,7 +89,10 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
                                        Option<double> c00, Option<double> c01, Option<double> c10,
                                        Option<double> c11, Option<double> reference_point_latitude,
                                        Option<double> reference_point_longitude,
-                                       Option<double> stec_quality_indicator, Option<long> ssr_iod);
+                                       Option<double> stec_quality_indicator,
+                                       Option<long>   stec_quality_indicator_cls,
+                                       Option<long>   stec_quality_indicator_val,
+                                       Option<long>   ssr_iod);
 void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
                                   Option<Float3> position_llh, Option<double> tropo_wet,
                                   Option<double> tropo_dry, Option<long> ssr_iod);

@@ -471,7 +471,8 @@ void CorrectionData::add_correction(long                                 gnss_id
 
 #ifdef DATA_TRACING
         datatrace::report_ssr_orbit_correction(reference_time, satellite_id.name(),
-                                               correction.delta, correction.dot_delta, ssr_iod);
+                                               correction.delta, correction.dot_delta, ssr_iod,
+                                               static_cast<long>(iod));
 #endif
 
         VERBOSEF("orbit: %3s %+f %+f %+f", satellite_id.name(), radial, along_track, cross_track);
@@ -684,15 +685,20 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         }
 
 #ifdef DATA_TRACING
+        datatrace::Option<long>   quality_indiciator_class{};
+        datatrace::Option<long>   quality_indicator_value{};
         datatrace::Option<double> quality_indicator{};
         if (!stec_quality_indicator.invalid) {
-            quality_indicator = stec_quality_indicator.value;
+            quality_indicator        = stec_quality_indicator.value;
+            quality_indiciator_class = stec_quality_indicator.cls;
+            quality_indicator_value  = stec_quality_indicator.val;
         }
 
         datatrace::report_ssr_ionospheric_polynomial(
             epoch_time, satellite_id.name(), c00, c01, c10, c11,
             correction_point_set.reference_point_latitude,
-            correction_point_set.reference_point_longitude, quality_indicator, ssr_iod);
+            correction_point_set.reference_point_longitude, quality_indicator,
+            quality_indiciator_class, quality_indicator_value, ssr_iod);
 #endif
 
         VERBOSEF("stec: %3s %+f %+f %+f %+f", satellite_id.name(), c00, c01, c10, c11);

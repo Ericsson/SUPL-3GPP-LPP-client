@@ -235,8 +235,10 @@ void Observation::compute_ranges() NOEXCEPT {
         VERBOSEF("phase_bias:   ---");
     }
 
-    auto stec_grid = 0.0;
-    auto stec_poly = 0.0;
+    auto stec_grid              = 0.0;
+    auto stec_poly              = 0.0;
+    auto vtec_mapping           = 0.0;
+    auto stec_height_correction = 0.0;
     if (mIonospheric.valid) {
         stec_grid = 40.3e10 * mIonospheric.grid_residual / (mFrequency * mFrequency);
         stec_poly = 40.3e10 * mIonospheric.poly_residual / (mFrequency * mFrequency);
@@ -245,8 +247,10 @@ void Observation::compute_ranges() NOEXCEPT {
         VERBOSEF("stec_poly:    %+24.10f (%gTECU,%gkHz)", stec_poly, mIonospheric.poly_residual,
                  mFrequency);
 #ifdef DATA_TRACING
-        dt_obs.stec_grid = stec_grid;
-        dt_obs.stec_poly = stec_poly;
+        dt_obs.stec_grid              = stec_grid;
+        dt_obs.stec_poly              = stec_poly;
+        dt_obs.vtec_mapping           = vtec_mapping;
+        dt_obs.stec_height_correction = stec_height_correction;
 #endif
     } else {
         VERBOSEF("stec_grid:    ---");

@@ -197,6 +197,9 @@ void report_observation(ts::Tai const& time, std::string const& satellite,
     }
     if (obs.orbit_delta_t.valid) ss << ",\"orbit_delta_t\":" << obs.orbit_delta_t.value;
     if (obs.eph_iod.valid) ss << ",\"eph_iod\":" << obs.eph_iod.value;
+    if (obs.vtec_mapping.valid) ss << ",\"vtec_mapping\":" << obs.vtec_mapping.value;
+    if (obs.stec_height_correction.valid)
+        ss << ",\"stec_height_correction\":" << obs.stec_height_correction.value;
     ss << "}";
 
     publish(topic, ss.str());
@@ -237,7 +240,7 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
 
 void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satellite,
                                  Option<Float3> delta, Option<Float3> dot_delta,
-                                 Option<long> ssr_iod) {
+                                 Option<long> ssr_iod, Option<long> eph_iod) {
     FUNCTION_SCOPE();
 
     auto topic    = "datatrace/ssr/orbit/" + gDevice + "/" + satellite + "/v1";
@@ -258,6 +261,7 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
         ss << ",\"delta_cross_rate\":" << dot_delta.value.z;
     }
     if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
+    if (eph_iod.valid) ss << ",\"eph_iod\":" << eph_iod.value;
     ss << "}";
 
     publish(topic, ss.str());
@@ -289,6 +293,8 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
                                        Option<double> c11, Option<double> reference_point_latitude,
                                        Option<double> reference_point_longitude,
                                        Option<double> stec_quality_indicator,
+                                       Option<long>   stec_quality_indicator_cls,
+                                       Option<long>   stec_quality_indicator_val,
                                        Option<long>   ssr_iod) {
     FUNCTION_SCOPE();
 
@@ -309,6 +315,10 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
         ss << ",\"reference_point_longitude\":" << reference_point_longitude.value;
     if (stec_quality_indicator.valid)
         ss << ",\"stec_quality_indicator\":" << stec_quality_indicator.value;
+    if (stec_quality_indicator_cls.valid)
+        ss << ",\"stec_quality_indicator_cls\":" << stec_quality_indicator_cls.value;
+    if (stec_quality_indicator_val.valid)
+        ss << ",\"stec_quality_indicator_val\":" << stec_quality_indicator_val.value;
     if (ssr_iod.valid) ss << ",\"ssr_iod\":" << ssr_iod.value;
     ss << "}";
 
