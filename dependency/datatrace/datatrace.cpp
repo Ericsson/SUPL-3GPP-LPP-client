@@ -12,6 +12,7 @@ namespace datatrace {
 
 static mosquitto*  gMosq        = nullptr;
 static bool        gInitialized = false;
+static bool        gEnabled     = false;
 static std::string gDevice;
 static std::string gServer;
 static int         gPort;
@@ -30,10 +31,12 @@ void initialize(std::string const& device, std::string const& server, int port,
     gUsername    = username;
     gPassword    = password;
     gInitialized = false;
+    gEnabled     = true;
 }
 
 void start() {
     if (gInitialized) return;
+    if (!gEnabled) return;
 
     ASSERT(gMosq == nullptr, "mosq is not null");
     gMosq = ::mosquitto_new(nullptr, true, nullptr);
@@ -80,6 +83,7 @@ void start() {
 
 void finalize() {
     FUNCTION_SCOPE();
+    if (!gEnabled) return;
     if (gInitialized) {
         ASSERT(gMosq != nullptr, "mosq is null");
 
@@ -99,6 +103,7 @@ void replace_all(std::string& str, std::string const& from, std::string const& t
 }
 
 void publish(std::string const& topic, std::string const& ss_data) {
+    if (!gEnabled) return;
     if (!gInitialized) start();
     if (!gInitialized) {
         WARNF("failed to initialize mosquitto");
