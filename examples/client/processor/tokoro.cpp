@@ -286,6 +286,13 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_tropospheric_height_correction(mConfig.tropospheric_height_correction);
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
     mReferenceStation->set_generate_rinex(mConfig.generate_rinex);
+    mReferenceStation->set_require_code_bias(mConfig.require_code_bias);
+    mReferenceStation->set_require_phase_bias(mConfig.require_phase_bias);
+    mReferenceStation->set_require_tropo(mConfig.require_tropo);
+    mReferenceStation->set_require_iono(mConfig.require_iono);
+    mReferenceStation->set_use_tropospheric_model(mConfig.use_tropospheric_model);
+    mReferenceStation->set_use_ionospheric_height_correction(
+        mConfig.use_ionospheric_height_correction);
 
     mReferenceStation->generate(generation_time);
 

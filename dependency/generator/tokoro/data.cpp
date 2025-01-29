@@ -379,6 +379,11 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
 
         has_polynomial                 = true;
         correction.polynomial_residual = c00 + c01 + c10 + c11;
+
+        if (polynomial.quality_indicator_valid) {
+            correction.quality_valid = true;
+            correction.quality       = polynomial.quality_indicator;
+        }
     }
 
     auto grid_it = mGrid.find(sv_id.gnss());
@@ -678,11 +683,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         poly.reference_point_latitude  = correction_point_set.reference_point_latitude;
         poly.reference_point_longitude = correction_point_set.reference_point_longitude;
 
-        if (stec_quality_indicator.invalid) {
-            poly.quality_indicator = 9999.0;
-        } else {
-            poly.quality_indicator = stec_quality_indicator.value;
-        }
+        poly.quality_indicator_valid = !stec_quality_indicator.invalid;
+        poly.quality_indicator       = stec_quality_indicator.value;
 
 #ifdef DATA_TRACING
         datatrace::Option<long>   quality_indiciator_class{};

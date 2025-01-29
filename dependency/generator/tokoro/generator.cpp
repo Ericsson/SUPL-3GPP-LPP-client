@@ -63,7 +63,13 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
       mGenerateRinex(false),
-      mRinexBuilder(ts::Utc::now().rinex_string() + ".25o", 3.04),
+      mRequireCodeBias(true),
+      mRequirePhaseBias(true),
+      mRequireTropo(true),
+      mRequireIono(true),
+      mUseTroposphericModel(false),
+      mUseIonosphericHeightCorrection(false),
+      mRinexBuilder(ts::Utc::now().rinex_filename() + ".rnx", 3.04),
       mGenerator(generator) {
     // Initialize the satellite vector to the maximum number of satellites
     // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
@@ -129,6 +135,12 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
     observation.set_negative_phase_windup(mNegativePhaseWindup);
+    observation.set_require_code_bias(mRequireCodeBias);
+    observation.set_require_phase_bias(mRequirePhaseBias);
+    observation.set_require_tropo(mRequireTropo);
+    observation.set_require_iono(mRequireIono);
+    observation.set_use_tropospheric_model(mUseTroposphericModel);
+    observation.set_use_ionospheric_height_correction(mUseIonosphericHeightCorrection);
     observation.compute_ranges();
 
     if (!observation.is_valid()) return;
@@ -139,11 +151,6 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     FUNCTION_SCOPE();
     if (mGenerator.mCorrectionData == nullptr) {
         WARNF("no correction data available");
-        return false;
-    }
-
-    if (reception_time <= mGenerationTime) {
-        VERBOSEF("generation time is not newer than last generation time");
         return false;
     }
 

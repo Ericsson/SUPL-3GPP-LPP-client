@@ -72,6 +72,14 @@ public:
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
     void set_generate_rinex(bool enabled) { mGenerateRinex = enabled; }
+    void set_require_code_bias(bool enabled) { mRequireCodeBias = enabled; }
+    void set_require_phase_bias(bool enabled) { mRequirePhaseBias = enabled; }
+    void set_require_tropo(bool enabled) { mRequireTropo = enabled; }
+    void set_require_iono(bool enabled) { mRequireIono = enabled; }
+    void set_use_tropospheric_model(bool enabled) { mUseTroposphericModel = enabled; }
+    void set_use_ionospheric_height_correction(bool enabled) {
+        mUseIonosphericHeightCorrection = enabled;
+    }
 
 protected:
     void initialize_satellites() NOEXCEPT;
@@ -103,6 +111,13 @@ private:
     uint32_t mRtcmMsmType;
     bool     mNegativePhaseWindup;
     bool     mGenerateRinex;
+
+    bool mRequireCodeBias;
+    bool mRequirePhaseBias;
+    bool mRequireTropo;
+    bool mRequireIono;
+    bool mUseTroposphericModel;
+    bool mUseIonosphericHeightCorrection;
 
     std::vector<Satellite>          mSatellites;
     std::unordered_set<SatelliteId> mSatelliteIncludeSet;

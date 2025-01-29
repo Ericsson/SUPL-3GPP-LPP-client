@@ -22,14 +22,21 @@ struct TroposphericDelay {
     double mapping_wet;
     double height_mapping_hydrostatic;
     double height_mapping_wet;
+    double model_hydrostatic;
+    double model_wet;
     bool   valid;
     bool   valid_height_mapping;
+    bool   valid_model;
 };
 
 struct IonosphericDelay {
     double grid_residual;
     double poly_residual;
     bool   valid;
+    double vtec_mapping;
+    double height_correction;
+    double quality;
+    bool   quality_valid;
 };
 
 struct Correction {
@@ -56,6 +63,14 @@ public:
     void           discard() NOEXCEPT { mIsValid = false; }
 
     void set_negative_phase_windup(bool enabled) NOEXCEPT { mNegativePhaseWindup = enabled; }
+    void set_require_code_bias(bool enabled) NOEXCEPT { mRequireCodeBias = enabled; }
+    void set_require_phase_bias(bool enabled) NOEXCEPT { mRequirePhaseBias = enabled; }
+    void set_require_tropo(bool enabled) NOEXCEPT { mRequireTropospheric = enabled; }
+    void set_require_iono(bool enabled) NOEXCEPT { mRequireIonospheric = enabled; }
+    void set_use_tropospheric_model(bool enabled) NOEXCEPT { mUseTroposphericModel = enabled; }
+    void set_use_ionospheric_height_correction(bool enabled) NOEXCEPT {
+        mUseIonosphericHeightCorrection = enabled;
+    }
 
     NODISCARD double code_range() const NOEXCEPT;
     NODISCARD double phase_range() const NOEXCEPT;
@@ -95,6 +110,7 @@ private:
     bool mRequireTropospheric;
     bool mRequireIonospheric;
     bool mUseTroposphericModel;
+    bool mUseIonosphericHeightCorrection;
 
     Correction        mClockCorrection;
     Correction        mCodeBias;

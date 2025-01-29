@@ -179,6 +179,49 @@ static args::Flag gGenerateRinex{
     {"tkr-generate-rinex"},
 };
 
+static args::Flag gCodeBiasOptional{
+    gGroup,
+    "code-bias-optional",
+    "Disable code bias requirement",
+    {"tkr-code-bias-optional"},
+};
+
+static args::Flag gPhaseBiasOptional{
+    gGroup,
+    "phase-bias-optional",
+    "Disable phase bias requirement",
+    {"tkr-phase-bias-optional"},
+};
+
+static args::Flag gTropoOptional{
+    gGroup,
+    "tropo-optional",
+    "Disable tropospheric correction requirement",
+    {"tkr-tropo-optional"},
+};
+
+static args::Flag gIonoOptional{
+    gGroup,
+    "iono-optional",
+    "Disable ionospheric correction requirement",
+    {"tkr-iono-optional"},
+};
+
+static args::Flag gUseTroposphericModel{
+    gGroup,
+    "use-tropospheric-model",
+    "Use tropospheric model if tropospheric correction are not available (requires "
+    "tkr-tropo-optional)",
+    {"tkr-use-tropospheric-model"},
+};
+
+static args::Flag gUseIonosphericHeightCorrection{
+    gGroup,
+    "use-ionospheric-height-correction",
+    "Use ionospheric height correction",
+    {"tkr-use-ionospheric-height-correction"},
+};
+
 static void setup() {
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
@@ -208,6 +251,13 @@ static void parse(Config* config) {
     tokoro.ocit                               = false;
     tokoro.negative_phase_windup              = false;
     tokoro.generate_rinex                     = false;
+
+    tokoro.require_code_bias                 = true;
+    tokoro.require_phase_bias                = true;
+    tokoro.require_tropo                     = true;
+    tokoro.require_iono                      = true;
+    tokoro.use_tropospheric_model            = false;
+    tokoro.use_ionospheric_height_correction = false;
 
     tokoro.vrs_mode                   = TokoroConfig::VrsMode::Dynamic;
     tokoro.dynamic_distance_threshold = 5.0;
@@ -292,6 +342,13 @@ static void parse(Config* config) {
     if (gOcit) tokoro.ocit = true;
     if (gNegativePhaseWindup) tokoro.negative_phase_windup = true;
     if (gGenerateRinex) tokoro.generate_rinex = true;
+
+    if (gCodeBiasOptional) tokoro.require_code_bias = false;
+    if (gPhaseBiasOptional) tokoro.require_phase_bias = false;
+    if (gTropoOptional) tokoro.require_tropo = false;
+    if (gIonoOptional) tokoro.require_iono = false;
+    if (gUseTroposphericModel) tokoro.use_tropospheric_model = true;
+    if (gUseIonosphericHeightCorrection) tokoro.use_ionospheric_height_correction = true;
 }
 
 static void dump(TokoroConfig const& config) {
@@ -341,6 +398,13 @@ static void dump(TokoroConfig const& config) {
     DEBUGF("ocit:                    %s", config.ocit ? "true" : "false");
     DEBUGF("negative phase windup:   %s", config.negative_phase_windup ? "true" : "false");
     DEBUGF("generate rinex:          %s", config.generate_rinex ? "true" : "false");
+    DEBUGF("code bias required:      %s", config.require_code_bias ? "true" : "false");
+    DEBUGF("phase bias required:     %s", config.require_phase_bias ? "true" : "false");
+    DEBUGF("tropospheric required:   %s", config.require_tropo ? "true" : "false");
+    DEBUGF("ionospheric required:    %s", config.require_iono ? "true" : "false");
+    DEBUGF("use tropospheric model:  %s", config.use_tropospheric_model ? "true" : "false");
+    DEBUGF("use ionospheric height:  %s",
+           config.use_ionospheric_height_correction ? "true" : "false");
 }
 
 }  // namespace tokoro

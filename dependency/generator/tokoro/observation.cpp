@@ -37,21 +37,22 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mFrequency  = signal_id.frequency();
     mWavelength = constant::SPEED_OF_LIGHT / mFrequency / 1000.0;
 
-    mCarrierToNoiseRatio = 47.0;   // TODO: How do we choose this value?
-    mLockTime            = 525.0;  // TODO: How do we determine this value?
+    mCarrierToNoiseRatio = 0.0;
+    mLockTime            = 0.0;
     mNegativePhaseWindup = false;
 
-    mRequirePhaseBias     = true;
-    mRequireCodeBias      = true;
-    mRequireTropospheric  = true;
-    mRequireIonospheric   = false;
-    mUseTroposphericModel = true;
+    mRequirePhaseBias               = true;
+    mRequireCodeBias                = true;
+    mRequireTropospheric            = true;
+    mRequireIonospheric             = true;
+    mUseTroposphericModel           = false;
+    mUseIonosphericHeightCorrection = false;
 
-    mClockCorrection       = Correction{satellite.clock_correction(), true};
-    mCodeBias              = Correction{0.0, false};
-    mPhaseBias             = Correction{0.0, false};
-    mTropospheric          = TroposphericDelay{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false};
-    mIonospheric           = IonosphericDelay{0.0, 0.0, false};
+    mClockCorrection = Correction{satellite.clock_correction(), true};
+    mCodeBias        = Correction{0.0, false};
+    mPhaseBias       = Correction{0.0, false};
+    mTropospheric = TroposphericDelay{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false};
+    mIonospheric  = IonosphericDelay{0.0, 0.0, false, 0.0, 0.0, 0.0, false};
     mAntennaPhaseVariation = Correction{0.0, false};
 
     mGroundPosition = location;
@@ -82,6 +83,14 @@ void Observation::compute_tropospheric_height() NOEXCEPT {
     } else {
         WARNF("failed to compute tropospheric height correction");
         mTropospheric.valid_height_mapping = false;
+    }
+
+    if (mops_eh) {
+        mTropospheric.model_hydrostatic = alt_eh.hydrostatic;
+        mTropospheric.model_wet         = alt_eh.wet;
+        mTropospheric.valid_model       = true;
+    } else {
+        mTropospheric.valid_model = false;
     }
 }
 
@@ -126,6 +135,16 @@ void Observation::compute_tropospheric(CorrectionData const& correction_data) NO
     mTropospheric.valid       = true;
 }
 
+static double compute_vtec_mapping(double altitude, double elevation) {
+    auto r       = ellipsoid::WGS84.semi_major_axis + altitude;
+    auto h       = 506.7e3;
+    auto alpha   = 0.9782;
+    auto sin     = std::sin(alpha * (constant::PI / 2.0 - elevation));
+    auto height  = r / (r + h);
+    auto mapping = std::sqrt(1 - height * height * sin * sin);
+    return mapping;
+}
+
 void Observation::compute_ionospheric(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
@@ -138,6 +157,15 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
     mIonospheric.grid_residual = correction.grid_residual;
     mIonospheric.poly_residual = correction.polynomial_residual;
     mIonospheric.valid         = true;
+
+    mIonospheric.quality       = correction.quality;
+    mIonospheric.quality_valid = correction.quality_valid;
+    mIonospheric.vtec_mapping  = compute_vtec_mapping(0, mCurrent->true_elevation);
+
+    auto ellipsoidal_height = mGroundLlh.z;
+    auto vtec_mf_0          = compute_vtec_mapping(0, mCurrent->true_elevation);
+    auto vtec_mf_alt        = compute_vtec_mapping(ellipsoidal_height, mCurrent->true_elevation);
+    mIonospheric.height_correction = vtec_mf_0 / vtec_mf_alt;
 }
 
 void Observation::compute_antenna_phase_variation() NOEXCEPT {
@@ -189,7 +217,7 @@ void Observation::compute_ranges() NOEXCEPT {
     dt_obs.orbit                       = true_range0 - mCurrent->eph_range;
     dt_obs.sat_clock                   = clock_bias0;
     dt_obs.phase_lock_time             = mLockTime;
-    dt_obs.carrier_to_noise_ratio      = mCarrierToNoiseRatio;
+    dt_obs.carrier_to_noise_ratio      = carrier_to_noise_ratio;
     dt_obs.eph_iod                     = mCurrent->eph_iod;
 
     dt_obs.orbit_radial_axis = mCurrent->orbit_radial_axis;
@@ -240,8 +268,10 @@ void Observation::compute_ranges() NOEXCEPT {
     auto vtec_mapping           = 0.0;
     auto stec_height_correction = 0.0;
     if (mIonospheric.valid) {
-        stec_grid = 40.3e10 * mIonospheric.grid_residual / (mFrequency * mFrequency);
-        stec_poly = 40.3e10 * mIonospheric.poly_residual / (mFrequency * mFrequency);
+        stec_grid              = 40.3e10 * mIonospheric.grid_residual / (mFrequency * mFrequency);
+        stec_poly              = 40.3e10 * mIonospheric.poly_residual / (mFrequency * mFrequency);
+        vtec_mapping           = mIonospheric.vtec_mapping;
+        stec_height_correction = mIonospheric.height_correction;
         VERBOSEF("stec_grid:    %+24.10f (%gTECU,%gkHz)", stec_grid, mIonospheric.grid_residual,
                  mFrequency);
         VERBOSEF("stec_poly:    %+24.10f (%gTECU,%gkHz)", stec_poly, mIonospheric.poly_residual,
@@ -286,10 +316,13 @@ void Observation::compute_ranges() NOEXCEPT {
         dt_obs.tropo_dry         = tropo_dry;
         dt_obs.tropo_wet         = tropo_wet;
 #endif
-    } else if (mUseTroposphericModel) {
-        // TODO(ewasjon): Compute tropospheric delay using simple model as a fallback
-        VERBOSEF("tropo_dry:    ---");
-        VERBOSEF("tropo_wet:    ---");
+    } else if (mUseTroposphericModel && mTropospheric.valid_model) {
+        tropo_model_dry = mTropospheric.model_hydrostatic * mTropospheric.mapping_hydrostatic;
+        tropo_model_wet = mTropospheric.model_wet * mTropospheric.mapping_wet;
+        VERBOSEF("tropo_dry:    %+24.10f (%gm x %g)", tropo_dry, mTropospheric.model_hydrostatic,
+                 mTropospheric.mapping_hydrostatic);
+        VERBOSEF("tropo_wet:    %+24.10f (%gm x %g)", tropo_wet, mTropospheric.model_wet,
+                 mTropospheric.mapping_wet);
 #ifdef DATA_TRACING
         dt_obs.tropo_dry = tropo_model_dry;
         dt_obs.tropo_wet = tropo_model_wet;
@@ -384,6 +417,11 @@ void Observation::compute_ranges() NOEXCEPT {
     if (is_valid()) {
         auto stec0 = stec_grid + stec_poly;
         auto stec1 = stec_grid + stec_poly;
+
+        if (mUseIonosphericHeightCorrection) {
+            stec0 *= stec_height_correction;
+            stec1 *= stec_height_correction;
+        }
 
         auto tropo0 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;
         auto tropo1 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;

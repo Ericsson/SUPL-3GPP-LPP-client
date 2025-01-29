@@ -118,6 +118,10 @@ struct TroposphericCorrection {
 struct IonosphericCorrection {
     double grid_residual;
     double polynomial_residual;
+    double vtec_grid_residual;
+    double vtec_polynomial_residual;
+    double quality;
+    bool quality_valid;
 };
 
 struct IonosphericPolynomial {
@@ -128,6 +132,7 @@ struct IonosphericPolynomial {
     double reference_point_latitude;
     double reference_point_longitude;
     double quality_indicator;
+    double quality_indicator_valid;
 };
 
 struct IonosphereGridPoint {

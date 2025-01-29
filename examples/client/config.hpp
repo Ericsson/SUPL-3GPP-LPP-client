@@ -269,6 +269,14 @@ struct TokoroConfig {
     bool ocit;
     bool negative_phase_windup;
     bool generate_rinex;
+
+    bool require_code_bias;
+    bool require_phase_bias;
+    bool require_tropo;
+    bool require_iono;
+
+    bool use_tropospheric_model;
+    bool use_ionospheric_height_correction;
 };
 #endif
 
