@@ -44,9 +44,17 @@ struct Correction {
     bool   valid;
 };
 
+struct LockTime {
+    ts::Tai time;
+    double  seconds;
+    bool    lost;
+};
+
 struct Observation {
 public:
     EXPLICIT Observation(Satellite const& satellite, SignalId signal_id, Float3 location) NOEXCEPT;
+
+    void update_lock_time(LockTime const& lock_time) NOEXCEPT;
 
     void compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT;
     void compute_code_bias(CorrectionData const& correction_data) NOEXCEPT;
@@ -78,7 +86,7 @@ public:
     NODISCARD double wave_length() const NOEXCEPT { return mWavelength; }
 
     NODISCARD double carrier_to_noise_ratio() const NOEXCEPT { return mCarrierToNoiseRatio; }
-    NODISCARD double lock_time() const NOEXCEPT { return mLockTime; }
+    NODISCARD LockTime const& lock_time() const NOEXCEPT { return mLockTime; }
 
     NODISCARD bool has_phase_bias() const NOEXCEPT { return mPhaseBias.valid; }
     NODISCARD bool has_code_bias() const NOEXCEPT { return mCodeBias.valid; }
@@ -99,11 +107,11 @@ private:
     SatelliteState const* mCurrent;
     SatelliteState const* mNext;
 
-    double mFrequency;
-    double mWavelength;
-    double mCarrierToNoiseRatio;
-    double mLockTime;
-    bool   mNegativePhaseWindup;
+    double   mFrequency;
+    double   mWavelength;
+    double   mCarrierToNoiseRatio;
+    LockTime mLockTime;
+    bool     mNegativePhaseWindup;
 
     bool mRequireCodeBias;
     bool mRequirePhaseBias;

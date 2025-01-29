@@ -5,6 +5,7 @@
 #include <memory>
 #include <sstream>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <generator/rtcm/satellite_id.hpp>
@@ -49,7 +50,8 @@ public:
 
     void epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites);
     void observations(SatelliteId                                        id,
-                      std::unordered_map<ObservationType, double> const& observations);
+                      std::unordered_map<ObservationType, double> const& observations,
+                      std::unordered_set<SignalId> const&                loss_signals);
 
     void set_antenna_position(Float3 const& position) NOEXCEPT { mApproxPosition = position; }
     void set_gps_support(bool support) NOEXCEPT { mGpsSupport = support; }

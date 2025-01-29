@@ -38,7 +38,11 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mWavelength = constant::SPEED_OF_LIGHT / mFrequency / 1000.0;
 
     mCarrierToNoiseRatio = 0.0;
-    mLockTime            = 0.0;
+    mLockTime            = {
+        mCurrent->reception_time,
+        0.0,
+        true,
+    };
     mNegativePhaseWindup = false;
 
     mRequirePhaseBias               = true;
@@ -92,6 +96,10 @@ void Observation::compute_tropospheric_height() NOEXCEPT {
     } else {
         mTropospheric.valid_model = false;
     }
+}
+
+void Observation::update_lock_time(LockTime const& lock_time) NOEXCEPT {
+    mLockTime = lock_time;
 }
 
 void Observation::compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT {
@@ -230,7 +238,6 @@ void Observation::compute_ranges() NOEXCEPT {
     }
 
     mCarrierToNoiseRatio = carrier_to_noise_ratio;
-    mLockTime            = 525.0;  // TODO: How do we determine this value?
 
 #ifdef DATA_TRACING
     datatrace::Observation dt_obs{};
@@ -240,7 +247,7 @@ void Observation::compute_ranges() NOEXCEPT {
     dt_obs.eph_relativistic_correction = mCurrent->eph_relativistic_correction;
     dt_obs.orbit                       = true_range0 - mCurrent->eph_range;
     dt_obs.sat_clock                   = clock_bias0;
-    dt_obs.phase_lock_time             = mLockTime;
+    dt_obs.phase_lock_time             = mLockTime.seconds;
     dt_obs.carrier_to_noise_ratio      = carrier_to_noise_ratio;
     dt_obs.eph_iod                     = mCurrent->eph_iod;
 

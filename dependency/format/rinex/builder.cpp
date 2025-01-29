@@ -430,7 +430,8 @@ std::vector<ObservationType> const& Builder::observation_types(SatelliteId const
 }
 
 void Builder::observations(SatelliteId                                        satellite_id,
-                           std::unordered_map<ObservationType, double> const& observations) {
+                           std::unordered_map<ObservationType, double> const& observations,
+                           std::unordered_set<SignalId> const&                loss_signals) {
     VSCOPE_FUNCTION();
 
     if (mVersion >= 3.00) {
@@ -444,7 +445,11 @@ void Builder::observations(SatelliteId                                        sa
             mStream << std::setw(14) << std::right << "" << "  ";
         } else if (type.kind == ObservationKind::Phase) {
             mStream << std::setw(15) << std::right << std::fixed << std::setprecision(3)
-                    << it->second << " ";
+                    << it->second;
+            if (loss_signals.count(type.signal_id) > 0) {
+                mStream << "0";
+            }
+            mStream << " ";
         } else {
             mStream << std::setw(14) << std::right << std::fixed << std::setprecision(3)
                     << it->second << "  ";

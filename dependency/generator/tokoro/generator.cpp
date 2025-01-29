@@ -122,9 +122,22 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT {
     FUNCTION_SCOPE();
 
+    // Update lock tracking
+    LockTime lock_time{};
+    if (mLockTime.find(signal_id) == mLockTime.end()) {
+        lock_time.time    = mGenerationTime;
+        lock_time.seconds = 0;
+        lock_time.lost    = true;
+    } else {
+        lock_time.time    = mLockTime[signal_id];
+        lock_time.seconds = mGenerationTime.difference_seconds(lock_time.time);
+        lock_time.lost    = false;
+    }
+
     auto correction_data = *mGenerator.mCorrectionData;
 
     auto& observation = satellite.initialize_observation(signal_id);
+    observation.update_lock_time(lock_time);
     observation.compute_phase_bias(correction_data);
     observation.compute_code_bias(correction_data);
     observation.compute_tropospheric(correction_data);
@@ -172,6 +185,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     }
 
     // Generate the observations
+    std::unordered_set<SignalId> active_signals;
     for (auto& satellite : mSatellites) {
         satellite.reset_observations();
 
@@ -221,8 +235,33 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             continue;
         }
 
+        for (auto const& observation : satellite.observations()) {
+            if (!observation.is_valid()) continue;
+            active_signals.insert(observation.signal_id());
+        }
+
         DEBUGF("satellite %s: %zu observations", satellite.id().name(),
                satellite.observations().size());
+    }
+
+    // Update the lock time
+    std::vector<SignalId> lost_lock;
+    for (auto& signal_id : mLockTime) {
+        if (active_signals.find(signal_id.first) == active_signals.end()) {
+            lost_lock.push_back(signal_id.first);
+        }
+    }
+
+    for (auto& signal_id : lost_lock) {
+        VERBOSEF("lock lost: %s", signal_id.name());
+        mLockTime.erase(signal_id);
+    }
+
+    for (auto& signal_id : active_signals) {
+        if (mLockTime.find(signal_id) == mLockTime.end()) {
+            VERBOSEF("lock acquired: %s", signal_id.name());
+            mLockTime[signal_id] = mGenerationTime;
+        }
     }
 
     return true;
@@ -256,7 +295,7 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
     signal.fine_pseudo_range      = delta_code_range_ms;
     signal.fine_phase_range       = delta_phase_range_ms;
     signal.carrier_to_noise_ratio = observation.carrier_to_noise_ratio();
-    signal.lock_time              = observation.lock_time();
+    signal.lock_time              = observation.lock_time().seconds;
 
     if (mPhaseRangeRate) {
         auto phase_range_rate       = observation.phase_range_rate();
@@ -375,6 +414,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
                 if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
                 rinex_observations.clear();
 
+                std::unordered_set<SignalId> loss_signals;
                 for (auto& observation : satellite.observations()) {
                     format::rinex::ObservationType type;
                     type.kind                = format::rinex::ObservationKind::Code;
@@ -387,9 +427,13 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 
                     type.kind                = format::rinex::ObservationKind::SignalStrength;
                     rinex_observations[type] = observation.carrier_to_noise_ratio();
+
+                    if (observation.lock_time().lost) {
+                        loss_signals.insert(observation.signal_id());
+                    }
                 }
 
-                mRinexBuilder.observations(satellite.id(), rinex_observations);
+                mRinexBuilder.observations(satellite.id(), rinex_observations, loss_signals);
             }
 
             mLastRinexEpoch = mGenerationTime;
