@@ -353,13 +353,13 @@ static void parse(Config* config) {
     if (gUraOverride && (lpp2spartn.sf024_override < 0 || lpp2spartn.sf024_override > 7)) {
         throw args::ValidationError("URA override must be between 0 and 7, got `" +
                                     std::to_string(lpp2spartn.sf024_override) + "`");
-    } else if (gUraOverride && (lpp2spartn.sf024_default < 0 || lpp2spartn.sf024_default > 7)) {
+    } else if (gUraDefault && (lpp2spartn.sf024_default < 0 || lpp2spartn.sf024_default > 7)) {
         throw args::ValidationError("URA default must be between 0 and 7, got `" +
                                     std::to_string(lpp2spartn.sf024_default) + "`");
     } else if (gSf042Override && (lpp2spartn.sf042_override < 0 || lpp2spartn.sf042_override > 7)) {
         throw args::ValidationError("SF042 override must be between 0 and 7, got `" +
                                     std::to_string(lpp2spartn.sf042_override) + "`");
-    } else if (gSf042Override && (lpp2spartn.sf042_default < 0 || lpp2spartn.sf042_default > 7)) {
+    } else if (gSf042Default && (lpp2spartn.sf042_default < 0 || lpp2spartn.sf042_default > 7)) {
         throw args::ValidationError("SF042 default must be between 0 and 7, got `" +
                                     std::to_string(lpp2spartn.sf042_default) + "`");
     } else if (gSf055Override &&
