@@ -52,6 +52,7 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
 
         if (++i % (correction_point_set.numberOfStepsLongitude_r16 + 1) == 0) {
             VERBOSEF("%s", buffer);
+            buffer_count = 0;
         }
     }
 
