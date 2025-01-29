@@ -66,6 +66,9 @@ protected:
     void header_observation_types();
     void header_observation_types_gnss(std::vector<ObservationType> const& types, char gnss_ch);
 
+    void header_phase_shift_type(ObservationType const& type, char gnss_ch);
+    void header_phase_shift();
+
     std::vector<ObservationType> const& observation_types(SatelliteId const& id) const;
 
     void generate_observation_order();
@@ -75,13 +78,13 @@ private:
     std::string mProgram;
     std::string mRunBy;
     std::string mMarkerName;
-    std::string mMarkerNumber;
     std::string mMarkerType;
     std::string mObserver;
     std::string mAgency;
     std::string mReceiverNumber;
     std::string mReceiverType;
     std::string mReceiverVersion;
+    std::string mAntennaSerial;
     std::string mAntennaNumber;
     std::string mAntennaType;
     Float3      mApproxPosition;

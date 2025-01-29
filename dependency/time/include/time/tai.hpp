@@ -37,6 +37,7 @@ public:
     NODISCARD double difference_seconds(Tai const& other) const;
 
     bool operator<=(Tai const& other) const { return tm.full_seconds() <= other.tm.full_seconds(); }
+    bool operator<(Tai const& other) const { return tm.full_seconds() < other.tm.full_seconds(); }
 
     NODISCARD static Tai now();
 

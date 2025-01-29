@@ -202,6 +202,18 @@ std::string Utc::rinex_string() const {
     return std::string{buffer.data()};
 }
 
+std::string Utc::rinex_filename() const {
+    auto ts    = timestamp();
+    auto epoch = date_from_utc(ts);
+
+    std::array<char, 256> buffer;
+    snprintf(buffer.data(), buffer.size(),
+             "%04" PRId64 "%02" PRId64 "%02" PRId64 "%02" PRId64 "%02" PRId64, epoch.year,
+             epoch.month, epoch.day, epoch.hour, epoch.minutes);
+
+    return std::string{buffer.data()};
+}
+
 Utc Utc::now() {
     struct timeval tv {};
     struct tm      tm {};

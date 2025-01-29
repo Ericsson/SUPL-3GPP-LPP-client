@@ -20,19 +20,19 @@ static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds)
     count += gal ? 1 : 0;
     count += bds ? 1 : 0;
     if (count > 1) {
-        return "M: (MIXED)";
+        return "M: MIXED";
     }
 
     if (gps) {
-        return "G: (GPS)";
+        return "G: GPS";
     } else if (glo) {
-        return "R: (GLONASS)";
+        return "R: GLONASS";
     } else if (gal) {
-        return "E: (GALILEO)";
+        return "E: Galileo";
     } else if (bds) {
-        return "C: (BEIDOU)";
+        return "C: BDS";
     } else {
-        return "M: (MIXED)";
+        return "M: MIXED";
     }
 }
 
@@ -115,18 +115,18 @@ Builder::Builder(std::string path, double version) NOEXCEPT : mVersion(version),
     mProgram = "Tokoro";
     mRunBy   = "Tokoro";
 
-    mMarkerName   = "Tokoro";
-    mMarkerNumber = "0";
-    mMarkerType   = "GEODETIC";
+    mMarkerName = "Tokoro";
+    mMarkerType = "GEODETIC";
 
     mObserver = "Tokoro";
     mAgency   = "Tokoro";
 
-    mReceiverNumber  = "0";
-    mReceiverType    = "NONE";
-    mReceiverVersion = "1.00";
+    mReceiverNumber  = "NA";
+    mReceiverType    = "NA";
+    mReceiverVersion = "NA";
 
-    mAntennaNumber = "0";
+    mAntennaSerial = "0";
+    mAntennaNumber = "GPPNULLANTENNA";
     mAntennaType   = "NONE";
 
     mApproxPosition = {0.0, 0.0, 0.0};
@@ -188,9 +188,9 @@ void Builder::header_begin() {
 
     auto date = ts::Utc::now();
 
-    mStream << std::setw(9) << std::left << mVersion             //
-            << std::setw(11) << std::left << ""                  //
-            << std::setw(20) << std::left << "OBSERVATION DATA"  //
+    mStream << std::setw(9) << std::right << std::fixed << std::setprecision(2) << mVersion  //
+            << std::setw(11) << std::left << ""                                              //
+            << std::setw(20) << std::left << "OBSERVATION DATA"                              //
             << std::setw(20) << std::left
             << observation_data_type(mGpsSupport, mGloSupport, mGalSupport, mBdsSupport)  //
             << std::setw(20) << std::left << "RINEX VERSION / TYPE" << std::endl;
@@ -207,10 +207,6 @@ void Builder::header_begin() {
     // MARKER NAME
     mStream << std::setw(60) << std::left << mMarkerName  //
             << std::setw(20) << std::left << "MARKER NAME" << std::endl;
-    // MARKER NUMBER
-    mStream << std::setw(20) << std::left << mMarkerNumber  //
-            << std::setw(40) << std::left << ""             //
-            << std::setw(20) << std::left << "MARKER NUMBER" << std::endl;
     // MARKER TYPE
     mStream << std::setw(20) << std::left << mMarkerType  //
             << std::setw(40) << std::left << ""           //
@@ -228,17 +224,19 @@ void Builder::header_begin() {
             << std::setw(20) << std::left << "REC # / TYPE / VERS" << std::endl;
 
     // ANT # / TYPE
-    mStream << std::setw(20) << std::left << mAntennaNumber  //
+    mStream << std::setw(20) << std::left << mAntennaSerial  //
+            << std::setw(20) << std::left << mAntennaNumber  //
             << std::setw(20) << std::left << mAntennaType    //
-            << std::setw(20) << std::left << ""              //
             << std::setw(20) << std::left << "ANT # / TYPE" << std::endl;
 
     // APPROX POSITION XYZ
     mStream << std::setw(14) << std::right << std::fixed << std::setprecision(4)
-            << mApproxPosition.x << std::setw(14) << std::right << std::fixed
-            << std::setprecision(4) << mApproxPosition.y << std::setw(14) << std::right
-            << std::fixed << std::setprecision(4) << mApproxPosition.z << std::setw(18) << std::left
-            << ""  //
+            << mApproxPosition.x  //
+            << std::setw(14) << std::right << std::fixed << std::setprecision(4)
+            << mApproxPosition.y  //
+            << std::setw(14) << std::right << std::fixed << std::setprecision(4)
+            << mApproxPosition.z                 //
+            << std::setw(18) << std::left << ""  //
             << std::setw(20) << std::left << "APPROX POSITION XYZ" << std::endl;
 
     // ANTENNA: DELTA H/E/N
@@ -261,7 +259,8 @@ void Builder::header_time_of_first_observation(ts::Tai const& time) {
         << std::setw(6) << std::right << tp.hour                                            //
         << std::setw(6) << std::right << tp.minutes                                         //
         << std::setw(13) << std::right << std::fixed << std::setprecision(7) << tp.seconds  //
-        << std::setw(8) << std::right << "GPS"                                              //
+        << std::setw(5) << ""                                                               //
+        << std::setw(3) << std::right << "GPS"                                              //
         << std::setw(9) << ""                                                               //
         << std::setw(20) << std::left << "TIME OF FIRST OBS" << std::endl;
 }
@@ -328,6 +327,31 @@ void Builder::header_observation_types_gnss(std::vector<ObservationType> const& 
     }
 }
 
+void Builder::header_phase_shift_type(ObservationType const& type, char gnss_ch) {
+    VSCOPE_FUNCTION();
+
+    if (type.kind != ObservationKind::Phase) {
+        return;
+    }
+
+    mStream << gnss_ch << " " << type.kind_char() << type.signal_id.to_rinex() << " "
+            << std::setw(60 - 6) << "" << std::setw(20) << std::left << "SYS / PHASE SHIFT TYPE"
+            << std::endl;
+}
+
+void Builder::header_phase_shift() {
+    VSCOPE_FUNCTION();
+
+    for (auto const& type : mGpsTypeOrder)
+        header_phase_shift_type(type, 'G');
+    for (auto const& type : mGloTypeOrder)
+        header_phase_shift_type(type, 'R');
+    for (auto const& type : mGalTypeOrder)
+        header_phase_shift_type(type, 'E');
+    for (auto const& type : mBdsTypeOrder)
+        header_phase_shift_type(type, 'C');
+}
+
 void Builder::epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites) {
     VSCOPE_FUNCTION();
 
@@ -349,6 +373,7 @@ void Builder::epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites) {
         header_begin();
         header_observation_types();
         header_time_of_first_observation(time);
+        header_phase_shift();
         header_end();
 
         mInitialized = true;
@@ -418,7 +443,7 @@ void Builder::observations(SatelliteId                                        sa
         if (it == observations.end()) {
             mStream << std::setw(14) << std::right << "" << "  ";
         } else if (type.kind == ObservationKind::Phase) {
-            mStream << std::setw(15) << std::right << std::fixed << std::setprecision(4)
+            mStream << std::setw(15) << std::right << std::fixed << std::setprecision(3)
                     << it->second << " ";
         } else {
             mStream << std::setw(14) << std::right << std::fixed << std::setprecision(3)

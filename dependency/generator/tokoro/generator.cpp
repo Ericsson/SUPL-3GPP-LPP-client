@@ -73,6 +73,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
     initialize_satellites();
 
     mGenerationTime = ts::Tai::now();
+    mLastRinexEpoch = mGenerationTime;
 }
 
 ReferenceStation::~ReferenceStation() NOEXCEPT = default;
@@ -339,47 +340,52 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     msm_bds.time = mGenerationTime;
 
     if (mGenerateRinex) {
-        mRinexBuilder.set_antenna_position(mRtcmGroundPosition);
-        mRinexBuilder.set_gps_support(mGenerateGps);
-        mRinexBuilder.set_glo_support(mGenerateGlo);
-        mRinexBuilder.set_gal_support(mGenerateGal);
-        mRinexBuilder.set_bds_support(mGenerateBds);
+        if (mLastRinexEpoch < mGenerationTime) {
+            mRinexBuilder.set_antenna_position(mRtcmGroundPosition);
+            mRinexBuilder.set_gps_support(mGenerateGps);
+            mRinexBuilder.set_glo_support(mGenerateGlo);
+            mRinexBuilder.set_gal_support(mGenerateGal);
+            mRinexBuilder.set_bds_support(mGenerateBds);
 
-        std::vector<SatelliteId> rinex_satellites;
-        for (auto& satellite : mSatellites) {
-            if (!satellite.enabled()) continue;
-            if (!mGenerateGps && satellite.id().gnss() == SatelliteId::Gnss::GPS) continue;
-            if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
-            if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
-            if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
-            rinex_satellites.push_back(satellite.id());
-        }
-
-        mRinexBuilder.epoch(mGenerationTime, rinex_satellites);
-
-        std::unordered_map<format::rinex::ObservationType, double> rinex_observations;
-        for (auto& satellite : mSatellites) {
-            if (!satellite.enabled()) continue;
-            if (!mGenerateGps && satellite.id().gnss() == SatelliteId::Gnss::GPS) continue;
-            if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
-            if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
-            if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
-            rinex_observations.clear();
-
-            for (auto& observation : satellite.observations()) {
-                format::rinex::ObservationType type;
-                type.kind                = format::rinex::ObservationKind::Code;
-                type.signal_id           = observation.signal_id();
-                rinex_observations[type] = observation.code_range();
-
-                type.kind                = format::rinex::ObservationKind::Phase;
-                rinex_observations[type] = observation.phase_range() / observation.wave_length();
-
-                type.kind                = format::rinex::ObservationKind::SignalStrength;
-                rinex_observations[type] = observation.carrier_to_noise_ratio();
+            std::vector<SatelliteId> rinex_satellites;
+            for (auto& satellite : mSatellites) {
+                if (!satellite.enabled()) continue;
+                if (!mGenerateGps && satellite.id().gnss() == SatelliteId::Gnss::GPS) continue;
+                if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
+                if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
+                if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
+                rinex_satellites.push_back(satellite.id());
             }
 
-            mRinexBuilder.observations(satellite.id(), rinex_observations);
+            mRinexBuilder.epoch(mGenerationTime, rinex_satellites);
+
+            std::unordered_map<format::rinex::ObservationType, double> rinex_observations;
+            for (auto& satellite : mSatellites) {
+                if (!satellite.enabled()) continue;
+                if (!mGenerateGps && satellite.id().gnss() == SatelliteId::Gnss::GPS) continue;
+                if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
+                if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
+                if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
+                rinex_observations.clear();
+
+                for (auto& observation : satellite.observations()) {
+                    format::rinex::ObservationType type;
+                    type.kind                = format::rinex::ObservationKind::Code;
+                    type.signal_id           = observation.signal_id();
+                    rinex_observations[type] = observation.code_range();
+
+                    type.kind = format::rinex::ObservationKind::Phase;
+                    rinex_observations[type] =
+                        observation.phase_range() / observation.wave_length();
+
+                    type.kind                = format::rinex::ObservationKind::SignalStrength;
+                    rinex_observations[type] = observation.carrier_to_noise_ratio();
+                }
+
+                mRinexBuilder.observations(satellite.id(), rinex_observations);
+            }
+
+            mLastRinexEpoch = mGenerationTime;
         }
     }
 

@@ -109,6 +109,7 @@ private:
     std::unordered_set<SignalId>    mSignalIncludeSet;
 
     ts::Tai mGenerationTime;
+    ts::Tai mLastRinexEpoch;
 
     format::rinex::Builder mRinexBuilder;
     Generator&             mGenerator;
