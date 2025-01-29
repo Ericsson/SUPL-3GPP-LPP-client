@@ -136,9 +136,6 @@ double BdsEphemeris::calculate_clock_bias(ts::Bdt const& time, double e_k) const
     VERBOSEF("delta_t_sv: %+.14f", delta_t_sv);
 
     auto clock_bias = delta_t_sv;
-#if 0
-    clock_bias += t_r;
-#endif
     VERBOSEF("clock_bias: %+.14f", clock_bias);
     return clock_bias;
 }

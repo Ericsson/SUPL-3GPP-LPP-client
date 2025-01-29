@@ -299,6 +299,8 @@ bool D1Collector::process(uint8_t prn, D1Subframe const& subframe,
             return false;
         }
 
+        // TODO(ewasjon): Check TOC=TOE
+
         VERBOSEF("processing ephemeris for PRN %u (week: %u)", prn,
                  internal_ephemeris.subframe1_data.wn);
 
@@ -339,6 +341,17 @@ bool D1Collector::process(uint8_t prn, D1Subframe const& subframe,
         // [3GPP TS 37.355]: In the case of broadcasted BDS B1I/B3I ephemeris, the iod contains 11
         // MSB bits of the toe as defined in [23], [50].
         ephemeris.lpp_iod = static_cast<uint16_t>(static_cast<uint32_t>(ephemeris.toe) >> 9);
+
+        if (ephemeris.toe > static_cast<double>(sf1.sow) + 302400.0) {
+            ephemeris.week_number += 1;
+        } else if (ephemeris.toe < static_cast<double>(sf1.sow) - 302400.0) {
+            ephemeris.week_number -= 1;
+        }
+
+        ephemeris.toc_time =
+            ts::Bdt::from_week_tow(ephemeris.week_number, static_cast<int64_t>(ephemeris.toc), 0.0);
+        ephemeris.toe_time =
+            ts::Bdt::from_week_tow(ephemeris.week_number, static_cast<int64_t>(ephemeris.toe), 0.0);
 
         internal_ephemeris.subframe1 = false;
         internal_ephemeris.subframe2 = false;
