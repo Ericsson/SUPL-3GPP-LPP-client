@@ -208,6 +208,30 @@ void Observation::compute_ranges() NOEXCEPT {
     VERBOSEF("clock_bias:   %+24.10f (%gs,%gm/s)", clock_bias0, -mCurrent->eph_clock_bias,
              (clock_bias1 - clock_bias0) / time_delta);
 
+    // TODO(ewasjon): Think more about how we compute the carrier-to-noise ratio
+    auto carrier_to_noise_ratio = 45.0;
+    if (mIonospheric.quality_valid) {
+        // TODO(ewasjon): What formula should we use to compute the carrier-to-noise ratio?
+        auto delta = mIonospheric.quality - 33.6664;
+        if (delta > 0) delta = 0;
+        auto value = delta * delta * 0.002;
+        carrier_to_noise_ratio += mIonospheric.quality * value;
+        VERBOSEF("cnr:          %+24.10f (%g)", carrier_to_noise_ratio, mIonospheric.quality);
+    }
+
+    if (mCurrent->true_elevation < constant::DEG2RAD * 40.0) {
+        // TODO(ewasjon): What formula should we use to compute the carrier-to-noise ratio?
+        auto delta = 40.0 - constant::RAD2DEG * mCurrent->true_elevation;
+        auto x     = delta * 0.05;
+        auto value = x * x;
+        carrier_to_noise_ratio -= value;
+        VERBOSEF("cnr:          %+24.10f (%gdeg)", carrier_to_noise_ratio,
+                 constant::RAD2DEG * mCurrent->true_elevation);
+    }
+
+    mCarrierToNoiseRatio = carrier_to_noise_ratio;
+    mLockTime            = 525.0;  // TODO: How do we determine this value?
+
 #ifdef DATA_TRACING
     datatrace::Observation dt_obs{};
     dt_obs.frequency                   = mFrequency * 1.0e3;
