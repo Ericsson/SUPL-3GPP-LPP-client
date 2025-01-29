@@ -50,7 +50,7 @@ std::unique_ptr<Message> GstMessage::parse(std::string prefix, std::string const
 
     // check number of tokens
     if (tokens.size() < 8) {
-        WARNF("invalid number of tokens: %zu", tokens.size());
+        DEBUGF("invalid number of tokens: %zu", tokens.size());
         return nullptr;
     }
 
@@ -68,7 +68,7 @@ std::unique_ptr<Message> GstMessage::parse(std::string prefix, std::string const
     if (success) {
         return std::unique_ptr<GstMessage>(message);
     } else {
-        WARNF("failed to parse message");
+        DEBUGF("failed to parse message");
         delete message;
         return nullptr;
     }

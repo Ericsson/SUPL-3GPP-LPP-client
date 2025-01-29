@@ -13,7 +13,7 @@ static bool parse_double(std::string const& token, double& value) {
         value = std::stod(token);
         return true;
     } catch (...) {
-        WARNF("failed to parse double: \"%s\"", token.c_str());
+        DEBUGF("failed to parse double: \"%s\"", token.c_str());
         return false;
     }
 }
@@ -30,7 +30,7 @@ static bool parse_double_opt(std::string const& token, double& value) {
 
 static bool parse_mode_indicator(std::string const& token, ModeIndicator& mode_indicator) {
     if (token.size() != 1) {
-        WARNF("invalid mode indicator: \"%s\"", token.c_str());
+        DEBUGF("invalid mode indicator: \"%s\"", token.c_str());
         return false;
     }
 
@@ -74,7 +74,7 @@ std::unique_ptr<Message> VtgMessage::parse(std::string prefix, std::string const
 
     // check number of tokens
     if (tokens.size() < 9) {
-        WARNF("invalid number of tokens: %zu", tokens.size());
+        DEBUGF("invalid number of tokens: %zu", tokens.size());
         return nullptr;
     }
 
@@ -91,7 +91,7 @@ std::unique_ptr<Message> VtgMessage::parse(std::string prefix, std::string const
     if (success) {
         return std::unique_ptr<VtgMessage>(message);
     } else {
-        WARNF("failed to parse message");
+        DEBUGF("failed to parse message");
         delete message;
         return nullptr;
     }
