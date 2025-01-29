@@ -128,17 +128,27 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
     if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
         // Nothing to do, the generator will generate when assistance data is received
     } else if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStep ||
-               mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepAligned) {
+               mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepAligned ||
+               mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepLast) {
         // Setup a periodic timer to generate every time step
         auto interval = std::chrono::milliseconds(static_cast<int>(mConfig.time_step * 1000.0));
         mPeriodicTask =
             std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
         mPeriodicTask->callback = [this]() {
             ASSERT(mGenerator, "generator is null");
-            if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepAligned) {
+            if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepLast) {
                 generate(mGenerator->last_correction_data_time());
             } else if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStep) {
                 generate(ts::Tai::now());
+            } else if (mConfig.generation_strategy ==
+                       TokoroConfig::GenerationStrategy::TimeStepAligned) {
+                auto now          = ts::Tai::now();
+                auto full_seconds = now.timestamp().full_seconds();
+                auto aligned_full_seconds =
+                    std::floor(full_seconds / mConfig.time_step) * mConfig.time_step;
+                auto aligned      = ts::Timestamp{aligned_full_seconds};
+                auto aligned_time = ts::Tai{aligned};
+                generate(aligned_time);
             } else {
                 WARNF("unsupported generation strategy");
             }

@@ -235,8 +235,10 @@ struct TokoroConfig {
 
     enum class GenerationStrategy {
         AssistanceData,   // Generate when assistance data is received
-        TimeStep,         // Generate every time step
-        TimeStepAligned,  // Generate every time step, using the same time step as the last
+        TimeStep,         // Generate every time step, using the current time
+        TimeStepAligned,  // Generate every time step, using the current time floored to the nearest
+                          // time step
+        TimeStepLast,     // Generate every time step, using the same time step as the last
                           // assistance data
     };
 

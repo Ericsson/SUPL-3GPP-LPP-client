@@ -295,11 +295,13 @@ static void parse(Config* config) {
             tokoro.generation_strategy = TokoroConfig::GenerationStrategy::TimeStep;
         } else if (s == "time-step-aligned") {
             tokoro.generation_strategy = TokoroConfig::GenerationStrategy::TimeStepAligned;
+        } else if (s == "time-step-last") {
+            tokoro.generation_strategy = TokoroConfig::GenerationStrategy::TimeStepLast;
         } else if (s == "assistance") {
             tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
         } else {
             throw args::ValidationError("--tkr-gen must be 'assistance', 'time-step', or "
-                                        "'time-step-aligned', got `" +
+                                        "'time-step-aligned', 'time-step-last', got `" +
                                         s + "`");
         }
     }
@@ -372,6 +374,8 @@ static void dump(TokoroConfig const& config) {
         case TokoroConfig::GenerationStrategy::AssistanceData: return "assistance data";
         case TokoroConfig::GenerationStrategy::TimeStep: return "time step";
         case TokoroConfig::GenerationStrategy::TimeStepAligned: return "time step aligned";
+        case TokoroConfig::GenerationStrategy::TimeStepLast: return "time step last";
+        default: return "unknown";
         }
     }());
 
