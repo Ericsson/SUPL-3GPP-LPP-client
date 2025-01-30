@@ -53,6 +53,12 @@ public:
         return mLppId < other.mLppId;
     }
 
+    inline bool operator>(SatelliteId const& other) const {
+        if (mGnss > other.mGnss) return true;
+        if (mGnss < other.mGnss) return false;
+        return mLppId > other.mLppId;
+    }
+
 private:
     explicit SatelliteId(Gnss gnss, int32_t lpp_id) : mGnss(gnss), mLppId(lpp_id) {}
 

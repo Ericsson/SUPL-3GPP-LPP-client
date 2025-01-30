@@ -123,13 +123,14 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     FUNCTION_SCOPE();
 
     // Update lock tracking
-    LockTime lock_time{};
-    if (mLockTime.find(signal_id) == mLockTime.end()) {
+    SatelliteSignalId ss_id{satellite.id(), signal_id};
+    LockTime          lock_time{};
+    if (mLockTime.find(ss_id) == mLockTime.end()) {
         lock_time.time    = mGenerationTime;
         lock_time.seconds = 0;
         lock_time.lost    = true;
     } else {
-        lock_time.time    = mLockTime[signal_id];
+        lock_time.time    = mLockTime[ss_id];
         lock_time.seconds = mGenerationTime.difference_seconds(lock_time.time);
         lock_time.lost    = false;
     }
@@ -185,7 +186,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     }
 
     // Generate the observations
-    std::unordered_set<SignalId> active_signals;
+    std::unordered_set<SatelliteSignalId> active_signals;
     for (auto& satellite : mSatellites) {
         satellite.reset_observations();
 
@@ -237,7 +238,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
         for (auto const& observation : satellite.observations()) {
             if (!observation.is_valid()) continue;
-            active_signals.insert(observation.signal_id());
+            active_signals.insert(observation.ss_id());
         }
 
         DEBUGF("satellite %s: %zu observations", satellite.id().name(),
@@ -245,22 +246,24 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     }
 
     // Update the lock time
-    std::vector<SignalId> lost_lock;
-    for (auto& signal_id : mLockTime) {
-        if (active_signals.find(signal_id.first) == active_signals.end()) {
-            lost_lock.push_back(signal_id.first);
+    std::vector<SatelliteSignalId> lost_lock;
+    for (auto& id : mLockTime) {
+        if (active_signals.find(id.first) == active_signals.end()) {
+            lost_lock.push_back(id.first);
         }
     }
 
-    for (auto& signal_id : lost_lock) {
-        VERBOSEF("lock lost: %s", signal_id.name());
-        mLockTime.erase(signal_id);
+    VERBOSEF("lli: active=%zu, lost=%zu, total=%zu", active_signals.size(), lost_lock.size(),
+             mLockTime.size());
+    for (auto& id : lost_lock) {
+        VERBOSEF("lli -%s", id.to_string().c_str());
+        mLockTime.erase(id);
     }
 
-    for (auto& signal_id : active_signals) {
-        if (mLockTime.find(signal_id) == mLockTime.end()) {
-            VERBOSEF("lock acquired: %s", signal_id.name());
-            mLockTime[signal_id] = mGenerationTime;
+    for (auto& id : active_signals) {
+        if (mLockTime.find(id) == mLockTime.end()) {
+            VERBOSEF("lli +%s", id.to_string().c_str());
+            mLockTime[id] = mGenerationTime;
         }
     }
 

@@ -123,7 +123,7 @@ private:
     std::unordered_set<SatelliteId> mSatelliteIncludeSet;
     std::unordered_set<SignalId>    mSignalIncludeSet;
 
-    std::unordered_map<SignalId, ts::Tai> mLockTime;
+    std::unordered_map<SatelliteSignalId, ts::Tai> mLockTime;
 
     ts::Tai mGenerationTime;
     ts::Tai mLastRinexEpoch;

@@ -593,3 +593,7 @@ long SignalId::lpp_id() const {
     assert(mLppId >= 0 && mLppId < 24);
     return mLppId;
 }
+
+std::string SatelliteSignalId::to_string() const {
+    return mSatellite.to_string() + " " + mSignal.to_string();
+}

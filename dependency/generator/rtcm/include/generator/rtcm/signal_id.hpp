@@ -1,5 +1,6 @@
 #pragma once
 #include <generator/rtcm/maybe.hpp>
+#include <generator/rtcm/satellite_id.hpp>
 
 #include <string>
 
@@ -36,6 +37,12 @@ public:
     }
 
     inline bool operator!=(SignalId const& other) const { return !(*this == other); }
+
+    inline bool operator<(SignalId const& other) const {
+        if (mGnss < other.mGnss) return true;
+        if (mGnss > other.mGnss) return false;
+        return mLppId < other.mLppId;
+    }
 
 private:
     explicit SignalId(Gnss gnss, int32_t lpp_id) : mGnss(gnss), mLppId(lpp_id) {}
@@ -127,6 +134,44 @@ struct hash<SignalId> {
         auto hash_gnss   = std::hash<int>()(static_cast<int>(k.gnss()));
         auto hash_lpp_id = std::hash<long>()(k.lpp_id());
         return hash_gnss ^ hash_lpp_id;
+    }
+};
+}  // namespace std
+
+class SatelliteSignalId {
+public:
+    SatelliteSignalId() = default;
+    SatelliteSignalId(SatelliteId satellite, SignalId signal) : mSatellite(satellite), mSignal(signal) {}
+
+    NODISCARD SatelliteId satellite() const { return mSatellite; }
+    NODISCARD SignalId    signal() const { return mSignal; }
+
+    NODISCARD std::string to_string() const;
+
+    inline bool operator==(SatelliteSignalId const& other) const {
+        return mSatellite == other.mSatellite && mSignal == other.mSignal;
+    }
+
+    inline bool operator!=(SatelliteSignalId const& other) const { return !(*this == other); }
+
+    inline bool operator<(SatelliteSignalId const& other) const {
+        if (mSatellite < other.mSatellite) return true;
+        if (mSatellite > other.mSatellite) return false;
+        return mSignal < other.mSignal;
+    }
+
+private:
+    SatelliteId mSatellite;
+    SignalId    mSignal;
+};
+
+namespace std {
+template <>
+struct hash<SatelliteSignalId> {
+    std::size_t operator()(SatelliteSignalId const& k) const NOEXCEPT {
+        auto hash_satellite = std::hash<SatelliteId>()(k.satellite());
+        auto hash_signal    = std::hash<SignalId>()(k.signal());
+        return hash_satellite ^ hash_signal;
     }
 };
 }  // namespace std

@@ -95,6 +95,7 @@ public:
 
     NODISCARD SatelliteId const& sv_id() const NOEXCEPT { return mSvId; }
     NODISCARD SignalId const&    signal_id() const NOEXCEPT { return mSignalId; }
+    NODISCARD SatelliteSignalId  ss_id() const NOEXCEPT { return {mSvId, mSignalId}; }
 
 private:
     SatelliteId mSvId;
