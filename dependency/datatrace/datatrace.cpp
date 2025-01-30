@@ -3,6 +3,7 @@
 #include <iomanip>
 #include <mosquitto.h>
 #include <sstream>
+#include <unistd.h>
 
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
@@ -120,7 +121,15 @@ void publish(std::string const& topic, std::string const& ss_data) {
         VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
                  topic.c_str(), ss_size, result);
         if (result != MOSQ_ERR_SUCCESS) {
-            DEBUGF("failed to publish (attempt %d): %s", count, mosquitto_strerror(result));
+            if (count >= 2) {
+                DEBUGF("failed to publish \"%s\" (attempt %d): %s", topic.c_str(), count,
+                       mosquitto_strerror(result));
+            } else {
+                VERBOSEF("failed to publish \"%s\" (attempt %d): %s", topic.c_str(), count,
+                         mosquitto_strerror(result));
+            }
+            // Yield to allow the mosquitto thread to process the message
+            usleep(0);
         } else {
             break;
         }
