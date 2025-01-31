@@ -176,9 +176,19 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
     mIonospheric.height_correction = vtec_mf_0 / vtec_mf_alt;
 }
 
-void Observation::compute_antenna_phase_variation() NOEXCEPT {
+void Observation::compute_antenna_phase_variation(format::antex::Antex const& antex) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
     mAntennaPhaseVariation.valid = false;
+
+    format::antex::PhaseVariation phase_variation{};
+    if (!antex.phase_variation(mSvId, mSignalId, mCurrent->reception_time, mCurrent->true_azimuth,
+                               mCurrent->true_nadir, phase_variation)) {
+        VERBOSEF("antenna phase variation not found");
+        return;
+    }
+
+    mAntennaPhaseVariation.correction = phase_variation.value;
+    mAntennaPhaseVariation.valid      = true;
 }
 
 void Observation::compute_ranges() NOEXCEPT {

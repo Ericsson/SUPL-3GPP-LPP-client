@@ -40,6 +40,11 @@ public:
 
     NODISCARD static int64_t days_from_ymd(int64_t year, int64_t month, int64_t day);
 
+    NODISCARD bool operator<(Gps const& other) const { return tm < other.tm; }
+    NODISCARD bool operator<=(Gps const& other) const { return tm <= other.tm; }
+    NODISCARD bool operator>(Gps const& other) const { return tm > other.tm; }
+    NODISCARD bool operator>=(Gps const& other) const { return tm >= other.tm; }
+
 protected:
     NODISCARD Timestamp utc_timestamp() const;
 

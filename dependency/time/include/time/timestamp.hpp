@@ -42,11 +42,11 @@ public:
     }
 
     void normalize() {
-        if(mFraction < 0.0) {
+        if (mFraction < 0.0) {
             auto underflow = static_cast<int64_t>(-mFraction) + 1;
             mSeconds -= underflow;
             mFraction += static_cast<double>(underflow);
-        } else if(mFraction >= 1.0) {
+        } else if (mFraction >= 1.0) {
             auto overflow = static_cast<int64_t>(mFraction);
             mSeconds += overflow;
             mFraction -= static_cast<double>(overflow);
@@ -67,6 +67,20 @@ public:
         mFraction -= sec;
         normalize();
     }
+
+    NODISCARD bool operator==(Timestamp const& other) const {
+        return seconds() == other.seconds() && fraction() == other.fraction();
+    }
+
+    NODISCARD bool operator<(Timestamp const& other) const {
+        return seconds() < other.seconds() ||
+               (seconds() == other.seconds() && fraction() < other.fraction());
+    }
+    NODISCARD bool operator<=(Timestamp const& other) const {
+        return *this < other || *this == other;
+    }
+    NODISCARD bool operator>(Timestamp const& other) const { return !(*this <= other); }
+    NODISCARD bool operator>=(Timestamp const& other) const { return !(*this < other); }
 
 private:
     int64_t mSeconds;

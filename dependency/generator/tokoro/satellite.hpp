@@ -19,6 +19,7 @@ namespace tokoro {
 struct SatelliteState {
     ts::Tai reception_time;
     ts::Tai emission_time;
+    Float3 ground_position;
 
     /// Ephemeris Parameters
     Float3   eph_position;
@@ -36,6 +37,7 @@ struct SatelliteState {
     Float3 true_line_of_sight;
     double true_azimuth;
     double true_elevation;
+    double true_nadir;
 
     Float3 orbit_radial_axis;
     Float3 orbit_along_axis;

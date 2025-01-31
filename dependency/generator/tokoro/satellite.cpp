@@ -90,6 +90,7 @@ void Satellite::datatrace_report() NOEXCEPT {
     dt_sat.eph_position = mCurrentState.eph_position;
     dt_sat.elevation    = mCurrentState.true_elevation * constant::RAD2DEG;
     dt_sat.azimuth      = mCurrentState.true_azimuth * constant::RAD2DEG;
+    dt_sat.nadir        = mCurrentState.true_nadir * constant::RAD2DEG;
     dt_sat.iod          = mCurrentState.eph_iod;
     datatrace::report_satellite(mCurrentState.reception_time, mId.name(), dt_sat);
 #endif
@@ -236,6 +237,7 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
     state.eph_clock_bias += relativistic_correction;
     state.eph_relativistic_correction = relativistic_correction;
 
+    state.ground_position = ground_position;
     state.true_range =
         geometric_distance(state.true_position, ground_position, &state.true_line_of_sight);
     if (!state.true_line_of_sight.normalize()) {
@@ -285,6 +287,7 @@ bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_posi
 
     state.true_azimuth   = 0.0;
     state.true_elevation = 0.0;
+    state.true_nadir     = 0.0;
 
     if (state.true_range < 1.0) {
         VERBOSEF("satellite is too close");
@@ -304,11 +307,25 @@ bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_posi
             azimuth += 2 * constant::PI;
         }
 
-        auto elevation       = std::asin(enu.z);
+        auto elevation = std::asin(enu.z);
+
+        auto satellite_to_earth    = -state.true_position;
+        auto satellite_to_receiver = state.ground_position - state.true_position;
+        if (!satellite_to_earth.normalize()) {
+            WARNF("failed to normalize satellite to earth vector");
+            return false;
+        } else if (!satellite_to_receiver.normalize()) {
+            WARNF("failed to normalize satellite to receiver vector");
+            return false;
+        }
+
+        auto nadir           = std::acos(dot_product(satellite_to_earth, satellite_to_receiver));
         state.true_azimuth   = azimuth;
         state.true_elevation = elevation;
-        VERBOSEF("azimuth: %.2f, elevation: %.2f", state.true_azimuth * constant::RAD2DEG,
-                 state.true_elevation * constant::RAD2DEG);
+        state.true_nadir     = nadir;
+        VERBOSEF("azimuth: %.2f, elevation: %.2f, nadir: %.2f",
+                 state.true_azimuth * constant::RAD2DEG, state.true_elevation * constant::RAD2DEG,
+                 state.true_nadir * constant::RAD2DEG);
         return true;
     } else {
         VERBOSEF("altitude is below sea level");

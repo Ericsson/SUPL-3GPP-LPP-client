@@ -279,6 +279,8 @@ struct TokoroConfig {
 
     bool use_tropospheric_model;
     bool use_ionospheric_height_correction;
+
+    std::string antex_file;
 };
 #endif
 

@@ -222,6 +222,13 @@ static args::Flag gUseIonosphericHeightCorrection{
     {"tkr-use-ionospheric-height-correction"},
 };
 
+static args::ValueFlag<std::string> gAntexFile{
+    gGroup,
+    "file",
+    "Antex file for antenna phase variation correction",
+    {"tkr-antex-file"},
+};
+
 static void setup() {
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
@@ -270,6 +277,8 @@ static void parse(Config* config) {
 
     tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
     tokoro.time_step           = 1.0;
+
+    tokoro.antex_file = "";
 
     if (gEnable) tokoro.enabled = true;
     if (gNoGPS) tokoro.generate_gps = false;
@@ -351,6 +360,7 @@ static void parse(Config* config) {
     if (gIonoOptional) tokoro.require_iono = false;
     if (gUseTroposphericModel) tokoro.use_tropospheric_model = true;
     if (gUseIonosphericHeightCorrection) tokoro.use_ionospheric_height_correction = true;
+    if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
 }
 
 static void dump(TokoroConfig const& config) {
@@ -409,6 +419,8 @@ static void dump(TokoroConfig const& config) {
     DEBUGF("use tropospheric model:  %s", config.use_tropospheric_model ? "true" : "false");
     DEBUGF("use ionospheric height:  %s",
            config.use_ionospheric_height_correction ? "true" : "false");
+
+    DEBUGF("antex file: \"%s\"", config.antex_file.c_str());
 }
 
 }  // namespace tokoro

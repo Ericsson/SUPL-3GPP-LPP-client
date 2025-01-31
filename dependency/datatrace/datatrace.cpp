@@ -236,6 +236,7 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
     }
     if (sat.elevation.valid) ss << ",\"elevation\":" << sat.elevation.value;
     if (sat.azimuth.valid) ss << ",\"azimuth\":" << sat.azimuth.value;
+    if (sat.nadir.valid) ss << ",\"nadir\":" << sat.nadir.value;
     if (sat.iod.valid) ss << ",\"iod\":" << sat.iod.value;
     if (sat.eph_position.valid) {
         ss << ",\"eph_pos_x\":" << sat.eph_position.value.x;

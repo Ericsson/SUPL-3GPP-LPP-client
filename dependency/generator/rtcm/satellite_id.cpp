@@ -39,6 +39,36 @@ SatelliteId SatelliteId::from_bds_prn(uint8_t prn) {
     }
 }
 
+SatelliteId SatelliteId::from_string(std::string const& str) {
+    if (str.size() < 3) {
+        return invalid();
+    }
+
+    Gnss gnss = Gnss::UNKNOWN;
+    switch (str[0]) {
+    case 'G': gnss = Gnss::GPS; break;
+    case 'R': gnss = Gnss::GLONASS; break;
+    case 'E': gnss = Gnss::GALILEO; break;
+    case 'C': gnss = Gnss::BEIDOU; break;
+    default: return invalid();
+    }
+
+    try {
+        char const* lpp_id_str = str.c_str() + 1;
+        char*       end;
+        long        lpp_id = strtol(lpp_id_str, &end, 10);
+        if (end != str.c_str() + str.size()) {
+            return invalid();
+        } else if (lpp_id < 1) {
+            return invalid();
+        } else {
+            return from_lpp(gnss, lpp_id - 1);
+        }
+    } catch (...) {
+        return invalid();
+    }
+}
+
 Maybe<long> SatelliteId::lpp_id() const {
     if (mLppId >= 0 && mLppId < LPP_SATELLITE_ID_LIMIT) {
         return mLppId;
@@ -105,12 +135,11 @@ static char const* GAL_NAMES[36] = {
 };
 
 static char const* BDS_NAMES[63] = {
-    "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12",
-    "C13", "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24",
-    "C25", "C26", "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36",
-    "C37", "C38", "C39", "C40", "C41", "C42", "C43", "C44", "C45", "C46", "C47", "C48",
-    "C49", "C50", "C51", "C52", "C53", "C54", "C55", "C56", "C57", "C58", "C59", "C60",
-    "C61", "C62", "C63",
+    "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13",
+    "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26",
+    "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36", "C37", "C38", "C39",
+    "C40", "C41", "C42", "C43", "C44", "C45", "C46", "C47", "C48", "C49", "C50", "C51", "C52",
+    "C53", "C54", "C55", "C56", "C57", "C58", "C59", "C60", "C61", "C62", "C63",
 };
 
 char const* SatelliteId::name() const {

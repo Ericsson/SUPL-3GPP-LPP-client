@@ -1,6 +1,7 @@
 #if defined(INCLUDE_GENERATOR_TOKORO)
 #include "tokoro.hpp"
 
+#include <format/antex/antex.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
 
@@ -124,6 +125,15 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
     mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
     mGenerator->set_rtoc(mConfig.rtoc);
     mGenerator->set_ocit(mConfig.ocit);
+
+    if (!config.antex_file.empty()) {
+        auto result = format::antex::Antex::from_file(config.antex_file);
+        if (!result) {
+            WARNF("failed to load antex file: \"%s\"", config.antex_file.c_str());
+        } else {
+            mGenerator->set_antex(std::move(result));
+        }
+    }
 
     if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
         // Nothing to do, the generator will generate when assistance data is received

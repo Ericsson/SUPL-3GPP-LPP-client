@@ -42,6 +42,7 @@ endif()
 if(${INCLUDE_GENERATOR_TOKORO})
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_TOKORO=1")
     target_link_libraries(example_client PRIVATE dependency::format::nav)
+    target_link_libraries(example_client PRIVATE dependency::format::antex)
     target_link_libraries(example_client PRIVATE dependency::generator::tokoro)
 endif()
 

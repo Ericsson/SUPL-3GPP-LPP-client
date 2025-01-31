@@ -29,6 +29,7 @@ struct Satellite {
     Option<Float3> velocity;
     Option<double> elevation;
     Option<double> azimuth;
+    Option<double> nadir;
     Option<long>   iod;
     Option<Float3> eph_position;
 };

@@ -172,6 +172,33 @@ static double GPS_FREQ[24] = {
     0.0,          // Reserved
 };
 
+static FrequencyType GPS_FREQ_TYPE[24] = {
+    FrequencyType::L1,       // L1 C/A
+    FrequencyType::L1,       // L1C
+    FrequencyType::L2,       // L2C
+    FrequencyType::L5,       // L5
+    FrequencyType::L1,       // L1 P
+    FrequencyType::L1,       // L1 Z-tracking
+    FrequencyType::L2,       // L2 C/A
+    FrequencyType::L2,       // L2 P
+    FrequencyType::L2,       // L2 Z-tracking
+    FrequencyType::L2,       // L2 L2C(M)
+    FrequencyType::L2,       // L2 L2C(L)
+    FrequencyType::L2,       // L2 L2C(M+L)
+    FrequencyType::L5,       // L5 I
+    FrequencyType::L5,       // L5 Q
+    FrequencyType::L5,       // L5 I+Q
+    FrequencyType::L1,       // L1 L1C(D)
+    FrequencyType::L1,       // L1 L1C(P)
+    FrequencyType::L1,       // L1 L1C(D+P)
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+};
+
 //
 // GLONASS
 //
@@ -264,6 +291,33 @@ static double GLONASS_FREQ[24] = {
     0.0,              // Reserved
     0.0,              // Reserved
     0.0,              // Reserved
+};
+
+static FrequencyType GLONASS_FREQ_TYPE[24] = {
+    FrequencyType::G1,       // G1 C/A
+    FrequencyType::G2,       // G2 C/A
+    FrequencyType::G3,       // G3
+    FrequencyType::G1,       // G1 P
+    FrequencyType::G2,       // G2 P
+    FrequencyType::G1,       // G1a(D)
+    FrequencyType::G1,       // G1a(P)
+    FrequencyType::G1,       // G1a (D+P)
+    FrequencyType::G2,       // G2a(I)
+    FrequencyType::G2,       // G2a(P)
+    FrequencyType::G2,       // G2a(I+P)
+    FrequencyType::G3,       // G3 I
+    FrequencyType::G3,       // G3 Q
+    FrequencyType::G3,       // G3 I+Q
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
 };
 
 //
@@ -365,6 +419,33 @@ static double GALILEO_FREQ[24] = {
     GALILEO_E5A_FREQ       // E5A I+Q
 };
 
+static FrequencyType GALILEO_FREQ_TYPE[24] = {
+    FrequencyType::E1,   // E1
+    FrequencyType::E5a,  // E5A
+    FrequencyType::E5b,  // E5B
+    FrequencyType::E6,   // E6
+    FrequencyType::E5,   // E5A + E5B
+    FrequencyType::E1,   // E1 C No data
+    FrequencyType::E1,   // E1 A
+    FrequencyType::E1,   // E1 B I/NAV OS/CS/SoL
+    FrequencyType::E1,   // E1 B+C
+    FrequencyType::E1,   // E1 A+B+C
+    FrequencyType::E6,   // E6 C
+    FrequencyType::E6,   // E6 A
+    FrequencyType::E6,   // E6 B
+    FrequencyType::E6,   // E6 B+C
+    FrequencyType::E6,   // E6 A+B+C
+    FrequencyType::E5b,  // E5B I
+    FrequencyType::E5b,  // E5B Q
+    FrequencyType::E5b,  // E5B I+Q
+    FrequencyType::E5,   // E5(A+B) I
+    FrequencyType::E5,   // E5(A+B) Q
+    FrequencyType::E5,   // E5(A+B) I+Q
+    FrequencyType::E5a,  // E5A I
+    FrequencyType::E5a,  // E5A Q
+    FrequencyType::E5a   // E5A I+Q
+};
+
 //
 // BDS
 //
@@ -462,6 +543,33 @@ static double BDS_FREQ[24] = {
     0.0               // Reserved
 };
 
+static FrequencyType BDS_FREQ_TYPE[24] = {
+    FrequencyType::B1,       // B1 I
+    FrequencyType::B1,       // B1 Q
+    FrequencyType::B1,       // B1 I+Q
+    FrequencyType::B3,       // B3 I
+    FrequencyType::B3,       // B3 Q
+    FrequencyType::B3,       // B3 I+Q
+    FrequencyType::B2,       // B2 I
+    FrequencyType::B2,       // B2 Q
+    FrequencyType::B2,       // B2 I+Q
+    FrequencyType::B1,       // B1C(D)
+    FrequencyType::B1,       // B1C(P)
+    FrequencyType::B1,       // B1C(D+P)
+    FrequencyType::B2a,      // B2a(D)
+    FrequencyType::B2a,      // B2a(P)
+    FrequencyType::B2a,      // B2a(D+P)
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN   // Reserved
+};
+
 SignalId SignalId::from_lpp(Gnss gnss, long id) {
     if (id >= 24) {
         return {};
@@ -555,6 +663,25 @@ double SignalId::frequency() const {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
         return 0.0;
+#endif
+    }
+}
+
+FrequencyType SignalId::frequency_type() const {
+    auto id = lpp_id();
+
+    if (mGnss == Gnss::GPS) {
+        return GPS_FREQ_TYPE[id];
+    } else if (mGnss == Gnss::GLONASS) {
+        return GLONASS_FREQ_TYPE[id];
+    } else if (mGnss == Gnss::GALILEO) {
+        return GALILEO_FREQ_TYPE[id];
+    } else if (mGnss == Gnss::BEIDOU) {
+        return BDS_FREQ_TYPE[id];
+    } else {
+        CORE_UNREACHABLE();
+#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+        return FrequencyType::UNKNOWN;
 #endif
     }
 }

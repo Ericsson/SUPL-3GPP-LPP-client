@@ -4,6 +4,27 @@
 
 #include <string>
 
+enum class FrequencyType {
+    UNKNOWN,
+    L1,
+    L2,
+    L5,
+    E1,
+    E5a,
+    E5b,
+    E5,
+    E6,
+    B1,
+    B2,
+    B2a,
+    B2b,
+    B2ab,
+    B3,
+    G1,
+    G2,
+    G3,
+};
+
 class SignalId {
 public:
     SignalId() = default;
@@ -25,10 +46,11 @@ public:
     NODISCARD Gnss gnss() const { return mGnss; }
     NODISCARD Maybe<long> as_msm() const;
     NODISCARD long        lpp_id() const;
-    NODISCARD std::string to_string() const;
-    NODISCARD const char* name() const;
-    NODISCARD double      frequency() const;
-    NODISCARD double      wavelength() const;
+    NODISCARD std::string   to_string() const;
+    NODISCARD const char*   name() const;
+    NODISCARD double        frequency() const;
+    NODISCARD double        wavelength() const;
+    NODISCARD FrequencyType frequency_type() const;
 
     NODISCARD std::string to_rinex() const;
 
@@ -141,7 +163,8 @@ struct hash<SignalId> {
 class SatelliteSignalId {
 public:
     SatelliteSignalId() = default;
-    SatelliteSignalId(SatelliteId satellite, SignalId signal) : mSatellite(satellite), mSignal(signal) {}
+    SatelliteSignalId(SatelliteId satellite, SignalId signal)
+        : mSatellite(satellite), mSignal(signal) {}
 
     NODISCARD SatelliteId satellite() const { return mSatellite; }
     NODISCARD SignalId    signal() const { return mSignal; }

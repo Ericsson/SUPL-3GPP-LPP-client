@@ -10,6 +10,7 @@
 #include <ephemeris/ephemeris.hpp>
 #include <ephemeris/gal.hpp>
 #include <ephemeris/gps.hpp>
+#include <format/antex/antex.hpp>
 #include <format/rinex/builder.hpp>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
@@ -145,6 +146,9 @@ public:
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
+    void set_antex(std::unique_ptr<format::antex::Antex> antex) NOEXCEPT {
+        mAntex = std::move(antex);
+    }
 
     std::shared_ptr<ReferenceStation>
     define_reference_station(ReferenceStationConfig const& config) NOEXCEPT;
@@ -165,9 +169,10 @@ private:
     std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
 
-    ts::Tai                             mLastCorrectionDataTime;
-    std::unique_ptr<CorrectionData>     mCorrectionData;
-    std::unique_ptr<CorrectionPointSet> mCorrectionPointSet;
+    ts::Tai                               mLastCorrectionDataTime;
+    std::unique_ptr<CorrectionData>       mCorrectionData;
+    std::unique_ptr<CorrectionPointSet>   mCorrectionPointSet;
+    std::unique_ptr<format::antex::Antex> mAntex;
 
     bool mIodConsistencyCheck;
     bool mUseReceptionTimeForOrbitAndClockCorrections;
