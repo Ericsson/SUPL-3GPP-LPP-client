@@ -7,9 +7,11 @@
 #define LOGLET_NAMEPASTE2(a, b) a##b
 #define LOGLET_NAMEPASTE(a, b) LOGLET_NAMEPASTE2(a, b)
 
+#if !defined(DISABLE_STRERRORNAME_NP)
 #if defined(_GNU_SOURCE) && defined(__GLIBC__) && defined(__GLIBC_MINOR__)
 #if (__GLIBC__ > 2) || ((__GLIBC__ == 2) && (__GLIBC_MINOR__ >= 30))
 #define HAVE_STRERRORNAME_NP
+#endif
 #endif
 #endif
 

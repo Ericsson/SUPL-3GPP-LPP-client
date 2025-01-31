@@ -21,6 +21,10 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     add_definitions(-DDEBUG=1)
 endif()
 
+if(${DISABLE_STRERRORNAME_NP})
+    add_definitions(-DDISABLE_STRERRORNAME_NP=1)
+endif()
+
 add_subdirectory("dependency")
 add_subdirectory("external")
 
