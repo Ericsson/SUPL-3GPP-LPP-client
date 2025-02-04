@@ -31,9 +31,9 @@ static double interpolate_coef(double lat_deg, double const coef[5]) {
     auto lat_abs = std::abs(lat_deg);
     auto index   = static_cast<int>(lat_abs / 15.0);
 
-    if (index < 1) {
+    if (index < 0) {
         return coef[0];
-    } else if (index > 4) {
+    } else if (index >= 4) {
         return coef[4];
     }
 
