@@ -38,6 +38,10 @@ public:
     void vrs_mode_dynamic();
     void generate(ts::Tai const& generation_time);
 
+    bool is_gps_enabled();
+    bool is_gal_enabled();
+    bool is_bds_enabled();
+
 private:
     OutputConfig const&                                  mOutput;
     TokoroConfig const&                                  mConfig;

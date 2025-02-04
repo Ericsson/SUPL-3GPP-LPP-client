@@ -180,6 +180,7 @@ EphemerisResult BdsEphemeris::compute(ts::Bdt const& time) const NOEXCEPT {
 
     // calculate the argument of latitude
     auto phi_k = v_k + omega;
+    VERBOSEF("omega: %f", omega);
     VERBOSEF("phi_k: %f", phi_k);
 
     // calculate the second harmonic perturbations

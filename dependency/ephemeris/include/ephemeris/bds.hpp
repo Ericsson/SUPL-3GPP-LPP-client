@@ -14,6 +14,8 @@ struct BdsEphemeris {
     uint16_t lpp_iod;
     uint8_t  iode;
     uint8_t  iodc;
+    uint8_t  aode;
+    uint8_t  aodc;
 
     ts::Bdt toc_time;
     ts::Bdt toe_time;

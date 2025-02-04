@@ -27,6 +27,7 @@ void TokoroEphemerisUbx::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
 
 void TokoroEphemerisUbx::handle_gps(format::ubx::RxmSfrbx* sfrbx) {
     VSCOPE_FUNCTION();
+    if (!mTokoro.is_gps_enabled()) return;
     if (sfrbx->sig_id() == 0) {
         handle_gps_lnav(sfrbx);
     } else {
@@ -52,6 +53,7 @@ void TokoroEphemerisUbx::handle_gal_inav(format::ubx::RxmSfrbx* sfrbx) {
 
 void TokoroEphemerisUbx::handle_gal(format::ubx::RxmSfrbx* sfrbx) {
     VSCOPE_FUNCTION();
+    if (!mTokoro.is_gal_enabled()) return;
     if (sfrbx->sig_id() == 5) {
         handle_gal_inav(sfrbx);
     } else {
@@ -77,6 +79,7 @@ void TokoroEphemerisUbx::handle_bds_d1(format::ubx::RxmSfrbx* sfrbx) {
 
 void TokoroEphemerisUbx::handle_bds(format::ubx::RxmSfrbx* sfrbx) {
     VSCOPE_FUNCTION();
+    if (!mTokoro.is_bds_enabled()) return;
     if (sfrbx->sig_id() == 0) {
         handle_bds_d1(sfrbx);
     } else {
@@ -174,6 +177,18 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
 
 Tokoro::~Tokoro() {
     VSCOPE_FUNCTION();
+}
+
+bool Tokoro::is_gps_enabled() {
+    return mConfig.generate_gps;
+}
+
+bool Tokoro::is_gal_enabled() {
+    return mConfig.generate_galileo;
+}
+
+bool Tokoro::is_bds_enabled() {
+    return mConfig.generate_beidou;
 }
 
 void Tokoro::update_location_information(lpp::LocationInformation location_information) NOEXCEPT {

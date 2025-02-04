@@ -177,9 +177,9 @@ static bool decode_subframe3(Words const& words, D1Subframe3& subframe) NOEXCEPT
     auto omega0_msb    = words.u32(211, 21);
     auto omega0_lsb    = words.u32(240, 11);
     auto omega0        = (omega0_msb << 11) | omega0_lsb;
-    auto omega_msb     = words.u32(251, 13);
-    auto omega_lsb     = words.u32(270, 11);
-    auto omega         = (omega_msb << 11) | omega_lsb;
+    auto omega_msb     = words.u32(251, 11);
+    auto omega_lsb     = words.u32(270, 21);
+    auto omega         = (omega_msb << 21) | omega_lsb;
 
     subframe.sow       = sow;
     subframe.toe_lsb   = toe;
@@ -316,6 +316,8 @@ bool D1Collector::process(uint8_t prn, D1Subframe const& subframe,
         ephemeris.toe         = static_cast<double>(toe) * 8.0;
         ephemeris.iodc        = (static_cast<uint32_t>(ephemeris.toc) / 720) % 240;
         ephemeris.iode        = (static_cast<uint32_t>(ephemeris.toe) / 720) % 240;
+        ephemeris.aode        = sf1.aode;
+        ephemeris.aodc        = sf1.aodc;
 
         ephemeris.af0 = sf1.a0;
         ephemeris.af1 = sf1.a1;

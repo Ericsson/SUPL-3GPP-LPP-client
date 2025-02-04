@@ -274,7 +274,7 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
             return false;
         }
 
-        DEBUGF("processing ephemeris for PRN %u (week: %u, IODE: %u)", prn,
+        VERBOSEF("processing ephemeris for PRN %u (week: %u, IODE: %u)", prn,
                internal_ephemeris.subframe1_data.week_number,
                internal_ephemeris.subframe2_data.iode);
 
