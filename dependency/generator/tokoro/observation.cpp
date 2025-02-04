@@ -233,7 +233,7 @@ void Observation::compute_ranges() NOEXCEPT {
         auto delta = mIonospheric.quality - 33.6664;
         if (delta > 0) delta = 0;
         auto value = delta * delta * 0.002;
-        carrier_to_noise_ratio += mIonospheric.quality * value;
+        carrier_to_noise_ratio += value;
         VERBOSEF("cnr:          %+24.10f (%g)", carrier_to_noise_ratio, mIonospheric.quality);
     }
 
