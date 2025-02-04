@@ -96,9 +96,8 @@ struct QualityIndicator {
 };
 
 inline QualityIndicator quality_indicator(BIT_STRING_s& bit_string) {
-    TRACEF("QUALITY INDICATOR %02X %d %d (%d %d)", bit_string.buf[0],
-           bit_string.buf[0] >> 3, bit_string.buf[0] & 0x7, (bit_string.buf[0] >> 5) & 0x7,
-           (bit_string.buf[0] >> 2) & 0x7);
+    TRACEF("QUALITY INDICATOR %02X %d %d (%d %d)", bit_string.buf[0], bit_string.buf[0] >> 3,
+           bit_string.buf[0] & 0x7, (bit_string.buf[0] >> 5) & 0x7, (bit_string.buf[0] >> 2) & 0x7);
     // auto cls     = (bit_string.buf[0] >> 3) & 0x7;
     // auto val     = bit_string.buf[0] & 0x7;
     auto cls     = (bit_string.buf[0] >> 5) & 0x7;
@@ -171,12 +170,9 @@ inline StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
     };
 
     auto value = bit_string.buf[0];
-
-    auto stec_cls = value & 0x7;
-    auto stec_val = (value >> 3) & 0x7;
-    stec_cls      = ((stec_cls & 0x1) << 2) | ((stec_cls & 0x2) << 0) | ((stec_cls & 0x4) >> 2);
-    stec_val      = ((stec_val & 0x1) << 2) | ((stec_val & 0x2) << 0) | ((stec_val & 0x4) >> 2);
-    auto index    = (8 * stec_cls) + stec_val;
+    auto cls   = (value >> 5) & 0x7;
+    auto val   = (value >> 2) & 0x7;
+    auto index = (8 * cls) + val;
 
     assert(index < 64);
     return StecQualityIndicator{
