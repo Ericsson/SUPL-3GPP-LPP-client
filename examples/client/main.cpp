@@ -50,7 +50,7 @@
 
 #define LOGLET_CURRENT_MODULE "client"
 
-static void client_connected(Program& program, lpp::Client& client) {
+static void client_request(Program& program, lpp::Client& client) {
     if (!program.cell) {
         ERRORF("internal error: no cell information");
         return;
@@ -87,14 +87,18 @@ static void client_connected(Program& program, lpp::Client& client) {
 }
 
 static void client_initialize(Program& program, lpp::Client&) {
-    program.client->on_connected = [&program](lpp::Client& client) {
+    program.client->on_connected = [](lpp::Client&) {
         INFOF("connected to LPP server");
-        client_connected(program, client);
     };
 
     program.client->on_disconnected = [](lpp::Client&) {
         INFOF("disconnected from LPP server");
         // TODO: reconnect
+    };
+
+    program.client->on_provide_capabilities = [&program](lpp::Client& client) {
+        INFOF("capabilities handshake completed");
+        client_request(program, client);
     };
 
     program.client->on_request_location_information =

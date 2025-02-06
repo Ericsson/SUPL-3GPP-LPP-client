@@ -36,6 +36,10 @@ public:
     // indicate the you have handled the message yourself.
     std::function<bool(Client&, TransactionHandle const&, Message const&)> on_capabilities;
 
+    // A provide capabilities message has been send from the client. This callback is useful for a
+    // quick way to know when it's safe to start sending request assistance data messages.
+    std::function<void(Client&)> on_provide_capabilities;
+
     // Called when the client receives a request location information from the server. If this
     // callback is set and you return true, the client will assume that you have handled the message
     // otherwise it will setup the periodic location information delivery for you. To reject request

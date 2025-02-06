@@ -207,6 +207,10 @@ void Client::process_request_capabilities(lpp::TransactionHandle const& transact
         auto response_message = create_provide_capabilities();
         mSession.send_with_end(transaction, response_message);
     }
+
+    if(on_provide_capabilities) {
+        on_provide_capabilities(*this);
+    }
 }
 
 void Client::process_request_assistance_data(lpp::TransactionHandle const& transaction,
