@@ -1,6 +1,6 @@
 # Changelog
 
-## [3.4.*]
+## [3.4.12] 2025-02-07
 - You can now set the provide location information update rate with `--update-rate`. 
 - Added more options for SPARTN generation:
     - `--no-code-bias-translate` to never translate between signal biases.
