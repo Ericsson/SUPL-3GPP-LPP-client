@@ -16,6 +16,7 @@ public:
     virtual void periodic_begin(TransactionHandle const& transaction) override;
     virtual void periodic_ended(TransactionHandle const& transaction) override;
     virtual void periodic_message(TransactionHandle const& transaction, Message message) override;
+    virtual void stale_request(TransactionHandle const& transaction) override;
 
     bool request_assistance_data();
     bool update_assistance_data(supl::Cell cell);

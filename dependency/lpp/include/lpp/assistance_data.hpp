@@ -44,6 +44,9 @@ struct RequestAssistanceData {
 
     /// @brief Callback for when a periodic session is ended.
     std::function<void(Client&, PeriodicSessionHandle)> on_ended;
+
+    /// @brief Called when a request assistance data failed
+    std::function<void(Client&)> on_error;
 };
 
 }  // namespace lpp

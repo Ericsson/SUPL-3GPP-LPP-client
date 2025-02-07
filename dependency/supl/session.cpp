@@ -143,7 +143,9 @@ Session::Handshake Session::handle_handshake() {
         return Handshake::ERROR;
     }
 
-    fill_receive_buffer();
+    if (!fill_receive_buffer()) {
+        return Handshake::ERROR;
+    }
 
     RESPONSE response{};
     END      end{};
@@ -259,7 +261,7 @@ ULP_PDU* Session::parse_receive_buffer() {
     }
 }
 
-void Session::fill_receive_buffer() {
+bool Session::fill_receive_buffer() {
     VSCOPE_FUNCTION();
 
     auto buffer = mReceiveBuffer + mReceiveBufferOffset;
@@ -267,11 +269,12 @@ void Session::fill_receive_buffer() {
     auto bytes  = mTcpClient->receive(buffer, static_cast<int>(size));
     if (bytes <= 0) {
         WARNF("receive failed");
-        return;
+        return false;
     }
 
     VERBOSEF("received %zd bytes", bytes);
     mReceiveBufferOffset += static_cast<size_t>(bytes);
+    return true;
 }
 
 ULP_PDU* Session::wait_for_ulp_pdu() {
@@ -281,7 +284,9 @@ ULP_PDU* Session::wait_for_ulp_pdu() {
         auto ulp_pdu = parse_receive_buffer();
         if (ulp_pdu) return ulp_pdu;
 
-        fill_receive_buffer();
+        if (!fill_receive_buffer()) {
+            return nullptr;
+        }
     }
 
     UNREACHABLE();

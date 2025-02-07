@@ -138,7 +138,7 @@ static char const* state_to_string(State state) {
 void Session::connect(std::string const& host, uint16_t port) {
     VSCOPE_FUNCTIONF("%s, %d", host.c_str(), port);
 
-    if (mState != State::UNKNOWN) {
+    if (mState != State::UNKNOWN && mState != State::EXIT) {
         ERRORF("invalid state: %s", state_to_string(mState));
         return;
     }
@@ -260,7 +260,11 @@ NextState Session::state_connection_failed() {
 
 NextState Session::state_disconnected() {
     VSCOPE_FUNCTION();
-    // TODO: Reconnect
+
+    if (on_disconnected) {
+        on_disconnected(*this);
+    }
+
     return NextState::make().next(State::EXIT);
 }
 
@@ -356,7 +360,9 @@ NextState Session::state_message() {
     VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
-    mSession->fill_receive_buffer();
+    if (!mSession->fill_receive_buffer()) {
+        return NextState::make().next(State::DISCONNECTED);
+    }
 
     for (;;) {
         supl::END end{};

@@ -119,6 +119,11 @@ bool Scheduler::update_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEX
     return true;
 }
 
+// More events here would be better, but right now there are systems that remove and deallocated
+// based on event. This can lead to the next event (in the same iteration) to fail as the memory is
+// deallocated. TODO: solve this for better performance.
+#define EVENT_COUNT 1
+
 void Scheduler::execute() NOEXCEPT {
     VSCOPE_FUNCTION();
     if (mEpollFd == -1 || mInterruptFd == -1) {
@@ -126,7 +131,9 @@ void Scheduler::execute() NOEXCEPT {
         return;
     }
 
-    struct epoll_event events[16];
+    tick_callbacks();
+
+    struct epoll_event events[EVENT_COUNT];
     for (;;) {
         if (mEpollCount == 0) {
             DEBUGF("no file descriptors to wait for");
@@ -135,8 +142,9 @@ void Scheduler::execute() NOEXCEPT {
 
         // Wait for a file descriptor to become ready.
         VERBOSEF("waiting for events (%d file descriptors)", mEpollCount);
-        auto nfds = ::epoll_pwait(mEpollFd, events, 16, -1, nullptr);
-        VERBOSEF("::epoll_pwait(%d, %p, 16, -1, nullptr) = %d", mEpollFd, events, nfds);
+        auto nfds = ::epoll_pwait(mEpollFd, events, EVENT_COUNT, -1, nullptr);
+        VERBOSEF("::epoll_pwait(%d, %p, %d, -1, nullptr) = %d", mEpollFd, events, EVENT_COUNT,
+                 nfds);
         if (nfds == -1) {
             if (errno == EINTR) {
                 continue;
@@ -159,13 +167,15 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
         return;
     }
 
+    tick_callbacks();
+
     auto now = std::chrono::steady_clock::now();
     auto end = now + duration;
 
-    struct epoll_event events[16];
+    struct epoll_event events[EVENT_COUNT];
     for (;;) {
         // Calculate the timeout for epoll_pwait.
-        now          = std::chrono::steady_clock::now();
+        now = std::chrono::steady_clock::now();
         if (now >= end) {
             VERBOSEF("timeout expired");
             return;
@@ -182,8 +192,9 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
         // Wait for a file descriptor to become ready. Even if the mEpollCount is 0, we still need
         // to wait for the timeout to expire.
         VERBOSEF("waiting for events (%d file descriptors, %d ms)", mEpollCount, timeout_ms);
-        auto nfds = ::epoll_pwait(mEpollFd, events, 16, timeout_ms, nullptr);
-        VERBOSEF("::epoll_pwait(%d, %p, 16, -1, nullptr) = %d", mEpollFd, events, nfds);
+        auto nfds = ::epoll_pwait(mEpollFd, events, EVENT_COUNT, timeout_ms, nullptr);
+        VERBOSEF("::epoll_pwait(%d, %p, %s, -1, nullptr) = %d", mEpollFd, events, EVENT_COUNT,
+                 nfds);
         if (nfds == -1) {
             if (errno == EINTR) {
                 VERBOSEF("timeout expired");
@@ -213,7 +224,9 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
         return;
     }
 
-    struct epoll_event events[16];
+    tick_callbacks();
+
+    struct epoll_event events[EVENT_COUNT];
     for (;;) {
         if (!condition()) {
             return;
@@ -221,8 +234,9 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
 
         // Wait for a file descriptor to become ready.
         VERBOSEF("waiting for events (%d file descriptors, while)", mEpollCount);
-        auto nfds = ::epoll_pwait(mEpollFd, events, 16, -1, nullptr);
-        VERBOSEF("::epoll_pwait(%d, %p, 16, -1, nullptr) = %d", mEpollFd, events, nfds);
+        auto nfds = ::epoll_pwait(mEpollFd, events, EVENT_COUNT, -1, nullptr);
+        VERBOSEF("::epoll_pwait(%d, %p, %d, -1, nullptr) = %d", mEpollFd, events, EVENT_COUNT,
+                 nfds);
         if (nfds == -1) {
             if (errno == EINTR) {
                 continue;
@@ -260,4 +274,21 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
         epoll_event->event(&event);
     }
 }
+
+void Scheduler::register_tick(void* unique_ptr, std::function<void()> callback) NOEXCEPT {
+    mTickCallbacks[unique_ptr] = callback;
+}
+
+void Scheduler::unregister_tick(void* unique_ptr) NOEXCEPT {
+    mTickCallbacks.erase(unique_ptr);
+}
+
+void Scheduler::tick_callbacks() {
+    for (auto& callback : mTickCallbacks) {
+        if (callback.second) {
+            callback.second();
+        }
+    }
+}
+
 }  // namespace scheduler

@@ -1,5 +1,6 @@
 #include "handler.hpp"
 #include "../lpp.hpp"
+#include "lpp/abort.hpp"
 #include "lpp/client.hpp"
 
 #include <algorithm>
@@ -15,9 +16,7 @@ std::string PeriodicSessionHandle::to_string() const {
 }
 
 PeriodicSession::PeriodicSession(Client* client, Session* session, PeriodicSessionHandle handle)
-    : mClient(client), mSession(session), mHandle(handle), mPeriodicTask{
-                                                               std::chrono::seconds(5),
-                                                           } {
+    : mClient(client), mSession(session), mHandle(handle), mPeriodicTask{std::chrono::seconds(5)} {
     mPeriodicTask.callback = [this]() {
         check_active_requests();
     };
@@ -27,15 +26,7 @@ PeriodicSession::PeriodicSession(Client* client, Session* session, PeriodicSessi
 }
 
 PeriodicSession::~PeriodicSession() {
-    if (mClient) {
-        mClient->deallocate_periodic_session_handle(mHandle);
-        mClient->mPeriodicTransactions.erase(mPeriodicTransaction);
-        for (auto& rt : mRequestTransactions) {
-            mClient->mRequestTransactions.erase(rt.first);
-        }
-
-        mPeriodicTask.cancel();
-    }
+    destroy();
 }
 
 void PeriodicSession::message(TransactionHandle const& transaction, Message message) {
@@ -96,6 +87,8 @@ void PeriodicSession::periodic_begin(TransactionHandle const&) {}
 
 void PeriodicSession::periodic_ended(TransactionHandle const&) {}
 
+void PeriodicSession::stale_request(TransactionHandle const&) {}
+
 bool PeriodicSession::send_new_request(Message message) {
     VSCOPE_FUNCTION();
     if (!mSession) return false;
@@ -142,6 +135,7 @@ void PeriodicSession::check_active_requests() {
         auto started     = it->second;
         if (now - started > std::chrono::seconds(5)) {
             to_remove.push_back(transaction);
+            stale_request(transaction);
             it = mRequestTransactions.erase(it);
         } else {
             ++it;
@@ -149,8 +143,42 @@ void PeriodicSession::check_active_requests() {
     }
 
     for (auto& transaction : to_remove) {
-        mSession->delete_transaction(transaction);
+        auto abort = lpp::create_abort();
+        transaction.send_with_end(abort);
         unregister_request(transaction);
+    }
+}
+
+void PeriodicSession::destroy() {
+    VSCOPE_FUNCTION();
+
+    std::vector<TransactionHandle> to_remove;
+    for (auto it = mRequestTransactions.begin(); it != mRequestTransactions.end(); ++it) {
+        auto transaction = it->first;
+        to_remove.push_back(transaction);
+    }
+
+    for (auto& transaction : to_remove) {
+        auto abort = lpp::create_abort();
+        transaction.send_with_end(abort);
+        unregister_request(transaction);
+    }
+
+    mRequestTransactions.clear();
+
+    if (mClient) {
+        mClient->deallocate_periodic_session_handle(mHandle);
+        mClient->mPeriodicTransactions.erase(mPeriodicTransaction);
+    }
+
+    mPeriodicTask.cancel();
+}
+
+void PeriodicSession::try_destroy() {
+    VSCOPE_FUNCTION();
+
+    if(mClient) {
+        mClient->want_to_be_destroyed(mHandle);
     }
 }
 

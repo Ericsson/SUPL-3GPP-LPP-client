@@ -51,6 +51,15 @@ void AssistanceDataHandler::periodic_message(TransactionHandle const& transactio
     }
 }
 
+void AssistanceDataHandler::stale_request(TransactionHandle const& transaction) {
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    if (mData.on_error) {
+        mData.on_error(*mClient);
+    }
+
+    try_destroy();
+}
+
 bool AssistanceDataHandler::request_assistance_data() {
     VSCOPE_FUNCTION();
 

@@ -77,7 +77,7 @@ public:
     NODISCARD const SLP&     slp() const { return mSLPSession; }
 
     int  fd() const;
-    void fill_receive_buffer();
+    bool fill_receive_buffer();
 
 protected:
     ULP_PDU* parse_receive_buffer();

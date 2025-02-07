@@ -24,6 +24,7 @@ struct PeriodicLocationInformationDeliveryDescription;
 class Client {
 public:
     explicit Client(supl::Identity identity, std::string const& host, uint16_t port);
+    ~Client();
 
     // Called once the client is connected and ready to send and receive messages
     std::function<void(Client&)> on_connected;
@@ -102,6 +103,7 @@ protected:
 
     bool allocate_periodic_session_handle(PeriodicSessionHandle& handle);
     bool deallocate_periodic_session_handle(PeriodicSessionHandle const& handle);
+    void want_to_be_destroyed(PeriodicSessionHandle const& handle);
 
     PeriodicSession* find_by_periodic_session_handle(PeriodicSessionHandle const& session);
     PeriodicSession* find_by_request_transaction_handle(TransactionHandle const& transaction);
@@ -118,6 +120,7 @@ private:
     std::unordered_map<PeriodicSessionHandle, Pah>               mSessions;
     std::unordered_map<TransactionHandle, Lid>                   mLocationInformationDeliveries;
     long                                                         mNextSessionId;
+    std::vector<PeriodicSessionHandle>                           mSessionsToDestroy;
 
     friend class PeriodicSession;
     friend class LocationInformationDelivery;

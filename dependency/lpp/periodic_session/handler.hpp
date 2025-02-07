@@ -22,6 +22,8 @@ public:
     void message(TransactionHandle const& transaction, Message message);
     void end(TransactionHandle const& transaction);
 
+    void try_destroy();
+
 protected:
     // Response to a request transaction
     virtual void request_response(TransactionHandle const& transaction, Message message) = 0;
@@ -31,9 +33,12 @@ protected:
     virtual void periodic_ended(TransactionHandle const& transaction) = 0;
     // Message received for the periodic session
     virtual void periodic_message(TransactionHandle const& transaction, Message message) = 0;
+    // An out-going request hasn't been answered for 5 seconds
+    virtual void stale_request(TransactionHandle const& transaction) = 0;
 
     bool send_new_request(Message message);
     void check_active_requests();
+    void destroy();
 
 private:
     void register_request(TransactionHandle const& transaction);

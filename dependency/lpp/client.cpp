@@ -42,6 +42,7 @@ Client::Client(supl::Identity identity, std::string const& host, uint16_t port)
 
     mSession.on_disconnected = [this](Session&) {
         DEBUGF("disconnected");
+        cancel();
 
         if (on_disconnected) {
             on_disconnected(*this);
@@ -69,6 +70,12 @@ Client::Client(supl::Identity identity, std::string const& host, uint16_t port)
                                  lpp::Message message) {
         this->process_message(transaction, std::move(message));
     };
+}
+
+Client::~Client() {
+    if (mScheduler) {
+        mScheduler->unregister_tick(this);
+    }
 }
 
 PeriodicSessionHandle
@@ -129,6 +136,13 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
     mScheduler = scheduler;
     mSession.connect(mHost, mPort);
     mSession.schedule(scheduler);
+    scheduler->register_tick(this, [this]() {
+        for (auto handle : mSessionsToDestroy) {
+            deallocate_periodic_session_handle(handle);
+        }
+
+        mSessionsToDestroy.clear();
+    });
 }
 
 void Client::cancel() {
@@ -145,6 +159,7 @@ void Client::cancel() {
 
     mRequestTransactions.clear();
     mPeriodicTransactions.clear();
+    mLocationInformationDeliveries.clear();
     mNextSessionId = 1;
 }
 
@@ -168,6 +183,11 @@ bool Client::deallocate_periodic_session_handle(PeriodicSessionHandle const& han
     mSessions.erase(handle);
     DEBUGF("deallocated periodic session handle %s", handle.to_string().c_str());
     return true;
+}
+
+void Client::want_to_be_destroyed(PeriodicSessionHandle const& handle) {
+    VSCOPE_FUNCTION();
+    mSessionsToDestroy.push_back(handle);
 }
 
 void Client::process_message(lpp::TransactionHandle const& transaction, lpp::Message message) {
@@ -208,7 +228,7 @@ void Client::process_request_capabilities(lpp::TransactionHandle const& transact
         mSession.send_with_end(transaction, response_message);
     }
 
-    if(on_provide_capabilities) {
+    if (on_provide_capabilities) {
         on_provide_capabilities(*this);
     }
 }

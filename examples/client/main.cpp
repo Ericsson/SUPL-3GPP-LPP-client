@@ -79,6 +79,9 @@ static void client_request(Program& program, lpp::Client& client) {
         [](lpp::Client&, lpp::PeriodicSessionHandle) {
             INFOF("request assistance data (ended)");
         },
+        [&program](lpp::Client&) {
+            ERRORF("request assistance data failed");
+        },
     });
 
     if (program.config.location_information.unsolicited) {
@@ -91,9 +94,10 @@ static void client_initialize(Program& program, lpp::Client&) {
         INFOF("connected to LPP server");
     };
 
-    program.client->on_disconnected = [](lpp::Client&) {
+    program.client->on_disconnected = [&program](lpp::Client& client) {
         INFOF("disconnected from LPP server");
-        // TODO: reconnect
+        INFOF("reconnecting to LPP server");
+        client.schedule(&program.scheduler);
     };
 
     program.client->on_provide_capabilities = [&program](lpp::Client& client) {
