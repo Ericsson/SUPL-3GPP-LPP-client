@@ -128,7 +128,8 @@ Ver2-CellInfo-extension ::= CHOICE {
     lteCell        LteCellInformation,
     wlanAP         WlanAPInformation,
     wimaxBS        WimaxBSInformation,
-    ...
+    ...,
+    nrCell         NRCellInformation
 }
 
 HrpdCellInformation ::= SEQUENCE {
@@ -163,6 +164,58 @@ LteCellInformation ::= SEQUENCE {
     measResultListEUTRA MeasResultListEUTRA OPTIONAL, --Neighbour measurements
     ...
 }
+
+-- Information for serving cells per 3GPP TS 38.331
+NRCellInformation ::= SEQUENCE {
+    servingCellInformation ServingCellInformationNR, --Serving cell 
+    informationmeasuredResultsListNR MeasResultListNR OPTIONAL, --Neighbour measurements
+    ...
+}
+
+-- The first listed serving cell shall be the primary cell
+ServingCellInformationNR ::= SEQUENCE (SIZE (1..maxNRServingCell)) OF ServCellNR
+
+ServCellNR ::= SEQUENCE {
+    physCellId PhysCellIdNR,
+    arfcn-NR ARFCN-NR,
+    cellGlobalId CellGlobalIdNR,
+    trackingAreaCode TrackingAreaCodeNR,
+    ssb-Measurements NR-Measurements OPTIONAL,
+    csi-rs-Measurements NR-Measurements OPTIONAL,
+    ta INTEGER(0..3846) OPTIONAL, --Timing Advance value
+    ...
+}
+
+-- Measured results of neighbours cells per 3GPP TS 38.331
+MeasResultListNR ::= SEQUENCE (SIZE (1..maxCellReportNR)) OF MeasResultNR 
+MeasResultNR ::= SEQUENCE {
+    physCellId PhysCellIdNR,
+    arfcn-NR ARFCN-NR,
+    cellGlobalId CellGlobalIdNR OPTIONAL,
+    trackingAreaCode TrackingAreaCodeNR OPTIONAL,
+    ssb-Measurements NR-Measurements OPTIONAL,
+    csi-rs-Measurements NR-Measurements OPTIONAL,
+    ...
+}
+
+PhysCellIdNR ::= INTEGER (0..1007)
+ARFCN-NR ::= INTEGER (0.. 3279165)
+TrackingAreaCodeNR ::= BIT STRING (SIZE (24))
+
+CellGlobalIdNR ::= SEQUENCE {
+    plmn-Identity PLMN-Identity,
+    cellIdentityNR CellIdentityNR,
+    ...
+}
+CellIdentityNR ::= BIT STRING (SIZE (36))
+NR-Measurements ::= SEQUENCE {
+    rsrp-Range INTEGER (0..127) OPTIONAL,
+    rsrq-Range INTEGER (0..127) OPTIONAL,
+    sinr-Range INTEGER (0..127) OPTIONAL,
+    ...
+}
+maxNRServingCell INTEGER ::= 32
+maxCellReportNR INTEGER ::= 32
 
 -- Measured results of neighbours cells per 3GPP TS 36.331 --
 MeasResultListEUTRA ::= SEQUENCE (SIZE (1..maxCellReport)) OF MeasResultEUTRA

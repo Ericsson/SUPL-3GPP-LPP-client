@@ -46,6 +46,14 @@ void supl_fill_cell_identity(CellIdentity_t* identity, unsigned long long value)
     BitStringBuilder{}.integer(0, 28, value).into_bit_string(28, identity);
 }
 
+void supl_fill_tracking_area_code_nr(TrackingAreaCodeNR_t* tac, int tac_value) {
+    BitStringBuilder{}.integer(0, 24, tac_value).into_bit_string(24, tac);
+}
+
+void supl_fill_cell_identity_nr(CellIdentityNR_t* identity, unsigned long long value) {
+    BitStringBuilder{}.integer(0, 36, value).into_bit_string(36, identity);
+}
+
 MCC* supl_create_mcc(int mcc_value) {
     if (mcc_value < 0 || mcc_value > 999) {
         return NULL;

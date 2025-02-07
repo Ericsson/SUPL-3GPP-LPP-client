@@ -5,6 +5,7 @@
 #include <GNSS-ID.h>
 #include <OCTET_STRING.h>
 #include <PosProtocolVersion3GPP.h>
+#include <ServCellNR.h>
 #include <Ver2-PosProtocol-extension.h>
 #include <utility/cpp.h>
 
@@ -46,6 +47,46 @@ void LPP_Client::set_identity_imsi(unsigned long long imsi) {
 void LPP_Client::set_identity_ipv4(std::string const& ipv4) {
     if (connected) return;
     mSUPL->set_session(SUPL_Session::ip_address(0, ipv4));
+}
+
+static void v2_cell_info(CellInfo_t* cell_info, CellID cell) {
+    cell_info->present = CellInfo_PR_ver2_CellInfo_extension;
+
+    // TODO(ewasjon): what to do here about NR cells?
+    auto cell_v2 = &cell_info->choice.ver2_CellInfo_extension;
+
+    if (cell.is_nr) {
+        cell_v2->present = Ver2_CellInfo_extension_PR_nrCell;
+
+        auto nr_cell_info = &cell_v2->choice.nrCell;
+
+        auto nr_cell_list = &nr_cell_info->servingCellInformation.list;
+
+        auto nr_cell                            = ALLOC_ZERO(ServCellNR);
+        nr_cell->physCellId                     = 0;
+        nr_cell->arfcn_NR                       = 0;
+        nr_cell->cellGlobalId.plmn_Identity.mcc = supl_create_mcc(cell.mcc);
+        supl_fill_mnc(&nr_cell->cellGlobalId.plmn_Identity.mnc, cell.mnc);
+        supl_fill_cell_identity_nr(&nr_cell->cellGlobalId.cellIdentityNR, cell.cell);
+        supl_fill_tracking_area_code_nr(&nr_cell->trackingAreaCode, cell.tac);
+
+        asn_sequence_add(nr_cell_list, nr_cell);
+
+    } else {
+        cell_v2->present = Ver2_CellInfo_extension_PR_lteCell;
+
+        auto lte_cell                                 = &cell_v2->choice.lteCell;
+        lte_cell->cellGlobalIdEUTRA.plmn_Identity.mcc = supl_create_mcc(cell.mcc);
+        supl_fill_mnc(&lte_cell->cellGlobalIdEUTRA.plmn_Identity.mnc, cell.mnc);
+        supl_fill_tracking_area_code(&lte_cell->trackingAreaCode, cell.tac);
+        supl_fill_cell_identity(&lte_cell->cellGlobalIdEUTRA.cellIdentity, cell.cell);
+
+        /* Set the remaining LTE parameters */
+        lte_cell->physCellId          = 0;
+        lte_cell->rsrpResult          = OPTIONAL_MISSING;
+        lte_cell->rsrqResult          = OPTIONAL_MISSING;
+        lte_cell->measResultListEUTRA = OPTIONAL_MISSING;
+    }
 }
 
 bool LPP_Client::supl_start(CellID cell) {
@@ -94,24 +135,8 @@ bool LPP_Client::supl_start(CellID cell) {
     }
 
     {
-        auto cell_info     = &start->locationId.cellInfo;
-        cell_info->present = CellInfo_PR_ver2_CellInfo_extension;
-
-        // TODO(ewasjon): what to do here about NR cells?
-        auto cell_v2     = &cell_info->choice.ver2_CellInfo_extension;
-        cell_v2->present = Ver2_CellInfo_extension_PR_lteCell;
-
-        auto lte_cell                                 = &cell_v2->choice.lteCell;
-        lte_cell->cellGlobalIdEUTRA.plmn_Identity.mcc = supl_create_mcc(cell.mcc);
-        supl_fill_mnc(&lte_cell->cellGlobalIdEUTRA.plmn_Identity.mnc, cell.mnc);
-        supl_fill_tracking_area_code(&lte_cell->trackingAreaCode, cell.tac);
-        supl_fill_cell_identity(&lte_cell->cellGlobalIdEUTRA.cellIdentity, cell.cell);
-
-        /* Set the remaining LTE parameters */
-        lte_cell->physCellId          = 0;
-        lte_cell->rsrpResult          = OPTIONAL_MISSING;
-        lte_cell->rsrqResult          = OPTIONAL_MISSING;
-        lte_cell->measResultListEUTRA = OPTIONAL_MISSING;
+        auto cell_info = &start->locationId.cellInfo;
+        v2_cell_info(cell_info, cell);
     }
 
     return mSUPL->send(message);
@@ -156,23 +181,7 @@ bool LPP_Client::supl_send_posinit(CellID cell) {
 
     {
         auto cell_info     = &posinit->locationId.cellInfo;
-        cell_info->present = CellInfo_PR_ver2_CellInfo_extension;
-
-        // TODO(ewasjon): what to do here about NR cells?
-        auto cell_v2     = &cell_info->choice.ver2_CellInfo_extension;
-        cell_v2->present = Ver2_CellInfo_extension_PR_lteCell;
-
-        auto lte_cell                                 = &cell_v2->choice.lteCell;
-        lte_cell->cellGlobalIdEUTRA.plmn_Identity.mcc = supl_create_mcc(cell.mcc);
-        supl_fill_mnc(&lte_cell->cellGlobalIdEUTRA.plmn_Identity.mnc, cell.mnc);
-        supl_fill_tracking_area_code(&lte_cell->trackingAreaCode, cell.tac);
-        supl_fill_cell_identity(&lte_cell->cellGlobalIdEUTRA.cellIdentity, cell.cell);
-
-        /* Set the remaining LTE parameters */
-        lte_cell->physCellId          = 0;
-        lte_cell->rsrpResult          = OPTIONAL_MISSING;
-        lte_cell->rsrqResult          = OPTIONAL_MISSING;
-        lte_cell->measResultListEUTRA = OPTIONAL_MISSING;
+        v2_cell_info(cell_info, cell);
     }
 
     return mSUPL->send(message);

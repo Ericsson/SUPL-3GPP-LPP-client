@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 #include "asnlib.h"
+#include <CellIdentityNR.h>
+#include <TrackingAreaCodeNR.h>
 
 template <typename T>
 inline T* asn1_allocate(size_t count = 1) {
@@ -52,8 +54,13 @@ private:
     uint64_t mBits;
 };
 
+
+
 void   supl_fill_tracking_area_code(TrackingAreaCode_t* tac, int tac_value);
 void   supl_fill_cell_identity(CellIdentity_t*, unsigned long long value);
+void   supl_fill_tracking_area_code_nr(TrackingAreaCodeNR_t* tac, int tac_value);
+void   supl_fill_cell_identity_nr(CellIdentityNR_t*, unsigned long long value);
+
 MCC*   supl_create_mcc(int mcc_value);
 void   supl_fill_mcc(MCC* mcc, int mcc_value);
 void   supl_fill_mnc(MNC* mnc, int mnc_value);

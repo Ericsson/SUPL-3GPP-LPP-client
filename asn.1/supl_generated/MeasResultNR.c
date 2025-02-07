@@ -5,20 +5,15 @@
  * 	`asn1c -fcompound-names -fno-include-deps -no-gen-example -pdu=all -gen-XER -gen-JER -no-gen-OER -gen-UPER -no-gen-APER -no-gen-BER -no-gen-print -no-gen-random-fill -D supl_generated/ -S empty_skeleton/`
  */
 
-#include "Ver2-CellInfo-extension.h"
+#include "MeasResultNR.h"
 
-#if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-asn_per_constraints_t asn_PER_type_Ver2_CellInfo_extension_constr_1 CC_NOTUSED = {
-	{ APC_CONSTRAINED | APC_EXTENSIBLE,  3,  3,  0,  4 }	/* (0..4,...) */,
-	{ APC_UNCONSTRAINED,	-1, -1,  0,  0 },
-	0, 0	/* No PER value map */
-};
-#endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[] = {
-	{ ATF_NOFLAGS, 0, offsetof(struct Ver2_CellInfo_extension, choice.hrpdCell),
+#include "CellGlobalIdNR.h"
+#include "NR-Measurements.h"
+asn_TYPE_member_t asn_MBR_MeasResultNR_1[] = {
+	{ ATF_NOFLAGS, 0, offsetof(struct MeasResultNR, physCellId),
 		(ASN_TAG_CLASS_CONTEXT | (0 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_HrpdCellInformation,
+		&asn_DEF_PhysCellIdNR,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -30,12 +25,12 @@ asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"hrpdCell"
+		"physCellId"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Ver2_CellInfo_extension, choice.umbCell),
+	{ ATF_NOFLAGS, 0, offsetof(struct MeasResultNR, arfcn_NR),
 		(ASN_TAG_CLASS_CONTEXT | (1 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_UmbCellInformation,
+		&asn_DEF_ARFCN_NR,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -47,12 +42,12 @@ asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"umbCell"
+		"arfcn-NR"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Ver2_CellInfo_extension, choice.lteCell),
+	{ ATF_POINTER, 4, offsetof(struct MeasResultNR, cellGlobalId),
 		(ASN_TAG_CLASS_CONTEXT | (2 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_LteCellInformation,
+		&asn_DEF_CellGlobalIdNR,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -64,12 +59,12 @@ asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"lteCell"
+		"cellGlobalId"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Ver2_CellInfo_extension, choice.wlanAP),
+	{ ATF_POINTER, 3, offsetof(struct MeasResultNR, trackingAreaCode),
 		(ASN_TAG_CLASS_CONTEXT | (3 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_WlanAPInformation,
+		&asn_DEF_TrackingAreaCodeNR,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -81,12 +76,12 @@ asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"wlanAP"
+		"trackingAreaCode"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Ver2_CellInfo_extension, choice.wimaxBS),
+	{ ATF_POINTER, 2, offsetof(struct MeasResultNR, ssb_Measurements),
 		(ASN_TAG_CLASS_CONTEXT | (4 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_WimaxBSInformation,
+		&asn_DEF_NR_Measurements,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -98,12 +93,12 @@ asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"wimaxBS"
+		"ssb-Measurements"
 		},
-	{ ATF_NOFLAGS, 0, offsetof(struct Ver2_CellInfo_extension, choice.nrCell),
+	{ ATF_POINTER, 1, offsetof(struct MeasResultNR, csi_rs_Measurements),
 		(ASN_TAG_CLASS_CONTEXT | (5 << 2)),
 		-1,	/* IMPLICIT tag at current level */
-		&asn_DEF_NRCellInformation,
+		&asn_DEF_NR_Measurements,
 		0,
 		{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
@@ -115,46 +110,51 @@ asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[] = {
 			0
 		},
 		0, 0, /* No default value */
-		"nrCell"
+		"csi-rs-Measurements"
 		},
 };
-static const asn_TYPE_tag2member_t asn_MAP_Ver2_CellInfo_extension_tag2el_1[] = {
-    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* hrpdCell */
-    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* umbCell */
-    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* lteCell */
-    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* wlanAP */
-    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* wimaxBS */
-    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 } /* nrCell */
+static const int asn_MAP_MeasResultNR_oms_1[] = { 2, 3, 4, 5 };
+static const ber_tlv_tag_t asn_DEF_MeasResultNR_tags_1[] = {
+	(ASN_TAG_CLASS_UNIVERSAL | (16 << 2))
 };
-asn_CHOICE_specifics_t asn_SPC_Ver2_CellInfo_extension_specs_1 = {
-	sizeof(struct Ver2_CellInfo_extension),
-	offsetof(struct Ver2_CellInfo_extension, _asn_ctx),
-	offsetof(struct Ver2_CellInfo_extension, present),
-	sizeof(((struct Ver2_CellInfo_extension *)0)->present),
-	asn_MAP_Ver2_CellInfo_extension_tag2el_1,
+static const asn_TYPE_tag2member_t asn_MAP_MeasResultNR_tag2el_1[] = {
+    { (ASN_TAG_CLASS_CONTEXT | (0 << 2)), 0, 0, 0 }, /* physCellId */
+    { (ASN_TAG_CLASS_CONTEXT | (1 << 2)), 1, 0, 0 }, /* arfcn-NR */
+    { (ASN_TAG_CLASS_CONTEXT | (2 << 2)), 2, 0, 0 }, /* cellGlobalId */
+    { (ASN_TAG_CLASS_CONTEXT | (3 << 2)), 3, 0, 0 }, /* trackingAreaCode */
+    { (ASN_TAG_CLASS_CONTEXT | (4 << 2)), 4, 0, 0 }, /* ssb-Measurements */
+    { (ASN_TAG_CLASS_CONTEXT | (5 << 2)), 5, 0, 0 } /* csi-rs-Measurements */
+};
+asn_SEQUENCE_specifics_t asn_SPC_MeasResultNR_specs_1 = {
+	sizeof(struct MeasResultNR),
+	offsetof(struct MeasResultNR, _asn_ctx),
+	asn_MAP_MeasResultNR_tag2el_1,
 	6,	/* Count of tags in the map */
-	0, 0,
-	5	/* Extensions start */
+	asn_MAP_MeasResultNR_oms_1,	/* Optional members */
+	4, 0,	/* Root/Additions */
+	6,	/* First extension addition */
 };
-asn_TYPE_descriptor_t asn_DEF_Ver2_CellInfo_extension = {
-	"Ver2-CellInfo-extension",
-	"Ver2-CellInfo-extension",
-	&asn_OP_CHOICE,
-	0,	/* No effective tags (pointer) */
-	0,	/* No effective tags (count) */
-	0,	/* No tags (pointer) */
-	0,	/* No tags (count) */
+asn_TYPE_descriptor_t asn_DEF_MeasResultNR = {
+	"MeasResultNR",
+	"MeasResultNR",
+	&asn_OP_SEQUENCE,
+	asn_DEF_MeasResultNR_tags_1,
+	sizeof(asn_DEF_MeasResultNR_tags_1)
+		/sizeof(asn_DEF_MeasResultNR_tags_1[0]), /* 1 */
+	asn_DEF_MeasResultNR_tags_1,	/* Same as above */
+	sizeof(asn_DEF_MeasResultNR_tags_1)
+		/sizeof(asn_DEF_MeasResultNR_tags_1[0]), /* 1 */
 	{
 #if !defined(ASN_DISABLE_OER_SUPPORT)
 		0,
 #endif  /* !defined(ASN_DISABLE_OER_SUPPORT) */
 #if !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT)
-		&asn_PER_type_Ver2_CellInfo_extension_constr_1,
+		0,
 #endif  /* !defined(ASN_DISABLE_UPER_SUPPORT) || !defined(ASN_DISABLE_APER_SUPPORT) */
-		CHOICE_constraint
+		SEQUENCE_constraint
 	},
-	asn_MBR_Ver2_CellInfo_extension_1,
+	asn_MBR_MeasResultNR_1,
 	6,	/* Elements count */
-	&asn_SPC_Ver2_CellInfo_extension_specs_1	/* Additional specs */
+	&asn_SPC_MeasResultNR_specs_1	/* Additional specs */
 };
 
