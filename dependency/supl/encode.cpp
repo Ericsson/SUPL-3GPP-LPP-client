@@ -16,6 +16,7 @@
 #include <PosProtocolVersion3GPP.h>
 #include <PosProtocolVersion3GPP2.h>
 #include <SETId.h>
+#include <ServCellNR.h>
 #include <SessionID.h>
 #include <SetSessionID.h>
 #include <SlpSessionID.h>
@@ -245,6 +246,28 @@ static TrackingAreaCode_t encode_trackingAreaCode(uint64_t tac) {
     return tracking_area_code;
 }
 
+static CellGlobalIdNR_t encode_cellGlobalIdNR(uint64_t mcc, uint64_t mnc, uint64_t ci) {
+    CellIdentityNR_t cellIdentity{};
+    helper::BitStringBuilder{}.integer(0, 36, ci).into_bit_string(36, &cellIdentity);
+
+    CellGlobalIdNR_t result{};
+    result.plmn_Identity.mcc = encode_mcc(mcc);
+    result.plmn_Identity.mnc = encode_mnc(mnc);
+    result.cellIdentityNR    = cellIdentity;
+    return result;
+}
+
+static PhysCellIdNR_t encode_physCellIdNR(uint64_t id) {
+    return static_cast<long>(id);
+}
+
+static TrackingAreaCodeNR_t encode_trackingAreaCodeNR(uint64_t tac) {
+    ASSERT(tac >= 0, "invalid tracking area code");
+    TrackingAreaCodeNR_t tracking_area_code{};
+    helper::BitStringBuilder{}.integer(0, 24, tac).into_bit_string(24, &tracking_area_code);
+    return tracking_area_code;
+}
+
 static CellInfo encode_cellinfo(Cell cell) {
     if (cell.type == Cell::Type::GSM) {
         // TODO: Unsupported
@@ -261,8 +284,22 @@ static CellInfo encode_cellinfo(Cell cell) {
         lte_cell.trackingAreaCode = encode_trackingAreaCode(cell.data.lte.tac);
         return result;
     } else if (cell.type == Cell::Type::NR) {
-        // TODO: Unsupported
-        UNIMPLEMENTED("NR is not supported");
+        CellInfo result{};
+        result.present                                = CellInfo_PR_ver2_CellInfo_extension;
+        result.choice.ver2_CellInfo_extension.present = Ver2_CellInfo_extension_PR_nrCell;
+
+        auto& nr_cell      = result.choice.ver2_CellInfo_extension.choice.nrCell;
+        auto& nr_cell_list = nr_cell.servingCellInformation.list;
+
+        auto serv_cell        = reinterpret_cast<ServCellNR*>(calloc(1, sizeof(ServCellNR)));
+        serv_cell->physCellId = encode_physCellIdNR(cell.data.nr.phys_id);
+        serv_cell->arfcn_NR   = 0;
+        serv_cell->cellGlobalId =
+            encode_cellGlobalIdNR(cell.data.nr.mcc, cell.data.nr.mnc, cell.data.nr.ci);
+        serv_cell->trackingAreaCode = encode_trackingAreaCodeNR(cell.data.nr.tac);
+
+        asn_sequence_add(&nr_cell_list, serv_cell);
+        return result;
     }
 
     assert(false);

@@ -17,6 +17,7 @@
 #include "LteCellInformation.h"
 #include "WlanAPInformation.h"
 #include "WimaxBSInformation.h"
+#include "NRCellInformation.h"
 #include <constr_CHOICE.h>
 
 #ifdef __cplusplus
@@ -30,9 +31,9 @@ typedef enum Ver2_CellInfo_extension_PR {
 	Ver2_CellInfo_extension_PR_umbCell,
 	Ver2_CellInfo_extension_PR_lteCell,
 	Ver2_CellInfo_extension_PR_wlanAP,
-	Ver2_CellInfo_extension_PR_wimaxBS
+	Ver2_CellInfo_extension_PR_wimaxBS,
 	/* Extensions may appear below */
-	
+	Ver2_CellInfo_extension_PR_nrCell
 } Ver2_CellInfo_extension_PR;
 
 /* Ver2-CellInfo-extension */
@@ -48,6 +49,7 @@ typedef struct Ver2_CellInfo_extension {
 		 * This type is extensible,
 		 * possible extensions are below.
 		 */
+		NRCellInformation_t	 nrCell;
 	} choice;
 	
 	/* Context for parsing across buffer boundaries */
@@ -57,7 +59,7 @@ typedef struct Ver2_CellInfo_extension {
 /* Implementation */
 extern asn_TYPE_descriptor_t asn_DEF_Ver2_CellInfo_extension;
 extern asn_CHOICE_specifics_t asn_SPC_Ver2_CellInfo_extension_specs_1;
-extern asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[5];
+extern asn_TYPE_member_t asn_MBR_Ver2_CellInfo_extension_1[6];
 extern asn_per_constraints_t asn_PER_type_Ver2_CellInfo_extension_constr_1;
 
 #ifdef __cplusplus
