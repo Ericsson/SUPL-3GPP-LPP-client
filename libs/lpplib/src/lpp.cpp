@@ -311,8 +311,8 @@ bool LPP_Client::connect(std::string const& host, int port, bool use_ssl, CellID
 
     // Old servers requires a few messages in the begining of the LPP session.
     struct timespec timeout;
-    timeout.tv_sec  = 0;
-    timeout.tv_nsec = 1000000 * 1000;  // 1 sec
+    timeout.tv_sec  = 1;
+    timeout.tv_nsec = 0;  // 1 sec
     nanosleep(&timeout, NULL);
 
     process();
