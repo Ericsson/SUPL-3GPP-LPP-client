@@ -24,7 +24,9 @@ static void agnss_assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Me
     gCell.tac   = cell_options.tac;
     gCell.cell  = cell_options.cid;
     gCell.is_nr = cell_options.is_nr;
-
+    
+    printf("[s3lc]\n");
+    printf("  version: %s\n", CLIENT_VERSION);
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
            location_server_options.port, location_server_options.ssl ? "[ssl]" : "");

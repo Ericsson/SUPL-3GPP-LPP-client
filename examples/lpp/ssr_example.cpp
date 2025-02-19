@@ -98,7 +98,9 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
     gConvertConfidence95To68      = location_information_options.convert_confidence_95_to_68;
     gOutputEllipse68              = location_information_options.output_ellipse_68;
     gOverrideHorizontalConfidence = location_information_options.override_horizontal_confidence;
-
+    
+    printf("[s3lc]\n");
+    printf("  version: %s\n", CLIENT_VERSION);
     printf("[settings]\n");
     printf("  location server:    \"%s:%d\" %s\n", location_server_options.host.c_str(),
            location_server_options.port, location_server_options.ssl ? "[ssl]" : "");

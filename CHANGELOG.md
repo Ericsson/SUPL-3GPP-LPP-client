@@ -2,6 +2,7 @@
 
 ## [3.4.13] 2025-02-18
 - Fixed LPP message sequence bug. Sending `RequestAssistanceData` before responding to `RequestCapabilities` with `ProvideCapabilities`
+- Print version at start of `example-lpp`
 
 ## [3.4.12] 2025-02-07
 - You can now set the provide location information update rate with `--update-rate`. 
