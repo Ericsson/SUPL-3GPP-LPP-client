@@ -41,6 +41,11 @@ public:
     void set_identity_msisdn(unsigned long long msisdn);
     void set_identity_imsi(unsigned long long imsi);
     void set_identity_ipv4(std::string const& ipv4);
+    void set_delivery_amount(long amount) {
+        mDeliveryAmount = amount;
+        if (mDeliveryAmount < 1) mDeliveryAmount = 1;
+        if (mDeliveryAmount > 32) mDeliveryAmount = 32;
+    }
 
     // Open connection to location server.
     // The 'cell' arguments is required for backwards compatibility and SHOULD
@@ -124,7 +129,8 @@ private:
     bool mEnableSegmentation;
     bool mSuplIdentityFix;
     bool mLocationUpdateUnlocked;
-    int mLocationUpdateRate;
+    int  mLocationUpdateRate;
+    long mDeliveryAmount;
 };
 
 void network_initialize();

@@ -35,6 +35,12 @@ static args::Flag location_server_slp_host_imsi{location_server,
                                                 {"slp-host-imsi"},
                                                 args::Options::Single};
 
+static args::ValueFlag<long> location_server_delivery_amount{location_server,
+                                                             "delivery-amount",
+                                                             "Delivery Amount",
+                                                             {"delivery-amount"},
+                                                             args::Options::Single};
+
 //
 // Identity
 //
@@ -369,12 +375,11 @@ static args::Flag li_unlocked{
     {"location-report-unlocked"},
     args::Options::Single,
 };
-static args::ValueFlag<int> li_update_rate{
-    location_infomation,
-    "update-rate",
-    "Update rate in milliseconds",
-    {"update-rate"},
-    args::Options::Single};
+static args::ValueFlag<int>    li_update_rate{location_infomation,
+                                           "update-rate",
+                                           "Update rate in milliseconds",
+                                              {"update-rate"},
+                                           args::Options::Single};
 static args::ValueFlag<double> li_latitude{location_infomation,
                                            "latitude",
                                            "Fake Latitude",
@@ -501,9 +506,19 @@ static args::ValueFlag<std::string> ctrl_un_output_path{
 
 static LocationServerOptions parse_location_server_options(Options& options) {
     LocationServerOptions location_server_options{};
-    location_server_options.host = location_server_host.Get();
-    location_server_options.port = 5431;
-    location_server_options.ssl  = false;
+    location_server_options.host            = location_server_host.Get();
+    location_server_options.port            = 5431;
+    location_server_options.ssl             = false;
+    location_server_options.delivery_amount = 32;
+
+    if (location_server_delivery_amount) {
+        location_server_options.delivery_amount = location_server_delivery_amount.Get();
+        if (location_server_options.delivery_amount < 1) {
+            throw args::ValidationError("`delivery-amount` must be at least 1");
+        } else if (location_server_options.delivery_amount > 32) {
+            throw args::ValidationError("`delivery-amount` must be at most 32");
+        }
+    }
 
     if (location_server_host) {
         location_server_options.host = location_server_host.Get();
@@ -1002,9 +1017,9 @@ static LocationInformationOptions parse_location_information_options() {
         location_information.unlock_update_rate = true;
     }
 
-    if(li_update_rate) {
+    if (li_update_rate) {
         location_information.update_rate = li_update_rate.Get();
-        if(location_information.update_rate < 10) {
+        if (location_information.update_rate < 10) {
             throw args::ValidationError("Update rate cannot be less than 10 milliseconds");
         }
     }
@@ -1275,6 +1290,8 @@ int OptionParser::parse_and_execute(int argc, char** argv) {
         "odd",
         "even",
     });
+
+    location_server_delivery_amount.HelpDefault("32");
 
     // Globals
     args::GlobalOptions location_server_globals{parser, location_server};

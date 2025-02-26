@@ -21,10 +21,10 @@ void         lpp_destroy(LPP_Message* lpp);
 
 LPP_Message* lpp_provide_capabilities(LPP_Transaction* transaction, bool segmentation);
 LPP_Message* lpp_request_assistance_data(LPP_Transaction* transaction, CellID cell,
-                                         long periodic_id, long interval);
+                                         long periodic_id, long interval, long amount);
 LPP_Message* lpp_request_agnss(LPP_Transaction* transaction, CellID cell, long gnss_id);
 LPP_Message* lpp_request_assistance_data_ssr(LPP_Transaction* transaction, CellID cell,
-                                             long periodic_id, long interval);
+                                             long periodic_id, long interval, long amount);
 LPP_Message* lpp_abort(LPP_Transaction* transaction);
 
 int lpp_is_provide_assistance_data(LPP_Message* lpp);

@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.14] 2025-02-26
+- Added support to set the delivery amount with `--delivery-amount`
+
 ## [3.4.13] 2025-02-18
 - Fixed LPP message sequence bug. Sending `RequestAssistanceData` before responding to `RequestCapabilities` with `ProvideCapabilities`
 - Print version at start of `example-lpp`

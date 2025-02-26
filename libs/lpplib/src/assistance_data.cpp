@@ -1,36 +1,36 @@
 #include "internal_lpp.h"
 #include "lpp.h"
 
-#include <GNSS-ID.h>
-#include <GNSS-ReferenceTimeReq.h>
-#include <GNSS-IonosphericModelReq.h>
-#include <GNSS-TimeModelListReq.h>
-#include <GNSS-TimeModelElementReq.h>
-#include <GNSS-NavigationModelReq.h>
-#include <GNSS-RTK-ReferenceStationInfoReq-r15.h>
-#include <GNSS-AuxiliaryInformationReq.h>
-#include <GNSS-RTK-ObservationsReq-r15.h>
-#include <GNSS-SSR-OrbitCorrectionsReq-r15.h>
-#include <GNSS-SSR-ClockCorrectionsReq-r15.h>
-#include <GNSS-SSR-CodeBiasReq-r15.h>
-#include <GNSS-SSR-PhaseBiasReq-r16.h>
-#include <GNSS-SSR-GriddedCorrectionReq-r16.h>
-#include <GNSS-SSR-STEC-CorrectionReq-r16.h>
-#include <GNSS-SSR-URA-Req-r16.h>
-#include <GNSS-GenericAssistDataReqElement.h>
-#include <GNSS-PeriodicControlParam-r15.h>
-#include <GNSS-RTK-ResidualsReq-r15.h>
-#include <GLO-RTK-BiasInformationReq-r15.h>
-#include <GNSS-RealTimeIntegrityReq.h>
-#include <GNSS-AlmanacReq.h>
-#include <GNSS-UTC-ModelReq.h>
-#include <PeriodicAssistanceDataControlParameters-r15.h>
+#include <A-GNSS-RequestAssistanceData.h>
 #include <CommonIEsRequestAssistanceData.h>
+#include <GLO-RTK-BiasInformationReq-r15.h>
+#include <GNSS-AlmanacReq.h>
+#include <GNSS-AuxiliaryInformationReq.h>
 #include <GNSS-CommonAssistDataReq.h>
 #include <GNSS-GenericAssistDataReq.h>
-#include <A-GNSS-RequestAssistanceData.h>
+#include <GNSS-GenericAssistDataReqElement.h>
+#include <GNSS-ID.h>
+#include <GNSS-IonosphericModelReq.h>
+#include <GNSS-NavigationModelReq.h>
 #include <GNSS-PeriodicAssistDataReq-r15.h>
+#include <GNSS-PeriodicControlParam-r15.h>
+#include <GNSS-RTK-ObservationsReq-r15.h>
+#include <GNSS-RTK-ReferenceStationInfoReq-r15.h>
+#include <GNSS-RTK-ResidualsReq-r15.h>
+#include <GNSS-RealTimeIntegrityReq.h>
+#include <GNSS-ReferenceTimeReq.h>
+#include <GNSS-SSR-ClockCorrectionsReq-r15.h>
+#include <GNSS-SSR-CodeBiasReq-r15.h>
 #include <GNSS-SSR-CorrectionPointsReq-r16.h>
+#include <GNSS-SSR-GriddedCorrectionReq-r16.h>
+#include <GNSS-SSR-OrbitCorrectionsReq-r15.h>
+#include <GNSS-SSR-PhaseBiasReq-r16.h>
+#include <GNSS-SSR-STEC-CorrectionReq-r16.h>
+#include <GNSS-SSR-URA-Req-r16.h>
+#include <GNSS-TimeModelElementReq.h>
+#include <GNSS-TimeModelListReq.h>
+#include <GNSS-UTC-ModelReq.h>
+#include <PeriodicAssistanceDataControlParameters-r15.h>
 
 static GNSS_ReferenceTimeReq_t* request_reference_time(long gnss_id) {
     auto element = ALLOC_ZERO(GNSS_ReferenceTimeReq_t);
@@ -220,7 +220,7 @@ static GNSS_PeriodicControlParam_r15_t* request_delivery(long amount, long inter
 }
 
 LPP_Message* lpp_request_assistance_data(LPP_Transaction* transaction, CellID cell,
-                                         long periodic_id, long interval) {
+                                         long periodic_id, long interval, long amount) {
     auto message = lpp_create(transaction, LPP_MessageBody__c1_PR_requestAssistanceData);
     auto body    = message->lpp_MessageBody;
 
@@ -237,15 +237,15 @@ LPP_Message* lpp_request_assistance_data(LPP_Transaction* transaction, CellID ce
     auto cad2 = ALLOC_ZERO(CommonIEsRequestAssistanceData::CommonIEsRequestAssistanceData__ext2);
     cad2->periodicAssistanceDataReq_r15 = pad;
 
-    if(cell.is_nr) {
+    if (cell.is_nr) {
         cad2->primaryCellID_r15 = ncgi_create(cell.mcc, cell.mnc, cell.cell);
     }
 
-    auto cad           = ALLOC_ZERO(CommonIEsRequestAssistanceData);
-    if(!cell.is_nr) {
+    auto cad = ALLOC_ZERO(CommonIEsRequestAssistanceData);
+    if (!cell.is_nr) {
         cad->primaryCellID = ecgi_create(cell.mcc, cell.mnc, cell.cell);
     }
-    cad->ext2          = cad2;
+    cad->ext2 = cad2;
 
     auto car1 = ALLOC_ZERO(GNSS_CommonAssistDataReq::GNSS_CommonAssistDataReq__ext1);
     car1->gnss_RTK_ReferenceStationInfoReq_r15 = request_reference_station();
@@ -263,9 +263,9 @@ LPP_Message* lpp_request_assistance_data(LPP_Transaction* transaction, CellID ce
     asn_sequence_add(&gar->list, request_generic_gnss(GNSS_ID__gnss_id_bds, true, false, false));
 
     auto padq                                    = ALLOC_ZERO(GNSS_PeriodicAssistDataReq_r15_t);
-    padq->gnss_RTK_PeriodicObservationsReq_r15   = request_delivery(32, interval);
-    padq->gnss_RTK_PeriodicResidualsReq_r15      = request_delivery(32, interval);
-    padq->glo_RTK_PeriodicBiasInformationReq_r15 = request_delivery(32, interval);
+    padq->gnss_RTK_PeriodicObservationsReq_r15   = request_delivery(amount, interval);
+    padq->gnss_RTK_PeriodicResidualsReq_r15      = request_delivery(amount, interval);
+    padq->glo_RTK_PeriodicBiasInformationReq_r15 = request_delivery(amount, interval);
 
     auto gad1 = ALLOC_ZERO(A_GNSS_RequestAssistanceData::A_GNSS_RequestAssistanceData__ext1);
     gad1->gnss_PeriodicAssistDataReq_r15 = padq;
@@ -312,7 +312,7 @@ LPP_Message* lpp_request_agnss(LPP_Transaction* transaction, CellID cell, long g
 }
 
 LPP_Message* lpp_request_assistance_data_ssr(LPP_Transaction* transaction, CellID cell,
-                                             long periodic_id, long interval) {
+                                             long periodic_id, long interval, long amount) {
     auto message = lpp_create(transaction, LPP_MessageBody__c1_PR_requestAssistanceData);
     auto body    = message->lpp_MessageBody;
 
@@ -351,15 +351,15 @@ LPP_Message* lpp_request_assistance_data_ssr(LPP_Transaction* transaction, CellI
     asn_sequence_add(&gar->list, request_generic_gnss(GNSS_ID__gnss_id_bds, false, true, false));
 
     auto padq                                      = ALLOC_ZERO(GNSS_PeriodicAssistDataReq_r15_t);
-    padq->gnss_SSR_PeriodicClockCorrectionsReq_r15 = request_delivery(32, interval);
-    padq->gnss_SSR_PeriodicOrbitCorrectionsReq_r15 = request_delivery(32, interval);
-    padq->gnss_SSR_PeriodicCodeBiasReq_r15         = request_delivery(32, interval);
+    padq->gnss_SSR_PeriodicClockCorrectionsReq_r15 = request_delivery(amount, interval);
+    padq->gnss_SSR_PeriodicOrbitCorrectionsReq_r15 = request_delivery(amount, interval);
+    padq->gnss_SSR_PeriodicCodeBiasReq_r15         = request_delivery(amount, interval);
 
     auto padq1 = ALLOC_ZERO(GNSS_PeriodicAssistDataReq_r15::GNSS_PeriodicAssistDataReq_r15__ext1);
-    padq1->gnss_SSR_PeriodicPhaseBiasReq_r16         = request_delivery(32, interval);
-    padq1->gnss_SSR_PeriodicGriddedCorrectionReq_r16 = request_delivery(32, interval);
-    padq1->gnss_SSR_PeriodicSTEC_CorrectionReq_r16   = request_delivery(32, interval);
-    padq1->gnss_SSR_PeriodicURA_Req_r16              = request_delivery(32, interval);
+    padq1->gnss_SSR_PeriodicPhaseBiasReq_r16         = request_delivery(amount, interval);
+    padq1->gnss_SSR_PeriodicGriddedCorrectionReq_r16 = request_delivery(amount, interval);
+    padq1->gnss_SSR_PeriodicSTEC_CorrectionReq_r16   = request_delivery(amount, interval);
+    padq1->gnss_SSR_PeriodicURA_Req_r16              = request_delivery(amount, interval);
     padq->ext1                                       = padq1;
 
     auto gad1 = ALLOC_ZERO(A_GNSS_RequestAssistanceData::A_GNSS_RequestAssistanceData__ext1);

@@ -271,6 +271,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
 
     // Request OSR assistance data from location server for the 'cell' and register a callback
     // that will be called when we receive assistance data.
+    client.set_delivery_amount(location_server_options.delivery_amount);
     request = client.request_assistance_data(gCell, nullptr, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");

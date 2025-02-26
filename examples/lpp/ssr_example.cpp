@@ -313,6 +313,7 @@ static void assistance_data_callback(LPP_Client*, LPP_Transaction*, LPP_Message*
         throw std::runtime_error("Unable to connect to location server");
     }
 
+    client.set_delivery_amount(location_server_options.delivery_amount);
     request = client.request_assistance_data_ssr(gGlobals.cell, nullptr, assistance_data_callback);
     if (request == AD_REQUEST_INVALID) {
         throw std::runtime_error("Unable to request assistance data");

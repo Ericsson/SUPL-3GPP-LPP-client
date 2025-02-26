@@ -21,6 +21,7 @@ LPP_Client::LPP_Client(bool segmentation) {
     mSuplIdentityFix          = true;
     mLocationUpdateUnlocked   = false;
     mLocationUpdateRate       = 1000;
+    mDeliveryAmount           = 32;
 
     main_request_callback  = nullptr;
     main_request_userdata  = nullptr;
@@ -180,7 +181,7 @@ bool LPP_Client::supl_send_posinit(CellID cell) {
     }
 
     {
-        auto cell_info     = &posinit->locationId.cellInfo;
+        auto cell_info = &posinit->locationId.cellInfo;
         v2_cell_info(cell_info, cell);
     }
 
@@ -465,7 +466,7 @@ LPP_Client::AD_Request LPP_Client::request_assistance_data(CellID cell, void* us
 
     auto periodic_id = 1;  // TODO(ewasjon): support multiple requests
     auto transaction = new_transaction();
-    auto message     = lpp_request_assistance_data(&transaction, cell, periodic_id, 1);
+    auto message     = lpp_request_assistance_data(&transaction, cell, periodic_id, 1, mDeliveryAmount);
     if (!supl_send(message)) {
         lpp_destroy(message);
         disconnect();
@@ -490,7 +491,7 @@ LPP_Client::AD_Request LPP_Client::request_assistance_data_ssr(CellID cell, void
 
     auto periodic_id = 1;  // TODO(ewasjon): support multiple requests
     auto transaction = new_transaction();
-    auto message     = lpp_request_assistance_data_ssr(&transaction, cell, periodic_id, 1);
+    auto message     = lpp_request_assistance_data_ssr(&transaction, cell, periodic_id, 1, mDeliveryAmount);
     if (!supl_send(message)) {
         lpp_destroy(message);
         disconnect();
@@ -543,7 +544,7 @@ bool LPP_Client::update_assistance_data(AD_Request id, CellID cell) {
     if (id == AD_REQUEST_INVALID) return false;
 
     auto transaction = new_transaction();
-    auto message     = lpp_request_assistance_data(&transaction, cell, (long)id, 1);
+    auto message     = lpp_request_assistance_data(&transaction, cell, (long)id, 1, mDeliveryAmount);
     if (!supl_send(message)) {
         lpp_destroy(message);
         return false;

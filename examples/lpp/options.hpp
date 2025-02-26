@@ -25,6 +25,8 @@ struct LocationServerOptions {
     int port;
     /// Whether to use SSL or not.
     bool ssl;
+
+    long delivery_amount;
 };
 
 /// Identity options.
