@@ -1,5 +1,8 @@
 # Changelog
 
+## [3.4.15] 2025-02-26
+- Fixed degradation in handling blocking and non-blocking messages 
+
 ## [3.4.14] 2025-02-26
 - Added support to set the delivery amount with `--delivery-amount`
 

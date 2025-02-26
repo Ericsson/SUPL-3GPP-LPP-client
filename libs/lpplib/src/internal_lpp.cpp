@@ -34,12 +34,9 @@ bool lpp_harvest_transaction(LPP_Transaction* transaction, LPP_Message* lpp) {
 }
 
 LPP_Message* lpp_decode(OCTET_STRING* data) {
-    asn_codec_ctx_t stack_ctx{};
-    stack_ctx.max_stack_size = 1024 * 1024 * 4;
-
     LPP_Message*   lpp = ALLOC_ZERO(LPP_Message);
     asn_dec_rval_t rval =
-        uper_decode_complete(&stack_ctx, &asn_DEF_LPP_Message, (void**)&lpp, data->buf, data->size);
+        uper_decode_complete(nullptr, &asn_DEF_LPP_Message, (void**)&lpp, data->buf, data->size);
     if (rval.code != RC_OK) {
         free(lpp);
         return NULL;
