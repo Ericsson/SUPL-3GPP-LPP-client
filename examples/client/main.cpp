@@ -192,6 +192,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         if (lpp_uper_pad) event_name += "+lpp-uper-pad";
 
         input.interface->schedule(program.scheduler);
+        input.interface->set_event_name(event_name);
         input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper,
                                      lpp_uper_pad](io::Input&, uint8_t* buffer, size_t count) {
             if (nmea) {

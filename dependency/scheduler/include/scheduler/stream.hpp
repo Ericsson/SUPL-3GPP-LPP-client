@@ -19,6 +19,8 @@ public:
 
     std::function<void(int fd, size_t block_size)> callback;
 
+    void set_event_name(std::string const& name) { mPeriodicTask.set_event_name(name); }
+
 private:
     NODISCARD int read_fd() const NOEXCEPT { return mPipeFds[0]; }
     NODISCARD int write_fd() const NOEXCEPT { return mPipeFds[1]; }
@@ -39,6 +41,8 @@ public:
     NODISCARD bool cancel() NOEXCEPT;
 
     NODISCARD int fd() const NOEXCEPT { return mStreamTask.fd(); }
+
+    void set_event_name(std::string const& name) { mStreamTask.set_event_name(name); }
 
 private:
     void forward(int dest_fd, size_t block_size);

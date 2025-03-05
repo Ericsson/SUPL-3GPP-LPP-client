@@ -32,9 +32,10 @@ template <typename T>
 class QueueTask : public QueueTaskBase {
 public:
     QueueTask(System& system) : mSystem(system), mQueue() {
-        mEvent = {[this](struct epoll_event* event) {
+        mEvent.name  = "streamline-queue";
+        mEvent.event = [this](struct epoll_event* event) {
             this->event(event);
-        }};
+        };
     }
     ~QueueTask() override { cancel(); }
 

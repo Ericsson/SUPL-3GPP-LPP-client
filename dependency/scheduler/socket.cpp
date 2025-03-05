@@ -548,6 +548,7 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     mConnected       = false;
     mShouldReconnect = should_reconnect;
 
+    mEvent.name = "socket";
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
     };

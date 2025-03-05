@@ -271,7 +271,16 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
 
     auto epoll_event = reinterpret_cast<EpollEvent*>(event.data.ptr);
     if (epoll_event) {
+        auto before_event = std::chrono::steady_clock::now();
         epoll_event->event(&event);
+        auto after_event = std::chrono::steady_clock::now();
+        auto event_name  = epoll_event->name;
+        if (!event_name) {
+            event_name = "unknown";
+        }
+        DEBUGF("event \"%s\" took %lld ms", event_name,
+                 std::chrono::duration_cast<std::chrono::milliseconds>(after_event - before_event)
+                     .count());
     }
 }
 

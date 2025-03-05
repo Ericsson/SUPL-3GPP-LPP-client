@@ -1,7 +1,7 @@
 #include "input.hpp"
 
 namespace io {
-Input::Input() NOEXCEPT : mScheduler(nullptr) {}
+Input::Input() NOEXCEPT : mEventName("input-unknown"), mScheduler(nullptr) {}
 Input::~Input() NOEXCEPT = default;
 
 bool Input::schedule(scheduler::Scheduler& scheduler) NOEXCEPT {

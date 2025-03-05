@@ -6,6 +6,7 @@
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
+#include <sstream>
 
 #include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
@@ -90,6 +91,10 @@ SerialInput::SerialInput(std::string device, BaudRate baud_rate, DataBits data_b
     VSCOPE_FUNCTIONF("\"%s\", %s, %s, %s, %s", mDevice.c_str(), baud_rate_to_str(mBaudRate),
                      data_bits_to_str(mDataBits), stop_bits_to_str(mStopBits),
                      parity_bit_to_str(mParityBit));
+
+    std::stringstream ss;
+    ss << "serial:" << mDevice;
+    mEventName = ss.str();
 }
 SerialInput::~SerialInput() NOEXCEPT {
     VSCOPE_FUNCTION();
@@ -241,6 +246,7 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
     mFdTask->set_fd(mFd);
+    mFdTask->set_event_name("fd/" + mEventName);
     mFdTask->on_read = [this](int) {
         auto read_result = ::read(mFd, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", mFd, mBuffer, sizeof(mBuffer), read_result);

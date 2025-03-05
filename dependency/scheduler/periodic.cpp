@@ -20,6 +20,7 @@ PeriodicTask::PeriodicTask(std::chrono::steady_clock::duration duration) NOEXCEP
       mDuration{duration},
       mTimerFd{-1} {
     VSCOPE_FUNCTION();
+    mEvent.name = "periodic";
     mEvent.event = [this](struct epoll_event* event) {
         if ((event->events & EPOLLIN) == 0) return;
 

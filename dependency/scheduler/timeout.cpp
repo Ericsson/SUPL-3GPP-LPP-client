@@ -20,6 +20,7 @@ TimeoutTask::TimeoutTask(std::chrono::steady_clock::duration duration) NOEXCEPT
       mDuration{duration},
       mTimerFd{-1} {
     VSCOPE_FUNCTION();
+    mEvent.name = "timeout";
     mEvent.event = [this](struct epoll_event* event) {
         if ((event->events & EPOLLIN) == 0) return;
 

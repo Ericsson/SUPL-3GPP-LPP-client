@@ -29,58 +29,75 @@ PeriodicSession::~PeriodicSession() {
     destroy();
 }
 
+void PeriodicSession::handle_request_response(TransactionHandle const& transaction,
+                                              Message                  message) {
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+    request_response(transaction, std::move(message));
+}
+
+void PeriodicSession::handle_periodic_begin(TransactionHandle const& transaction, Message message) {
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+
+    mPeriodicTransactions.push_back(transaction);
+    if (mClient) {
+        mClient->mPeriodicTransactions[transaction] = mHandle;
+    }
+
+    periodic_begin(transaction);
+    periodic_message(transaction, std::move(message));
+}
+
+void PeriodicSession::handle_periodic_ended(TransactionHandle const& transaction) {
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
+
+    auto it = std::find(mPeriodicTransactions.begin(), mPeriodicTransactions.end(), transaction);
+    ASSERT(it != mPeriodicTransactions.end(), "transaction mismatch");
+    mPeriodicTransactions.erase(it);
+
+    if (mClient) {
+        mClient->mPeriodicTransactions.erase(transaction);
+    }
+
+    periodic_ended(transaction);
+}
+
 void PeriodicSession::message(TransactionHandle const& transaction, Message message) {
     VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
     // Check if the transaction is a request transaction
-    auto it = mRequestTransactions.find(transaction);
-    if (it != mRequestTransactions.end()) {
-        request_response(transaction, std::move(message));
+    auto rit = mRequestTransactions.find(transaction);
+    if (rit != mRequestTransactions.end()) {
+        handle_request_response(transaction, std::move(message));
         return;
     }
 
     // Check if the transaction is the periodic transaction
-    if (mPeriodicTransaction.is_valid() && mPeriodicTransaction == transaction) {
+    auto pit = std::find(mPeriodicTransactions.begin(), mPeriodicTransactions.end(), transaction);
+    if (pit != mPeriodicTransactions.end()) {
         periodic_message(transaction, std::move(message));
         return;
     }
 
     // Otherwise, this is the new transaction for the periodic session
-    if (!mPeriodicTransaction.is_valid()) {
-        mPeriodicTransaction = transaction;
-        if (mClient) {
-            mClient->mPeriodicTransactions[transaction] = mHandle;
-        }
-
-        periodic_begin(transaction);
-        periodic_message(transaction, std::move(message));
-        return;
-    }
-
-    WARNF("unknown transaction received");
+    handle_periodic_begin(transaction, std::move(message));
 }
 
 void PeriodicSession::end(TransactionHandle const& transaction) {
     VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
-    auto it = mRequestTransactions.find(transaction);
-    if (it != mRequestTransactions.end()) {
-        mRequestTransactions.erase(it);
+    auto rit = mRequestTransactions.find(transaction);
+    if (rit != mRequestTransactions.end()) {
+        unregister_request(transaction);
         return;
     }
 
-    if (mPeriodicTransaction == transaction) {
-        periodic_ended(transaction);
-
-        ASSERT(mPeriodicTransaction == transaction, "transaction mismatch");
-        if (mClient) {
-            mClient->mPeriodicTransactions.erase(transaction);
-        }
-
-        mPeriodicTransaction = TransactionHandle{};
-        // TODO(ewasjon): Why is this unreachable?
-        UNREACHABLE();
+    auto pit = std::find(mPeriodicTransactions.begin(), mPeriodicTransactions.end(), transaction);
+    if (pit != mPeriodicTransactions.end()) {
+        handle_periodic_ended(transaction);
+        return;
     }
+
+    WARNF("unknown transaction ending: %s", transaction.to_string().c_str());
 }
 
 void PeriodicSession::periodic_begin(TransactionHandle const&) {}
@@ -105,7 +122,7 @@ bool PeriodicSession::send_new_request(Message message) {
 }
 
 void PeriodicSession::register_request(TransactionHandle const& transaction) {
-    VSCOPE_FUNCTION();
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     mRequestTransactions[transaction] = std::chrono::steady_clock::now();
     if (mClient) {
         mClient->mRequestTransactions[transaction] = mHandle;
@@ -113,7 +130,7 @@ void PeriodicSession::register_request(TransactionHandle const& transaction) {
 }
 
 void PeriodicSession::unregister_request(TransactionHandle const& transaction) {
-    VSCOPE_FUNCTION();
+    VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     auto it = mRequestTransactions.find(transaction);
     if (it != mRequestTransactions.end()) {
         mRequestTransactions.erase(it);
@@ -152,6 +169,7 @@ void PeriodicSession::check_active_requests() {
 void PeriodicSession::destroy() {
     VSCOPE_FUNCTION();
 
+    // Remove request
     std::vector<TransactionHandle> to_remove;
     for (auto it = mRequestTransactions.begin(); it != mRequestTransactions.end(); ++it) {
         auto transaction = it->first;
@@ -164,11 +182,22 @@ void PeriodicSession::destroy() {
         unregister_request(transaction);
     }
 
+    to_remove.clear();
     mRequestTransactions.clear();
+
+    // Remove periodic
+    for (auto& transaction : mPeriodicTransactions) {
+        to_remove.push_back(transaction);
+    }
+
+    for (auto& transaction : to_remove) {
+        auto abort = lpp::create_abort();
+        transaction.send_with_end(abort);
+        handle_periodic_ended(transaction);
+    }
 
     if (mClient) {
         mClient->deallocate_periodic_session_handle(mHandle);
-        mClient->mPeriodicTransactions.erase(mPeriodicTransaction);
     }
 
     mPeriodicTask.cancel();
@@ -177,7 +206,7 @@ void PeriodicSession::destroy() {
 void PeriodicSession::try_destroy() {
     VSCOPE_FUNCTION();
 
-    if(mClient) {
+    if (mClient) {
         mClient->want_to_be_destroyed(mHandle);
     }
 }

@@ -1,6 +1,7 @@
 #include "file.hpp"
 
 #include <fcntl.h>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
@@ -22,6 +23,10 @@ FileInput::FileInput(std::string path, size_t bytes_per_tick, Duration tick_inte
       mForwardFd(-1) {
     VSCOPE_FUNCTIONF("\"%s\", %zu, %zu ms", mPath.c_str(), mBytesPerTick,
                      std::chrono::duration_cast<std::chrono::milliseconds>(mTickInterval).count());
+
+    std::stringstream ss;
+    ss << "file:" << mPath;
+    mEventName = ss.str();
 }
 
 FileInput::~FileInput() NOEXCEPT {
@@ -40,10 +45,12 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     }
 
     mStreamTask.reset(new scheduler::ForwardStreamTask(mFileFd, mBytesPerTick, mTickInterval));
+    mStreamTask->set_event_name("fst/" + mEventName);
     mForwardFd = mStreamTask->fd();
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
     mFdTask->set_fd(mForwardFd);
+    mFdTask->set_event_name("fd/" + mEventName);
     mFdTask->on_read = [this](int) {
         auto result = ::read(mForwardFd, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", mForwardFd, mBuffer, sizeof(mBuffer), result);

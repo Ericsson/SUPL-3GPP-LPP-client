@@ -30,9 +30,10 @@ namespace lpp {
 SessionTask::SessionTask(Session* session, int fd)
     : mFd(fd), mSession(session), mScheduler(nullptr), mReadEnabled(false), mWriteEnabled(false),
       mErrorEnabled(false) {
-    mEvent = {[this](struct epoll_event* event) {
+    mEvent.name  = "lpp-session";
+    mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
-    }};
+    };
 }
 
 bool SessionTask::schedule(scheduler::Scheduler& scheduler) {

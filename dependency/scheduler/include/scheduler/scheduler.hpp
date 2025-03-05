@@ -8,6 +8,7 @@
 
 namespace scheduler {
 struct EpollEvent {
+    const char* name = nullptr;
     std::function<void(struct epoll_event*)> event;
 };
 

@@ -5,6 +5,7 @@
 
 #include <chrono>
 #include <unordered_map>
+#include <vector>
 
 namespace lpp {
 
@@ -28,9 +29,9 @@ protected:
     // Response to a request transaction
     virtual void request_response(TransactionHandle const& transaction, Message message) = 0;
     // Periodic session transaction started
-    virtual void periodic_begin(TransactionHandle const& transaction) = 0;
+    virtual void periodic_begin(TransactionHandle const& transaction);
     // Periodic session transaction ended
-    virtual void periodic_ended(TransactionHandle const& transaction) = 0;
+    virtual void periodic_ended(TransactionHandle const& transaction);
     // Message received for the periodic session
     virtual void periodic_message(TransactionHandle const& transaction, Message message) = 0;
     // An out-going request hasn't been answered for 5 seconds
@@ -40,15 +41,20 @@ protected:
     void check_active_requests();
     void destroy();
 
+    void handle_request_response(TransactionHandle const& transaction, Message message);
+    void handle_unsolicited_message(TransactionHandle const& transaction, Message message);
+    void handle_periodic_begin(TransactionHandle const& transaction, Message message);
+    void handle_periodic_ended(TransactionHandle const& transaction);
+
 private:
     void register_request(TransactionHandle const& transaction);
     void unregister_request(TransactionHandle const& transaction);
 
 protected:
-    Client*               mClient;
-    Session*              mSession;
-    PeriodicSessionHandle mHandle;
-    TransactionHandle     mPeriodicTransaction;
+    Client*                        mClient;
+    Session*                       mSession;
+    PeriodicSessionHandle          mHandle;
+    std::vector<TransactionHandle> mPeriodicTransactions;
 
     std::unordered_map<TransactionHandle, std::chrono::steady_clock::time_point>
                             mRequestTransactions;
