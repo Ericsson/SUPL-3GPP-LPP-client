@@ -19,9 +19,11 @@ static std::string gServer;
 static int         gPort;
 static std::string gUsername;
 static std::string gPassword;
+static bool        gReliable = false;
+static bool        gSsrData  = true;
 
 void initialize(std::string const& device, std::string const& server, int port,
-                std::string const& username, std::string const& password) {
+                std::string const& username, std::string const& password, bool reliable) {
     FUNCTION_SCOPE();
     ::mosquitto_lib_init();
     VERBOSEF("::mosquitto_lib_init()");
@@ -33,6 +35,12 @@ void initialize(std::string const& device, std::string const& server, int port,
     gPassword    = password;
     gInitialized = false;
     gEnabled     = true;
+    gReliable    = reliable;
+    gSsrData     = true;
+}
+
+void set_ssr_data(bool ssr_data) {
+    gSsrData = ssr_data;
 }
 
 void start() {
@@ -62,8 +70,9 @@ void start() {
         return;
     }
 
-    result = ::mosquitto_connect(gMosq, gServer.c_str(), gPort, 60);
-    VERBOSEF("::mosquitto_connect(%p, %s, %d, 60) = %d", gMosq, gServer.c_str(), gPort, result);
+    result = ::mosquitto_connect_async(gMosq, gServer.c_str(), gPort, 60);
+    VERBOSEF("::mosquitto_connect_async(%p, %s, %d, 60) = %d", gMosq, gServer.c_str(), gPort,
+             result);
     if (result != MOSQ_ERR_SUCCESS) {
         ERRORF("failed to connect to mosquitto server: %s", mosquitto_strerror(result));
         mosquitto_destroy(gMosq);
@@ -113,27 +122,14 @@ void publish(std::string const& topic, std::string const& ss_data) {
 
     ASSERT(gMosq != nullptr, "mosq is null");
 
-    int count = 0;
-    while (count < 3) {
-        auto ss_size = static_cast<int>(ss_data.size());
-        auto result =
-            ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), 1, false);
-        VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., 0, false) = %d", gMosq,
-                 topic.c_str(), ss_size, result);
-        if (result != MOSQ_ERR_SUCCESS) {
-            if (count >= 2) {
-                DEBUGF("failed to publish \"%s\" (attempt %d): %s", topic.c_str(), count,
-                       mosquitto_strerror(result));
-            } else {
-                VERBOSEF("failed to publish \"%s\" (attempt %d): %s", topic.c_str(), count,
-                         mosquitto_strerror(result));
-            }
-            // Yield to allow the mosquitto thread to process the message
-            usleep(0);
-        } else {
-            break;
-        }
-        count++;
+    auto qos     = gReliable ? 1 : 0;
+    auto ss_size = static_cast<int>(ss_data.size());
+    auto result =
+        ::mosquitto_publish(gMosq, nullptr, topic.c_str(), ss_size, ss_data.c_str(), qos, false);
+    VERBOSEF("::mosquitto_publish(%p, nullptr, \"%s\", %zu, ..., %d, false) = %d", gMosq,
+             topic.c_str(), ss_size, result, qos);
+    if (result != MOSQ_ERR_SUCCESS) {
+        VERBOSEF("failed to publish \"%s\": %s", topic.c_str(), mosquitto_strerror(result));
     }
 }
 
@@ -252,6 +248,7 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
                                  Option<Float3> delta, Option<Float3> dot_delta,
                                  Option<long> ssr_iod, Option<long> eph_iod) {
     FUNCTION_SCOPE();
+    if (!gSsrData) return;
 
     auto topic    = "datatrace/ssr/orbit/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -281,6 +278,7 @@ void report_ssr_clock_correction(ts::Tai const& time, std::string const& satelli
                                  Option<double> c0, Option<double> c1, Option<double> c2,
                                  Option<long> ssr_iod) {
     FUNCTION_SCOPE();
+    if (!gSsrData) return;
 
     auto topic    = "datatrace/ssr/clock/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -307,6 +305,7 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
                                        Option<long>   stec_quality_indicator_val,
                                        Option<long>   ssr_iod) {
     FUNCTION_SCOPE();
+    if (!gSsrData) return;
 
     auto topic    = "datatrace/ssr/iono_poly/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -339,6 +338,7 @@ void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
                                   Option<Float3> position_llh, Option<double> tropo_wet,
                                   Option<double> tropo_dry, Option<long> ssr_iod) {
     FUNCTION_SCOPE();
+    if (!gSsrData) return;
 
     auto topic =
         "datatrace/ssr/tropo_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/v1";
@@ -364,6 +364,7 @@ void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
                                  Option<Float3> position_llh, std::string const& satellite,
                                  Option<double> residual, Option<long> ssr_iod) {
     FUNCTION_SCOPE();
+    if (!gSsrData) return;
 
     auto topic = "datatrace/ssr/iono_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/" +
                  satellite + "/v1";

@@ -448,10 +448,11 @@ int main(int argc, char** argv) {
 
 #ifdef DATA_TRACING
     if (program.config.data_tracing.enabled) {
-        datatrace::initialize(program.config.data_tracing.device,
-                              program.config.data_tracing.server, program.config.data_tracing.port,
-                              program.config.data_tracing.username,
-                              program.config.data_tracing.password);
+        datatrace::initialize(
+            program.config.data_tracing.device, program.config.data_tracing.server,
+            program.config.data_tracing.port, program.config.data_tracing.username,
+            program.config.data_tracing.password, program.config.data_tracing.reliable);
+        datatrace::set_ssr_data(!program.config.data_tracing.disable_ssr_data);
     }
 #endif
 

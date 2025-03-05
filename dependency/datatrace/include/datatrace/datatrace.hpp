@@ -21,8 +21,10 @@ struct Option {
 };
 
 void initialize(std::string const& device, std::string const& server, int port,
-                std::string const& username, std::string const& password);
+                std::string const& username, std::string const& password, bool reliable);
 void finalize();
+
+void set_ssr_data(bool enable);
 
 struct Satellite {
     Option<Float3> position;

@@ -22,14 +22,24 @@ static args::ValueFlag<std::string> gPassword{
     gGroup, "password", "Password", {"dt-password"}, args::Options::Single,
 };
 
+static args::Flag gReliable{
+    gGroup, "reliable", "Reliable", {"dt-reliable"}, args::Options::Single,
+};
+
+static args::Flag gDisableSsrData{
+    gGroup, "disable-ssr-data", "Disable SSR Data", {"dt-disable-ssr-data"}, args::Options::Single,
+};
+
 static void setup() {
     gPort.HelpDefault("1883");
 }
 
 static void parse(Config* config) {
-    auto& dt   = config->data_tracing;
-    dt.enabled = false;
-    dt.port    = 1883;
+    auto& dt            = config->data_tracing;
+    dt.enabled          = false;
+    dt.port             = 1883;
+    dt.reliable         = gReliable;
+    dt.disable_ssr_data = gDisableSsrData;
 
     if (gDevice || gServer || gPort || gUsername || gPassword) {
         if (!gDevice || !gServer || !gUsername || !gPassword) {
