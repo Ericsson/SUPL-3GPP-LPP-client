@@ -94,10 +94,9 @@ static void client_initialize(Program& program, lpp::Client&) {
         INFOF("connected to LPP server");
     };
 
-    program.client->on_disconnected = [&program](lpp::Client& client) {
+    program.client->on_disconnected = [&program](lpp::Client&) {
         INFOF("disconnected from LPP server");
-        INFOF("reconnecting to LPP server");
-        client.schedule(&program.scheduler);
+        program.is_disconnected = true;
     };
 
     program.client->on_provide_capabilities = [&program](lpp::Client& client) {
@@ -184,6 +183,13 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         if (lpp_uper_pad)
             program.lpp_uper_parsers.push_back(
                 std::unique_ptr<format::lpp::UperParser>(lpp_uper_pad));
+
+        std::string event_name = input.interface->event_name();
+        if (nmea) event_name += "+nmea";
+        if (ubx) event_name += "+ubx";
+        if (ctrl) event_name += "+ctrl";
+        if (lpp_uper) event_name += "+lpp-uper";
+        if (lpp_uper_pad) event_name += "+lpp-uper-pad";
 
         input.interface->schedule(program.scheduler);
         input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper,
@@ -456,7 +462,8 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    program.stream = streamline::System{program.scheduler};
+    program.stream          = streamline::System{program.scheduler};
+    program.is_disconnected = false;
 
     initialize_inputs(program, program.config.input);
     initialize_outputs(program, program.config.output);
@@ -467,6 +474,15 @@ int main(int argc, char** argv) {
     setup_lpp2osr(program);
     setup_lpp2spartn(program);
     setup_tokoro(program);
+
+    scheduler::PeriodicTask reconnect_task{std::chrono::seconds(15)};
+    reconnect_task.callback = [&program]() {
+        if (program.is_disconnected) {
+            INFOF("reconnecting to LPP server");
+            program.is_disconnected = false;
+            program.client->schedule(&program.scheduler);
+        }
+    };
 
     if (program.config.location_server.enabled) {
         if (program.config.identity.wait_for_identity) {
@@ -570,6 +586,8 @@ int main(int argc, char** argv) {
         program.client.reset(client);
 
         client_initialize(program, *client);
+
+        reconnect_task.schedule(program.scheduler);
         client->schedule(&program.scheduler);
     }
 

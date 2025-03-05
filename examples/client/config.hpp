@@ -144,6 +144,9 @@ struct DataTracingConfig {
     uint16_t    port;
     std::string username;
     std::string password;
+
+    bool reliable;
+    bool disable_ssr_data;
 };
 #endif
 

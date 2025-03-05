@@ -21,6 +21,7 @@ struct Program {
     Config               config;
     scheduler::Scheduler scheduler;
     streamline::System   stream;
+    bool                 is_disconnected;
 
     lpp::PeriodicSessionHandle assistance_data_session{};
 

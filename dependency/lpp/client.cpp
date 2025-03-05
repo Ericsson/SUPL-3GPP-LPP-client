@@ -393,12 +393,14 @@ void Client::process_provide_assistance_data(lpp::TransactionHandle const& trans
     PeriodicSessionHandle handle{};
     if (!lpp::get_periodic_session(*inner, &handle)) {
         WARNF("provide assistance data message does not contain a periodic session id");
+        // TODO(ewasjon): Handle single-shot requests
         return;
     }
 
     periodic_session = find_by_periodic_session_handle(handle);
     if (!periodic_session) {
         WARNF("provide assistance data with a unknown periodic session");
+        // TODO(ewasjon): Send back an abort for the transactions
         return;
     }
 

@@ -549,7 +549,10 @@ TransactionHandle Session::allocate_transaction() {
 
 void Session::send(TransactionHandle const& handle, Message& message) {
     VSCOPE_FUNCTION();
-    ASSERT(mSession != nullptr, "session is null");
+    if (!mSession) {
+        VERBOSEF("session is null");
+        return;
+    }
 
     // Ensure that the message doesn't already have a transactionID set and that endTransaction
     // is false
