@@ -97,6 +97,11 @@ static void client_initialize(Program& program, lpp::Client&) {
     program.client->on_disconnected = [&program](lpp::Client&) {
         INFOF("disconnected from LPP server");
         program.is_disconnected = true;
+
+        if (program.config.location_server.shutdown_on_disconnect) {
+            INFOF("shutting down location server");
+            exit(1);
+        }
     };
 
     program.client->on_provide_capabilities = [&program](lpp::Client& client) {
@@ -269,14 +274,15 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     // TODO(ewasjon): bool spartn_output   = false;
     // TODO(ewasjon): bool rtcm_output   = false;
     for (auto& output : config.outputs) {
-        DEBUGF("output %p: %s%s%s%s%s%s%s", output.interface.get(),
+        DEBUGF("output %p: %s%s%s%s%s%s%s%s", output.interface.get(),
                (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
                (output.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
                (output.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
                (output.format & OUTPUT_FORMAT_LPP_XER) ? "lpp-xer " : "",
-               (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "");
+               (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
+               (output.format & OUTPUT_FORMAT_LFR) ? "lfr " : "");
 
         if ((output.format & OUTPUT_FORMAT_LPP_XER) != 0) lpp_xer_output = true;
         if ((output.format & OUTPUT_FORMAT_LPP_UPER) != 0) lpp_uper_output = true;

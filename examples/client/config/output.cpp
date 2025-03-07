@@ -30,7 +30,7 @@ static args::ValueFlagList<std::string> gArgs{
     "    path=<path>\n"
     "\n"
     "Formats:\n"
-    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper\n"
+    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper, lrf\n"
     "Examples:\n"
     "  --output file:path=/tmp/output,format=ubx+nmea",
     {"output"},
@@ -57,6 +57,7 @@ static OutputFormat parse_format(std::string const& str) {
     if (str == "spartn") return OUTPUT_FORMAT_SPARTN;
     if (str == "lpp-xer") return OUTPUT_FORMAT_LPP_XER;
     if (str == "lpp-uper") return OUTPUT_FORMAT_LPP_UPER;
+    if (str == "lfr") return OUTPUT_FORMAT_LFR;
     throw args::ValidationError("--output format: invalid format, got `" + str + "`");
 }
 
@@ -272,7 +273,9 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        return {format, std::unique_ptr<io::Output>(new io::TcpClientOutput(host, static_cast<uint16_t>(port), reconnect)),
+        return {format,
+                std::unique_ptr<io::Output>(
+                    new io::TcpClientOutput(host, static_cast<uint16_t>(port), reconnect)),
                 print};
     } else if (options.find("path") != options.end()) {
         auto path = options.at("path");
@@ -316,7 +319,10 @@ parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(host, static_cast<uint16_t>(port))), print};
+        return {
+            format,
+            std::unique_ptr<io::Output>(new io::UdpClientOutput(host, static_cast<uint16_t>(port))),
+            print};
     } else if (options.find("path") != options.end()) {
         auto path = options.at("path");
         return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(path)), print};
@@ -395,7 +401,7 @@ static void dump(OutputConfig const& config) {
 
         auto tcp_client_output = dynamic_cast<io::TcpClientOutput*>(output.interface.get());
         if (tcp_client_output) {
-            if(tcp_client_output->host().empty()) {
+            if (tcp_client_output->host().empty()) {
                 DEBUGF("path: %s", tcp_client_output->path().c_str());
             } else {
                 DEBUGF("host: %s", tcp_client_output->host().c_str());
@@ -407,7 +413,7 @@ static void dump(OutputConfig const& config) {
 
         auto udp_client_output = dynamic_cast<io::UdpClientOutput*>(output.interface.get());
         if (udp_client_output) {
-            if(udp_client_output->host().empty()) {
+            if (udp_client_output->host().empty()) {
                 DEBUGF("path: %s", udp_client_output->path().c_str());
             } else {
                 DEBUGF("host: %s", udp_client_output->host().c_str());

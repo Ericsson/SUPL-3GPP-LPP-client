@@ -28,9 +28,20 @@ void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message) NOEXCE
 
         // TODO(ewasjon): These message should be passed back into the system
         for (auto const& output : mOutput.outputs) {
-            if (!output.rtcm_support()) continue;
+            auto output_lfr    = output.lfr_support();
+            auto output_rtcm   = mConfig.output_in_rtcm && output.rtcm_support();
+            auto should_output = output_rtcm || output_lfr;
+            if (!should_output) continue;
+
             if (output.print) {
-                XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), sub_size);
+                if (output_lfr) {
+                    XINFOF(OUTPUT_PRINT_MODULE, "lfr : %04d (%zd bytes)", submessage.id(),
+                           sub_size);
+                }
+                if (output_rtcm) {
+                    XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(),
+                           sub_size);
+                }
             }
 
             output.interface->write(sub_buffer, sub_size);

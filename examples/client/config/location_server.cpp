@@ -30,12 +30,19 @@ static args::Flag gSlpHostImsi{
     "Use IMSI to resolve location server IP address",
     {"slp-host-imsi"},
 };
+static args::Flag gShutdownOnDisconnect{
+    gGroup,
+    "shutdown-on-disconnect",
+    "Shutdown the client if the location server connection is lost",
+    {"ls-shutdown-on-disconnect"},
+};
 
 static void setup() {}
 
 static void parse(Config* config) {
-    auto& ls   = config->location_server;
-    ls.enabled = true;
+    auto& ls                  = config->location_server;
+    ls.enabled                = true;
+    ls.shutdown_on_disconnect = false;
 
     if (gDisable) {
         ls.enabled = false;
@@ -62,6 +69,8 @@ static void parse(Config* config) {
         ls.host = gHost.Get();
         ls.port = gPort.Get();
     }
+
+    if (gShutdownOnDisconnect) ls.shutdown_on_disconnect = true;
 }
 
 static void dump(LocationServerConfig const& config) {

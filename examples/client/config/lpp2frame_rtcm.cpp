@@ -1,7 +1,7 @@
 
 namespace lpp2frame_rtcm {
 
-static args::Group gGroup{"LPP to FRAMED RTCM:"};
+static args::Group gGroup{"LPP to framed RTCM:"};
 static args::Flag  gEnable{
     gGroup,
     "enable",
@@ -16,6 +16,13 @@ static args::ValueFlag<int> gRtcmMessageId{
     {"l2f-id"},
 };
 
+static args::Flag gOutputInRtcm{
+    gGroup,
+    "rtcm",
+    "Output as both 'lrf' and 'rtcm' messages",
+    {"l2f-rtcm"},
+};
+
 static void setup() {
     gRtcmMessageId.HelpDefault("355");
 }
@@ -24,6 +31,7 @@ static void parse(Config* config) {
     auto& lpp2frame_rtcm           = config->lpp2frame_rtcm;
     lpp2frame_rtcm.enabled         = false;
     lpp2frame_rtcm.rtcm_message_id = 355;
+    lpp2frame_rtcm.output_in_rtcm  = gOutputInRtcm.Get();
 
     if (gEnable) lpp2frame_rtcm.enabled = true;
 
@@ -41,6 +49,7 @@ static void dump(Lpp2FrameRtcmConfig const& config) {
     if (!config.enabled) return;
 
     DEBUGF("rtcm_message_id: %d", config.rtcm_message_id);
+    DEBUGF("output_in_rtcm:  %s", config.output_in_rtcm ? "true" : "false");
 }
 
 }  // namespace lpp2frame_rtcm

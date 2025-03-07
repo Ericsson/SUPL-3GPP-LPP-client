@@ -160,6 +160,7 @@ bool parse(int argc, char** argv, Config* config) {
     args::GlobalOptions gnss_globals{parser, gnss::gGroup};
 #ifdef INCLUDE_GENERATOR_RTCM
     args::GlobalOptions lpp2rtcm_globals{parser, lpp2rtcm::gGroup};
+    args::GlobalOptions lpp2frame_rtcm_globals{parser, lpp2frame_rtcm::gGroup};
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     args::GlobalOptions lpp2spartn_globals{parser, lpp2spartn::gGroup};
