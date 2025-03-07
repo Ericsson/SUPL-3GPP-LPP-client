@@ -5,6 +5,9 @@
 
 This project is a set of libraries, examples and tools to facilitate the development of 3GPP LPP clients. 
 
+> [!IMPORTANT]
+> Upgrading from version 3.4 to version 4 have breaking changes. Follow [Upgrade Guide](/UPGRADE_FROM_V3.md) for argument changes when using `example-lpp`.  
+
 ## Libraries
 * 3GPP LPP client - A library that can be used to communicate with a SUPL server and request assistance data.
 * LPP to RTCM converter - Convert 3GPP LPP messages to RTCM messages
