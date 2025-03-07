@@ -79,7 +79,7 @@ static void client_request(Program& program, lpp::Client& client) {
         [](lpp::Client&, lpp::PeriodicSessionHandle) {
             INFOF("request assistance data (ended)");
         },
-        [&program](lpp::Client&) {
+        [&](lpp::Client&) {
             ERRORF("request assistance data failed");
         },
     });

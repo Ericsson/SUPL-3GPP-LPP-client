@@ -79,6 +79,7 @@ struct CorrectionPointSet {
 
 struct OrbitCorrection {
     ts::Tai  reference_time;
+    uint16_t ssr_iod;
     uint16_t iod;
     Float3   delta;      // {radial, along_track, cross_track}
     Float3   dot_delta;  // {radial, along_track, cross_track}
@@ -89,20 +90,23 @@ struct OrbitCorrection {
 };
 
 struct ClockCorrection {
-    ts::Tai reference_time;
-    double  c0;
-    double  c1;
-    double  c2;
+    ts::Tai  reference_time;
+    uint16_t ssr_iod;
+    double   c0;
+    double   c1;
+    double   c2;
 
     NODISCARD double correction(ts::Tai time) const NOEXCEPT;
 };
 
 struct CodeBiasCorrection {
-    double bias;
+    uint16_t ssr_iod;
+    double   bias;
 };
 
 struct PhaseBiasCorrection {
-    double bias;
+    uint16_t ssr_iod;
+    double   bias;
 };
 
 struct SignalCorrection {
@@ -121,7 +125,7 @@ struct IonosphericCorrection {
     double vtec_grid_residual;
     double vtec_polynomial_residual;
     double quality;
-    bool quality_valid;
+    bool   quality_valid;
 };
 
 struct IonosphericPolynomial {
