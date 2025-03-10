@@ -1,7 +1,6 @@
 # Example - Client
 
 ```
-I250310 09:44:10[    client] S3LC Client (4.0.1)
   ./example-client {OPTIONS}
 
     S3LC Client (4.0.1)
