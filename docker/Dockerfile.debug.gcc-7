@@ -1,0 +1,18 @@
+FROM ubuntu:18.04
+
+RUN apt-get update && apt-get upgrade -y && apt-get install -y \
+    gcc-7 \
+    g++-7 \
+    cmake \
+    ninja-build \
+    libssl-dev \
+ && rm -rf /var/lib/apt/lists/*
+
+RUN find / -name "gcc-*"
+RUN find / -name "g++-*"
+
+WORKDIR /app
+COPY . .
+RUN mkdir -p docker_build
+RUN cd docker_build && cmake .. -GNinja -DFORCE_COLORED_OUTPUT=OFF -DCMAKE_CXX_COMPILER=g++-7 -DCMAKE_C_COMPILER=gcc-7 -DCMAKE_BUILD_TYPE=Debug -DCMAKE_EXE_LINKER_FLAGS="-static" && ninja
+RUN cd docker_build && find . -type f -name "example-*" -executable -exec strip -s {} \;

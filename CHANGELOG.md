@@ -1,5 +1,9 @@
 # Changelog
 
+## [Prerelease]
+
+- Building and publishing containers to GHCR
+
 ## [4.0.2] 2025-03-12
 
 - TRACE/VERBOSE/DEBUG is now available in Release mode
