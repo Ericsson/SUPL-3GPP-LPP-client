@@ -1,6 +1,6 @@
 # Changelog
 
-## [Prerelease]
+## [4.0.3] 2025-03-12
 
 - Building and publishing containers to GHCR
 
