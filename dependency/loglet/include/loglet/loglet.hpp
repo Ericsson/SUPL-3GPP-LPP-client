@@ -28,18 +28,6 @@
 #define ERRNO_ARGS(e) e, strerror(e)
 #endif
 
-#if !defined(DEBUG)
-#ifndef DISABLE_TRACE
-#define DISABLE_TRACE
-#endif
-#ifndef DISABLE_VERBOSE
-#define DISABLE_VERBOSE
-#endif
-#ifndef DISABLE_DEBUG
-#define DISABLE_DEBUG
-#endif
-#endif
-
 #ifdef DISABLE_TRACE
 #define XTRACEF(module, fmt, ...)
 #define TRACEF(fmt, ...)

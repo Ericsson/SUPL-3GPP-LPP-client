@@ -11,6 +11,7 @@ add_executable(example_client
     "processor/lpp2frame_rtcm.cpp"
     "processor/lpp2spartn.cpp"
     "processor/tokoro.cpp"
+    "processor/test.cpp"
 )
 add_executable(examples::client ALIAS example_client)
 

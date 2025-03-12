@@ -149,6 +149,8 @@ public:
                           StopBits stop_bits, ParityBit parity_bit) NOEXCEPT;
     ~SerialOutput() NOEXCEPT override;
 
+    NODISCARD const char* name() const NOEXCEPT override { return "serial"; }
+
     void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
 
     NODISCARD std::string const& device() const NOEXCEPT { return mDevice; }

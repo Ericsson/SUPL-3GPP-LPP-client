@@ -8,6 +8,8 @@ public:
     EXPLICIT StdoutOutput() NOEXCEPT;
     ~StdoutOutput() NOEXCEPT override;
 
+    NODISCARD const char* name() const NOEXCEPT override { return "stdout"; }
+
     void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
 };
 }  // namespace io

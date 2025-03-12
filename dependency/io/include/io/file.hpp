@@ -47,6 +47,8 @@ public:
     EXPLICIT FileOutput(std::string path, bool truncate, bool append, bool create) NOEXCEPT;
     ~FileOutput() NOEXCEPT override;
 
+    NODISCARD const char* name() const NOEXCEPT override { return "file"; }
+
     void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
 
     NODISCARD std::string const& path() const NOEXCEPT { return mPath; }

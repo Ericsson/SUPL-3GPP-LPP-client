@@ -75,6 +75,8 @@ public:
     EXPLICIT TcpClientOutput(std::string path, bool reconnect) NOEXCEPT;
     ~TcpClientOutput() NOEXCEPT override;
 
+    NODISCARD const char* name() const NOEXCEPT override { return "tcp-client"; }
+
     void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
 
     NODISCARD std::string const& host() const NOEXCEPT { return mHost; }
@@ -108,6 +110,36 @@ private:
     struct sockaddr_storage               mAddress;
     socklen_t                             mAddressLength;
     std::chrono::steady_clock::time_point mReconnectTime;
+};
+
+class TcpServerOutput : public Output {
+public:
+    EXPLICIT TcpServerOutput(std::string listen, uint16_t port) NOEXCEPT;
+    EXPLICIT TcpServerOutput(std::string path) NOEXCEPT;
+    ~TcpServerOutput() NOEXCEPT override;
+
+    NODISCARD const char* name() const NOEXCEPT override { return "tcp-server"; }
+
+    void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
+
+    NODISCARD std::string const& listen() const NOEXCEPT { return mListen; }
+    NODISCARD uint16_t           port() const NOEXCEPT { return mPort; }
+    NODISCARD std::string const& path() const NOEXCEPT { return mPath; }
+
+protected:
+    NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;
+    NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;
+
+    void remove_client(int fd) NOEXCEPT;
+
+private:
+    std::string mPath;
+    std::string mListen;
+    uint16_t    mPort;
+
+    std::unique_ptr<scheduler::TcpListenerTask>         mListenerTask;
+    std::vector<std::unique_ptr<scheduler::SocketTask>> mClientTasks;
+    std::vector<std::unique_ptr<scheduler::SocketTask>> mRemoveClientTasks;
 };
 
 }  // namespace io

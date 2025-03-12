@@ -43,6 +43,8 @@ public:
     EXPLICIT UdpClientOutput(std::string path) NOEXCEPT;
     ~UdpClientOutput() NOEXCEPT override;
 
+    NODISCARD const char* name() const NOEXCEPT override { return "udp-client"; }
+
     void write(uint8_t const* buffer, size_t length) NOEXCEPT override;
 
     NODISCARD std::string const& host() const NOEXCEPT { return mHost; }

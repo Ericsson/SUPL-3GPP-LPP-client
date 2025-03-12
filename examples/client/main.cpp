@@ -32,6 +32,7 @@
 #include "processor/lpp.hpp"
 #include "processor/nmea.hpp"
 #include "processor/ubx.hpp"
+#include "processor/test.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
@@ -271,10 +272,12 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     bool nmea_output     = false;
     bool ubx_output      = false;
     bool ctrl_output     = false;
+    bool test_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
     // TODO(ewasjon): bool rtcm_output   = false;
     for (auto& output : config.outputs) {
-        DEBUGF("output %p: %s%s%s%s%s%s%s%s", output.interface.get(),
+        if (!output.interface) continue;
+        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s", output.interface.get()->name(),
                (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
@@ -282,15 +285,19 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
                (output.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
                (output.format & OUTPUT_FORMAT_LPP_XER) ? "lpp-xer " : "",
                (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (output.format & OUTPUT_FORMAT_LFR) ? "lfr " : "");
+               (output.format & OUTPUT_FORMAT_LFR) ? "lfr " : "",
+               (output.format & OUTPUT_FORMAT_TEST) ? "test " : "");
 
-        if ((output.format & OUTPUT_FORMAT_LPP_XER) != 0) lpp_xer_output = true;
-        if ((output.format & OUTPUT_FORMAT_LPP_UPER) != 0) lpp_uper_output = true;
-        if ((output.format & OUTPUT_FORMAT_NMEA) != 0) nmea_output = true;
-        if ((output.format & OUTPUT_FORMAT_UBX) != 0) ubx_output = true;
-        if ((output.format & OUTPUT_FORMAT_CTRL) != 0) ctrl_output = true;
-        // TODO(ewasjon): if ((output.format & OUTPUT_FORMAT_SPARTN) != 0) spartn_output = true;
-        // TODO(ewasjon): if ((output.format & OUTPUT_FORMAT_RTCM) != 0) rtcm_output = true;
+        if (output.lpp_xer_support()) lpp_xer_output = true;
+        if (output.lpp_uper_support()) lpp_uper_output = true;
+        if (output.nmea_support()) nmea_output = true;
+        if (output.ubx_support()) ubx_output = true;
+        if (output.ctrl_support()) ctrl_output = true;
+        // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
+        // TODO(ewasjon): if (output.rtcm_support()) rtcm_output = true;
+        if(output.test_support()) test_output = true;
+
+        output.interface->schedule(program.scheduler);
     }
 
     if (lpp_xer_output) program.stream.add_inspector<LppXerOutput>(config);
@@ -298,6 +305,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     if (nmea_output) program.stream.add_inspector<NmeaOutput>(config);
     if (ubx_output) program.stream.add_inspector<UbxOutput>(config);
     if (ctrl_output) program.stream.add_inspector<CtrlOutput>(config);
+    if(test_output) test_outputer(program.scheduler, config);
 }
 
 static void setup_location_stream(Program& program) {

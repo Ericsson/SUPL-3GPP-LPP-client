@@ -45,6 +45,7 @@ constexpr static OutputFormat OUTPUT_FORMAT_LPP_UPER = 32;
 constexpr static OutputFormat OUTPUT_FORMAT_UNUSED64 = 64;
 constexpr static OutputFormat OUTPUT_FORMAT_SPARTN   = 128;
 constexpr static OutputFormat OUTPUT_FORMAT_LFR      = 256;
+constexpr static OutputFormat OUTPUT_FORMAT_TEST     = 1llu << 63;
 constexpr static OutputFormat OUTPUT_FORMAT_ALL =
     OUTPUT_FORMAT_UBX | OUTPUT_FORMAT_NMEA | OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_CTRL |
     OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_SPARTN | OUTPUT_FORMAT_LFR;
@@ -62,6 +63,8 @@ struct OutputInterface {
     inline bool lpp_uper_support() const { return (format & OUTPUT_FORMAT_LPP_UPER) != 0; }
     inline bool spartn_support() const { return (format & OUTPUT_FORMAT_SPARTN) != 0; }
     inline bool lfr_support() const { return (format & OUTPUT_FORMAT_LFR) != 0; }
+
+    inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
 };
 
 struct OutputConfig {

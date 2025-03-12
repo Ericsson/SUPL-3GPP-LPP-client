@@ -36,6 +36,9 @@ static args::ValueFlagList<std::string> gArgs{
     {"output"},
 };
 
+static args::Flag gPrintEverything{
+    gGroup, "print-everything", "Print everything", {"output-print-everything"}};
+
 static void setup() {}
 
 static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,
@@ -58,6 +61,7 @@ static OutputFormat parse_format(std::string const& str) {
     if (str == "lpp-xer") return OUTPUT_FORMAT_LPP_XER;
     if (str == "lpp-uper") return OUTPUT_FORMAT_LPP_UPER;
     if (str == "lfr") return OUTPUT_FORMAT_LFR;
+    if (str == "test") return OUTPUT_FORMAT_TEST;
     throw args::ValidationError("--output format: invalid format, got `" + str + "`");
 }
 
@@ -332,6 +336,51 @@ parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
     }
 }
 
+static OutputInterface
+parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
+    auto format = parse_format_list_from_options(options);
+    auto print  = parse_bool_option(options, "tcp-server", "print", false);
+
+    if (options.find("host") != options.end()) {
+        if (options.find("host") == options.end()) {
+            throw args::RequiredError("--output tcp-server: missing `host` option");
+        }
+        if (options.find("port") == options.end()) {
+            throw args::RequiredError("--output tcp-server: missing `port` option");
+        }
+        if (options.find("path") != options.end()) {
+            throw args::RequiredError(
+                "--output tcp-server: `path` cannot be used with `host` and `port`");
+        }
+
+        auto host = options.at("host");
+        auto port = 0;
+        try {
+            port = std::stoi(options.at("port"));
+        } catch (...) {
+            throw args::ParseError("--output tcp-server: `port` must be an integer, got `" +
+                                   options.at("port") + "'");
+        }
+
+        if (port < 0 || port > 65535) {
+            throw args::ParseError(
+                "--output tcp-server: `port` must be in the range [0, 65535], got `" +
+                std::to_string(port) + "'");
+        }
+
+        return {
+            format,
+            std::unique_ptr<io::Output>(new io::TcpServerOutput(host, static_cast<uint16_t>(port))),
+            print};
+    } else if (options.find("path") != options.end()) {
+        auto path = options.at("path");
+        return {format, std::unique_ptr<io::Output>(new io::TcpServerOutput(path)), print};
+    } else {
+        throw args::RequiredError(
+            "--output tcp-server: missing `host` and `port` or `path` option");
+    }
+}
+
 static OutputInterface parse_interface(std::string const& source) {
     std::unordered_map<std::string, std::string> options;
 
@@ -349,12 +398,24 @@ static OutputInterface parse_interface(std::string const& source) {
     if (parts[0] == "serial") return parse_serial(options);
     if (parts[0] == "tcp-client") return parse_tcp_client(options);
     if (parts[0] == "udp-client") return parse_udp_client(options);
+    if (parts[0] == "tcp-server") return parse_tcp_server(options);
     throw args::ParseError("--output type not recognized: \"" + parts[0] + "\"");
 }
 
 static void parse(Config* config) {
+    auto print_everything = false;
+    if (gPrintEverything) {
+        print_everything = true;
+    }
+
     for (auto const& output : gArgs.Get()) {
         config->output.outputs.push_back(parse_interface(output));
+    }
+
+    for (auto& output : config->output.outputs) {
+        if (print_everything) {
+            output.print = true;
+        }
     }
 }
 

@@ -1,5 +1,6 @@
 #include "tcp.hpp"
 
+#include <algorithm>
 #include <arpa/inet.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -252,7 +253,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
     if (mHost.size() > 0) {
         // DNS lookup
         struct addrinfo* dns_result{};
-        struct addrinfo  hints {};
+        struct addrinfo  hints{};
         hints.ai_family   = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
@@ -396,7 +397,7 @@ bool TcpClientOutput::connecting() NOEXCEPT {
     VSCOPE_FUNCTIONF(") (state=%s", state_to_string(mState));
 
     // use poll to check for connection status or error
-    struct pollfd poll_fd {};
+    struct pollfd poll_fd{};
     poll_fd.fd      = mFd;
     poll_fd.events  = POLLOUT | POLLERR | POLLHUP | POLLRDHUP;
     poll_fd.revents = 0;
@@ -448,6 +449,127 @@ char const* TcpClientOutput::state_to_string(State state) const NOEXCEPT {
     case State::STATE_DISCONNECTED: return "STATE_DISCONNECTED";
     case State::STATE_ERROR: return "STATE_ERROR";
     case State::STATE_RECONNECT: return "STATE_RECONNECT";
+    }
+}
+
+//
+//
+//
+
+TcpServerOutput::TcpServerOutput(std::string listen, uint16_t port) NOEXCEPT
+    : mPath(),
+      mListen(std::move(listen)),
+      mPort(port) {
+    VSCOPE_FUNCTIONF("\"%s\", %u", mListen.c_str(), mPort);
+}
+
+TcpServerOutput::TcpServerOutput(std::string path) NOEXCEPT : mPath(std::move(path)),
+                                                              mListen(),
+                                                              mPort(0) {
+    VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
+}
+
+TcpServerOutput::~TcpServerOutput() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    cancel();
+}
+
+bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%p", &scheduler);
+
+    if (!mListen.empty())
+        mListenerTask.reset(new scheduler::TcpListenerTask(mListen, mPort));
+    else if (!mPath.empty())
+        mListenerTask.reset(new scheduler::TcpListenerTask(mPath));
+    else {
+        ERRORF("no listen or path specified");
+        return false;
+    }
+
+    ASSERT(mListenerTask, "failed to create listener task");
+    mListenerTask->on_accept = [this, &scheduler](scheduler::TcpListenerTask&, int data_fd,
+                                                  struct sockaddr_storage*, socklen_t) {
+        // Cleanup removed clients
+        for (auto& client : mRemoveClientTasks) {
+            client.reset();
+        }
+
+        mRemoveClientTasks.clear();
+
+        // Add new client
+        auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
+        client->on_error = [this](scheduler::SocketTask& task) {
+            task.cancel();
+            remove_client(task.fd());
+        };
+
+        if (!client->schedule(scheduler)) {
+            auto result = ::close(data_fd);
+            VERBOSEF("::close(%d) = %d", data_fd, result);
+        } else {
+            VERBOSEF("add client task: %p", client.get());
+            mClientTasks.push_back(std::move(client));
+        }
+    };
+
+    mListenerTask->on_error = [this](scheduler::TcpListenerTask&) {
+        cancel();
+    };
+
+    if (!mListenerTask->schedule(scheduler)) {
+        mListenerTask.reset();
+        return false;
+    }
+
+    return true;
+}
+
+bool TcpServerOutput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    if (mListenerTask) {
+        mListenerTask->cancel();
+        mListenerTask.reset();
+    }
+
+    for (auto& client : mClientTasks) {
+        client->cancel();
+    }
+    mClientTasks.clear();
+
+    return true;
+}
+
+void TcpServerOutput::write(uint8_t const* buffer, size_t length) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%p, %zu", buffer, length);
+
+    for (auto& client : mClientTasks) {
+        if (client->is_scheduled()) {
+            auto result = ::send(client->fd(), buffer, length, MSG_NOSIGNAL);
+            VERBOSEF("::send(%d, %p, %zu, MSG_NOSIGNAL) = %d", client->fd(), buffer, length,
+                     result);
+            if (result < 0) {
+                WARNF("failed to write to socket: " ERRNO_FMT, ERRNO_ARGS(errno));
+                client->cancel();
+            }
+        }
+    }
+}
+
+void TcpServerOutput::remove_client(int fd) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%d", fd);
+
+    auto client = std::find_if(mClientTasks.begin(), mClientTasks.end(),
+                               [fd](std::unique_ptr<scheduler::SocketTask>& client) {
+                                   return client->fd() == fd;
+                               });
+
+    if (client != mClientTasks.end()) {
+        VERBOSEF("remove client task: %p", client->get());
+        client->get()->cancel();
+
+        mRemoveClientTasks.push_back(std::move(*client));
+        mClientTasks.erase(client);
     }
 }
 
