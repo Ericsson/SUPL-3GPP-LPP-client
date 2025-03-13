@@ -1,6 +1,6 @@
 # Changelog
 
-## []
+## [4.0.4] 2025-03-13
 
 - Added `--log-no-color` to disable colored logging output
 - Added `--log-flush` to flush logging after every line
