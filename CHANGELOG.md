@@ -1,5 +1,10 @@
 # Changelog
 
+## []
+
+- Added `--log-no-color` to disable colored logging output
+- Added `--log-flush` to flush logging after every line
+
 ## [4.0.3] 2025-03-12
 
 - Building and publishing containers to GHCR

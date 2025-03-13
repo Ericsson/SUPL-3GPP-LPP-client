@@ -45,7 +45,9 @@ struct Module {
     Level       level;
 };
 
-static Level              sLevel = Level::Debug;
+static Level              sLevel        = Level::Debug;
+static bool               sColorEnabled = true;
+static bool               sAlwaysFlush  = false;
 static std::vector<Scope> sScopes;
 
 static std::unordered_map<char const*, Module, HashModuleName, EqualModuleName> sModules;
@@ -76,6 +78,14 @@ void uninitialize() {
 
 void set_level(Level level) {
     sLevel = level;
+}
+
+void set_color_enable(bool enabled) {
+    sColorEnabled = enabled;
+}
+
+void set_always_flush(bool flush) {
+    sAlwaysFlush = flush;
 }
 
 void set_module_level(char const* module, Level level) {
@@ -130,6 +140,7 @@ static char const* level_to_string(Level level) {
 }
 
 static char const* level_to_color(Level level) {
+    if (!sColorEnabled) return "";
     switch (level) {
     case Level::Trace: return COLOR_CYAN;
     case Level::Verbose: return COLOR_BLUE;
@@ -162,8 +173,18 @@ void log(char const* module, Level level, char const* message) {
         fflush(stdout);
     }
 
-    fprintf(file, "%s%s%s[%10s] %*s%s%s\n", start_color, level_to_string(level), buffer, module,
-            static_cast<int>(sScopes.size() * 2), "", message, stop_color);
+    if (sAlwaysFlush) {
+        fflush(file);
+    }
+
+    char const indent_buffer[64 + 1] =
+        "                                                                ";
+    auto indent_length = static_cast<int>(sScopes.size() * 2);
+    if (indent_length > 64) {
+        indent_length = 64;
+    }
+    fprintf(file, "%s%s%s[%10s] %.*s%s%s\n", start_color, level_to_string(level), buffer, module,
+            static_cast<int>(sScopes.size() * 2), indent_buffer, message, stop_color);
 }
 
 void logf(char const* module, Level level, char const* format, ...) {

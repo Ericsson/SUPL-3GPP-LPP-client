@@ -187,6 +187,8 @@ enum class Level {
 void uninitialize();
 
 void set_level(Level level);
+void set_color_enable(bool enabled);
+void set_always_flush(bool flush);
 void set_module_level(char const* module, Level level);
 void disable_module(char const* module);
 bool is_module_enabled(char const* module);

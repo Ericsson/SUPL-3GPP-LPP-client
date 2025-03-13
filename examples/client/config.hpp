@@ -158,6 +158,8 @@ struct DataTracingConfig {
 
 struct LoggingConfig {
     loglet::Level                                  log_level;
+    bool                                           color;
+    bool                                           flush;
     std::unordered_map<std::string, loglet::Level> module_levels;
 };
 

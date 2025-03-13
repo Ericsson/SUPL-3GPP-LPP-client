@@ -50,12 +50,26 @@ static args::ValueFlagList<std::string> gModules{
     "<module>=<level>",
     {"lm"},
 };
+static args::Flag gNoColor{
+    gGroup,
+    "no-color",
+    "Disable colored output",
+    {"log-no-color"},
+};
+static args::Flag gFlush{
+    gGroup,
+    "flush",
+    "Flush log after each line",
+    {"log-flush"},
+};
 
 static void setup() {}
 
 static void parse(Config* config) {
     auto& logging     = config->logging;
     logging.log_level = loglet::Level::Info;
+    logging.color     = gNoColor ? false : true;
+    logging.flush     = gFlush;
 
     if (gTrace) {
         logging.log_level = loglet::Level::Trace;
