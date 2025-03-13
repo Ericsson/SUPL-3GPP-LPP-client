@@ -458,6 +458,8 @@ int main(int argc, char** argv) {
     }
 
     loglet::set_level(config.logging.log_level);
+    loglet::set_color_enable(config.logging.color);
+    loglet::set_always_flush(config.logging.flush);
     for (auto const& [module, level] : config.logging.module_levels) {
         loglet::set_module_level(module.c_str(), level);
     }
