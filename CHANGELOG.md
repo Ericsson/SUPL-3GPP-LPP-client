@@ -1,5 +1,10 @@
 # Changelog
 
+## []
+
+- `--log-no-color` will also not print the reset color code
+- Update the digit order of SUPL identity encoding/decoding  
+
 ## [4.0.4] 2025-03-13
 
 - Added `--log-no-color` to disable colored logging output

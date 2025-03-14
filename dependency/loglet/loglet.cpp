@@ -164,7 +164,7 @@ void log(char const* module, Level level, char const* message) {
     strftime(buffer, sizeof(buffer), "%y%m%d %H:%M:%S", std::localtime(&now_c));
 
     auto start_color = level_to_color(level);
-    auto stop_color  = COLOR_RESET;
+    auto stop_color  = sColorEnabled ? COLOR_RESET : "";
 
     auto file = stdout;
     if (level == Level::Error || level == Level::Warning) {
