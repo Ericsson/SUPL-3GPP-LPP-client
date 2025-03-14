@@ -1,5 +1,9 @@
 # Changelog
 
+## []
+
+- `--log-no-color` will also not print the reset color code
+
 ## [4.0.4] 2025-03-13
 
 - Added `--log-no-color` to disable colored logging output
