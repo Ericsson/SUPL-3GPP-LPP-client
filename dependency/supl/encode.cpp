@@ -91,13 +91,22 @@ static OCTET_STRING binary_encoded_octet(size_t max_length, uint64_t from) {
     octet.buf  = reinterpret_cast<uint8_t*>(calloc(1, octet.size));
     memset(octet.buf, 0xFF, octet.size);
 
-    auto index = 0;
-    while (from > 0) {
-        auto value = static_cast<uint8_t>((from % 10) & 0xF);
-        from /= 10;
+    auto length = 0;
+    auto data   = from;
+    while (data > 0) {
+        data /= 10;
+        length++;
+    }
 
-        auto byte_index = 8 - 1 - (index / 2);
-        if (index % 2 == 0) {
+    auto offset = 2 * max_length - length;
+    auto index  = offset;
+    data        = from;
+    while (data > 0 && index < 2 * max_length) {
+        auto value = static_cast<uint8_t>((data % 10) & 0xF);
+        data /= 10;
+
+        auto byte_index = max_length - 1 - (index / 2);
+        if (index % 2 == 1) {
             octet.buf[byte_index] &= 0xF0;
             octet.buf[byte_index] |= value;
         } else {
