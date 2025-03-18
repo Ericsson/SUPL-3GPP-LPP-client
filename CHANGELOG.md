@@ -1,6 +1,6 @@
 # Changelog
 
-## [] 
+## [4.0.6]  2025-03-8
 
 - Include Application ID details in SUPL
 - Use the initial cell in SUPL instead of a dummy cell
