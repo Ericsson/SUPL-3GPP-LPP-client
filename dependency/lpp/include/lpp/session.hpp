@@ -3,6 +3,7 @@
 #include <lpp/transaction.hpp>
 #include <lpp/version.hpp>
 #include <scheduler/scheduler.hpp>
+#include <supl/cell.hpp>
 #include <supl/identity.hpp>
 
 #include <functional>
@@ -108,7 +109,7 @@ protected:
 
 class Session {
 public:
-    explicit Session(Version version, supl::Identity identity);
+    explicit Session(Version version, supl::Identity identity, supl::Cell cell);
     ~Session();
 
     // Setup the connection information for the session and switch to the CONNECT state
@@ -191,6 +192,7 @@ private:
     State          mState;
     Version        mVersion;
     supl::Identity mIdentity;
+    supl::Cell     mInitialCell;
     supl::Session* mSession;
 
     std::string mConnectionHost;

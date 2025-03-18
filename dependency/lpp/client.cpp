@@ -23,8 +23,10 @@
 
 namespace lpp {
 
-Client::Client(supl::Identity identity, std::string const& host, uint16_t port)
-    : mHost(host), mPort(port), mSession{lpp::VERSION_16_4_0, std::move(identity)},
+Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const& host,
+               uint16_t port)
+    : mHost(host), mPort(port),
+      mSession{lpp::VERSION_18_4_0, std::move(identity), std::move(supl_cell)},
       mScheduler{nullptr} {
     VSCOPE_FUNCTION();
 

@@ -2,6 +2,8 @@
 
 ## [] 
 
+- Include Application ID details in SUPL
+- Use the initial cell in SUPL instead of a dummy cell
 - Added `--ad-delivery-amount`
 - Added `--ad-no-antenna-height`
 

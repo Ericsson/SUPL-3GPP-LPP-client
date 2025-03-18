@@ -599,8 +599,11 @@ int main(int argc, char** argv) {
             INFOF("generated host: \"%s\"", program.config.location_server.host.c_str());
         }
 
+        ASSERT(program.identity, "identity must be set by now");
+        ASSERT(program.cell, "cell must be set by now");
         auto client = new lpp::Client{
             *program.identity,
+            *program.cell,
             program.config.location_server.host,
             program.config.location_server.port,
         };

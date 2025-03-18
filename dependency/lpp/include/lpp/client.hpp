@@ -23,7 +23,8 @@ class LocationInformationDelivery;
 struct PeriodicLocationInformationDeliveryDescription;
 class Client {
 public:
-    explicit Client(supl::Identity identity, std::string const& host, uint16_t port);
+    explicit Client(supl::Identity identity, supl::Cell supl_cell, std::string const& host,
+                    uint16_t port);
     ~Client();
 
     // Called once the client is connected and ready to send and receive messages

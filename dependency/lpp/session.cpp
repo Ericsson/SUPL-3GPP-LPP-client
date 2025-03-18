@@ -99,11 +99,11 @@ void SessionTask::event(struct epoll_event* event) {
     }
 }
 
-Session::Session(Version version, supl::Identity identity)
-    : mState(State::UNKNOWN), mVersion(version), mIdentity(std::move(identity)), mSession(nullptr),
-      mTransactionId(1), mGenerationId(1), mSequenceNumber(0), mScheduler(nullptr), mTask(this, -1),
-      mNextReadState(State::UNKNOWN), mNextWriteState(State::UNKNOWN),
-      mNextErrorState(State::UNKNOWN) {
+Session::Session(Version version, supl::Identity identity, supl::Cell cell)
+    : mState(State::UNKNOWN), mVersion(version), mIdentity(std::move(identity)),
+      mInitialCell(std::move(cell)), mSession(nullptr), mTransactionId(1), mGenerationId(1),
+      mSequenceNumber(0), mScheduler(nullptr), mTask(this, -1), mNextReadState(State::UNKNOWN),
+      mNextWriteState(State::UNKNOWN), mNextErrorState(State::UNKNOWN) {
     VSCOPE_FUNCTION();
 }
 
@@ -283,11 +283,11 @@ NextState Session::state_handshake_send() {
     VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
-    auto cell = supl::Cell::lte(240, 1, 1, 0);
-
     supl::SETCapabilities capabilities{};
     capabilities.posTechnology                         = {};
-    capabilities.prefMethod                            = supl::PrefMethod::noPreference;
+    capabilities.posTechnology.agpsSETassisted         = true;
+    capabilities.posTechnology.agpsSETBased            = true;
+    capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
     capabilities.posProtocol.lpp.enabled               = true;
     capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;
     capabilities.posProtocol.lpp.technicalVersionField = mVersion.technical;
@@ -295,10 +295,10 @@ NextState Session::state_handshake_send() {
 
     supl::START start{};
     start.sETCapabilities        = capabilities;
-    start.applicationID.name     = "SUPL Example Client";
-    start.applicationID.provider = "Application-Provider";
-    start.applicationID.version  = "1.0.0.0";
-    start.locationID.cell        = cell;
+    start.applicationID.name     = "SUPL-3GPP-LPP-Client";
+    start.applicationID.provider = "Ericsson";
+    start.applicationID.version  = CLIENT_VERSION;
+    start.locationID.cell        = mInitialCell;
 
     if (!mSession->handshake(start)) {
         ERRORF("failed to establish SUPL handshake");
@@ -326,8 +326,6 @@ NextState Session::state_posinit() {
     VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
-    auto cell = supl::Cell::lte(240, 1, 1, 0);
-
     supl::SETCapabilities capabilities{};
     capabilities.posTechnology                         = {};
     capabilities.prefMethod                            = supl::PrefMethod::noPreference;
@@ -338,7 +336,7 @@ NextState Session::state_posinit() {
 
     supl::POSINIT posinit{};
     posinit.sETCapabilities = capabilities;
-    posinit.locationID.cell = cell;
+    posinit.locationID.cell = mInitialCell;
     if (!mSession->send(posinit)) {
         ERRORF("failed to send SUPL POSINIT");
         return NextState::make().next(State::DISCONNECTED);

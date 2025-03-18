@@ -14,6 +14,9 @@ struct RequestAssistanceData {
     bool galileo;
     bool bds;
 
+    long delivery_amount;
+    bool rtk_antenna_height;
+
     // The periodicity of each assistance data type. A value of 0 means that the assistance data is
     // not requested.
     long reference_time;

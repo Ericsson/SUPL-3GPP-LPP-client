@@ -8,6 +8,7 @@
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
 #pragma GCC diagnostic ignored "-Wunused-function"
+#include <ApplicationID.h>
 #include <FQDN.h>
 #include <MCC-MNC-Digit.h>
 #include <MCC.h>
@@ -23,6 +24,7 @@
 #include <ULP-PDU.h>
 #include <UTCTime.h>
 #include <Ver2-PosProtocol-extension.h>
+#include <Ver2-SUPL-START-extension.h>
 #include <per_encoder.h>
 #pragma GCC diagnostic pop
 
@@ -407,6 +409,50 @@ static ::PosPayLoad encode_pospayload(std::vector<supl::Payload> const& payloads
     return pos_payload;
 }
 
+static ::ApplicationID* encode_applicationid(ApplicationID const& app_id) {
+    auto application_id = helper::asn1_allocate<::ApplicationID>();
+
+    char app_provider[24 + 1];
+    char app_name[32 + 1];
+    char app_version[8 + 1];
+
+    if (app_id.provider.size() < 1)
+        snprintf(app_provider, sizeof(app_provider), "%s", "unknown");
+    else
+        snprintf(app_provider, sizeof(app_provider), "%s", app_id.provider.c_str());
+
+    if (app_id.name.size() < 1)
+        snprintf(app_name, sizeof(app_name), "%s", "unknown");
+    else
+        snprintf(app_name, sizeof(app_name), "%s", app_id.name.c_str());
+
+    if (app_id.version.size() < 1)
+        snprintf(app_version, sizeof(app_version), "%s", "unknown");
+    else
+        snprintf(app_version, sizeof(app_version), "%s", app_id.version.c_str());
+
+    OCTET_STRING_fromString(&application_id->appProvider, app_provider);
+    OCTET_STRING_fromString(&application_id->appName, app_name);
+
+    auto appVersion = helper::asn1_allocate<IA5String_t>();
+    OCTET_STRING_fromBuf(appVersion, app_version, strlen(app_version));
+    application_id->appVersion = appVersion;
+    return application_id;
+}
+
+static ::Ver2_SUPL_START_extension* encode_start_extension(const START& message) {
+    auto application_id = encode_applicationid(message.applicationID);
+
+    if (!application_id) {
+        helper::asn1_free(application_id);
+        return nullptr;
+    }
+
+    auto extension           = helper::asn1_allocate<::Ver2_SUPL_START_extension>();
+    extension->applicationID = application_id;
+    return extension;
+}
+
 EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, const START& message) {
     VSCOPE_FUNCTIONF("START");
 
@@ -417,9 +463,10 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, con
 
     encode_session(ulp_pdu, set, slp);
 
-    auto& pdu_message           = ulp_pdu->message.choice.msSUPLSTART;
-    pdu_message.sETCapabilities = encode_setcapabilities(message.sETCapabilities);
-    pdu_message.locationId      = encode_locationid(message.locationID);
+    auto& pdu_message                     = ulp_pdu->message.choice.msSUPLSTART;
+    pdu_message.sETCapabilities           = encode_setcapabilities(message.sETCapabilities);
+    pdu_message.locationId                = encode_locationid(message.locationID);
+    pdu_message.ver2_SUPL_START_extension = encode_start_extension(message);
 
     print(loglet::Level::Verbose, ulp_pdu);
     return encode_uper(ulp_pdu);
