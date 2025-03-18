@@ -118,6 +118,9 @@ struct AssistanceDataConfig {
     long ssr_gridded;
     long ssr_ura;
     long ssr_correction_points;
+
+    long delivery_amount;
+    bool antenna_height;
 };
 
 struct FakeLocationInformationConfig {

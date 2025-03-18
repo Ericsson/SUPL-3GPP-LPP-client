@@ -109,6 +109,21 @@ static args::ValueFlag<long> gSsrGridded{
     gSsrs, "rate", "SSR Gridded", {"ad-ssr-gridded"}, args::Options::Single,
 };
 
+static args::ValueFlag<long> gDeliveryAmount{
+    gGroup,
+    "delivery-amount",
+    "The number of assistance data provided to request. You specify the exponent in 2^x, where "
+    "x=32 is unlimited",
+    {"ad-delivery-amount"},
+};
+
+static args::Flag gNoAntennaHeight{
+    gGroup,
+    "no-antenna-height",
+    "Do not request antenna height",
+    {"ad-no-antenna-height"},
+};
+
 static void setup() {
     gType.HelpChoices({"osr", "ssr"});
 
@@ -123,6 +138,8 @@ static void setup() {
     gSsrPhaseBias.HelpDefault("5");
     gSsrStec.HelpDefault("30");
     gSsrGridded.HelpDefault("30");
+
+    gDeliveryAmount.HelpDefault("32");
 }
 
 static void parse(Config* config) {
@@ -148,6 +165,9 @@ static void parse(Config* config) {
     ad.ssr_gridded           = 30;
     ad.ssr_ura               = 5;
     ad.ssr_correction_points = 1;
+
+    ad.delivery_amount = 32;
+    ad.antenna_height  = !gNoAntennaHeight;
 
     if (gDisable) {
         ad.enabled = false;
@@ -223,6 +243,13 @@ static void parse(Config* config) {
     if (ad.ssr_gridded <= 0)
         throw args::ParseError("invalid SSR gridded: " + std::to_string(ad.ssr_gridded));
     if (ad.ssr_ura <= 0) throw args::ParseError("invalid SSR ura: " + std::to_string(ad.ssr_ura));
+
+    if (gDeliveryAmount) ad.delivery_amount = gDeliveryAmount.Get();
+
+    if (ad.delivery_amount < 0)
+        throw args::ParseError("invalid delivery amount: " + std::to_string(ad.delivery_amount));
+    else if (ad.delivery_amount > 32)
+        ad.delivery_amount = 32;
 }
 
 static void dump(AssistanceDataConfig const& config) {

@@ -153,10 +153,12 @@ common_request_assistance_data(RequestAssistanceData const& request) {
     return message;
 }
 
-static GNSS_PeriodicControlParam_r15* gnss_periodic_control_param(long value) {
+static GNSS_PeriodicControlParam_r15* gnss_periodic_control_param(long value, long amount) {
     if (value <= 0) return nullptr;
+    if (amount < 0) amount = 0;
+    if (amount > 32) amount = 32;  // 32 = infinite amount
     auto message                  = ALLOC_ZERO(GNSS_PeriodicControlParam_r15);
-    message->deliveryAmount_r15   = 32;  // 32 = infinite amount
+    message->deliveryAmount_r15   = amount;
     message->deliveryInterval_r15 = value;
     return message;
 }
@@ -165,20 +167,23 @@ static GNSS_PeriodicAssistDataReq_r15*
 gnss_periodic_assist_data_req(RequestAssistanceData const& request) {
     auto message = ALLOC_ZERO(GNSS_PeriodicAssistDataReq_r15);
     message->gnss_RTK_PeriodicObservationsReq_r15 =
-        gnss_periodic_control_param(request.rtk_observations);
-    message->gnss_RTK_PeriodicResidualsReq_r15 = gnss_periodic_control_param(request.rtk_residuals);
+        gnss_periodic_control_param(request.rtk_observations, request.delivery_amount);
+    message->gnss_RTK_PeriodicResidualsReq_r15 =
+        gnss_periodic_control_param(request.rtk_residuals, request.delivery_amount);
     message->glo_RTK_PeriodicBiasInformationReq_r15 =
-        gnss_periodic_control_param(request.rtk_bias_information);
+        gnss_periodic_control_param(request.rtk_bias_information, request.delivery_amount);
     message->gnss_SSR_PeriodicClockCorrectionsReq_r15 =
-        gnss_periodic_control_param(request.ssr_clock);
+        gnss_periodic_control_param(request.ssr_clock, request.delivery_amount);
     message->gnss_SSR_PeriodicOrbitCorrectionsReq_r15 =
-        gnss_periodic_control_param(request.ssr_orbit);
-    message->gnss_SSR_PeriodicCodeBiasReq_r15 = gnss_periodic_control_param(request.ssr_code_bias);
+        gnss_periodic_control_param(request.ssr_orbit, request.delivery_amount);
+    message->gnss_SSR_PeriodicCodeBiasReq_r15 =
+        gnss_periodic_control_param(request.ssr_code_bias, request.delivery_amount);
 
-    auto phase_bias_req = gnss_periodic_control_param(request.ssr_phase_bias);
-    auto ura_req        = gnss_periodic_control_param(request.ssr_ura);
-    auto stec_req       = gnss_periodic_control_param(request.ssr_stec);
-    auto gridded_req    = gnss_periodic_control_param(request.ssr_gridded);
+    auto phase_bias_req =
+        gnss_periodic_control_param(request.ssr_phase_bias, request.delivery_amount);
+    auto ura_req     = gnss_periodic_control_param(request.ssr_ura, request.delivery_amount);
+    auto stec_req    = gnss_periodic_control_param(request.ssr_stec, request.delivery_amount);
+    auto gridded_req = gnss_periodic_control_param(request.ssr_gridded, request.delivery_amount);
 
     if (phase_bias_req || ura_req || stec_req || gridded_req) {
         auto ext1 =
@@ -239,7 +244,10 @@ static GNSS_IonosphericModelReq* gnss_ionospheric_model_req(RequestAssistanceDat
 static GNSS_RTK_ReferenceStationInfoReq_r15*
 gnss_rtk_reference_station_info_req(RequestAssistanceData const& request) {
     if (request.rtk_reference_station_info) {
-        auto message = ALLOC_ZERO(GNSS_RTK_ReferenceStationInfoReq_r15);
+        auto message                             = ALLOC_ZERO(GNSS_RTK_ReferenceStationInfoReq_r15);
+        message->antennaHeightReq_r15            = request.rtk_antenna_height;
+        message->antennaDescriptionReq_r15       = false;
+        message->physicalReferenceStationReq_r15 = true;
         return message;
     }
     return nullptr;

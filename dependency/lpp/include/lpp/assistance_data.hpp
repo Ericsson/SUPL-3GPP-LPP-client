@@ -32,6 +32,14 @@ struct RequestAssistanceData {
         bool beidou;
     } gnss;
 
+    /// @brief The assistance data request configuration
+    struct {
+        /// @brief The amount of deliveries to request. Amount = 2^x, if x=32 then amount=unlimited
+        long delivery_amount;
+        /// @brief If the reference station request should request the antenna height
+        bool antenna_height;
+    } config;
+
     /// @brief Callback for non-periodic assistance data.
     /// @note This will be called _before_ the `on_started` callback.
     std::function<void(Client&, Message)> on_non_periodic;

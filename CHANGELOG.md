@@ -1,5 +1,10 @@
 # Changelog
 
+## [] 
+
+- Added `--ad-delivery-amount`
+- Added `--ad-no-antenna-height`
+
 ## [4.0.5] 2025-03-13
 
 - `--log-no-color` will also not print the reset color code

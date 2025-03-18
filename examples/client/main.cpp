@@ -66,6 +66,10 @@ static void client_request(Program& program, lpp::Client& client) {
             program.config.assistance_data.galileo,
             program.config.assistance_data.beidou,
         },
+        {
+            program.config.assistance_data.delivery_amount,
+            program.config.assistance_data.antenna_height,
+        },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("provide assistance data (non-periodic)");
             program.stream.push(std::move(message));
