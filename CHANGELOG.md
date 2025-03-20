@@ -1,5 +1,9 @@
 # Changelog
 
+## []
+
+- Fix decoding of IMSI identity
+
 ## [4.0.6]  2025-03-8
 
 - Include Application ID details in SUPL
