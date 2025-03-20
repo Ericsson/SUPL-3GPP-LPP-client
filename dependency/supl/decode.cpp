@@ -82,8 +82,8 @@ static Identity decode_identity(SETId& set_id) {
         uint64_t imsi = 0;
         for (size_t i = 0; i < input.size; i++) {
             auto byte   = input.buf[i];
-            auto first  = static_cast<uint64_t>((byte >> 4) & 0xF);
-            auto second = static_cast<uint64_t>((byte >> 0) & 0xF);
+            auto first  = static_cast<uint64_t>((byte >> 0) & 0xF);
+            auto second = static_cast<uint64_t>((byte >> 4) & 0xF);
             if (first != 0xF) {
                 imsi = 10 * imsi + first;
             }
