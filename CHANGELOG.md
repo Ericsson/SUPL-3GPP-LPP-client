@@ -1,10 +1,10 @@
 # Changelog
 
-## []
+## [4.0.7] 2025-03-20
 
 - Fix decoding of IMSI identity
 
-## [4.0.6]  2025-03-8
+## [4.0.6] 2025-03-18
 
 - Include Application ID details in SUPL
 - Use the initial cell in SUPL instead of a dummy cell

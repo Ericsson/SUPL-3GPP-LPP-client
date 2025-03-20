@@ -99,7 +99,7 @@ struct TimePoint {
 class LeapSeconds {
 public:
     NODISCARD static int64_t count() {
-#define LAST_UPDATE_CHECKED 0x040006
+#define LAST_UPDATE_CHECKED 0x040007
 #ifndef CLIENT_VERSION_INT
 #error "Please define CLIENT_VERSION_INT"
 #endif
