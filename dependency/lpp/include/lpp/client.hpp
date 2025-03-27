@@ -82,6 +82,8 @@ public:
     // sessions
     void cancel();
 
+    void set_interface(std::string const& interface) { mInterface = interface; }
+
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
     using Lid = std::shared_ptr<LocationInformationDelivery>;
@@ -113,6 +115,7 @@ protected:
 private:
     std::string           mHost;
     uint16_t              mPort;
+    std::string           mInterface;
     Session               mSession;
     scheduler::Scheduler* mScheduler;
 

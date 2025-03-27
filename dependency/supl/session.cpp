@@ -57,8 +57,8 @@ Session::~Session() {
     }
 }
 
-bool Session::connect(std::string const& ip, uint16_t port) {
-    VSCOPE_FUNCTIONF("%s,%d", ip.c_str(), port);
+bool Session::connect(std::string const& ip, uint16_t port, std::string const& interface) {
+    VSCOPE_FUNCTIONF("\"%s\",%d,\"%s\"", ip.c_str(), port, interface.c_str());
 
     if (mState != State::UNKNOWN) {
         WARNF("mState != State::UNKNOWN");
@@ -71,7 +71,7 @@ bool Session::connect(std::string const& ip, uint16_t port) {
         return false;
     }
 
-    if (!mTcpClient->connect(ip, port, false)) {
+    if (!mTcpClient->connect(ip, port, interface, false)) {
         WARNF("connect failed");
         delete mTcpClient;
         mTcpClient = nullptr;

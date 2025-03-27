@@ -634,6 +634,9 @@ int main(int argc, char** argv) {
             program.config.location_server.host,
             program.config.location_server.port,
         };
+        if (program.config.location_server.interface) {
+            client->set_interface(*program.config.location_server.interface);
+        }
         program.client.reset(client);
 
         client_initialize(program, *client);

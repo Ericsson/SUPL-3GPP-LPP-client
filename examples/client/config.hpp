@@ -15,8 +15,9 @@
 #include <vector>
 
 struct LocationServerConfig {
-    std::string host;
-    uint16_t    port;
+    std::string                  host;
+    uint16_t                     port;
+    std::unique_ptr<std::string> interface;
 
     bool enabled;
     bool slp_host_cell;

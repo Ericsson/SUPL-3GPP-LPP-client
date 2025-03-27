@@ -2,6 +2,7 @@
 #include "supl.hpp"
 
 #include <cstring>
+#include <net/if.h>
 #include <netdb.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -109,6 +110,18 @@ bool TcpClient::initialize_socket() {
             continue;
         }
 
+        if (mInterface.length() > 0) {
+            struct ifreq ifr;
+            memset(&ifr, 0, sizeof(ifr));
+            strncpy(ifr.ifr_name, mInterface.c_str(), IFNAMSIZ);
+            auto set_result =
+                ::setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE, (void*)&ifr, sizeof(ifr));
+            if (set_result < 0) {
+                WARNF("failed to set SO_BINDTODEVICE: %d (%s)", errno, strerror(errno));
+                continue;
+            }
+        }
+
         VERBOSEF("created socket %d", fd);
 
         auto addr_str = addr_to_string(aip->ai_addr);
@@ -136,16 +149,18 @@ bool TcpClient::initialize_socket() {
     return false;
 }
 
-bool TcpClient::connect(std::string const& host, int port, bool use_ssl) {
+bool TcpClient::connect(std::string const& host, int port, std::string const& interface,
+                        bool use_ssl) {
     VSCOPE_FUNCTION();
     if (!is_disconnected()) {
         DEBUGF("client is already connected");
         return false;
     }
 
-    mHost   = host;
-    mPort   = port;
-    mUseSSL = use_ssl;
+    mHost      = host;
+    mPort      = port;
+    mInterface = interface;
+    mUseSSL    = use_ssl;
 
 #if defined(USE_OPENSSL)
     if (mUseSSL) {

@@ -24,7 +24,7 @@ public:
     TcpClient();
     ~TcpClient();
 
-    bool connect(const std::string& host, int port, bool use_ssl);
+    bool connect(std::string const& host, int port, std::string const& interface, bool use_ssl);
     bool handle_connection();
     bool disconnect();
 
@@ -33,7 +33,7 @@ public:
     NODISCARD bool is_connected() const { return mState == State::CONNECTED; }
 
     int receive(void* buffer, int size);
-    int send(const void* buffer, int size);
+    int send(void const* buffer, int size);
 
     int fd() const { return mSocket; }
 
@@ -43,6 +43,7 @@ protected:
 private:
     std::string mHost;
     int         mPort;
+    std::string mInterface;
     bool        mUseSSL;
     int         mSocket;
     State       mState;

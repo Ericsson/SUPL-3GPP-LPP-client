@@ -12,6 +12,10 @@ static args::ValueFlag<std::string> gHost{
 static args::ValueFlag<uint16_t> gPort{
     gGroup, "port", "Location server port", {'p', "ls-port"}, args::Options::Single,
 };
+static args::ValueFlag<std::string> gInterface{
+    gGroup,           "interface",           "Interface to use for location server connection",
+    {"ls-interface"}, args::Options::Single,
+};
 static args::Flag gDisable{
     gGroup,
     "disable",
@@ -43,10 +47,15 @@ static void parse(Config* config) {
     auto& ls                  = config->location_server;
     ls.enabled                = true;
     ls.shutdown_on_disconnect = false;
+    ls.interface              = nullptr;
 
     if (gDisable) {
         ls.enabled = false;
         return;
+    }
+
+    if (gInterface) {
+        ls.interface = std::unique_ptr<std::string>(new std::string(gInterface.Get()));
     }
 
     if (gSlpHostCell) {

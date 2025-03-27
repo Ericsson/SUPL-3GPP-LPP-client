@@ -137,16 +137,17 @@ static char const* state_to_string(State state) {
     }
 }
 
-void Session::connect(std::string const& host, uint16_t port) {
-    VSCOPE_FUNCTIONF("%s, %d", host.c_str(), port);
+void Session::connect(std::string const& host, uint16_t port, std::string const& interface) {
+    VSCOPE_FUNCTIONF("\"%s\", %d, \"%s\"", host.c_str(), port, interface.c_str());
 
     if (mState != State::UNKNOWN && mState != State::EXIT) {
         ERRORF("invalid state: %s", state_to_string(mState));
         return;
     }
 
-    mConnectionHost = host;
-    mConnectionPort = port;
+    mConnectionHost      = host;
+    mConnectionPort      = port;
+    mConnectionInterface = interface;
     switch_state(State::CONNECT);
 }
 
@@ -236,8 +237,9 @@ NextState Session::state_connect() {
     }
 
     mSession = new supl::Session(supl::VERSION_2_0, mIdentity);
-    if (!mSession->connect(mConnectionHost, mConnectionPort)) {
-        ERRORF("failed to connect to %s:%d", mConnectionHost.c_str(), mConnectionPort);
+    if (!mSession->connect(mConnectionHost, mConnectionPort, mConnectionInterface)) {
+        ERRORF("failed to connect to %s:%d (%s)", mConnectionHost.c_str(), mConnectionPort,
+               mConnectionInterface.c_str());
         return NextState::make().next(State::DISCONNECTED);
     }
 
