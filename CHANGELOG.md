@@ -1,6 +1,6 @@
 # Changelog
 
-## [] 
+## [4.0.8] 2025-03-27 
 
 - Updated loglet to use a new system for modules
 - Added `--log-tree` to visualize the logging modules and their logging level
