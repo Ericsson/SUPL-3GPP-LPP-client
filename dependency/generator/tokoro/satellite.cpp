@@ -14,7 +14,8 @@
 
 #include <algorithm>
 
-#define LOGLET_CURRENT_MODULE "tokoro"
+LOGLET_MODULE2(tokoro, sat);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, sat)
 
 namespace generator {
 namespace tokoro {

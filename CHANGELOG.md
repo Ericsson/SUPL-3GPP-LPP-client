@@ -1,5 +1,10 @@
 # Changelog
 
+## [] 
+
+- Updated loglet to use a new system for modules. 
+- Added `--log-tree` to visualize the logging modules and their logging level
+
 ## [4.0.7] 2025-03-20
 
 - Fix decoding of IMSI identity

@@ -13,7 +13,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "task"
+LOGLET_MODULE2(sched, socket);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, socket)
 
 namespace scheduler {
 ListenerTask::ListenerTask(int listener_fd) NOEXCEPT : mScheduler{nullptr},

@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/l2r"
+LOGLET_MODULE2(p, l2r);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2r)
 
 Lpp2Rtcm::Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config)
     : mOutput(output), mConfig(config) {

@@ -8,7 +8,8 @@
 #include <time/gps.hpp>
 #include <time/utc.hpp>
 
-#define LOGLET_CURRENT_MODULE "format/rinex"
+LOGLET_MODULE2(format, rinex);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, rinex)
 
 namespace format {
 namespace rinex {

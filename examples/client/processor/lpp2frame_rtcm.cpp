@@ -5,7 +5,8 @@
 #include <loglet/loglet.hpp>
 #include <lpp/session.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/l2f"
+LOGLET_MODULE2(p, l2f);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2f)
 
 void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message) NOEXCEPT {
     VSCOPE_FUNCTION();

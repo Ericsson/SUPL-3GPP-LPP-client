@@ -27,7 +27,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "supl/decode"
+LOGLET_MODULE2(supl, decode);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(supl, decode)
 
 namespace supl {
 

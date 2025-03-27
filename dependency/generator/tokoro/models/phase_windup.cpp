@@ -6,7 +6,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "tokoro/phw"
+LOGLET_MODULE2(tokoro, phw);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, phw)
 
 namespace generator {
 namespace tokoro {

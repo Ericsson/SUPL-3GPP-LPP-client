@@ -31,8 +31,8 @@
 #include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
 #include "processor/nmea.hpp"
-#include "processor/ubx.hpp"
 #include "processor/test.hpp"
+#include "processor/ubx.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
@@ -49,7 +49,10 @@
 
 #include "client.hpp"
 
-#define LOGLET_CURRENT_MODULE "client"
+LOGLET_MODULE(client);
+LOGLET_MODULE(output);
+LOGLET_MODULE(p);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client)
 
 static void client_request(Program& program, lpp::Client& client) {
     if (!program.cell) {
@@ -241,9 +244,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     auto message = lpp_uper->try_parse();
                     if (!message) break;
 
-                    XDEBUGF("lpp/msg", "create %p", message);
                     auto lpp_message = lpp::Message{message};
-
                     if (input.print) {
                         lpp::print(lpp_message);
                     }
@@ -299,7 +300,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
         if (output.ctrl_support()) ctrl_output = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
         // TODO(ewasjon): if (output.rtcm_support()) rtcm_output = true;
-        if(output.test_support()) test_output = true;
+        if (output.test_support()) test_output = true;
 
         output.interface->schedule(program.scheduler);
     }
@@ -309,7 +310,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     if (nmea_output) program.stream.add_inspector<NmeaOutput>(config);
     if (ubx_output) program.stream.add_inspector<UbxOutput>(config);
     if (ctrl_output) program.stream.add_inspector<CtrlOutput>(config);
-    if(test_output) test_outputer(program.scheduler, config);
+    if (test_output) test_outputer(program.scheduler, config);
 }
 
 static void setup_location_stream(Program& program) {
@@ -438,6 +439,8 @@ static void setup_tokoro(Program& program) {
 }
 
 int main(int argc, char** argv) {
+    loglet::initialize();
+
 #if defined(FORCE_LOG_LEVEL_TRACE)
     loglet::set_level(loglet::Level::Trace);
 #elif defined(FORCE_LOG_LEVEL_VERBOSE)
@@ -464,8 +467,32 @@ int main(int argc, char** argv) {
     loglet::set_level(config.logging.log_level);
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
-    for (auto const& [module, level] : config.logging.module_levels) {
-        loglet::set_module_level(module.c_str(), level);
+    for (auto const& [name, level] : config.logging.module_levels) {
+        auto modules = loglet::get_modules(name);
+        for (auto module : modules) {
+            loglet::set_module_level(module, level);
+        }
+        if (modules.empty()) {
+            ERRORF("unknown module(s): %s", name.c_str());
+        }
+    }
+
+    if (config.logging.tree) {
+        loglet::iterate_modules(
+            [](loglet::LogModule const* module, int depth, void* data) {
+                char buffer[64];
+                snprintf(buffer, sizeof(buffer), "%*s%s", depth * 2, "", module->name);
+                INFOF("%-20s %s%s%s%s%s%s%s%s", buffer,
+                      loglet::is_module_level_enabled(module, loglet::Level::Trace) ? "T" : ".",
+                      loglet::is_module_level_enabled(module, loglet::Level::Verbose) ? "V" : ".",
+                      loglet::is_module_level_enabled(module, loglet::Level::Debug) ? "D" : ".",
+                      loglet::is_module_level_enabled(module, loglet::Level::Info) ? "I" : ".",
+                      loglet::is_module_level_enabled(module, loglet::Level::Notice) ? "N" : ".",
+                      loglet::is_module_level_enabled(module, loglet::Level::Warning) ? "W" : ".",
+                      loglet::is_module_level_enabled(module, loglet::Level::Error) ? "E" : ".",
+                      loglet::is_module_level_enabled(module, loglet::Level::Disabled) ? "#" : ".");
+            },
+            nullptr);
     }
 
     config::dump(&config);

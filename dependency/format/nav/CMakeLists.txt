@@ -1,5 +1,6 @@
 
 add_library(dependency_format_nav STATIC 
+    "nav.cpp"
     "gps/lnav.cpp"
     "gal/inav.cpp"
     "d1.cpp"

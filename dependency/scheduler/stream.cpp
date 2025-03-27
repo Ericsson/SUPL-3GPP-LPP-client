@@ -7,7 +7,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "task"
+LOGLET_MODULE2(sched, stream);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, stream)
 
 namespace scheduler {
 StreamTask::StreamTask(size_t                              block_size,

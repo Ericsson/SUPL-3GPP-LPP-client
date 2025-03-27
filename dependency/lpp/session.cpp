@@ -23,7 +23,8 @@
 
 #include <sstream>
 
-#define LOGLET_CURRENT_MODULE "lpp/s"
+LOGLET_MODULE2(lpp, session);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, session)
 
 namespace lpp {
 

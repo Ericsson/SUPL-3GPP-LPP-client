@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "tokoro/astarg"
+LOGLET_MODULE2(tokoro, astarg);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, astarg)
 
 namespace generator {
 namespace tokoro {

@@ -11,7 +11,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "spartn/g"
+LOGLET_MODULE2(spartn, time);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, time)
 
 CONSTEXPR static uint32_t SECONDS_IN_DAY        = 86400;
 CONSTEXPR static uint64_t DAY_BETWEEN_1970_1980 = 3657;   // Jan 6

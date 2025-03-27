@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "tokoro/nut"
+LOGLET_MODULE2(tokoro, nut);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, nut)
 
 namespace generator {
 namespace tokoro {

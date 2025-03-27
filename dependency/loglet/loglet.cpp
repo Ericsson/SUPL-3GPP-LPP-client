@@ -1,5 +1,6 @@
 #include "loglet/loglet.hpp"
 
+#include <algorithm>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -41,10 +42,14 @@ struct EqualModuleName {
 };
 
 struct Module {
-    char const* name;
-    Level       level;
+    std::string          name;
+    uint64_t             hash;
+    Level                level;
+    Module*              parent;
+    std::vector<Module*> children;
 };
 
+static char const*        sPrefix       = nullptr;
 static Level              sLevel        = Level::Debug;
 static bool               sColorEnabled = true;
 static bool               sAlwaysFlush  = false;
@@ -68,16 +73,155 @@ Module& get_or_add_module(char const* reference) {
     }
 }
 
+struct GlobalData {
+    std::vector<LogModule*> root_modules;
+    std::vector<LogModule*> modules;
+    size_t                  max_full_name_length = 0;
+};
+
+static GlobalData* sGlobalData = nullptr;
+
+void preinit() {
+    if (sGlobalData) return;
+    sGlobalData = new GlobalData();
+    sGlobalData->root_modules.reserve(100);
+    sGlobalData->modules.reserve(256);
+    sGlobalData->max_full_name_length = 10;
+}
+
+void register_module(LogModule* module) {
+    if (!sGlobalData) return;
+    sGlobalData->modules.push_back(module);
+    if (module->parent == nullptr) {
+        sGlobalData->root_modules.push_back(module);
+    }
+}
+
+void iterate_modules_recursive(LogModule* module, int depth,
+                               void (*callback)(LogModule const* module, int depth, void* data),
+                               void* data) {
+    callback(module, depth, data);
+    for (auto child : module->children) {
+        iterate_modules_recursive(child, depth + 1, callback, data);
+    }
+}
+
+void iterate_modules(void (*callback)(LogModule const* module, int depth, void* data), void* data) {
+    if (!sGlobalData) return;
+    for (auto module : sGlobalData->root_modules) {
+        iterate_modules_recursive(module, 0, callback, data);
+    }
+}
+
+void generate_full_name(LogModule* parent) {
+    if (parent && sGlobalData && sGlobalData->max_full_name_length < parent->full_name.length()) {
+        sGlobalData->max_full_name_length = parent->full_name.length();
+    }
+    for (auto child : parent->children) {
+        child->full_name = parent->full_name + "/" + child->name;
+        generate_full_name(child);
+    }
+}
+
+void initialize() {
+    if (!sGlobalData) return;
+    for (auto module : sGlobalData->modules) {
+        if (module->parent != nullptr) {
+            module->parent->children.push_back(module);
+        }
+    }
+
+    // Sort modules by name
+    std::sort(sGlobalData->root_modules.begin(), sGlobalData->root_modules.end(),
+              [](LogModule const* a, LogModule const* b) {
+                  return strcmp(a->name, b->name) < 0;
+              });
+
+    for (auto module : sGlobalData->root_modules) {
+        std::sort(module->children.begin(), module->children.end(),
+                  [](LogModule const* a, LogModule const* b) {
+                      return strcmp(a->name, b->name) < 0;
+                  });
+    }
+
+    // Generate full name
+    for (auto module : sGlobalData->root_modules) {
+        module->full_name = module->name;
+        generate_full_name(module);
+    }
+}
+
 void uninitialize() {
     sScopes.clear();
-    for (auto it = sModules.begin(); it != sModules.end();) {
-        delete[] it->second.name;
-        it = sModules.erase(it);
+}
+
+static std::vector<LogModule*> get_all_children(LogModule* module) {
+    std::vector<LogModule*> result;
+    for (auto child : module->children) {
+        result.push_back(child);
+        auto children = get_all_children(child);
+        result.insert(result.end(), children.begin(), children.end());
     }
+    return result;
+}
+
+static void find_modules(std::vector<std::string>& parts, size_t index, LogModule* parent,
+                         std::vector<LogModule*> const& children, std::vector<LogModule*>& result) {
+    if (index >= parts.size()) {
+        if (parent != nullptr) {
+            result.push_back(parent);
+        }
+        return;
+    }
+
+    if (parts[index] == "+") {
+        for (auto child : children) {
+            find_modules(parts, index + 1, child, child->children, result);
+        }
+    } else if (parts[index] == "*") {
+        result.push_back(parent);
+        for (auto child : get_all_children(parent)) {
+            result.push_back(child);
+        }
+    } else {
+        for (auto child : children) {
+            if (parts[index] == child->name) {
+                find_modules(parts, index + 1, child, child->children, result);
+            }
+        }
+    }
+}
+
+std::vector<LogModule*> get_modules(std::string const& name) {
+    std::vector<std::string> parts;
+    auto                     str = name;
+    for (auto it = str.begin(); it != str.end(); it++) {
+        if (*it == '/') {
+            parts.push_back(std::string(str.begin(), it));
+            str = std::string(it + 1, str.end());
+            it  = str.begin();
+        }
+    }
+
+    if (str.size() > 0) {
+        parts.push_back(str);
+    }
+
+    std::vector<LogModule*> result;
+    find_modules(parts, 0, nullptr, sGlobalData->root_modules, result);
+    return result;
+}
+
+void set_prefix(char const* prefix) {
+    sPrefix = prefix;
 }
 
 void set_level(Level level) {
     sLevel = level;
+    if (!sGlobalData) return;
+    for (auto& module : sGlobalData->modules) {
+        module->level = level;
+    }
 }
 
 void set_color_enable(bool enabled) {
@@ -88,34 +232,24 @@ void set_always_flush(bool flush) {
     sAlwaysFlush = flush;
 }
 
-void set_module_level(char const* module, Level level) {
-    auto& module_ref = get_or_add_module(module);
-    module_ref.level = level;
+void set_module_level(LogModule* module, Level level) {
+    module->level = level;
 }
 
-void disable_module(char const* module) {
-    auto& module_ref = get_or_add_module(module);
-    module_ref.level = Level::Disabled;
+void disable_module(LogModule* module) {
+    module->level = Level::Disabled;
 }
 
-bool is_module_enabled(char const* module) {
-    auto it = sModules.find(module);
-    if (it == sModules.end()) {
-        return true;
-    }
-    return it->second.level != Level::Disabled;
+bool is_module_enabled(LogModule const* module) {
+    return module->level != Level::Disabled;
 }
 
 bool is_level_enabled(Level level) {
     return level >= sLevel;
 }
 
-bool is_module_level_enabled(char const* module, Level level) {
-    auto it = sModules.find(module);
-    if (it == sModules.end()) {
-        return is_level_enabled(level);
-    }
-    return level >= it->second.level;
+bool is_module_level_enabled(LogModule const* module, Level level) {
+    return level >= module->level;
 }
 
 void push_indent() {
@@ -139,6 +273,19 @@ static char const* level_to_string(Level level) {
     }
 }
 
+char const* level_to_full_string(Level level) {
+    switch (level) {
+    case Level::Trace: return "trace";
+    case Level::Verbose: return "verbose";
+    case Level::Debug: return "debug";
+    case Level::Info: return "info";
+    case Level::Notice: return "notice";
+    case Level::Warning: return "warning";
+    case Level::Error: return "error";
+    case Level::Disabled: CORE_UNREACHABLE();
+    }
+}
+
 static char const* level_to_color(Level level) {
     if (!sColorEnabled) return "";
     switch (level) {
@@ -153,7 +300,7 @@ static char const* level_to_color(Level level) {
     }
 }
 
-void log(char const* module, Level level, char const* message) {
+void log(LogModule const* module, Level level, char const* message) {
     if (!is_module_level_enabled(module, level)) {
         return;
     }
@@ -177,100 +324,101 @@ void log(char const* module, Level level, char const* message) {
         fflush(file);
     }
 
-    char const indent_buffer[64 + 1] =
-        "                                                                ";
-    auto indent_length = static_cast<int>(sScopes.size() * 2);
+    char indent_buffer[64 + 1] = "                                                                ";
+    auto indent_length         = static_cast<int>(sScopes.size() * 2);
     if (indent_length > 64) {
         indent_length = 64;
     }
-    fprintf(file, "%s%s%s[%10s] %.*s%s%s\n", start_color, level_to_string(level), buffer, module,
-            static_cast<int>(sScopes.size() * 2), indent_buffer, message, stop_color);
+    indent_buffer[indent_length] = '\0';
+    fprintf(file, "%s%s%s[%-*s] %s%s%s\n", start_color, level_to_string(level), buffer,
+            static_cast<int>(sGlobalData ? sGlobalData->max_full_name_length : 16),
+            module->full_name.c_str(), indent_buffer, message, stop_color);
 }
 
-void logf(char const* module, Level level, char const* format, ...) {
+void logf(LogModule const* module, Level level, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vlogf(module, level, format, args);
     va_end(args);
 }
 
-void vlogf(char const* module, Level level, char const* format, va_list args) {
+void vlogf(LogModule const* module, Level level, char const* format, va_list args) {
     char buffer[32 * 1024];
     vsnprintf(buffer, sizeof(buffer), format, args);
     log(module, level, buffer);
 }
 
-void vtracef(char const* module, char const* format, va_list args) {
+void vtracef(LogModule const* module, char const* format, va_list args) {
     vlogf(module, Level::Trace, format, args);
 }
 
-void vverbosef(char const* module, char const* format, va_list args) {
+void vverbosef(LogModule const* module, char const* format, va_list args) {
     vlogf(module, Level::Verbose, format, args);
 }
 
-void vdebugf(char const* module, char const* format, va_list args) {
+void vdebugf(LogModule const* module, char const* format, va_list args) {
     vlogf(module, Level::Debug, format, args);
 }
 
-void vinfof(char const* module, char const* format, va_list args) {
+void vinfof(LogModule const* module, char const* format, va_list args) {
     vlogf(module, Level::Info, format, args);
 }
 
-void vnoticef(char const* module, char const* format, va_list args) {
+void vnoticef(LogModule const* module, char const* format, va_list args) {
     vlogf(module, Level::Notice, format, args);
 }
 
-void vwarnf(char const* module, char const* format, va_list args) {
+void vwarnf(LogModule const* module, char const* format, va_list args) {
     vlogf(module, Level::Warning, format, args);
 }
 
-void verrorf(char const* module, char const* format, va_list args) {
+void verrorf(LogModule const* module, char const* format, va_list args) {
     vlogf(module, Level::Error, format, args);
 }
 
-void tracef(char const* module, char const* format, ...) {
+void tracef(LogModule const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vtracef(module, format, args);
     va_end(args);
 }
 
-void verbosef(char const* module, char const* format, ...) {
+void verbosef(LogModule const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vverbosef(module, format, args);
     va_end(args);
 }
 
-void debugf(char const* module, char const* format, ...) {
+void debugf(LogModule const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vdebugf(module, format, args);
     va_end(args);
 }
 
-void infof(char const* module, char const* format, ...) {
+void infof(LogModule const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vinfof(module, format, args);
     va_end(args);
 }
 
-void noticef(char const* module, char const* format, ...) {
+void noticef(LogModule const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vnoticef(module, format, args);
     va_end(args);
 }
 
-void warnf(char const* module, char const* format, ...) {
+void warnf(LogModule const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     vwarnf(module, format, args);
     va_end(args);
 }
 
-void errorf(char const* module, char const* format, ...) {
+void errorf(LogModule const* module, char const* format, ...) {
     va_list args;
     va_start(args, format);
     verrorf(module, format, args);

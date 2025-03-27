@@ -5,7 +5,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "coord"
+LOGLET_MODULE2(tokoro, coord);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, coord)
 
 namespace generator {
 namespace tokoro {
@@ -174,7 +175,7 @@ static ItrfParameter const& itrf2020_to_parameter(Itrf to) {
     case Itrf::ITRF1988: return ITRF_2020_to_88_PARAMETER;
     }
 
-    XUNREACHABLE("tkr/coord");
+    UNREACHABLE();
 }
 
 static Float3 itrf2020_to(Itrf to, double epoch, Float3 position) {
@@ -216,12 +217,11 @@ Float3 itrf_transform(Itrf from, Itrf to, double epoch, Float3 position) {
         return itrf2020_to(to, epoch, itrf2020_from(Itrf::ITRF1988, epoch, position));
     }
 
-    XUNREACHABLE("tkr/coord");
+    UNREACHABLE();
 }
 
-static ItrfParameter ITRF89_TO_ETRF89_PARAMETER = {
-    0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1989.0, 0.0, 0.0, 0.0, 0.0, 0.11, 0.57, -0.71
-};
+static ItrfParameter ITRF89_TO_ETRF89_PARAMETER = {0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  1989.0,
+                                                   0.0, 0.0, 0.0, 0.0, 0.11, 0.57, -0.71};
 
 Float3 itrf89_to_etrf89(double epoch, Float3 position) {
     return itrf_transform_parameter(ITRF89_TO_ETRF89_PARAMETER, epoch, position);
@@ -233,3 +233,5 @@ Float3 etrf89_to_itrf89(double epoch, Float3 position) {
 
 }  // namespace tokoro
 }  // namespace generator
+
+#undef LOGLET_CURRENT_MODULE

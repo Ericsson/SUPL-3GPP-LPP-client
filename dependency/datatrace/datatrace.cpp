@@ -7,7 +7,9 @@
 
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
-#define LOGLET_CURRENT_MODULE "datatrace"
+
+LOGLET_MODULE(datatrace);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(datatrace)
 
 namespace datatrace {
 

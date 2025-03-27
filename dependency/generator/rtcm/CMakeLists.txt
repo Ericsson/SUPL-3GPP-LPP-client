@@ -1,5 +1,6 @@
 
 add_library(dependency_generator_rtcm STATIC 
+    "rtcm.cpp"
     "generator.cpp"
     "satellite_id.cpp"
     "signal_id.cpp"

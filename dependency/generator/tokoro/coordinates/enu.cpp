@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "coord"
+LOGLET_MODULE2(tokoro, enu);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, enu)
 
 namespace generator {
 namespace tokoro {

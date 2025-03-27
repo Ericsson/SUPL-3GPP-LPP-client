@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/l2s"
+LOGLET_MODULE2(p, l2s);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2s)
 
 Lpp2Spartn::Lpp2Spartn(OutputConfig const& output, Lpp2SpartnConfig const& config)
     : mOutput(output), mConfig(config) {

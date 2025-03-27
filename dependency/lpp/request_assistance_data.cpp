@@ -47,7 +47,8 @@
 
 #define ALLOC_ZERO(type) reinterpret_cast<type*>(calloc(1, sizeof(type)))
 
-#define LOGLET_CURRENT_MODULE "lpp/m"
+LOGLET_MODULE2(lpp, rad);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, rad)
 
 namespace lpp {
 namespace messages {

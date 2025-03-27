@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/li"
+LOGLET_MODULE2(p, li);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, li)
 
 void LocationCollector::inspect(streamline::System&, DataType const& location) NOEXCEPT {
     VSCOPE_FUNCTION();

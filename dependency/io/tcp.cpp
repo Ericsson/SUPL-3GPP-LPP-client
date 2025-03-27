@@ -19,7 +19,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "io"
+LOGLET_MODULE2(io, tcp);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, tcp)
 
 namespace io {
 TcpServerInput::TcpServerInput(std::string listen, uint16_t port) NOEXCEPT

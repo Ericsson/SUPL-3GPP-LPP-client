@@ -1,5 +1,6 @@
 
 add_library(dependency_lpp 
+    "lpp.cpp"
     "session.cpp"
     "transaction.cpp"
     "message.cpp"

@@ -4,7 +4,9 @@
 #include "message.hpp"
 
 #include <loglet/loglet.hpp>
-#define LOGLET_CURRENT_MODULE "spartn/g"
+
+LOGLET_MODULE2(spartn, gad);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, gad)
 
 namespace generator {
 namespace spartn {

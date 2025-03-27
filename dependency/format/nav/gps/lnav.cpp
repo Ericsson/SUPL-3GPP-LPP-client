@@ -5,7 +5,8 @@
 #include <ephemeris/gps.hpp>
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "nav"
+LOGLET_MODULE(nav);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(nav)
 
 namespace format {
 namespace nav {

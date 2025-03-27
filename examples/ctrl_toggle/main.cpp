@@ -20,7 +20,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "ctrl-toggle"
+LOGLET_MODULE(ctrl_toggle);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ctrl_toggle)
 
 struct Cell {
     int                mcc;

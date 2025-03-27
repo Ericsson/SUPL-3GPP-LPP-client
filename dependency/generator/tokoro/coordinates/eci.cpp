@@ -6,7 +6,8 @@
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
-#define LOGLET_CURRENT_MODULE "tokoro"
+LOGLET_MODULE2(tokoro, eci);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, eci)
 
 namespace generator {
 namespace tokoro {

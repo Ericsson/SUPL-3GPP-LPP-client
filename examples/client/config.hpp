@@ -33,7 +33,9 @@ struct IdentityConfig {
     std::unique_ptr<std::string> ipv4;
 };
 
-#define OUTPUT_PRINT_MODULE "output"
+LOGLET_MODULE_FORWARD_REF(output);
+#define OUTPUT_PRINT_MODULE &LOGLET_MODULE_REF(output)
+
 using OutputFormat                                   = uint64_t;
 constexpr static OutputFormat OUTPUT_FORMAT_NONE     = 0;
 constexpr static OutputFormat OUTPUT_FORMAT_UBX      = 1;
@@ -163,6 +165,7 @@ struct LoggingConfig {
     loglet::Level                                  log_level;
     bool                                           color;
     bool                                           flush;
+    bool                                           tree;
     std::unordered_map<std::string, loglet::Level> module_levels;
 };
 

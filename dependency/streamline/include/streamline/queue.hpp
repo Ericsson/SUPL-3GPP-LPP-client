@@ -10,6 +10,9 @@
 
 #define EVENT_QUEUE_SIZE 2048
 
+LOGLET_MODULE_FORWARD_REF(streamline);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(streamline)
+
 namespace streamline {
 template <typename T>
 class EventQueue {
@@ -21,8 +24,8 @@ public:
         std::lock_guard<std::mutex> lock(mMutex);
         mQueue.push(std::move(data));
         if (mQueue.size() > EVENT_QUEUE_SIZE) {
-            XWARNF("smtl", "queue size limit reached (%lu > %d), discarding data", mQueue.size(),
-                   EVENT_QUEUE_SIZE);
+            WARNF("queue size limit reached (%lu > %d), discarding data", mQueue.size(),
+                  EVENT_QUEUE_SIZE);
             mQueue.pop();
         } else {
             uint64_t value = 1;
@@ -50,3 +53,5 @@ private:
     int           mFd;
 };
 }  // namespace streamline
+
+#undef LOGLET_CURRENT_MODULE

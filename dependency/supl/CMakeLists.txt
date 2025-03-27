@@ -1,5 +1,6 @@
 
 add_library(dependency_supl 
+    "supl.cpp"
     "session.cpp"
     "tcp_client.cpp"
     "encode.cpp"

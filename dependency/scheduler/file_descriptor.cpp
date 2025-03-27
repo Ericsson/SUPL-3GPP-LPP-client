@@ -10,7 +10,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "task"
+LOGLET_MODULE2(sched, task);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, task)
 
 namespace scheduler {
 FileDescriptorTask::FileDescriptorTask() NOEXCEPT : on_read{},

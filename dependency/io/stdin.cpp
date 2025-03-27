@@ -11,7 +11,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "io"
+LOGLET_MODULE2(io, stdio);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, stdio)
 
 namespace io {
 StdinInput::StdinInput() NOEXCEPT {

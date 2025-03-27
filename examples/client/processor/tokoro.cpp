@@ -5,7 +5,8 @@
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/tkr"
+LOGLET_MODULE2(p, tkr);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, tkr)
 
 void TokoroEphemerisUbx::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
     VSCOPE_FUNCTION();

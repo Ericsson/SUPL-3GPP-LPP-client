@@ -5,8 +5,10 @@
 #include <ephemeris/bds.hpp>
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "nav/d1"
 #define SEMI_CIRCLE_TO_RAD 3.1415926535898
+
+LOGLET_MODULE3(format, nav, d1);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, nav, d1)
 
 namespace format {
 namespace nav {

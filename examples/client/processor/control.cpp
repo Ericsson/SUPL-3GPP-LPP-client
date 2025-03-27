@@ -4,7 +4,8 @@
 #include <format/ctrl/identity.hpp>
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/ctrl"
+LOGLET_MODULE2(p, ctrl);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ctrl)
 
 void CtrlPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
     VSCOPE_FUNCTION();

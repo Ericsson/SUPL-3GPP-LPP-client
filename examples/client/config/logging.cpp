@@ -62,6 +62,12 @@ static args::Flag gFlush{
     "Flush log after each line",
     {"log-flush"},
 };
+static args::Flag gTree{
+    gGroup,
+    "tree",
+    "Show log tree",
+    {"log-tree"},
+};
 
 static void setup() {}
 
@@ -70,6 +76,7 @@ static void parse(Config* config) {
     logging.log_level = loglet::Level::Info;
     logging.color     = gNoColor ? false : true;
     logging.flush     = gFlush;
+    logging.tree      = gTree;
 
     if (gTrace) {
         logging.log_level = loglet::Level::Trace;

@@ -1,5 +1,6 @@
 
 add_library(dependency_io STATIC 
+    "io.cpp"
     "input.cpp"
     "output.cpp"
     "file.cpp"

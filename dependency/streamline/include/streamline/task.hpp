@@ -10,6 +10,9 @@
 #include <loglet/loglet.hpp>
 #include <scheduler/scheduler.hpp>
 
+LOGLET_MODULE_FORWARD_REF(streamline);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(streamline)
+
 namespace streamline {
 
 template <typename T>
@@ -41,10 +44,10 @@ public:
 
     void schedule(scheduler::Scheduler* scheduler) override {
         if (scheduler->add_epoll_fd(mQueue.get_fd(), EPOLLIN, &mEvent)) {
-            XVERBOSEF("smtl", "queue task (%d) scheduled", mQueue.get_fd());
+            VERBOSEF("queue task (%d) scheduled", mQueue.get_fd());
             mScheduler = scheduler;
         } else {
-            XWARNF("smtl", "queue task (%d) failed to schedule", mQueue.get_fd());
+            WARNF("queue task (%d) failed to schedule", mQueue.get_fd());
             mScheduler = nullptr;
         }
     }
@@ -52,9 +55,9 @@ public:
     void cancel() override {
         if (mScheduler) {
             if (mScheduler->remove_epoll_fd(mQueue.get_fd())) {
-                XVERBOSEF("smtl", "queue task (%d) cancelled", mQueue.get_fd());
+                VERBOSEF("queue task (%d) cancelled", mQueue.get_fd());
             } else {
-                XWARNF("smtl", "queue task (%d) failed to cancel", mQueue.get_fd());
+                WARNF("queue task (%d) failed to cancel", mQueue.get_fd());
             }
             mScheduler = nullptr;
         }
@@ -65,8 +68,8 @@ public:
         if ((event->events & EPOLLIN) == 0) return;
 
         auto count = mQueue.poll_count();
-        XVERBOSEF("smtl", "queue task (%d): event count %lu", mQueue.get_fd(), count);
-        LOGLET_XINDENT_SCOPE("smtl", loglet::Level::Verbose);
+        VERBOSEF("queue task (%d): event count %lu", mQueue.get_fd(), count);
+        LOGLET_INDENT_SCOPE(loglet::Level::Verbose);
 
         for (uint64_t i = 0; i < count; i++) {
             auto data = mQueue.pop();
@@ -79,7 +82,7 @@ public:
                 auto consumer = it->get();
                 if (std::next(it) != mConsumers.end()) {
                     auto clone = streamline::Clone<T>{}(data);
-                    XVERBOSEF("smtl", "cloning data for next consumer");
+                    VERBOSEF("cloning data for next consumer");
                     consumer->consume(mSystem, std::move(clone));
                 } else {
                     consumer->consume(mSystem, std::move(data));
@@ -110,3 +113,5 @@ protected:
 };
 
 }  // namespace streamline
+
+#undef LOGLET_CURRENT_MODULE

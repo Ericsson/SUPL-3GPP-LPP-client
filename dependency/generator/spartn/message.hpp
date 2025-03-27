@@ -1,12 +1,15 @@
 #pragma once
-#include "generator.hpp"
 #include "builder.hpp"
 #include "data.hpp"
+#include "generator.hpp"
 
 #include <map>
 #include <stdio.h>
 
 #include <loglet/loglet.hpp>
+
+LOGLET_MODULE_FORWARD_REF2(spartn, message);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, message)
 
 #define CRC_16_CCITT 1
 
@@ -125,8 +128,7 @@ private:
 
 class MessageBuilder {
 public:
-    EXPLICIT MessageBuilder(uint8_t message_type, uint8_t message_subtype,
-                                   uint32_t message_time);
+    EXPLICIT MessageBuilder(uint8_t message_type, uint8_t message_subtype, uint32_t message_time);
 
     generator::spartn::Message build();
 
@@ -520,7 +522,7 @@ public:
         case 1: return sf065(value); break;
         case 2: return sf066(value); break;
         case 3: return sf067(value); break;
-        default: XUNREACHABLE("spartn");
+        default: UNREACHABLE();
         }
     }
 
@@ -530,7 +532,7 @@ public:
         case 1: sf065_invalid(); break;
         case 2: sf066_invalid(); break;
         case 3: sf067_invalid(); break;
-        default: XUNREACHABLE("spartn");
+        default: UNREACHABLE();
         }
     }
 
@@ -606,3 +608,5 @@ private:
     uint32_t mMessageTime;
     Builder  mBuilder;
 };
+
+#undef LOGLET_CURRENT_MODULE

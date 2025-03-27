@@ -9,7 +9,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "nmea"
+LOGLET_MODULE2(format, nmea);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, nmea)
 
 namespace format {
 namespace nmea {
