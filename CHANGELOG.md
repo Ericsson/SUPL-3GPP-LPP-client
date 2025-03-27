@@ -2,8 +2,9 @@
 
 ## [] 
 
-- Updated loglet to use a new system for modules. 
+- Updated loglet to use a new system for modules
 - Added `--log-tree` to visualize the logging modules and their logging level
+- Added `--ls-interface` to set the interface used by the location server connection
 
 ## [4.0.7] 2025-03-20
 

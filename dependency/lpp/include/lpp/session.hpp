@@ -113,7 +113,7 @@ public:
     ~Session();
 
     // Setup the connection information for the session and switch to the CONNECT state
-    void connect(std::string const& host, uint16_t port);
+    void connect(std::string const& host, uint16_t port, std::string const& interface);
 
     // Create a new transaction. 'single_side_endable' determines if the transaction is can be ended
     // when either sides sends a endTransaction, otherwise you need to end the transaction yourself
@@ -197,6 +197,7 @@ private:
 
     std::string mConnectionHost;
     uint16_t    mConnectionPort;
+    std::string mConnectionInterface;
 
     std::unordered_map<TransactionLookup, TransactionHandle> mTransacionLookup;
     std::unordered_map<TransactionHandle, TransactionData>   mTransactions;

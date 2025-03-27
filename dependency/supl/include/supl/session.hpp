@@ -55,11 +55,11 @@ public:
     explicit Session(Version version, Identity identity);
     ~Session();
 
-    bool connect(const std::string& ip, uint16_t port);
+    bool connect(std::string const& ip, uint16_t port, std::string const& interface);
     bool handle_connection();
 
-    void                disconnect();
-    bool                is_connected() const;
+    void           disconnect();
+    bool           is_connected() const;
     NODISCARD bool is_disconnected() const { return mState == State::DISCONNECTED; }
 
     bool      handshake(const START& message);

@@ -26,7 +26,7 @@ namespace lpp {
 
 Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const& host,
                uint16_t port)
-    : mHost(host), mPort(port),
+    : mHost(host), mPort(port), mInterface(""),
       mSession{lpp::VERSION_18_4_0, std::move(identity), std::move(supl_cell)},
       mScheduler{nullptr} {
     VSCOPE_FUNCTION();
@@ -137,7 +137,7 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
     ASSERT(!mScheduler, "scheduler is already set");
 
     mScheduler = scheduler;
-    mSession.connect(mHost, mPort);
+    mSession.connect(mHost, mPort, mInterface);
     mSession.schedule(scheduler);
     scheduler->register_tick(this, [this]() {
         for (auto handle : mSessionsToDestroy) {
