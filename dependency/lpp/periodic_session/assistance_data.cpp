@@ -6,7 +6,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "lpp/ad"
+LOGLET_MODULE2(lpp, ad);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, ad)
 
 namespace lpp {
 

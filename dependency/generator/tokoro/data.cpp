@@ -36,7 +36,8 @@
 #include <datatrace/datatrace.hpp>
 #endif
 
-#define LOGLET_CURRENT_MODULE "tokoro/data"
+LOGLET_MODULE2(tokoro, data);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, data)
 
 namespace generator {
 namespace tokoro {

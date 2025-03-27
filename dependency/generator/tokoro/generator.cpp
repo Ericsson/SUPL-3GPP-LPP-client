@@ -37,7 +37,8 @@
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
-#define LOGLET_CURRENT_MODULE "tokoro"
+LOGLET_MODULE(tokoro);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(tokoro)
 
 namespace generator {
 namespace tokoro {

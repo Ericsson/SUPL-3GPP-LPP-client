@@ -9,7 +9,8 @@
 #include <generator/rtcm/generator.hpp>
 #endif
 
-#define LOGLET_CURRENT_MODULE "p/lpp"
+LOGLET_MODULE2(p, lpp);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, lpp)
 
 void LppXerOutput::inspect(streamline::System&, DataType const& message) NOEXCEPT {
     VSCOPE_FUNCTION();

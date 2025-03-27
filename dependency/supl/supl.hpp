@@ -2,8 +2,6 @@
 #include <core/core.hpp>
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "supl"
-
 #include <memory>
 
 // Defer Macro

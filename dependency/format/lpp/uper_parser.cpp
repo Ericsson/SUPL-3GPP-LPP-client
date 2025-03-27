@@ -17,7 +17,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "f/lpp"
+LOGLET_MODULE2(format, lpp);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, lpp)
 
 namespace format {
 namespace lpp {

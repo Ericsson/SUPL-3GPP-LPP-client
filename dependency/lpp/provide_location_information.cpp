@@ -27,7 +27,8 @@
 #include <loglet/loglet.hpp>
 #include <time/gps.hpp>
 
-#define LOGLET_CURRENT_MODULE "lpp"
+LOGLET_MODULE2(lpp, pli);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, pli)
 
 #define ALLOC_ZERO(type) reinterpret_cast<type*>(calloc(1, sizeof(type)))
 

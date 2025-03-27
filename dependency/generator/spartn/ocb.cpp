@@ -36,7 +36,9 @@
 #include <map>
 
 #include <loglet/loglet.hpp>
-#define LOGLET_CURRENT_MODULE "spartn/g"
+
+LOGLET_MODULE2(spartn, ocb);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, ocb)
 
 namespace generator {
 namespace spartn {

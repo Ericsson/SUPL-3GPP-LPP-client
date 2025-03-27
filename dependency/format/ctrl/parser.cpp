@@ -6,7 +6,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "ctrl"
+LOGLET_MODULE(ctrl);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ctrl)
 
 namespace format {
 namespace ctrl {

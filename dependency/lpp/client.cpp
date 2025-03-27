@@ -19,7 +19,8 @@
 #include <RequestLocationInformation-r9-IEs.h>
 #pragma GCC diagnostic pop
 
-#define LOGLET_CURRENT_MODULE "lpp/c"
+LOGLET_MODULE2(lpp, client);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, client)
 
 namespace lpp {
 

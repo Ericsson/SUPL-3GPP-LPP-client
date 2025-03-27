@@ -1,5 +1,6 @@
 
 add_library(dependency_generator_spartn2 STATIC 
+    "spartn.cpp"
     "generator.cpp"
     "ocb.cpp"
     "gad.cpp"

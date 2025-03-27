@@ -10,7 +10,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "task"
+LOGLET_MODULE2(sched, periodic);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, periodic)
 
 namespace scheduler {
 PeriodicTask::PeriodicTask(std::chrono::steady_clock::duration duration) NOEXCEPT

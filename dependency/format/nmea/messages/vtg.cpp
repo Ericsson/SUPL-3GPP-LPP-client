@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "nmea/vtg"
+LOGLET_MODULE3(format, nmea, vtg);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, nmea, vtg)
 
 namespace format {
 namespace nmea {

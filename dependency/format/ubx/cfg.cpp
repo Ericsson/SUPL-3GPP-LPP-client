@@ -4,7 +4,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "ubx"
+LOGLET_MODULE_FORWARD_REF(ubx);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ubx)
 
 namespace format {
 namespace ubx {

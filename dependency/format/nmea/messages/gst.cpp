@@ -3,7 +3,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "nmea/gst"
+LOGLET_MODULE3(format, nmea, gst);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, nmea, gst)
 
 namespace format {
 namespace nmea {

@@ -5,7 +5,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "lpp/t"
+LOGLET_MODULE2(lpp, tx);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, tx)
 
 namespace lpp {
 

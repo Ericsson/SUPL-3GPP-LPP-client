@@ -21,6 +21,9 @@
 
 #define UPER_DECODE_BUFFER_SIZE (64 * 1024)
 
+LOGLET_MODULE2(supl, session);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(supl, session)
+
 namespace supl {
 
 Session::Session(Version version, Identity identity)

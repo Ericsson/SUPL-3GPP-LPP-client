@@ -6,7 +6,8 @@
 
 #include <cmath>
 
-#define LOGLET_CURRENT_MODULE "p/ubx"
+LOGLET_MODULE2(p, ubx);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ubx)
 
 void UbxPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
     VSCOPE_FUNCTION();

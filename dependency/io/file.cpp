@@ -12,7 +12,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "io"
+LOGLET_MODULE2(io, file);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, file)
 
 namespace io {
 FileInput::FileInput(std::string path, size_t bytes_per_tick, Duration tick_interval) NOEXCEPT

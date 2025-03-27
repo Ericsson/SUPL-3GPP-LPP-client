@@ -7,7 +7,8 @@
 #include <loglet/loglet.hpp>
 #include <lpp/location_information.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/ubx"
+LOGLET_MODULE2(p, nmea);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, nmea)
 
 void NmeaPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
     VSCOPE_FUNCTION();

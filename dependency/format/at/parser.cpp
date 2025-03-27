@@ -2,7 +2,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "at"
+LOGLET_MODULE(at);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(at)
 
 namespace format {
 namespace at {

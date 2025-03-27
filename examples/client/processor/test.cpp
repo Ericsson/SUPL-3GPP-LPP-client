@@ -4,7 +4,8 @@
 #include <scheduler/periodic.hpp>
 #include <scheduler/scheduler.hpp>
 
-#define LOGLET_CURRENT_MODULE "p/test"
+LOGLET_MODULE2(p, test);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, test)
 
 static std::unique_ptr<scheduler::PeriodicTask> periodic_task = nullptr;
 

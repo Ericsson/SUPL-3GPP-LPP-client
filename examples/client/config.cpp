@@ -19,7 +19,8 @@
 #include <args.hpp>
 #pragma GCC diagnostic pop
 
-#define LOGLET_CURRENT_MODULE "config"
+LOGLET_MODULE2(client, config);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 namespace config {
 

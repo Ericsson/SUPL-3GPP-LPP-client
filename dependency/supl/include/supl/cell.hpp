@@ -2,6 +2,9 @@
 #include <core/core.hpp>
 #include <loglet/loglet.hpp>
 
+LOGLET_MODULE_FORWARD_REF(supl);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(supl)
+
 namespace supl {
 
 struct Cell {
@@ -87,7 +90,7 @@ inline bool operator==(Cell const& lhs, Cell const& rhs) {
     case Cell::Type::UNKNOWN: break;
     }
 
-    XUNREACHABLE("supl");
+    UNREACHABLE();
     return false;
 }
 
@@ -96,3 +99,5 @@ inline bool operator!=(Cell const& lhs, Cell const& rhs) {
 }
 
 }  // namespace supl
+
+#undef LOGLET_CURRENT_MODULE

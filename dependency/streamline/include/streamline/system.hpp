@@ -11,7 +11,8 @@
 #include <loglet/loglet.hpp>
 #include <scheduler/scheduler.hpp>
 
-#define LOGLET_CURRENT_MODULE "smtl"
+LOGLET_MODULE_FORWARD_REF(streamline);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(streamline)
 
 namespace streamline {
 class System {

@@ -21,7 +21,8 @@
 #include <datatrace/datatrace.hpp>
 #endif
 
-#define LOGLET_CURRENT_MODULE "tokoro"
+LOGLET_MODULE2(tokoro, obs);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, obs)
 
 namespace generator {
 namespace tokoro {

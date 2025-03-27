@@ -3,7 +3,8 @@
 #include <loglet/loglet.hpp>
 #include <scheduler/scheduler.hpp>
 
-#define LOGLET_CURRENT_MODULE "modem"
+LOGLET_MODULE(modem);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(modem)
 
 namespace modem {
 

@@ -23,7 +23,9 @@
 #include <cmath>
 
 #include <loglet/loglet.hpp>
-#define LOGLET_CURRENT_MODULE "spartn/g"
+
+LOGLET_MODULE2(spartn, hpac);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, hpac)
 
 namespace generator {
 namespace spartn {

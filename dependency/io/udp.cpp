@@ -18,7 +18,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "io"
+LOGLET_MODULE2(io, udp);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, udp)
 
 namespace io {
 UdpServerInput::UdpServerInput(std::string listen, uint16_t port) NOEXCEPT

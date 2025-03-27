@@ -25,7 +25,9 @@
 #include <unordered_map>
 
 #include <loglet/loglet.hpp>
-#define LOGLET_CURRENT_MODULE "spartn"
+
+LOGLET_MODULE_FORWARD_REF(spartn);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(spartn)
 
 namespace generator {
 namespace spartn {

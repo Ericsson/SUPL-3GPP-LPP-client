@@ -2,10 +2,17 @@
 #include <core/core.hpp>
 
 #include <cstdarg>
+#include <vector>
+#include <string>
 
 #define LOGLET_CURRENT_FUNCTION __FUNCTION__
 #define LOGLET_NAMEPASTE2(a, b) a##b
 #define LOGLET_NAMEPASTE(a, b) LOGLET_NAMEPASTE2(a, b)
+
+#define LOGLET_NAMEPASTE_SEP2(a, b) a##_##b
+#define LOGLET_NAMEPASTE_SEP(a, b) LOGLET_NAMEPASTE_SEP2(a, b)
+
+#define LOGLET_DEFAULT_LEVEL loglet::Level::Info
 
 #if !defined(DISABLE_STRERRORNAME_NP)
 #if defined(_GNU_SOURCE) && defined(__GLIBC__) && defined(__GLIBC_MINOR__)
@@ -19,6 +26,7 @@
     loglet::ScopeFunction LOGLET_NAMEPASTE(loglet_scope_function, __LINE__) {                      \
         level, module                                                                              \
     }
+#define LOGLET_INDENT_SCOPE(level) LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, level)
 
 #ifdef HAVE_STRERRORNAME_NP
 #define ERRNO_FMT "%3d (%s) %s"
@@ -184,42 +192,95 @@ enum class Level {
     Disabled = 999,
 };
 
+struct LogModule;
+void preinit();
+void register_module(LogModule* module);
+void iterate_modules(void (*callback)(LogModule const* module, int depth, void* data), void* data);
+
+struct LogModule {
+    LogModule*              parent;
+    char const*             name;
+    std::string             full_name;
+    Level                   level;
+    bool                    initialized;
+    std::vector<LogModule*> children;
+
+    explicit LogModule(LogModule* parent, char const* name)
+        : parent(parent), name(name), level(Level::Info), initialized(false) {
+        preinit();
+        register_module(this);
+    }
+};
+
+#define LOGLET_MODULE_REF(name) LOGLET_NAMEPASTE(loglet_module_, name)
+#define LOGLET_MODULE_REF2(name, child)                                                            \
+    LOGLET_NAMEPASTE_SEP(LOGLET_NAMEPASTE(loglet_module_, name), child)
+#define LOGLET_MODULE_REF3(name, child, grandchild)                                                \
+    LOGLET_NAMEPASTE_SEP(LOGLET_NAMEPASTE_SEP(LOGLET_NAMEPASTE(loglet_module_, name), child),      \
+                         grandchild)
+
+#define LOGLET_MODULE_FORWARD_REF(name) extern loglet::LogModule LOGLET_MODULE_REF(name)
+#define LOGLET_MODULE_FORWARD_REF2(name, child)                                                    \
+    extern loglet::LogModule LOGLET_MODULE_REF2(name, child)
+#define LOGLET_MODULE_FORWARD_REF3(name, child, grandchild)                                        \
+    extern loglet::LogModule LOGLET_MODULE_REF3(name, child, grandchild)
+
+#define LOGLET_MODULE(module)                                                                      \
+    loglet::LogModule LOGLET_MODULE_REF(module) {                                                  \
+        nullptr, #module                                                                           \
+    }
+#define LOGLET_MODULE2(parent, child)                                                              \
+    LOGLET_MODULE_FORWARD_REF(parent);                                                             \
+    loglet::LogModule LOGLET_MODULE_REF2(parent, child) {                                          \
+        &LOGLET_MODULE_REF(parent), #child                                                         \
+    }
+#define LOGLET_MODULE3(parent, child, grandchild)                                                  \
+    LOGLET_MODULE_FORWARD_REF2(parent, child);                                                     \
+    loglet::LogModule LOGLET_MODULE_REF3(parent, child, grandchild) {                              \
+        &LOGLET_MODULE_REF2(parent, child), #grandchild                                            \
+    }
+
+void initialize();
 void uninitialize();
 
+void set_prefix(char const* prefix);
 void set_level(Level level);
 void set_color_enable(bool enabled);
 void set_always_flush(bool flush);
-void set_module_level(char const* module, Level level);
-void disable_module(char const* module);
-bool is_module_enabled(char const* module);
+void set_module_level(LogModule* module, Level level);
+void disable_module(LogModule* module);
+bool is_module_enabled(LogModule const* module);
 bool is_level_enabled(Level level);
-bool is_module_level_enabled(char const* module, Level level);
+bool is_module_level_enabled(LogModule const* module, Level level);
+std::vector<LogModule*> get_modules(std::string const& name);
+const char* level_to_full_string(Level level);
+
 void push_indent();
 void pop_indent();
 
-void log(char const* module, Level level, char const* message);
-void logf(char const* module, Level level, char const* format, ...);
-void vlogf(char const* module, Level level, char const* format, va_list args);
+void log(LogModule const* module, Level level, char const* message);
+void logf(LogModule const* module, Level level, char const* format, ...);
+void vlogf(LogModule const* module, Level level, char const* format, va_list args);
 
-void tracef(char const* module, char const* format, ...);
-void verbosef(char const* module, char const* format, ...);
-void debugf(char const* module, char const* format, ...);
-void infof(char const* module, char const* format, ...);
-void noticef(char const* module, char const* format, ...);
-void warnf(char const* module, char const* format, ...);
-void errorf(char const* module, char const* format, ...);
+void tracef(LogModule const* module, char const* format, ...);
+void verbosef(LogModule const* module, char const* format, ...);
+void debugf(LogModule const* module, char const* format, ...);
+void infof(LogModule const* module, char const* format, ...);
+void noticef(LogModule const* module, char const* format, ...);
+void warnf(LogModule const* module, char const* format, ...);
+void errorf(LogModule const* module, char const* format, ...);
 
-void vtracef(char const* module, char const* format, va_list args);
-void vverbosef(char const* module, char const* format, va_list args);
-void vdebugf(char const* module, char const* format, va_list args);
-void vinfof(char const* module, char const* format, va_list args);
-void vnoticef(char const* module, char const* format, va_list args);
-void vwarnf(char const* module, char const* format, va_list args);
-void verrorf(char const* module, char const* format, va_list args);
+void vtracef(LogModule const* module, char const* format, va_list args);
+void vverbosef(LogModule const* module, char const* format, va_list args);
+void vdebugf(LogModule const* module, char const* format, va_list args);
+void vinfof(LogModule const* module, char const* format, va_list args);
+void vnoticef(LogModule const* module, char const* format, va_list args);
+void vwarnf(LogModule const* module, char const* format, va_list args);
+void verrorf(LogModule const* module, char const* format, va_list args);
 
 struct ScopeFunction {
     bool indent = false;
-    ScopeFunction(Level level, char const* module) {
+    ScopeFunction(Level level, LogModule const* module) {
         if (is_module_level_enabled(module, level)) {
             push_indent();
             indent = true;

@@ -5,8 +5,10 @@
 #include <ephemeris/gal.hpp>
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "nav/gal"
 #define SEMI_CIRCLE_TO_RAD 3.1415926535898
+
+LOGLET_MODULE3(format, nav, gal);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, nav, gal)
 
 namespace format {
 namespace nav {

@@ -7,7 +7,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "sched"
+LOGLET_MODULE(sched);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(sched)
 
 namespace scheduler {
 Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1), mInterruptFd(-1), mEpollCount(0) {

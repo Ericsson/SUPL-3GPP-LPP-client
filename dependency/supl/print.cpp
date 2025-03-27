@@ -18,7 +18,8 @@
 #include <Version.h>
 #pragma GCC diagnostic pop
 
-#define LOGLET_CURRENT_MODULE "supl/print"
+LOGLET_MODULE2(supl, print);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(supl, print)
 
 namespace supl {
 

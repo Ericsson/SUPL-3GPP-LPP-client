@@ -7,7 +7,8 @@
 #include <loglet/loglet.hpp>
 #include <scheduler/scheduler.hpp>
 
-#define LOGLET_CURRENT_MODULE "lpp/lid"
+LOGLET_MODULE2(lpp, lid);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, lid)
 
 namespace lpp {
 

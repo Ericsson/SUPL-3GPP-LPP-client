@@ -13,7 +13,9 @@
 #include <cmath>
 
 #include <loglet/loglet.hpp>
-#define LOGLET_CURRENT_MODULE "spartn/decode"
+
+LOGLET_MODULE_FORWARD_REF2(spartn, decode);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, decode)
 
 namespace decode {
 

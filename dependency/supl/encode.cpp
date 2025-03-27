@@ -31,6 +31,9 @@
 #include <asn.1/bit_string.hpp>
 #include <asn.1/helper.hpp>
 
+LOGLET_MODULE2(supl, encode);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(supl, encode)
+
 namespace supl {
 
 // NOTE: Empty encode used for determine the final length of the ULP/PDU.

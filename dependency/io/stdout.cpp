@@ -8,7 +8,8 @@
 
 #include <loglet/loglet.hpp>
 
-#define LOGLET_CURRENT_MODULE "io"
+LOGLET_MODULE2(io, stdout);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, stdout)
 
 namespace io {
 StdoutOutput::StdoutOutput() NOEXCEPT  = default;
