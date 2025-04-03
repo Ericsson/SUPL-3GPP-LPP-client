@@ -1,6 +1,6 @@
 # Changelog
 
-## [] 
+## [4.0.9] 2025-04-03 
 
 - Fix `agpsSETassisted`, `agpsSETBased`, and `agpsSETBasedPreferred`
 
