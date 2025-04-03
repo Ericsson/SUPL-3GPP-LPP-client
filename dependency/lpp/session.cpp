@@ -24,6 +24,7 @@
 #include <sstream>
 
 LOGLET_MODULE2(lpp, session);
+LOGLET_MODULE2(lpp, print);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, session)
 
 namespace lpp {
@@ -558,6 +559,9 @@ void Session::send(TransactionHandle const& handle, Message& message) {
         return;
     }
 
+    XVERBOSEF(&LOGLET_MODULE_REF2(lpp, print), "send:\n%s",
+              encode_lpp_message_xer(message).c_str());
+
     // Ensure that the message doesn't already have a transactionID set and that endTransaction
     // is false
     if (message->transactionID) {
@@ -663,6 +667,9 @@ void Session::process_lpp_payload(supl::Payload const& payload) {
         WARNF("failed to decode LPP message");
         return;
     }
+
+    XVERBOSEF(&LOGLET_MODULE_REF2(lpp, print), "recv:\n%s",
+              encode_lpp_message_xer(message).c_str());
 
     if (!message->transactionID) {
         WARNF("missing transaction id");

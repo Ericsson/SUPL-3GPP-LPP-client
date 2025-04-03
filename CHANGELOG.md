@@ -3,6 +3,7 @@
 ## []
 
 - More information included when printing SUPL message with `supl/print`
+- Added logging support of LPP messages via `lpp/print`
 
 ## [4.0.9] 2025-04-03 
 
