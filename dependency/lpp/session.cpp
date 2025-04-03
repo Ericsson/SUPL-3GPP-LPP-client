@@ -331,7 +331,9 @@ NextState Session::state_posinit() {
 
     supl::SETCapabilities capabilities{};
     capabilities.posTechnology                         = {};
-    capabilities.prefMethod                            = supl::PrefMethod::noPreference;
+    capabilities.posTechnology.agpsSETassisted         = true;
+    capabilities.posTechnology.agpsSETBased            = true;
+    capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
     capabilities.posProtocol.lpp.enabled               = true;
     capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;
     capabilities.posProtocol.lpp.technicalVersionField = mVersion.technical;
