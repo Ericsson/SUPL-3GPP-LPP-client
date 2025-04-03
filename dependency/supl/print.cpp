@@ -113,6 +113,25 @@ public:
     void value(::MeasResultListEUTRA const& x);
     void value(::Ver2_SETCapabilities_extension const& x);
 
+    void value(::ULP_Velocity const& value);
+    void value(::Ver2_SUPL_POS_extension const&);
+    void value(::SUPLPOS const& value);
+    void value(::RequestedAssistData const& value);
+    void value(::Position const& value);
+    void value(::Ver2_SUPL_POS_INIT_extension const& value);
+    void value(::SUPLPOSINIT const& value);
+    void value(::StatusCode const& value);
+    void value(::Ver2_SUPL_END_extension const& value);
+    void value(::SUPLEND const& value);
+    void value(::SETAuthKey const& value);
+    void value(::Ver2_SUPL_RESPONSE_extension const& value);
+    void value(::SUPLRESPONSE const& value);
+
+    void value(::Ver2_PosPayLoad_extension::Ver2_PosPayLoad_extension__lPPPayload const& value);
+    void value(::Ver2_PosPayLoad_extension::Ver2_PosPayLoad_extension__tIA801Payload const& value);
+    void value(::Ver2_PosPayLoad_extension const& value);
+    void value(::PosPayLoad const& value);
+
     template <typename T>
     void field(char const* field_name, T const& field_value) {
         if (mPreviousField) {
@@ -235,10 +254,10 @@ void Printer::value(::UlpMessage const& x) {
     case UlpMessage_PR_NOTHING: field("type", "nothing"); break;
     case UlpMessage_PR_msSUPLINIT: field("ms-suplinit", x.choice.msSUPLINIT); break;
     case UlpMessage_PR_msSUPLSTART: field("ms-suplstart", x.choice.msSUPLSTART); break;
-    case UlpMessage_PR_msSUPLPOS: field("type", "ms-suplpos"); break;
-    case UlpMessage_PR_msSUPLPOSINIT: field("type", "ms-suplposinit"); break;
-    case UlpMessage_PR_msSUPLEND: field("type", "ms-suplend"); break;
-    case UlpMessage_PR_msSUPLRESPONSE: field("type", "ms-suplresponse"); break;
+    case UlpMessage_PR_msSUPLPOS: field("ms-suplpos", x.choice.msSUPLPOS);
+    case UlpMessage_PR_msSUPLPOSINIT: field("ms-suplposinit", x.choice.msSUPLPOSINIT);
+    case UlpMessage_PR_msSUPLEND: field("ms-suplend", x.choice.msSUPLEND);
+    case UlpMessage_PR_msSUPLRESPONSE: field("ms-suplresponse", x.choice.msSUPLRESPONSE);
     case UlpMessage_PR_msSUPLAUTHREQ:
     case UlpMessage_PR_msSUPLAUTHRESP:
     case UlpMessage_PR_msSUPLTRIGGEREDSTART:
@@ -485,6 +504,123 @@ void Printer::value(::Ver2_SETCapabilities_extension const&) {
 
 void Printer::value(::Ver2_SUPL_START_extension const&) {
     appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::Ver2_PosPayLoad_extension::Ver2_PosPayLoad_extension__lPPPayload const& x) {
+    push('[');
+    for (auto i = 0; i < x.list.count; i++) {
+        if (x.list.array[i]) {
+            value(*x.list.array[i]);
+        }
+    }
+    pop(']');
+}
+
+void Printer::value(
+    ::Ver2_PosPayLoad_extension::Ver2_PosPayLoad_extension__tIA801Payload const& x) {
+    push('[');
+    for (auto i = 0; i < x.list.count; i++) {
+        if (x.list.array[i]) {
+            value(*x.list.array[i]);
+        }
+    }
+    pop(']');
+}
+
+void Printer::value(::Ver2_PosPayLoad_extension const& value) {
+    push('{');
+    field_opt("lpp-payload", value.lPPPayload);
+    field_opt("tia801-payload", value.tIA801Payload);
+    pop('}');
+}
+
+void Printer::value(::PosPayLoad const& value) {
+    push('{');
+    switch (static_cast<long>(value.present)) {
+    case PosPayLoad_PR_NOTHING: field("type", "nothing"); break;
+    case PosPayLoad_PR_tia801payload: field("tia801-payload", value.choice.tia801payload);
+    case PosPayLoad_PR_rrcPayload: field("rrc-payload", value.choice.rrcPayload);
+    case PosPayLoad_PR_rrlpPayload: field("rrlp-payload", value.choice.rrlpPayload);
+    case PosPayLoad_PR_ver2_PosPayLoad_extension:
+        field("ver2-pos-payload-extension", value.choice.ver2_PosPayLoad_extension);
+    default: field("type", "unsupported");
+    }
+    pop('}');
+}
+
+void Printer::value(::ULP_Velocity const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::Ver2_SUPL_POS_extension const&) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::SUPLPOS const& value) {
+    push('{');
+    field("pos-payload", value.posPayLoad);
+    field_opt("velocity", value.velocity);
+    field_opt("ver2-supl-pos-extension", value.ver2_SUPL_POS_extension);
+    pop('}');
+}
+
+void Printer::value(::RequestedAssistData const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::Position const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::Ver2_SUPL_POS_INIT_extension const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::SUPLPOSINIT const& value) {
+    push('{');
+    field("set-capabilities", value.sETCapabilities);
+    field_opt("requested-assist-data", value.requestedAssistData);
+    field("location-id", value.locationId);
+    field_opt("position", value.position);
+    field_opt("suplpos", value.sUPLPOS);
+    field_opt("ver", value.ver);
+    field_opt("ver2-supl-pos-init-extension", value.ver2_SUPL_POS_INIT_extension);
+    pop('}');
+}
+
+void Printer::value(::StatusCode const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::Ver2_SUPL_END_extension const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::SUPLEND const& value) {
+    push('{');
+    field_opt("position", value.position);
+    field_opt("status-code", value.statusCode);
+    field_opt("ver", value.ver);
+    field_opt("ver2-supl-end-extension", value.ver2_SUPL_END_extension);
+    pop('}');
+}
+
+void Printer::value(::SETAuthKey const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::Ver2_SUPL_RESPONSE_extension const& value) {
+    appendf("{ /* unsupported */ }");
+}
+
+void Printer::value(::SUPLRESPONSE const& value) {
+    push('{');
+    field("pos-method", value.posMethod);
+    field_opt("spl-address", value.sLPAddress);
+    field_opt("set-auth-key", value.sETAuthKey);
+    field_opt("key-identity-4", value.keyIdentity4);
+    field_opt("ver2-supl-response-extension", value.ver2_SUPL_RESPONSE_extension);
+    pop('}');
 }
 
 void print(loglet::Level level, ::ULP_PDU* ulp_pdu) {

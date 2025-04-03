@@ -1,5 +1,9 @@
 # Changelog
 
+## []
+
+- More information included when printing SUPL message with `supl/print`
+
 ## [4.0.9] 2025-04-03 
 
 - Fix `agpsSETassisted`, `agpsSETBased`, and `agpsSETBasedPreferred`
