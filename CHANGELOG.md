@@ -1,5 +1,9 @@
 # Changelog
 
+## [] 
+
+- Fix `agpsSETassisted`, `agpsSETBased`, and `agpsSETBasedPreferred`
+
 ## [4.0.8] 2025-03-27 
 
 - Updated loglet to use a new system for modules
