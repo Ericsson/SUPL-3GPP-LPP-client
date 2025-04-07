@@ -1,5 +1,10 @@
 # Changelog
 
+## []
+
+- Include `assistanceDataSupportList` in `ProvideCapabilities` for the default message send by the LPP Client
+- Only include GNSS supported by assistance data in `gnss-SupportList`
+
 ## [4.0.10] 2025-04-03
 
 - More information included when printing SUPL message with `supl/print`

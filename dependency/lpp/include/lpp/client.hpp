@@ -18,6 +18,7 @@ struct ProvideLocationInformation;
 }
 
 struct RequestAssistanceData;
+struct ProvideCapabilities;
 class PeriodicSession;
 class LocationInformationDelivery;
 struct PeriodicLocationInformationDeliveryDescription;
@@ -84,6 +85,8 @@ public:
 
     void set_interface(std::string const& interface) { mInterface = interface; }
 
+    void set_capabilities(ProvideCapabilities const& capabilities);
+
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
     using Lid = std::shared_ptr<LocationInformationDelivery>;
@@ -113,11 +116,12 @@ protected:
     PeriodicSession* find_by_periodic_transaction_handle(TransactionHandle const& transaction);
 
 private:
-    std::string           mHost;
-    uint16_t              mPort;
-    std::string           mInterface;
-    Session               mSession;
-    scheduler::Scheduler* mScheduler;
+    std::string                          mHost;
+    uint16_t                             mPort;
+    std::string                          mInterface;
+    Session                              mSession;
+    scheduler::Scheduler*                mScheduler;
+    std::unique_ptr<ProvideCapabilities> mCapabilities;
 
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;
