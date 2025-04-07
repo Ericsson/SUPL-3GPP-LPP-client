@@ -17,6 +17,7 @@
 
 #include <loglet/loglet.hpp>
 #include <lpp/assistance_data.hpp>
+#include <lpp/provide_capabilities.hpp>
 #include <lpp/messages/provide_location_information.hpp>
 
 #include <arpa/inet.h>
@@ -159,6 +160,21 @@ static void client_initialize(Program& program, lpp::Client&) {
             DEBUGF("no location information available");
             return false;
         };
+
+    // Configure Capaiblities
+    lpp::ProvideCapabilities capabilities{};
+    capabilities.gnss.gps = program.config.assistance_data.gps;
+    capabilities.gnss.glonass = program.config.assistance_data.glonass;
+    capabilities.gnss.galileo = program.config.assistance_data.galileo;
+    capabilities.gnss.beidou = program.config.assistance_data.beidou;
+
+    if (program.config.assistance_data.type == lpp::RequestAssistanceData::Type::OSR) {
+        capabilities.assistance_data.osr = true;
+    } else if (program.config.assistance_data.type == lpp::RequestAssistanceData::Type::SSR) {
+        capabilities.assistance_data.ssr = true;
+    }
+
+    program.client->set_capabilities(capabilities);
 }
 
 static void initialize_inputs(Program& program, InputConfig const& config) {

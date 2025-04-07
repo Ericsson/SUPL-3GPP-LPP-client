@@ -28,7 +28,7 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
                uint16_t port)
     : mHost(host), mPort(port), mInterface(""),
       mSession{lpp::VERSION_18_4_0, std::move(identity), std::move(supl_cell)},
-      mScheduler{nullptr} {
+      mCapabilities{nullptr}, mScheduler{nullptr} {
     VSCOPE_FUNCTION();
 
     on_capabilities                          = nullptr;
@@ -227,7 +227,15 @@ void Client::process_request_capabilities(lpp::TransactionHandle const& transact
     }
 
     if (!capabilities_has_been_handled) {
-        auto response_message = create_provide_capabilities();
+        ProvideCapabilities default_capabilities{};
+        default_capabilities.gnss.gps     = true;
+        default_capabilities.gnss.glonass = true;
+        default_capabilities.gnss.galileo = true;
+        default_capabilities.gnss.beidou  = true;
+        
+        auto capabilities                 = mCapabilities.get();
+        if (!capabilities) capabilities = &default_capabilities;
+        auto response_message = create_provide_capabilities(*capabilities);
         mSession.send_with_end(transaction, response_message);
     }
 
@@ -473,6 +481,10 @@ void Client::stop_periodic_location_information(TransactionHandle const& transac
     }
 
     ERRORF("todo: stop periodic location information");
+}
+
+void Client::set_capabilities(ProvideCapabilities const& capabilities) {
+    mCapabilities.reset(new ProvideCapabilities(capabilities));
 }
 
 }  // namespace lpp
