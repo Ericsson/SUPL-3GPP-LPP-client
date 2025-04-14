@@ -1,5 +1,9 @@
 # Changelog
 
+## []
+
+- Added `--ls-hack-bad-transaction-initiator` to bypass incorrect location server behaviour
+
 ## [4.0.11] 2025-04-07
 
 - Include `assistanceDataSupportList` in `ProvideCapabilities` for the default message send by the LPP Client

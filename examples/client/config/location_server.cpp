@@ -40,14 +40,21 @@ static args::Flag gShutdownOnDisconnect{
     "Shutdown the client if the location server connection is lost",
     {"ls-shutdown-on-disconnect"},
 };
+static args::Flag gHackBadTransactionInitiator{
+    gGroup,
+    "hack-bad-transaction-initiator",
+    "Hack to allow the transaction initiator in ProvideAssistanceData to be LocationServer",
+    {"ls-hack-bad-transaction-initiator"},
+};
 
 static void setup() {}
 
 static void parse(Config* config) {
-    auto& ls                  = config->location_server;
-    ls.enabled                = true;
-    ls.shutdown_on_disconnect = false;
-    ls.interface              = nullptr;
+    auto& ls                          = config->location_server;
+    ls.enabled                        = true;
+    ls.shutdown_on_disconnect         = false;
+    ls.interface                      = nullptr;
+    ls.hack_bad_transaction_initiator = gHackBadTransactionInitiator.Get();
 
     if (gDisable) {
         ls.enabled = false;

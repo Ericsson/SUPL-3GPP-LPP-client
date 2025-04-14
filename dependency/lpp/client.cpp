@@ -27,8 +27,8 @@ namespace lpp {
 Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const& host,
                uint16_t port)
     : mHost(host), mPort(port), mInterface(""),
-      mSession{lpp::VERSION_18_4_0, std::move(identity), std::move(supl_cell)},
-      mCapabilities{nullptr}, mScheduler{nullptr} {
+      mSession{lpp::VERSION_18_4_0, std::move(identity), std::move(supl_cell)}, mScheduler{nullptr},
+      mCapabilities{nullptr} {
     VSCOPE_FUNCTION();
 
     on_capabilities                          = nullptr;
@@ -73,6 +73,8 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
                                  lpp::Message message) {
         this->process_message(transaction, std::move(message));
     };
+
+    mHackBadTransactionInitiator = false;
 }
 
 Client::~Client() {
@@ -93,6 +95,7 @@ Client::request_assistance_data(RequestAssistanceData const& request_assistance_
 
     auto periodic_session =
         std::make_shared<AssistanceDataHandler>(this, &mSession, handle, request_assistance_data);
+    periodic_session->set_hack_bad_transaction_initiator(mHackBadTransactionInitiator);
     if (!periodic_session->request_assistance_data()) {
         ERRORF("failed to request assistance data");
         return PeriodicSessionHandle::invalid();
@@ -232,8 +235,8 @@ void Client::process_request_capabilities(lpp::TransactionHandle const& transact
         default_capabilities.gnss.glonass = true;
         default_capabilities.gnss.galileo = true;
         default_capabilities.gnss.beidou  = true;
-        
-        auto capabilities                 = mCapabilities.get();
+
+        auto capabilities = mCapabilities.get();
         if (!capabilities) capabilities = &default_capabilities;
         auto response_message = create_provide_capabilities(*capabilities);
         mSession.send_with_end(transaction, response_message);

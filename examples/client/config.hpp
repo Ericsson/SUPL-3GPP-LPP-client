@@ -23,6 +23,7 @@ struct LocationServerConfig {
     bool slp_host_cell;
     bool slp_host_imsi;
     bool shutdown_on_disconnect;
+    bool hack_bad_transaction_initiator;
 };
 
 struct IdentityConfig {
