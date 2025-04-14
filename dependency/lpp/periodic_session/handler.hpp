@@ -25,6 +25,8 @@ public:
 
     void try_destroy();
 
+    void set_hack_bad_transaction_initiator(bool value) { mHackBadTransactionInitiator = value; }
+
 protected:
     // Response to a request transaction
     virtual void request_response(TransactionHandle const& transaction, Message message) = 0;
@@ -55,6 +57,9 @@ protected:
     Session*                       mSession;
     PeriodicSessionHandle          mHandle;
     std::vector<TransactionHandle> mPeriodicTransactions;
+
+    // HACK:
+    bool mHackBadTransactionInitiator;
 
     std::unordered_map<TransactionHandle, std::chrono::steady_clock::time_point>
                             mRequestTransactions;

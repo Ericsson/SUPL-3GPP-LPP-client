@@ -87,6 +87,8 @@ public:
 
     void set_capabilities(ProvideCapabilities const& capabilities);
 
+    void set_hack_bad_transaction_initiator(bool value) { mHackBadTransactionInitiator = value; }
+
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
     using Lid = std::shared_ptr<LocationInformationDelivery>;
@@ -122,6 +124,9 @@ private:
     Session                              mSession;
     scheduler::Scheduler*                mScheduler;
     std::unique_ptr<ProvideCapabilities> mCapabilities;
+
+    // HACK:
+    bool mHackBadTransactionInitiator;
 
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;

@@ -18,7 +18,8 @@ std::string PeriodicSessionHandle::to_string() const {
 
 PeriodicSession::PeriodicSession(Client* client, Session* session, PeriodicSessionHandle handle)
     : mClient(client), mSession(session), mHandle(handle), mPeriodicTask{std::chrono::seconds(5)} {
-    mPeriodicTask.callback = [this]() {
+    mHackBadTransactionInitiator = false;
+    mPeriodicTask.callback       = [this]() {
         check_active_requests();
     };
     if (mClient && mClient->mScheduler) {
@@ -65,10 +66,35 @@ void PeriodicSession::handle_periodic_ended(TransactionHandle const& transaction
 void PeriodicSession::message(TransactionHandle const& transaction, Message message) {
     VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
 
+    // HACK: ENL has a bug where the transaction initiator is not set correctly, luckily,
+    // because of the periodic session id we still get here (the correct periodic session).
+    // Although, the handle_request_response will never be call because the transaction
+    // doesn't match one in the mRequestTransactions.
+    if (mHackBadTransactionInitiator) {
+        if (transaction.initiator() == Initiator::LocationServer) {
+            auto corrected_transaction = TransactionHandle{
+                mSession, transaction.id(), transaction.generation_id(), Initiator::TargetDevice};
+
+            auto rit = mRequestTransactions.find(corrected_transaction);
+            if (rit != mRequestTransactions.end()) {
+                handle_request_response(corrected_transaction, std::move(message));
+                return;
+            }
+        }
+    }
+    // HACK-END
+
     // Check if the transaction is a request transaction
     auto rit = mRequestTransactions.find(transaction);
     if (rit != mRequestTransactions.end()) {
         handle_request_response(transaction, std::move(message));
+        return;
+    }
+
+    // Weird case, when transaction is not one of our requests but it is we who initiated it
+    if (transaction.initiator() == Initiator::TargetDevice) {
+        WARNF("unexpected transaction: %s (non-request target-device initiated)",
+              transaction.to_string().c_str());
         return;
     }
 

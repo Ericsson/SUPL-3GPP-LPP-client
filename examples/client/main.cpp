@@ -17,8 +17,8 @@
 
 #include <loglet/loglet.hpp>
 #include <lpp/assistance_data.hpp>
-#include <lpp/provide_capabilities.hpp>
 #include <lpp/messages/provide_location_information.hpp>
+#include <lpp/provide_capabilities.hpp>
 
 #include <arpa/inet.h>
 #include <thread>
@@ -163,10 +163,10 @@ static void client_initialize(Program& program, lpp::Client&) {
 
     // Configure Capaiblities
     lpp::ProvideCapabilities capabilities{};
-    capabilities.gnss.gps = program.config.assistance_data.gps;
+    capabilities.gnss.gps     = program.config.assistance_data.gps;
     capabilities.gnss.glonass = program.config.assistance_data.glonass;
     capabilities.gnss.galileo = program.config.assistance_data.galileo;
-    capabilities.gnss.beidou = program.config.assistance_data.beidou;
+    capabilities.gnss.beidou  = program.config.assistance_data.beidou;
 
     if (program.config.assistance_data.type == lpp::RequestAssistanceData::Type::OSR) {
         capabilities.assistance_data.osr = true;
@@ -175,6 +175,9 @@ static void client_initialize(Program& program, lpp::Client&) {
     }
 
     program.client->set_capabilities(capabilities);
+
+    program.client->set_hack_bad_transaction_initiator(
+        program.config.location_server.hack_bad_transaction_initiator);
 }
 
 static void initialize_inputs(Program& program, InputConfig const& config) {
