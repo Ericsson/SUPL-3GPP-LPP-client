@@ -72,20 +72,21 @@ void PeriodicSession::message(TransactionHandle const& transaction, Message mess
     // doesn't match one in the mRequestTransactions.
     if (mHackBadTransactionInitiator) {
         if (transaction.initiator() == Initiator::LocationServer) {
-            WARNF("HACK: bad transaction initiator: %s", transaction.to_string().c_str());
-            auto corrected_transaction = TransactionHandle{
-                mSession, transaction.id(), transaction.generation_id(), Initiator::TargetDevice};
+            for (auto& [t, m] : mRequestTransactions) {
+                auto corrected_transaction = TransactionHandle{t};
+                if (corrected_transaction.initiator() == Initiator::TargetDevice &&
+                    corrected_transaction.id() == transaction.id()) {
+                    WARNF("HACK: bad transaction initiator: %s", transaction.to_string().c_str());
+                    handle_request_response(corrected_transaction, std::move(message));
 
-            auto rit = mRequestTransactions.find(corrected_transaction);
-            if (rit != mRequestTransactions.end()) {
-                handle_request_response(corrected_transaction, std::move(message));
-
-                // To actuall stop the request timeout, we to simulate PeriodicSession::end for the
-                // correction transaction. If the location server doesn't indicate that the
-                // transaction has ended - which would be weird - then this is technically
-                // incorrect. However, this is already a hack...
-                end(corrected_transaction);
-                return;
+                    // To actuall stop the request timeout, we to simulate PeriodicSession::end for
+                    // the correction transaction. If the location server doesn't indicate that the
+                    // transaction has ended - which would be weird - then this is technically
+                    // incorrect. However, this is already a hack...
+                    end(corrected_transaction);
+                    return;  // NOTE: 'end' will modify mRequestTransactions, not return and
+                             // continuing to use the loop is bad
+                }
             }
         }
     }

@@ -1,8 +1,9 @@
 # Changelog
 
-## [4.0.12] 2025-04-14
+## [4.0.14] 2025-04-14
 
 - Added `--ls-hack-bad-transaction-initiator` to bypass incorrect location server behaviour
+- Added logging when sending or receive LPP message
 
 ## [4.0.11] 2025-04-07
 
