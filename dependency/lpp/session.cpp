@@ -559,6 +559,7 @@ void Session::send(TransactionHandle const& handle, Message& message) {
         return;
     }
 
+    DEBUGF("send message %s", handle.to_string().c_str());
     XVERBOSEF(&LOGLET_MODULE_REF2(lpp, print), "send:\n%s",
               encode_lpp_message_xer(message).c_str());
 
@@ -704,6 +705,7 @@ void Session::process_lpp_payload(supl::Payload const& payload) {
 
     auto& transaction = *transaction_ptr;
     auto  handle      = transaction.handle;
+    DEBUGF("recv message %s", handle.to_string().c_str());
     if (on_message) {
         on_message(*this, handle, std::move(message));
     }
