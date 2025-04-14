@@ -1,6 +1,6 @@
 # Changelog
 
-## []
+## [4.0.12] 2025-04-14
 
 - Added `--ls-hack-bad-transaction-initiator` to bypass incorrect location server behaviour
 
