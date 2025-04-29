@@ -542,6 +542,12 @@ int main(int argc, char** argv) {
     setup_lpp2spartn(program);
     setup_tokoro(program);
 
+#ifdef DATA_TRACING
+    if (!program.config.data_trace.possib_log.empty()) {
+        program.stream.add_inspector<LppPossibLogger>(program.config.data_trace.possib_log);
+    }
+#endif
+
     scheduler::PeriodicTask reconnect_task{std::chrono::seconds(15)};
     reconnect_task.callback = [&program]() {
         if (program.is_disconnected) {

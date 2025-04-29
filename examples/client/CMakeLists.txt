@@ -12,6 +12,7 @@ add_executable(example_client
     "processor/lpp2spartn.cpp"
     "processor/tokoro.cpp"
     "processor/test.cpp"
+    "processor/possib_logger.cpp"
 )
 add_executable(examples::client ALIAS example_client)
 
@@ -28,6 +29,7 @@ target_link_libraries(example_client PRIVATE dependency::loglet)
 target_link_libraries(example_client PRIVATE dependency::core)
 target_link_libraries(example_client PRIVATE dependency::supl)
 target_link_libraries(example_client PRIVATE dependency::lpp)
+target_link_libraries(example_client PRIVATE dependency::time)
 target_link_libraries(example_client PRIVATE asn1::generated::lpp asn1::helper)
 
 if(${INCLUDE_GENERATOR_RTCM})

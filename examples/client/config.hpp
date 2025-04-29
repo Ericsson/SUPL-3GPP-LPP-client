@@ -160,6 +160,7 @@ struct DataTracingConfig {
 
     bool reliable;
     bool disable_ssr_data;
+    std::string possib_log;
 };
 #endif
 

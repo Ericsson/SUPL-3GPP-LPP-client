@@ -30,6 +30,10 @@ static args::Flag gDisableSsrData{
     gGroup, "disable-ssr-data", "Disable SSR Data", {"dt-disable-ssr-data"}, args::Options::Single,
 };
 
+static args::ValueFlag<std::string> gPossibLog{
+    gGroup, "path", "Log IEs used in posSIB in json", {"dt-possib-log"}, args::Options::Single,
+};
+
 static void setup() {
     gPort.HelpDefault("1883");
 }
@@ -40,6 +44,9 @@ static void parse(Config* config) {
     dt.port             = 1883;
     dt.reliable         = gReliable;
     dt.disable_ssr_data = gDisableSsrData;
+    if (gPossibLog) {
+        dt.possib_log = gPossibLog.Get();
+    }
 
     if (gDevice || gServer || gPort || gUsername || gPassword) {
         if (!gDevice || !gServer || !gUsername || !gPassword) {
@@ -68,6 +75,7 @@ static void dump(DataTracingConfig const& config) {
     DEBUGF("port: %d", config.port);
     DEBUGF("username: \"%s\"", config.username.c_str());
     DEBUGF("password: \"%s\"", config.password.c_str());
+    DEBUGF("possib-log" : \"%s\"", config.possib_log.c_str());
 }
 
 }  // namespace data_tracing
