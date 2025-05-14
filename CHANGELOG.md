@@ -1,5 +1,10 @@
 # Changelog
 
+## []
+
+- Added system to log data for posSIBs
+- Included `LPP-Broadcast-Definitions.asn` and generated the corresponding ASN.1 C source files
+
 ## [4.0.14] 2025-04-14
 
 - Added `--ls-hack-bad-transaction-initiator` to bypass incorrect location server behaviour

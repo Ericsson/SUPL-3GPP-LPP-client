@@ -48,17 +48,60 @@ struct GNSS_SSR_URA_Set2_r17;
 struct GNSS_LOS_NLOS_GriddedIndications_r18;
 struct GNSS_SSR_SatellitePCVResiduals_r18;
 struct asn_TYPE_descriptor_s;
+struct GNSS_SSR_IOD_Update_r18;
+struct GNSS_CommonAssistData;
+struct GNSS_LOS_NLOS_GridPoints_r18;
+struct GNSS_GenericAssistDataElement;
+struct GNSS_GenericAssistData;
+struct A_GNSS_ProvideAssistanceData;
+struct ProvideAssistanceData_r9_IEs;
+struct ProvideAssistanceData;
+struct CommonIEsProvideAssistanceData;
 
-class LppPossibLogger : public streamline::Inspector<lpp::Message> {
+class PossibMessage {
 public:
-    LppPossibLogger(std::string path);
-    ~LppPossibLogger() override;
+    PossibMessage(std::string json) : mJson(std::move(json)) {}
+
+    std::string const& json() const { return mJson; }
+
+private:
+    std::string mJson;
+};
+
+namespace streamline {
+template <>
+struct Clone<std::unique_ptr<PossibMessage>> {
+    std::unique_ptr<PossibMessage> operator()(std::unique_ptr<PossibMessage> const&) {
+        __builtin_unreachable();
+    }
+};
+}  // namespace streamline
+
+class PossibOutput : public streamline::Inspector<std::unique_ptr<PossibMessage>> {
+public:
+    PossibOutput(OutputConfig const& output) : mOutput(output) {}
+
+    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+
+private:
+    OutputConfig const& mOutput;
+};
+
+class LppPossibBuilder : public streamline::Inspector<lpp::Message> {
+public:
+    LppPossibBuilder(bool wrap);
+    ~LppPossibBuilder() override;
 
     void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
 
 protected:
-    void basic_log(const char* type, asn_TYPE_descriptor_s* def, void const* ptr);
-    void basic_log(long id, const char* type, asn_TYPE_descriptor_s* def, void const* ptr);
+    std::vector<uint8_t> encode_to_buffer(asn_TYPE_descriptor_s* descriptor,
+                                          void const*            struct_ptr);
+
+    void log(char const* type, asn_TYPE_descriptor_s* def, void const* ptr,
+             std::unordered_map<std::string, std::string> const& params);
+    void basic_log(char const* type, asn_TYPE_descriptor_s* def, void const* ptr);
+    void basic_log(long id, char const* type, asn_TYPE_descriptor_s* def, void const* ptr);
 
     void process(GNSS_ReferenceTime const& x);
     void process(GNSS_ReferenceLocation const& x);
@@ -70,6 +113,10 @@ protected:
     void process(GNSS_SSR_CorrectionPoints_r16 const& x);
     void process(GNSS_Integrity_ServiceParameters_r17 const& x);
     void process(GNSS_Integrity_ServiceAlert_r17 const& x);
+    void process(GNSS_LOS_NLOS_GridPoints_r18 const& x);
+    void process(GNSS_SSR_IOD_Update_r18 const& x);
+    void process(GNSS_CommonAssistData const& x);
+
     void process(long id, GNSS_TimeModelList const& x);
     void process(long id, GNSS_DifferentialCorrections const& x);
     void process(long id, GNSS_NavigationModel const& x);
@@ -100,16 +147,17 @@ protected:
     void process(long id, GNSS_SSR_URA_Set2_r17 const& x);
     void process(long id, GNSS_LOS_NLOS_GriddedIndications_r18 const& x);
     void process(long id, GNSS_SSR_SatellitePCVResiduals_r18 const& x);
+    void process(GNSS_GenericAssistDataElement const& x);
+
+    void process(GNSS_GenericAssistData const& message);
+    void process(A_GNSS_ProvideAssistanceData const& message);
+    void process(CommonIEsProvideAssistanceData const& message);
+    void process(ProvideAssistanceData_r9_IEs const& message);
+    void process(ProvideAssistanceData const& message);
 
 private:
-    std::string mPath;
-    void* mEncodeBuffer;
-    size_t mEncodeBufferSize;
-
-    struct LogFile {
-        int64_t last_timestamp;
-        std::ofstream stream;
-    };
-
-    std::unordered_map<std::string, LogFile> mFiles;
+    void*               mEncodeBuffer;
+    size_t              mEncodeBufferSize;
+    bool                mIncludeWrap;
+    streamline::System* mSystem;
 };

@@ -48,6 +48,10 @@
 #include "processor/tokoro.hpp"
 #endif
 
+#ifdef DATA_TRACING
+#include "processor/possib_logger.hpp"
+#endif
+
 #include "client.hpp"
 
 LOGLET_MODULE(client);
@@ -296,9 +300,10 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     bool nmea_output     = false;
     bool ubx_output      = false;
     bool ctrl_output     = false;
-    bool test_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
     // TODO(ewasjon): bool rtcm_output   = false;
+    bool possib_output = false;
+    bool test_output   = false;
     for (auto& output : config.outputs) {
         if (!output.interface) continue;
         DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s", output.interface.get()->name(),
@@ -310,6 +315,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
                (output.format & OUTPUT_FORMAT_LPP_XER) ? "lpp-xer " : "",
                (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
                (output.format & OUTPUT_FORMAT_LFR) ? "lfr " : "",
+               (output.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
                (output.format & OUTPUT_FORMAT_TEST) ? "test " : "");
 
         if (output.lpp_xer_support()) lpp_xer_output = true;
@@ -319,6 +325,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
         if (output.ctrl_support()) ctrl_output = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
         // TODO(ewasjon): if (output.rtcm_support()) rtcm_output = true;
+        if (output.possib_support()) possib_output = true;
         if (output.test_support()) test_output = true;
 
         output.interface->schedule(program.scheduler);
@@ -329,6 +336,9 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     if (nmea_output) program.stream.add_inspector<NmeaOutput>(config);
     if (ubx_output) program.stream.add_inspector<UbxOutput>(config);
     if (ctrl_output) program.stream.add_inspector<CtrlOutput>(config);
+#ifdef DATA_TRACING
+    if (possib_output) program.stream.add_inspector<PossibOutput>(config);
+#endif
     if (test_output) test_outputer(program.scheduler, config);
 }
 
@@ -498,7 +508,7 @@ int main(int argc, char** argv) {
 
     if (config.logging.tree) {
         loglet::iterate_modules(
-            [](loglet::LogModule const* module, int depth, void* data) {
+            [](loglet::LogModule const* module, int depth, void*) {
                 char buffer[64];
                 snprintf(buffer, sizeof(buffer), "%*s%s", depth * 2, "", module->name);
                 INFOF("%-20s %s%s%s%s%s%s%s%s", buffer,
@@ -543,8 +553,8 @@ int main(int argc, char** argv) {
     setup_tokoro(program);
 
 #ifdef DATA_TRACING
-    if (!program.config.data_trace.possib_log.empty()) {
-        program.stream.add_inspector<LppPossibLogger>(program.config.data_trace.possib_log);
+    if (program.config.data_tracing.possib_log) {
+        program.stream.add_inspector<LppPossibBuilder>(program.config.data_tracing.possib_wrap);
     }
 #endif
 
