@@ -242,6 +242,7 @@ void Printer::value(::SLPAddress const& x) {
     case SLPAddress_PR_NOTHING: field("type", "nothing"); break;
     case SLPAddress_PR_iPAddress: field("ip-address", x.choice.iPAddress); break;
     case SLPAddress_PR_fQDN: field("type", "unsupported"); break;
+    default: field("type", "unsupported"); break;
     }
     pop('}');
 }
@@ -254,10 +255,10 @@ void Printer::value(::UlpMessage const& x) {
     case UlpMessage_PR_NOTHING: field("type", "nothing"); break;
     case UlpMessage_PR_msSUPLINIT: field("ms-suplinit", x.choice.msSUPLINIT); break;
     case UlpMessage_PR_msSUPLSTART: field("ms-suplstart", x.choice.msSUPLSTART); break;
-    case UlpMessage_PR_msSUPLPOS: field("ms-suplpos", x.choice.msSUPLPOS);
-    case UlpMessage_PR_msSUPLPOSINIT: field("ms-suplposinit", x.choice.msSUPLPOSINIT);
-    case UlpMessage_PR_msSUPLEND: field("ms-suplend", x.choice.msSUPLEND);
-    case UlpMessage_PR_msSUPLRESPONSE: field("ms-suplresponse", x.choice.msSUPLRESPONSE);
+    case UlpMessage_PR_msSUPLPOS: field("ms-suplpos", x.choice.msSUPLPOS); break;
+    case UlpMessage_PR_msSUPLPOSINIT: field("ms-suplposinit", x.choice.msSUPLPOSINIT); break;
+    case UlpMessage_PR_msSUPLEND: field("ms-suplend", x.choice.msSUPLEND); break;
+    case UlpMessage_PR_msSUPLRESPONSE: field("ms-suplresponse", x.choice.msSUPLRESPONSE); break;
     case UlpMessage_PR_msSUPLAUTHREQ:
     case UlpMessage_PR_msSUPLAUTHRESP:
     case UlpMessage_PR_msSUPLTRIGGEREDSTART:
@@ -267,7 +268,7 @@ void Printer::value(::UlpMessage const& x) {
     case UlpMessage_PR_msSUPLNOTIFYRESPONSE:
     case UlpMessage_PR_msSUPLSETINIT:
     case UlpMessage_PR_msSUPLREPORT:
-    default: field("type", "unsupported");
+    default: field("type", "unsupported"); break;
     }
     pop('}');
 }

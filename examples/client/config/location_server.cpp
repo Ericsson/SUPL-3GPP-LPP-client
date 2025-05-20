@@ -95,8 +95,14 @@ static void dump(LocationServerConfig const& config) {
 
     DEBUGF("host: \"%s\"", config.host.c_str());
     DEBUGF("port: %d", config.port);
+    if (config.interface) {
+        DEBUGF("interface: \"%s\"", config.interface.get()->c_str());
+    }
     DEBUGF("slp-host-cell: %s", config.slp_host_cell ? "true" : "false");
     DEBUGF("slp-host-imsi: %s", config.slp_host_imsi ? "true" : "false");
+    DEBUGF("shutdown-on-disconnect:         %s", config.shutdown_on_disconnect ? "true" : "false");
+    DEBUGF("hack-bad-transaction-initiator: %s",
+           config.hack_bad_transaction_initiator ? "true" : "false");
 }
 
 }  // namespace ls
