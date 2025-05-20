@@ -239,6 +239,18 @@ void Tokoro::vrs_mode_fixed() {
     }
 }
 
+static Float3 llh_from_shape(lpp::LocationShape const& shape) {
+    auto latitude  = shape.latitude();
+    auto longitude = shape.longitude();
+    auto altitude  = shape.altitude();
+
+    return Float3{
+        latitude * generator::tokoro::constant::DEG2RAD,
+        longitude * generator::tokoro::constant::DEG2RAD,
+        altitude,
+    };
+}
+
 void Tokoro::vrs_mode_dynamic() {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
@@ -250,14 +262,17 @@ void Tokoro::vrs_mode_dynamic() {
         auto const& current_shape = mLastLocation.const_value();
         auto const& last_shape    = mLastUsedLocation.const_value();
 
-        auto current_position = generator::tokoro::llh_to_ecef(
-            Float3{current_shape.latitude(), current_shape.longitude(), current_shape.altitude()},
-            generator::tokoro::ellipsoid::WGS84);
-        auto last_position = generator::tokoro::llh_to_ecef(
-            Float3{last_shape.latitude(), last_shape.longitude(), last_shape.altitude()},
-            generator::tokoro::ellipsoid::WGS84);
+        auto current_llh = llh_from_shape(current_shape);
+        auto last_llh    = llh_from_shape(last_shape);
+
+        auto current_position =
+            generator::tokoro::llh_to_ecef(current_llh, generator::tokoro::ellipsoid::WGS84);
+        auto last_position =
+            generator::tokoro::llh_to_ecef(last_llh, generator::tokoro::ellipsoid::WGS84);
 
         auto distance_km = (current_position - last_position).length() / 1000.0;
+        DEBUGF("distance to last used location: %.6fkm (%.6fkm threshold)", distance_km,
+               mConfig.dynamic_distance_threshold);
         if (distance_km > mConfig.dynamic_distance_threshold) {
             // We have moved far enough to generate a new VRS, discard the last VRS and let the code
             // below generate a new one.
@@ -275,18 +290,20 @@ void Tokoro::vrs_mode_dynamic() {
         // because (1) we only need a rough location and (2) the it will probably be in WGS84, which
         // is aligned with ITRF current, and that's what we use for the reference station.
         auto const& last_location_shape = mLastLocation.const_value();
-        auto        location            = generator::tokoro::llh_to_ecef(
-            Float3{
-                last_location_shape.latitude(),
-                last_location_shape.longitude(),
-                last_location_shape.altitude(),
-            },
-            generator::tokoro::ellipsoid::WGS84);
+        auto        last_location_llh   = llh_from_shape(last_location_shape);
+        INFOF("last location (llh): (%.14f,%.14f,%.6f)",
+              last_location_llh.x * generator::tokoro::constant::RAD2DEG,
+              last_location_llh.y * generator::tokoro::constant::RAD2DEG, last_location_llh.z);
+
+        auto last_location =
+            generator::tokoro::llh_to_ecef(last_location_llh, generator::tokoro::ellipsoid::WGS84);
+        INFOF("last location (ecef): (%.14f,%.14f,%.14f)", last_location.x, last_location.y,
+              last_location.z);
 
         mReferenceStation =
             mGenerator->define_reference_station(generator::tokoro::ReferenceStationConfig{
-                location,
-                location,
+                last_location,
+                last_location,
                 mConfig.generate_gps,
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
