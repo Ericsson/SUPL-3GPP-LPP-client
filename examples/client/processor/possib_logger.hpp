@@ -97,6 +97,8 @@ public:
 protected:
     std::vector<uint8_t> encode_to_buffer(asn_TYPE_descriptor_s* descriptor,
                                           void const*            struct_ptr);
+    std::vector<size_t>  encode_list_to_sizes(asn_TYPE_descriptor_s* descriptor,
+                                              void const** struct_ptr, int n);
 
     void log(char const* type, asn_TYPE_descriptor_s* def, void const* ptr,
              std::unordered_map<std::string, std::string> const& params);

@@ -2,6 +2,7 @@
 
 ## []
 
+- Include per satelite/signal information in posSIB log
 - Added system to log data for posSIBs
 - Included `LPP-Broadcast-Definitions.asn` and generated the corresponding ASN.1 C source files
 
