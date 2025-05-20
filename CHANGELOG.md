@@ -1,6 +1,6 @@
 # Changelog
 
-## []
+## [4.0.15] 2025-05-20
 
 - Fixed bug when using `llh_to_ecef` to generate the virtual reference station for Tokoro
 - Include per satelite/signal information in posSIB log
