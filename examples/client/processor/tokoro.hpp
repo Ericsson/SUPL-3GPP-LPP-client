@@ -13,6 +13,7 @@
 #include <format/ubx/messages/rxm_sfrbx.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
+#include <generator/tokoro/constant.hpp>
 #include <lpp/location_information.hpp>
 #include <scheduler/scheduler.hpp>
 #include <scheduler/periodic.hpp>
