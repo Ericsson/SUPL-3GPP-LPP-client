@@ -1,4 +1,6 @@
 #pragma once
+
+#ifdef DATA_TRACING
 #include <fstream>
 #include <unordered_map>
 
@@ -163,3 +165,5 @@ private:
     bool                mIncludeWrap;
     streamline::System* mSystem;
 };
+
+#endif

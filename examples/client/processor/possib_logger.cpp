@@ -1,5 +1,6 @@
 #include "possib_logger.hpp"
 
+#ifdef DATA_TRACING
 #include <loglet/loglet.hpp>
 #include <time/gps.hpp>
 #include <time/utc.hpp>
@@ -665,3 +666,5 @@ void LppPossibBuilder::inspect(streamline::System& system, DataType const& messa
 
     mSystem = nullptr;
 }
+
+#endif
