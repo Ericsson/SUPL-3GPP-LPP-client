@@ -28,3 +28,13 @@ public:
 private:
     Program& mProgram;
 };
+
+class LocationOutput : public streamline::Inspector<lpp::LocationInformation> {
+public:
+    LocationOutput(OutputConfig const& output) : mOutput(output) {}
+
+    void inspect(streamline::System&, DataType const& location) NOEXCEPT override;
+
+private:
+    OutputConfig const& mOutput;
+};

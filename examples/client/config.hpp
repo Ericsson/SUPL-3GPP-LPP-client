@@ -50,6 +50,7 @@ constexpr static OutputFormat OUTPUT_FORMAT_UNUSED64 = 64;
 constexpr static OutputFormat OUTPUT_FORMAT_SPARTN   = 128;
 constexpr static OutputFormat OUTPUT_FORMAT_LFR      = 256;
 constexpr static OutputFormat OUTPUT_FORMAT_POSSIB   = 512;
+constexpr static OutputFormat OUTPUT_FORMAT_LOCATION = 1024;
 constexpr static OutputFormat OUTPUT_FORMAT_TEST     = 1llu << 63;
 constexpr static OutputFormat OUTPUT_FORMAT_ALL =
     OUTPUT_FORMAT_UBX | OUTPUT_FORMAT_NMEA | OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_CTRL |
@@ -69,6 +70,7 @@ struct OutputInterface {
     inline bool spartn_support() const { return (format & OUTPUT_FORMAT_SPARTN) != 0; }
     inline bool lfr_support() const { return (format & OUTPUT_FORMAT_LFR) != 0; }
     inline bool possib_support() const { return (format & OUTPUT_FORMAT_POSSIB) != 0; }
+    inline bool location_support() const { return (format & OUTPUT_FORMAT_LOCATION) != 0; }
 
     inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
 };

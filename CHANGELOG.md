@@ -1,5 +1,10 @@
 # Changelog
 
+## []
+
+- Fixed incorrect handling of GST message with missing fields
+- Added support to output location information as json
+
 ## [4.0.15] 2025-05-20
 
 - Fixed bug when using `llh_to_ecef` to generate the virtual reference station for Tokoro

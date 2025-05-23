@@ -9,6 +9,16 @@ LOGLET_MODULE3(format, nmea, gst);
 namespace format {
 namespace nmea {
 
+static bool parse_double(std::string const& token, double& value) {
+    try {
+        value = std::stod(token);
+        return true;
+    } catch (...) {
+        return false;
+    }
+}
+    
+
 static bool parse_double_opt(std::string const& token, double& value) {
     try {
         value = std::stod(token);
@@ -59,12 +69,12 @@ std::unique_ptr<Message> GstMessage::parse(std::string prefix, std::string const
     auto message = new GstMessage(prefix, payload, checksum);
     auto success = true;
     success &= parse_double_opt(tokens[1], message->mRmsValue);
-    success &= parse_double_opt(tokens[2], message->mSemiMajorError);
-    success &= parse_double_opt(tokens[3], message->mSemiMinorError);
+    success &= parse_double(tokens[2], message->mSemiMajorError);
+    success &= parse_double(tokens[3], message->mSemiMinorError);
     success &= parse_double_opt(tokens[4], message->mOrientationOfSemiMajorError);
-    success &= parse_double_opt(tokens[5], message->mLatitudeError);
-    success &= parse_double_opt(tokens[6], message->mLongitudeError);
-    success &= parse_double_opt(tokens[7], message->mAltitudeError);
+    success &= parse_double(tokens[5], message->mLatitudeError);
+    success &= parse_double(tokens[6], message->mLongitudeError);
+    success &= parse_double(tokens[7], message->mAltitudeError);
 
     if (success) {
         return std::unique_ptr<GstMessage>(message);

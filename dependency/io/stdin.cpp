@@ -56,7 +56,6 @@ bool StdinInput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
 
     if (mFdTask) {
         mFdTask->cancel();
-        mFdTask.reset();
     }
 
     return true;

@@ -30,7 +30,7 @@ static args::ValueFlagList<std::string> gArgs{
     "    path=<path>\n"
     "\n"
     "Formats:\n"
-    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper, lrf, possib, test\n"
+    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper, lrf, possib, location, test\n"
     "Examples:\n"
     "  --output file:path=/tmp/output,format=ubx+nmea",
     {"output"},
@@ -62,6 +62,7 @@ static OutputFormat parse_format(std::string const& str) {
     if (str == "lpp-uper") return OUTPUT_FORMAT_LPP_UPER;
     if (str == "lfr") return OUTPUT_FORMAT_LFR;
     if (str == "possib") return OUTPUT_FORMAT_POSSIB;
+    if (str == "location") return OUTPUT_FORMAT_LOCATION;
     if (str == "test") return OUTPUT_FORMAT_TEST;
     throw args::ValidationError("--output format: invalid format, got `" + str + "`");
 }

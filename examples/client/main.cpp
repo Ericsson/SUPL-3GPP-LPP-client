@@ -303,6 +303,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     // TODO(ewasjon): bool spartn_output   = false;
     // TODO(ewasjon): bool rtcm_output   = false;
     bool possib_output = false;
+    bool location_output = false;
     bool test_output   = false;
     for (auto& output : config.outputs) {
         if (!output.interface) continue;
@@ -326,6 +327,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
         // TODO(ewasjon): if (output.rtcm_support()) rtcm_output = true;
         if (output.possib_support()) possib_output = true;
+        if (output.location_support()) location_output = true;
         if (output.test_support()) test_output = true;
 
         output.interface->schedule(program.scheduler);
@@ -339,6 +341,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
 #ifdef DATA_TRACING
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
 #endif
+    if (location_output) program.stream.add_inspector<LocationOutput>(config);
     if (test_output) test_outputer(program.scheduler, config);
 }
 
