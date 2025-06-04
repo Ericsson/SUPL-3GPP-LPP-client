@@ -2,6 +2,8 @@
 
 ## []
 
+## [4.0.16] 2025-06-04
+
 - Fix incorrect handling of GST message with missing fields
 - Add support to output location information as json
 - Fix grid point bitmasking
