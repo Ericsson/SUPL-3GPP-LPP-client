@@ -2,7 +2,7 @@
 #include "coordinate.hpp"
 #include "coordinates/eci.hpp"
 #include "coordinates/enu.hpp"
-#include "data.hpp"
+#include "data/correction.hpp"
 #include "models/astronomical_arguments.hpp"
 #include "models/geoid.hpp"
 #include "models/helper.hpp"

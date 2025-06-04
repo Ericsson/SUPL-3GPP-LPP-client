@@ -1,7 +1,7 @@
 #include "satellite.hpp"
 #include "coordinate.hpp"
 #include "coordinates/enu.hpp"
-#include "data.hpp"
+#include "data/correction.hpp"
 #include "generator.hpp"
 #include "models/helper.hpp"
 

@@ -22,6 +22,14 @@ add_library(dependency_generator_tokoro STATIC
     "coordinates/wgs84.cpp"
     "coordinates/ecef.cpp"
     "coordinates/eci.cpp"
+
+    "data/orbit.cpp"
+    "data/clock.cpp"
+    "data/grid.cpp"
+    "data/set.cpp"
+    "data/ionosphere.cpp"
+    "data/troposphere.cpp"
+    "data/gather.cpp"
 )
 add_library(dependency::generator::tokoro ALIAS dependency_generator_tokoro)
 

@@ -1,5 +1,5 @@
-#include "data/correction.hpp"
 #include "constant.hpp"
+#include "set.hpp"
 #include "decode.hpp"
 
 #pragma GCC diagnostic push
@@ -36,12 +36,42 @@
 #include <datatrace/datatrace.hpp>
 #endif
 
-LOGLET_MODULE2(tokoro, data);
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, data)
+LOGLET_MODULE3(tokoro, data, set);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(tokoro, data, set)
 
 namespace generator {
 namespace tokoro {
 
+bool CorrectionPointSet::array_to_index(long array_index, CorrectionPointInfo* result) const NOEXCEPT {
+    long array_count    = 0;
+    long absolute_index = 0;
+    for (long y = 0; y <= number_of_steps_latitude; y++) {
+        for (long x = 0; x <= number_of_steps_longitude; x++) {
+            auto i        = y * (number_of_steps_longitude + 1) + x;
+            auto bit      = 1ULL << (64 - 1 - i);
+            auto is_valid = (bitmask & bit) != 0;
+
+            if (array_count == array_index) {
+                result->array_index = array_index;
+                result->absolute_index = absolute_index;
+                result->is_valid = is_valid;
+                result->latitude_index = y;
+                result->position.x = reference_point_latitude - static_cast<double>(y) * step_of_latitude;
+                result->position.y = reference_point_longitude + static_cast<double>(x) * step_of_longitude;
+                result->position.z = 0;
+                return true;
+            }
+
+            // only valid grid points are included in the array
+            if (is_valid) {
+                array_count++;
+            }
+            absolute_index++;
+        }
+    }
+
+    return false;
+}
 
 }  // namespace tokoro
 }  // namespace generator

@@ -1,6 +1,7 @@
-#include "data/correction.hpp"
+#include "troposphere.hpp"
 #include "constant.hpp"
 #include "decode.hpp"
+#include "correction.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -36,12 +37,35 @@
 #include <datatrace/datatrace.hpp>
 #endif
 
-LOGLET_MODULE2(tokoro, data);
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, data)
+LOGLET_MODULE3(tokoro, data, troposphere);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(tokoro, data, troposphere)
 
 namespace generator {
 namespace tokoro {
 
+bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
+                                  TroposphericCorrection& correction) const NOEXCEPT {
+    FUNCTION_SCOPE();
+
+    if (mCorrectionPointSet == nullptr) {
+        WARNF("tropospheric correction grid not available");
+        return false;
+    }
+
+    auto grid_it = mGrid.find(sv_id.gnss());
+    if (grid_it == mGrid.end()) {
+        WARNF("tropospheric correction for satellite not found");
+        return false;
+    }
+
+    auto& grid = grid_it->second;
+    if (!grid.tropospheric(llh, correction)) {
+        VERBOSEF("tropospheric correction not found");
+        return false;
+    }
+
+    return true;
+}
 
 }  // namespace tokoro
 }  // namespace generator
