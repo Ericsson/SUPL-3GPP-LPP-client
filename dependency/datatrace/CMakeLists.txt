@@ -10,7 +10,7 @@ target_link_libraries(dependency_datatrace PUBLIC dependency::time)
 target_link_libraries(dependency_datatrace PUBLIC dependency::maths)
 
 
-if(${CMAKE_CROSSCOMPILING})    
+if(CMAKE_CROSSCOMPILING)    
     target_link_libraries(dependency_datatrace PUBLIC ${LIBMOSQUITTO_LIBRARIES})
     target_include_directories(dependency_datatrace PRIVATE ${LIBMOSQUITTO_INCLUDE_DIRS})
 else()
