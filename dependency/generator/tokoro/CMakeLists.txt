@@ -43,11 +43,11 @@ target_link_libraries(dependency_generator_tokoro PUBLIC dependency::format::rin
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::format::antex)
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::maths)
 
-if(${DATA_TRACING})
+if(DATA_TRACING)
     target_link_libraries(dependency_generator_tokoro PRIVATE dependency::datatrace)
 endif()
 
-if(${INCLUDE_GENERATOR_RTCM})
+if(INCLUDE_GENERATOR_RTCM)
     target_compile_definitions(dependency_generator_tokoro PRIVATE "INCLUDE_GENERATOR_RTCM=1")
     target_link_libraries(dependency_generator_tokoro PRIVATE dependency::generator::rtcm)
 else()

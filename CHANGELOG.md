@@ -2,6 +2,8 @@
 
 ## []
 
+- Fix CMake truthiness checking on variables
+
 ## [4.0.16] 2025-06-04
 
 - Fix incorrect handling of GST message with missing fields

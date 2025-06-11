@@ -12,7 +12,7 @@ target_link_libraries(dependency_format_rinex PUBLIC dependency::time)
 target_link_libraries(dependency_format_rinex PUBLIC dependency::core)
 target_link_libraries(dependency_format_rinex PUBLIC dependency::maths)
 
-if(${INCLUDE_GENERATOR_RTCM})
+if(INCLUDE_GENERATOR_RTCM)
     target_compile_definitions(dependency_format_rinex PRIVATE "INCLUDE_GENERATOR_RTCM=1")
     target_link_libraries(dependency_format_rinex PRIVATE dependency::generator::rtcm)
 else()

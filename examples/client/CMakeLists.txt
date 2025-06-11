@@ -32,24 +32,24 @@ target_link_libraries(example_client PRIVATE dependency::lpp)
 target_link_libraries(example_client PRIVATE dependency::time)
 target_link_libraries(example_client PRIVATE asn1::generated::lpp asn1::helper)
 
-if(${INCLUDE_GENERATOR_RTCM})
+if(INCLUDE_GENERATOR_RTCM)
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_RTCM=1")
     target_link_libraries(example_client PRIVATE dependency::generator::rtcm)
 endif()
 
-if(${INCLUDE_GENERATOR_SPARTN})
+if(INCLUDE_GENERATOR_SPARTN)
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_SPARTN=1")
     target_link_libraries(example_client PRIVATE dependency::generator::spartn2)
 endif()
 
-if(${INCLUDE_GENERATOR_TOKORO})
+if(INCLUDE_GENERATOR_TOKORO)
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_TOKORO=1")
     target_link_libraries(example_client PRIVATE dependency::format::nav)
     target_link_libraries(example_client PRIVATE dependency::format::antex)
     target_link_libraries(example_client PRIVATE dependency::generator::tokoro)
 endif()
 
-if(${DATA_TRACING})
+if(DATA_TRACING)
     target_link_libraries(example_client PRIVATE dependency::datatrace)
 endif()
 

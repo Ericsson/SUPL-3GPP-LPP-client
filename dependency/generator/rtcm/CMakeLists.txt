@@ -27,7 +27,7 @@ target_link_libraries(dependency_generator_rtcm PUBLIC dependency::loglet)
 target_link_libraries(dependency_generator_rtcm PUBLIC dependency::time)
 target_link_libraries(dependency_generator_rtcm PUBLIC dependency::core)
 
-if(${DATA_TRACING})
+if(DATA_TRACING)
     target_link_libraries(dependency_generator_rtcm PRIVATE dependency::datatrace)
 endif()
 

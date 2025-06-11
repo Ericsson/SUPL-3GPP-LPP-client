@@ -17,11 +17,11 @@ add_definitions(-DCLIENT_VERSION_INT=0x040010)
 
 find_package(Threads REQUIRED)
 
-if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG=1)
 endif()
 
-if(${DISABLE_STRERRORNAME_NP})
+if(DISABLE_STRERRORNAME_NP)
     add_definitions(-DDISABLE_STRERRORNAME_NP=1)
 endif()
 

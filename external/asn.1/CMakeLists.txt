@@ -9,35 +9,35 @@ set(ASN1_RFILL_SUPPORT OFF CACHE BOOL "Enable RFILL support")
 set(ASN1_PRINT_SUPPORT OFF CACHE BOOL "Enable PRINT support")
 
 function(asn1_target_setup target)
-    if(NOT ${ASN1_XER_SUPPORT})
+    if(NOT ASN1_XER_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_XER_SUPPORT=1")
     endif()
 
-    if(NOT ${ASN1_JER_SUPPORT})
+    if(NOT ASN1_JER_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_JER_SUPPORT=1")
     endif()
 
-    if(NOT ${ASN1_OER_SUPPORT})
+    if(NOT ASN1_OER_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_OER_SUPPORT=1")
     endif()
 
-    if(NOT ${ASN1_UPER_SUPPORT})
+    if(NOT ASN1_UPER_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_UPER_SUPPORT=1")
     endif()
 
-    if(NOT ${ASN1_APER_SUPPORT})
+    if(NOT ASN1_APER_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_APER_SUPPORT=1")
     endif()
 
-    if(NOT ${ASN1_BER_SUPPORT})
+    if(NOT ASN1_BER_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_BER_SUPPORT=1")
     endif()
 
-    if(NOT ${ASN1_RFILL_SUPPORT})
+    if(NOT ASN1_RFILL_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_RFILL_SUPPORT=1")
     endif()
 
-    if(NOT ${ASN1_PRINT_SUPPORT})
+    if(NOT ASN1_PRINT_SUPPORT)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_PRINT_SUPPORT=1")
     endif()
 
@@ -51,7 +51,7 @@ function(asn1_target_setup target)
     endif()
 
     # TODO(ewasjon): I don't think the ASN.1 generated code should be compiled with ASAN.
-    if (${USE_ASAN})
+    if (USE_ASAN)
         target_compile_options(${target} PRIVATE -fsanitize=address,undefined,leak)
         target_link_libraries(${target} PRIVATE -fsanitize=address,undefined,leak)
     endif ()
