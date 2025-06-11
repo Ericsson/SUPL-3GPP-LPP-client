@@ -199,52 +199,52 @@ void LppPossibBuilder::basic_log(long id, char const* type, asn_TYPE_descriptor_
 }
 
 void LppPossibBuilder::process(GNSS_ReferenceTime const& x) {
-    basic_log("gnss-reference-time", &asn_DEF_GNSS_ReferenceTime, &x);
+    basic_log("GNSS-ReferenceTime", &asn_DEF_GNSS_ReferenceTime, &x);
 }
 
 void LppPossibBuilder::process(GNSS_ReferenceLocation const& x) {
-    basic_log("gnss-reference-location", &asn_DEF_GNSS_ReferenceLocation, &x);
+    basic_log("GNSS-ReferenceLocation", &asn_DEF_GNSS_ReferenceLocation, &x);
 }
 
 void LppPossibBuilder::process(GNSS_IonosphericModel const& x) {
-    basic_log("gnss-ionospheric-model", &asn_DEF_GNSS_IonosphericModel, &x);
+    basic_log("GNSS-IonosphericModel", &asn_DEF_GNSS_IonosphericModel, &x);
 }
 
 void LppPossibBuilder::process(GNSS_EarthOrientationParameters const& x) {
-    basic_log("gnss-earth-orientation-parameters", &asn_DEF_GNSS_EarthOrientationParameters, &x);
+    basic_log("GNSS-EarthOrientationParameters", &asn_DEF_GNSS_EarthOrientationParameters, &x);
 }
 
 void LppPossibBuilder::process(GNSS_RTK_ReferenceStationInfo_r15 const& x) {
-    basic_log("gnss-rtk-reference-station-info", &asn_DEF_GNSS_RTK_ReferenceStationInfo_r15, &x);
+    basic_log("GNSS-RTK-ReferenceStationInfo-r15", &asn_DEF_GNSS_RTK_ReferenceStationInfo_r15, &x);
 }
 
 void LppPossibBuilder::process(GNSS_RTK_CommonObservationInfo_r15 const& x) {
-    basic_log("gnss-rtk-common-observation-info", &asn_DEF_GNSS_RTK_CommonObservationInfo_r15, &x);
+    basic_log("GNSS-RTK-CommonObservationInfo-r15", &asn_DEF_GNSS_RTK_CommonObservationInfo_r15, &x);
 }
 
 void LppPossibBuilder::process(GNSS_RTK_AuxiliaryStationData_r15 const& x) {
-    basic_log("gnss-rtk-auxiliary-station-data", &asn_DEF_GNSS_RTK_AuxiliaryStationData_r15, &x);
+    basic_log("GNSS-RTK-AuxiliaryStationData-r15", &asn_DEF_GNSS_RTK_AuxiliaryStationData_r15, &x);
 }
 
 void LppPossibBuilder::process(GNSS_SSR_CorrectionPoints_r16 const& x) {
-    basic_log("gnss-ssr-corretion-points", &asn_DEF_GNSS_SSR_CorrectionPoints_r16, &x);
+    basic_log("GNSS-SSR-CorrectionPoints-r16", &asn_DEF_GNSS_SSR_CorrectionPoints_r16, &x);
 }
 
 void LppPossibBuilder::process(GNSS_Integrity_ServiceParameters_r17 const& x) {
-    basic_log("gnss-integrity-service-parameters", &asn_DEF_GNSS_Integrity_ServiceParameters_r17,
+    basic_log("GNSS-Integrity-ServiceParameters-r17", &asn_DEF_GNSS_Integrity_ServiceParameters_r17,
               &x);
 }
 
 void LppPossibBuilder::process(GNSS_Integrity_ServiceAlert_r17 const& x) {
-    basic_log("gnss-integrity-service-alert", &asn_DEF_GNSS_Integrity_ServiceAlert_r17, &x);
+    basic_log("GNSS-Integrity-ServiceAlert-r17", &asn_DEF_GNSS_Integrity_ServiceAlert_r17, &x);
 }
 
 void LppPossibBuilder::process(GNSS_LOS_NLOS_GridPoints_r18 const& x) {
-    basic_log("gnss-los-nlos-grid-points", &asn_DEF_GNSS_LOS_NLOS_GridPoints_r18, &x);
+    basic_log("GNSS-LOS-NLOS-GridPoints-r18", &asn_DEF_GNSS_LOS_NLOS_GridPoints_r18, &x);
 }
 
 void LppPossibBuilder::process(GNSS_SSR_IOD_Update_r18 const& x) {
-    basic_log("gnss-ssr-iod-update", &asn_DEF_GNSS_SSR_IOD_Update_r18, &x);
+    basic_log("GNSS-SSR-IOD-Update-r18", &asn_DEF_GNSS_SSR_IOD_Update_r18, &x);
 }
 
 void LppPossibBuilder::process(GNSS_CommonAssistData const& x) {
@@ -281,68 +281,68 @@ void LppPossibBuilder::process(GNSS_CommonAssistData const& x) {
 }
 
 void LppPossibBuilder::process(long id, GNSS_TimeModelList const& x) {
-    basic_log(id, "gnss-time-model-list", &asn_DEF_GNSS_TimeModelList, &x);
+    basic_log(id, "GNSS-TimeModelList", &asn_DEF_GNSS_TimeModelList, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_DifferentialCorrections const& x) {
-    basic_log(id, "gnss-differential-corrections", &asn_DEF_GNSS_DifferentialCorrections, &x);
+    basic_log(id, "GNSS-DifferentialCorrections", &asn_DEF_GNSS_DifferentialCorrections, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_NavigationModel const& x) {
-    basic_log(id, "gnss-navigation-model", &asn_DEF_GNSS_NavigationModel, &x);
+    basic_log(id, "GNSS-NavigationModel", &asn_DEF_GNSS_NavigationModel, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_RealTimeIntegrity const& x) {
-    basic_log(id, "gnss-real-time-integrity", &asn_DEF_GNSS_RealTimeIntegrity, &x);
+    basic_log(id, "GNSS-RealTimeIntegrity", &asn_DEF_GNSS_RealTimeIntegrity, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_DataBitAssistance const& x) {
-    basic_log(id, "gnss-data-bit-assistance", &asn_DEF_GNSS_DataBitAssistance, &x);
+    basic_log(id, "GNSS-DataBitAssistance", &asn_DEF_GNSS_DataBitAssistance, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_AcquisitionAssistance const& x) {
-    basic_log(id, "gnss-acquisition-assistance", &asn_DEF_GNSS_AcquisitionAssistance, &x);
+    basic_log(id, "GNSS-AcquisitionAssistance", &asn_DEF_GNSS_AcquisitionAssistance, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_Almanac const& x) {
-    basic_log(id, "gnss-almanac", &asn_DEF_GNSS_Almanac, &x);
+    basic_log(id, "GNSS-Almanac", &asn_DEF_GNSS_Almanac, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_UTC_Model const& x) {
-    basic_log(id, "gnss-utc-model", &asn_DEF_GNSS_UTC_Model, &x);
+    basic_log(id, "GNSS-UTC-Model", &asn_DEF_GNSS_UTC_Model, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_AuxiliaryInformation const& x) {
-    basic_log(id, "gnss-axuiliary-information", &asn_DEF_GNSS_AuxiliaryInformation, &x);
+    basic_log(id, "GNSS-AuxiliaryInformation", &asn_DEF_GNSS_AuxiliaryInformation, &x);
 }
 
 void LppPossibBuilder::process(long id, BDS_DifferentialCorrections_r12 const& x) {
-    basic_log(id, "bds-differential-corrections", &asn_DEF_BDS_DifferentialCorrections_r12, &x);
+    basic_log(id, "BDS-DifferentialCorrections-r12", &asn_DEF_BDS_DifferentialCorrections_r12, &x);
 }
 
 void LppPossibBuilder::process(long id, BDS_GridModelParameter_r12 const& x) {
-    basic_log(id, "bds-grid-model-parameter", &asn_DEF_BDS_GridModelParameter_r12, &x);
+    basic_log(id, "BDS-GridModelParameter-r12", &asn_DEF_BDS_GridModelParameter_r12, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_RTK_Observations_r15 const& x) {
-    basic_log(id, "gnss-rtk-observations", &asn_DEF_GNSS_RTK_Observations_r15, &x);
+    basic_log(id, "GNSS-RTK-Observations-r15", &asn_DEF_GNSS_RTK_Observations_r15, &x);
 }
 
 void LppPossibBuilder::process(long id, GLO_RTK_BiasInformation_r15 const& x) {
-    basic_log(id, "glo-rtk-bias-information", &asn_DEF_GLO_RTK_BiasInformation_r15, &x);
+    basic_log(id, "GLO-RTK-BiasInformation-r15", &asn_DEF_GLO_RTK_BiasInformation_r15, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_RTK_MAC_CorrectionDifferences_r15 const& x) {
-    basic_log(id, "gnss-rtk-max-correction-differences",
+    basic_log(id, "GNSS-RTK-MAC-CorrectionDifferences-r15",
               &asn_DEF_GNSS_RTK_MAC_CorrectionDifferences_r15, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_RTK_Residuals_r15 const& x) {
-    basic_log(id, "gnss-rtk-residuals", &asn_DEF_GNSS_RTK_Residuals_r15, &x);
+    basic_log(id, "GNSS-RTK-Residuals-r15", &asn_DEF_GNSS_RTK_Residuals_r15, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_RTK_FKP_Gradients_r15 const& x) {
-    basic_log(id, "gnss-rtk-fkp-gradients", &asn_DEF_GNSS_RTK_FKP_Gradients_r15, &x);
+    basic_log(id, "GNSS-RTK-FKP-Gradients-r15", &asn_DEF_GNSS_RTK_FKP_Gradients_r15, &x);
 }
 
 std::vector<size_t> LppPossibBuilder::encode_list_to_sizes(asn_TYPE_descriptor_s* descriptor,
@@ -379,7 +379,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_OrbitCorrections_r15 const& x) 
     params["gnss_id"]         = gnss_name_from_id(id);
     params["satellite_count"] = std::to_string(satellite_count);
     params["satellite_sizes"] = to_json_array(satellite_sizes);
-    log("gnss-ssr-orbit-corrections", &asn_DEF_GNSS_SSR_OrbitCorrections_r15, &x, params);
+    log("GNSS-SSR-OrbitCorrections-r15", &asn_DEF_GNSS_SSR_OrbitCorrections_r15, &x, params);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_ClockCorrections_r15 const& x) {
@@ -392,7 +392,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_ClockCorrections_r15 const& x) 
     params["gnss_id"]         = gnss_name_from_id(id);
     params["satellite_count"] = std::to_string(satellite_count);
     params["satellite_sizes"] = to_json_array(satellite_sizes);
-    log("gnss-ssr-clock-corrections", &asn_DEF_GNSS_SSR_ClockCorrections_r15, &x, params);
+    log("GNSS-SSR-ClockCorrections-r15", &asn_DEF_GNSS_SSR_ClockCorrections_r15, &x, params);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_CodeBias_r15 const& x) {
@@ -422,7 +422,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_CodeBias_r15 const& x) {
     params["satellite_sizes"] = to_json_array(satellite_sizes);
     params["signal_count"]    = std::to_string(signal_count);
     params["signal_sizes"]    = to_json_array(signal_sizes);
-    log("gnss-ssr-code-bias", &asn_DEF_GNSS_SSR_CodeBias_r15, &x, params);
+    log("GNSS-SSR-CodeBias-r15", &asn_DEF_GNSS_SSR_CodeBias_r15, &x, params);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_URA_r16 const& x) {
@@ -435,7 +435,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_URA_r16 const& x) {
     params["gnss_id"]         = gnss_name_from_id(id);
     params["satellite_count"] = std::to_string(satellite_count);
     params["satellite_sizes"] = to_json_array(satellite_sizes);
-    log("gnss-ssr-ura", &asn_DEF_GNSS_SSR_URA_r16, &x, params);
+    log("GNSS-SSR-URA-r16", &asn_DEF_GNSS_SSR_URA_r16, &x, params);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_PhaseBias_r16 const& x) {
@@ -465,46 +465,46 @@ void LppPossibBuilder::process(long id, GNSS_SSR_PhaseBias_r16 const& x) {
     params["satellite_sizes"] = to_json_array(satellite_sizes);
     params["signal_count"]    = std::to_string(signal_count);
     params["signal_sizes"]    = to_json_array(signal_sizes);
-    log("gnss-ssr-phase-bias", &asn_DEF_GNSS_SSR_PhaseBias_r16, &x, params);
+    log("GNSS-SSR-PhaseBias-r16", &asn_DEF_GNSS_SSR_PhaseBias_r16, &x, params);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_STEC_Correction_r16 const& x) {
-    basic_log(id, "gnss-ssr-stec-corrections", &asn_DEF_GNSS_SSR_STEC_Correction_r16, &x);
+    basic_log(id, "GNSS-SSR-STEC-Correction-r16", &asn_DEF_GNSS_SSR_STEC_Correction_r16, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_GriddedCorrection_r16 const& x) {
-    basic_log(id, "gnss-ssr-gridded-correction", &asn_DEF_GNSS_SSR_GriddedCorrection_r16, &x);
+    basic_log(id, "GNSS-SSR-GriddedCorrection-r16", &asn_DEF_GNSS_SSR_GriddedCorrection_r16, &x);
 }
 
 void LppPossibBuilder::process(long id, NavIC_DifferentialCorrections_r16 const& x) {
-    basic_log(id, "navic-differential-corrections", &asn_DEF_NavIC_DifferentialCorrections_r16, &x);
+    basic_log(id, "NavIC-DifferentialCorrections-r16", &asn_DEF_NavIC_DifferentialCorrections_r16, &x);
 }
 
 void LppPossibBuilder::process(long id, NavIC_GridModelParameter_r16 const& x) {
-    basic_log(id, "navic-grid-model-parameter", &asn_DEF_NavIC_GridModelParameter_r16, &x);
+    basic_log(id, "NavIC-GridModelParameter-r16", &asn_DEF_NavIC_GridModelParameter_r16, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_OrbitCorrectionsSet2_r17 const& x) {
-    basic_log(id, "gnss-ssr-orbit-corrections-set2", &asn_DEF_GNSS_SSR_OrbitCorrectionsSet2_r17,
+    basic_log(id, "GNSS-SSR-OrbitCorrectionsSet2-r17", &asn_DEF_GNSS_SSR_OrbitCorrectionsSet2_r17,
               &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_ClockCorrectionsSet2_r17 const& x) {
-    basic_log(id, "gnss-ssr-clock-corrections-set2", &asn_DEF_GNSS_SSR_ClockCorrectionsSet2_r17,
+    basic_log(id, "GNSS-SSR-ClockCorrectionsSet2-r17", &asn_DEF_GNSS_SSR_ClockCorrectionsSet2_r17,
               &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_URA_Set2_r17 const& x) {
-    basic_log(id, "gnss-ssr-ura-set2", &asn_DEF_GNSS_SSR_URA_Set2_r17, &x);
+    basic_log(id, "GNSS-SSR-URA_Set2-r17", &asn_DEF_GNSS_SSR_URA_Set2_r17, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_LOS_NLOS_GriddedIndications_r18 const& x) {
-    basic_log(id, "gnss-los-nlos-gridded-indications",
+    basic_log(id, "GNSS-LOS-NLOS-GriddedIndications-r18",
               &asn_DEF_GNSS_LOS_NLOS_GriddedIndications_r18, &x);
 }
 
 void LppPossibBuilder::process(long id, GNSS_SSR_SatellitePCVResiduals_r18 const& x) {
-    basic_log(id, "gnss-ssr-satellite-pcv-residuals", &asn_DEF_GNSS_SSR_SatellitePCVResiduals_r18,
+    basic_log(id, "GNSS-SSR-SatellitePCVResiduals-r18", &asn_DEF_GNSS_SSR_SatellitePCVResiduals_r18,
               &x);
 }
 

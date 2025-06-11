@@ -2,6 +2,7 @@
 
 ## []
 
+- Update posSIB logging names to conform to 3GPP LPP standard
 - `--li-unsolicited` implemented
 - `--ad-disable` implemented
 - Fix CMake truthiness checking on variables
