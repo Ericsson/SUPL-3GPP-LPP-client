@@ -73,6 +73,8 @@ public:
     bool start_periodic_location_information(
         TransactionHandle const&                              transaction,
         PeriodicLocationInformationDeliveryDescription const& description);
+    TransactionHandle start_periodic_location_information(
+        PeriodicLocationInformationDeliveryDescription const& description);
     void stop_periodic_location_information(TransactionHandle const& transaction);
 
     // Schedule the client to run on the given scheduler. Without calling this method, the client

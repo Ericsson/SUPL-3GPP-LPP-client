@@ -99,10 +99,25 @@ static void client_request(Program& program, lpp::Client& client) {
             ERRORF("request assistance data failed");
         },
     });
+}
 
-    if (program.config.location_information.unsolicited) {
-        TODOF("unsolicited location information");
+static void client_location_information(Program& program, lpp::Client& client) {
+    if (!program.config.location_information.unsolicited) {
+        return;
     }
+
+    lpp::PeriodicLocationInformationDeliveryDescription description{};
+    description.ha_gnss_metrics            = true;
+    description.reporting_amount_unlimited = true;
+    description.reporting_interval         = std::chrono::seconds(1);
+    description.coordinate_type.ha_ellipsoid_point_with_altitude_and_uncertainty_ellipsoid = true;
+    description.coordinate_type.ha_ellipsoid_point_with_scalable_altitude_and_uncertainty_ellipse =
+        true;
+    description.coordinate_type.ha_ellipsoid_point_with_scalable_uncertainty_ellipse = true;
+    description.coordinate_type.ha_ellipsoid_point_with_uncertainty_ellipse          = true;
+
+    auto _ = client.start_periodic_location_information(description);
+    DEBUGF("started periodic location information");
 }
 
 static void client_initialize(Program& program, lpp::Client&) {
@@ -123,11 +138,19 @@ static void client_initialize(Program& program, lpp::Client&) {
     program.client->on_provide_capabilities = [&program](lpp::Client& client) {
         INFOF("capabilities handshake completed");
         client_request(program, client);
+        client_location_information(program, client);
     };
 
     program.client->on_request_location_information =
-        [](lpp::Client&, lpp::TransactionHandle const&, lpp::Message const&) {
+        [&program](lpp::Client&, lpp::TransactionHandle const&, lpp::Message const&) {
             INFOF("request location information");
+
+            if (program.config.location_information.unsolicited) {
+                WARNF("unsolicited location information already requested");
+                WARNF("the request location information will be ignored");
+                return true;
+            }
+
             return false;
         };
 
@@ -305,9 +328,9 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     bool ctrl_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
     // TODO(ewasjon): bool rtcm_output   = false;
-    bool possib_output = false;
+    bool possib_output   = false;
     bool location_output = false;
-    bool test_output   = false;
+    bool test_output     = false;
     for (auto& output : config.outputs) {
         if (!output.interface) continue;
         DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s", output.interface.get()->name(),

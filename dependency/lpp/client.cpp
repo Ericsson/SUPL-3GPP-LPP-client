@@ -453,6 +453,14 @@ void Client::process_end_transaction(lpp::TransactionHandle const& transaction) 
     mLocationInformationDeliveries.erase(transaction);
 }
 
+TransactionHandle Client::start_periodic_location_information(
+    PeriodicLocationInformationDeliveryDescription const& description) {
+    VSCOPE_FUNCTION();
+    auto transaction = mSession.create_transaction(false);
+    start_periodic_location_information(transaction, description);
+    return transaction;
+}
+
 bool Client::start_periodic_location_information(
     TransactionHandle const&                              transaction,
     PeriodicLocationInformationDeliveryDescription const& description) {
