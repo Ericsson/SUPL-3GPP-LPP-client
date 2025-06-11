@@ -60,7 +60,10 @@ LOGLET_MODULE(p);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client)
 
 static void client_request(Program& program, lpp::Client& client) {
-    if (!program.cell) {
+    if (!program.config.assistance_data.enabled) {
+        DEBUGF("assistance data is disabled");
+        return;
+    } else if (!program.cell) {
         ERRORF("internal error: no cell information");
         return;
     }

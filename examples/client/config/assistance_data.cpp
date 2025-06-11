@@ -171,7 +171,6 @@ static void parse(Config* config) {
 
     if (gDisable) {
         ad.enabled = false;
-        return;
     } else if (!config->location_server.enabled) {
         ad.enabled = false;
         VERBOSEF("assistance data can only be requested when connecting to the location server\n");
