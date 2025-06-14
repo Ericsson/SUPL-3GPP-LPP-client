@@ -56,6 +56,7 @@ bool CorrectionPointSet::array_to_index(long array_index, CorrectionPointInfo* r
                 result->absolute_index = absolute_index;
                 result->is_valid = is_valid;
                 result->latitude_index = y;
+                result->longitude_index = x;
                 result->position.x = reference_point_latitude - static_cast<double>(y) * step_of_latitude;
                 result->position.y = reference_point_longitude + static_cast<double>(x) * step_of_longitude;
                 result->position.z = 0;
