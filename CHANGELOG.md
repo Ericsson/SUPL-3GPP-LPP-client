@@ -1,6 +1,6 @@
 # Changelog
 
-## []
+## [4.0.17] 2025-07-14
 
 - Disconnect on failed SUPL send
 - Fake location is now pushed through streamline
