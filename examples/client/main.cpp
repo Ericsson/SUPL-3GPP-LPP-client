@@ -159,22 +159,6 @@ static void client_initialize(Program& program, lpp::Client&) {
                    lpp::messages::ProvideLocationInformation& data) {
             INFOF("provide location information");
 
-            if (program.config.location_information.fake.enabled) {
-                DEBUGF("using simulated location information");
-
-                lpp::LocationInformation info{};
-                info.time     = ts::Tai::now();
-                info.location = lpp::LocationShape::ha_ellipsoid_altitude_with_uncertainty(
-                    program.config.location_information.fake.latitude,
-                    program.config.location_information.fake.longitude,
-                    program.config.location_information.fake.altitude,
-                    lpp::HorizontalAccuracy::to_ellipse_68(1, 1, 0),
-                    lpp::VerticalAccuracy::from_1sigma(1));
-
-                program.latest_location_information           = info;
-                program.latest_location_information_submitted = false;
-            }
-
             if (program.latest_location_information.has_value()) {
                 if (program.latest_location_information_submitted) {
                     DEBUGF("location information already submitted");
@@ -329,7 +313,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     // TODO(ewasjon): bool spartn_output   = false;
     // TODO(ewasjon): bool rtcm_output   = false;
 #ifdef DATA_TRACING
-    bool possib_output   = false;
+    bool possib_output = false;
 #endif
     bool location_output = false;
     bool test_output     = false;
@@ -468,6 +452,25 @@ static void setup_control_stream(Program& program) {
     };
 }
 
+static void setup_fake_location(Program& program) {
+    program.fake_location_task = std::unique_ptr<scheduler::PeriodicTask>(
+        new scheduler::PeriodicTask{std::chrono::seconds(1)});
+    program.fake_location_task->callback = [&program]() {
+        DEBUGF("generate fake location information");
+        lpp::LocationInformation info{};
+        info.time     = ts::Tai::now();
+        info.location = lpp::LocationShape::ha_ellipsoid_altitude_with_uncertainty(
+            program.config.location_information.fake.latitude,
+            program.config.location_information.fake.longitude,
+            program.config.location_information.fake.altitude,
+            lpp::HorizontalAccuracy::to_ellipse_68(1, 1, 0), lpp::VerticalAccuracy::from_1sigma(1));
+        program.stream.push(std::move(info));
+    };
+
+    INFOF("enable fake location information");
+    program.fake_location_task->schedule(program.scheduler);
+}
+
 static void setup_lpp2osr(Program& program) {
 #if defined(INCLUDE_GENERATOR_RTCM)
     if (program.config.lpp2rtcm.enabled) {
@@ -584,6 +587,10 @@ int main(int argc, char** argv) {
     setup_lpp2osr(program);
     setup_lpp2spartn(program);
     setup_tokoro(program);
+
+    if (program.config.location_information.fake.enabled) {
+        setup_fake_location(program);
+    }
 
 #ifdef DATA_TRACING
     if (program.config.data_tracing.possib_log) {
