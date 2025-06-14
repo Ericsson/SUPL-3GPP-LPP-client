@@ -781,6 +781,7 @@ std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
     if (result.encoded == -1) {
         WARNF("failed to encode uper: %s",
               result.failed_type ? result.failed_type->name : "<unknown>");
+        WARNF("result:\n%s", encode_lpp_message_xer(message).c_str());
         return {};
     }
 
