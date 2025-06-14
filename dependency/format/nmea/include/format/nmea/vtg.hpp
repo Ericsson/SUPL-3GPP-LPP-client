@@ -25,25 +25,24 @@ public:
     VtgMessage& operator=(VtgMessage const&) = delete;
     VtgMessage& operator=(VtgMessage&&)      = delete;
 
+    static NODISCARD VtgMessage fake(double true_course_over_ground, double speed_over_ground_kmh,
+                                     double        magnetic_course_over_ground,
+                                     ModeIndicator mode_indicator) NOEXCEPT;
+
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     /// Get the true course over ground in degrees from true north.
-    NODISCARD double true_course_over_ground() const NOEXCEPT {
-        return mTrueCourseOverGround;
-    }
+    NODISCARD double true_course_over_ground() const NOEXCEPT { return mTrueCourseOverGround; }
 
     /// Get the speed over ground in meters per second.
-    NODISCARD double speed_over_ground() const NOEXCEPT {
-        return mSpeedOverGroundKmh / 3.6;
-    }
+    NODISCARD double speed_over_ground() const NOEXCEPT { return mSpeedOverGroundKmh / 3.6; }
 
-    NODISCARD static std::unique_ptr<Message>
-    parse(std::string prefix, std::string const& payload, std::string checksum);
+    NODISCARD static std::unique_ptr<Message> parse(std::string prefix, std::string const& payload,
+                                                    std::string checksum);
 
 private:
-    EXPLICIT VtgMessage(std::string prefix, std::string payload,
-                             std::string checksum) NOEXCEPT;
+    EXPLICIT VtgMessage(std::string prefix, std::string payload, std::string checksum) NOEXCEPT;
 
     double        mTrueCourseOverGround;
     double        mMagneticCourseOverGround;
@@ -53,4 +52,4 @@ private:
 };
 
 }  // namespace nmea
-}  // namespace receiver
+}  // namespace format

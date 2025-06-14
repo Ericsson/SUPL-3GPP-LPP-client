@@ -150,6 +150,9 @@ struct LocationInformationConfig {
     bool   output_ellipse_68;
     double override_horizontal_confidence;
 
+    bool nmea_require_gst;
+    bool nmea_require_vtg;
+
     FakeLocationInformationConfig fake;
 };
 

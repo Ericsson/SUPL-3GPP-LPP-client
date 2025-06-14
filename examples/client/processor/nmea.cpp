@@ -10,6 +10,8 @@
 LOGLET_MODULE2(p, nmea);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, nmea)
 
+using namespace format::nmea;
+
 void NmeaPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
     VSCOPE_FUNCTION();
     message->print();
@@ -30,64 +32,17 @@ void NmeaOutput::inspect(streamline::System&, DataType const& message) NOEXCEPT 
     }
 }
 
-void NmeaLocation::consume(streamline::System& system, DataType&& message) NOEXCEPT {
-    VSCOPE_FUNCTION();
-    auto gga = dynamic_cast<format::nmea::GgaMessage*>(message.get());
-    if (gga) {
-        mGga.reset(gga);
-        message.release();
-    }
-
-    auto vtg = dynamic_cast<format::nmea::VtgMessage*>(message.get());
-    if (vtg) {
-        mVtg.reset(vtg);
-        message.release();
-    }
-
-    auto gst = dynamic_cast<format::nmea::GstMessage*>(message.get());
-    if (gst) {
-        mGst.reset(gst);
-        message.release();
-    }
-
-    auto epe = dynamic_cast<format::nmea::EpeMessage*>(message.get());
-    if (epe) {
-        mEpe.reset(epe);
-        message.release();
-    }
-
-    if (mGga && mVtg && mGst) {
-        process(system, *mGga.get(), *mVtg.get(), *mGst.get());
-        // NOTE(ewasjon): Should we clear the pointers here?
-    } else if (mGga && mVtg && mEpe) {
-        process(system, *mGga.get(), *mVtg.get(), *mEpe.get());
-        // NOTE(ewasjon): Should we clear the pointers here?
-    }
-}
-
 NmeaLocation::NmeaLocation(LocationInformationConfig const& config)
     : mGga(nullptr), mVtg(nullptr), mGst(nullptr), mEpe(nullptr), mConfig(config) {}
 
 NmeaLocation::~NmeaLocation() = default;
 
-void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage const& gga,
-                           format::nmea::VtgMessage const& vtg,
-                           format::nmea::GstMessage const& gst) {
-    process(system, gga, vtg, gst.semi_major(), gst.semi_minor(), gst.orientation(),
-            gst.vertical_position_error());
+lpp::VelocityShape NmeaLocation::vtg_to_velocity(VtgMessage const& vtg) const {
+    return lpp::VelocityShape::horizontal(vtg.speed_over_ground(), vtg.true_course_over_ground());
 }
 
-void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage const& gga,
-                           format::nmea::VtgMessage const& vtg,
-                           format::nmea::EpeMessage const& epe) {
-    process(system, gga, vtg, epe.semi_major(), epe.semi_minor(), epe.orientation(),
-            epe.vertical_position_error());
-}
-
-void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage const& gga,
-                           format::nmea::VtgMessage const& vtg, double semi_major,
-                           double semi_minor, double orientation, double vertical_position_error) {
-    VSCOPE_FUNCTION();
+lpp::HorizontalAccuracy NmeaLocation::horizontal_accuracy(double semi_major, double semi_minor,
+                                                          double orientation) const {
     if (mConfig.convert_confidence_95_to_68) {
         // 95% confidence to 68% confidence
         // TODO(ewasjon): should this not be 1.95996 (sqrt(3.84)) from 1-degree chi-squared
@@ -107,14 +62,112 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
         horizontal_accuracy.confidence = mConfig.override_horizontal_confidence;
     }
 
+    return horizontal_accuracy;
+}
+
+lpp::HorizontalAccuracy NmeaLocation::epe_to_horizontal(EpeMessage const& epe) const {
+    return horizontal_accuracy(epe.semi_major(), epe.semi_minor(), epe.orientation());
+}
+
+lpp::HorizontalAccuracy NmeaLocation::gst_to_horizontal(GstMessage const& gst) const {
+    return horizontal_accuracy(gst.semi_major(), gst.semi_minor(), gst.orientation());
+}
+
+lpp::VerticalAccuracy NmeaLocation::gst_to_vertical(GstMessage const& gst) const {
+    return lpp::VerticalAccuracy::from_1sigma(gst.vertical_position_error());
+}
+
+lpp::VerticalAccuracy NmeaLocation::epe_to_vertical(EpeMessage const& epe) const {
+    return lpp::VerticalAccuracy::from_1sigma(epe.vertical_position_error());
+}
+
+void NmeaLocation::consume(streamline::System& system, DataType&& message) NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    auto received_new_message = false;
+    auto gga                  = dynamic_cast<GgaMessage*>(message.get());
+    if (gga) {
+        mGga.reset(gga);
+        message.release();
+        received_new_message = true;
+    }
+
+    auto vtg = dynamic_cast<VtgMessage*>(message.get());
+    if (vtg) {
+        mVtg.reset(vtg);
+        message.release();
+        received_new_message = true;
+    }
+
+    auto gst = dynamic_cast<GstMessage*>(message.get());
+    if (gst) {
+        mGst.reset(gst);
+        message.release();
+        received_new_message = true;
+    }
+
+    auto epe = dynamic_cast<EpeMessage*>(message.get());
+    if (epe) {
+        mEpe.reset(epe);
+        message.release();
+        received_new_message = true;
+    }
+
+    if (!received_new_message) {
+        return;
+    }
+
+    if (!mGga) {
+        DEBUGF("nmea location require gga");
+        return;
+    }
+
+    auto semi_major = 5.0;
+    auto semi_minor = 5.0;
+
+    if (mGga->fix_quality() == GgaFixQuality::RtkFixed) {
+        semi_major = 0.05;
+        semi_minor = 0.05;
+    } else if (mGga->fix_quality() == GgaFixQuality::RtkFloat) {
+        semi_major = 0.5;
+        semi_minor = 0.5;
+    }
+
+    auto velocity   = lpp::VelocityShape::horizontal(0.0, 0.0);
+    auto horizontal = lpp::HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, 0.0);
+    auto vertical   = lpp::VerticalAccuracy::from_1sigma(1.0);
+
+    if (mGst) {
+        horizontal = gst_to_horizontal(*mGst.get());
+        vertical   = gst_to_vertical(*mGst.get());
+    } else if (mEpe) {
+        horizontal = epe_to_horizontal(*mEpe.get());
+        vertical   = epe_to_vertical(*mEpe.get());
+    } else if (mConfig.nmea_require_gst) {
+        DEBUGF("nmea location require gst/epe");
+        return;
+    }
+
+    if (mVtg) {
+        velocity = vtg_to_velocity(*mVtg.get());
+    } else if (mConfig.nmea_require_vtg) {
+        DEBUGF("nmea location require vtg");
+        return;
+    }
+
+    process(system, *mGga.get(), velocity, horizontal, vertical);
+}
+
+void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage const& gga,
+                           lpp::VelocityShape velocity, lpp::HorizontalAccuracy horizontal,
+                           lpp::VerticalAccuracy vertical) {
+    VSCOPE_FUNCTION();
     lpp::LocationInformation location{};
     location.time     = gga.time_of_day();
     location.location = lpp::LocationShape::ha_ellipsoid_altitude_with_uncertainty(
-        gga.latitude(), gga.longitude(), gga.altitude(), horizontal_accuracy,
-        lpp::VerticalAccuracy::from_1sigma(vertical_position_error));
-    location.velocity =
-        lpp::VelocityShape::horizontal(vtg.speed_over_ground(), vtg.true_course_over_ground());
-    system.push(std::move(location));
+        gga.latitude(), gga.longitude(), gga.altitude(), horizontal, vertical);
+    location.velocity = velocity;
+    system.push(std ::move(location));
 
     lpp::HaGnssMetrics metrics{};
     metrics.fix_quality          = lpp::FixQuality::INVALID;

@@ -328,7 +328,9 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     bool ctrl_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
     // TODO(ewasjon): bool rtcm_output   = false;
+#ifdef DATA_TRACING
     bool possib_output   = false;
+#endif
     bool location_output = false;
     bool test_output     = false;
     for (auto& output : config.outputs) {
@@ -352,7 +354,9 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
         if (output.ctrl_support()) ctrl_output = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
         // TODO(ewasjon): if (output.rtcm_support()) rtcm_output = true;
+#ifdef DATA_TRACING
         if (output.possib_support()) possib_output = true;
+#endif
         if (output.location_support()) location_output = true;
         if (output.test_support()) test_output = true;
 
