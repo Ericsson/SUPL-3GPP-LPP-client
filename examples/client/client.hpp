@@ -14,6 +14,7 @@
 
 #include <lpp/client.hpp>
 #include <lpp/session.hpp>
+#include <scheduler/periodic.hpp>
 
 #include "config.hpp"
 
@@ -37,6 +38,8 @@ struct Program {
     std::vector<std::unique_ptr<format::ubx::Parser>>     ubx_parsers;
     std::vector<std::unique_ptr<format::ctrl::Parser>>    ctrl_parsers;
     std::vector<std::unique_ptr<format::lpp::UperParser>> lpp_uper_parsers;
+
+    std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
 
     void update_location_information(lpp::LocationInformation const& location) {
         latest_location_information           = location;
