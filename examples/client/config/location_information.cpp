@@ -49,6 +49,18 @@ static args::ValueFlag<double> gOverrideHorizontalConfidence{
     {"li-override-horizontal-confidence"},
     args::Options::Single,
 };
+static args::Flag gNmeaRequireGst{
+    gGroup,
+    "nmea-require-gst",
+    "Require the NMEA GST/EPE for location information",
+    {"li-nmea-require-gst"},
+};
+static args::Flag gNmeaRequireVtg{
+    gGroup,
+    "nmea-require-vgt",
+    "Require the NMEA VTG for location information",
+    {"li-nmea-require-vgt"},
+};
 
 static args::Group gFakeLocationGroup{gGroup, "Fake Location:"};
 static args::Flag  gFakeLocation{
@@ -84,6 +96,8 @@ static void parse(Config* config) {
     li.convert_confidence_95_to_68    = false;
     li.output_ellipse_68              = false;
     li.override_horizontal_confidence = -1.0;
+    li.nmea_require_gst               = false;
+    li.nmea_require_vtg               = false;
     li.fake.enabled                   = false;
     li.fake.latitude                  = 69.06;
     li.fake.longitude                 = 20.55;
@@ -125,7 +139,8 @@ static void dump(LocationInformationConfig const& config) {
     DEBUGF("update_rate_ms: %d ms", config.update_rate_ms);
     DEBUGF("use_nmea_location: %s", config.use_nmea_location ? "true" : "false");
     DEBUGF("use_ubx_location: %s", config.use_ubx_location ? "true" : "false");
-    DEBUGF("convert_confidence_95_to_68: %s", config.convert_confidence_95_to_68 ? "true" : "false");
+    DEBUGF("convert_confidence_95_to_68: %s",
+           config.convert_confidence_95_to_68 ? "true" : "false");
     DEBUGF("output_ellipse_68: %s", config.output_ellipse_68 ? "true" : "false");
     DEBUGF("override_horizontal_confidence: %.1f", config.override_horizontal_confidence);
     DEBUGF("fake.enabled: %s", config.fake.enabled ? "true" : "false");
