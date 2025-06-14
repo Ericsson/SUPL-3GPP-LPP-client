@@ -615,6 +615,7 @@ void Session::send(TransactionHandle const& handle, Message& message) {
     pos.payloads.push_back(std::move(payload));
     if (!mSession->send(pos)) {
         ERRORF("failed to send SUPL POS");
+        mSession->disconnect();
         return;
     }
 

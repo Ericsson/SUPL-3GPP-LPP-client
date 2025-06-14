@@ -2,6 +2,7 @@
 
 ## []
 
+- Disconnect on failed SUPL send
 - Fake location is now pushed through streamline
 - Support NMEA location without GST/EPE and VTG
 - Update posSIB logging names to conform to 3GPP LPP standard
