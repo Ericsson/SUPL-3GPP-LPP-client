@@ -399,7 +399,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                 gnss_grid.add_point(correction_point);
                 continue;
             }
-            DEBUGF("point: %s %ld,%ld, (%ld,%ld), %.14f, %.14f, %.14f",
+            DEBUGF("point: %s %2ld,%2ld, (%2ld,%2ld), %.14f, %.14f, %.14f",
                    correction_point.is_valid ? "OK " : "BAD", correction_point.array_index,
                    correction_point.absolute_index, correction_point.latitude_index,
                    correction_point.longitude_index, correction_point.position.x,
