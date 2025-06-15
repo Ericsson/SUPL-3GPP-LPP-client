@@ -380,6 +380,9 @@ NextState Session::state_message() {
         } else if (received == supl::Session::Received::POS) {
             process_supl_pos(pos);
             continue;
+        } else if (received == supl::Session::Received::SESSION_TERMINATED ||
+                   received == supl::Session::Received::INVALID_SESSION) {
+            return NextState::make().next(State::DISCONNECTED);
         } else {
             WARNF("problem receiving SUPL message");
             continue;

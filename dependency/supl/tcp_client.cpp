@@ -269,6 +269,9 @@ bool TcpClient::disconnect() {
     mSSL        = nullptr;
 #endif
 
+    auto result = shutdown(mSocket, SHUT_RDWR);
+    VERBOSEF("::shutdown(%d, SHUT_RDWR) = %d", mSocket, result);
+
     VERBOSEF("closing socket %d", mSocket);
     close(mSocket);
     VERBOSEF("::close(%d)", mSocket);

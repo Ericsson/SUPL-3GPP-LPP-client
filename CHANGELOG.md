@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.0.18] 2025-07-15
+
+- Shutdown socket on disconnect
+- Handle SUPL session termination in LPP
+
 ## [4.0.17] 2025-07-14
 
 - Disconnect on failed SUPL send
