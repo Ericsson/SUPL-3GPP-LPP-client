@@ -1,6 +1,6 @@
 # SUPL 3GPP LPP client
 
-![version](https://img.shields.io/badge/version-4.0.14-green)
+![version](https://img.shields.io/badge/version-4.0.18-green)
 ![license](https://img.shields.io/badge/license-MXM-blue)
 
 A comprehensive toolkit for developing 3GPP LPP (LTE Positioning Protocol) clients. This project provides libraries and tools for handling SUPL (Secure User Plane Location) communication and various positioning-related message conversions.
