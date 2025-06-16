@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.0.20] 2025-07-16
+## [4.0.21] 2025-07-16
 
 - Implement update_assistance_data
 

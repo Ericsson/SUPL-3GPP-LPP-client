@@ -109,12 +109,14 @@ bool AssistanceDataHandler::update_assistance_data(supl::Cell cell) {
     VSCOPE_FUNCTION();
 
     messages::RequestAssistanceData message_description{};
-    message_description.cell             = cell;
-    message_description.periodic_session = handle();
-    message_description.gps              = true;
-    message_description.glonass          = true;
-    message_description.galileo          = true;
-    message_description.bds              = false;
+    message_description.cell               = cell;
+    message_description.periodic_session   = handle();
+    message_description.gps                = mData.gnss.gps;
+    message_description.glonass            = mData.gnss.glonass;
+    message_description.galileo            = mData.gnss.galileo;
+    message_description.bds                = mData.gnss.beidou;
+    message_description.delivery_amount    = mData.config.delivery_amount;
+    message_description.rtk_antenna_height = mData.config.antenna_height;
 
     if (mData.type == RequestAssistanceData::Type::OSR) {
         message_description.rtk_observations           = 1;
