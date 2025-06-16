@@ -4,10 +4,10 @@
 #include <cstring>
 #include <net/if.h>
 #include <netdb.h>
+#include <netinet/tcp.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include <netinet/tcp.h>
 
 #include <loglet/loglet.hpp>
 
@@ -188,27 +188,33 @@ bool TcpClient::connect(std::string const& host, int port, std::string const& in
     }
 
     // set socket keepalive options
-    int            enable   = 1;
-    int            idle     = 15;
-    int            interval = 5;
-    int            count    = 3;
+    int enable       = 1;
+    int idle         = 1;     // First probe after 1 second idle
+    int interval     = 2;     // Subsequent probes every 2 seconds
+    int count        = 3;     // 3 probes before giving up
+    int user_timeout = 8000;  // 8 seconds total timeout
 
     auto result = setsockopt(mSocket, SOL_SOCKET, SO_KEEPALIVE, &enable, sizeof(enable));
-    VERBOSEF("setsockopt(%d, SOL_SOCKET, SO_KEEPALIVE, %p, %zu) = %d", mSocket, &enable,
-             sizeof(enable), result);
+    VERBOSEF("::setsockopt(%d, SOL_SOCKET, SO_KEEPALIVE, *%p=%d, %zu) = %d", mSocket, &enable,
+             enable, sizeof(enable), result);
 
     // Configure keep-alive parameters
     result = setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPIDLE, &idle, sizeof(idle));
-    VERBOSEF("setsockopt(%d, IPPROTO_TCP, TCP_KEEPIDLE, %p, %zu) = %d", mSocket, &idle,
+    VERBOSEF("::setsockopt(%d, IPPROTO_TCP, TCP_KEEPIDLE, *%p=%d, %zu) = %d", mSocket, &idle, idle,
              sizeof(idle), result);
 
     result = setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPINTVL, &interval, sizeof(interval));
-    VERBOSEF("setsockopt(%d, IPPROTO_TCP, TCP_KEEPINTVL, %p, %zu) = %d", mSocket, &interval,
-             sizeof(interval), result);
+    VERBOSEF("::setsockopt(%d, IPPROTO_TCP, TCP_KEEPINTVL, *%p=%d, %zu) = %d", mSocket, &interval,
+             interval, sizeof(interval), result);
 
     result = setsockopt(mSocket, IPPROTO_TCP, TCP_KEEPCNT, &count, sizeof(count));
-    VERBOSEF("setsockopt(%d, IPPROTO_TCP, TCP_KEEPCNT, %p, %zu) = %d", mSocket, &count,
+    VERBOSEF("::setsockopt(%d, IPPROTO_TCP, TCP_KEEPCNT, *%p=%d, %zu) = %d", mSocket, &count, count,
              sizeof(count), result);
+
+    result =
+        setsockopt(mSocket, IPPROTO_TCP, TCP_USER_TIMEOUT, &user_timeout, sizeof(user_timeout));
+    VERBOSEF("::setsockopt(%d, IPPROTO_TCP, TCP_USER_TIMEOUT, *%p=%d, %zu) = %d", mSocket,
+             &user_timeout, user_timeout, sizeof(user_timeout), result);
 
     mState = State::CONNECTING;
     return true;
