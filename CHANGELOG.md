@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.0.19] 2025-07-16
+
+- Set `TCP_USER_TIMEOUT`
+
 ## [4.0.18] 2025-07-15
 
 - Shutdown socket on disconnect

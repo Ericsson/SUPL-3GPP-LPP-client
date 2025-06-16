@@ -12,8 +12,8 @@ include(cmake/compiler.cmake)
 include(cmake/target.cmake)
 
 add_definitions(-D_POSIX_C_SOURCE=200809L)
-add_definitions(-DCLIENT_VERSION="4.0.18")
-add_definitions(-DCLIENT_VERSION_INT=0x040012)
+add_definitions(-DCLIENT_VERSION="4.0.19")
+add_definitions(-DCLIENT_VERSION_INT=0x040013)
 
 find_package(Threads REQUIRED)
 
