@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.0.20] 2025-07-16
+
+- Implement update_assistance_data
+
 ## [4.0.19] 2025-07-16
 
 - Set `TCP_USER_TIMEOUT`

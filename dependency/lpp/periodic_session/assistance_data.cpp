@@ -122,8 +122,14 @@ bool AssistanceDataHandler::update_assistance_data(supl::Cell cell) {
         message_description.rtk_bias_information       = 1;
         message_description.rtk_reference_station_info = 1;
     } else if (mData.type == RequestAssistanceData::Type::SSR) {
-        UNIMPLEMENTED("SSR not implemented");
-        return false;
+        message_description.ssr_clock             = 5;
+        message_description.ssr_orbit             = 5;
+        message_description.ssr_code_bias         = 5;
+        message_description.ssr_phase_bias        = 5;
+        message_description.ssr_stec              = 5;
+        message_description.ssr_gridded           = 5;
+        message_description.ssr_ura               = 5;
+        message_description.ssr_correction_points = 1;
     } else if (mData.type == RequestAssistanceData::Type::AGNSS) {
         UNIMPLEMENTED("AGNSS not implemented");
         return false;
