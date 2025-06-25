@@ -25,13 +25,13 @@ struct Program {
     bool                 is_disconnected;
 
     lpp::PeriodicSessionHandle assistance_data_session{};
-
-    bool first_assistance_data_completed;
+    size_t                     assistance_data_request_count;
 
     lpp::Optional<lpp::LocationInformation> latest_location_information;
     lpp::Optional<lpp::HaGnssMetrics>       latest_gnss_metrics;
     bool                                    latest_location_information_submitted{false};
 
+    std::unique_ptr<supl::Cell>     initial_cell;
     std::unique_ptr<supl::Cell>     cell;
     std::unique_ptr<supl::Identity> identity;
     std::unique_ptr<lpp::Client>    client;

@@ -2,6 +2,7 @@
 
 ## []
 
+- Initial cell will be used on reconnect. Use `--use-latest-cell-on-reconnect` to re-enable the previous behaviour
 - Initial cell will not be overwritten with the one from the control interface until the first RequestAssistanceData has been sent
 
 ## [4.0.21] 2025-07-16

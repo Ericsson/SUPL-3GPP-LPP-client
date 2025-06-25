@@ -68,9 +68,17 @@ static void client_request(Program& program, lpp::Client& client) {
         return;
     }
 
+    auto cell = *program.cell.get();
+    if (program.assistance_data_request_count == 0 && program.initial_cell &&
+        !program.config.assistance_data.use_latest_cell_on_reconnect) {
+        cell = *program.initial_cell;
+        DEBUGF("using initial cell for first assistance data request");
+    }
+
+    program.assistance_data_request_count++;
     program.assistance_data_session = client.request_assistance_data({
         program.config.assistance_data.type,
-        *program.cell.get(),
+        cell,
         {
             program.config.assistance_data.gps,
             program.config.assistance_data.glonass,
@@ -83,7 +91,6 @@ static void client_request(Program& program, lpp::Client& client) {
         },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("provide assistance data (non-periodic)");
-            program.first_assistance_data_completed = true;
             program.stream.push(std::move(message));
         },
         [&program](lpp::Client&, lpp::PeriodicSessionHandle, lpp::Message message) {
@@ -98,8 +105,6 @@ static void client_request(Program& program, lpp::Client& client) {
         },
         [&](lpp::Client&) {
             ERRORF("request assistance data failed");
-            // NOTE:
-            program.first_assistance_data_completed = true;
         },
     });
 }
@@ -125,12 +130,13 @@ static void client_location_information(Program& program, lpp::Client& client) {
 
 static void client_initialize(Program& program, lpp::Client&) {
     program.client->on_connected = [](lpp::Client&) {
-        INFOF("connected to LPP server");
+        INFOF("connected to location server");
     };
 
     program.client->on_disconnected = [&program](lpp::Client&) {
-        INFOF("disconnected from LPP server");
-        program.is_disconnected = true;
+        INFOF("disconnected from location server");
+        program.is_disconnected               = true;
+        program.assistance_data_request_count = 0;
 
         if (program.config.location_server.shutdown_on_disconnect) {
             INFOF("shutting down location server");
@@ -403,12 +409,6 @@ static void setup_control_stream(Program& program) {
     }
 
     ctrl_events->on_cell_id = [&program](format::ctrl::CellId const& cell) {
-        if (!program.config.assistance_data.wait_for_cell &&
-            !program.first_assistance_data_completed) {
-            DEBUGF("cell id received, ignoring until first assistance data request has completed");
-            return;
-        }
-        
         supl::Cell new_cell{};
         if (cell.is_nr()) {
             new_cell = supl::Cell::nr(cell.mcc(), cell.mnc(), cell.tac(), cell.cell());
@@ -431,6 +431,11 @@ static void setup_control_stream(Program& program) {
                   new_cell.data.nr.ci, cell_changed ? "(changed)" : "");
         } else {
             WARNF("unsupported cell type");
+        }
+
+        if (!program.initial_cell && program.config.assistance_data.wait_for_cell) {
+            INFOF("found initial cell");
+            program.initial_cell.reset(new supl::Cell(new_cell));
         }
 
         if (cell_changed && program.cell) {
@@ -664,9 +669,10 @@ int main(int argc, char** argv) {
             }
 
             program.scheduler.execute_while([&program] {
-                return !program.cell;
+                return !program.initial_cell;
             });
         } else {
+            program.initial_cell.reset(new supl::Cell{program.config.assistance_data.cell});
             program.cell.reset(new supl::Cell{program.config.assistance_data.cell});
         }
 

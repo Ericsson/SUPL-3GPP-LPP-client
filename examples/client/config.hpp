@@ -104,6 +104,7 @@ struct InputConfig {
 struct AssistanceDataConfig {
     bool enabled;
     bool wait_for_cell;
+    bool use_latest_cell_on_reconnect;
 
     lpp::RequestAssistanceData::Type type;
     supl::Cell                       cell;
