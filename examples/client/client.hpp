@@ -26,6 +26,8 @@ struct Program {
 
     lpp::PeriodicSessionHandle assistance_data_session{};
 
+    bool first_assistance_data_completed;
+
     lpp::Optional<lpp::LocationInformation> latest_location_information;
     lpp::Optional<lpp::HaGnssMetrics>       latest_gnss_metrics;
     bool                                    latest_location_information_submitted{false};

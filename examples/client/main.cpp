@@ -83,6 +83,7 @@ static void client_request(Program& program, lpp::Client& client) {
         },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("provide assistance data (non-periodic)");
+            program.first_assistance_data_completed = true;
             program.stream.push(std::move(message));
         },
         [&program](lpp::Client&, lpp::PeriodicSessionHandle, lpp::Message message) {
@@ -97,6 +98,8 @@ static void client_request(Program& program, lpp::Client& client) {
         },
         [&](lpp::Client&) {
             ERRORF("request assistance data failed");
+            // NOTE:
+            program.first_assistance_data_completed = true;
         },
     });
 }
@@ -400,6 +403,12 @@ static void setup_control_stream(Program& program) {
     }
 
     ctrl_events->on_cell_id = [&program](format::ctrl::CellId const& cell) {
+        if (!program.config.assistance_data.wait_for_cell &&
+            !program.first_assistance_data_completed) {
+            DEBUGF("cell id received, ignoring until first assistance data request has completed");
+            return;
+        }
+        
         supl::Cell new_cell{};
         if (cell.is_nr()) {
             new_cell = supl::Cell::nr(cell.mcc(), cell.mnc(), cell.tac(), cell.cell());
@@ -426,8 +435,7 @@ static void setup_control_stream(Program& program) {
 
         if (cell_changed && program.cell) {
             if (!program.assistance_data_session.is_valid()) {
-                WARNF("cell id received, but no assistance data session is active (this is normal "
-                      "if you're waiting for the cell at startup)");
+                WARNF("cell id received, but no assistance data session is active");
                 return;
             } else if (!program.client) {
                 WARNF("cell id received, but no client is active (--ls-disable is set)");
