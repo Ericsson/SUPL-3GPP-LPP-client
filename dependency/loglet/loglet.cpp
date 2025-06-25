@@ -7,7 +7,6 @@
 #include <ctime>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #define COLOR_RESET "\033[0m"
@@ -52,7 +51,7 @@ struct Module {
 
 static char const*        sPrefix       = nullptr;
 static Level              sLevel        = Level::Debug;
-static bool               sColorEnabled = true;
+static bool               sColorEnabled = false;
 static bool               sAlwaysFlush  = false;
 static std::vector<Scope> sScopes;
 
