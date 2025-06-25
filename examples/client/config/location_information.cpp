@@ -2,11 +2,17 @@
 namespace li {
 
 static args::Group gGroup{"Location Information:"};
-static args::Flag  gUnsolicited{
+static args::Flag  gDisable{
+    gGroup,
+    "li-disable",
+    "Disable location information",
+     {"li-disable"},
+};
+static args::Flag gUnsolicited{
     gGroup,
     "li-unsolicited",
     "Send unsolicited provide location information messages to the location server",
-     {"li-unsolicited"},
+    {"li-unsolicited"},
 };
 static args::ValueFlag<int> gUpdateRate{
     gGroup,
@@ -88,6 +94,7 @@ static void setup() {
 
 static void parse(Config* config) {
     auto& li                          = config->location_information;
+    li.enable                         = true;
     li.unsolicited                    = false;
     li.update_rate_forced             = false;
     li.update_rate_ms                 = 1000;
@@ -102,6 +109,10 @@ static void parse(Config* config) {
     li.fake.latitude                  = 69.06;
     li.fake.longitude                 = 20.55;
     li.fake.altitude                  = 0.0;
+
+    if (gDisable) {
+        li.enable = false;
+    }
 
     if (gUnsolicited) {
         li.unsolicited = true;

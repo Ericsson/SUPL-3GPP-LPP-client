@@ -117,6 +117,9 @@ static void client_request(Program& program, lpp::Client& client) {
 static void client_location_information(Program& program, lpp::Client& client) {
     if (!program.config.location_information.unsolicited) {
         return;
+    } else if (!program.config.location_information.enable) {
+        DEBUGF("location information is disabled");
+        return;
     }
 
     lpp::PeriodicLocationInformationDeliveryDescription description{};
@@ -155,18 +158,24 @@ static void client_initialize(Program& program, lpp::Client&) {
         client_location_information(program, client);
     };
 
-    program.client->on_request_location_information =
-        [&program](lpp::Client&, lpp::TransactionHandle const&, lpp::Message const&) {
-            INFOF("request location information");
+    program.client->on_request_location_information = [&program](lpp::Client&,
+                                                                 lpp::TransactionHandle const&,
+                                                                 lpp::Message const&) {
+        INFOF("request location information");
 
-            if (program.config.location_information.unsolicited) {
-                WARNF("unsolicited location information already requested");
-                WARNF("the request location information will be ignored");
-                return true;
-            }
+        if (program.config.location_information.unsolicited) {
+            WARNF("unsolicited location information already requested");
+            WARNF("the request location information will be ignored");
+            return true;
+        }
 
-            return false;
-        };
+        if (!program.config.location_information.enable) {
+            WARNF("ignoring request location information because location information is disabled");
+            return true;
+        }
+
+        return false;
+    };
 
     program.client->on_provide_location_information =
         [&program](lpp::Client&, lpp::LocationInformationDelivery const&,

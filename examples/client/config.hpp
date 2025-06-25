@@ -142,6 +142,7 @@ struct FakeLocationInformationConfig {
 };
 
 struct LocationInformationConfig {
+    bool enable;
     bool unsolicited;
     bool update_rate_forced;
     int  update_rate_ms;
