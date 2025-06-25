@@ -73,6 +73,11 @@ static void client_request(Program& program, lpp::Client& client) {
         !program.config.assistance_data.use_latest_cell_on_reconnect) {
         cell = *program.initial_cell;
         DEBUGF("using initial cell for first assistance data request");
+
+        // To ensure that a cell change event is triggered after the first
+        // assistance data request, we need to invalidate the current cell
+        // information by resetting the cell to the initial cell.
+        program.cell.reset(new supl::Cell{cell});
     }
 
     program.assistance_data_request_count++;
