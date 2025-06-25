@@ -17,6 +17,7 @@
 #define COLOR_MAGENTA "\033[35m"
 #define COLOR_CYAN "\033[36m"
 #define COLOR_WHITE "\033[37m"
+#define COLOR_FOREGROUND ""
 #define COLOR_BOLD "\033[1m"
 #define COLOR_UNDERLINE "\033[4m"
 #define COLOR_GREEN "\033[32m"
@@ -292,7 +293,7 @@ static char const* level_to_color(Level level) {
     case Level::Trace: return COLOR_CYAN;
     case Level::Verbose: return COLOR_BLUE;
     case Level::Debug: return COLOR_GREEN;
-    case Level::Info: return COLOR_WHITE;
+    case Level::Info: return COLOR_FOREGROUND;
     case Level::Notice: return COLOR_UNDERLINE COLOR_MAGENTA;
     case Level::Warning: return COLOR_UNDERLINE COLOR_YELLOW;
     case Level::Error: return COLOR_BOLD COLOR_RED;
