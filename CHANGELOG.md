@@ -1,5 +1,9 @@
 # Changelog
 
+## []
+
+- Initial cell will not be overwritten with the one from the control interface until the first RequestAssistanceData has been sent
+
 ## [4.0.21] 2025-07-16
 
 - Implement update_assistance_data
