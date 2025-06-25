@@ -7,7 +7,6 @@
 #include <ctime>
 #include <string>
 #include <unordered_map>
-#include <unordered_set>
 #include <vector>
 
 #define COLOR_RESET "\033[0m"
