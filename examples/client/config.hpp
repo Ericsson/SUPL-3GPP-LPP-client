@@ -24,6 +24,7 @@ struct LocationServerConfig {
     bool slp_host_imsi;
     bool shutdown_on_disconnect;
     bool hack_bad_transaction_initiator;
+    bool hack_never_send_abort;
 };
 
 struct IdentityConfig {
@@ -54,7 +55,8 @@ constexpr static OutputFormat OUTPUT_FORMAT_LOCATION = 1024;
 constexpr static OutputFormat OUTPUT_FORMAT_TEST     = 1llu << 63;
 constexpr static OutputFormat OUTPUT_FORMAT_ALL =
     OUTPUT_FORMAT_UBX | OUTPUT_FORMAT_NMEA | OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_CTRL |
-    OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_SPARTN | OUTPUT_FORMAT_LFR | OUTPUT_FORMAT_POSSIB;
+    OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_SPARTN | OUTPUT_FORMAT_LFR |
+    OUTPUT_FORMAT_POSSIB;
 
 struct OutputInterface {
     OutputFormat                format;

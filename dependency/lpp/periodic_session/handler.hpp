@@ -26,6 +26,7 @@ public:
     void try_destroy();
 
     void set_hack_bad_transaction_initiator(bool value) { mHackBadTransactionInitiator = value; }
+    void set_hack_never_send_abort(bool value) { mHackNeverSendAbort = value; }
 
 protected:
     // Response to a request transaction
@@ -60,6 +61,7 @@ protected:
 
     // HACK:
     bool mHackBadTransactionInitiator;
+    bool mHackNeverSendAbort;
 
     std::unordered_map<TransactionHandle, std::chrono::steady_clock::time_point>
                             mRequestTransactions;

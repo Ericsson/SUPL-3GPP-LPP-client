@@ -90,6 +90,7 @@ public:
     void set_capabilities(ProvideCapabilities const& capabilities);
 
     void set_hack_bad_transaction_initiator(bool value) { mHackBadTransactionInitiator = value; }
+    void set_hack_never_send_abort(bool value) { mHackNeverSendAbort = value; }
 
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
@@ -129,6 +130,7 @@ private:
 
     // HACK:
     bool mHackBadTransactionInitiator;
+    bool mHackNeverSendAbort;
 
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;
