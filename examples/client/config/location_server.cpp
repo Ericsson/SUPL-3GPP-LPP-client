@@ -46,6 +46,12 @@ static args::Flag gHackBadTransactionInitiator{
     "Hack to allow the transaction initiator in ProvideAssistanceData to be LocationServer",
     {"ls-hack-bad-transaction-initiator"},
 };
+static args::Flag gHackNeverSendAbort{
+    gGroup,
+    "hack-never-send-abort",
+    "Hack to disable sending Abort in assistance data handler",
+    {"ls-hack-never-send-abort"},
+};
 
 static void setup() {}
 
@@ -55,6 +61,7 @@ static void parse(Config* config) {
     ls.shutdown_on_disconnect         = false;
     ls.interface                      = nullptr;
     ls.hack_bad_transaction_initiator = gHackBadTransactionInitiator.Get();
+    ls.hack_never_send_abort          = gHackNeverSendAbort.Get();
 
     if (gDisable) {
         ls.enabled = false;

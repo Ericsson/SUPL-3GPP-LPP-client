@@ -48,6 +48,12 @@ static args::Flag gWaitForCell{
     "Wait for the cell information to be provided via the control interface",
     {"wait-for-cell"},
 };
+static args::Flag gUseLatestCellOnReconnect{
+    gCellInformation,
+    "use-latest-cell-on-reconnect",
+    "Use the latest cell information on reconnect",
+    {"use-latest-cell-on-reconnect"},
+};
 
 static args::Group gGnss{gGroup, "GNSS:"};
 static args::Flag  gGps{
@@ -143,9 +149,10 @@ static void setup() {
 }
 
 static void parse(Config* config) {
-    auto& ad         = config->assistance_data;
-    ad.enabled       = true;
-    ad.wait_for_cell = false;
+    auto& ad                        = config->assistance_data;
+    ad.enabled                      = true;
+    ad.wait_for_cell                = false;
+    ad.use_latest_cell_on_reconnect = false;
 
     ad.gps     = true;
     ad.glonass = true;
@@ -190,6 +197,10 @@ static void parse(Config* config) {
         } else {
             ad.cell = supl::Cell::lte(gMcc.Get(), gMnc.Get(), gTac.Get(), gCi.Get());
         }
+    }
+
+    if (gUseLatestCellOnReconnect) {
+        ad.use_latest_cell_on_reconnect = true;
     }
 
     if (gGps) ad.gps = false;
