@@ -21,7 +21,6 @@
 #include <lpp/provide_capabilities.hpp>
 
 #include <arpa/inet.h>
-#include <thread>
 #include <unistd.h>
 
 #ifdef DATA_TRACING

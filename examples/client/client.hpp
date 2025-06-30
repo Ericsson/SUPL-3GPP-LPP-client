@@ -14,6 +14,7 @@
 
 #include <lpp/client.hpp>
 #include <lpp/session.hpp>
+#include <lpp/location_information.hpp>
 #include <scheduler/periodic.hpp>
 
 #include "config.hpp"
