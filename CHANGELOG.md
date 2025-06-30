@@ -6,6 +6,8 @@
 - Added `--ls-hack-never-send-abort` to bypass incorrect abort handling in location server
 - Initial cell will be used on reconnect. Use `--use-latest-cell-on-reconnect` to re-enable the previous behaviour
 - Initial cell will not be overwritten with the one from the control interface until the first RequestAssistanceData has been sent
+- Fix bug where inital client message still had color even when `--log-no-color` was enabled
+- Change color used by `INFO` logs from `WHITE` to `FOREGROUND` 
 
 ## [4.0.21] 2025-07-16
 
