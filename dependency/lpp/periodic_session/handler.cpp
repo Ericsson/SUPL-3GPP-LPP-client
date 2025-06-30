@@ -195,6 +195,11 @@ void PeriodicSession::check_active_requests() {
     }
 
     for (auto& transaction : to_remove) {
+        if (mHackNeverSendAbort) {
+            WARNF("skipping abort for %s", transaction.to_string().c_str());
+            continue;
+        }
+
         auto abort = lpp::create_abort();
         transaction.send_with_end(abort);
         unregister_request(transaction);
@@ -212,6 +217,11 @@ void PeriodicSession::destroy() {
     }
 
     for (auto& transaction : to_remove) {
+        if (mHackNeverSendAbort) {
+            WARNF("skipping abort for %s", transaction.to_string().c_str());
+            continue;
+        }
+
         auto abort = lpp::create_abort();
         transaction.send_with_end(abort);
         unregister_request(transaction);
@@ -226,6 +236,11 @@ void PeriodicSession::destroy() {
     }
 
     for (auto& transaction : to_remove) {
+        if (mHackNeverSendAbort) {
+            WARNF("skipping abort for %s", transaction.to_string().c_str());
+            continue;
+        }
+
         auto abort = lpp::create_abort();
         transaction.send_with_end(abort);
         handle_periodic_ended(transaction);

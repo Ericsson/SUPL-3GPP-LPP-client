@@ -549,7 +549,7 @@ void Printer::value(::PosPayLoad const& value) {
     pop('}');
 }
 
-void Printer::value(::ULP_Velocity const& value) {
+void Printer::value(::ULP_Velocity const&) {
     appendf("{ /* unsupported */ }");
 }
 
@@ -565,15 +565,15 @@ void Printer::value(::SUPLPOS const& value) {
     pop('}');
 }
 
-void Printer::value(::RequestedAssistData const& value) {
+void Printer::value(::RequestedAssistData const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(::Position const& value) {
+void Printer::value(::Position const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(::Ver2_SUPL_POS_INIT_extension const& value) {
+void Printer::value(::Ver2_SUPL_POS_INIT_extension const&) {
     appendf("{ /* unsupported */ }");
 }
 
@@ -589,11 +589,11 @@ void Printer::value(::SUPLPOSINIT const& value) {
     pop('}');
 }
 
-void Printer::value(::StatusCode const& value) {
+void Printer::value(::StatusCode const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(::Ver2_SUPL_END_extension const& value) {
+void Printer::value(::Ver2_SUPL_END_extension const&) {
     appendf("{ /* unsupported */ }");
 }
 
@@ -606,11 +606,11 @@ void Printer::value(::SUPLEND const& value) {
     pop('}');
 }
 
-void Printer::value(::SETAuthKey const& value) {
+void Printer::value(::SETAuthKey const&) {
     appendf("{ /* unsupported */ }");
 }
 
-void Printer::value(::Ver2_SUPL_RESPONSE_extension const& value) {
+void Printer::value(::Ver2_SUPL_RESPONSE_extension const&) {
     appendf("{ /* unsupported */ }");
 }
 

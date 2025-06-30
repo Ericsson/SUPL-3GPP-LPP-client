@@ -96,6 +96,7 @@ Client::request_assistance_data(RequestAssistanceData const& request_assistance_
     auto periodic_session =
         std::make_shared<AssistanceDataHandler>(this, &mSession, handle, request_assistance_data);
     periodic_session->set_hack_bad_transaction_initiator(mHackBadTransactionInitiator);
+    periodic_session->set_hack_never_send_abort(mHackNeverSendAbort);
     if (!periodic_session->request_assistance_data()) {
         ERRORF("failed to request assistance data");
         return PeriodicSessionHandle::invalid();
