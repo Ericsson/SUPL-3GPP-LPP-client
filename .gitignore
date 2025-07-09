@@ -7,3 +7,4 @@ generated_files
 .vscode
 compile_commands.json
 *Zone.Identifier
+.cache
