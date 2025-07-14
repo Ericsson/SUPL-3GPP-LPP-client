@@ -299,6 +299,16 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         }
     }
 
+    if (p.rtcm && (formats & INPUT_FORMAT_RTCM) != 0){
+        p.rtcm->append(buffer, count);
+        for (;;) {
+            auto message = p.rtcm->try_parse();
+            if (!message) break;
+            if (p.input->print) message->print();
+            program.stream.push(std::move(message));
+        }
+    }
+
     if (p.ubx && (formats & INPUT_FORMAT_UBX) != 0) {
         p.ubx->append(buffer, count);
         for (;;) {
@@ -351,12 +361,14 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
 static void initialize_inputs(Program& program, InputConfig& config) {
     for (auto& input : config.inputs) {
         format::nmea::Parser*    nmea{};
+        format::rtcm::Parser*    rtcm{};
         format::ubx::Parser*     ubx{};
         format::ctrl::Parser*    ctrl{};
         format::lpp::UperParser* lpp_uper{};
         format::lpp::UperParser* lpp_uper_pad{};
 
         if ((input.format & INPUT_FORMAT_NMEA) != 0) nmea = new format::nmea::Parser{};
+        if ((input.format & INPUT_FORMAT_RTCM) != 0) rtcm = new format::rtcm::Parser{};
         if ((input.format & INPUT_FORMAT_UBX) != 0) ubx = new format::ubx::Parser{};
         if ((input.format & INPUT_FORMAT_CTRL) != 0) ctrl = new format::ctrl::Parser{};
         if ((input.format & INPUT_FORMAT_LPP_UPER) != 0) lpp_uper = new format::lpp::UperParser{};
@@ -383,18 +395,20 @@ static void initialize_inputs(Program& program, InputConfig& config) {
         DEBUGF("input  %p: %s%s%s%s%s %s[%" PRIu64 "] | stages=%s", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
+               (input.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
                (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
                tag, stage_str.c_str());
 
-        if (!nmea && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
+        if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
             WARNF("-- skipping input %p, no format specified", input.interface.get());
             continue;
         }
 
         std::string event_name = input.interface->event_name();
         if (nmea) event_name += "+nmea";
+        if (rtcm) event_name += "+rtcm";
         if (ubx) event_name += "+ubx";
         if (ctrl) event_name += "+ctrl";
         if (lpp_uper) event_name += "+lpp-uper";
@@ -406,6 +420,7 @@ static void initialize_inputs(Program& program, InputConfig& config) {
         context->name  = std::move(event_name);
         context->input = &input;
         if (nmea) context->nmea = std::unique_ptr<format::nmea::Parser>(nmea);
+        if (rtcm) context->rtcm = std::unique_ptr<format::rtcm::Parser>(rtcm);
         if (ubx) context->ubx = std::unique_ptr<format::ubx::Parser>(ubx);
         if (ctrl) context->ctrl = std::unique_ptr<format::ctrl::Parser>(ctrl);
         if (lpp_uper) context->lpp_uper = std::unique_ptr<format::lpp::UperParser>(lpp_uper);
