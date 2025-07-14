@@ -9,6 +9,8 @@
 #include <format/lpp/uper_parser.hpp>
 #include <format/nmea/message.hpp>
 #include <format/nmea/parser.hpp>
+#include <format/rtcm/message.hpp>
+#include <format/rtcm/parser.hpp>
 #include <format/ubx/message.hpp>
 #include <format/ubx/parser.hpp>
 
@@ -24,6 +26,7 @@ struct InputContext {
     std::string                              name;
     InputInterface const*                    input{};
     std::unique_ptr<format::nmea::Parser>    nmea{};
+    std::unique_ptr<format::rtcm::Parser>    rtcm{};
     std::unique_ptr<format::ubx::Parser>     ubx{};
     std::unique_ptr<format::ctrl::Parser>    ctrl{};
     std::unique_ptr<format::lpp::UperParser> lpp_uper{};
