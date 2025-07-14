@@ -2,6 +2,7 @@
 add_subdirectory("helper")
 add_subdirectory("ubx")
 add_subdirectory("nmea")
+add_subdirectory("rtcm")
 add_subdirectory("nav")
 add_subdirectory("ctrl")
 add_subdirectory("at")
