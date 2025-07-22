@@ -497,6 +497,12 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
     pdu_message.sETCapabilities = encode_setcapabilities(message.sETCapabilities);
     pdu_message.locationId      = encode_locationid(message.locationID);
 
+    if(message.payloads.size() > 0) {
+        auto suplpos = helper::asn1_allocate<SUPLPOS>();
+        suplpos->posPayLoad = encode_pospayload(message.payloads);
+        pdu_message.sUPLPOS = suplpos;
+    }
+
     print(loglet::Level::Verbose, ulp_pdu);
     return encode_uper(ulp_pdu);
 }
