@@ -79,6 +79,8 @@ static void client_request(Program& program, lpp::Client& client) {
         program.cell.reset(new supl::Cell{cell});
     }
 
+    DEBUGF("request assistance data (GNSS)");
+
     program.assistance_data_request_count++;
     program.assistance_data_session = client.request_assistance_data({
         program.config.assistance_data.type,
@@ -109,6 +111,34 @@ static void client_request(Program& program, lpp::Client& client) {
         },
         [&](lpp::Client&) {
             ERRORF("request assistance data failed");
+        },
+    });
+}
+
+static void client_request_assisted_gnss(Program& program, lpp::Client& client) {
+    if (!program.cell) {
+        ERRORF("internal error: no cell information");
+        return;
+    }
+
+    DEBUGF("request assistance data (AGNSS)");
+
+    auto cell = *program.cell.get();
+    client.request_assistance_data({
+        lpp::SingleRequestAssistanceData::Type::AGNSS,
+        cell,
+        {
+            program.config.assistance_data.gps,
+            program.config.assistance_data.glonass,
+            program.config.assistance_data.galileo,
+            program.config.assistance_data.beidou,
+        },
+        [&program](lpp::Client&, lpp::Message message) {
+            INFOF("[AGNSS] provide assistance data");
+            program.stream.push(std::move(message));
+        },
+        [&](lpp::Client&) {
+            ERRORF("[AGNSS] request assistance data failed");
         },
     });
 }
@@ -197,6 +227,10 @@ static void client_initialize(Program& program, lpp::Client&) {
             return false;
         };
 
+    if (program.config.assistance_data.request_assisted_gnss) {
+        client_request_assisted_gnss(program, *program.client);
+    }
+
     // Configure Capaiblities
     lpp::ProvideCapabilities capabilities{};
     capabilities.gnss.gps     = program.config.assistance_data.gps;
@@ -204,9 +238,9 @@ static void client_initialize(Program& program, lpp::Client&) {
     capabilities.gnss.galileo = program.config.assistance_data.galileo;
     capabilities.gnss.beidou  = program.config.assistance_data.beidou;
 
-    if (program.config.assistance_data.type == lpp::RequestAssistanceData::Type::OSR) {
+    if (program.config.assistance_data.type == lpp::PeriodicRequestAssistanceData::Type::OSR) {
         capabilities.assistance_data.osr = true;
-    } else if (program.config.assistance_data.type == lpp::RequestAssistanceData::Type::SSR) {
+    } else if (program.config.assistance_data.type == lpp::PeriodicRequestAssistanceData::Type::SSR) {
         capabilities.assistance_data.ssr = true;
     }
 

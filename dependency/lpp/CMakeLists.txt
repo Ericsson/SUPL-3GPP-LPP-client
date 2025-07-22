@@ -12,6 +12,7 @@ add_library(dependency_lpp
     "periodic_session/handler.cpp"
     "periodic_session/assistance_data.cpp"
     "location_information_delivery.cpp"
+    "single_session.cpp"
 )
 add_library(dependency::lpp ALIAS dependency_lpp)
 target_include_directories(dependency_lpp PUBLIC "include/")

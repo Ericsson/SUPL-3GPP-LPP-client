@@ -21,16 +21,12 @@ static args::Flag  gDisable{
     "Don't request assistance data",
      {"ad-disable"},
 };
-
-#if 0
-// TODO(ewasjon): Add support for requesting assisted GNSS data first
 static args::Flag gAssistedGnss{
     gGroup,
     "assisted-gnss",
-    "Request assisted GNSS data first",
+    "Request A-GNSS data first",
     {"ad-assisted-gnss"},
 };
-#endif
 
 static args::ValueFlag<std::string> gType{
     gGroup, "type", "Type of assistance data to request", {"ad-type"}, args::Options::Single,
@@ -172,6 +168,7 @@ static void parse(Config* config) {
     ad.enabled                      = true;
     ad.wait_for_cell                = false;
     ad.use_latest_cell_on_reconnect = false;
+    ad.request_assisted_gnss        = false;
 
     ad.gps     = true;
     ad.glonass = true;
@@ -211,7 +208,7 @@ static void parse(Config* config) {
                 "cell information is required, use `--mcc`, `--mnc`, `--tac`, `--ci`");
         }
 
-        if(gIsNr && gIsGsm) {
+        if (gIsNr && gIsGsm) {
             throw args::RequiredError("cell information cannot be specified for NR and GSM");
         }
 
@@ -228,6 +225,10 @@ static void parse(Config* config) {
         ad.use_latest_cell_on_reconnect = true;
     }
 
+    if (gAssistedGnss) {
+        ad.request_assisted_gnss = true;
+    }
+
     if (gGps) ad.gps = false;
     if (gGlonass) ad.glonass = false;
     if (gGalileo) ad.galileo = false;
@@ -235,9 +236,9 @@ static void parse(Config* config) {
 
     if (gType) {
         if (gType.Get() == "OSR" || gType.Get() == "osr") {
-            ad.type = lpp::RequestAssistanceData::Type::OSR;
+            ad.type = lpp::PeriodicRequestAssistanceData::Type::OSR;
         } else if (gType.Get() == "SSR" || gType.Get() == "ssr") {
-            ad.type = lpp::RequestAssistanceData::Type::SSR;
+            ad.type = lpp::PeriodicRequestAssistanceData::Type::SSR;
         } else {
             throw args::ParseError("invalid assistance data type: " + gType.Get());
         }
@@ -318,7 +319,8 @@ static void dump(AssistanceDataConfig const& config) {
     DEBUGF("galileo: %s", config.galileo ? "enabled" : "disabled");
     DEBUGF("beidou: %s", config.beidou ? "enabled" : "disabled");
 
-    DEBUGF("type: %s", config.type == lpp::RequestAssistanceData::Type::OSR ? "OSR" : "SSR");
+    DEBUGF("type: %s",
+           config.type == lpp::PeriodicRequestAssistanceData::Type::OSR ? "OSR" : "SSR");
 
     DEBUGF("rtk_observations: %ld", config.rtk_observations);
     DEBUGF("rtk_residuals: %ld", config.rtk_residuals);

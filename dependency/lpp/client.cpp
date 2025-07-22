@@ -2,8 +2,10 @@
 #include "location_information_delivery.hpp"
 #include "lpp.hpp"
 #include "lpp/assistance_data.hpp"
+#include "lpp/messages/request_assistance_data.hpp"
 #include "lpp/provide_capabilities.hpp"
 #include "periodic_session/assistance_data.hpp"
+#include "single_session.hpp"
 
 #include <loglet/loglet.hpp>
 
@@ -75,6 +77,7 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
     };
 
     mHackBadTransactionInitiator = false;
+    mHackNeverSendAbort = false;
 }
 
 Client::~Client() {
@@ -84,7 +87,7 @@ Client::~Client() {
 }
 
 PeriodicSessionHandle
-Client::request_assistance_data(RequestAssistanceData const& request_assistance_data) {
+Client::request_assistance_data(PeriodicRequestAssistanceData const& request_assistance_data) {
     VSCOPE_FUNCTION();
 
     PeriodicSessionHandle handle{};
@@ -136,6 +139,45 @@ bool Client::is_periodic_session_valid(PeriodicSessionHandle const& session) con
     return it->second->is_valid();
 }
 
+bool Client::request_assistance_data(SingleRequestAssistanceData const& request_assistance_data) {
+    VSCOPE_FUNCTION();
+
+    messages::RequestAssistanceData message_description{};
+    message_description.cell             = request_assistance_data.cell;
+    message_description.periodic_session = PeriodicSessionHandle::invalid();
+    message_description.gps              = request_assistance_data.gnss.gps;
+    message_description.glonass          = request_assistance_data.gnss.glonass;
+    message_description.galileo          = request_assistance_data.gnss.galileo;
+    message_description.bds              = request_assistance_data.gnss.beidou;
+
+    if (request_assistance_data.type == SingleRequestAssistanceData::Type::AGNSS) {
+        message_description.reference_time = 1;
+        message_description.ionospheric_model = 1;
+    } else {
+        WARNF("unknown RequestAssistanceData type");
+        return false;
+    }
+
+    auto message = messages::create_request_assistance_data(message_description);
+    if (!message) {
+        ERRORF("failed to create request assistance data message");
+        return false;
+    }
+
+    auto transaction = mSession.create_transaction();
+    if (!transaction.is_valid()) {
+        ERRORF("failed to create transaction");
+        return false;
+    }
+
+    transaction.send(message);
+
+    auto session = std::make_shared<SingleRequestAssistanceSession>(
+        this, &mSession, transaction, std::move(request_assistance_data));
+    session->set_hack_never_send_abort(mHackNeverSendAbort);
+    return add_single_session(session);
+}
+
 void Client::schedule(scheduler::Scheduler* scheduler) {
     ASSERT(scheduler, "scheduler is null");
     ASSERT(!mScheduler, "scheduler is already set");
@@ -149,6 +191,12 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
         }
 
         mSessionsToDestroy.clear();
+
+        for (auto transaction : mSingleSessionsToDestroy) {
+            remove_single_session(transaction);
+        }
+
+        mSingleSessionsToDestroy.clear();
     });
 }
 
@@ -166,6 +214,7 @@ void Client::cancel() {
 
     mRequestTransactions.clear();
     mPeriodicTransactions.clear();
+    mSingleSessions.clear();
     mLocationInformationDeliveries.clear();
     mNextSessionId = 1;
 }
@@ -192,9 +241,29 @@ bool Client::deallocate_periodic_session_handle(PeriodicSessionHandle const& han
     return true;
 }
 
+bool Client::add_single_session(Sah session) {
+    ASSERT(session, "session is null");
+    ASSERT(session->transaction().is_valid(), "transaction is invalid");
+    mSingleSessions[session->transaction()] = session;
+    DEBUGF("added single session with transaction %s", session->transaction().to_string().c_str());
+    return true;
+}
+
+bool Client::remove_single_session(TransactionHandle const& handle) {
+    if (!handle.is_valid()) return false;
+    mSingleSessions.erase(handle);
+    DEBUGF("removed single session with transaction %s", handle.to_string().c_str());
+    return true;
+}
+
 void Client::want_to_be_destroyed(PeriodicSessionHandle const& handle) {
     VSCOPE_FUNCTION();
     mSessionsToDestroy.push_back(handle);
+}
+
+void Client::single_session_want_to_be_destroyed(TransactionHandle const& handle) {
+    VSCOPE_FUNCTION();
+    mSingleSessionsToDestroy.push_back(handle);
 }
 
 void Client::process_message(lpp::TransactionHandle const& transaction, lpp::Message message) {
@@ -392,6 +461,16 @@ PeriodicSession* Client::find_by_periodic_transaction_handle(TransactionHandle c
     }
 }
 
+SingleSession*
+Client::find_single_session_by_request_transaction_handle(TransactionHandle const& transaction) {
+    auto it = mSingleSessions.find(transaction);
+    if (it != mSingleSessions.end()) {
+        return it->second.get();
+    } else {
+        return nullptr;
+    }
+}
+
 void Client::process_provide_assistance_data(lpp::TransactionHandle const& transaction,
                                              lpp::Message                  message) {
     VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
@@ -402,6 +481,12 @@ void Client::process_provide_assistance_data(lpp::TransactionHandle const& trans
     auto periodic_session = find_by_request_transaction_handle(transaction);
     if (periodic_session) {
         periodic_session->message(transaction, std::move(message));
+        return;
+    }
+
+    auto single_session = find_single_session_by_request_transaction_handle(transaction);
+    if (single_session) {
+        single_session->message(transaction, std::move(message));
         return;
     }
 
@@ -444,6 +529,12 @@ void Client::process_end_transaction(lpp::TransactionHandle const& transaction) 
     auto periodic_session = find_by_request_transaction_handle(transaction);
     if (periodic_session) {
         periodic_session->end(transaction);
+    }
+
+    auto single_session = find_single_session_by_request_transaction_handle(transaction);
+    if (single_session) {
+        // When a single session ends, it is destroyed
+        remove_single_session(transaction);
     }
 
     periodic_session = find_by_periodic_transaction_handle(transaction);

@@ -107,8 +107,9 @@ struct AssistanceDataConfig {
     bool enabled;
     bool wait_for_cell;
     bool use_latest_cell_on_reconnect;
+    bool request_assisted_gnss;
 
-    lpp::RequestAssistanceData::Type type;
+    lpp::PeriodicRequestAssistanceData::Type type;
     supl::Cell                       cell;
 
     bool gps;

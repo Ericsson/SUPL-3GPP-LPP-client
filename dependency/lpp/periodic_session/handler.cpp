@@ -19,6 +19,7 @@ std::string PeriodicSessionHandle::to_string() const {
 PeriodicSession::PeriodicSession(Client* client, Session* session, PeriodicSessionHandle handle)
     : mClient(client), mSession(session), mHandle(handle), mPeriodicTask{std::chrono::seconds(5)} {
     mHackBadTransactionInitiator = false;
+    mHackNeverSendAbort          = false;
     mPeriodicTask.callback       = [this]() {
         check_active_requests();
     };
