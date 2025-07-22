@@ -42,6 +42,12 @@ static args::Flag gIsNr{
     "The cell specified is a 5G NR cell",
     {"nr-cell"},
 };
+static args::Flag gIsGsm{
+    gCellInformation,
+    "gsm",
+    "The cell specified is a 2G GSM cell",
+    {"gsm-cell"},
+};
 static args::Flag gWaitForCell{
     gCellInformation,
     "wait-for-cell",
@@ -192,8 +198,14 @@ static void parse(Config* config) {
                 "cell information is required, use `--mcc`, `--mnc`, `--tac`, `--ci`");
         }
 
+        if(gIsNr && gIsGsm) {
+            throw args::RequiredError("cell information cannot be specified for NR and GSM");
+        }
+
         if (gIsNr) {
             ad.cell = supl::Cell::nr(gMcc.Get(), gMnc.Get(), gTac.Get(), gCi.Get());
+        } else if (gIsGsm) {
+            ad.cell = supl::Cell::gsm(gMcc.Get(), gMnc.Get(), gTac.Get(), gCi.Get());
         } else {
             ad.cell = supl::Cell::lte(gMcc.Get(), gMnc.Get(), gTac.Get(), gCi.Get());
         }
@@ -217,7 +229,9 @@ static void parse(Config* config) {
             throw args::ParseError("invalid assistance data type: " + gType.Get());
         }
     } else {
-        throw args::RequiredError("assistance data type is required, use `--ad-type`");
+        if (ad.enabled) {
+            throw args::RequiredError("assistance data type is required, use `--ad-type`");
+        }
     }
 
     if (gOsrObservations) ad.rtk_observations = gOsrObservations.Get();

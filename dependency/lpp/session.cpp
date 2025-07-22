@@ -237,7 +237,7 @@ NextState Session::state_connect() {
         return NextState::make().next(State::DISCONNECTED);
     }
 
-    mSession = new supl::Session(supl::VERSION_2_0, mIdentity);
+    mSession = new supl::Session(supl::VERSION_2_1, mIdentity);
     if (!mSession->connect(mConnectionHost, mConnectionPort, mConnectionInterface)) {
         ERRORF("failed to connect to %s:%d (%s)", mConnectionHost.c_str(), mConnectionPort,
                mConnectionInterface.c_str());
@@ -287,10 +287,12 @@ NextState Session::state_handshake_send() {
     VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
+    // TODO: Create a SETCapabilities object with all the capabilities in the Session
     supl::SETCapabilities capabilities{};
     capabilities.posTechnology                         = {};
     capabilities.posTechnology.agpsSETassisted         = true;
     capabilities.posTechnology.agpsSETBased            = true;
+    capabilities.posTechnology.autonomousGPS           = true;
     capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
     capabilities.posProtocol.lpp.enabled               = true;
     capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;
@@ -334,6 +336,7 @@ NextState Session::state_posinit() {
     capabilities.posTechnology                         = {};
     capabilities.posTechnology.agpsSETassisted         = true;
     capabilities.posTechnology.agpsSETBased            = true;
+    capabilities.posTechnology.autonomousGPS           = true;
     capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
     capabilities.posProtocol.lpp.enabled               = true;
     capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;

@@ -284,8 +284,15 @@ static TrackingAreaCodeNR_t encode_trackingAreaCodeNR(uint64_t tac) {
 
 static CellInfo encode_cellinfo(Cell cell) {
     if (cell.type == Cell::Type::GSM) {
-        // TODO: Unsupported
-        UNIMPLEMENTED("GSM is not supported");
+        CellInfo result{};
+        result.present               = CellInfo_PR_gsmCell;
+        result.choice.gsmCell.refMCC = cell.data.gsm.mcc;
+        result.choice.gsmCell.refMNC = cell.data.gsm.mnc;
+        result.choice.gsmCell.refLAC = cell.data.gsm.lac;
+        result.choice.gsmCell.refCI  = cell.data.gsm.ci;
+        result.choice.gsmCell.tA     = NULL;
+        result.choice.gsmCell.nMR    = NULL;
+        return result;
     } else if (cell.type == Cell::Type::LTE) {
         CellInfo result{};
         result.present                                = CellInfo_PR_ver2_CellInfo_extension;

@@ -2,6 +2,7 @@
 
 ## []
 
+- Support to specify if the cell is GSM using `--gsm-cell`
 - Added `--li-disable` to disable location information
 - Added `--ls-hack-never-send-abort` to bypass incorrect abort handling in location server
 - Initial cell will be used on reconnect. Use `--use-latest-cell-on-reconnect` to re-enable the previous behaviour

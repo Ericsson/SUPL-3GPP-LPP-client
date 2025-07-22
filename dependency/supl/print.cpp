@@ -12,9 +12,12 @@
 #include <MAC.h>
 #include <MCC.h>
 #include <MNC.h>
+#include <PosProtocolVersion3GPP.h>
+#include <PosProtocolVersion3GPP2.h>
 #include <SetSessionID.h>
 #include <SlpSessionID.h>
 #include <ULP-PDU.h>
+#include <Ver2-PosProtocol-extension.h>
 #include <Version.h>
 #pragma GCC diagnostic pop
 
@@ -92,6 +95,8 @@ public:
     void value(::SETCapabilities const& value);
     void value(::LocationId const& value);
     void value(::Ver2_SUPL_START_extension const& value);
+    void value(::PosProtocolVersion3GPP const& value);
+    void value(::PosProtocolVersion3GPP2 const& value);
 
     void value(::PosTechnology const& x);
     void value(::Ver2_PosTechnology_extension const& x);
@@ -142,6 +147,12 @@ public:
         appendf("\"%s\": ", field_name);
         value(field_value);
         mPreviousField = true;
+    }
+
+    template <typename T, typename U>
+    void field_cast(char const* field_name, U field_value) {
+        T field_value_cast = static_cast<T>(field_value);
+        field<T>(field_name, field_value_cast);
     }
 
     template <typename T>
@@ -241,7 +252,12 @@ void Printer::value(::SLPAddress const& x) {
     switch (static_cast<long>(x.present)) {
     case SLPAddress_PR_NOTHING: field("type", "nothing"); break;
     case SLPAddress_PR_iPAddress: field("ip-address", x.choice.iPAddress); break;
-    case SLPAddress_PR_fQDN: field("type", "unsupported"); break;
+    case SLPAddress_PR_fQDN: {
+        char buffer[256];
+        memcpy(buffer, x.choice.fQDN.buf, x.choice.fQDN.size);
+        buffer[x.choice.fQDN.size] = 0;
+        field("fqdn", buffer);
+    } break;
     default: field("type", "unsupported"); break;
     }
     pop('}');
@@ -275,11 +291,11 @@ void Printer::value(::UlpMessage const& x) {
 
 void Printer::value(::SUPLINIT const& x) {
     push('{');
-    field("pos-method", x.posMethod);
+    field_cast<::PosMethod>("pos-method", x.posMethod);
     field_opt("notification", x.notification);
     field_opt("slp-address", x.sLPAddress);
     field_opt("qop", x.qoP);
-    field("slp-mode", x.sLPMode);
+    field_cast<::SLPMode>("slp-mode", x.sLPMode);
     field_opt("mac", x.mAC);
     field_opt("key-identity", x.keyIdentity);
     field_opt("ver2-supl-init-extension", x.ver2_SUPL_INIT_extension);
@@ -349,7 +365,7 @@ void Printer::value(::SUPLSTART const& x) {
 void Printer::value(::SETCapabilities const& x) {
     push('{');
     field("pos-technology", x.posTechnology);
-    field("pref-method", x.prefMethod);
+    field_cast<::PrefMethod>("pref-method", x.prefMethod);
     field("pos-protocol", x.posProtocol);
     field_opt("ver2-set-capabilities-extension", x.ver2_SETCapabilities_extension);
     pop('}');
@@ -392,16 +408,32 @@ void Printer::value(::PosProtocol const& x) {
     pop('}');
 }
 
-void Printer::value(::Ver2_PosProtocol_extension const&) {
+void Printer::value(::Ver2_PosProtocol_extension const& x) {
     push('{');
-
+    field("lpp", x.lpp);
+    field_opt("pos-protocol-version-lpp", x.posProtocolVersionLPP);
+    field_opt("pos-protocol-version-rrc", x.posProtocolVersionRRC);
+    field_opt("pos-protocol-version-rrlp", x.posProtocolVersionRRLP);
+    field_opt("pos-protocol-version-tia801", x.posProtocolVersionTIA801);
     pop('}');
+}
+
+void Printer::value(::PosProtocolVersion3GPP const& x) {
+    push('{');
+    field("majorVersionField", x.majorVersionField);
+    field("technicalVersionField", x.technicalVersionField);
+    field("editorialVersionField", x.editorialVersionField);
+    pop('}');
+}
+
+void Printer::value(::PosProtocolVersion3GPP2 const& x) {
+    appendf("{ /* unsupported */ }");
 }
 
 void Printer::value(::LocationId const& x) {
     push('{');
     field("cell-info", x.cellInfo);
-    field("status", x.status);
+    field_cast<::Status>("status", x.status);
     pop('}');
 }
 
@@ -616,7 +648,7 @@ void Printer::value(::Ver2_SUPL_RESPONSE_extension const&) {
 
 void Printer::value(::SUPLRESPONSE const& value) {
     push('{');
-    field("pos-method", value.posMethod);
+    field_cast<::PosMethod>("pos-method", value.posMethod);
     field_opt("spl-address", value.sLPAddress);
     field_opt("set-auth-key", value.sETAuthKey);
     field_opt("key-identity-4", value.keyIdentity4);
