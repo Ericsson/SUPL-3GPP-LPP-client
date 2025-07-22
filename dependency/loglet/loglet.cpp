@@ -342,10 +342,10 @@ void logf(LogModule const* module, Level level, char const* format, ...) {
     va_end(args);
 }
 
+static char gLogBuffer[1024 * 1024];
 void vlogf(LogModule const* module, Level level, char const* format, va_list args) {
-    char buffer[32 * 1024];
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    log(module, level, buffer);
+    vsnprintf(gLogBuffer, sizeof(gLogBuffer), format, args);
+    log(module, level, gLogBuffer);
 }
 
 void vtracef(LogModule const* module, char const* format, va_list args) {
