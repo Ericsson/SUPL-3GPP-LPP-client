@@ -18,9 +18,13 @@ void RtcmPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
 void RtcmOutput::inspect(streamline::System&, DataType const& message) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto& data = message->data();
+    auto size = data.size();
     for (auto& output : mOutput.outputs) {
-        if ((output.format & OUTPUT_FORMAT_RTCM) != 0) {
-            output.interface->write(data.data(), data.size());
+        if (!output.rtcm_support()) continue;
+        if (output.print) {
+            XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %zd bytes", size);
         }
+
+        output.interface->write(data.data(), size);
     }
 }
