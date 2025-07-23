@@ -33,6 +33,7 @@
 #include "processor/nmea.hpp"
 #include "processor/test.hpp"
 #include "processor/ubx.hpp"
+#include "processor/rtcm.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
@@ -460,9 +461,9 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     bool ubx_output      = false;
     bool ctrl_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
-    // TODO(ewasjon): bool rtcm_output   = false;
+    bool rtcm_output     = false;
 #ifdef DATA_TRACING
-    bool possib_output = false;
+    bool possib_output   = false;
 #endif
     bool location_output = false;
     bool test_output     = false;
@@ -513,18 +514,18 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                output.include_tag_mask, otag_str.c_str(), output.exclude_tag_mask,
                stage_str.c_str());
 
-        if (output.lpp_xer_support()) lpp_xer_output = true;
+        if (output.lpp_xer_support()) lpp_xer_output   = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
-        if (output.nmea_support()) nmea_output = true;
-        if (output.ubx_support()) ubx_output = true;
-        if (output.ctrl_support()) ctrl_output = true;
+        if (output.nmea_support()) nmea_output         = true;
+        if (output.ubx_support()) ubx_output           = true;
+        if (output.ctrl_support()) ctrl_output         = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
-        // TODO(ewasjon): if (output.rtcm_support()) rtcm_output = true;
+        if (output.rtcm_support()) rtcm_output         = true;
 #ifdef DATA_TRACING
-        if (output.possib_support()) possib_output = true;
+        if (output.possib_support()) possib_output     = true;
 #endif
         if (output.location_support()) location_output = true;
-        if (output.test_support()) test_output = true;
+        if (output.test_support()) test_output         = true;
 
         if (!output.stages.empty()) {
             auto last_stage = std::unique_ptr<OutputStage>(
@@ -552,6 +553,7 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     if (lpp_uper_output) program.stream.add_inspector<LppUperOutput>(config);
     if (nmea_output) program.stream.add_inspector<NmeaOutput>(config);
     if (ubx_output) program.stream.add_inspector<UbxOutput>(config);
+    if (rtcm_output) program.stream.add_inspector<RtcmOutput>(config);
     if (ctrl_output) program.stream.add_inspector<CtrlOutput>(config);
 #ifdef DATA_TRACING
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
@@ -698,6 +700,7 @@ static void setup_tokoro(Program& program) {
         auto tokoro = program.stream.add_inspector<Tokoro>(
             program.config.output, program.config.tokoro, program.scheduler);
         program.stream.add_inspector<TokoroEphemerisUbx>(*tokoro);
+        program.stream.add_inspector<TokoroEphemerisRtcm>(*tokoro);
         program.stream.add_inspector<TokoroLocation>(*tokoro);
     }
 #endif
