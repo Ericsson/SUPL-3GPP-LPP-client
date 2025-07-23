@@ -1,3 +1,4 @@
+#include "format/rtcm/1019.hpp"
 #if defined(INCLUDE_GENERATOR_TOKORO)
 #include "tokoro.hpp"
 
@@ -103,6 +104,76 @@ void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message) {
     } else if (sfrbx->gnss_id() == 3) {
         handle_bds(sfrbx);
     }
+}
+
+//
+//
+//
+
+void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_message) {
+    VSCOPE_FUNCTION();
+
+    ephemeris::GpsEphemeris ephemeris{};
+    ephemeris.prn = rtcm_message->prn;
+    ephemeris.week_number = rtcm_message->week;
+    ephemeris.ca_or_p_on_l2 = rtcm_message->code_on_l2;
+    ephemeris.ura_index = rtcm_message->SV_ACCURACY;
+    ephemeris.sv_health = rtcm_message->SV_HEALTH;
+    ephemeris.lpp_iod = rtcm_message->iode;
+    ephemeris.iodc = rtcm_message->iodc;
+    ephemeris.iode = rtcm_message->iode;
+    // ephemeris.aodo = rtcm_message->;
+    ephemeris.toc = rtcm_message->t_oc;
+    ephemeris.toe = rtcm_message->t_oe;
+    ephemeris.tgd = rtcm_message->t_GD;
+    ephemeris.af2 = rtcm_message->a_f2;
+    ephemeris.af1 = rtcm_message->a_f1;
+    ephemeris.af0 = rtcm_message->a_f0;
+    ephemeris.crc = rtcm_message->C_rc;
+    ephemeris.crs = rtcm_message->C_rs;
+    ephemeris.cuc = rtcm_message->C_uc;
+    ephemeris.cus = rtcm_message->C_us;
+    ephemeris.cic = rtcm_message->C_ic;
+    ephemeris.cis = rtcm_message->C_is;
+    ephemeris.e = rtcm_message->e;
+    ephemeris.m0 = rtcm_message->M_0;
+    ephemeris.delta_n = rtcm_message->dn; // Really should rename this one
+    ephemeris.a = rtcm_message->sqrt_A;
+    ephemeris.i0 = rtcm_message->i_0;
+    ephemeris.omega0 = rtcm_message->OMEGA_0;
+    ephemeris.omega = rtcm_message->omega;
+    ephemeris.omega_dot = rtcm_message->OMEGADOT;
+    ephemeris.idot = rtcm_message->idot;
+    ephemeris.fit_interval_flag = rtcm_message->fit;
+    ephemeris.l2_p_data_flag = rtcm_message->L2_P_data_flag;
+
+    mTokoro.process_ephemeris(ephemeris);
+}
+
+
+void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019Message* rtcm_message) {
+    VSCOPE_FUNCTION();
+    if (!mTokoro.is_gps_enabled()) return;
+    if (rtcm_message->type() == 1019) {
+        handle_gps_lnav(rtcm_message);
+    } else {
+        VERBOSEF("not rtcm 1019 but rtcm %d", rtcm_message-> type());
+    }
+}
+
+
+void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message) {
+    VSCOPE_FUNCTION();
+    auto ptr = message.get();
+    if (!ptr) return;
+
+    // Could cast to message and check type instead, migth be more reliable??
+    auto rtcm_message = dynamic_cast<format::rtcm::Rtcm1019Message*>(ptr);
+    if (rtcm_message) handle_gps(rtcm_message);
+    // auto rtcm1042 = dynamic_cast<format::rtcm::Rtcm1042Message*>(ptr);
+    // if (rtcm1042) handle_bds(rtcm1042);
+    // auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046Message*>(ptr);
+    // if (rtcm1046) handle_gal(rtcm1046);
 }
 
 //

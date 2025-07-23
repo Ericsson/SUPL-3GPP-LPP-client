@@ -1,5 +1,6 @@
 #pragma once
 
+#include "format/rtcm/1019.hpp"
 #if !defined(INCLUDE_GENERATOR_TOKORO)
 #error "INCLUDE_GENERATOR_TOKORO must be defined"
 #endif
@@ -21,6 +22,7 @@
 #include "config.hpp"
 #include "lpp.hpp"
 #include "ubx.hpp"
+#include "rtcm.hpp"
 
 class Tokoro : public streamline::Inspector<lpp::Message> {
 public:
@@ -66,6 +68,30 @@ public:
 
     void handle_bds_d1(format::ubx::RxmSfrbx* sfrbx);
     void handle_bds(format::ubx::RxmSfrbx* sfrbx);
+
+    void inspect(streamline::System&, DataType const& message) override;
+
+private:
+    Tokoro&                                    mTokoro;
+    format::nav::gps::lnav::EphemerisCollector mGpsCollector;
+    format::nav::gal::InavEphemerisCollector   mGalCollector;
+    format::nav::D1Collector                   mBdsCollector;
+};
+
+class TokoroEphemerisRtcm : public streamline::Inspector<RtcmMessage> {
+public:
+    TokoroEphemerisRtcm(Tokoro& tokoro) : mTokoro(tokoro) {}
+
+    void handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_message);
+    void handle_gps(format::rtcm::Rtcm1019Message* rtcm_message);
+
+    /* Not implemented messages yet
+    void handle_gal_inav(format::rtcm::Rtcm1046Message* rtcm_message);
+    void handle_gal(format::rtcm::Rtcm1046Message* rtcm_message);
+
+    void handle_bds_d1(format::rtcm::Rtcm1042Message* rtcm_message);
+    void handle_bds(format::rtcm::Rtcm1042Message* rtcm_message);
+    */
 
     void inspect(streamline::System&, DataType const& message) override;
 
