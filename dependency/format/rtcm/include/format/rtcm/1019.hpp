@@ -5,28 +5,31 @@
 #include <memory>
 
 #include <time/tai.hpp>
-#include <datafields.hpp>
+#include "datafields.hpp"
+
+// TODO: Put headers for messages in /messages folder
+// Also maybe remove Message in Rtcm1019Message to be more uniform with other formats
 
 namespace format {
 namespace rtcm{
 
-class RTCM1019Message final : public Message {
+class Rtcm1019Message final : public Message {
 public:
-    ~RTCM1019Message() override = default;
+    ~Rtcm1019Message() override = default;
 
-    RTCM1019Message(RTCM1019Message const& other)
+    Rtcm1019Message(Rtcm1019Message const& other)
         : Message(other) {}
-    RTCM1019Message(RTCM1019Message&&)                 = delete;
-    RTCM1019Message& operator=(RTCM1019Message const&) = delete;
-    RTCM1019Message& operator=(RTCM1019Message&&)      = delete;
+    Rtcm1019Message(Rtcm1019Message&&)                 = delete;
+    Rtcm1019Message& operator=(Rtcm1019Message const&) = delete;
+    Rtcm1019Message& operator=(Rtcm1019Message&&)      = delete;
 
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     NODISCARD static std::unique_ptr<Message> parse(std::vector<uint8_t> data);
 
-private:
-    EXPLICIT RTCM1019Message(std::vector<uint8_t> data) NOEXCEPT;
+// private:
+    EXPLICIT Rtcm1019Message(std::vector<uint8_t> data) NOEXCEPT;
     DF009  prn;
     DF076  week;
     DF077  SV_ACCURACY;
