@@ -78,7 +78,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     DF002 type = (message[3] << 4) | (message[4] >> 4);
 
     switch (type) {
-    case 1019: return RTCM1019Message::parse(message);
+    case 1019: return Rtcm1019Message::parse(message);
     default:   return std::make_unique<UnsupportedMessage>(type, message);
     }
 }
