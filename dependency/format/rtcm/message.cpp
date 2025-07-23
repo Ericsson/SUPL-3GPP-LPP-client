@@ -5,12 +5,12 @@
 namespace format {
 namespace rtcm {
 
-Message::Message(std::vector<uint8_t> data) NOEXCEPT : data{data} {}
+Message::Message(std::vector<uint8_t> mData) NOEXCEPT : mData{mData} {}
 
 Message::~Message() NOEXCEPT = default;
 
-UnsupportedMessage::UnsupportedMessage(unsigned type, std::vector<uint8_t> data) NOEXCEPT
-    : Message(data), type{type} {}
+UnsupportedMessage::UnsupportedMessage(unsigned type, std::vector<uint8_t> mData) NOEXCEPT
+    : Message(mData), type{type} {}
 
 void UnsupportedMessage::print() const NOEXCEPT {
     printf("[RTCM%x] UNSUPPORTED MESSAGE", type);

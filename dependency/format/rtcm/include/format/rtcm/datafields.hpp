@@ -3,7 +3,7 @@
 #include "datatypes.hpp"
 #include <cmath>
 
-#define PI 3.1415926535897932
+#define PI_DF 3.1415926535897932
 
 enum struct Conversion {
     NONE,
@@ -54,7 +54,7 @@ private:
                           pow2(n + 1) / 2.0;
     }
     static T constexpr _factor() {
-        return pow2(exponent) * (C==Conversion::SC2RAD ? PI : 1);
+        return pow2(exponent) * (C==Conversion::SC2RAD ? PI_DF : 1);
     }
     static constexpr T factor { _factor() };
 };
