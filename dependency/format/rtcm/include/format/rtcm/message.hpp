@@ -11,13 +11,17 @@ namespace rtcm {
 /// Base class for all messages.
 class Message {
 public:
-    EXPLICIT Message(std::vector<uint8_t> data) NOEXCEPT;
+    EXPLICIT Message(std::vector<uint8_t> mData) NOEXCEPT;
     virtual ~Message() NOEXCEPT;
 
-    Message(Message const& other) : data{other.data} {}
+    Message(Message const& other) : mData{other.mData} {}
     Message(Message&&)                 = delete;
     Message& operator=(Message const&) = delete;
     Message& operator=(Message&&)      = delete;
+
+    NODISCARD std::vector<uint8_t> const& data() const NOEXCEPT { return mData; }
+
+    NODISCARD int type() const NOEXCEPT { return mType; }
 
     /// Print the message to stdout.
     virtual void print() const NOEXCEPT = 0;
@@ -26,15 +30,15 @@ public:
     virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
 
 protected:
-    DF002 type;
+    DF002 mType;
 private:
-    std::vector<uint8_t> data;
+    std::vector<uint8_t> mData;
 };
 
 /// Unsupported or unknown message.
 class UnsupportedMessage final : public Message {
 public:
-    EXPLICIT UnsupportedMessage(unsigned type, std::vector<uint8_t> data) NOEXCEPT;
+    EXPLICIT UnsupportedMessage(unsigned type, std::vector<uint8_t> mData) NOEXCEPT;
     ~UnsupportedMessage() override = default;
 
     UnsupportedMessage(UnsupportedMessage const& other) : Message(other), type{other.type} {}
@@ -44,6 +48,7 @@ public:
 
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
+    // Should probably change to mType
     const unsigned type;
 };
 
