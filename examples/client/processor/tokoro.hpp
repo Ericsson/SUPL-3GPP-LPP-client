@@ -1,6 +1,5 @@
 #pragma once
 
-#include "format/rtcm/1019.hpp"
 #if !defined(INCLUDE_GENERATOR_TOKORO)
 #error "INCLUDE_GENERATOR_TOKORO must be defined"
 #endif
@@ -12,6 +11,7 @@
 #include <format/nav/gal/inav.hpp>
 #include <format/nav/gps/lnav.hpp>
 #include <format/ubx/messages/rxm_sfrbx.hpp>
+#include <format/rtcm/1019.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
 #include <generator/tokoro/constant.hpp>

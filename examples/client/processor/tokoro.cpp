@@ -1,4 +1,3 @@
-#include "format/rtcm/1019.hpp"
 #if defined(INCLUDE_GENERATOR_TOKORO)
 #include "tokoro.hpp"
 

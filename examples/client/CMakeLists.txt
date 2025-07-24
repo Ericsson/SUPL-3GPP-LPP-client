@@ -7,6 +7,7 @@ add_executable(example_client
     "processor/location_information.cpp"
     "processor/ubx.cpp"
     "processor/nmea.cpp"
+    "processor/rtcm.cpp"
     "processor/lpp2rtcm.cpp"
     "processor/lpp2frame_rtcm.cpp"
     "processor/lpp2spartn.cpp"
