@@ -1,6 +1,5 @@
 #pragma once
 
-#include "format/rtcm/1019.hpp"
 #if !defined(INCLUDE_GENERATOR_TOKORO)
 #error "INCLUDE_GENERATOR_TOKORO must be defined"
 #endif
@@ -13,6 +12,7 @@
 #include <format/nav/gps/lnav.hpp>
 #include <format/ubx/messages/rxm_sfrbx.hpp>
 #include <generator/tokoro/constant.hpp>
+#include <format/rtcm/1019.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
 #include <lpp/location_information.hpp>
@@ -96,7 +96,7 @@ public:
     void handle_bds(format::rtcm::Rtcm1042Message* rtcm_message);
     */
 
-    void inspect(streamline::System&, DataType const& message) override;
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Tokoro&                                    mTokoro;
