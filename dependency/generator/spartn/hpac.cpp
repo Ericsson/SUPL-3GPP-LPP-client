@@ -8,9 +8,12 @@
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <BadSignalElement.h>
 #include <GNSS-ID.h>
+#include <GNSS-RealTimeIntegrity.h>
 #include <GNSS-SSR-GriddedCorrection-r16.h>
 #include <GNSS-SSR-STEC-Correction-r16.h>
+#include <GNSS-SignalIDs.h>
 #include <GridElement-r16.h>
 #include <STEC-ResidualSatElement-r16.h>
 #include <STEC-ResidualSatList-r16.h>
@@ -22,6 +25,7 @@
 #include <algorithm>
 #include <cmath>
 
+#include <asn.1/bit_string.hpp>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(spartn, hpac);
@@ -38,9 +42,11 @@ void CorrectionPointSet::calculate_grid_points() {
         for (long y = 0; y < numberOfStepsLongitude_r16 + 1; y++) {
             auto      i = x * (numberOfStepsLongitude_r16 + 1) + y;
             GridPoint grid_point{};
-            grid_point.id        = relative_id;
-            grid_point.latitude  = reference_point_latitude - latitude_delta * static_cast<double>(x);
-            grid_point.longitude = reference_point_longitude + longitude_delta * static_cast<double>(y);
+            grid_point.id = relative_id;
+            grid_point.latitude =
+                reference_point_latitude - latitude_delta * static_cast<double>(x);
+            grid_point.longitude =
+                reference_point_longitude + longitude_delta * static_cast<double>(y);
             if (has_grid_point(i)) {
                 relative_id++;
             } else {
@@ -241,6 +247,46 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16* 
     corrections.stec       = stec;
 }
 
+void CorrectionData::add_correction(long gnss_id, GNSS_RealTimeIntegrity* rti) {
+    if (!rti) return;
+
+    auto& data = mRealTimeIntegrityData[gnss_id];
+    data.mBadSatellites.clear();
+
+    auto& list = rti->gnss_BadSignalList.list;
+    for (int i = 0; i < list.count; i++) {
+        auto element = list.array[i];
+        if (!element) continue;
+
+        auto  satellite_id = element->badSVID.satellite_id;
+        auto& satellite    = data.mBadSatellites[satellite_id];
+        satellite.id       = satellite_id;
+
+        if (!element->badSignalID) {
+            auto& signal_list = satellite.mBadSignals;
+            auto  signal_bs0  = helper::BitStringReader(&element->badSignalID->gnss_SignalIDs);
+            for (size_t i = 0; i < signal_bs0.count(); i++) {
+                if (!signal_bs0.get(i)) {
+                    continue;
+                }
+
+                signal_list.push_back(i);
+            }
+
+            if (element->badSignalID->ext1 != nullptr) {
+                auto signal_bs1 = helper::BitStringReader(element->badSignalID->ext1->gnss_SignalIDs_Ext_r15);
+                for (size_t i = 0; i < signal_bs1.count(); i++) {
+                    if (!signal_bs1.get(i)) {
+                        continue;
+                    }
+
+                    signal_list.push_back(i + 8);
+                }
+            }
+        }
+    }
+}
+
 static bool within_range(double min, double max, double value) {
     if (value < min) return false;
     if (value > max) return false;
@@ -375,9 +421,9 @@ static StecParameters compute_stec_parameters(CorrectionPointSet const&  correct
                 auto incorrect_r = StecParameters::compute_residual(latitude, longitude, c00, c01,
                                                                     c10, c11, mx, my);
                 VERBOSEF("    stec[%2ld] = lpp: %+9.6f, spartn: %+9.6f (%+9.6f), incorrect: %+9.6f "
-                       "(%+9.6f)  (%.4f, %.4f)",
-                       gp.id, lpp_r, spartn_r, lpp_r - spartn_r, incorrect_r, incorrect_r - lpp_r,
-                       latitude, longitude);
+                         "(%+9.6f)  (%.4f, %.4f)",
+                         gp.id, lpp_r, spartn_r, lpp_r - spartn_r, incorrect_r, incorrect_r - lpp_r,
+                         latitude, longitude);
             }
         }
     }
@@ -789,7 +835,7 @@ static void ionosphere_data_block_2(MessageBuilder&     builder,
             auto residual         = r.residual;
             auto encoded_residual = builder.ionosphere_residual(residual_field_size, residual);
             VERBOSEF("    grid[%2ld] = %+.4f (%+.4f)%s", r.id, encoded_residual,
-                   residual - encoded_residual, r.invalid ? " [invalid]" : "");
+                     residual - encoded_residual, r.invalid ? " [invalid]" : "");
         }
     }
 }

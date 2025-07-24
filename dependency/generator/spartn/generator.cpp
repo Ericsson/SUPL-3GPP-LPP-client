@@ -236,5 +236,19 @@ void Generator::find_hpac_corrections(ProvideAssistanceData_r9_IEs const* messag
     }
 }
 
+void Generator::find_rti_corrections(ProvideAssistanceData_r9_IEs const* message) {
+    if (!message->a_gnss_ProvideAssistanceData) return;
+    if (!message->a_gnss_ProvideAssistanceData->gnss_GenericAssistData) return;
+
+    auto& gad = *message->a_gnss_ProvideAssistanceData->gnss_GenericAssistData;
+    for (int i = 0; i < gad.list.count; i++) {
+        auto element = gad.list.array[i];
+        if (!element) continue;
+
+        auto gnss_id = element->gnss_ID.gnss_id;
+        mCorrectionData->add_correction(gnss_id, element->gnss_RealTimeIntegrity);
+    }
+}
+
 }  // namespace spartn
 }  // namespace generator

@@ -393,8 +393,8 @@ phase_biases(SystemMapping const* mapping, SSR_PhaseBiasSatElement_r16 const& sa
         auto bias = (*bias_to_signal)(mapping, true, signal_id, correction, continuity_indicator,
                                       fix_flag, translate, correction_shift);
         if (bias.signal_id == -1) {
-            TRACEF("    ?         %2ld '%-16s' %7.2f%s", signal_id,
-                   mapping->signal_name(signal_id), correction, fix_flag ? " (fix)" : " (unfixed)");
+            TRACEF("    ?         %2ld '%-16s' %7.2f%s", signal_id, mapping->signal_name(signal_id),
+                   correction, fix_flag ? " (fix)" : " (unfixed)");
             continue;
         }
 

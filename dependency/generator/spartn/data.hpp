@@ -70,6 +70,8 @@ struct STEC_SatElement_r16;
 struct STEC_ResidualSatElement_r16;
 struct GridElement_r16;
 
+struct GNSS_RealTimeIntegrity;
+
 namespace generator {
 namespace spartn {
 
@@ -197,10 +199,20 @@ struct HpacData {
     void set_ids(std::vector<uint16_t>& ids) const;
 };
 
+struct RealTimeIntegrityData {
+    struct Satellite {
+        long id;
+        std::vector<long> mBadSignals;
+    };
+
+    std::unordered_map<long, Satellite> mBadSatellites;
+};
+
 struct CorrectionData {
-    bool                                   mGroupByEpochTime;
-    std::unordered_map<uint16_t, OcbData>  mOcbData;
-    std::unordered_map<uint16_t, HpacData> mHpacData;
+    bool                                            mGroupByEpochTime;
+    std::unordered_map<uint16_t, OcbData>           mOcbData;
+    std::unordered_map<uint16_t, HpacData>          mHpacData;
+    std::unordered_map<long, RealTimeIntegrityData> mRealTimeIntegrityData;
 
     CorrectionData(bool group_by_epoch_time) : mGroupByEpochTime(group_by_epoch_time) {}
 
@@ -229,6 +241,8 @@ struct CorrectionData {
 
     void add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16* gridded);
     void add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16* stec);
+
+    void add_correction(long gnss_id, GNSS_RealTimeIntegrity* integrity);
 };
 
 inline uint8_t subtype_from_gnss_id(long gnss_id) {

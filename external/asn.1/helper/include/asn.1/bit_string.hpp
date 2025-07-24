@@ -111,4 +111,40 @@ private:
     uint64_t mBits;
 };
 
+class BitStringReader {
+public:
+    explicit BitStringReader(BIT_STRING_s* bit_string) : mBits(0), mCount(0) {
+        read_all_bits(bit_string);
+    }
+
+    size_t count() const { return mCount; }
+
+    template <typename T>
+    bool get(T index) const {
+        assert(index < 64);
+        return (mBits & (1llu << index)) != 0;
+    }
+
+    template <typename X, typename T>
+    X integer(T index, T bits) const {
+        assert(bits <= 64);
+        assert(bits <= sizeof(X) * 8);
+        X value = 0;
+        for (T i = 0; i < bits; i++) {
+            auto bit       = get(index + i);
+            auto bit_index = bits - i - 1;
+            auto bit_value = X{bit ? 1 : 0};
+            value |= (bit_value << bit_index);
+        }
+
+        return value;
+    }
+
+private:
+    void read_all_bits(BIT_STRING_s* bit_string);
+
+    uint64_t mBits;
+    size_t   mCount;
+};
+
 }  // namespace helper

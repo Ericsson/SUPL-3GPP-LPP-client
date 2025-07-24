@@ -120,6 +120,7 @@ private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const* message);
     void find_ocb_corrections(ProvideAssistanceData_r9_IEs const* message);
     void find_hpac_corrections(ProvideAssistanceData_r9_IEs const* message);
+    void find_rti_corrections(ProvideAssistanceData_r9_IEs const* message);
 
     void generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id);
     void generate_ocb(uint16_t iod);
