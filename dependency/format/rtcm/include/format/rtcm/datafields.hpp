@@ -80,8 +80,8 @@ void getdatafield(std::bitset<N> const& data, std::size_t& i, DF &dest) {
 //                        V         V       V           V
 using DF002 = DataField<int   , df_uint8                          >;
 using DF009 = DataField<int   , df_uint6                          >;
-using DF076 = DataField<int   , df_uint10                         >;
-using DF077 = DataField<int   , df_uint4                          >;
+using DF076 = DataField<int   , df_uint10                         >; // GPS Week Number
+using DF077 = DataField<int   , df_uint4                          >; // GPS SV ACCURACY
 using DF078 = DataField<int   , df_uint2                          >;
 using DF079 = DataField<double, df_int14 , -43, Conversion::SC2RAD>;
 using DF071 = DataField<int   , df_uint8                          >;
@@ -110,3 +110,35 @@ using DF102 = DataField<int   , df_uint6                          >;
 using DF103 = DataField<int   , df_bit<1>                         >;
 using DF137 = DataField<double, df_bit<1>                         >;
 
+/*
+using DF252 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF289 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF290 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF286 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF292 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF293 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF294 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF295 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF296 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF297 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF298 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF299 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF300 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF301 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF302 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF303 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF304 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF305 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF306 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF307 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF308 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF309 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF310 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF311 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF312 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF313 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF316 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF317 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF287 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+using DF288 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
+*/
