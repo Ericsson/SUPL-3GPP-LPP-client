@@ -18,18 +18,28 @@ std::string PeriodicSessionHandle::to_string() const {
 
 PeriodicSession::PeriodicSession(Client* client, Session* session, PeriodicSessionHandle handle)
     : mClient(client), mSession(session), mHandle(handle), mPeriodicTask{std::chrono::seconds(5)} {
+    VSCOPE_FUNCTION();
     mHackBadTransactionInitiator = false;
     mHackNeverSendAbort          = false;
-    mPeriodicTask.callback       = [this]() {
+    mPeriodicTask.set_event_name("periodic-session");
+    mPeriodicTask.callback = [this]() {
         check_active_requests();
     };
-    if (mClient && mClient->mScheduler) {
-        mPeriodicTask.schedule(*mClient->mScheduler);
-    }
 }
 
 PeriodicSession::~PeriodicSession() {
+    VSCOPE_FUNCTION();
     destroy();
+}
+
+void PeriodicSession::schedule(scheduler::Scheduler& scheduler) {
+    VSCOPE_FUNCTION();
+    mPeriodicTask.schedule(scheduler);
+}
+
+void PeriodicSession::cancel() {
+    VSCOPE_FUNCTION();
+    mPeriodicTask.cancel();
 }
 
 void PeriodicSession::handle_request_response(TransactionHandle const& transaction,
@@ -251,7 +261,7 @@ void PeriodicSession::destroy() {
         mClient->deallocate_periodic_session_handle(mHandle);
     }
 
-    mPeriodicTask.cancel();
+    cancel();
 }
 
 void PeriodicSession::try_destroy() {

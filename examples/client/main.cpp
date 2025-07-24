@@ -660,6 +660,7 @@ int main(int argc, char** argv) {
 #endif
 
     scheduler::PeriodicTask reconnect_task{std::chrono::seconds(15)};
+    reconnect_task.set_event_name("lpp-reconnect");
     reconnect_task.callback = [&program]() {
         if (program.is_disconnected) {
             INFOF("reconnecting to LPP server");

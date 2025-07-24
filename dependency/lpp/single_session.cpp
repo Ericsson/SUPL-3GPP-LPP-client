@@ -14,19 +14,29 @@ namespace lpp {
 
 SingleSession::SingleSession(Client* client, Session* session, TransactionHandle handle)
     : mClient(client), mSession(session), mPeriodicTask{std::chrono::seconds(5)} {
-    mHackNeverSendAbort    = false;
-    mTransaction           = std::move(handle);
-    mLastRequestTime       = std::chrono::steady_clock::now();
+    VSCOPE_FUNCTION();
+    mHackNeverSendAbort = false;
+    mTransaction        = std::move(handle);
+    mLastRequestTime    = std::chrono::steady_clock::now();
+    mPeriodicTask.set_event_name("single-session");
     mPeriodicTask.callback = [this]() {
         check_active_requests();
     };
-    if (mClient && mClient->mScheduler) {
-        mPeriodicTask.schedule(*mClient->mScheduler);
-    }
 }
 
 SingleSession::~SingleSession() {
+    VSCOPE_FUNCTION();
     destroy();
+}
+
+void SingleSession::schedule(scheduler::Scheduler& scheduler) {
+    VSCOPE_FUNCTION();
+    mPeriodicTask.schedule(scheduler);
+}
+
+void SingleSession::cancel() {
+    VSCOPE_FUNCTION();
+    mPeriodicTask.cancel();
 }
 
 void SingleSession::message(TransactionHandle const& transaction, Message message) {
@@ -50,6 +60,7 @@ void SingleSession::check_active_requests() {
     if (now - mLastRequestTime > std::chrono::seconds(5)) {
         DEBUGF("no response received for more than 5 seconds");
         stale_request(mTransaction);
+        try_destroy();
 
         if (mHackNeverSendAbort) {
             WARNF("skipping abort for %s", mTransaction.to_string().c_str());
@@ -57,8 +68,6 @@ void SingleSession::check_active_requests() {
             auto abort = lpp::create_abort();
             mTransaction.send_with_end(abort);
         }
-        
-        try_destroy();
     }
 }
 
@@ -74,7 +83,7 @@ void SingleSession::destroy() {
         mTransaction = TransactionHandle{};
     }
 
-    mPeriodicTask.cancel();
+    cancel();
 }
 
 void SingleSession::try_destroy() {
@@ -90,8 +99,9 @@ void SingleSession::try_destroy() {
 //
 //
 
-SingleRequestAssistanceSession::SingleRequestAssistanceSession(Client* client, Session* session, TransactionHandle handle,
-                                                             SingleRequestAssistanceData data)
+SingleRequestAssistanceSession::SingleRequestAssistanceSession(Client* client, Session* session,
+                                                               TransactionHandle           handle,
+                                                               SingleRequestAssistanceData data)
     : SingleSession(client, session, handle), mData(std::move(data)) {
     VSCOPE_FUNCTION();
 }
@@ -100,7 +110,8 @@ SingleRequestAssistanceSession::~SingleRequestAssistanceSession() {
     VSCOPE_FUNCTION();
 }
 
-void SingleRequestAssistanceSession::request_response(TransactionHandle const& transaction, Message message) {
+void SingleRequestAssistanceSession::request_response(TransactionHandle const& transaction,
+                                                      Message                  message) {
     VSCOPE_FUNCTIONF("%s", transaction.to_string().c_str());
     if (mData.on_message) {
         mData.on_message(*mClient, std::move(message));

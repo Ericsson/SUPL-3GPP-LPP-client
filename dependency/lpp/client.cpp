@@ -77,7 +77,7 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
     };
 
     mHackBadTransactionInitiator = false;
-    mHackNeverSendAbort = false;
+    mHackNeverSendAbort          = false;
 }
 
 Client::~Client() {
@@ -151,7 +151,7 @@ bool Client::request_assistance_data(SingleRequestAssistanceData const& request_
     message_description.bds              = request_assistance_data.gnss.beidou;
 
     if (request_assistance_data.type == SingleRequestAssistanceData::Type::AGNSS) {
-        message_description.reference_time = 1;
+        message_description.reference_time    = 1;
         message_description.ionospheric_model = 1;
     } else {
         WARNF("unknown RequestAssistanceData type");
@@ -182,10 +182,23 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
     ASSERT(scheduler, "scheduler is null");
     ASSERT(!mScheduler, "scheduler is already set");
 
+    // If the client has sessions already, then we need to schedule
+    // the sessions now.
+    for (auto& session : mSessions) {
+        session.second->schedule(*scheduler);
+    }
+
+    for (auto& session : mSingleSessions) {
+        session.second->schedule(*scheduler);
+    }
+
     mScheduler = scheduler;
     mSession.connect(mHost, mPort, mInterface);
     mSession.schedule(scheduler);
     scheduler->register_tick(this, [this]() {
+        TRACEF("tick: %zu sessions, %zu single sessions",
+                 mSessions.size(),
+                 mSingleSessions.size());
         for (auto handle : mSessionsToDestroy) {
             deallocate_periodic_session_handle(handle);
         }
@@ -203,7 +216,16 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
 void Client::cancel() {
     ASSERT(mScheduler, "scheduler is null");
 
+    for (auto& session : mSessions) {
+        session.second->cancel();
+    }
+
+    for (auto& session : mSingleSessions) {
+        session.second->cancel();
+    }
+
     mSession.cancel();
+    mScheduler->unregister_tick(this);
     mScheduler = nullptr;
 
     while (!mSessions.empty()) {

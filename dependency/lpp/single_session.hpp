@@ -17,6 +17,9 @@ public:
     EXPLICIT SingleSession(Client* client, Session* session, TransactionHandle handle);
     virtual ~SingleSession();
 
+    void schedule(scheduler::Scheduler& scheduler);
+    void cancel();
+
     void message(TransactionHandle const& transaction, Message message);
 
     void try_destroy();
