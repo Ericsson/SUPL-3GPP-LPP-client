@@ -26,7 +26,7 @@ Lpp2Rtcm::~Lpp2Rtcm() {
     VSCOPE_FUNCTION();
 }
 
-void Lpp2Rtcm::inspect(streamline::System&, DataType const& message) {
+void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t tag) {
     VSCOPE_FUNCTION();
     auto messages = mGenerator->generate(message.get(), mFilter);
     if (messages.empty()) {
@@ -44,6 +44,10 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message) {
         // TODO(ewasjon): These message should be passed back into the system
         for (auto const& output : mOutput.outputs) {
             if (!output.rtcm_support()) continue;
+            if (!output.accept_tag(tag)) {
+                XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                continue;
+            }
             if (output.print) {
                 XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), size);
             }

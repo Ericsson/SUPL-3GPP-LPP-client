@@ -240,7 +240,8 @@ static void client_initialize(Program& program, lpp::Client&) {
 
     if (program.config.assistance_data.type == lpp::PeriodicRequestAssistanceData::Type::OSR) {
         capabilities.assistance_data.osr = true;
-    } else if (program.config.assistance_data.type == lpp::PeriodicRequestAssistanceData::Type::SSR) {
+    } else if (program.config.assistance_data.type ==
+               lpp::PeriodicRequestAssistanceData::Type::SSR) {
         capabilities.assistance_data.ssr = true;
     }
 
@@ -266,12 +267,22 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         if ((input.format & INPUT_FORMAT_LPP_UPER_PAD) != 0)
             lpp_uper_pad = new format::lpp::UperParser{};
 
-        DEBUGF("input  %p: %s%s%s%s%s", input.interface.get(),
+        std::stringstream tag_stream;
+        for (size_t i = 0; i < input.tags.size(); i++) {
+            if (i > 0) tag_stream << ",";
+            tag_stream << input.tags[i];
+        }
+
+        auto tag_str = tag_stream.str();
+        auto tag     = program.config.get_tag(input.tags) | program.config.get_tag("input");
+
+        DEBUGF("input  %p: %s%s%s%s%s %s[%llX]", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "");
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
+               tag);
 
         if (!nmea && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
             WARNF("-- skipping input %p, no format specified", input.interface.get());
@@ -296,15 +307,15 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
 
         input.interface->schedule(program.scheduler);
         input.interface->set_event_name(event_name);
-        input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper,
-                                     lpp_uper_pad](io::Input&, uint8_t* buffer, size_t count) {
+        input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper, lpp_uper_pad,
+                                     tag](io::Input&, uint8_t* buffer, size_t count) {
             if (nmea) {
                 nmea->append(buffer, count);
                 for (;;) {
                     auto message = nmea->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
-                    program.stream.push(std::move(message));
+                    program.stream.push(std::move(message), tag);
                 }
             }
 
@@ -314,7 +325,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     auto message = ubx->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
-                    program.stream.push(std::move(message));
+                    program.stream.push(std::move(message), tag);
                 }
             }
 
@@ -324,7 +335,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     auto message = ctrl->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
-                    program.stream.push(std::move(message));
+                    program.stream.push(std::move(message), tag);
                 }
             }
 
@@ -338,7 +349,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     if (input.print) {
                         lpp::print(lpp_message);
                     }
-                    program.stream.push(std::move(lpp_message));
+                    program.stream.push(std::move(lpp_message), tag);
                 }
             }
 
@@ -359,7 +370,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
     }
 }
 
-static void initialize_outputs(Program& program, OutputConfig const& config) {
+static void initialize_outputs(Program& program, OutputConfig& config) {
     VSCOPE_FUNCTION();
 
     bool lpp_xer_output  = false;
@@ -401,6 +412,9 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
         if (output.location_support()) location_output = true;
         if (output.test_support()) test_output = true;
 
+        output.include_tag_mask = program.config.get_tag(output.include_tags);
+        output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
+
         output.interface->schedule(program.scheduler);
     }
 
@@ -413,7 +427,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
 #endif
     if (location_output) program.stream.add_inspector<LocationOutput>(config);
-    if (test_output) test_outputer(program.scheduler, config);
+    if (test_output) test_outputer(program.scheduler, config, program.config.get_tag("test"));
 }
 
 static void setup_location_stream(Program& program) {

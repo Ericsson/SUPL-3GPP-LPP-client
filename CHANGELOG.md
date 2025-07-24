@@ -2,6 +2,7 @@
 
 ## []
 
+- Message tagging support. Input (and other intermediate) messages can be tagged and filtered before use or output. See `tags`, `itags` and `otags`.
 - Better support for AGNSS via supl.google.com
 - Added support for missing AGNSS data using `--ad-assisted-gnss`
 - Support for single-shot request for assistance data

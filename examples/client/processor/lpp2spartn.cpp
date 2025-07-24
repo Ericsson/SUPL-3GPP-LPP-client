@@ -59,7 +59,7 @@ Lpp2Spartn::~Lpp2Spartn() {
     VSCOPE_FUNCTION();
 }
 
-void Lpp2Spartn::inspect(streamline::System&, DataType const& message) {
+void Lpp2Spartn::inspect(streamline::System&, DataType const& message, uint64_t tag) {
     VSCOPE_FUNCTION();
     auto messages = mGenerator->generate(message.get());
     if (messages.empty()) {
@@ -75,6 +75,10 @@ void Lpp2Spartn::inspect(streamline::System&, DataType const& message) {
             // TODO(ewasjon): These message should be passed back into the system
             for (auto const& output : mOutput.outputs) {
                 if (!output.spartn_support()) continue;
+                if (!output.accept_tag(tag)) {
+                    XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                    continue;
+                }
                 if (output.print) {
                     XINFOF(OUTPUT_PRINT_MODULE, "spartn: %02X %02X (%zd bytes)", msg.message_type(),
                            msg.message_subtype(), data.size());

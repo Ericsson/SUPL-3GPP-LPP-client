@@ -76,13 +76,17 @@
 LOGLET_MODULE2(p, possib);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, possib)
 
-void PossibOutput::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+void PossibOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto sentence = message->json();
     auto data     = reinterpret_cast<uint8_t const*>(sentence.data());
     auto size     = sentence.size();
     for (auto const& output : mOutput.outputs) {
         if (!output.possib_support()) continue;
+        if(!output.accept_tag(tag)) {
+            XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            continue;
+        }
         if (output.print) {
             XINFOF(OUTPUT_PRINT_MODULE, "possib: %zd bytes", size);
         }
@@ -623,7 +627,7 @@ void LppPossibBuilder::process(ProvideAssistanceData const& message) {
     }
 }
 
-void LppPossibBuilder::inspect(streamline::System& system, DataType const& message) noexcept {
+void LppPossibBuilder::inspect(streamline::System& system, DataType const& message, uint64_t) noexcept {
     VSCOPE_FUNCTION();
 
     if (!message) return;

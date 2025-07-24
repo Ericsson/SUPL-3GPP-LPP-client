@@ -24,14 +24,14 @@ struct Clone<UbxMessage> {
 
 class UbxPrint : public streamline::Inspector<UbxMessage> {
 public:
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 };
 
 class UbxOutput : public streamline::Inspector<UbxMessage> {
 public:
     UbxOutput(OutputConfig const& output) : mOutput(output) {}
 
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
     OutputConfig const& mOutput;
@@ -41,7 +41,7 @@ class UbxLocation : public streamline::Inspector<UbxMessage> {
 public:
     UbxLocation(LocationInformationConfig const& config) : mConfig(config) {}
 
-    void inspect(streamline::System& system, DataType const& message) NOEXCEPT override;
+    void inspect(streamline::System& system, DataType const& message, uint64_t tag) NOEXCEPT override;
     void nav_pvt(streamline::System& system, format::ubx::UbxNavPvt const& nav_pvt);
 
 private:

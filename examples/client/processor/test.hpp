@@ -10,4 +10,4 @@ namespace scheduler {
 class Scheduler;
 }
 
-void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output);
+void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, uint64_t tag);

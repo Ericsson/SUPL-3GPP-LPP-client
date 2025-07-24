@@ -34,6 +34,11 @@ protected:
 template <typename T>
 class QueueTask : public QueueTaskBase {
 public:
+    struct Item {
+        uint64_t tag;
+        T        data;
+    };
+
     QueueTask(System& system) : mSystem(system), mQueue() {
         mEvent.name  = "streamline-queue";
         mEvent.event = [this](struct epoll_event* event) {
@@ -72,27 +77,37 @@ public:
         LOGLET_INDENT_SCOPE(loglet::Level::Verbose);
 
         for (uint64_t i = 0; i < count; i++) {
-            auto data = mQueue.pop();
+            auto item = mQueue.pop();
             for (auto& inspector : mInspectors) {
-                inspector->inspect(mSystem, data);
+                if (inspector->accept(mSystem, item.tag)) {
+                    inspector->inspect(mSystem, item.data, item.tag);
+                }
             }
 
             auto it = mConsumers.begin();
             while (it != mConsumers.end()) {
                 auto consumer = it->get();
+                if (!consumer->accept(mSystem, item.tag)) {
+                    it++;
+                    continue;
+                }
+
+                // TODO(ewasjon): This is a bit weird, if the item is consumed why clone it? What is
+                // the reason for multiple consumers, instead of just using inspectors?
+                auto data = std::move(item.data);
                 if (std::next(it) != mConsumers.end()) {
                     auto clone = streamline::Clone<T>{}(data);
                     VERBOSEF("cloning data for next consumer");
-                    consumer->consume(mSystem, std::move(clone));
+                    consumer->consume(mSystem, std::move(clone), item.tag);
                 } else {
-                    consumer->consume(mSystem, std::move(data));
+                    consumer->consume(mSystem, std::move(data), item.tag);
                 }
                 it++;
             }
         }
     }
 
-    void push(T&& value) { mQueue.push(std::move(value)); }
+    void push(T&& value, uint64_t tag) { mQueue.push({tag, std::move(value)}); }
 
     template <typename Consumer>
     void add_consumer(std::unique_ptr<Consumer> consumer) {
@@ -107,7 +122,7 @@ public:
 protected:
     System&                                    mSystem;
     scheduler::EpollEvent                      mEvent;
-    EventQueue<T>                              mQueue;
+    EventQueue<Item>                           mQueue;
     std::vector<std::unique_ptr<Consumer<T>>>  mConsumers;
     std::vector<std::unique_ptr<Inspector<T>>> mInspectors;
 };

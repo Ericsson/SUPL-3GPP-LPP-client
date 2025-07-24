@@ -196,6 +196,9 @@ bool parse(int argc, char** argv, Config* config) {
     data_tracing::setup();
 #endif
 
+    config->next_tag_bit_mask = 1;
+    config->tag_to_bit_mask.clear();
+
     // TODO(ewasjon): Use logger library here
     try {
         parser.ParseCLI(argc, argv);

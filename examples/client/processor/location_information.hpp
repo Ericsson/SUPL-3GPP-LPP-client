@@ -13,7 +13,7 @@ class LocationCollector : public streamline::Inspector<lpp::LocationInformation>
 public:
     LocationCollector(Program& program) : mProgram(program) {}
 
-    void inspect(streamline::System&, DataType const& location) NOEXCEPT override;
+    void inspect(streamline::System&, DataType const& location, uint64_t tag) NOEXCEPT override;
 
 private:
     Program& mProgram;
@@ -23,7 +23,7 @@ class MetricsCollector : public streamline::Inspector<lpp::HaGnssMetrics> {
 public:
     MetricsCollector(Program& program) : mProgram(program) {}
 
-    void inspect(streamline::System&, DataType const& metrics) NOEXCEPT override;
+    void inspect(streamline::System&, DataType const& metrics, uint64_t tag) NOEXCEPT override;
 
 private:
     Program& mProgram;
@@ -33,7 +33,7 @@ class LocationOutput : public streamline::Inspector<lpp::LocationInformation> {
 public:
     LocationOutput(OutputConfig const& output) : mOutput(output) {}
 
-    void inspect(streamline::System&, DataType const& location) NOEXCEPT override;
+    void inspect(streamline::System&, DataType const& location, uint64_t tag) NOEXCEPT override;
 
 private:
     OutputConfig const& mOutput;

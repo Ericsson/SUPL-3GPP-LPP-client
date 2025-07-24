@@ -62,6 +62,11 @@ struct OutputInterface {
     OutputFormat                format;
     std::unique_ptr<io::Output> interface;
     bool                        print;
+    std::vector<std::string>    include_tags;
+    std::vector<std::string>    exclude_tags;
+
+    uint64_t include_tag_mask;
+    uint64_t exclude_tag_mask;
 
     inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
     inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
@@ -75,6 +80,11 @@ struct OutputInterface {
     inline bool location_support() const { return (format & OUTPUT_FORMAT_LOCATION) != 0; }
 
     inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
+
+    inline bool accept_tag(uint64_t tag) const {
+        return tag == 0 ||
+               (((include_tag_mask & tag) || include_tag_mask == 0) && !(exclude_tag_mask & tag));
+    }
 };
 
 struct OutputConfig {
@@ -97,6 +107,7 @@ struct InputInterface {
     InputFormat                format;
     bool                       print;
     std::unique_ptr<io::Input> interface;
+    std::vector<std::string>   tags;
 };
 
 struct InputConfig {
@@ -110,7 +121,7 @@ struct AssistanceDataConfig {
     bool request_assisted_gnss;
 
     lpp::PeriodicRequestAssistanceData::Type type;
-    supl::Cell                       cell;
+    supl::Cell                               cell;
 
     bool gps;
     bool glonass;
@@ -340,6 +351,33 @@ struct Config {
 #ifdef DATA_TRACING
     DataTracingConfig data_tracing;
 #endif
+
+    uint64_t                                  next_tag_bit_mask;
+    std::unordered_map<std::string, uint64_t> tag_to_bit_mask;
+
+    void register_tag(std::string const& tag) {
+        if (tag_to_bit_mask.find(tag) == tag_to_bit_mask.end()) {
+            tag_to_bit_mask[tag] = next_tag_bit_mask;
+            next_tag_bit_mask    = next_tag_bit_mask << 1;
+        }
+    }
+
+    uint64_t get_tag(std::string const& tag) {
+        if (tag_to_bit_mask.find(tag) == tag_to_bit_mask.end()) {
+            return 0;
+        }
+        return tag_to_bit_mask[tag];
+    }
+
+    uint64_t get_tag(char const* tag) { return get_tag(std::string(tag)); }
+
+    uint64_t get_tag(std::vector<std::string> const& tags) {
+        uint64_t tag_bit_mask = 0;
+        for (auto const& tag : tags) {
+            tag_bit_mask |= get_tag(tag);
+        }
+        return tag_bit_mask;
+    }
 };
 
 namespace config {
