@@ -283,7 +283,6 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
             if (rtcm) {
                 rtcm->append(buffer, count);
                 for (;;) {
-                    INFOF("trying to parse rtcm in main");
                     auto message = rtcm->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
