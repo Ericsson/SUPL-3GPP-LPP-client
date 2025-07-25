@@ -2,6 +2,7 @@
 #include <bitset>
 #include "datatypes.hpp"
 #include <cmath>
+#include <stdint.h>
 
 #define PI_DF 3.1415926535897932
 
@@ -78,37 +79,37 @@ void getdatafield(std::bitset<N> const& data, std::size_t& i, DF &dest) {
 //                        |         |       |         Conversion of second factor
 //                        |         |       |           |
 //                        V         V       V           V
-using DF002 = DataField<int   , df_uint12                         >;
-using DF009 = DataField<int   , df_uint6                          >;
-using DF076 = DataField<int   , df_uint10                         >; // GPS Week Number
-using DF077 = DataField<int   , df_uint4                          >; // GPS SV ACCURACY
-using DF078 = DataField<int   , df_uint2                          >;
-using DF079 = DataField<double, df_int14 , -43, Conversion::SC2RAD>;
-using DF071 = DataField<int   , df_uint8                          >;
-using DF081 = DataField<double, df_uint16,   4                    >;
-using DF082 = DataField<double, df_uint8 , -55                    >;
-using DF083 = DataField<double, df_uint16, -43                    >;
-using DF084 = DataField<double, df_int22 , -31                    >;
-using DF085 = DataField<int   , df_uint10                         >;
-using DF086 = DataField<double, df_uint16,  -5                    >;
-using DF087 = DataField<double, df_uint16, -43, Conversion::SC2RAD>;
-using DF088 = DataField<double, df_uint32, -31, Conversion::SC2RAD>;
-using DF089 = DataField<double, df_uint16, -29                    >;
-using DF090 = DataField<double, df_uint32, -33                    >;
-using DF091 = DataField<double, df_uint16, -29                    >;
-using DF092 = DataField<double, df_uint32, -19                    >;
-using DF093 = DataField<double, df_uint16,   4                    >;
-using DF094 = DataField<double, df_uint16, -29                    >;
-using DF095 = DataField<double, df_uint32, -31, Conversion::SC2RAD>;
-using DF096 = DataField<double, df_uint16, -29                    >;
-using DF097 = DataField<double, df_uint32, -31, Conversion::SC2RAD>;
-using DF098 = DataField<double, df_uint16,  -5                    >;
-using DF099 = DataField<double, df_uint32, -31, Conversion::SC2RAD>;
-using DF100 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
-using DF101 = DataField<double, df_uint8 , -31                    >;
-using DF102 = DataField<int   , df_uint6                          >;
-using DF103 = DataField<int   , df_bit<1>                         >;
-using DF137 = DataField<double, df_bit<1>                         >;
+using DF002 = DataField<int     , df_uint12                         >;
+using DF009 = DataField<uint8_t , df_uint6                          >;
+using DF076 = DataField<uint16_t, df_uint10                         >; // GPS Week Number
+using DF077 = DataField<uint8_t , df_uint4                          >; // GPS SV ACCURACY
+using DF078 = DataField<uint8_t , df_uint2                          >;
+using DF079 = DataField<double  , df_int14 , -43, Conversion::SC2RAD>;
+using DF071 = DataField<uint8_t , df_uint8                          >;
+using DF081 = DataField<double  , df_uint16,   4                    >;
+using DF082 = DataField<double  , df_uint8 , -55                    >;
+using DF083 = DataField<double  , df_uint16, -43                    >;
+using DF084 = DataField<double  , df_int22 , -31                    >;
+using DF085 = DataField<uint16_t, df_uint10                         >;
+using DF086 = DataField<double  , df_uint16,  -5                    >;
+using DF087 = DataField<double  , df_uint16, -43, Conversion::SC2RAD>;
+using DF088 = DataField<double  , df_uint32, -31, Conversion::SC2RAD>;
+using DF089 = DataField<double  , df_uint16, -29                    >;
+using DF090 = DataField<double  , df_uint32, -33                    >;
+using DF091 = DataField<double  , df_uint16, -29                    >;
+using DF092 = DataField<double  , df_uint32, -19                    >;
+using DF093 = DataField<double  , df_uint16,   4                    >;
+using DF094 = DataField<double  , df_uint16, -29                    >;
+using DF095 = DataField<double  , df_uint32, -31, Conversion::SC2RAD>;
+using DF096 = DataField<double  , df_uint16, -29                    >;
+using DF097 = DataField<double  , df_uint32, -31, Conversion::SC2RAD>;
+using DF098 = DataField<double  , df_uint16,  -5                    >;
+using DF099 = DataField<double  , df_uint32, -31, Conversion::SC2RAD>;
+using DF100 = DataField<double  , df_uint24, -43, Conversion::SC2RAD>;
+using DF101 = DataField<double  , df_uint8 , -31                    >;
+using DF102 = DataField<uint8_t , df_uint6                          >;
+using DF103 = DataField<bool    , df_bit<1>                         >;
+using DF137 = DataField<bool    , df_bit<1>                         >;
 
 /*
 using DF252 = DataField<double, df_uint24, -43, Conversion::SC2RAD>;
