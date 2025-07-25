@@ -73,6 +73,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     find_correction_point_set(message);
     find_ocb_corrections(message);
     find_hpac_corrections(message);
+    find_rti_corrections(message);
 
     auto iods = mCorrectionData->iods();
     for (auto iod : iods) {

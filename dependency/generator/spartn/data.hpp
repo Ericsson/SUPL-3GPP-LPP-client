@@ -206,6 +206,12 @@ struct RealTimeIntegrityData {
     };
 
     std::unordered_map<long, Satellite> mBadSatellites;
+
+    bool can_use_satellite(long id) const {
+        auto it = mBadSatellites.find(id);
+        if (it == mBadSatellites.end()) return true;
+        return false;
+    }
 };
 
 struct CorrectionData {
@@ -228,6 +234,12 @@ struct CorrectionData {
     HpacData* hpac(uint16_t iod) {
         auto it = mHpacData.find(iod);
         if (it == mHpacData.end()) return nullptr;
+        return &it->second;
+    }
+
+    RealTimeIntegrityData* real_time_integrity(long gnss_id) {
+        auto it = mRealTimeIntegrityData.find(gnss_id);
+        if (it == mRealTimeIntegrityData.end()) return nullptr;
         return &it->second;
     }
 
