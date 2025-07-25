@@ -25,7 +25,7 @@ std::unique_ptr<Message> Rtcm1019Message::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> Rtcm1019Message::parse(std::vector<uint8_t> mData) {
     if (mData.size() != 6+12+488+24) {
-        ERRORF("RTCM 1019 message created without enough data");
+        ERRORF("RTCM 1019 message created without enough data (requires %d bytes, received %d bytes)", 6+12+488+24, mData.size());
         return std::make_unique<ErrorMessage>();
     }
 
