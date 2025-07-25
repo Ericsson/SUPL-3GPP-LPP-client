@@ -78,7 +78,7 @@ void getdatafield(std::bitset<N> const& data, std::size_t& i, DF &dest) {
 //                        |         |       |         Conversion of second factor
 //                        |         |       |           |
 //                        V         V       V           V
-using DF002 = DataField<int   , df_uint8                          >;
+using DF002 = DataField<int   , df_uint12                         >;
 using DF009 = DataField<int   , df_uint6                          >;
 using DF076 = DataField<int   , df_uint10                         >; // GPS Week Number
 using DF077 = DataField<int   , df_uint4                          >; // GPS SV ACCURACY
