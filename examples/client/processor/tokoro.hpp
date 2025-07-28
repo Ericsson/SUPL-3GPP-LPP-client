@@ -13,6 +13,8 @@
 #include <format/ubx/messages/rxm_sfrbx.hpp>
 #include <generator/tokoro/constant.hpp>
 #include <format/rtcm/1019.hpp>
+#include <format/rtcm/1042.hpp>
+#include <format/rtcm/1046.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
 #include <lpp/location_information.hpp>
@@ -88,13 +90,11 @@ public:
     void handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_message);
     void handle_gps(format::rtcm::Rtcm1019Message* rtcm_message);
 
-    /* Not implemented messages yet
     void handle_gal_inav(format::rtcm::Rtcm1046Message* rtcm_message);
     void handle_gal(format::rtcm::Rtcm1046Message* rtcm_message);
 
     void handle_bds_d1(format::rtcm::Rtcm1042Message* rtcm_message);
     void handle_bds(format::rtcm::Rtcm1042Message* rtcm_message);
-    */
 
     void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
