@@ -43,7 +43,7 @@ public:
     DF303  sqrt_a;
     DF304  toe;
     DF305  cic;
-    DF306  omega_0;
+    DF306  omega0;
     DF307  cis;
     DF308  i0;
     DF309  crc;
