@@ -31,7 +31,7 @@ public:
 // private:
     EXPLICIT Rtcm1042Message(std::vector<uint8_t> data) NOEXCEPT;
     DF009  prn;
-    DF076  week;
+    DF076  week_number;
     DF077  SV_ACCURACY;
     DF078  code_on_l2;
     DF079  idot;
