@@ -8,7 +8,6 @@
 #include "datafields.hpp"
 
 // TODO: Put headers for messages in /messages folder
-// Also maybe remove Message in Rtcm1042Message to be more uniform with other formats
 
 namespace format {
 namespace rtcm{

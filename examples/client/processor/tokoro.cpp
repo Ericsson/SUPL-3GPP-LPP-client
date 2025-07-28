@@ -1,3 +1,5 @@
+#include "ephemeris/bds.hpp"
+#include "ephemeris/gal.hpp"
 #if defined(INCLUDE_GENERATOR_TOKORO)
 #include "tokoro.hpp"
 
@@ -150,7 +152,6 @@ void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_me
     mTokoro.process_ephemeris(ephemeris);
 }
 
-
 void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019Message* rtcm_message) {
     VSCOPE_FUNCTION();
     if (!mTokoro.is_gps_enabled()) return;
@@ -161,6 +162,104 @@ void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019Message* rtcm_message
     }
 }
 
+void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042Message* rtcm_message) {
+    VSCOPE_FUNCTION();
+
+    ephemeris::BdsEphemeris ephemeris{};
+    /*
+    ephemeris.prn = rtcm_message->prn;
+    ephemeris.week_number = rtcm_message->week_number;
+    // ephemeris.ca_or_p_on_l2 = rtcm_message->code_on_l2;
+    // ephemeris.ura_index = rtcm_message->SV_ACCURACY;
+    ephemeris.sv_health = rtcm_message->SV_HEALTH;
+    ephemeris.lpp_iod = rtcm_message->iode;
+    ephemeris.iodc = rtcm_message->iodc;
+    ephemeris.iode = rtcm_message->iode;
+    // ephemeris.aodo = 0;
+    ephemeris.toc = rtcm_message->t_oc;
+    ephemeris.toe = rtcm_message->t_oe;
+    // ephemeris.tgd = rtcm_message->t_GD;
+    ephemeris.af2 = rtcm_message->a_f2;
+    ephemeris.af1 = rtcm_message->a_f1;
+    ephemeris.af0 = rtcm_message->a_f0;
+    ephemeris.crc = rtcm_message->C_rc;
+    ephemeris.crs = rtcm_message->C_rs;
+    ephemeris.cuc = rtcm_message->C_uc;
+    ephemeris.cus = rtcm_message->C_us;
+    ephemeris.cic = rtcm_message->C_ic;
+    ephemeris.cis = rtcm_message->C_is;
+    ephemeris.e = rtcm_message->e;
+    ephemeris.m0 = rtcm_message->M_0;
+    ephemeris.delta_n = rtcm_message->dn; // Really should rename this one
+    ephemeris.a = rtcm_message->sqrt_A * rtcm_message->sqrt_A;
+    ephemeris.i0 = rtcm_message->i_0;
+    ephemeris.omega0 = rtcm_message->OMEGA_0;
+    ephemeris.omega = rtcm_message->omega;
+    ephemeris.omega_dot = rtcm_message->OMEGADOT;
+    ephemeris.idot = rtcm_message->idot;
+    // ephemeris.fit_interval_flag = rtcm_message->fit;
+    // ephemeris.l2_p_data_flag = rtcm_message->L2_P_data_flag;
+    */
+
+    mTokoro.process_ephemeris(ephemeris);
+}
+
+void TokoroEphemerisRtcm::handle_bds(format::rtcm::Rtcm1042Message* rtcm_message) {
+    VSCOPE_FUNCTION();
+    if (!mTokoro.is_gal_enabled()) return;
+    if (rtcm_message->type() == 1042) {
+        handle_bds_d1(rtcm_message);
+    } else {
+        VERBOSEF("not rtcm 1042 but rtcm %d", rtcm_message-> type());
+    }
+}
+
+void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046Message* rtcm_message) {
+    VSCOPE_FUNCTION();
+
+    ephemeris::GalEphemeris ephemeris{};
+    ephemeris.prn = rtcm_message->prn;
+    ephemeris.week_number = rtcm_message->week_number;
+    ephemeris.lpp_iod = rtcm_message->iod_nav;
+    ephemeris.iod_nav = rtcm_message->iod_nav;
+
+    ephemeris.toc = rtcm_message->toc;
+    ephemeris.toe = rtcm_message->toe;
+
+    ephemeris.af2 = rtcm_message->af2;
+    ephemeris.af1 = rtcm_message->af1;
+    ephemeris.af0 = rtcm_message->af0;
+
+    ephemeris.crc = rtcm_message->crc;
+    ephemeris.crs = rtcm_message->crs;
+    ephemeris.cuc = rtcm_message->cuc;
+    ephemeris.cus = rtcm_message->cus;
+    ephemeris.cic = rtcm_message->cic;
+    ephemeris.cis = rtcm_message->cis;
+
+    ephemeris.e = rtcm_message->e;
+    ephemeris.m0 = rtcm_message->m0;
+    ephemeris.delta_n = rtcm_message->delta_n;
+    ephemeris.a = rtcm_message->sqrt_a * rtcm_message->sqrt_a;
+
+    ephemeris.i0 = rtcm_message->i0;
+    ephemeris.omega0 = rtcm_message->omega_0;
+    ephemeris.omega = rtcm_message->omega;
+    ephemeris.omega_dot = rtcm_message->omega_dot;
+    ephemeris.idot = rtcm_message->idot;
+
+    mTokoro.process_ephemeris(ephemeris);
+}
+
+void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046Message* rtcm_message) {
+    VSCOPE_FUNCTION();
+    if (!mTokoro.is_gal_enabled()) return;
+    if (rtcm_message->type() == 1046) {
+        handle_gal_inav(rtcm_message);
+    } else {
+        VERBOSEF("not rtcm 1046 but rtcm %d", rtcm_message-> type());
+    }
+}
 
 void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message) {
     VSCOPE_FUNCTION();
