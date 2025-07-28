@@ -1,5 +1,6 @@
 #pragma once
 #include <core/core.hpp>
+#include <cmath>
 
 namespace ts {
 
@@ -20,9 +21,13 @@ CONSTEXPR static int64_t MILLISECONDS_PER_SECOND = 1000LL;
 class Timestamp {
 public:
     Timestamp() : mSeconds(0), mFraction(0.0) {}
-    EXPLICIT Timestamp(double seconds) : Timestamp() { add(seconds); }
+    EXPLICIT Timestamp(double seconds) : Timestamp() {
+        CORE_ASSERT(!std::isnan(seconds), "sec is NaN");
+        add(seconds);
+    }
     EXPLICIT Timestamp(int64_t seconds) : mSeconds(seconds), mFraction() {}
     EXPLICIT Timestamp(int64_t seconds, double fraction) {
+        CORE_ASSERT(!std::isnan(fraction), "Fraction is NaN");
         mSeconds  = seconds;
         mFraction = fraction;
         normalize();
@@ -61,11 +66,13 @@ public:
     void subtract(int64_t sec) { mSeconds -= sec; }
 
     void add(double sec) {
+        CORE_ASSERT(!std::isnan(sec), "sec is NaN");
         mFraction += sec;
         normalize();
     }
 
     void subtract(double sec) {
+        CORE_ASSERT(!std::isnan(sec), "sec is NaN");
         mFraction -= sec;
         normalize();
     }
