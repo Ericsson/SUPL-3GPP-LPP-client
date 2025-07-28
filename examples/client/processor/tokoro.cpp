@@ -166,6 +166,7 @@ void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042Message* rtcm_mess
     VSCOPE_FUNCTION();
 
     ephemeris::BdsEphemeris ephemeris{};
+    /*
     ephemeris.prn = rtcm_message->prn;
     ephemeris.week_number = rtcm_message->week_number;
     // ephemeris.ca_or_p_on_l2 = rtcm_message->code_on_l2;
@@ -198,6 +199,7 @@ void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042Message* rtcm_mess
     ephemeris.idot = rtcm_message->idot;
     // ephemeris.fit_interval_flag = rtcm_message->fit;
     // ephemeris.l2_p_data_flag = rtcm_message->L2_P_data_flag;
+    */
 
     mTokoro.process_ephemeris(ephemeris);
 }
