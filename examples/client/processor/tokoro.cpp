@@ -243,7 +243,7 @@ void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046Message* rtcm_me
     ephemeris.a = rtcm_message->sqrt_a * rtcm_message->sqrt_a;
 
     ephemeris.i0 = rtcm_message->i0;
-    ephemeris.omega0 = rtcm_message->omega_0;
+    ephemeris.omega0 = rtcm_message->omega0;
     ephemeris.omega = rtcm_message->omega;
     ephemeris.omega_dot = rtcm_message->omega_dot;
     ephemeris.idot = rtcm_message->idot;
