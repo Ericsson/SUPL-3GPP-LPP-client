@@ -95,10 +95,16 @@ ostream& operator<<(ostream& os, const DF137 d) {
 ostream& operator<<(ostream& os, const DF252 d) {
     return os << "      Galileo PRN:      " << static_cast<int>(d) << " \n";
 }
+ostream& operator<<(ostream& os, const DF286 d) {
+    return os << "      SISA index:       " << static_cast<int>(d) << " \n";
+}
 ostream& operator<<(ostream& os, const DF289 d) {
     return os << "      Galileo week:     " << static_cast<int>(d) << " \n";
 }
 ostream& operator<<(ostream& os, const DF290 d) {
     return os << "      Galileo IODnav:   " << static_cast<int>(d) << " \n";
+}
+ostream& operator<<(ostream& os, const DF292 d) {
+    return os << "      Galileo idot:     " << static_cast<double>(d) << " \n";
 }
 } // namespace std
