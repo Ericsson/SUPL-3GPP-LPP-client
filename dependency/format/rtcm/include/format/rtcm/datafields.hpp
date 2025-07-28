@@ -10,6 +10,7 @@
 enum struct Conversion {
     NONE,
     SC2RAD, // Semi circle to radians
+    MINUTE, // Multiply by 60
 };
 
 
@@ -57,7 +58,8 @@ private:
                           pow2(n + 1) / 2.0;
     }
     static T constexpr _factor() {
-        return pow2(exponent) * (C==Conversion::SC2RAD ? PI_DF : 1);
+        return pow2(exponent) * (C==Conversion::SC2RAD ? PI_DF : 
+                                 C==Conversion::MINUTE ? 60    : 1);
     }
     static constexpr T factor { _factor() };
 };
@@ -81,70 +83,68 @@ void getdatafield(std::bitset<N> const& data, std::size_t& i, DF &dest) {
 //                            |         |       |         Conversion of second factor
 //                            |         |       |           |
 //                            V         V       V           V
-using DF002 = DataField<  2, int   , df_uint12                         >;
-using DF009 = DataField<  9, int   , df_uint6                          >;
-using DF076 = DataField< 76, int   , df_uint10                         >; // GPS Week Number
-using DF077 = DataField< 77, int   , df_uint4                          >; // GPS SV ACCURACY
-using DF078 = DataField< 78, int   , df_uint2                          >;
-using DF079 = DataField< 79, double, df_int14 , -43, Conversion::SC2RAD>;
-using DF071 = DataField< 71, int   , df_uint8                          >;
-using DF081 = DataField< 81, double, df_uint16,   4                    >;
-using DF082 = DataField< 82, double, df_int8  , -55                    >;
-using DF083 = DataField< 83, double, df_int16 , -43                    >;
-using DF084 = DataField< 84, double, df_int22 , -31                    >;
-using DF085 = DataField< 85, int   , df_uint10                         >;
-using DF086 = DataField< 86, double, df_int16 ,  -5                    >;
-using DF087 = DataField< 87, double, df_int16 , -43, Conversion::SC2RAD>;
-using DF088 = DataField< 88, double, df_int32 , -31, Conversion::SC2RAD>;
-using DF089 = DataField< 89, double, df_int16 , -29                    >;
-using DF090 = DataField< 90, double, df_uint32, -33                    >;
-using DF091 = DataField< 91, double, df_int16 , -29                    >;
-using DF092 = DataField< 92, double, df_uint32, -19                    >;
-using DF093 = DataField< 93, double, df_uint16,   4                    >;
-using DF094 = DataField< 94, double, df_int16 , -29                    >;
-using DF095 = DataField< 95, double, df_int32 , -31, Conversion::SC2RAD>;
-using DF096 = DataField< 96, double, df_int16 , -29                    >;
-using DF097 = DataField< 97, double, df_int32 , -31, Conversion::SC2RAD>;
-using DF098 = DataField< 98, double, df_int16 ,  -5                    >;
-using DF099 = DataField< 99, double, df_int32 , -31, Conversion::SC2RAD>;
-using DF100 = DataField<100, double, df_int24 , -43, Conversion::SC2RAD>;
-using DF101 = DataField<101, double, df_int8  , -31                    >;
-using DF102 = DataField<102, int   , df_uint6                          >;
-using DF103 = DataField<103, int   , df_bit<1>                         >;
-using DF137 = DataField<137, double, df_bit<1>                         >;
-
-/*
-using DF252 = DataField<252, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF289 = DataField<289, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF290 = DataField<290, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF286 = DataField<286, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF292 = DataField<292, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF293 = DataField<293, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF294 = DataField<294, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF295 = DataField<295, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF296 = DataField<296, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF297 = DataField<297, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF298 = DataField<298, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF299 = DataField<299, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF300 = DataField<300, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF301 = DataField<301, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF302 = DataField<302, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF303 = DataField<303, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF304 = DataField<304, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF305 = DataField<305, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF306 = DataField<306, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF307 = DataField<307, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF308 = DataField<308, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF309 = DataField<309, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF310 = DataField<310, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF311 = DataField<311, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF312 = DataField<312, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF313 = DataField<313, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF316 = DataField<316, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF317 = DataField<317, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF287 = DataField<287, double, df_uint24, -43, Conversion::SC2RAD>;
-using DF288 = DataField<288, double, df_uint24, -43, Conversion::SC2RAD>;
-*/
+using DF001 = DataField<  1, uint8_t , df_bit<2>                         >;
+using DF002 = DataField<  2, uint16_t, df_uint12                         >;
+using DF009 = DataField<  9, uint8_t , df_uint6                          >;
+using DF071 = DataField< 71, uint8_t , df_uint8                          >;
+using DF076 = DataField< 76, uint16_t, df_uint10                         >; // GPS Week Number
+using DF077 = DataField< 77, uint8_t , df_uint4                          >; // GPS SV ACCURACY
+using DF078 = DataField< 78, uint8_t , df_uint2                          >;
+using DF079 = DataField< 79, double  , df_int14 , -43, Conversion::SC2RAD>;
+using DF081 = DataField< 81, double  , df_uint16,   4                    >;
+using DF082 = DataField< 82, double  , df_int8  , -55                    >;
+using DF083 = DataField< 83, double  , df_int16 , -43                    >;
+using DF084 = DataField< 84, double  , df_int22 , -31                    >;
+using DF085 = DataField< 85, uint16_t, df_uint10                         >;
+using DF086 = DataField< 86, double  , df_int16 ,  -5                    >;
+using DF087 = DataField< 87, double  , df_int16 , -43, Conversion::SC2RAD>;
+using DF088 = DataField< 88, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF089 = DataField< 89, double  , df_int16 , -29                    >;
+using DF090 = DataField< 90, double  , df_uint32, -33                    >;
+using DF091 = DataField< 91, double  , df_int16 , -29                    >;
+using DF092 = DataField< 92, double  , df_uint32, -19                    >;
+using DF093 = DataField< 93, double  , df_uint16,   4                    >;
+using DF094 = DataField< 94, double  , df_int16 , -29                    >;
+using DF095 = DataField< 95, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF096 = DataField< 96, double  , df_int16 , -29                    >;
+using DF097 = DataField< 97, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF098 = DataField< 98, double  , df_int16 ,  -5                    >;
+using DF099 = DataField< 99, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF100 = DataField<100, double  , df_int24 , -43, Conversion::SC2RAD>;
+using DF101 = DataField<101, double  , df_int8  , -31                    >;
+using DF102 = DataField<102, uint8_t , df_uint6                          >;
+using DF103 = DataField<103, bool    , df_bit<1>                         >;
+using DF137 = DataField<137, bool    , df_bit<1>                         >;
+using DF252 = DataField<252, uint8_t , df_uint6                          >;
+using DF289 = DataField<289, uint16_t, df_uint12                         >;
+using DF290 = DataField<290, uint16_t, df_uint10                         >;
+using DF286 = DataField<286, uint8_t , df_uint8                          >;
+using DF287 = DataField<287, uint8_t , df_bit<2>                         >;
+using DF288 = DataField<288, bool    , df_bit<1>                         >;
+using DF292 = DataField<292, double  , df_int14 , -43, Conversion::SC2RAD>;
+using DF293 = DataField<293, double  , df_uint14,   0, Conversion::MINUTE>;
+using DF294 = DataField<294, double  , df_int6  , -59                    >;
+using DF295 = DataField<295, double  , df_int21 , -46                    >;
+using DF296 = DataField<296, double  , df_int31 , -34                    >;
+using DF297 = DataField<297, double  , df_int16 ,  -5                    >;
+using DF298 = DataField<298, double  , df_int16 , -43, Conversion::SC2RAD>;
+using DF299 = DataField<299, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF300 = DataField<300, double  , df_int16 , -29                    >;
+using DF301 = DataField<301, double  , df_uint32, -33                    >;
+using DF302 = DataField<302, double  , df_int16 , -29                    >;
+using DF303 = DataField<303, double  , df_uint32, -19                    >;
+using DF304 = DataField<304, double  , df_uint14,   0, Conversion::MINUTE>;
+using DF305 = DataField<305, double  , df_int16 , -29                    >;
+using DF306 = DataField<306, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF307 = DataField<307, double  , df_int16 , -29                    >;
+using DF308 = DataField<308, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF309 = DataField<309, double  , df_int16 ,  -5                    >;
+using DF310 = DataField<310, double  , df_int32 , -31, Conversion::SC2RAD>;
+using DF311 = DataField<311, double  , df_int24 , -43, Conversion::SC2RAD>;
+using DF312 = DataField<312, double  , df_int10 , -32                    >;
+using DF313 = DataField<313, double  , df_int10 , -32                    >;
+using DF316 = DataField<316, uint8_t , df_bit<2>                         >;
+using DF317 = DataField<317, bool    , df_bit<1>                         >;
 
 namespace std {
 ostream& operator<<(ostream& os, const DF002 d);
