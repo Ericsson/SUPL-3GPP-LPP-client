@@ -40,7 +40,7 @@ public:
     DF084  a_f0;
     DF085  iodc;
     DF086  C_rs;
-    DF087  dn;
+    DF087  delta_n;
     DF088  M_0;
     DF089  C_uc;
     DF090  e;

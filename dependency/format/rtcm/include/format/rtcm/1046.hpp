@@ -7,9 +7,6 @@
 #include <time/tai.hpp>
 #include "datafields.hpp"
 
-// TODO: Put headers for messages in /messages folder
-// Also maybe remove Message in Rtcm1046Message to be more uniform with other formats
-
 namespace format {
 namespace rtcm{
 
@@ -28,38 +25,39 @@ public:
 
     NODISCARD static std::unique_ptr<Message> parse(std::vector<uint8_t> data);
 
-// private:
+    DF252  prn;
+    DF289  week_number;
+    DF290  iod_nav;
+    DF286  sisa_index;
+    DF292  idot;
+    DF293  toc;
+    DF294  af2;
+    DF295  af1;
+    DF296  af0;
+    DF297  crs;
+    DF298  delta_n;
+    DF299  m0;
+    DF300  cuc;
+    DF301  e;
+    DF302  cus;
+    DF303  sqrt_a;
+    DF304  toe;
+    DF305  cic;
+    DF306  omega_0;
+    DF307  cis;
+    DF308  i0;
+    DF309  crc;
+    DF310  omega;
+    DF311  omega_dot;
+    DF312  BGD_E5a_E1;
+    DF313  BGD_E5b_E1;
+    DF316  E5b_signal_health;
+    DF317  E5b_data_validity;
+    DF287  E1_B_signal_health;
+    DF288  E1_B_data_validity;
+    DF001  reserved;
+private:
     EXPLICIT Rtcm1046Message(std::vector<uint8_t> data) NOEXCEPT;
-    DF009  prn;
-    DF076  week;
-    DF077  SV_ACCURACY;
-    DF078  code_on_l2;
-    DF079  idot;
-    DF071  iode;
-    DF081  t_oc;
-    DF082  a_f2;
-    DF083  a_f1;
-    DF084  a_f0;
-    DF085  iodc;
-    DF086  C_rs;
-    DF087  dn;
-    DF088  M_0;
-    DF089  C_uc;
-    DF090  e;
-    DF091  C_us;
-    DF092  sqrt_A;
-    DF093  t_oe;
-    DF094  C_ic;
-    DF095  OMEGA_0;
-    DF096  C_is;
-    DF097  i_0;
-    DF098  C_rc;
-    DF099  omega;
-    DF100  OMEGADOT;
-    DF101  t_GD;
-    DF102  SV_HEALTH;
-    DF103  L2_P_data_flag;
-    DF137  fit;
 };
 
 }  // namespace rtcm
