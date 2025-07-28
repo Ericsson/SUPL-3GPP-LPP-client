@@ -15,6 +15,7 @@ struct DataType {
 
 template<std::size_t N>
 struct df_bit    : DataType< N, Sign::UNSIGNED> {};
+struct df_int6   : DataType< 6, Sign::SIGNED> {};
 struct df_int8   : DataType< 8, Sign::SIGNED> {};
 struct df_int9   : DataType< 9, Sign::SIGNED> {};
 struct df_int10  : DataType<10, Sign::SIGNED> {};
@@ -32,6 +33,7 @@ struct df_int25  : DataType<25, Sign::SIGNED> {};
 struct df_int26  : DataType<26, Sign::SIGNED> {};
 struct df_int27  : DataType<27, Sign::SIGNED> {};
 struct df_int30  : DataType<30, Sign::SIGNED> {};
+struct df_int31  : DataType<31, Sign::SIGNED> {};
 struct df_int32  : DataType<32, Sign::SIGNED> {};
 struct df_int34  : DataType<34, Sign::SIGNED> {};
 struct df_int35  : DataType<35, Sign::SIGNED> {};
