@@ -29,7 +29,7 @@ void Rtcm1019Message::print() const NOEXCEPT {
               << a_f0
               << iodc
               << C_rs
-              << dn
+              << delta_n
               << M_0
               << C_uc
               << e
@@ -86,7 +86,7 @@ std::unique_ptr<Message> Rtcm1019Message::parse(std::vector<uint8_t> mData) {
     getdatafield(bits,i,  m->a_f0          );
     getdatafield(bits,i,  m->iodc          );
     getdatafield(bits,i,  m->C_rs          );
-    getdatafield(bits,i,  m->dn            );
+    getdatafield(bits,i,  m->delta_n       );
     getdatafield(bits,i,  m->M_0           );
     getdatafield(bits,i,  m->C_uc          );
     getdatafield(bits,i,  m->e             );

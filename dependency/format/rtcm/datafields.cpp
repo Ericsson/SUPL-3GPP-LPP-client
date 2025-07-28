@@ -92,4 +92,13 @@ ostream& operator<<(ostream& os, const DF103 d) {
 ostream& operator<<(ostream& os, const DF137 d) {
     return os << "      GPS Fit Interval: " << (d?">4 hours":"=4 hours") << " \n";
 }
+ostream& operator<<(ostream& os, const DF252 d) {
+    return os << "      Galileo PRN:      " << static_cast<int>(d) << " \n";
+}
+ostream& operator<<(ostream& os, const DF289 d) {
+    return os << "      Galileo week:     " << static_cast<int>(d) << " \n";
+}
+ostream& operator<<(ostream& os, const DF290 d) {
+    return os << "      Galileo IODnav:   " << static_cast<int>(d) << " \n";
+}
 } // namespace std

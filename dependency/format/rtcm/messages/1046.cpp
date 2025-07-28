@@ -15,8 +15,39 @@ Rtcm1046Message::Rtcm1046Message(std::vector<uint8_t> mData) NOEXCEPT
     : Message{mData} {}
 
 void Rtcm1046Message::print() const NOEXCEPT {
-    printf("[%4d]\n",           static_cast<int>(mType));
-    printf("        prn: %d\n", static_cast<int>(prn));
+    std::cout << "RTCM 1046 message\n"
+              << prn               
+              << week_number       
+              << iod_nav           
+              << sisa_index        
+              << idot              
+              << toc               
+              << af2               
+              << af1               
+              << af0               
+              << crs               
+              << delta_n           
+              << m0                
+              << cuc               
+              << e                 
+              << cus               
+              << sqrt_a            
+              << toe               
+              << cic               
+              << omega_0           
+              << cis               
+              << i0                
+              << crc               
+              << omega             
+              << omega_dot         
+              << BGD_E5a_E1        
+              << BGD_E5b_E1        
+              << E5b_signal_health 
+              << E5b_data_validity 
+              << E1_B_signal_health
+              << E1_B_data_validity
+              << reserved
+              << std::endl;
 }
 
 std::unique_ptr<Message> Rtcm1046Message::clone() const NOEXCEPT {
@@ -30,9 +61,9 @@ std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
     }
 
     auto m = new Rtcm1046Message(mData);
-    std::bitset<8+16+488+24> bits { 0UL };
+    std::bitset<8+16+504+24> bits { 0UL };
     for (auto b : mData) {
-        const std::bitset<8+16+488+24> bs {b};
+        const std::bitset<8+16+504+24> bs {b};
         bits <<= 8;
         bits  |= bs;
     }
@@ -44,37 +75,38 @@ std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
         ERRORF("bits: %s", bits.to_string().c_str());
         return std::make_unique<ErrorMessage>();
     }
-    getdatafield(bits,i,  m->prn           );
-    getdatafield(bits,i,  m->week          );
-    getdatafield(bits,i,  m->SV_ACCURACY   );
-    getdatafield(bits,i,  m->code_on_l2    );
-    getdatafield(bits,i,  m->idot          );
-    getdatafield(bits,i,  m->iode          );
-    getdatafield(bits,i,  m->t_oc          );
-    getdatafield(bits,i,  m->a_f2          );
-    getdatafield(bits,i,  m->a_f1          );
-    getdatafield(bits,i,  m->a_f0          );
-    getdatafield(bits,i,  m->iodc          );
-    getdatafield(bits,i,  m->C_rs          );
-    getdatafield(bits,i,  m->dn            );
-    getdatafield(bits,i,  m->M_0           );
-    getdatafield(bits,i,  m->C_uc          );
-    getdatafield(bits,i,  m->e             );
-    getdatafield(bits,i,  m->C_us          );
-    getdatafield(bits,i,  m->sqrt_A        );
-    getdatafield(bits,i,  m->t_oe          );
-    getdatafield(bits,i,  m->C_ic          );
-    getdatafield(bits,i,  m->OMEGA_0       );
-    getdatafield(bits,i,  m->C_is          );
-    getdatafield(bits,i,  m->i_0           );
-    getdatafield(bits,i,  m->C_rc          );
-    getdatafield(bits,i,  m->omega         );
-    getdatafield(bits,i,  m->OMEGADOT      );
-    getdatafield(bits,i,  m->t_GD          );
-    getdatafield(bits,i,  m->SV_HEALTH     );
-    getdatafield(bits,i,  m->L2_P_data_flag);
-    getdatafield(bits,i,  m->fit           );
-
+    getdatafield(bits,i,  m->prn               );
+    getdatafield(bits,i,  m->week_number       );
+    getdatafield(bits,i,  m->iod_nav           );
+    getdatafield(bits,i,  m->sisa_index        );
+    getdatafield(bits,i,  m->idot              );
+    getdatafield(bits,i,  m->toc               );
+    getdatafield(bits,i,  m->af2               );
+    getdatafield(bits,i,  m->af1               );
+    getdatafield(bits,i,  m->af0               );
+    getdatafield(bits,i,  m->crs               );
+    getdatafield(bits,i,  m->delta_n           );
+    getdatafield(bits,i,  m->m0                );
+    getdatafield(bits,i,  m->cuc               );
+    getdatafield(bits,i,  m->e                 );
+    getdatafield(bits,i,  m->cus               );
+    getdatafield(bits,i,  m->sqrt_a            );
+    getdatafield(bits,i,  m->toe               );
+    getdatafield(bits,i,  m->cic               );
+    getdatafield(bits,i,  m->omega_0           );
+    getdatafield(bits,i,  m->cis               );
+    getdatafield(bits,i,  m->i0                );
+    getdatafield(bits,i,  m->crc               );
+    getdatafield(bits,i,  m->omega             );
+    getdatafield(bits,i,  m->omega_dot         );
+    getdatafield(bits,i,  m->BGD_E5a_E1        );
+    getdatafield(bits,i,  m->BGD_E5b_E1        );
+    getdatafield(bits,i,  m->E5b_signal_health );
+    getdatafield(bits,i,  m->E5b_data_validity );
+    getdatafield(bits,i,  m->E1_B_signal_health);
+    getdatafield(bits,i,  m->E1_B_data_validity);
+    getdatafield(bits,i,  m->reserved          );
+                             
     return std::unique_ptr<Rtcm1046Message>(m);
 }
 
