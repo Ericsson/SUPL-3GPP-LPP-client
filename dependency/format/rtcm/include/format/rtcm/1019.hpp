@@ -28,8 +28,6 @@ public:
 
     NODISCARD static std::unique_ptr<Message> parse(std::vector<uint8_t> data);
 
-// private:
-    EXPLICIT Rtcm1019Message(std::vector<uint8_t> data) NOEXCEPT;
     DF009  prn;
     DF076  week;
     DF077  SV_ACCURACY;
@@ -60,6 +58,8 @@ public:
     DF102  SV_HEALTH;
     DF103  L2_P_data_flag;
     DF137  fit;
+private:
+    EXPLICIT Rtcm1019Message(std::vector<uint8_t> data) NOEXCEPT;
 };
 
 }  // namespace rtcm

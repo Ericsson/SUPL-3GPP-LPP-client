@@ -2,6 +2,7 @@
 add_library(dependency_format_rtcm STATIC 
     "message.cpp"
     "parser.cpp"
+    "datafields.cpp"
     "messages/1019.cpp"
 )
 add_library(dependency::format::rtcm ALIAS dependency_format_rtcm)

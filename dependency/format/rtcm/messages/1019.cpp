@@ -4,6 +4,7 @@
 #include <loglet/loglet.hpp>
 #include <helper.hpp>
 #include <datafields.hpp>
+#include <iostream>
 
 LOGLET_MODULE3(format, rtcm, rtcm1019);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, rtcm, rtcm1019)
@@ -15,8 +16,38 @@ Rtcm1019Message::Rtcm1019Message(std::vector<uint8_t> mData) NOEXCEPT
     : Message{mData} {}
 
 void Rtcm1019Message::print() const NOEXCEPT {
-    printf("[%4d]\n",           static_cast<int>(mType));
-    printf("        prn: %d\n", static_cast<int>(prn));
+    std::cout << "RTCM 1019 message\n"
+              << prn
+              << week
+              << SV_ACCURACY
+              << code_on_l2
+              << idot
+              << iode
+              << t_oc
+              << a_f2
+              << a_f1
+              << a_f0
+              << iodc
+              << C_rs
+              << dn
+              << M_0
+              << C_uc
+              << e
+              << C_us
+              << sqrt_A
+              << t_oe
+              << C_ic
+              << OMEGA_0
+              << C_is
+              << i_0
+              << C_rc
+              << omega
+              << OMEGADOT
+              << t_GD
+              << SV_HEALTH
+              << L2_P_data_flag
+              << fit
+              << std::endl;
 }
 
 std::unique_ptr<Message> Rtcm1019Message::clone() const NOEXCEPT {
@@ -41,7 +72,6 @@ std::unique_ptr<Message> Rtcm1019Message::parse(std::vector<uint8_t> mData) {
     getdatafield(bits,i,  m->mType);
     if (m->mType != 1019) {
         ERRORF("RTCM 1019 message missmatched message number. should be '1019', was '%4d'", m->mType);
-        ERRORF("bits: %s", bits.to_string().c_str());
         return std::make_unique<ErrorMessage>();
     }
     getdatafield(bits,i,  m->prn           );
