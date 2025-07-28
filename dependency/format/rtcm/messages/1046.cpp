@@ -1,0 +1,82 @@
+#include "1046.hpp"
+
+#include <bitset>
+#include <loglet/loglet.hpp>
+#include <helper.hpp>
+#include <datafields.hpp>
+
+LOGLET_MODULE3(format, rtcm, rtcm1046);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, rtcm, rtcm1046)
+
+namespace format {
+namespace rtcm {
+
+Rtcm1046Message::Rtcm1046Message(std::vector<uint8_t> mData) NOEXCEPT
+    : Message{mData} {}
+
+void Rtcm1046Message::print() const NOEXCEPT {
+    printf("[%4d]\n",           static_cast<int>(mType));
+    printf("        prn: %d\n", static_cast<int>(prn));
+}
+
+std::unique_ptr<Message> Rtcm1046Message::clone() const NOEXCEPT {
+    return std::unique_ptr<Message>(new Rtcm1046Message(*this));
+}
+
+std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
+    if (mData.size()*8 < 8+16+488+24) {
+        ERRORF("RTCM 1046 message created without enough data (requires %d bits, received %d bits)", 8+16+488+24, mData.size()*8);
+        return std::make_unique<ErrorMessage>();
+    }
+
+    auto m = new Rtcm1046Message(mData);
+    std::bitset<8+16+488+24> bits { 0UL };
+    for (auto b : mData) {
+        const std::bitset<8+16+488+24> bs {b};
+        bits <<= 8;
+        bits  |= bs;
+    }
+
+    std::size_t i = 8+16; 
+    getdatafield(bits,i,  m->mType);
+    if (m->mType != 1046) {
+        ERRORF("RTCM 1046 message missmatched message number. should be '1046', was '%4d'", m->mType);
+        ERRORF("bits: %s", bits.to_string().c_str());
+        return std::make_unique<ErrorMessage>();
+    }
+    getdatafield(bits,i,  m->prn           );
+    getdatafield(bits,i,  m->week          );
+    getdatafield(bits,i,  m->SV_ACCURACY   );
+    getdatafield(bits,i,  m->code_on_l2    );
+    getdatafield(bits,i,  m->idot          );
+    getdatafield(bits,i,  m->iode          );
+    getdatafield(bits,i,  m->t_oc          );
+    getdatafield(bits,i,  m->a_f2          );
+    getdatafield(bits,i,  m->a_f1          );
+    getdatafield(bits,i,  m->a_f0          );
+    getdatafield(bits,i,  m->iodc          );
+    getdatafield(bits,i,  m->C_rs          );
+    getdatafield(bits,i,  m->dn            );
+    getdatafield(bits,i,  m->M_0           );
+    getdatafield(bits,i,  m->C_uc          );
+    getdatafield(bits,i,  m->e             );
+    getdatafield(bits,i,  m->C_us          );
+    getdatafield(bits,i,  m->sqrt_A        );
+    getdatafield(bits,i,  m->t_oe          );
+    getdatafield(bits,i,  m->C_ic          );
+    getdatafield(bits,i,  m->OMEGA_0       );
+    getdatafield(bits,i,  m->C_is          );
+    getdatafield(bits,i,  m->i_0           );
+    getdatafield(bits,i,  m->C_rc          );
+    getdatafield(bits,i,  m->omega         );
+    getdatafield(bits,i,  m->OMEGADOT      );
+    getdatafield(bits,i,  m->t_GD          );
+    getdatafield(bits,i,  m->SV_HEALTH     );
+    getdatafield(bits,i,  m->L2_P_data_flag);
+    getdatafield(bits,i,  m->fit           );
+
+    return std::unique_ptr<Rtcm1046Message>(m);
+}
+
+}  // namespace rtcm
+}  // namespace format
