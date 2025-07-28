@@ -3,6 +3,7 @@
 #include "datatypes.hpp"
 #include <cmath>
 #include <iostream>
+#include <stdint.h>
 
 #define PI_DF 3.1415926535897932
 
