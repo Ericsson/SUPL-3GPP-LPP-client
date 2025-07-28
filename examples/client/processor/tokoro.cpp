@@ -166,13 +166,12 @@ void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message) 
     auto ptr = message.get();
     if (!ptr) return;
 
-    // Could cast to message and check type instead, migth be more reliable??
     auto rtcm1019 = dynamic_cast<format::rtcm::Rtcm1019Message*>(ptr);
     if (rtcm1019) return handle_gps(rtcm1019);
-    // auto rtcm1042 = dynamic_cast<format::rtcm::Rtcm1042Message*>(ptr);
-    // if (rtcm1042) handle_bds(rtcm1042);
-    // auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046Message*>(ptr);
-    // if (rtcm1046) handle_gal(rtcm1046);
+    auto rtcm1042 = dynamic_cast<format::rtcm::Rtcm1042Message*>(ptr);
+    if (rtcm1042) return handle_bds(rtcm1042);
+    auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046Message*>(ptr);
+    if (rtcm1046) return handle_gal(rtcm1046);
 }
 
 //
