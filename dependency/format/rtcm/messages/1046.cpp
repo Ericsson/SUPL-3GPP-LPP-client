@@ -34,7 +34,7 @@ void Rtcm1046Message::print() const NOEXCEPT {
               << sqrt_a            
               << toe               
               << cic               
-              << omega_0           
+              << omega0           
               << cis               
               << i0                
               << crc               
@@ -93,7 +93,7 @@ std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
     getdatafield(bits,i,  m->sqrt_a            );
     getdatafield(bits,i,  m->toe               );
     getdatafield(bits,i,  m->cic               );
-    getdatafield(bits,i,  m->omega_0           );
+    getdatafield(bits,i,  m->omega0           );
     getdatafield(bits,i,  m->cis               );
     getdatafield(bits,i,  m->i0                );
     getdatafield(bits,i,  m->crc               );
