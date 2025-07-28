@@ -137,7 +137,7 @@ void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_me
     ephemeris.cis = rtcm_message->C_is;
     ephemeris.e = rtcm_message->e;
     ephemeris.m0 = rtcm_message->M_0;
-    ephemeris.delta_n = rtcm_message->dn; // Really should rename this one
+    ephemeris.delta_n = rtcm_message->delta_n;
     ephemeris.a = rtcm_message->sqrt_A * rtcm_message->sqrt_A;
     ephemeris.i0 = rtcm_message->i_0;
     ephemeris.omega0 = rtcm_message->OMEGA_0;
