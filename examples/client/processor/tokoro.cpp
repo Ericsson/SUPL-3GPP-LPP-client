@@ -4,6 +4,7 @@
 #include <format/antex/antex.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
+#include <format/rtcm/datafields.hpp>
 
 LOGLET_MODULE2(p, tkr);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, tkr)
@@ -121,7 +122,7 @@ void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_me
     ephemeris.lpp_iod = rtcm_message->iode;
     ephemeris.iodc = rtcm_message->iodc;
     ephemeris.iode = rtcm_message->iode;
-    // ephemeris.aodo = rtcm_message->;
+    ephemeris.aodo = 0;
     ephemeris.toc = rtcm_message->t_oc;
     ephemeris.toe = rtcm_message->t_oe;
     ephemeris.tgd = rtcm_message->t_GD;
@@ -137,7 +138,7 @@ void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_me
     ephemeris.e = rtcm_message->e;
     ephemeris.m0 = rtcm_message->M_0;
     ephemeris.delta_n = rtcm_message->dn; // Really should rename this one
-    ephemeris.a = rtcm_message->sqrt_A;
+    ephemeris.a = rtcm_message->sqrt_A * rtcm_message->sqrt_A;
     ephemeris.i0 = rtcm_message->i_0;
     ephemeris.omega0 = rtcm_message->OMEGA_0;
     ephemeris.omega = rtcm_message->omega;
