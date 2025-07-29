@@ -81,9 +81,9 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 
     DEBUGF("decoding RTCM message of type: %04d", type);
     switch (type) {
-    case 1019: return Rtcm1019Message::parse(message);
-    case 1042: return Rtcm1042Message::parse(message);
-    case 1046: return Rtcm1046Message::parse(message);
+    case 1019: return Rtcm1019::parse(message);
+    case 1042: return Rtcm1042::parse(message);
+    case 1046: return Rtcm1046::parse(message);
     default:   return std::make_unique<UnsupportedMessage>(type, message);
     }
 }

@@ -10,15 +10,15 @@
 namespace format {
 namespace rtcm{
 
-class Rtcm1046Message final : public Message {
+class Rtcm1046 final : public Message {
 public:
-    ~Rtcm1046Message() override = default;
+    ~Rtcm1046() override = default;
 
-    Rtcm1046Message(Rtcm1046Message const& other)
+    Rtcm1046(Rtcm1046 const& other)
         : Message(other) {}
-    Rtcm1046Message(Rtcm1046Message&&)                 = delete;
-    Rtcm1046Message& operator=(Rtcm1046Message const&) = delete;
-    Rtcm1046Message& operator=(Rtcm1046Message&&)      = delete;
+    Rtcm1046(Rtcm1046&&)                 = delete;
+    Rtcm1046& operator=(Rtcm1046 const&) = delete;
+    Rtcm1046& operator=(Rtcm1046&&)      = delete;
 
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
@@ -57,7 +57,7 @@ public:
     DF288  E1_B_data_validity;
     DF001  reserved;
 private:
-    EXPLICIT Rtcm1046Message(std::vector<uint8_t> data) NOEXCEPT;
+    EXPLICIT Rtcm1046(std::vector<uint8_t> data) NOEXCEPT;
 };
 
 }  // namespace rtcm
