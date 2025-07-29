@@ -55,8 +55,8 @@ std::unique_ptr<Message> Rtcm1046Message::clone() const NOEXCEPT {
 }
 
 std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
-    if (mData.size()*8 < 8+16+488+24) {
-        ERRORF("RTCM 1046 message created without enough data (requires %d bits, received %d bits)", 8+16+488+24, mData.size()*8);
+    if (mData.size()*8 < 8+16+504+24) {
+        ERRORF("RTCM 1046 message created without enough data (requires %d bits, received %d bits)", 8+16+504+24, mData.size()*8);
         return std::make_unique<ErrorMessage>();
     }
 
@@ -93,7 +93,7 @@ std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
     getdatafield(bits,i,  m->sqrt_a            );
     getdatafield(bits,i,  m->toe               );
     getdatafield(bits,i,  m->cic               );
-    getdatafield(bits,i,  m->omega0           );
+    getdatafield(bits,i,  m->omega0            );
     getdatafield(bits,i,  m->cis               );
     getdatafield(bits,i,  m->i0                );
     getdatafield(bits,i,  m->crc               );
