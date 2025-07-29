@@ -10,3 +10,7 @@ endif()
 if(INCLUDE_GENERATOR_TOKORO)
 add_subdirectory("tokoro")
 endif()
+
+if(INCLUDE_GENERATOR_IDOKEIDO)
+add_subdirectory("idokeido")
+endif()

@@ -47,6 +47,10 @@
 #include "processor/tokoro.hpp"
 #endif
 
+#if defined(INCLUDE_GENERATOR_IDOKEIDO)
+#include "processor/idokeido.hpp"
+#endif
+
 #ifdef DATA_TRACING
 #include "processor/possib_logger.hpp"
 #endif
@@ -578,6 +582,16 @@ static void setup_tokoro(Program& program) {
 #endif
 }
 
+static void setup_idokeido(Program& program) {
+#if defined(INCLUDE_GENERATOR_IDOKEIDO)
+    if (program.config.idokeido.enabled) {
+        auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
+            program.config.output, program.config.idokeido, program.scheduler);
+        program.stream.add_inspector<IdokeidoEphemerisUbx<IdokeidoSpp>>(*idokeido_spp);
+    }
+#endif
+}
+
 int main(int argc, char** argv) {
     loglet::initialize();
 
@@ -662,6 +676,7 @@ int main(int argc, char** argv) {
     setup_lpp2osr(program);
     setup_lpp2spartn(program);
     setup_tokoro(program);
+    setup_idokeido(program);
 
     if (program.config.location_information.fake.enabled) {
         setup_fake_location(program);

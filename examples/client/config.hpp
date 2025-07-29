@@ -329,6 +329,12 @@ struct TokoroConfig {
 };
 #endif
 
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+struct IdokeidoConfig {
+    bool enabled;
+};
+#endif
+
 struct Config {
     LocationServerConfig      location_server;
     IdentityConfig            identity;
@@ -346,6 +352,9 @@ struct Config {
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
     TokoroConfig tokoro;
+#endif
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+    IdokeidoConfig idokeido;
 #endif
     LoggingConfig logging;
 #ifdef DATA_TRACING

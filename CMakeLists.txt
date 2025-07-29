@@ -17,6 +17,8 @@ add_definitions(-DCLIENT_VERSION_INT=0x040015)
 
 find_package(Threads REQUIRED)
 
+include(cmake/CPM.cmake)
+
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG=1)
 endif()

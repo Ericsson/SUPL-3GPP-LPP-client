@@ -52,6 +52,9 @@ static std::vector<std::string> split(std::string const& str, char delim) {
 #ifdef INCLUDE_GENERATOR_TOKORO
 #include "config/tokoro.cpp"
 #endif
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+#include "config/idokeido.cpp"
+#endif
 #ifdef DATA_TRACING
 #include "config/data_tracing.cpp"
 #endif
@@ -131,6 +134,14 @@ void dump(Config* config) {
     }
 #endif
 
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+    {
+        DEBUGF("idokeido:");
+        DEBUG_INDENT_SCOPE();
+        idokeido::dump(config->idokeido);
+    }
+#endif
+
     {
         DEBUGF("logging:");
         DEBUG_INDENT_SCOPE();
@@ -169,6 +180,9 @@ bool parse(int argc, char** argv, Config* config) {
 #ifdef INCLUDE_GENERATOR_TOKORO
     args::GlobalOptions tokoro_globals{parser, tokoro::gGroup};
 #endif
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+    args::GlobalOptions idokeido_globals{parser, idokeido::gGroup};
+#endif
     args::GlobalOptions logging_globals{parser, logging::gGroup};
 #ifdef DATA_TRACING
     args::GlobalOptions data_tracing_globals{parser, data_tracing::gGroup};
@@ -190,6 +204,9 @@ bool parse(int argc, char** argv, Config* config) {
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
     tokoro::setup();
+#endif
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+    idokeido::setup();
 #endif
     logging::setup();
 #ifdef DATA_TRACING
@@ -224,6 +241,9 @@ bool parse(int argc, char** argv, Config* config) {
 #ifdef INCLUDE_GENERATOR_TOKORO
         tokoro::parse(config);
 #endif
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+        idokeido::parse(config);
+#endif
         logging::parse(config);
 #ifdef DATA_TRACING
         data_tracing::parse(config);
@@ -253,6 +273,9 @@ bool parse(int argc, char** argv, Config* config) {
         config->tokoro.generate_glonass &= config->gnss.glonass;
         config->tokoro.generate_galileo &= config->gnss.galileo;
         config->tokoro.generate_beidou &= config->gnss.beidou;
+#endif
+
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
 #endif
 
         return true;
