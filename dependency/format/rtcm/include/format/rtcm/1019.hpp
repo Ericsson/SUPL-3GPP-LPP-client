@@ -13,15 +13,15 @@
 namespace format {
 namespace rtcm{
 
-class Rtcm1019Message final : public Message {
+class Rtcm1019 final : public Message {
 public:
-    ~Rtcm1019Message() override = default;
+    ~Rtcm1019() override = default;
 
-    Rtcm1019Message(Rtcm1019Message const& other)
+    Rtcm1019(Rtcm1019 const& other)
         : Message(other) {}
-    Rtcm1019Message(Rtcm1019Message&&)                 = delete;
-    Rtcm1019Message& operator=(Rtcm1019Message const&) = delete;
-    Rtcm1019Message& operator=(Rtcm1019Message&&)      = delete;
+    Rtcm1019(Rtcm1019&&)                 = delete;
+    Rtcm1019& operator=(Rtcm1019 const&) = delete;
+    Rtcm1019& operator=(Rtcm1019&&)      = delete;
 
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
@@ -59,7 +59,7 @@ public:
     DF103  L2_P_data_flag;
     DF137  fit;
 private:
-    EXPLICIT Rtcm1019Message(std::vector<uint8_t> data) NOEXCEPT;
+    EXPLICIT Rtcm1019(std::vector<uint8_t> data) NOEXCEPT;
 };
 
 }  // namespace rtcm

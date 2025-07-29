@@ -9,7 +9,7 @@
 
 namespace format {
 namespace rtcm {
-class Rtcm1019Message;
+class Rtcm1019;
 }
 }  // namespace format
 

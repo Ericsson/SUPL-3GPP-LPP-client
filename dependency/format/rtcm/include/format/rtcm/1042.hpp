@@ -12,15 +12,15 @@
 namespace format {
 namespace rtcm{
 
-class Rtcm1042Message final : public Message {
+class Rtcm1042 final : public Message {
 public:
-    ~Rtcm1042Message() override = default;
+    ~Rtcm1042() override = default;
 
-    Rtcm1042Message(Rtcm1042Message const& other)
+    Rtcm1042(Rtcm1042 const& other)
         : Message(other) {}
-    Rtcm1042Message(Rtcm1042Message&&)                 = delete;
-    Rtcm1042Message& operator=(Rtcm1042Message const&) = delete;
-    Rtcm1042Message& operator=(Rtcm1042Message&&)      = delete;
+    Rtcm1042(Rtcm1042&&)                 = delete;
+    Rtcm1042& operator=(Rtcm1042 const&) = delete;
+    Rtcm1042& operator=(Rtcm1042&&)      = delete;
 
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
@@ -57,7 +57,7 @@ public:
     DF515 sv_health;
 
 private:
-    EXPLICIT Rtcm1042Message(std::vector<uint8_t> data) NOEXCEPT;
+    EXPLICIT Rtcm1042(std::vector<uint8_t> data) NOEXCEPT;
 };
 
 }  // namespace rtcm

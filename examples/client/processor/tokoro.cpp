@@ -1,5 +1,7 @@
+#include <cstdint>
 #include "ephemeris/bds.hpp"
 #include "ephemeris/gal.hpp"
+#include "time/bdt.hpp"
 #if defined(INCLUDE_GENERATOR_TOKORO)
 #include "tokoro.hpp"
 
@@ -112,152 +114,148 @@ void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message) {
 //
 //
 
-void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_message) {
+void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019* rtcm) {
     VSCOPE_FUNCTION();
 
     ephemeris::GpsEphemeris ephemeris{};
-    ephemeris.prn = rtcm_message->prn;
-    ephemeris.week_number = rtcm_message->week;
-    ephemeris.ca_or_p_on_l2 = rtcm_message->code_on_l2;
-    ephemeris.ura_index = rtcm_message->SV_ACCURACY;
-    ephemeris.sv_health = rtcm_message->SV_HEALTH;
-    ephemeris.lpp_iod = rtcm_message->iode;
-    ephemeris.iodc = rtcm_message->iodc;
-    ephemeris.iode = rtcm_message->iode;
+    ephemeris.prn = rtcm->prn;
+    ephemeris.week_number = rtcm->week;
+    ephemeris.ca_or_p_on_l2 = rtcm->code_on_l2;
+    ephemeris.ura_index = rtcm->SV_ACCURACY;
+    ephemeris.sv_health = rtcm->SV_HEALTH;
+    ephemeris.lpp_iod = rtcm->iode;
+    ephemeris.iodc = rtcm->iodc;
+    ephemeris.iode = rtcm->iode;
     ephemeris.aodo = 0;
-    ephemeris.toc = rtcm_message->t_oc;
-    ephemeris.toe = rtcm_message->t_oe;
-    ephemeris.tgd = rtcm_message->t_GD;
-    ephemeris.af2 = rtcm_message->a_f2;
-    ephemeris.af1 = rtcm_message->a_f1;
-    ephemeris.af0 = rtcm_message->a_f0;
-    ephemeris.crc = rtcm_message->C_rc;
-    ephemeris.crs = rtcm_message->C_rs;
-    ephemeris.cuc = rtcm_message->C_uc;
-    ephemeris.cus = rtcm_message->C_us;
-    ephemeris.cic = rtcm_message->C_ic;
-    ephemeris.cis = rtcm_message->C_is;
-    ephemeris.e = rtcm_message->e;
-    ephemeris.m0 = rtcm_message->M_0;
-    ephemeris.delta_n = rtcm_message->delta_n;
-    ephemeris.a = rtcm_message->sqrt_A * rtcm_message->sqrt_A;
-    ephemeris.i0 = rtcm_message->i_0;
-    ephemeris.omega0 = rtcm_message->OMEGA_0;
-    ephemeris.omega = rtcm_message->omega;
-    ephemeris.omega_dot = rtcm_message->OMEGADOT;
-    ephemeris.idot = rtcm_message->idot;
-    ephemeris.fit_interval_flag = rtcm_message->fit;
-    ephemeris.l2_p_data_flag = rtcm_message->L2_P_data_flag;
+    ephemeris.toc = rtcm->t_oc;
+    ephemeris.toe = rtcm->t_oe;
+    ephemeris.tgd = rtcm->t_GD;
+    ephemeris.af2 = rtcm->a_f2;
+    ephemeris.af1 = rtcm->a_f1;
+    ephemeris.af0 = rtcm->a_f0;
+    ephemeris.crc = rtcm->C_rc;
+    ephemeris.crs = rtcm->C_rs;
+    ephemeris.cuc = rtcm->C_uc;
+    ephemeris.cus = rtcm->C_us;
+    ephemeris.cic = rtcm->C_ic;
+    ephemeris.cis = rtcm->C_is;
+    ephemeris.e = rtcm->e;
+    ephemeris.m0 = rtcm->M_0;
+    ephemeris.delta_n = rtcm->delta_n;
+    ephemeris.a = rtcm->sqrt_A * rtcm->sqrt_A;
+    ephemeris.i0 = rtcm->i_0;
+    ephemeris.omega0 = rtcm->OMEGA_0;
+    ephemeris.omega = rtcm->omega;
+    ephemeris.omega_dot = rtcm->OMEGADOT;
+    ephemeris.idot = rtcm->idot;
+    ephemeris.fit_interval_flag = rtcm->fit;
+    ephemeris.l2_p_data_flag = rtcm->L2_P_data_flag;
 
     mTokoro.process_ephemeris(ephemeris);
 }
 
-void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019Message* rtcm_message) {
+void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019* rtcm) {
     VSCOPE_FUNCTION();
     if (!mTokoro.is_gps_enabled()) return;
-    if (rtcm_message->type() == 1019) {
-        handle_gps_lnav(rtcm_message);
+    if (rtcm->type() == 1019) {
+        handle_gps_lnav(rtcm);
     } else {
-        VERBOSEF("not rtcm 1019 but rtcm %d", rtcm_message-> type());
+        VERBOSEF("not rtcm 1019 but rtcm %d", rtcm-> type());
     }
 }
 
-void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042Message* rtcm_message) {
+void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042* rtcm) {
     VSCOPE_FUNCTION();
 
     ephemeris::BdsEphemeris ephemeris{};
-    /*
-    ephemeris.prn = rtcm_message->prn;
-    ephemeris.week_number = rtcm_message->week_number;
-    // ephemeris.ca_or_p_on_l2 = rtcm_message->code_on_l2;
-    // ephemeris.ura_index = rtcm_message->SV_ACCURACY;
-    ephemeris.sv_health = rtcm_message->SV_HEALTH;
-    ephemeris.lpp_iod = rtcm_message->iode;
-    ephemeris.iodc = rtcm_message->iodc;
-    ephemeris.iode = rtcm_message->iode;
-    // ephemeris.aodo = 0;
-    ephemeris.toc = rtcm_message->t_oc;
-    ephemeris.toe = rtcm_message->t_oe;
-    // ephemeris.tgd = rtcm_message->t_GD;
-    ephemeris.af2 = rtcm_message->a_f2;
-    ephemeris.af1 = rtcm_message->a_f1;
-    ephemeris.af0 = rtcm_message->a_f0;
-    ephemeris.crc = rtcm_message->C_rc;
-    ephemeris.crs = rtcm_message->C_rs;
-    ephemeris.cuc = rtcm_message->C_uc;
-    ephemeris.cus = rtcm_message->C_us;
-    ephemeris.cic = rtcm_message->C_ic;
-    ephemeris.cis = rtcm_message->C_is;
-    ephemeris.e = rtcm_message->e;
-    ephemeris.m0 = rtcm_message->M_0;
-    ephemeris.delta_n = rtcm_message->dn; // Really should rename this one
-    ephemeris.a = rtcm_message->sqrt_A * rtcm_message->sqrt_A;
-    ephemeris.i0 = rtcm_message->i_0;
-    ephemeris.omega0 = rtcm_message->OMEGA_0;
-    ephemeris.omega = rtcm_message->omega;
-    ephemeris.omega_dot = rtcm_message->OMEGADOT;
-    ephemeris.idot = rtcm_message->idot;
-    // ephemeris.fit_interval_flag = rtcm_message->fit;
-    // ephemeris.l2_p_data_flag = rtcm_message->L2_P_data_flag;
-    */
+    ephemeris.prn = rtcm->prn;
+    ephemeris.week_number = rtcm->week_number; // Could have something to do with sow???
+    ephemeris.sv_health = rtcm->sv_health;
+    ephemeris.lpp_iod = static_cast<uint16_t>(static_cast<uint32_t>(rtcm->toe) >> 9);
+    ephemeris.iodc = (static_cast<uint32_t>(rtcm->toc) / 720) % 240;
+    ephemeris.iode = (static_cast<uint32_t>(rtcm->toe) / 720) % 240;
+    ephemeris.aode = rtcm->aode;
+    ephemeris.aodc = rtcm->aodc;
+    ephemeris.toc_time = ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toc), 0.0);
+    ephemeris.toe_time = ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toe), 0.0);
+    ephemeris.toc = rtcm->toc;
+    ephemeris.toe = rtcm->toe;
+    ephemeris.af2 = rtcm->af2;
+    ephemeris.af1 = rtcm->af1;
+    ephemeris.af0 = rtcm->af0;
+    ephemeris.crc = rtcm->crc;
+    ephemeris.crs = rtcm->crs;
+    ephemeris.cuc = rtcm->cuc;
+    ephemeris.cus = rtcm->cus;
+    ephemeris.cic = rtcm->cic;
+    ephemeris.cis = rtcm->cis;
+    ephemeris.e = rtcm->e;
+    ephemeris.m0 = rtcm->m0;
+    ephemeris.delta_n = rtcm->delta_n;
+    ephemeris.a = rtcm->sqrt_a * rtcm->sqrt_a;
+    ephemeris.i0 = rtcm->i0;
+    ephemeris.omega0 = rtcm->omega0;
+    ephemeris.omega = rtcm->omega;
+    ephemeris.omega_dot = rtcm->omega_dot;
+    ephemeris.idot = rtcm->idot;
 
     mTokoro.process_ephemeris(ephemeris);
 }
 
-void TokoroEphemerisRtcm::handle_bds(format::rtcm::Rtcm1042Message* rtcm_message) {
+void TokoroEphemerisRtcm::handle_bds(format::rtcm::Rtcm1042* rtcm) {
     VSCOPE_FUNCTION();
     if (!mTokoro.is_gal_enabled()) return;
-    if (rtcm_message->type() == 1042) {
-        handle_bds_d1(rtcm_message);
+    if (rtcm->type() == 1042) {
+        handle_bds_d1(rtcm);
     } else {
-        VERBOSEF("not rtcm 1042 but rtcm %d", rtcm_message-> type());
+        VERBOSEF("not rtcm 1042 but rtcm %d", rtcm-> type());
     }
 }
 
-void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046Message* rtcm_message) {
+void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046* rtcm) {
     VSCOPE_FUNCTION();
 
     ephemeris::GalEphemeris ephemeris{};
-    ephemeris.prn = rtcm_message->prn;
-    ephemeris.week_number = rtcm_message->week_number;
-    ephemeris.lpp_iod = rtcm_message->iod_nav;
-    ephemeris.iod_nav = rtcm_message->iod_nav;
+    ephemeris.prn = rtcm->prn;
+    ephemeris.week_number = rtcm->week_number;
+    ephemeris.lpp_iod = rtcm->iod_nav;
+    ephemeris.iod_nav = rtcm->iod_nav;
 
-    ephemeris.toc = rtcm_message->toc;
-    ephemeris.toe = rtcm_message->toe;
+    ephemeris.toc = rtcm->toc;
+    ephemeris.toe = rtcm->toe;
 
-    ephemeris.af2 = rtcm_message->af2;
-    ephemeris.af1 = rtcm_message->af1;
-    ephemeris.af0 = rtcm_message->af0;
+    ephemeris.af2 = rtcm->af2;
+    ephemeris.af1 = rtcm->af1;
+    ephemeris.af0 = rtcm->af0;
 
-    ephemeris.crc = rtcm_message->crc;
-    ephemeris.crs = rtcm_message->crs;
-    ephemeris.cuc = rtcm_message->cuc;
-    ephemeris.cus = rtcm_message->cus;
-    ephemeris.cic = rtcm_message->cic;
-    ephemeris.cis = rtcm_message->cis;
+    ephemeris.crc = rtcm->crc;
+    ephemeris.crs = rtcm->crs;
+    ephemeris.cuc = rtcm->cuc;
+    ephemeris.cus = rtcm->cus;
+    ephemeris.cic = rtcm->cic;
+    ephemeris.cis = rtcm->cis;
 
-    ephemeris.e = rtcm_message->e;
-    ephemeris.m0 = rtcm_message->m0;
-    ephemeris.delta_n = rtcm_message->delta_n;
-    ephemeris.a = rtcm_message->sqrt_a * rtcm_message->sqrt_a;
+    ephemeris.e = rtcm->e;
+    ephemeris.m0 = rtcm->m0;
+    ephemeris.delta_n = rtcm->delta_n;
+    ephemeris.a = rtcm->sqrt_a * rtcm->sqrt_a;
 
-    ephemeris.i0 = rtcm_message->i0;
-    ephemeris.omega0 = rtcm_message->omega0;
-    ephemeris.omega = rtcm_message->omega;
-    ephemeris.omega_dot = rtcm_message->omega_dot;
-    ephemeris.idot = rtcm_message->idot;
+    ephemeris.i0 = rtcm->i0;
+    ephemeris.omega0 = rtcm->omega0;
+    ephemeris.omega = rtcm->omega;
+    ephemeris.omega_dot = rtcm->omega_dot;
+    ephemeris.idot = rtcm->idot;
 
     mTokoro.process_ephemeris(ephemeris);
 }
 
-void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046Message* rtcm_message) {
+void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046* rtcm) {
     VSCOPE_FUNCTION();
     if (!mTokoro.is_gal_enabled()) return;
-    if (rtcm_message->type() == 1046) {
-        handle_gal_inav(rtcm_message);
+    if (rtcm->type() == 1046) {
+        handle_gal_inav(rtcm);
     } else {
-        VERBOSEF("not rtcm 1046 but rtcm %d", rtcm_message-> type());
+        VERBOSEF("not rtcm 1046 but rtcm %d", rtcm-> type());
     }
 }
 
@@ -266,11 +264,11 @@ void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message) 
     auto ptr = message.get();
     if (!ptr) return;
 
-    auto rtcm1019 = dynamic_cast<format::rtcm::Rtcm1019Message*>(ptr);
+    auto rtcm1019 = dynamic_cast<format::rtcm::Rtcm1019*>(ptr);
     if (rtcm1019) return handle_gps(rtcm1019);
-    auto rtcm1042 = dynamic_cast<format::rtcm::Rtcm1042Message*>(ptr);
+    auto rtcm1042 = dynamic_cast<format::rtcm::Rtcm1042*>(ptr);
     if (rtcm1042) return handle_bds(rtcm1042);
-    auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046Message*>(ptr);
+    auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046*>(ptr);
     if (rtcm1046) return handle_gal(rtcm1046);
 }
 
