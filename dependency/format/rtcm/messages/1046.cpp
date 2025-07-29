@@ -11,10 +11,10 @@ LOGLET_MODULE3(format, rtcm, rtcm1046);
 namespace format {
 namespace rtcm {
 
-Rtcm1046Message::Rtcm1046Message(std::vector<uint8_t> mData) NOEXCEPT
+Rtcm1046::Rtcm1046(std::vector<uint8_t> mData) NOEXCEPT
     : Message{mData} {}
 
-void Rtcm1046Message::print() const NOEXCEPT {
+void Rtcm1046::print() const NOEXCEPT {
     std::cout << "RTCM 1046 message\n"
               << prn               
               << week_number       
@@ -50,17 +50,17 @@ void Rtcm1046Message::print() const NOEXCEPT {
               << std::endl;
 }
 
-std::unique_ptr<Message> Rtcm1046Message::clone() const NOEXCEPT {
-    return std::unique_ptr<Message>(new Rtcm1046Message(*this));
+std::unique_ptr<Message> Rtcm1046::clone() const NOEXCEPT {
+    return std::unique_ptr<Message>(new Rtcm1046(*this));
 }
 
-std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
+std::unique_ptr<Message> Rtcm1046::parse(std::vector<uint8_t> mData) {
     if (mData.size()*8 < 8+16+504+24) {
         ERRORF("RTCM 1046 message created without enough data (requires %d bits, received %d bits)", 8+16+504+24, mData.size()*8);
         return std::make_unique<ErrorMessage>();
     }
 
-    auto m = new Rtcm1046Message(mData);
+    auto m = new Rtcm1046(mData);
     std::bitset<8+16+504+24> bits { 0UL };
     for (auto b : mData) {
         const std::bitset<8+16+504+24> bs {b};
@@ -107,7 +107,7 @@ std::unique_ptr<Message> Rtcm1046Message::parse(std::vector<uint8_t> mData) {
     getdatafield(bits,i,  m->E1_B_data_validity);
     getdatafield(bits,i,  m->reserved          );
                              
-    return std::unique_ptr<Rtcm1046Message>(m);
+    return std::unique_ptr<Rtcm1046>(m);
 }
 
 }  // namespace rtcm
