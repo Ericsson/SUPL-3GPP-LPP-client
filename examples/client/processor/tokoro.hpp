@@ -87,14 +87,14 @@ class TokoroEphemerisRtcm : public streamline::Inspector<RtcmMessage> {
 public:
     TokoroEphemerisRtcm(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    void handle_gps_lnav(format::rtcm::Rtcm1019Message* rtcm_message);
-    void handle_gps(format::rtcm::Rtcm1019Message* rtcm_message);
+    void handle_gps_lnav(format::rtcm::Rtcm1019* rtcm);
+    void handle_gps(format::rtcm::Rtcm1019* rtcm);
 
-    void handle_gal_inav(format::rtcm::Rtcm1046Message* rtcm_message);
-    void handle_gal(format::rtcm::Rtcm1046Message* rtcm_message);
+    void handle_gal_inav(format::rtcm::Rtcm1046* rtcm);
+    void handle_gal(format::rtcm::Rtcm1046* rtcm);
 
-    void handle_bds_d1(format::rtcm::Rtcm1042Message* rtcm_message);
-    void handle_bds(format::rtcm::Rtcm1042Message* rtcm_message);
+    void handle_bds_d1(format::rtcm::Rtcm1042* rtcm);
+    void handle_bds(format::rtcm::Rtcm1042* rtcm);
 
     void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
