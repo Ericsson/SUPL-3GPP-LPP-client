@@ -22,15 +22,15 @@ std::unique_ptr<Message> Rtcm1042Message::clone() const NOEXCEPT {
 }
 
 std::unique_ptr<Message> Rtcm1042Message::parse(std::vector<uint8_t> mData) {
-    if (mData.size()*8 < 8+16+488+24) {
-        ERRORF("RTCM 1042 message created without enough data (requires %d bits, received %d bits)", 8+16+488+24, mData.size()*8);
+    if (mData.size()*8 < 8+16+512+24) {
+        ERRORF("RTCM 1042 message created without enough data (requires %d bits, received %d bits)", 8+16+512+24, mData.size()*8);
         return std::make_unique<ErrorMessage>();
     }
 
     auto m = new Rtcm1042Message(mData);
-    std::bitset<8+16+488+24> bits { 0UL };
+    std::bitset<8+16+512+24> bits { 0UL };
     for (auto b : mData) {
-        const std::bitset<8+16+488+24> bs {b};
+        const std::bitset<8+16+512+24> bs {b};
         bits <<= 8;
         bits  |= bs;
     }
