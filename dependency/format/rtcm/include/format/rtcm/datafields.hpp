@@ -146,6 +146,36 @@ using DF313 = DataField<313, double  , df_int10 , -32                    >;
 using DF316 = DataField<316, uint8_t , df_bit<2>                         >;
 using DF317 = DataField<317, bool    , df_bit<1>                         >;
 
+
+using DF488 = DataField<488, uint8_t , df_uint6 , -32                    >;
+using DF489 = DataField<489, uint16_t, df_uint13, -32                    >;
+using DF490 = DataField<490, uint8_t , df_bit<4>, -32                    >;
+using DF491 = DataField<491, double  , df_int14 , -32                    >;
+using DF492 = DataField<492, uint8_t , df_uint5 , -32                    >;
+using DF493 = DataField<493, double  , df_uint17, -32                    >;
+using DF494 = DataField<494, double  , df_int11 , -32                    >;
+using DF495 = DataField<495, double  , df_int22 , -32                    >;
+using DF496 = DataField<496, double  , df_int24 , -32                    >;
+using DF497 = DataField<497, uint8_t , df_uint5 , -32                    >;
+using DF498 = DataField<498, double  , df_int18 , -32                    >;
+using DF499 = DataField<499, double  , df_int16 , -32                    >;
+using DF500 = DataField<500, double  , df_int32 , -32                    >;
+using DF501 = DataField<501, double  , df_int18 , -32                    >;
+using DF502 = DataField<502, double  , df_int32 , -32                    >;
+using DF503 = DataField<503, double  , df_int18 , -32                    >;
+using DF504 = DataField<504, double  , df_int32 , -32                    >;
+using DF505 = DataField<505, double  , df_uint17, -32                    >;
+using DF506 = DataField<506, double  , df_int18 , -32                    >;
+using DF507 = DataField<507, double  , df_int32 , -32                    >;
+using DF508 = DataField<508, double  , df_int18 , -32                    >;
+using DF509 = DataField<509, double  , df_int32 , -32                    >;
+using DF510 = DataField<510, double  , df_int18 , -32                    >;
+using DF511 = DataField<511, double  , df_int32 , -32                    >;
+using DF512 = DataField<512, double  , df_int24 , -32                    >;
+using DF513 = DataField<513, double  , df_int10 , -32                    >;
+using DF514 = DataField<514, double  , df_int10 , -32                    >;
+using DF515 = DataField<515, uint8_t , df_bit<1>, -32                    >; // Is uint8_t in ephem, bool?
+
 namespace std {
 ostream& operator<<(ostream& os, const DF002 d);
 ostream& operator<<(ostream& os, const DF009 d);
