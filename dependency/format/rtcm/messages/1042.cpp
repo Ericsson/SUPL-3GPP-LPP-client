@@ -43,6 +43,35 @@ std::unique_ptr<Message> Rtcm1042Message::parse(std::vector<uint8_t> mData) {
         return std::make_unique<ErrorMessage>();
     }
 
+    getdatafield(bits,i,  m->prn        );
+    getdatafield(bits,i,  m->week_number);
+    getdatafield(bits,i,  m->ura_index  );
+    getdatafield(bits,i,  m->idot       );
+    getdatafield(bits,i,  m->aode       );
+    getdatafield(bits,i,  m->toc        );
+    getdatafield(bits,i,  m->af2        );
+    getdatafield(bits,i,  m->af1        );
+    getdatafield(bits,i,  m->af0        );
+    getdatafield(bits,i,  m->aodc       );
+    getdatafield(bits,i,  m->crs        );
+    getdatafield(bits,i,  m->delta_n    );
+    getdatafield(bits,i,  m->m0         );
+    getdatafield(bits,i,  m->cuc        );
+    getdatafield(bits,i,  m->e          );
+    getdatafield(bits,i,  m->cus        );
+    getdatafield(bits,i,  m->sqrt_a     );
+    getdatafield(bits,i,  m->toe        );
+    getdatafield(bits,i,  m->cic        );
+    getdatafield(bits,i,  m->omega0     );
+    getdatafield(bits,i,  m->cis        );
+    getdatafield(bits,i,  m->i0         );
+    getdatafield(bits,i,  m->crc        );
+    getdatafield(bits,i,  m->omega      );
+    getdatafield(bits,i,  m->omega_dot  );
+    getdatafield(bits,i,  m->tgd1       );
+    getdatafield(bits,i,  m->tgd2       );
+    getdatafield(bits,i,  m->sv_health  );
+
     return std::unique_ptr<Rtcm1042Message>(m);
 }
 
