@@ -49,7 +49,7 @@ public:
 
 private:
     std::queue<T> mQueue;
-    std::mutex    mMutex;
+    std::mutex    mMutex; // TODO(ewasjon): why have a mutex if the program is single threaded?
     int           mFd;
 };
 }  // namespace streamline

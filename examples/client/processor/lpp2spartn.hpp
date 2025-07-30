@@ -14,6 +14,7 @@ public:
     Lpp2Spartn(OutputConfig const& output, Lpp2SpartnConfig const& config);
     ~Lpp2Spartn() override;
 
+    const char* name() const NOEXCEPT override { return "Lpp2Spartn"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
