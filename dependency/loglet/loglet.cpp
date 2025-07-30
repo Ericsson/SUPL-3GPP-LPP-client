@@ -328,6 +328,8 @@ void log(LogModule const* module, Level level, char const* message) {
     auto indent_length         = static_cast<int>(sScopes.size() * 2);
     if (indent_length > 64) {
         indent_length = 64;
+    } else if(indent_length < 0) {
+        indent_length = 0;
     }
     indent_buffer[indent_length] = '\0';
     fprintf(file, "%s%s%s[%-*s] %s%s%s\n", start_color, level_to_string(level), buffer,

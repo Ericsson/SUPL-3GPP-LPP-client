@@ -39,4 +39,8 @@ if(DISABLE_LOGGING)
     target_compile_definitions(dependency_loglet PUBLIC "DISABLE_LOGGING=1")
 endif()
 
+if(LOG_FUNCTION_PERFORMANCE)
+    target_compile_definitions(dependency_loglet PUBLIC "FUNCTION_PERFORMANCE=1")
+endif()
+
 setup_target(dependency_loglet)
