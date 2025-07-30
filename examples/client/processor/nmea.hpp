@@ -28,6 +28,7 @@ struct Clone<NmeaMessage> {
 
 class NmeaPrint : public streamline::Inspector<NmeaMessage> {
 public:
+    const char* name() const NOEXCEPT override { return "NmeaPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 };
 
@@ -35,6 +36,7 @@ class NmeaOutput : public streamline::Inspector<NmeaMessage> {
 public:
     NmeaOutput(OutputConfig const& output) : mOutput(output) {}
 
+    const char* name() const NOEXCEPT override { return "NmeaOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
@@ -46,6 +48,7 @@ public:
     NmeaLocation(LocationInformationConfig const& config);
     virtual ~NmeaLocation() override;
 
+    const char* name() const NOEXCEPT override { return "NmeaLocation"; }
     void consume(streamline::System& system, DataType&& message, uint64_t tag) NOEXCEPT override;
     void process(streamline::System& system, format::nmea::GgaMessage const& gga,
                  lpp::VelocityShape velocity, lpp::HorizontalAccuracy horizontal,

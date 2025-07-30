@@ -83,6 +83,7 @@ class PossibOutput : public streamline::Inspector<std::unique_ptr<PossibMessage>
 public:
     PossibOutput(OutputConfig const& output) : mOutput(output) {}
 
+    const char* name() const NOEXCEPT override { return "PossibOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
@@ -94,6 +95,7 @@ public:
     LppPossibBuilder(bool wrap);
     ~LppPossibBuilder() override;
 
+    const char* name() const NOEXCEPT override { return "LppPossibBuilder"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 protected:

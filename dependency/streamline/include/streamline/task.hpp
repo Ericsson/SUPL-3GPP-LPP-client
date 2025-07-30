@@ -40,7 +40,8 @@ public:
     };
 
     QueueTask(System& system) : mSystem(system), mQueue() {
-        mEvent.name  = "streamline-queue";
+        mQueueName   = std::string{"streamline-queue/"} + typeid(T).name();
+        mEvent.name  = mQueueName.c_str();
         mEvent.event = [this](struct epoll_event* event) {
             this->event(event);
         };
@@ -73,14 +74,21 @@ public:
         if ((event->events & EPOLLIN) == 0) return;
 
         auto count = mQueue.poll_count();
-        VERBOSEF("queue task (%d): event count %lu", mQueue.get_fd(), count);
+        VERBOSEF("queue task (%d): event count %lu (%zu inspectors, %zu consumers)",
+                 mQueue.get_fd(), count, mInspectors.size(), mConsumers.size());
         LOGLET_INDENT_SCOPE(loglet::Level::Verbose);
 
         for (uint64_t i = 0; i < count; i++) {
             auto item = mQueue.pop();
             for (auto& inspector : mInspectors) {
                 if (inspector->accept(mSystem, item.tag)) {
+                    auto before_event = std::chrono::steady_clock::now();
                     inspector->inspect(mSystem, item.data, item.tag);
+                    auto after_event = std::chrono::steady_clock::now();
+                    VERBOSEF("inspector \"%s\" took %lld ms", inspector->name(),
+                           std::chrono::duration_cast<std::chrono::milliseconds>(after_event -
+                                                                                 before_event)
+                               .count());
                 }
             }
 
@@ -92,6 +100,8 @@ public:
                     continue;
                 }
 
+                auto before_event = std::chrono::steady_clock::now();
+
                 // TODO(ewasjon): This is a bit weird, if the item is consumed why clone it? What is
                 // the reason for multiple consumers, instead of just using inspectors?
                 auto data = std::move(item.data);
@@ -102,6 +112,13 @@ public:
                 } else {
                     consumer->consume(mSystem, std::move(data), item.tag);
                 }
+
+                auto after_event = std::chrono::steady_clock::now();
+                VERBOSEF("consumer \"%s\" took %lld ms", consumer->name(),
+                       std::chrono::duration_cast<std::chrono::milliseconds>(after_event -
+                                                                             before_event)
+                           .count());
+
                 it++;
             }
         }
@@ -125,6 +142,7 @@ protected:
     EventQueue<Item>                           mQueue;
     std::vector<std::unique_ptr<Consumer<T>>>  mConsumers;
     std::vector<std::unique_ptr<Inspector<T>>> mInspectors;
+    std::string                                mQueueName;
 };
 
 }  // namespace streamline
