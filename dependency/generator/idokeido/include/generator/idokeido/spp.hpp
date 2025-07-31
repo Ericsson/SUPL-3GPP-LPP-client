@@ -8,7 +8,6 @@
 #include <vector>
 
 #include <Eigen/Eigen>
-#include <ephemeris/ephemeris.hpp>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include <time/tai.hpp>
@@ -28,49 +27,22 @@ struct RawObservation {
     double lock_time;      // seconds
 };
 
-class EphemerisEngine {
-public:
-    EphemerisEngine()  = default;
-    ~EphemerisEngine() = default;
-
-    void add(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;
-    void add(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
-    void add(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
-
-    struct Satellite {
-        SatelliteId     id;
-        Eigen::Vector3d position;
-        Eigen::Vector3d velocity;
-        double          clock;
-
-        bool is_valid() const NOEXCEPT { return id.is_valid(); }
+struct Solution {
+    enum class Status {
+        None,
+        Standard,
     };
 
-    Satellite evaluate(SatelliteId satellite_id, ts::Tai const& time) const NOEXCEPT;
+    ts::Tai time;
+    Status  status;
 
-protected:
-    ephemeris::GpsEphemeris const* find_gps(SatelliteId    satellite_id,
-                                            ts::Tai const& time) const NOEXCEPT;
-    ephemeris::GalEphemeris const* find_gal(SatelliteId    satellite_id,
-                                            ts::Tai const& time) const NOEXCEPT;
-    ephemeris::BdsEphemeris const* find_bds(SatelliteId    satellite_id,
-                                            ts::Tai const& time) const NOEXCEPT;
-
-    Satellite evaluate_gps(SatelliteId satellite_id, ts::Tai const& time,
-                           ephemeris::GpsEphemeris const& eph) const NOEXCEPT;
-    Satellite evaluate_gal(SatelliteId satellite_id, ts::Tai const& time,
-                           ephemeris::GalEphemeris const& eph) const NOEXCEPT;
-    Satellite evaluate_bds(SatelliteId satellite_id, ts::Tai const& time,
-                           ephemeris::BdsEphemeris const& eph) const NOEXCEPT;
-
-private:
-    std::unordered_map<SatelliteId, std::vector<ephemeris::GpsEphemeris>> mGpsEphemeris;
-    std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
-    std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
+    double latitude;
+    double longitude;
+    double altitude;
 };
 
 struct SppConfiguration {
-    enum WeightFunction {
+    enum class WeightFunction {
         Uniform,
         Snr,
         Elevation,
@@ -78,8 +50,15 @@ struct SppConfiguration {
 
     enum class FrequencyMode { Single, Dual };
 
+    enum class EpochSelection {
+        FirstObservation,
+        LastObservation,
+        MeanObservation,
+    };
+
     FrequencyMode  frequency_mode;
     WeightFunction weight_function;
+    EpochSelection epoch_selection;
 
     struct {
         bool gps;
@@ -87,6 +66,8 @@ struct SppConfiguration {
         bool gal;
         bool bds;
     } gnss;
+
+    double observation_window;
 
     double elevation_cutoff;
     double snr_cutoff;
@@ -97,12 +78,16 @@ struct SppConfiguration {
     bool reject_outliers;
 };
 
+class EphemerisEngine;
 class SppEngine {
 public:
     struct Satellite {
-        ts::Tai         time;
         SatelliteId     id;
+        ts::Tai         reception_time;
+        ts::Tai         transmission_time;
         Eigen::Vector3d position;
+        Eigen::Vector3d velocity;
+        double          clock;
         long            main_observation_id;
     };
 
@@ -123,25 +108,33 @@ public:
     /// Add an observation
     void observation(RawObservation const& observation) NOEXCEPT;
 
-    /// Evaluate the SPP epoch
-    void evaluate() NOEXCEPT;
+    /// Evaluate the SPP at next epoch
+    NODISCARD Solution evaluate() NOEXCEPT;
+
+    /// Evaluate the SPP at epoch
+    NODISCARD Solution evaluate(ts::Tai time) NOEXCEPT;
 
 protected:
-    void group_by_satellite();
-    void select_best_observations();
-    void compute_satellite_states();
+    void select_best_observations(ts::Tai const& time);
+    void compute_satellite_states(ts::Tai const& time);
+    void compute_satellite_state(Satellite& satellite, ts::Tai const& reception_time,
+                                 Eigen::Vector3d const& ground_position);
 
     NODISCARD Satellite& find_satellite(SatelliteId id);
 
 private:
-    SppConfiguration            mConfiguration;
-    EphemerisEngine&            mEphemerisEngine;
+    SppConfiguration mConfiguration;
+    EphemerisEngine& mEphemerisEngine;
+    long             mFirstObservationId;
+    long             mLastObservationId;
+    long             mEpochObservationCount;
+    double           mEpochTotalObservationTime;
 
     std::bitset<SATELLITE_ID_MAX> mSatelliteMask;
-    std::bitset<SIGNAL_ID_MAX> mObservationMask;
+    std::bitset<SIGNAL_ID_MAX>    mObservationMask;
 
     std::array<Satellite, SATELLITE_ID_MAX> mSatelliteStates;
-    std::array<Observation, SIGNAL_ID_MAX> mObservationStates;
+    std::array<Observation, SIGNAL_ID_MAX>  mObservationStates;
 };
 
 }  // namespace idokeido

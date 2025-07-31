@@ -8,6 +8,7 @@
 #include <format/ubx/messages/rxm_rawx.hpp>
 #include <format/ubx/messages/rxm_sfrbx.hpp>
 #include <generator/idokeido/spp.hpp>
+#include <generator/idokeido/eph.hpp>
 #include <lpp/location_information.hpp>
 #include <scheduler/periodic.hpp>
 #include <scheduler/scheduler.hpp>
@@ -19,7 +20,7 @@
 class IdokeidoSpp : public streamline::Inspector<lpp::Message> {
 public:
     IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& config,
-                scheduler::Scheduler& scheduler);
+                scheduler::Scheduler& scheduler, streamline::System& system);
     ~IdokeidoSpp() override;
 
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;
@@ -28,16 +29,20 @@ public:
 
     void measurement(idokeido::RawObservation const& observation) NOEXCEPT;
 
-    const char* name() const NOEXCEPT override { return "IdokeidoSpp"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    void compute() NOEXCEPT;
+
+    char const* name() const NOEXCEPT override { return "IdokeidoSpp"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     OutputConfig const&                        mOutput;
     IdokeidoConfig const&                      mConfig;
     scheduler::Scheduler&                      mScheduler;
+    streamline::System&                        mSystem;
     std::unique_ptr<idokeido::SppEngine>       mEngine;
     std::unique_ptr<idokeido::EphemerisEngine> mEphemerisEngine;
     uint64_t                                   mOutputTag;
+    std::unique_ptr<scheduler::PeriodicTask>   mComputeTask;
 };
 
 template <typename Base>
@@ -64,8 +69,8 @@ public:
     void handle_bds_d1(format::ubx::RxmSfrbx* sfrbx);
     void handle_bds(format::ubx::RxmSfrbx* sfrbx);
 
-    const char* name() const NOEXCEPT override { return "IdokeidoEphemerisUbx"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "IdokeidoEphemerisUbx"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Base&                                      mBase;
@@ -85,8 +90,8 @@ public:
 
     void handle(format::ubx::UbxRxmRawx* rawx);
 
-    const char* name() const NOEXCEPT override { return "IdokeidoMeasurmentUbx"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "IdokeidoMeasurmentUbx"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Base& mBase;
