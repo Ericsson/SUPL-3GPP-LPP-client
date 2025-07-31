@@ -363,7 +363,8 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     auto message = rtcm->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
-                    program.stream.push(std::move(message));
+                    NOTICEF("######## TAG=%llX", tag);
+                    program.stream.push(std::move(message), tag);
                 }
             }
 
