@@ -25,7 +25,7 @@ public:
     VtgMessage& operator=(VtgMessage const&) = delete;
     VtgMessage& operator=(VtgMessage&&)      = delete;
 
-    static NODISCARD VtgMessage fake(double true_course_over_ground, double speed_over_ground_kmh,
+    NODISCARD static VtgMessage fake(double true_course_over_ground, double speed_over_ground_kmh,
                                      double        magnetic_course_over_ground,
                                      ModeIndicator mode_indicator) NOEXCEPT;
 
