@@ -96,6 +96,7 @@ public:
     void handle_bds_d1(format::rtcm::Rtcm1042* rtcm);
     void handle_bds(format::rtcm::Rtcm1042* rtcm);
 
+    const char* name() const NOEXCEPT override { return "TokoroEphemerisRtcm"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
