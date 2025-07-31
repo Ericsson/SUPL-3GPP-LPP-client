@@ -34,6 +34,13 @@ struct Satellite {
     Option<double> nadir;
     Option<long>   iod;
     Option<Float3> eph_position;
+    Option<Float3> ground_position_ecef;
+    Option<Float3> ground_position_llh;
+    Option<double> reception_time;
+    Option<double> emission_time;
+    Option<Float3> sun_position;
+    Option<Float3> moon_position;
+    Option<double> gmst;
 };
 
 struct Observation {
