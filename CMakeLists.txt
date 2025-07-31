@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.5)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(example LANGUAGES C CXX)
 
@@ -23,6 +24,12 @@ endif()
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG=1)
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+    add_definitions(-DCOMPILER_GCC=1)
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    add_definitions(-DCOMPILER_CLANG=1)
 endif()
 
 if(DISABLE_STRERRORNAME_NP)
