@@ -494,24 +494,30 @@ static void dump(OutputConfig const& config) {
     for (auto const& output : config.outputs) {
         DEBUGF("%p: %s", output.interface.get(), output_type(output.interface.get()));
         DEBUG_INDENT_SCOPE();
-        DEBUGF("format: %s%s%s%s%s%s%s", (output.format & OUTPUT_FORMAT_UBX) ? "UBX " : "",
+        DEBUGF("format: %s%s%s%s%s%s%s%s%s%s%s", (output.format & OUTPUT_FORMAT_UBX) ? "UBX " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "NMEA " : "",
                (output.format & OUTPUT_FORMAT_RTCM) ? "RTCM " : "",
                (output.format & OUTPUT_FORMAT_CTRL) ? "CTRL " : "",
                (output.format & OUTPUT_FORMAT_LPP_XER) ? "LPP-XER " : "",
                (output.format & OUTPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
-               (output.format & OUTPUT_FORMAT_SPARTN) ? "SPARTN " : "");
+               (output.format & OUTPUT_FORMAT_SPARTN) ? "SPARTN " : "",
+               (output.format & OUTPUT_FORMAT_LFR) ? "LFR " : "",
+               (output.format & OUTPUT_FORMAT_POSSIB) ? "POSSIB " : "",
+               (output.format & OUTPUT_FORMAT_LOCATION) ? "LOCATION " : "",
+               (output.format & OUTPUT_FORMAT_TEST) ? "TEST " : "");
 
         std::stringstream tag_ss;
         for (auto const& tag : output.include_tags) {
             tag_ss << tag << " ";
         }
-        DEBUGF("include tags: %s", tag_ss.str().c_str());
+        auto tag_str = tag_ss.str();
+        DEBUGF("include tags: %s", tag_str.c_str());
         std::stringstream otag_ss;
         for (auto const& tag : output.exclude_tags) {
             otag_ss << tag << " ";
         }
-        DEBUGF("exclude tags: %s", otag_ss.str().c_str());
+        auto otag_str = otag_ss.str();
+        DEBUGF("exclude tags: %s", otag_str.c_str());
 
         auto stdout_output = dynamic_cast<io::StdoutOutput*>(output.interface.get());
         if (stdout_output) continue;
