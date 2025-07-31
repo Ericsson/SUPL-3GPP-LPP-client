@@ -8,14 +8,12 @@
 namespace lpp {
 
 class Client;
-struct RequestAssistanceData {
+struct PeriodicRequestAssistanceData {
     enum class Type {
         /// @brief Request OSR specific assistance data.
         OSR,
         /// @brief Request SSR specific assistance data.
         SSR,
-        /// @brief Request A-GNSS specific assistance data.
-        AGNSS,
     };
 
     /// @brief The type of assistance data to request.
@@ -52,6 +50,33 @@ struct RequestAssistanceData {
 
     /// @brief Callback for when a periodic session is ended.
     std::function<void(Client&, PeriodicSessionHandle)> on_ended;
+
+    /// @brief Called when a request assistance data failed
+    std::function<void(Client&)> on_error;
+};
+
+struct SingleRequestAssistanceData {
+    enum class Type {
+        /// @brief Request AGNSS specific assistance data.
+        AGNSS
+    };
+
+    /// @brief The type of assistance data to request.
+    Type type;
+
+    /// @brief The cell information to use for the request.
+    supl::Cell cell;
+
+    /// @brief The GNSS systems to request assistance data for.
+    struct {
+        bool gps;
+        bool glonass;
+        bool galileo;
+        bool beidou;
+    } gnss;
+
+    /// @brief Callback for providing assistance data
+    std::function<void(Client&, Message)> on_message;
 
     /// @brief Called when a request assistance data failed
     std::function<void(Client&)> on_error;

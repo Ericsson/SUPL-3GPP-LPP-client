@@ -6,6 +6,7 @@
 #include "models/shapiro.hpp"
 #include "observation.hpp"
 #include "sv_id.hpp"
+#include "models/sun_moon.hpp"
 
 #include <ephemeris/ephemeris.hpp>
 #include <generator/rtcm/satellite_id.hpp>
@@ -47,6 +48,7 @@ struct SatelliteState {
     PhaseWindup     phase_windup;
     Shapiro         shapiro;
     EarthSolidTides earth_solid_tides;
+    SunMoonPosition sun_moon_position;
 };
 
 class Generator;
@@ -87,6 +89,7 @@ public:
     void compute_shapiro() NOEXCEPT;
     void compute_earth_solid_tides() NOEXCEPT;
     void compute_phase_windup() NOEXCEPT;
+    void compute_sun_position() NOEXCEPT;
 
     void datatrace_report() NOEXCEPT;
 
@@ -106,6 +109,7 @@ protected:
     void compute_shapiro(SatelliteState& state) NOEXCEPT;
     void compute_earth_solid_tides(SatelliteState& state) NOEXCEPT;
     void compute_phase_windup(SatelliteState& state) NOEXCEPT;
+    void compute_sun_position(SatelliteState& state) NOEXCEPT;
 
 private:
     SatelliteId mId;

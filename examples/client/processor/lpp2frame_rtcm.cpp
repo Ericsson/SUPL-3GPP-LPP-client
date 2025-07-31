@@ -8,7 +8,7 @@
 LOGLET_MODULE2(p, l2f);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2f)
 
-void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto buffer = lpp::Session::encode_lpp_message(message);
     if (buffer.empty()) return;
@@ -33,6 +33,11 @@ void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message) NOEXCE
             auto output_rtcm   = mConfig.output_in_rtcm && output.rtcm_support();
             auto should_output = output_rtcm || output_lfr;
             if (!should_output) continue;
+
+            if (!output.accept_tag(tag)) {
+                XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                continue;
+            }
 
             if (output.print) {
                 if (output_lfr) {

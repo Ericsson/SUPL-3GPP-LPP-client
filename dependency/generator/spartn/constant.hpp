@@ -332,6 +332,99 @@ static CONSTEXPR const char* GAL_SIGNAL_NAMES[24] = {
     "E5(A+B) I", "E5(A+B) Q",  "E5(A+B) I+Q", "E5A I",    "E5A Q",   "E5A I+Q",
 };
 
+static CONSTEXPR uint8_t BDS_TO_SPARTN[24] = {
+    0,  //  0 2I B1 I
+    X,  //  1 2Q B1 Q
+    X,  //  2 2X B1 I+Q
+    3,  //  3 6I B3 I
+    X,  //  4 6Q B3 Q
+    X,  //  5 6X B3 I+Q
+    X,  //  6 2I B2 I
+    X,  //  7 2Q B2 Q
+    X,  //  8 2X B2 I+Q
+    X,  //  9 1D B1C(D)
+    X,  // 10 1C B1C(P)
+    X,  // 11 1X B1C(D+P)
+    X,  // 12 5D B2a(D)
+    1,  // 13 5P B2a(P)
+    X,  // 14 5X B2a(D+P)
+    X,  // 15 Reserved
+    X,  // 16 Reserved
+    X,  // 17 Reserved
+    X,  // 18 Reserved
+    X,  // 19 Reserved
+    X,  // 20 Reserved
+    X,  // 21 Reserved
+    X,  // 22 Reserved
+    X,  // 23 Reserved
+};
+
+static CONSTEXPR uint8_t BDS_MAPPING[24] = {
+    X,  //  0 2I B1 I
+    X,  //  1 2Q B1 Q
+    X,  //  2 2X B1 I+Q
+    X,  //  3 6I B3 I
+    X,  //  4 6Q B3 Q
+    X,  //  5 6X B3 I+Q
+    X,  //  6 2I B2 I
+    X,  //  7 2Q B2 Q
+    X,  //  8 2X B2 I+Q
+    X,  //  9 1D B1C(D)
+    X,  // 10 1C B1C(P)
+    X,  // 11 1X B1C(D+P)
+    X,  // 12 5D B2a(D)
+    X,  // 13 5P B2a(P)
+    X,  // 14 5X B2a(D+P)
+    X,  // 15 Reserved
+    X,  // 16 Reserved
+    X,  // 17 Reserved
+    X,  // 18 Reserved
+    X,  // 19 Reserved
+    X,  // 20 Reserved
+    X,  // 21 Reserved
+    X,  // 22 Reserved
+    X,  // 23 Reserved
+};
+
+#define BDS_B1 1561.098
+#define BDS_B1B3 1575.42
+#define BDS_B2a 1176.45
+#define BDS_B2b 1207.14
+#define BDS_B2ab 1191.795
+#define BDS_B3 1268.52
+static CONSTEXPR double BDS_FREQ[24] = {
+    BDS_B1,    //  0 2I B1 I
+    BDS_B1,    //  1 2Q B1 Q
+    BDS_B1,    //  2 2X B1 I+Q
+    BDS_B3,    //  3 6I B3 I
+    BDS_B3,    //  4 6Q B3 Q
+    BDS_B3,    //  5 6X B3 I+Q
+    BDS_B1,    //  6 2I B2 I
+    BDS_B1,    //  7 2Q B2 Q
+    BDS_B1,    //  8 2X B2 I+Q
+    BDS_B1B3,  //  9 1D B1C(D)
+    BDS_B1B3,  // 10 1C B1C(P)
+    BDS_B1B3,  // 11 1X B1C(D+P)
+    BDS_B2a,   // 12 5D B2a(D)
+    BDS_B2a,   // 13 5P B2a(P)
+    BDS_B2ab,  // 14 5X B2a(D+P)
+    0.0,       // 15 Reserved
+    0.0,       // 16 Reserved
+    0.0,       // 17 Reserved
+    0.0,       // 18 Reserved
+    0.0,       // 19 Reserved
+    0.0,       // 20 Reserved
+    0.0,       // 21 Reserved
+    0.0,       // 22 Reserved
+    0.0,       // 23 Reserved
+};
+
+static CONSTEXPR const char* BDS_SIGNAL_NAMES[24] = {
+    "B1 I", "B1 Q", "B1 I+Q", "B3 I", "B3 Q", "B3 I+Q", "B2 I", "B2 Q", "B2 I+Q",
+    "B1C(D)", "B1C(P)", "B1C(D+P)", "B2a(D)", "B2a(P)", "B2a(D+P)",
+    "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+};
+
 struct SystemMapping {
     long               gnss_id;
     long               signal_count;
@@ -358,6 +451,10 @@ static CONSTEXPR SystemMapping GAL_SM = {
     GNSS_ID__gnss_id_galileo, 24, GAL_TO_SPARTN, GAL_MAPPING, GAL_FREQ, GAL_SIGNAL_NAMES,
 };
 
+static CONSTEXPR SystemMapping BDS_SM = {
+    GNSS_ID__gnss_id_bds, 24, BDS_TO_SPARTN, BDS_MAPPING, BDS_FREQ, BDS_SIGNAL_NAMES,
+};
+
 static CONSTEXPR const char* GPS_PHASE_BIAS_TYPES[4] = {
     "L1C",
     "L2W",
@@ -374,6 +471,13 @@ static CONSTEXPR const char* GAL_PHASE_BIAS_TYPES[3] = {
     "L1C",
     "L5Q",
     "L7Q",
+};
+
+static CONSTEXPR const char* BDS_PHASE_BIAS_TYPES[4] = {
+    "L2I",
+    "L5P",
+    "L7I",
+    "L6I",
 };
 
 static CONSTEXPR const char* GPS_CODE_BIAS_TYPES[4] = {
@@ -394,6 +498,13 @@ static CONSTEXPR const char* GAL_CODE_BIAS_TYPES[3] = {
     "C7Q",
 };
 
+static CONSTEXPR const char* BDS_CODE_BIAS_TYPES[4] = {
+    "C2I",
+    "C5P",
+    "C7I",
+    "C6I",
+};
+
 static char const* bias_type_name(long gnss_id, bool is_phase, uint8_t type) {
     if (gnss_id == GNSS_ID__gnss_id_gps) {
         if (is_phase) {
@@ -412,6 +523,12 @@ static char const* bias_type_name(long gnss_id, bool is_phase, uint8_t type) {
             if (type < 3) return GAL_PHASE_BIAS_TYPES[type];
         } else {
             if (type < 3) return GAL_CODE_BIAS_TYPES[type];
+        }
+    } else if (gnss_id == GNSS_ID__gnss_id_bds) {
+        if (is_phase) {
+            if (type < 4) return BDS_PHASE_BIAS_TYPES[type];
+        } else {
+            if (type < 4) return BDS_CODE_BIAS_TYPES[type];
         }
     }
 

@@ -48,11 +48,13 @@ public:
 
     void normalize() {
         CORE_ASSERT(!std::isnan(mFraction), "Fraction is NaN");
-        if (mFraction < 0.0) {
+        while (mFraction < 0.0) {
             auto underflow = static_cast<int64_t>(-mFraction) + 1;
             mSeconds -= underflow;
             mFraction += static_cast<double>(underflow);
-        } else if (mFraction >= 1.0) {
+        }
+        
+        while (mFraction >= 1.0) {
             auto overflow = static_cast<int64_t>(mFraction);
             mSeconds += overflow;
             mFraction -= static_cast<double>(overflow);

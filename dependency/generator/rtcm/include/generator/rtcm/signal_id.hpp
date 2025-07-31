@@ -4,6 +4,9 @@
 
 #include <string>
 
+#define SIGNAL_ABS_COUNT 24
+#define SIGNAL_ID_MAX (SATELLITE_ID_MAX * SIGNAL_ABS_COUNT)
+
 enum class FrequencyType {
     UNKNOWN,
     L1,
@@ -52,6 +55,8 @@ public:
     NODISCARD double        wavelength() const;
     NODISCARD FrequencyType frequency_type() const;
 
+    NODISCARD long absolute_id() const;
+
     NODISCARD std::string to_rinex() const;
 
     inline bool operator==(SignalId const& other) const {
@@ -65,6 +70,8 @@ public:
         if (mGnss > other.mGnss) return false;
         return mLppId < other.mLppId;
     }
+
+    inline bool is_valid() const { return mGnss != Gnss::UNKNOWN && mLppId != -1; }
 
 private:
     explicit SignalId(Gnss gnss, int32_t lpp_id) : mGnss(gnss), mLppId(lpp_id) {}

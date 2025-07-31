@@ -393,8 +393,8 @@ phase_biases(SystemMapping const* mapping, SSR_PhaseBiasSatElement_r16 const& sa
         auto bias = (*bias_to_signal)(mapping, true, signal_id, correction, continuity_indicator,
                                       fix_flag, translate, correction_shift);
         if (bias.signal_id == -1) {
-            TRACEF("    ?         %2ld '%-16s' %7.2f%s", signal_id,
-                   mapping->signal_name(signal_id), correction, fix_flag ? " (fix)" : " (unfixed)");
+            TRACEF("    ?         %2ld '%-16s' %7.2f%s", signal_id, mapping->signal_name(signal_id),
+                   correction, fix_flag ? " (fix)" : " (unfixed)");
             continue;
         }
 
@@ -580,6 +580,36 @@ static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const
     }
 }
 
+static void generate_bds_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
+                                    SSR_CodeBiasSatElement_r15 const*  code_bias,
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
+                                    bool code_bias_translate, bool code_bias_correction_shift,
+                                    bool phase_bias_translate, bool phase_bias_correction_shift) {
+    if (!phase_bias) {
+        builder.sf103_raw(false, 0);
+    } else {
+        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
+                                            phase_bias_translate, phase_bias_correction_shift);
+        builder.sf103(&types_of_biases);
+        for (auto& kvp : types_of_biases) {
+            builder.sf023(kvp.second.fix_flag);
+            builder.sf015(kvp.second.continuity_indicator);
+            builder.sf020(kvp.second.correction);
+        }
+    }
+
+    if (!code_bias) {
+        builder.sf106_raw(false, 0);
+    } else {
+        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
+                                           code_bias_translate, code_bias_correction_shift);
+        builder.sf106(&types_of_biases);
+        for (auto& kvp : types_of_biases) {
+            builder.sf029(kvp.second.correction);
+        }
+    }
+}
+
 void Generator::generate_ocb(uint16_t iod) {
     auto ocb_data = mCorrectionData->ocb(iod);
     if (!ocb_data) return;
@@ -603,6 +633,7 @@ void Generator::generate_ocb(uint16_t iod) {
         auto& corrections = *messages[message_id];
         auto  epoch_time  = corrections.epoch_time.rounded_seconds;
         auto  gnss_id     = corrections.gnss_id;
+        auto  rti_data    = mCorrectionData->real_time_integrity(gnss_id);
 
         auto satellites = corrections.satellites();
 
@@ -634,7 +665,13 @@ void Generator::generate_ocb(uint16_t iod) {
         for (auto& satellite : satellites) {
             VERBOSEF("  SATELLITE: %4ld", satellite.id);
 
-            builder.sf013(false /* false = do use this satellite */);
+            auto do_use_satellite = true;
+            if (rti_data) {
+                do_use_satellite = rti_data->can_use_satellite(satellite.id);
+                ERRORF("  CAN USE SATELLITE: %ld: %ld: %u", gnss_id, satellite.id, do_use_satellite);
+            }
+
+            builder.sf013(!do_use_satellite);
             builder.sf014(satellite.orbit != nullptr, satellite.clock != nullptr,
                           satellite.code_bias != nullptr || satellite.phase_bias != nullptr);
             if (mContinuityIndicator >= 0.0) {
@@ -685,8 +722,8 @@ void Generator::generate_ocb(uint16_t iod) {
                 auto c2 = decode::delta_Clock_C2_r15(clock.delta_Clock_C2_r15);
 
                 // t_0 = epochTime + (0.5 * ssrUpdateInterval)
-                // TODO(ewasjon): [low-priority] Include SSR update interval. This is fine not to
-                // include while we are using t=t0.
+                // TODO(ewasjon): [low-priority] Include SSR update interval. This is fine not
+                // to include while we are using t=t0.
                 auto t0 = corrections.epoch_time.seconds;
                 // TODO(ewasjon): [low-priority] We don't have an actual time available, is it
                 // possible for us to have access to that? If not, we will continue to use t=t0.
@@ -698,8 +735,8 @@ void Generator::generate_ocb(uint16_t iod) {
 
                 // NOTE(ewasjon): [REDACTED] observed that changing the sign of the clock
                 // corrections (in their correction feed) improved the result. They assumed that
-                // u-Blox implemented it with a flipped sign. Thus, we also need to flip the sign to
-                // conform to the u-Blox implementation.
+                // u-Blox implemented it with a flipped sign. Thus, we also need to flip the
+                // sign to conform to the u-Blox implementation.
                 if (mUBloxClockCorrection) {
                     dc *= -1;
                 }
@@ -750,6 +787,12 @@ void Generator::generate_ocb(uint16_t iod) {
                     break;
                 case GNSS_ID__gnss_id_galileo:
                     generate_gal_bias_block(builder, &GAL_SM, satellite.code_bias,
+                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
+                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
+                                            mPhaseBiasCorrectionShift);
+                    break;
+                case GNSS_ID__gnss_id_bds:
+                    generate_bds_bias_block(builder, &BDS_SM, satellite.code_bias,
                                             satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
                                             mCodeBiasCorrectionShift, mPhaseBiasTranslate,
                                             mPhaseBiasCorrectionShift);

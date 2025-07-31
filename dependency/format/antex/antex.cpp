@@ -200,6 +200,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                 ERRORF("expected antenna method and date");
                 return nullptr;
             }
+            TRACEF("antenna method: %s", line.c_str());
 
             if (!std::getline(stream, line)) {
                 ERRORF("failed to read dazi");
@@ -208,6 +209,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                 ERRORF("expected dazi");
                 return nullptr;
             }
+            TRACEF("dazi: %s", line.c_str());
 
             auto dazi_str = trim(line.substr(2, 6));
 
@@ -219,6 +221,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                 return nullptr;
             }
 
+            TRACEF("zen: %s", line.c_str());
             auto zen1_str = trim(line.substr(2, 6));
             auto zen2_str = trim(line.substr(8, 6));
             auto dzen_str = trim(line.substr(14, 6));
@@ -231,6 +234,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                 return nullptr;
             }
 
+            TRACEF("frequency count: %s", line.c_str());
             auto frequency_count_str = trim(line.substr(0, 6));
 
             if (!parse_float(dazi_str, antenna->dazi)) {
@@ -258,6 +262,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
             DEBUGF("  frequency count: %ld", antenna->frequency_count);
 
             while (std::getline(stream, line)) {
+                TRACEF("line: %s", line.c_str());
                 if (is_end_of_antenna(line)) {
                     break;
                 } else if (is_valid_from(line)) {
@@ -292,6 +297,10 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                                valid_from_second_str.c_str());
                         return nullptr;
                     }
+
+                    VERBOSEF("  valid from: %04" PRId64 " %02" PRId64 " %02" PRId64 " "
+                             "%02" PRId64 ":%02" PRId64 ":%06.3f",
+                             year, month, day, hour, minute, second);
 
                     antenna->valid_from_set = true;
                     antenna->valid_from =
@@ -400,6 +409,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                         return nullptr;
                     }
 
+                    TRACEF("  NEW: %s", line.c_str());
                     auto north_str = trim(line.substr(0, 10));
                     auto east_str  = trim(line.substr(10, 10));
                     auto up_str    = trim(line.substr(20, 10));
@@ -409,6 +419,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                         return nullptr;
                     }
 
+                    TRACEF("  NOAZI: %s", line.c_str());
                     auto prefix = line.substr(0, 8);
                     if (prefix != "   NOAZI") {
                         ERRORF("expected no azimuth");
@@ -418,8 +429,10 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                     auto element_count =
                         (int64_t)((antenna->zen2 - antenna->zen1) / antenna->dzen) + 1;
                     auto expected_length = 8 + 8 * element_count;
+                    TRACEF("  %f - %f = %f / %f, expected %" PRId64, antenna->zen2, antenna->zen1,
+                           antenna->zen2 - antenna->zen1, antenna->dzen, element_count);
                     if (line.size() != (size_t)expected_length) {
-                        ERRORF("expected no azimuth length %ld, got %zu", expected_length,
+                        ERRORF("expected no azimuth length %" PRId64 ", got %zu", expected_length,
                                line.size());
                         return nullptr;
                     }
@@ -443,6 +456,7 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                                 return nullptr;
                             }
 
+                            TRACEF("  AZI: %s", line.c_str());
                             auto azimuth_str = trim(line.substr(0, 8));
                             auto azimuth     = 0.0;
                             if (!parse_float(azimuth_str, azimuth)) {

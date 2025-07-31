@@ -2,6 +2,8 @@ asn/src
 asn1c
 bin
 build
+build-armv7
+build-arm64
 output.txt
 generated_files
 .vscode

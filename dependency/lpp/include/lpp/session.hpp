@@ -203,6 +203,8 @@ private:
     std::unordered_map<TransactionHandle, TransactionData>   mTransactions;
     std::unordered_set<long>                                 mClientTransactions;
 
+    std::vector<supl::POS> mPosQueue;
+
     long mTransactionId;
     long mGenerationId;
     long mSequenceNumber;

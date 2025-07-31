@@ -132,14 +132,14 @@ void Scheduler::execute() NOEXCEPT {
         return;
     }
 
-    tick_callbacks();
-
     struct epoll_event events[EVENT_COUNT];
     for (;;) {
         if (mEpollCount == 0) {
             DEBUGF("no file descriptors to wait for");
             return;
         }
+
+        tick_callbacks();
 
         // Wait for a file descriptor to become ready.
         VERBOSEF("waiting for events (%d file descriptors)", mEpollCount);
@@ -280,8 +280,8 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
             event_name = "unknown";
         }
         DEBUGF("event \"%s\" took %lld ms", event_name,
-                 std::chrono::duration_cast<std::chrono::milliseconds>(after_event - before_event)
-                     .count());
+               std::chrono::duration_cast<std::chrono::milliseconds>(after_event - before_event)
+                   .count());
     }
 }
 

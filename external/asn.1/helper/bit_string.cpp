@@ -195,4 +195,18 @@ BIT_STRING_s* BitStringBuilder::into_bit_string(size_t bits, BIT_STRING_s* bit_s
     return bit_string;
 }
 
+void BitStringReader::read_all_bits(BIT_STRING_s* bit_string) {
+    mBits  = 0;
+    mCount = 0;
+    for (int j = 0; j < 64; j++) {
+        auto x = j / 8;
+        auto y = 7 - (j % 8);
+        if (static_cast<size_t>(x) >= bit_string->size) break;
+        if (bit_string->buf[x] & (1 << y)) {
+            mBits |= (1llu << j);
+            mCount++;
+        }
+    }
+}
+
 }  // namespace helper

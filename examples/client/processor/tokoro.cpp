@@ -93,7 +93,7 @@ void TokoroEphemerisUbx::handle_bds(format::ubx::RxmSfrbx* sfrbx) {
     }
 }
 
-void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message) {
+void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     auto ptr = message.get();
     if (!ptr) return;
@@ -259,7 +259,7 @@ void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046* rtcm) {
     }
 }
 
-void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message) {
+void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     auto ptr = message.get();
     if (!ptr) return;
@@ -276,7 +276,7 @@ void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message) 
 //
 //
 
-void TokoroLocation::inspect(streamline::System&, DataType const& location) {
+void TokoroLocation::inspect(streamline::System&, DataType const& location, uint64_t) {
     VSCOPE_FUNCTION();
     mTokoro.update_location_information(location);
 }
@@ -292,6 +292,7 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
     mGenerator = std::unique_ptr<generator::tokoro::Generator>(new generator::tokoro::Generator{});
     mReferenceStation = nullptr;
     mPeriodicTask     = nullptr;
+    mOutputTag        = 0;
 
     mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
     mGenerator->set_rtoc(mConfig.rtoc);
@@ -527,6 +528,10 @@ void Tokoro::generate(ts::Tai const& generation_time) {
         // TODO(ewasjon): These message should be passed back into the system
         for (auto const& output : mOutput.outputs) {
             if (!output.rtcm_support()) continue;
+            if (!output.accept_tag(mOutputTag)) {
+                XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", mOutputTag);
+                continue;
+            }
             if (output.print) {
                 XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), size);
             }
@@ -536,7 +541,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     }
 }
 
-void Tokoro::inspect(streamline::System&, DataType const& message) {
+void Tokoro::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
 

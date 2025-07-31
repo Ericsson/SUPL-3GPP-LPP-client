@@ -48,6 +48,10 @@
 #include "processor/tokoro.hpp"
 #endif
 
+#if defined(INCLUDE_GENERATOR_IDOKEIDO)
+#include "processor/idokeido.hpp"
+#endif
+
 #ifdef DATA_TRACING
 #include "processor/possib_logger.hpp"
 #endif
@@ -80,6 +84,8 @@ static void client_request(Program& program, lpp::Client& client) {
         program.cell.reset(new supl::Cell{cell});
     }
 
+    DEBUGF("request assistance data (GNSS)");
+
     program.assistance_data_request_count++;
     program.assistance_data_session = client.request_assistance_data({
         program.config.assistance_data.type,
@@ -110,6 +116,34 @@ static void client_request(Program& program, lpp::Client& client) {
         },
         [&](lpp::Client&) {
             ERRORF("request assistance data failed");
+        },
+    });
+}
+
+static void client_request_assisted_gnss(Program& program, lpp::Client& client) {
+    if (!program.cell) {
+        ERRORF("internal error: no cell information");
+        return;
+    }
+
+    DEBUGF("request assistance data (AGNSS)");
+
+    auto cell = *program.cell.get();
+    client.request_assistance_data({
+        lpp::SingleRequestAssistanceData::Type::AGNSS,
+        cell,
+        {
+            program.config.assistance_data.gps,
+            program.config.assistance_data.glonass,
+            program.config.assistance_data.galileo,
+            program.config.assistance_data.beidou,
+        },
+        [&program](lpp::Client&, lpp::Message message) {
+            INFOF("[AGNSS] provide assistance data");
+            program.stream.push(std::move(message));
+        },
+        [&](lpp::Client&) {
+            ERRORF("[AGNSS] request assistance data failed");
         },
     });
 }
@@ -198,6 +232,10 @@ static void client_initialize(Program& program, lpp::Client&) {
             return false;
         };
 
+    if (program.config.assistance_data.request_assisted_gnss) {
+        client_request_assisted_gnss(program, *program.client);
+    }
+
     // Configure Capaiblities
     lpp::ProvideCapabilities capabilities{};
     capabilities.gnss.gps     = program.config.assistance_data.gps;
@@ -205,9 +243,10 @@ static void client_initialize(Program& program, lpp::Client&) {
     capabilities.gnss.galileo = program.config.assistance_data.galileo;
     capabilities.gnss.beidou  = program.config.assistance_data.beidou;
 
-    if (program.config.assistance_data.type == lpp::RequestAssistanceData::Type::OSR) {
+    if (program.config.assistance_data.type == lpp::PeriodicRequestAssistanceData::Type::OSR) {
         capabilities.assistance_data.osr = true;
-    } else if (program.config.assistance_data.type == lpp::RequestAssistanceData::Type::SSR) {
+    } else if (program.config.assistance_data.type ==
+               lpp::PeriodicRequestAssistanceData::Type::SSR) {
         capabilities.assistance_data.ssr = true;
     }
 
@@ -235,13 +274,23 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         if ((input.format & INPUT_FORMAT_LPP_UPER_PAD) != 0)
             lpp_uper_pad = new format::lpp::UperParser{};
 
-        DEBUGF("input  %p: %s%s%s%s%s", input.interface.get(),
+        std::stringstream tag_stream;
+        for (size_t i = 0; i < input.tags.size(); i++) {
+            if (i > 0) tag_stream << ",";
+            tag_stream << input.tags[i];
+        }
+
+        auto tag_str = tag_stream.str();
+        auto tag     = program.config.get_tag(input.tags) | program.config.get_tag("input");
+
+        DEBUGF("input  %p: %s%s%s%s%s %s[%llX]", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "");
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
+               tag);
 
         if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
             WARNF("-- skipping input %p, no format specified", input.interface.get());
@@ -269,14 +318,42 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         input.interface->schedule(program.scheduler);
         input.interface->set_event_name(event_name);
         input.interface->callback = [&program, &input, nmea, rtcm, ubx, ctrl, lpp_uper,
-                                     lpp_uper_pad](io::Input&, uint8_t* buffer, size_t count) {
+                                     lpp_uper_pad, tag](io::Input&, uint8_t* buffer, size_t count) {
+            if (loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
+                VERBOSEF("input %p: %zu bytes", input.interface.get(), count);
+                char print_buffer[512];
+                for (size_t i = 0; i < count;) {
+                    int  print_count = 0;
+                    for (size_t j = 0; j < 16; j++) {
+                        if (i + j < count) {
+                            print_count += snprintf(print_buffer + print_count,
+                                                    sizeof(print_buffer) - print_count, "%02X ",
+                                                    buffer[i + j]);
+                        } else {
+                            print_count += snprintf(print_buffer + print_count,
+                                                    sizeof(print_buffer) - print_count, "   ");
+                        }
+                    }
+                    for (size_t j = 0; j < 16; j++) {
+                        if (i + j < count) {
+                            print_count += snprintf(print_buffer + print_count,
+                                                    sizeof(print_buffer) - print_count, "%c",
+                                                    isprint(buffer[i + j]) ? buffer[i + j] : '.');
+                        }
+                    }
+                    
+                    VERBOSEF("%s", print_buffer);
+                    i += 16;
+                }
+            }
+
             if (nmea) {
                 nmea->append(buffer, count);
                 for (;;) {
                     auto message = nmea->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
-                    program.stream.push(std::move(message));
+                    program.stream.push(std::move(message), tag);
                 }
             }
 
@@ -296,7 +373,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     auto message = ubx->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
-                    program.stream.push(std::move(message));
+                    program.stream.push(std::move(message), tag);
                 }
             }
 
@@ -306,7 +383,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     auto message = ctrl->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
-                    program.stream.push(std::move(message));
+                    program.stream.push(std::move(message), tag);
                 }
             }
 
@@ -320,7 +397,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                     if (input.print) {
                         lpp::print(lpp_message);
                     }
-                    program.stream.push(std::move(lpp_message));
+                    program.stream.push(std::move(lpp_message), tag);
                 }
             }
 
@@ -341,7 +418,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
     }
 }
 
-static void initialize_outputs(Program& program, OutputConfig const& config) {
+static void initialize_outputs(Program& program, OutputConfig& config) {
     VSCOPE_FUNCTION();
 
     bool lpp_xer_output  = false;
@@ -383,6 +460,9 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
         if (output.location_support()) location_output = true;
         if (output.test_support()) test_output         = true;
 
+        output.include_tag_mask = program.config.get_tag(output.include_tags);
+        output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
+
         output.interface->schedule(program.scheduler);
     }
 
@@ -396,7 +476,7 @@ static void initialize_outputs(Program& program, OutputConfig const& config) {
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
 #endif
     if (location_output) program.stream.add_inspector<LocationOutput>(config);
-    if (test_output) test_outputer(program.scheduler, config);
+    if (test_output) test_outputer(program.scheduler, config, program.config.get_tag("test"));
 }
 
 static void setup_location_stream(Program& program) {
@@ -548,6 +628,16 @@ static void setup_tokoro(Program& program) {
 #endif
 }
 
+static void setup_idokeido(Program& program) {
+#if defined(INCLUDE_GENERATOR_IDOKEIDO)
+    if (program.config.idokeido.enabled) {
+        auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
+            program.config.output, program.config.idokeido, program.scheduler);
+        program.stream.add_inspector<IdokeidoEphemerisUbx<IdokeidoSpp>>(*idokeido_spp);
+    }
+#endif
+}
+
 int main(int argc, char** argv) {
     loglet::initialize();
 
@@ -632,6 +722,7 @@ int main(int argc, char** argv) {
     setup_lpp2osr(program);
     setup_lpp2spartn(program);
     setup_tokoro(program);
+    setup_idokeido(program);
 
     if (program.config.location_information.fake.enabled) {
         setup_fake_location(program);
@@ -644,6 +735,7 @@ int main(int argc, char** argv) {
 #endif
 
     scheduler::PeriodicTask reconnect_task{std::chrono::seconds(15)};
+    reconnect_task.set_event_name("lpp-reconnect");
     reconnect_task.callback = [&program]() {
         if (program.is_disconnected) {
             INFOF("reconnecting to LPP server");
