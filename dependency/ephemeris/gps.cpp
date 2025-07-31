@@ -154,6 +154,10 @@ double GpsEphemeris::calculate_relativistic_correction(Float3 const& position,
     return t_r;
 }
 
+double GpsEphemeris::calculate_group_delay() const NOEXCEPT {
+    return tgd;
+}
+
 EphemerisResult GpsEphemeris::compute(ts::Gps const& time) const NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", ts::Utc(time).rtklib_time_string().c_str());
 
