@@ -84,6 +84,7 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
 void Satellite::datatrace_report() NOEXCEPT {
     if (!mEnabled) return;
+    VSCOPE_FUNCTION();
 #ifdef DATA_TRACING
     datatrace::Satellite dt_sat{};
     dt_sat.position             = mCurrentState.true_position;
