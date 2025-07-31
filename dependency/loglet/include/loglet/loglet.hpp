@@ -361,7 +361,9 @@ struct PerformanceStack {
         stack->parent      = current;
 
 #pragma GCC diagnostic push
+#if COMPILER_GCC
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
+#endif
         current = stack;
 #pragma GCC diagnostic pop
     }
@@ -393,10 +395,10 @@ struct ScopeFunctionPerf {
     ScopeFunctionPerf(Level level, LogModule const* module, char const* func) {
         if (is_module_level_enabled(module, level)) {
             push_indent();
-            indent       = true;
-            log_module   = module;
-            log_level    = level;
-            log_name     = func;
+            indent     = true;
+            log_module = module;
+            log_level  = level;
+            log_name   = func;
         }
         stack        = {};
         stack.module = module;
