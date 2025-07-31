@@ -63,7 +63,6 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto message_class = header_decoder.U1();
     auto message_id    = header_decoder.U1();
     auto length        = static_cast<uint32_t>(header_decoder.U2());
-    WARNF("message_class: %u, message_id: %u, length: %u", message_class, message_id, length);
 
     auto type = (static_cast<uint16_t>(message_class) << 8) | static_cast<uint16_t>(message_id);
     if (length > 8192) {
@@ -95,8 +94,6 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     // parse payload
     Decoder              decoder(buffer + 6, length);
     std::vector<uint8_t> data(buffer, buffer + length + 8);
-
-    VERBOSEF("type: %04u", type);
 
     switch (type) {
     case 0x0107: return UbxNavPvt::parse(decoder, std::move(data));
