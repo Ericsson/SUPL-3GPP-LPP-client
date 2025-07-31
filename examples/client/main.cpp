@@ -313,6 +313,34 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         input.interface->set_event_name(event_name);
         input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper, lpp_uper_pad,
                                      tag](io::Input&, uint8_t* buffer, size_t count) {
+            if (loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
+                VERBOSEF("input %p: %zu bytes", input.interface.get(), count);
+                char print_buffer[512];
+                for (size_t i = 0; i < count;) {
+                    int  print_count = 0;
+                    for (size_t j = 0; j < 16; j++) {
+                        if (i + j < count) {
+                            print_count += snprintf(print_buffer + print_count,
+                                                    sizeof(print_buffer) - print_count, "%02X ",
+                                                    buffer[i + j]);
+                        } else {
+                            print_count += snprintf(print_buffer + print_count,
+                                                    sizeof(print_buffer) - print_count, "   ");
+                        }
+                    }
+                    for (size_t j = 0; j < 16; j++) {
+                        if (i + j < count) {
+                            print_count += snprintf(print_buffer + print_count,
+                                                    sizeof(print_buffer) - print_count, "%c",
+                                                    isprint(buffer[i + j]) ? buffer[i + j] : '.');
+                        }
+                    }
+                    
+                    VERBOSEF("%s", print_buffer);
+                    i += 16;
+                }
+            }
+
             if (nmea) {
                 nmea->append(buffer, count);
                 for (;;) {

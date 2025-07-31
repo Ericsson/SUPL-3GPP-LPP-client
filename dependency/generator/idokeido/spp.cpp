@@ -231,25 +231,44 @@ SppEngine::~SppEngine() {
     FUNCTION_SCOPE();
 }
 
-void SppEngine::epoch() {
-    FUNCTION_SCOPE();
-    mObservations.clear();
+static long absolute_signal_id(SatelliteId satellite_id, SignalId signal_id) {
+    auto sid = satellite_id.absolute_id();
+    if (sid < 0) return -1;
+    auto oid = signal_id.absolute_id();
+    if (oid < 0) return -1;
+    return sid * SIGNAL_ABS_COUNT + oid;
 }
 
-void SppEngine::observation(RawObservation const& raw) {
+void SppEngine::observation(RawObservation const& raw) NOEXCEPT {
     FUNCTION_SCOPE();
-    VERBOSEF("new observation: %s %s", raw.satellite_id.name(), raw.signal_id.name());
-    mObservations.push_back(raw);
-}
 
-SppEngine::Satellite& SppEngine::find_satellite(SatelliteId id) {
-    for (auto& satellite : mSatellites) {
-        if (satellite.id == id) return satellite;
+    auto satellite_id = raw.satellite_id.absolute_id();
+    auto signal_id    = absolute_signal_id(raw.satellite_id, raw.signal_id);
+    if (satellite_id < 0 || signal_id < 0) {
+        WARNF("invalid satellite or signal id: %s %s", raw.satellite_id.name(),
+              raw.signal_id.name());
+        return;
     }
-    mSatellites.emplace_back();
-    auto& satellite = mSatellites.back();
-    satellite.id    = id;
-    return satellite;
+
+    // Mark that the satellite is active
+    mSatelliteMask[satellite_id]      = true;
+    mSatelliteStates[satellite_id].id = raw.satellite_id;
+
+    // Add the observation
+    mObservationMask[signal_id]   = true;
+    mObservationStates[signal_id] = Observation{
+        .time          = raw.time,
+        .satellite_id  = raw.satellite_id,
+        .signal_id     = raw.signal_id,
+        .pseudo_range  = raw.pseudo_range,
+        .carrier_phase = raw.carrier_phase,
+        .doppler       = raw.doppler,
+        .snr           = raw.snr,
+        .lock_time     = raw.lock_time,
+    };
+
+    VERBOSEF("new observation: %03ld:%04ld %s %s", satellite_id, signal_id, raw.satellite_id.name(),
+             raw.signal_id.name());
 }
 
 template <typename T>
@@ -259,90 +278,87 @@ static std::string epf(T const& t) {
     return ss.str();
 }
 
-void SppEngine::group_by_satellite() {
-    FUNCTION_SCOPE();
-    mSatellites.clear();
-    for (auto& observation : mObservations) {
-        if (observation.snr < mConfiguration.snr_cutoff) {
-            DEBUGF("  %4s %10s: %f (rejected by SNR)", observation.satellite_id.name(),
-                   observation.signal_id.name(), observation.snr);
-            continue;
-        } else if (!mConfiguration.gnss.gps && observation.satellite_id.is_gps()) {
-            DEBUGF("  %4s %10s: rejected by GPS", observation.satellite_id.name(),
-                   observation.signal_id.name());
-            continue;
-        } else if (!mConfiguration.gnss.glo && observation.satellite_id.is_glonass()) {
-            DEBUGF("  %4s %10s: rejected by GLO", observation.satellite_id.name(),
-                   observation.signal_id.name());
-            continue;
-        } else if (!mConfiguration.gnss.gal && observation.satellite_id.is_galileo()) {
-            DEBUGF("  %4s %10s: rejected by GAL", observation.satellite_id.name(),
-                   observation.signal_id.name());
-            continue;
-        } else if (!mConfiguration.gnss.bds && observation.satellite_id.is_beidou()) {
-            DEBUGF("  %4s %10s: rejected by BDS", observation.satellite_id.name(),
-                   observation.signal_id.name());
-            continue;
-        }
-
-        auto satellite = find_satellite(observation.satellite_id);
-        satellite.observations.push_back(observation);
-    }
-
-    DEBUGF("satellites: %zu (observations: %zu)", mSatellites.size());
-}
-
 void SppEngine::select_best_observations() {
     FUNCTION_SCOPE();
 
-    for (auto it = mSatellites.begin(); it != mSatellites.end();) {
-        auto& satellite = *it;
-        std::sort(satellite.observations.begin(), satellite.observations.end(),
-                  [](RawObservation const& a, RawObservation const& b) {
-                      if (a.snr > b.snr) return -1;
-                      if (a.snr < b.snr) return 1;
-                      return 0;
-                  });
-        if (!satellite.observations.empty()) {
-            satellite.observation = satellite.observations[0];
-            it++;
-        } else {
-            it = mSatellites.erase(it);
-        }
-    }
+    DEBUGF("selecting best observation for each satellite");
+    for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
+        if (!mSatelliteMask[i]) continue;
 
-    DEBUGF("satellites: %zu", mSatellites.size());
+        auto& satellite    = mSatelliteStates[i];
+        auto  satellite_id = satellite.id.absolute_id();
+        ASSERT(satellite_id >= 0, "invalid satellite id");
+
+        long   best_id  = -1;
+        double best_snr = 0.0;
+
+        for (long j = satellite_id * SIGNAL_ABS_COUNT; j < (satellite_id + 1) * SIGNAL_ABS_COUNT;
+             ++j) {
+            if (!mObservationMask[j]) continue;
+            auto& observation = mObservationStates[j];
+            // TODO: reject observations with too high SNR
+            // TODO: reject observations with cycle slip
+            // TODO: reject stale observations
+            if (observation.snr > best_snr) {
+                best_id  = j;
+                best_snr = observation.snr;
+            }
+        }
+
+        if (best_id >= 0) {
+            satellite.main_observation_id = best_id;
+        } else {
+            mSatelliteMask[i]             = false;
+            satellite.main_observation_id = -1;
+            WARNF("no observation for satellite %03ld %s", satellite_id, satellite.id.name());
+            continue;
+        }
+
+        // TODO: find secondary observation with highest SNR for ionospheric 1-order estimation
+
+        DEBUGF("  %03ld %s: %04ld", satellite_id, satellite.id.name(),
+               satellite.main_observation_id);
+    }
 }
 
 void SppEngine::compute_satellite_states() {
     FUNCTION_SCOPE();
-    for (auto it = mSatellites.begin(); it != mSatellites.end();) {
-        auto& satellite = *it;
-        auto  state     = mEphemerisEngine.evaluate(satellite.id, satellite.observation.time);
+
+    DEBUGF("computing satellite states");
+    for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
+        if (!mSatelliteMask[i]) continue;
+
+        auto& satellite = mSatelliteStates[i];
+        ASSERT(satellite.main_observation_id >= 0, "no main observation for satellite");
+        ASSERT(mObservationMask[satellite.main_observation_id], "main observation not found");
+        auto& observation = mObservationStates[satellite.main_observation_id];
+        auto  state       = mEphemerisEngine.evaluate(satellite.id, observation.time);
         if (!state.is_valid()) {
-            WARNF("satellite %s is not valid", satellite.id.name());
-            it = mSatellites.erase(it);
+            mSatelliteMask[i] = false;
+            WARNF("invalid state for satellite %03ld %s", satellite.id.absolute_id(),
+                  satellite.id.name());
             continue;
         }
 
         satellite.position = state.position;
-        it++;
-    }
 
-    DEBUGF("satellites: %zu", mSatellites.size());
+        DEBUGF("  %03ld %s: %s", satellite.id.absolute_id(), satellite.id.name(),
+               epf(satellite.position).c_str());
+    }
 }
 
-void SppEngine::evaluate() {
+void SppEngine::evaluate() NOEXCEPT {
     FUNCTION_SCOPE();
-    DEBUGF("evaluating %zu observations", mObservations.size());
+    DEBUGF("evaluating %zu satellites and %zu observations", mSatelliteMask.count(),
+           mObservationMask.count());
 
-    group_by_satellite();
     select_best_observations();
     compute_satellite_states();
 
     // We can only solve if we have enough satellites
-    if (mSatellites.size() < 4) {
-        WARNF("not enough satellites: %d < 4", mSatellites.size());
+    auto satellite_count = mSatelliteMask.count();
+    if (satellite_count < 4) {
+        WARNF("not enough satellites: %d < 4", satellite_count);
         return;
     }
 
@@ -353,10 +369,13 @@ void SppEngine::evaluate() {
     for (size_t it = 0; it < 10; ++it) {
         DEBUGF("iteration %d: %s", it, epf(current).c_str());
         // Compute the geometric range to the guess
-        Eigen::MatrixXd residuals{mSatellites.size(), 1};
-        Eigen::MatrixXd design_matrix{mSatellites.size(), 4};
-        for (size_t i = 0; i < mSatellites.size(); ++i) {
-            auto& satellite = mSatellites[i];
+        Eigen::MatrixXd residuals{satellite_count, 1};
+        Eigen::MatrixXd design_matrix{satellite_count, 4};
+        for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
+            if (!mSatelliteMask[i]) continue;
+
+            auto& satellite   = mSatelliteStates[i];
+            auto& observation = mObservationStates[satellite.main_observation_id];
 
             auto delta_position  = satellite.position - current.head<3>();
             auto geometric_range = delta_position.norm();
@@ -367,7 +386,7 @@ void SppEngine::evaluate() {
             design_matrix(i, 2) = line_of_sight.z();
             design_matrix(i, 3) = 1;
 
-            auto residual   = geometric_range - satellite.observation.pseudo_range;
+            auto residual   = geometric_range - observation.pseudo_range;
             residuals(i, 0) = residual;
 
             DEBUGF("%14.4f %14.4f %14.4f %14.4f | %14.4f", line_of_sight.x(), line_of_sight.y(),

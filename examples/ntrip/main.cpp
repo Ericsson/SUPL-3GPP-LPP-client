@@ -63,7 +63,7 @@ static std::string authorization_basic(std::string const& username, std::string 
 static void hexdump(void const* data, size_t size) {
     auto bytes = reinterpret_cast<uint8_t const*>(data);
     for (size_t i = 0; i < size; i += 16) {
-        printf("%08lx: ", i);
+        printf("%08zx: ", i);
 
         // hex
         for (size_t j = 0; j < 16; j++) {

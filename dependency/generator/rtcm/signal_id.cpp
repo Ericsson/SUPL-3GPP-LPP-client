@@ -724,3 +724,12 @@ long SignalId::lpp_id() const {
 std::string SatelliteSignalId::to_string() const {
     return mSatellite.to_string() + " " + mSignal.to_string();
 }
+
+long SignalId::absolute_id() const {
+    if (mLppId >= SIGNAL_ABS_COUNT) {
+        return -1;
+    }
+
+    return mLppId;
+}
+

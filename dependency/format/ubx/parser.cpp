@@ -5,10 +5,10 @@
 #include "messages/cfg_valget.hpp"
 #include "messages/mon_ver.hpp"
 #include "messages/nav_pvt.hpp"
+#include "messages/rxm_rawx.hpp"
 #include "messages/rxm_rtcm.hpp"
 #include "messages/rxm_sfrbx.hpp"
 #include "messages/rxm_spartn.hpp"
-#include "messages/rxm_rawx.hpp"
 
 #include <cstdio>
 
@@ -26,27 +26,31 @@ char const* Parser::name() const NOEXCEPT {
 
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     // search for frame boundary
+    bool did_skip_anything = false;
     for (;;) {
         if (buffer_length() < 8) {
             // not enough data to search for frame boundary
-            VERBOSEF("not enough data to search for frame boundary");
+            TRACEF("not enough data to search for frame boundary: %u", buffer_length());
             return nullptr;
         }
 
         if (is_frame_boundary()) {
-            // found frame boundary
-            VERBOSEF("found frame boundary");
+            if (did_skip_anything) {
+                // found frame boundary (only print once)
+                VERBOSEF("found frame boundary");
+            }
             break;
         }
 
         // skip one byte and try again
         skip(1u);
+        did_skip_anything = true;
     }
 
     // check that we have enough data for the header
     if (buffer_length() < 8) {
         // not enough data for header
-        VERBOSEF("not enough data for header");
+        VERBOSEF("not enough data for header: %u", buffer_length());
         return nullptr;
     }
 
@@ -59,6 +63,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto message_class = header_decoder.U1();
     auto message_id    = header_decoder.U1();
     auto length        = static_cast<uint32_t>(header_decoder.U2());
+    WARNF("message_class: %u, message_id: %u, length: %u", message_class, message_id, length);
 
     auto type = (static_cast<uint16_t>(message_class) << 8) | static_cast<uint16_t>(message_id);
     if (length > 8192) {
@@ -68,12 +73,11 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         return nullptr;
     } else if (buffer_length() < length + 8) {
         // not enough data for payload
-        VERBOSEF("not enough data for payload");
+        TRACEF("not enough data for payload: %u of %u", buffer_length(), length + 8);
         return nullptr;
     }
 
     copy_to_buffer(buffer, length + 8);
-    skip(length + 8);
 
     // check checksum
     auto calculated_checksum = checksum_message(buffer, length + 8);
@@ -81,14 +85,18 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
                              static_cast<uint16_t>(buffer[length + 6]);
     if (calculated_checksum != expected_checksum) {
         // checksum failed
-        skip(length + 8);
+        skip(2u);
         VERBOSEF("checksum failed");
         return nullptr;
     }
 
+    skip(length + 8);
+
     // parse payload
     Decoder              decoder(buffer + 6, length);
     std::vector<uint8_t> data(buffer, buffer + length + 8);
+
+    VERBOSEF("type: %04u", type);
 
     switch (type) {
     case 0x0107: return UbxNavPvt::parse(decoder, std::move(data));

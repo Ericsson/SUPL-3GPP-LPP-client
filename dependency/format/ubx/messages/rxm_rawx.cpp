@@ -4,6 +4,11 @@
 #include "parser.hpp"
 
 #include <stdio.h>
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE2(ubx, rawx);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(ubx, rawx)
+
 namespace format {
 namespace ubx {
 
@@ -23,7 +28,9 @@ std::unique_ptr<Message> UbxRxmRawx::clone() const NOEXCEPT {
 }
 
 std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t> data) NOEXCEPT {
+    FUNCTION_SCOPE();
     if (decoder.remaining() < 16) {
+        VERBOSEF("not enough data for payload");
         return nullptr;
     }
 
@@ -35,6 +42,7 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
     auto version   = decoder.U1();
     auto reserved0 = decoder.U2();
     if (decoder.error()) {
+        VERBOSEF("failed to decode payload");
         return nullptr;
     }
 
@@ -65,6 +73,7 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
         auto trk_stat       = decoder.X1();
         auto meas_reserved0 = decoder.U1();
         if (decoder.error()) {
+            VERBOSEF("failed to decode measurement %u", i);
             return nullptr;
         }
 
@@ -90,6 +99,7 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
     }
 
     if (decoder.error()) {
+        VERBOSEF("failed to decode measurements");
         return nullptr;
     } else {
         return std::unique_ptr<Message>{

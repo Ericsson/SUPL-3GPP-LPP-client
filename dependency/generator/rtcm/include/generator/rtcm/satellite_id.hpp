@@ -4,6 +4,23 @@
 #include <functional>
 #include <string>
 
+#define GPS_ABS_COUNT 32
+#define GLO_ABS_COUNT 24
+#define GAL_ABS_COUNT 36
+#define BDS_ABS_COUNT 63
+
+#define GPS_ABS_MIN 0
+#define GPS_ABS_MAX (GPS_ABS_MIN + GPS_ABS_COUNT - 1)
+#define GLO_ABS_MIN (GPS_ABS_MAX + 1)
+#define GLO_ABS_MAX (GLO_ABS_MIN + GLO_ABS_COUNT - 1)
+#define GAL_ABS_MIN (GLO_ABS_MAX + 1)
+#define GAL_ABS_MAX (GAL_ABS_MIN + GAL_ABS_COUNT - 1)
+#define BDS_ABS_MIN (GAL_ABS_MAX + 1)
+#define BDS_ABS_MAX (BDS_ABS_MIN + BDS_ABS_COUNT - 1)
+
+#define SATELLITE_ID_MAX (BDS_ABS_MAX + 1)
+
+
 class SatelliteId {
 public:
     SatelliteId() = default;
@@ -31,6 +48,8 @@ public:
     NODISCARD Maybe<long> as_df009() const;
     NODISCARD Maybe<long> as_df038() const;
     NODISCARD Maybe<long> as_msm() const;
+
+    NODISCARD long absolute_id() const;
 
     NODISCARD bool is_valid() const { return mGnss != Gnss::UNKNOWN && mLppId != -1; }
     NODISCARD bool is_gps() const { return mGnss == Gnss::GPS; }
