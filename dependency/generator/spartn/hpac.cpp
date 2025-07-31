@@ -35,6 +35,7 @@ namespace generator {
 namespace spartn {
 
 void CorrectionPointSet::calculate_grid_points() {
+    FUNCTION_SCOPE();
     internal_grid_points.clear();
 
     long relative_id = 0;
@@ -77,6 +78,7 @@ void HpacSatellite::add_correction(long grid_id, STEC_ResidualSatElement_r16* re
 }
 
 bool HpacSatellite::has_all_residuals(CorrectionPointSet const& cps) const {
+    FUNCTION_SCOPE();
     for (auto gp : cps.grid_points()) {
         if (residuals.find(gp.id) == residuals.end()) {
             return false;
@@ -87,6 +89,7 @@ bool HpacSatellite::has_all_residuals(CorrectionPointSet const& cps) const {
 }
 
 std::vector<HpacSatellite> HpacCorrections::satellites() const {
+    FUNCTION_SCOPE();
     std::unordered_map<long, HpacSatellite> satellites;
 
     if (stec) {
@@ -188,6 +191,7 @@ std::vector<uint16_t> CorrectionData::iods() const {
 }
 
 bool CorrectionData::find_gad_epoch_time(uint16_t iod, SpartnTime* epoch_time) const {
+    FUNCTION_SCOPE();
     SpartnTime time{};
     bool       found = false;
 
@@ -215,6 +219,7 @@ bool CorrectionData::find_gad_epoch_time(uint16_t iod, SpartnTime* epoch_time) c
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16* gridded) {
     if (!gridded) return;
+    FUNCTION_SCOPE();
     auto  iod  = static_cast<uint16_t>(gridded->iod_ssr_r16);
     auto& hpac = mHpacData[iod];
 
@@ -232,6 +237,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16* stec) {
     if (!stec) return;
+    FUNCTION_SCOPE();
     auto  iod  = static_cast<uint16_t>(stec->iod_ssr_r16);
     auto& hpac = mHpacData[iod];
 
@@ -250,6 +256,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16* 
 void CorrectionData::add_correction(long gnss_id, GNSS_RealTimeIntegrity* rti) {
     if (!rti) return;
 
+    FUNCTION_SCOPE();
     auto& data = mRealTimeIntegrityData[gnss_id];
     data.mBadSatellites.clear();
 
@@ -274,7 +281,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_RealTimeIntegrity* rti) {
             }
 
             if (element->badSignalID->ext1 != nullptr) {
-                auto signal_bs1 = helper::BitStringReader(element->badSignalID->ext1->gnss_SignalIDs_Ext_r15);
+                auto signal_bs1 =
+                    helper::BitStringReader(element->badSignalID->ext1->gnss_SignalIDs_Ext_r15);
                 for (size_t i = 0; i < signal_bs1.count(); i++) {
                     if (!signal_bs1.get(i)) {
                         continue;
@@ -309,11 +317,13 @@ struct StecParameters {
     }
 
     inline double evaluate_at_point(double x, double y) {
+        FUNCTION_SCOPE();
         return compute_residual(x, y, c00, c01, c10, c11, reference_x, reference_y);
     }
 };
 
 static bool compute_coefficient_size_indicator(StecParameters& parameters) {
+    FUNCTION_SCOPE();
     auto small_coefficient_size = true;
 
     // NOTE(ewasjon): There is no resolution difference between the small and large coefficent
