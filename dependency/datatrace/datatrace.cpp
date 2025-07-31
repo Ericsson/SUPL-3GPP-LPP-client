@@ -46,6 +46,7 @@ void set_ssr_data(bool ssr_data) {
 }
 
 void start() {
+    FUNCTION_SCOPE();
     if (gInitialized) return;
     if (!gEnabled) return;
 
@@ -302,8 +303,8 @@ void report_ssr_orbit_correction(ts::Tai const& time, std::string const& satelli
 void report_ssr_clock_correction(ts::Tai const& time, std::string const& satellite,
                                  Option<double> c0, Option<double> c1, Option<double> c2,
                                  Option<long> ssr_iod) {
-    FUNCTION_SCOPE();
     if (!gSsrData) return;
+    FUNCTION_SCOPE();
 
     auto topic    = "datatrace/ssr/clock/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -329,8 +330,8 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
                                        Option<long>   stec_quality_indicator_cls,
                                        Option<long>   stec_quality_indicator_val,
                                        Option<long>   ssr_iod) {
-    FUNCTION_SCOPE();
     if (!gSsrData) return;
+    FUNCTION_SCOPE();
 
     auto topic    = "datatrace/ssr/iono_poly/" + gDevice + "/" + satellite + "/v1";
     auto utc_time = ts::Utc{time};
@@ -362,8 +363,8 @@ void report_ssr_ionospheric_polynomial(ts::Tai const& time, std::string const& s
 void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
                                   Option<Float3> position_llh, Option<double> tropo_wet,
                                   Option<double> tropo_dry, Option<long> ssr_iod) {
-    FUNCTION_SCOPE();
     if (!gSsrData) return;
+    FUNCTION_SCOPE();
 
     auto topic =
         "datatrace/ssr/tropo_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/v1";
@@ -388,8 +389,8 @@ void report_ssr_tropospheric_grid(ts::Tai const& time, long grid_point_id,
 void report_ssr_ionospheric_grid(ts::Tai const& time, long grid_point_id,
                                  Option<Float3> position_llh, std::string const& satellite,
                                  Option<double> residual, Option<long> ssr_iod) {
-    FUNCTION_SCOPE();
     if (!gSsrData) return;
+    FUNCTION_SCOPE();
 
     auto topic = "datatrace/ssr/iono_grid/" + gDevice + "/" + std::to_string(grid_point_id) + "/" +
                  satellite + "/v1";
