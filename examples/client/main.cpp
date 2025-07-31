@@ -280,7 +280,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         auto tag_str = tag_stream.str();
         auto tag     = program.config.get_tag(input.tags) | program.config.get_tag("input");
 
-        DEBUGF("input  %p: %s%s%s%s%s %s[%llX]", input.interface.get(),
+        DEBUGF("input  %p: %s%s%s%s%s %s[%" PRIu64 "]", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
@@ -317,7 +317,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                 VERBOSEF("input %p: %zu bytes", input.interface.get(), count);
                 char print_buffer[512];
                 for (size_t i = 0; i < count;) {
-                    int  print_count = 0;
+                    int print_count = 0;
                     for (size_t j = 0; j < 16; j++) {
                         if (i + j < count) {
                             print_count += snprintf(print_buffer + print_count,
@@ -419,8 +419,29 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     bool test_output     = false;
     for (auto& output : config.outputs) {
         if (!output.interface) continue;
-        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s", output.interface.get()->name(),
-               (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
+
+        std::stringstream itag_stream;
+        for (size_t i = 0; i < output.include_tags.size(); i++) {
+            if (i > 0) itag_stream << ",";
+            itag_stream << output.include_tags[i];
+        }
+
+        auto itag_str = itag_stream.str();
+
+        std::stringstream otag_stream;
+        for (size_t i = 0; i < output.exclude_tags.size(); i++) {
+            if (i > 0) otag_stream << ",";
+            otag_stream << output.exclude_tags[i];
+        }
+
+        auto otag_str = otag_stream.str();
+
+        output.include_tag_mask = program.config.get_tag(output.include_tags);
+        output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
+
+        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s | include=%s[%" PRIu64 "] | exclude=%s[%" PRIu64
+               "]",
+               output.interface.get()->name(), (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
                (output.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
@@ -429,7 +450,9 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
                (output.format & OUTPUT_FORMAT_LFR) ? "lfr " : "",
                (output.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
-               (output.format & OUTPUT_FORMAT_TEST) ? "test " : "");
+               (output.format & OUTPUT_FORMAT_LOCATION) ? "location " : "",
+               (output.format & OUTPUT_FORMAT_TEST) ? "test " : "", itag_str.c_str(),
+               output.include_tag_mask, otag_str.c_str(), output.exclude_tag_mask);
 
         if (output.lpp_xer_support()) lpp_xer_output = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
@@ -443,9 +466,6 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
 #endif
         if (output.location_support()) location_output = true;
         if (output.test_support()) test_output = true;
-
-        output.include_tag_mask = program.config.get_tag(output.include_tags);
-        output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
 
         output.interface->schedule(program.scheduler);
     }
@@ -694,6 +714,8 @@ int main(int argc, char** argv) {
 
     program.stream          = streamline::System{program.scheduler};
     program.is_disconnected = false;
+
+    program.config.register_tag("input");
 
     initialize_inputs(program, program.config.input);
     initialize_outputs(program, program.config.output);

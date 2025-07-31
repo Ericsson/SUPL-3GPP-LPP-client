@@ -443,7 +443,7 @@ static void parse(Config* config) {
     }
 
     for (auto& input : config->input.inputs) {
-        for(auto& tag : input.tags) {
+        for (auto& tag : input.tags) {
             config->register_tag(tag);
         }
     }
@@ -469,13 +469,13 @@ static void dump(InputConfig const& config) {
                (input.format & INPUT_FORMAT_CTRL) ? "CTRL " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
                (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "LPP-UPER-PAD " : "");
-        char tag_buffer[256];
-        auto tag_buffer_index = 0;
+
+        std::stringstream tag_ss;
         for (auto const& tag : input.tags) {
-            tag_buffer_index += snprintf(tag_buffer + tag_buffer_index, 256 - tag_buffer_index,
-                                        "%s ", tag.c_str());
+            tag_ss << tag << " ";
         }
-        DEBUGF("tags: %s", tag_buffer);
+        auto tag_str = tag_ss.str();
+        DEBUGF("tags: %s", tag_str.c_str());
 
         DEBUGF("print: %s", input.print ? "true" : "false");
         auto stdin_input = dynamic_cast<io::StdinInput*>(input.interface.get());
