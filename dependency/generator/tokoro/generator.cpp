@@ -193,6 +193,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
         if (!satellite.enabled()) continue;
 
+        satellite.compute_sun_position();
         if (mShapiroCorrection) satellite.compute_shapiro();
         if (mEarthSolidTidesCorrection) satellite.compute_earth_solid_tides();
         if (mPhaseWindupCorrection) satellite.compute_phase_windup();
@@ -703,6 +704,7 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
 
 bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iod,
                                ephemeris::Ephemeris& eph) const NOEXCEPT {
+    FUNCTION_SCOPE();
     if (sv_id.gnss() == SatelliteId::Gnss::GPS) {
         auto it = mGpsEphemeris.find(sv_id);
         if (it == mGpsEphemeris.end()) return false;
