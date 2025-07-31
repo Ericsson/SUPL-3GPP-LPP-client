@@ -50,6 +50,7 @@ Generator::Generator()
 Generator::~Generator() = default;
 
 std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
+    FUNCTION_SCOPE();
     // Clear previous messages
     mMessages.clear();
     if (!lpp_message) return mMessages;
@@ -122,6 +123,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
 }
 
 void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* message) {
+    FUNCTION_SCOPE();
     if (!message->a_gnss_ProvideAssistanceData) return;
     if (!message->a_gnss_ProvideAssistanceData->gnss_CommonAssistData) return;
 
@@ -198,6 +200,7 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
 }
 
 void Generator::find_ocb_corrections(ProvideAssistanceData_r9_IEs const* message) {
+    FUNCTION_SCOPE();
     if (!message->a_gnss_ProvideAssistanceData) return;
     if (!message->a_gnss_ProvideAssistanceData->gnss_GenericAssistData) return;
 
@@ -221,6 +224,7 @@ void Generator::find_ocb_corrections(ProvideAssistanceData_r9_IEs const* message
 }
 
 void Generator::find_hpac_corrections(ProvideAssistanceData_r9_IEs const* message) {
+    FUNCTION_SCOPE();
     if (!message->a_gnss_ProvideAssistanceData) return;
     if (!message->a_gnss_ProvideAssistanceData->gnss_GenericAssistData) return;
 
@@ -238,6 +242,7 @@ void Generator::find_hpac_corrections(ProvideAssistanceData_r9_IEs const* messag
 }
 
 void Generator::find_rti_corrections(ProvideAssistanceData_r9_IEs const* message) {
+    FUNCTION_SCOPE();
     if (!message->a_gnss_ProvideAssistanceData) return;
     if (!message->a_gnss_ProvideAssistanceData->gnss_GenericAssistData) return;
 
