@@ -12,18 +12,22 @@ LOGLET_MODULE2(p, nmea);
 
 using namespace format::nmea;
 
-void NmeaPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+void NmeaPrint::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     message->print();
 }
 
-void NmeaOutput::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+void NmeaOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto sentence = message->sentence();
     auto data     = reinterpret_cast<uint8_t const*>(sentence.data());
     auto size     = sentence.size();
     for (auto const& output : mOutput.outputs) {
         if (!output.nmea_support()) continue;
+        if(!output.accept_tag(tag)) {
+            XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            continue;
+        }
         if (output.print) {
             XINFOF(OUTPUT_PRINT_MODULE, "nmea: %zd bytes", size);
         }
@@ -81,7 +85,7 @@ lpp::VerticalAccuracy NmeaLocation::epe_to_vertical(EpeMessage const& epe) const
     return lpp::VerticalAccuracy::from_1sigma(epe.vertical_position_error());
 }
 
-void NmeaLocation::consume(streamline::System& system, DataType&& message) NOEXCEPT {
+void NmeaLocation::consume(streamline::System& system, DataType&& message, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
 
     auto received_new_message = false;

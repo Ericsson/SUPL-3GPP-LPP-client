@@ -1,3 +1,16 @@
+#include "config.hpp"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#include <args.hpp>
+#pragma GCC diagnostic pop
 
 namespace input {
 
@@ -8,7 +21,8 @@ static args::ValueFlagList<std::string> gArgs{
     "Add an input interface.\n"
     "Usage: --input <type>:<arguments>\n\n"
     "Arguments:\n"
-    "  format=<fmt>[+<fmt>...]\n\n"
+    "  format=<fmt>[+<fmt>...]\n"
+    "  tags=<tag>[+<tag>...]\n\n"
     "Types and their specific arguments:\n"
     "  stdin:\n"
     "  file:\n"
@@ -79,6 +93,20 @@ parse_format_list_from_options(std::unordered_map<std::string, std::string> cons
     return parse_format_list(options.at("format"));
 }
 
+static std::vector<std::string> parse_tags(std::string const& str) {
+    auto parts = split(str, '+');
+    return parts;
+}
+
+static std::vector<std::string>
+parse_tags_from_options(std::unordered_map<std::string, std::string> const& options) {
+    if (options.find("tags") == options.end()) {
+        return {};
+    } else {
+        return parse_tags(options.at("tags"));
+    }
+}
+
 static std::unordered_map<std::string, std::string> parse_options(std::string const& str) {
     auto                                         parts = split(str, ',');
     std::unordered_map<std::string, std::string> options;
@@ -95,14 +123,16 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
 static InputInterface
 parse_input_stdin(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto tags   = parse_tags_from_options(options);
     auto print  = parse_bool_option(options, "stdin", "print", false);
     auto input  = std::unique_ptr<io::Input>(new io::StdinInput());
-    return {format, print, std::move(input)};
+    return {format, print, std::move(input), tags};
 }
 
 static InputInterface
 parse_input_file(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto tags   = parse_tags_from_options(options);
     auto print  = parse_bool_option(options, "input", "print", false);
     if (options.find("path") == options.end()) {
         throw args::ValidationError("--input file: missing `path` option");
@@ -123,7 +153,7 @@ parse_input_file(std::unordered_map<std::string, std::string> const& options) {
     auto bytes_per_tick = static_cast<size_t>((bps + 9) / 10);
 
     auto input = std::unique_ptr<io::Input>(new io::FileInput(path, bytes_per_tick, tick_interval));
-    return {format, print, std::move(input)};
+    return {format, print, std::move(input), tags};
 }
 
 static io::BaudRate parse_baudrate(std::string const& str) {
@@ -206,6 +236,7 @@ static io::ParityBit parse_paritybit(std::string const& str) {
 
 static InputInterface parse_serial(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto tags   = parse_tags_from_options(options);
     auto print  = parse_bool_option(options, "serial", "print", false);
     if (options.find("device") == options.end()) {
         throw args::RequiredError("--input serial: missing `device` option");
@@ -231,12 +262,13 @@ static InputInterface parse_serial(std::unordered_map<std::string, std::string> 
     auto device = options.at("device");
     auto input  = std::unique_ptr<io::Input>(
         new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
-    return {format, print, std::move(input)};
+    return {format, print, std::move(input), tags};
 }
 
 static InputInterface
 parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto tags   = parse_tags_from_options(options);
     auto print  = parse_bool_option(options, "tcp-client", "print", false);
 
     auto reconnect = true;
@@ -278,11 +310,11 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
 
         auto input = std::unique_ptr<io::Input>(
             new io::TcpClientInput(host, static_cast<uint16_t>(port), reconnect));
-        return {format, print, std::move(input)};
+        return {format, print, std::move(input), tags};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
         auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(path, reconnect));
-        return {format, print, std::move(input)};
+        return {format, print, std::move(input), tags};
     } else {
         throw args::RequiredError("--input tcp-client: missing `host` and `port` or `path` option");
     }
@@ -291,6 +323,7 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
 static InputInterface
 parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto tags   = parse_tags_from_options(options);
     auto print  = parse_bool_option(options, "tcp-server", "print", false);
 
     if (options.find("listen") != options.end() || options.find("port") != options.end()) {
@@ -324,11 +357,11 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
 
         auto input =
             std::unique_ptr<io::Input>(new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
-        return {format, print, std::move(input)};
+        return {format, print, std::move(input), tags};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
         auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(path));
-        return {format, print, std::move(input)};
+        return {format, print, std::move(input), tags};
     } else {
         throw args::RequiredError(
             "--input tcp-server: missing `listen` and `port` or `path` option");
@@ -338,6 +371,7 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
 static InputInterface
 parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto tags   = parse_tags_from_options(options);
     auto print  = parse_bool_option(options, "udp-server", "print", false);
 
     if (options.find("listen") != options.end() || options.find("port") != options.end()) {
@@ -371,11 +405,11 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
 
         auto input =
             std::unique_ptr<io::Input>(new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
-        return {format, print, std::move(input)};
+        return {format, print, std::move(input), tags};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
         auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(path));
-        return {format, print, std::move(input)};
+        return {format, print, std::move(input), tags};
     } else {
         throw args::RequiredError(
             "--input udp-server: missing `listen` and `port` or `path` option");
@@ -407,6 +441,12 @@ static void parse(Config* config) {
     for (auto const& input : gArgs.Get()) {
         config->input.inputs.push_back(parse_interface(input));
     }
+
+    for (auto& input : config->input.inputs) {
+        for(auto& tag : input.tags) {
+            config->register_tag(tag);
+        }
+    }
 }
 
 static char const* input_type(io::Input* input) {
@@ -429,6 +469,13 @@ static void dump(InputConfig const& config) {
                (input.format & INPUT_FORMAT_CTRL) ? "CTRL " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
                (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "LPP-UPER-PAD " : "");
+        char tag_buffer[256];
+        auto tag_buffer_index = 0;
+        for (auto const& tag : input.tags) {
+            tag_buffer_index += snprintf(tag_buffer + tag_buffer_index, 256 - tag_buffer_index,
+                                        "%s ", tag.c_str());
+        }
+        DEBUGF("tags: %s", tag_buffer);
 
         DEBUGF("print: %s", input.print ? "true" : "false");
         auto stdin_input = dynamic_cast<io::StdinInput*>(input.interface.get());

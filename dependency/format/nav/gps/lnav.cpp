@@ -305,7 +305,7 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         ephemeris.a                 = sf2.sqrt_a * sf2.sqrt_a;
         ephemeris.toe               = sf2.toe;
         ephemeris.fit_interval_flag = sf2.fit_interval_flag;
-        ephemeris.aodo              = sf2.aodo;
+        ephemeris.aodo              = sf2.aodo; // TODO(ewasjon): AODO is not a ephemeris field
         ephemeris.cic               = sf3.cic;
         ephemeris.omega0            = sf3.omega0;
         ephemeris.cis               = sf3.cis;

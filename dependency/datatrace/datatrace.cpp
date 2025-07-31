@@ -241,6 +241,29 @@ void report_satellite(ts::Tai const& time, std::string const& satellite, Satelli
         ss << ",\"eph_pos_y\":" << sat.eph_position.value.y;
         ss << ",\"eph_pos_z\":" << sat.eph_position.value.z;
     }
+    if (sat.ground_position_ecef.valid) {
+        ss << ",\"ground_pos_x\":" << sat.ground_position_ecef.value.x;
+        ss << ",\"ground_pos_y\":" << sat.ground_position_ecef.value.y;
+        ss << ",\"ground_pos_z\":" << sat.ground_position_ecef.value.z;
+    }
+    if (sat.ground_position_llh.valid) {
+        ss << ",\"ground_pos_lat\":" << sat.ground_position_llh.value.x;
+        ss << ",\"ground_pos_lon\":" << sat.ground_position_llh.value.y;
+        ss << ",\"ground_pos_alt\":" << sat.ground_position_llh.value.z;
+    }
+    if (sat.reception_time.valid) ss << ",\"reception_time\":" << sat.reception_time.value;
+    if (sat.emission_time.valid) ss << ",\"emission_time\":" << sat.emission_time.value;
+    if (sat.sun_position.valid) {
+        ss << ",\"sun_pos_x\":" << sat.sun_position.value.x;
+        ss << ",\"sun_pos_y\":" << sat.sun_position.value.y;
+        ss << ",\"sun_pos_z\":" << sat.sun_position.value.z;
+    }
+    if (sat.moon_position.valid) {
+        ss << ",\"moon_pos_x\":" << sat.moon_position.value.x;
+        ss << ",\"moon_pos_y\":" << sat.moon_position.value.y;
+        ss << ",\"moon_pos_z\":" << sat.moon_position.value.z;
+    }
+    if (sat.gmst.valid) ss << ",\"gmst\":" << sat.gmst.value;
     ss << "}";
 
     publish(topic, ss.str());

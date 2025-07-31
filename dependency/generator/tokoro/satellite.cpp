@@ -86,13 +86,20 @@ void Satellite::datatrace_report() NOEXCEPT {
     if (!mEnabled) return;
 #ifdef DATA_TRACING
     datatrace::Satellite dt_sat{};
-    dt_sat.position     = mCurrentState.true_position;
-    dt_sat.velocity     = mCurrentState.true_velocity;
-    dt_sat.eph_position = mCurrentState.eph_position;
-    dt_sat.elevation    = mCurrentState.true_elevation * constant::RAD2DEG;
-    dt_sat.azimuth      = mCurrentState.true_azimuth * constant::RAD2DEG;
-    dt_sat.nadir        = mCurrentState.true_nadir * constant::RAD2DEG;
-    dt_sat.iod          = mCurrentState.eph_iod;
+    dt_sat.position             = mCurrentState.true_position;
+    dt_sat.velocity             = mCurrentState.true_velocity;
+    dt_sat.eph_position         = mCurrentState.eph_position;
+    dt_sat.elevation            = mCurrentState.true_elevation * constant::RAD2DEG;
+    dt_sat.azimuth              = mCurrentState.true_azimuth * constant::RAD2DEG;
+    dt_sat.nadir                = mCurrentState.true_nadir * constant::RAD2DEG;
+    dt_sat.iod                  = mCurrentState.eph_iod;
+    dt_sat.ground_position_ecef = mGroundPositionEcef;
+    dt_sat.ground_position_llh  = mGroundPositionLlh;
+    dt_sat.reception_time       = mCurrentState.reception_time.timestamp().full_seconds();
+    dt_sat.emission_time        = mCurrentState.emission_time.timestamp().full_seconds();
+    dt_sat.sun_position         = mCurrentState.sun_moon_position.sun;
+    dt_sat.moon_position        = mCurrentState.sun_moon_position.moon;
+    dt_sat.gmst                 = mCurrentState.sun_moon_position.gmst;
     datatrace::report_satellite(mCurrentState.reception_time, mId.name(), dt_sat);
 #endif
 }
@@ -360,6 +367,17 @@ bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOE
     return true;
 }
 
+void Satellite::compute_sun_position() NOEXCEPT {
+    compute_sun_position(mCurrentState);
+    compute_sun_position(mNextState);
+}
+
+void Satellite::compute_sun_position(SatelliteState& state) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s, %s", mId.name(), state.reception_time.rtklib_time_string().c_str());
+
+    state.sun_moon_position = sun_and_moon_position_ecef(state.reception_time);
+}
+
 void Satellite::compute_shapiro() NOEXCEPT {
     compute_shapiro(mCurrentState);
     compute_shapiro(mNextState);
@@ -387,6 +405,8 @@ void Satellite::compute_shapiro(SatelliteState& state) NOEXCEPT {
 
 void Satellite::compute_earth_solid_tides(SatelliteState& state) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mId.name(), state.reception_time.rtklib_time_string().c_str());
+
+    // TODO(ewasjon): Use sun_moon_position in model_earth_solid_tides instead of re-computing it
     state.earth_solid_tides = model_earth_solid_tides(state.reception_time, state,
                                                       mGroundPositionEcef, mGroundPositionLlh);
 
@@ -405,6 +425,7 @@ void Satellite::compute_earth_solid_tides(SatelliteState& state) NOEXCEPT {
 void Satellite::compute_phase_windup(SatelliteState& state) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mId.name(), state.reception_time.rtklib_time_string().c_str());
 
+    // TODO(ewasjon): Use sun_moon_position in model_phase_windup instead of re-computing it
     state.phase_windup = model_phase_windup(state.reception_time, state, mGroundPositionEcef,
                                             mGroundPositionLlh, state.phase_windup);
     VERBOSEF("phase_windup: %+.14f", state.phase_windup.correction_sun);

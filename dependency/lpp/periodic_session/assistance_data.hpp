@@ -9,7 +9,7 @@ namespace lpp {
 class AssistanceDataHandler : public PeriodicSession {
 public:
     EXPLICIT AssistanceDataHandler(Client* client, Session* session, PeriodicSessionHandle handle,
-                                   RequestAssistanceData data);
+                                   PeriodicRequestAssistanceData data);
     virtual ~AssistanceDataHandler() override;
 
     virtual void request_response(TransactionHandle const& transaction, Message message) override;
@@ -22,7 +22,7 @@ public:
     bool update_assistance_data(supl::Cell cell);
 
 private:
-    RequestAssistanceData mData;
+    PeriodicRequestAssistanceData mData;
 };
 
 }  // namespace lpp

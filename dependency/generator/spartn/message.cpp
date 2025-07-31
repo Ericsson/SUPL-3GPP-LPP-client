@@ -180,6 +180,21 @@ void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
             count = 36;
         }
         break;
+    case GNSS_ID_BDS:
+        if (count > 48) {
+            mBuilder.bits(3, 2);
+            count = 64;
+        } else if (count > 40) {
+            mBuilder.bits(2, 2);
+            count = 48;
+        } else if (count > 10) {
+            mBuilder.bits(1, 2);
+            count = 40;
+        } else {
+            mBuilder.bits(0, 2);
+            count = 10;
+        }
+        break;
     default: UNREACHABLE();
     }
 
@@ -253,6 +268,9 @@ void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string, bool iod
         mBuilder.bits(iode & 0x7F, 7);
         break;
     case GNSS_ID_GAL:  // SF099 - Galileo IOD
+        mBuilder.bits(iode & 0x3FF, 10);
+        break;
+    case GNSS_ID_BDS:  // SF100 - BeiDou IODE/IODC
         mBuilder.bits(iode & 0x3FF, 10);
         break;
     default: UNREACHABLE();

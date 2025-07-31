@@ -9,22 +9,28 @@
 LOGLET_MODULE2(p, ubx);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ubx)
 
-void UbxPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+void UbxPrint::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     message->print();
 }
 
-void UbxOutput::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+void UbxOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto& data = message->data();
     for (auto& output : mOutput.outputs) {
-        if ((output.format & OUTPUT_FORMAT_UBX) != 0) {
-            output.interface->write(data.data(), data.size());
+        if (!output.ubx_support()) continue;
+        if (!output.accept_tag(tag)) {
+            XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            continue;
         }
+        if (output.print) {
+            XINFOF(OUTPUT_PRINT_MODULE, "ubx: %zd bytes", data.size());
+        }
+        output.interface->write(data.data(), data.size());
     }
 }
 
-void UbxLocation::inspect(streamline::System& system, DataType const& message) NOEXCEPT {
+void UbxLocation::inspect(streamline::System& system, DataType const& message, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto nav_pvt = dynamic_cast<format::ubx::UbxNavPvt*>(message.get());
     if (nav_pvt) {

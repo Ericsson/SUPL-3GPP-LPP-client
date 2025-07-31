@@ -13,7 +13,7 @@ namespace lpp {
 
 AssistanceDataHandler::AssistanceDataHandler(Client* client, Session* session,
                                              PeriodicSessionHandle handle,
-                                             RequestAssistanceData data)
+                                             PeriodicRequestAssistanceData data)
     : PeriodicSession(client, session, handle), mData(data) {
     VSCOPE_FUNCTION();
 }
@@ -74,12 +74,12 @@ bool AssistanceDataHandler::request_assistance_data() {
     message_description.delivery_amount    = mData.config.delivery_amount;
     message_description.rtk_antenna_height = mData.config.antenna_height;
 
-    if (mData.type == RequestAssistanceData::Type::OSR) {
+    if (mData.type == PeriodicRequestAssistanceData::Type::OSR) {
         message_description.rtk_observations           = 1;
         message_description.rtk_residuals              = 1;
         message_description.rtk_bias_information       = 1;
         message_description.rtk_reference_station_info = 1;
-    } else if (mData.type == RequestAssistanceData::Type::SSR) {
+    } else if (mData.type == PeriodicRequestAssistanceData::Type::SSR) {
         message_description.ssr_clock             = 5;
         message_description.ssr_orbit             = 5;
         message_description.ssr_code_bias         = 5;
@@ -88,9 +88,6 @@ bool AssistanceDataHandler::request_assistance_data() {
         message_description.ssr_gridded           = 5;
         message_description.ssr_ura               = 5;
         message_description.ssr_correction_points = 1;
-    } else if (mData.type == RequestAssistanceData::Type::AGNSS) {
-        UNIMPLEMENTED("AGNSS not implemented");
-        return false;
     } else {
         WARNF("unknown RequestAssistanceData type");
         return false;
@@ -108,6 +105,7 @@ bool AssistanceDataHandler::request_assistance_data() {
 bool AssistanceDataHandler::update_assistance_data(supl::Cell cell) {
     VSCOPE_FUNCTION();
 
+    // TODO(ewasjon): remove the duplication code
     messages::RequestAssistanceData message_description{};
     message_description.cell               = cell;
     message_description.periodic_session   = handle();
@@ -118,12 +116,12 @@ bool AssistanceDataHandler::update_assistance_data(supl::Cell cell) {
     message_description.delivery_amount    = mData.config.delivery_amount;
     message_description.rtk_antenna_height = mData.config.antenna_height;
 
-    if (mData.type == RequestAssistanceData::Type::OSR) {
+    if (mData.type == PeriodicRequestAssistanceData::Type::OSR) {
         message_description.rtk_observations           = 1;
         message_description.rtk_residuals              = 1;
         message_description.rtk_bias_information       = 1;
         message_description.rtk_reference_station_info = 1;
-    } else if (mData.type == RequestAssistanceData::Type::SSR) {
+    } else if (mData.type == PeriodicRequestAssistanceData::Type::SSR) {
         message_description.ssr_clock             = 5;
         message_description.ssr_orbit             = 5;
         message_description.ssr_code_bias         = 5;
@@ -132,9 +130,6 @@ bool AssistanceDataHandler::update_assistance_data(supl::Cell cell) {
         message_description.ssr_gridded           = 5;
         message_description.ssr_ura               = 5;
         message_description.ssr_correction_points = 1;
-    } else if (mData.type == RequestAssistanceData::Type::AGNSS) {
-        UNIMPLEMENTED("AGNSS not implemented");
-        return false;
     } else {
         WARNF("unknown RequestAssistanceData type");
         return false;

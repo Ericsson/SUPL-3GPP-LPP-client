@@ -1,3 +1,16 @@
+#include "config.hpp"
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
+#pragma GCC diagnostic ignored "-Wnewline-eof"
+#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
+#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#pragma GCC diagnostic ignored "-Wshadow-field"
+#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#include <args.hpp>
+#pragma GCC diagnostic pop
 
 namespace output {
 
@@ -8,7 +21,9 @@ static args::ValueFlagList<std::string> gArgs{
     "Add an output interface.\n"
     "Usage: --output <type>:<arguments>\n\n"
     "Arguments:\n"
-    "  format=<fmt>[+<fmt>...]\n\n"
+    "  format=<fmt>[+<fmt>...]\n"
+    "  itags=<tag>[+<tag>...]\n"
+    "  otags=<tag>[+<tag>...]\n\n"
     "Types and their specific arguments:\n"
     "  stdout:\n"
     "  file:\n"
@@ -84,6 +99,29 @@ parse_format_list_from_options(std::unordered_map<std::string, std::string> cons
     return parse_format_list(options.at("format"));
 }
 
+static std::vector<std::string> parse_tags(std::string const& str) {
+    auto parts = split(str, '+');
+    return parts;
+}
+
+static std::vector<std::string>
+parse_itags_from_options(std::unordered_map<std::string, std::string> const& options) {
+    if (options.find("itags") == options.end()) {
+        return {};
+    } else {
+        return parse_tags(options.at("itags"));
+    }
+}
+
+static std::vector<std::string>
+parse_otags_from_options(std::unordered_map<std::string, std::string> const& options) {
+    if (options.find("otags") == options.end()) {
+        return {};
+    } else {
+        return parse_tags(options.at("otags"));
+    }
+}
+
 static std::unordered_map<std::string, std::string> parse_options(std::string const& str) {
     auto                                         parts = split(str, ',');
     std::unordered_map<std::string, std::string> options;
@@ -99,13 +137,17 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
 
 static OutputInterface parse_stdout(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto itags  = parse_itags_from_options(options);
+    auto otags  = parse_otags_from_options(options);
     auto print  = parse_bool_option(options, "stdin", "print", false);
     auto output = std::unique_ptr<io::Output>(new io::StdoutOutput());
-    return {format, std::move(output), print};
+    return {format, std::move(output), print, std::move(itags), std::move(otags)};
 }
 
 static OutputInterface parse_file(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto itags  = parse_itags_from_options(options);
+    auto otags  = parse_otags_from_options(options);
     auto print  = parse_bool_option(options, "file", "print", false);
     if (options.find("path") == options.end()) {
         throw args::ValidationError("--output file: missing `path` option");
@@ -125,7 +167,7 @@ static OutputInterface parse_file(std::unordered_map<std::string, std::string> c
         }
     }
     auto output = std::unique_ptr<io::Output>(new io::FileOutput(path, truncate, append, true));
-    return {format, std::move(output), print};
+    return {format, std::move(output), print, std::move(itags), std::move(otags)};
 }
 
 static io::BaudRate parse_baudrate(std::string const& str) {
@@ -208,6 +250,8 @@ static io::ParityBit parse_paritybit(std::string const& str) {
 
 static OutputInterface parse_serial(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto itags  = parse_itags_from_options(options);
+    auto otags  = parse_otags_from_options(options);
     auto print  = parse_bool_option(options, "serial", "print", false);
     if (options.find("device") == options.end()) {
         throw args::RequiredError("--output serial: missing `device` option");
@@ -233,12 +277,14 @@ static OutputInterface parse_serial(std::unordered_map<std::string, std::string>
     auto device = options.at("device");
     auto output = std::unique_ptr<io::Output>(
         new io::SerialOutput(device, baud_rate, data_bits, stop_bits, parity_bit));
-    return {format, std::move(output), print};
+    return {format, std::move(output), print, std::move(itags), std::move(otags)};
 }
 
 static OutputInterface
 parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto itags  = parse_itags_from_options(options);
+    auto otags  = parse_otags_from_options(options);
     auto print  = parse_bool_option(options, "tcp", "print", false);
 
     auto reconnect = true;
@@ -282,11 +328,11 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
         return {format,
                 std::unique_ptr<io::Output>(
                     new io::TcpClientOutput(host, static_cast<uint16_t>(port), reconnect)),
-                print};
+                print, std::move(itags), std::move(otags)};
     } else if (options.find("path") != options.end()) {
         auto path = options.at("path");
         return {format, std::unique_ptr<io::Output>(new io::TcpClientOutput(path, reconnect)),
-                print};
+                print, std::move(itags), std::move(otags)};
     } else {
         throw args::RequiredError(
             "--output tcp-client: missing `host` and `port` or `path` option");
@@ -296,6 +342,8 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
 static OutputInterface
 parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto itags  = parse_itags_from_options(options);
+    auto otags  = parse_otags_from_options(options);
     auto print  = parse_bool_option(options, "udp-client", "print", false);
 
     if (options.find("host") != options.end()) {
@@ -328,10 +376,11 @@ parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
         return {
             format,
             std::unique_ptr<io::Output>(new io::UdpClientOutput(host, static_cast<uint16_t>(port))),
-            print};
+            print, std::move(itags), std::move(otags)};
     } else if (options.find("path") != options.end()) {
         auto path = options.at("path");
-        return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(path)), print};
+        return {format, std::unique_ptr<io::Output>(new io::UdpClientOutput(path)), print,
+                std::move(itags), std::move(otags)};
     } else {
         throw args::RequiredError(
             "--output udp-client: missing `host` and `port` or `path` option");
@@ -341,6 +390,8 @@ parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
 static OutputInterface
 parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
     auto format = parse_format_list_from_options(options);
+    auto itags  = parse_itags_from_options(options);
+    auto otags  = parse_otags_from_options(options);
     auto print  = parse_bool_option(options, "tcp-server", "print", false);
 
     if (options.find("host") != options.end()) {
@@ -373,10 +424,11 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
         return {
             format,
             std::unique_ptr<io::Output>(new io::TcpServerOutput(host, static_cast<uint16_t>(port))),
-            print};
+            print, std::move(itags), std::move(otags)};
     } else if (options.find("path") != options.end()) {
         auto path = options.at("path");
-        return {format, std::unique_ptr<io::Output>(new io::TcpServerOutput(path)), print};
+        return {format, std::unique_ptr<io::Output>(new io::TcpServerOutput(path)), print,
+                std::move(itags), std::move(otags)};
     } else {
         throw args::RequiredError(
             "--output tcp-server: missing `host` and `port` or `path` option");
@@ -418,6 +470,14 @@ static void parse(Config* config) {
         if (print_everything) {
             output.print = true;
         }
+
+        for (auto const& itag : output.include_tags) {
+            config->register_tag(itag);
+        }
+
+        for (auto const& otag : output.exclude_tags) {
+            config->register_tag(otag);
+        }
     }
 }
 
@@ -441,6 +501,17 @@ static void dump(OutputConfig const& config) {
                (output.format & OUTPUT_FORMAT_LPP_XER) ? "LPP-XER " : "",
                (output.format & OUTPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "SPARTN " : "");
+
+        std::stringstream tag_ss;
+        for (auto const& tag : output.include_tags) {
+            tag_ss << tag << " ";
+        }
+        DEBUGF("include tags: %s", tag_ss.str().c_str());
+        std::stringstream otag_ss;
+        for (auto const& tag : output.exclude_tags) {
+            otag_ss << tag << " ";
+        }
+        DEBUGF("exclude tags: %s", otag_ss.str().c_str());
 
         auto stdout_output = dynamic_cast<io::StdoutOutput*>(output.interface.get());
         if (stdout_output) continue;

@@ -16,9 +16,11 @@ namespace messages {
 struct ProvideLocationInformation;
 }
 
-struct RequestAssistanceData;
+struct PeriodicRequestAssistanceData;
+struct SingleRequestAssistanceData;
 struct ProvideCapabilities;
 class PeriodicSession;
+class SingleSession;
 class LocationInformationDelivery;
 struct PeriodicLocationInformationDeliveryDescription;
 class Client {
@@ -61,11 +63,14 @@ public:
 
     // Request assistance data from the server
     PeriodicSessionHandle
-    request_assistance_data(RequestAssistanceData const& request_assistance_data);
+    request_assistance_data(PeriodicRequestAssistanceData const& request_assistance_data);
     // Update assistance data with a new cell for the given periodic session
     bool update_assistance_data(PeriodicSessionHandle const& session, supl::Cell cell);
     // Cancel assistance data for the given periodic session
     void cancel_assistance_data(PeriodicSessionHandle const& session);
+
+    // Request assistance data once from the server
+    bool request_assistance_data(SingleRequestAssistanceData const& request_assistance_data);
 
     bool is_periodic_session_valid(PeriodicSessionHandle const& session) const;
 
@@ -94,6 +99,7 @@ public:
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
     using Lid = std::shared_ptr<LocationInformationDelivery>;
+    using Sah = std::shared_ptr<SingleSession>;
 
     void process_message(TransactionHandle const& transaction, Message message);
     void process_request_capabilities(TransactionHandle const& transaction, Message message);
@@ -115,9 +121,14 @@ protected:
     bool deallocate_periodic_session_handle(PeriodicSessionHandle const& handle);
     void want_to_be_destroyed(PeriodicSessionHandle const& handle);
 
+    bool add_single_session(Sah session);
+    bool remove_single_session(TransactionHandle const& handle);
+    void single_session_want_to_be_destroyed(TransactionHandle const& handle);
+
     PeriodicSession* find_by_periodic_session_handle(PeriodicSessionHandle const& session);
     PeriodicSession* find_by_request_transaction_handle(TransactionHandle const& transaction);
     PeriodicSession* find_by_periodic_transaction_handle(TransactionHandle const& transaction);
+    SingleSession* find_single_session_by_request_transaction_handle(TransactionHandle const& transaction);
 
 private:
     std::string                          mHost;
@@ -133,12 +144,15 @@ private:
 
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;
+    std::unordered_map<TransactionHandle, Sah>                   mSingleSessions;
     std::unordered_map<PeriodicSessionHandle, Pah>               mSessions;
     std::unordered_map<TransactionHandle, Lid>                   mLocationInformationDeliveries;
     long                                                         mNextSessionId;
     std::vector<PeriodicSessionHandle>                           mSessionsToDestroy;
+    std::vector<TransactionHandle>                               mSingleSessionsToDestroy;
 
     friend class PeriodicSession;
+    friend class SingleSession;
     friend class LocationInformationDelivery;
 };
 

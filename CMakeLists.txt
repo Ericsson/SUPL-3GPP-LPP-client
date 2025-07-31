@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -18,6 +18,8 @@ add_definitions(-DCLIENT_VERSION_INT=0x040015)
 include(cmake/CPM.cmake)
 
 find_package(Threads REQUIRED)
+
+include(cmake/CPM.cmake)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
     add_definitions(-DDEBUG=1)

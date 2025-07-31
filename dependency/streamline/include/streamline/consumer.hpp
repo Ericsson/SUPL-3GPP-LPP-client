@@ -11,6 +11,8 @@ public:
 
     Consumer()                            = default;
     virtual ~Consumer()                   = default;
-    virtual void consume(System&, DataType&& data) = 0;
+    virtual void consume(System&, DataType&& data, uint64_t tag) = 0;
+    virtual bool accept(System&, uint64_t) { return true; }
+    virtual const char* name() const NOEXCEPT = 0;
 };
 }  // namespace streamline

@@ -9,12 +9,12 @@
 LOGLET_MODULE2(p, li);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, li)
 
-void LocationCollector::inspect(streamline::System&, DataType const& location) NOEXCEPT {
+void LocationCollector::inspect(streamline::System&, DataType const& location, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     mProgram.update_location_information(location);
 }
 
-void MetricsCollector::inspect(streamline::System&, DataType const& metrics) NOEXCEPT {
+void MetricsCollector::inspect(streamline::System&, DataType const& metrics, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     mProgram.update_gnss_metrics(metrics);
 }
@@ -31,7 +31,7 @@ static void vertical_accuracy_json(std::stringstream& result, lpp::VerticalAccur
     result << ",\"confidence\": " << vertical_accuracy.confidence;
 }
 
-void LocationOutput::inspect(streamline::System&, DataType const& location) NOEXCEPT {
+void LocationOutput::inspect(streamline::System&, DataType const& location, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
     
     std::stringstream result;
@@ -76,6 +76,10 @@ void LocationOutput::inspect(streamline::System&, DataType const& location) NOEX
     auto size     = sentence.size();
     for (auto const& output : mOutput.outputs) {
         if (!output.location_support()) continue;
+        if(!output.accept_tag(tag)) {
+            XDEBUGF(OUTPUT_PRINT_MODULE, "location: tag %llX not accepted", tag);
+            continue;
+        }
         if (output.print) {
             XINFOF(OUTPUT_PRINT_MODULE, "location: %zd bytes", size);
         }

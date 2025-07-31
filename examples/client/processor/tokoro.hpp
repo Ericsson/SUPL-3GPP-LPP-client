@@ -14,12 +14,12 @@
 #include <format/rtcm/1019.hpp>
 #include <format/rtcm/1042.hpp>
 #include <format/rtcm/1046.hpp>
+#include <generator/tokoro/constant.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
-#include <generator/tokoro/constant.hpp>
 #include <lpp/location_information.hpp>
-#include <scheduler/scheduler.hpp>
 #include <scheduler/periodic.hpp>
+#include <scheduler/scheduler.hpp>
 
 #include "config.hpp"
 #include "lpp.hpp"
@@ -37,7 +37,8 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
 
-    void inspect(streamline::System&, DataType const& message) override;
+    const char* name() const NOEXCEPT override { return "Tokoro"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
     void vrs_mode_fixed();
     void vrs_mode_dynamic();
@@ -56,6 +57,7 @@ private:
     std::unique_ptr<generator::tokoro::Generator>        mGenerator;
     std::shared_ptr<generator::tokoro::ReferenceStation> mReferenceStation;
     std::unique_ptr<scheduler::PeriodicTask>             mPeriodicTask;
+    uint64_t                                             mOutputTag;
 };
 
 class TokoroEphemerisUbx : public streamline::Inspector<UbxMessage> {
@@ -71,7 +73,8 @@ public:
     void handle_bds_d1(format::ubx::RxmSfrbx* sfrbx);
     void handle_bds(format::ubx::RxmSfrbx* sfrbx);
 
-    void inspect(streamline::System&, DataType const& message) override;
+    const char* name() const NOEXCEPT override { return "TokoroEphemerisUbx"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Tokoro&                                    mTokoro;
@@ -93,7 +96,7 @@ public:
     void handle_bds_d1(format::rtcm::Rtcm1042* rtcm);
     void handle_bds(format::rtcm::Rtcm1042* rtcm);
 
-    void inspect(streamline::System&, DataType const& message) override;
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Tokoro&                                    mTokoro;
@@ -106,7 +109,8 @@ class TokoroLocation : public streamline::Inspector<lpp::LocationInformation> {
 public:
     TokoroLocation(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    void inspect(streamline::System&, DataType const& location) override;
+    const char* name() const NOEXCEPT override { return "TokoroLocation"; }
+    void inspect(streamline::System&, DataType const& location, uint64_t tag) override;
 
 private:
     Tokoro& mTokoro;

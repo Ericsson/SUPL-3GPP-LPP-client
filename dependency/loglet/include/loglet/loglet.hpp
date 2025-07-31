@@ -2,8 +2,12 @@
 #include <core/core.hpp>
 
 #include <cstdarg>
-#include <vector>
 #include <string>
+#include <vector>
+
+#if FUNCTION_PERFORMANCE
+#include <chrono>
+#endif
 
 #define LOGLET_CURRENT_FUNCTION __FUNCTION__
 #define LOGLET_NAMEPASTE2(a, b) a##b
@@ -28,6 +32,15 @@
     }
 #define LOGLET_INDENT_SCOPE(level) LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, level)
 
+#if FUNCTION_PERFORMANCE
+#define LOGLET_XPERF_SCOPE(module, level)                                                          \
+    loglet::ScopeFunctionPerf LOGLET_NAMEPASTE(loglet_scope_function_pref, __LINE__) {             \
+        level, module, LOGLET_CURRENT_FUNCTION                                                     \
+    }
+#else
+#define LOGLET_XPERF_SCOPE(module, level)
+#endif
+
 #ifdef HAVE_STRERRORNAME_NP
 #define ERRNO_FMT "%3d (%s) %s"
 #define ERRNO_ARGS(e) e, strerrorname_np(e), strerror(e)
@@ -36,13 +49,17 @@
 #define ERRNO_ARGS(e) e, strerror(e)
 #endif
 
+// Macros for blocking argument evaluation if log level is disabled.
+#define AEB_BEGIN(level, module) do { if (loglet::is_module_level_enabled(module, level)) {
+#define AEB_END ; } } while (false) 
+
 #ifdef DISABLE_TRACE
 #define XTRACEF(module, fmt, ...)
 #define TRACEF(fmt, ...)
 #define XTRACE_INDENT_SCOPE(module)
 #define TRACE_INDENT_SCOPE()
 #else
-#define XTRACEF(module, fmt, ...) loglet::tracef(module, fmt, ##__VA_ARGS__)
+#define XTRACEF(module, fmt, ...) AEB_BEGIN(loglet::Level::Trace, module) loglet::tracef(module, fmt, ##__VA_ARGS__) AEB_END
 #define TRACEF(fmt, ...) XTRACEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XTRACE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Trace)
 #define TRACE_INDENT_SCOPE() XTRACE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -54,7 +71,7 @@
 #define XVERBOSE_INDENT_SCOPE(module)
 #define VERBOSE_INDENT_SCOPE()
 #else
-#define XVERBOSEF(module, fmt, ...) loglet::verbosef(module, fmt, ##__VA_ARGS__)
+#define XVERBOSEF(module, fmt, ...) AEB_BEGIN(loglet::Level::Verbose, module) loglet::verbosef(module, fmt, ##__VA_ARGS__) AEB_END
 #define VERBOSEF(fmt, ...) XVERBOSEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XVERBOSE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Verbose)
 #define VERBOSE_INDENT_SCOPE() XVERBOSE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -66,7 +83,7 @@
 #define XDEBUG_INDENT_SCOPE(module)
 #define DEBUG_INDENT_SCOPE()
 #else
-#define XDEBUGF(module, fmt, ...) loglet::debugf(module, fmt, ##__VA_ARGS__)
+#define XDEBUGF(module, fmt, ...) AEB_BEGIN(loglet::Level::Debug, module) loglet::debugf(module, fmt, ##__VA_ARGS__) AEB_END
 #define DEBUGF(fmt, ...) XDEBUGF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XDEBUG_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Debug)
 #define DEBUG_INDENT_SCOPE() XDEBUG_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -78,7 +95,7 @@
 #define XINFO_INDENT_SCOPE(module)
 #define INFO_INDENT_SCOPE()
 #else
-#define XINFOF(module, fmt, ...) loglet::infof(module, fmt, ##__VA_ARGS__)
+#define XINFOF(module, fmt, ...) AEB_BEGIN(loglet::Level::Info, module) loglet::infof(module, fmt, ##__VA_ARGS__) AEB_END
 #define INFOF(fmt, ...) XINFOF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XINFO_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Info)
 #define INFO_INDENT_SCOPE() XINFO_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -90,10 +107,11 @@
 #define XNOTICE_INDENT_SCOPE(module)
 #define NOTICE_INDENT_SCOPE()
 #else
-#define XNOTICEF(module, fmt, ...) loglet::noticef(module, fmt, ##__VA_ARGS__)
+#define XNOTICEF(module, fmt, ...) AEB_BEGIN(loglet::Level::Notice, module) loglet::noticef(module, fmt, ##__VA_ARGS__) AEB_END
 #define NOTICEF(fmt, ...) XNOTICEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XNOTICE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Notice)
 #define NOTICE_INDENT_SCOPE() XNOTICE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
+#define NOTICE_PERF_SCOPE() LOGLET_XPERF_SCOPE(LOGLET_CURRENT_MODULE, loglet::Level::Notice)
 #endif
 
 #ifdef DISABLE_WARNING
@@ -102,7 +120,7 @@
 #define XWARN_INDENT_SCOPE(module)
 #define WARN_INDENT_SCOPE()
 #else
-#define XWARNF(module, fmt, ...) loglet::warnf(module, fmt, ##__VA_ARGS__)
+#define XWARNF(module, fmt, ...) AEB_BEGIN(loglet::Level::Warning, module) loglet::warnf(module, fmt, ##__VA_ARGS__) AEB_END
 #define WARNF(fmt, ...) XWARNF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XWARN_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Warning)
 #define WARN_INDENT_SCOPE() XWARN_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -114,7 +132,7 @@
 #define XERROR_INDENT_SCOPE(module)
 #define ERROR_INDENT_SCOPE()
 #else
-#define XERRORF(module, fmt, ...) loglet::errorf(module, fmt, ##__VA_ARGS__)
+#define XERRORF(module, fmt, ...) AEB_BEGIN(loglet::Level::Error, module) loglet::errorf(module, fmt, ##__VA_ARGS__) AEB_END
 #define ERRORF(fmt, ...) XERRORF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XERROR_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Error)
 #define ERROR_INDENT_SCOPE() XERROR_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -135,12 +153,22 @@
 #define FUNCTION_SCOPE()
 #define FUNCTION_SCOPEF(fmt, ...)
 #else
+
+#ifdef FUNCTION_PERFORMANCE
+#define FUNCTION_SCOPE()                                                                           \
+    NOTICEF("%s()", LOGLET_CURRENT_FUNCTION);                                                      \
+    NOTICE_PERF_SCOPE()
+#define FUNCTION_SCOPEF(fmt, ...)                                                                  \
+    NOTICEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                \
+    NOTICE_PERF_SCOPE()
+#else
 #define FUNCTION_SCOPE()                                                                           \
     TRACEF("%s()", LOGLET_CURRENT_FUNCTION);                                                       \
     TRACE_INDENT_SCOPE()
 #define FUNCTION_SCOPEF(fmt, ...)                                                                  \
     TRACEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                 \
     TRACE_INDENT_SCOPE()
+#endif
 #endif
 
 #define VSCOPE_FUNCTIONF(fmt, ...) FUNCTION_SCOPEF(fmt, ##__VA_ARGS__)
@@ -243,17 +271,17 @@ struct LogModule {
 void initialize();
 void uninitialize();
 
-void set_prefix(char const* prefix);
-void set_level(Level level);
-void set_color_enable(bool enabled);
-void set_always_flush(bool flush);
-void set_module_level(LogModule* module, Level level);
-void disable_module(LogModule* module);
-bool is_module_enabled(LogModule const* module);
-bool is_level_enabled(Level level);
-bool is_module_level_enabled(LogModule const* module, Level level);
+void                    set_prefix(char const* prefix);
+void                    set_level(Level level);
+void                    set_color_enable(bool enabled);
+void                    set_always_flush(bool flush);
+void                    set_module_level(LogModule* module, Level level);
+void                    disable_module(LogModule* module);
+bool                    is_module_enabled(LogModule const* module);
+bool                    is_level_enabled(Level level);
+bool                    is_module_level_enabled(LogModule const* module, Level level);
 std::vector<LogModule*> get_modules(std::string const& name);
-const char* level_to_full_string(Level level);
+char const*             level_to_full_string(Level level);
 
 void push_indent();
 void pop_indent();
@@ -292,5 +320,33 @@ struct ScopeFunction {
         }
     }
 };
+
+#if FUNCTION_PERFORMANCE
+struct ScopeFunctionPerf {
+    bool                                               indent = false;
+    std::chrono::time_point<std::chrono::steady_clock> start;
+    LogModule const*                                   log_module;
+    Level                                              log_level;
+    char const*                                        log_name;
+    ScopeFunctionPerf(Level level, LogModule const* module, char const* func) {
+        if (is_module_level_enabled(module, level)) {
+            push_indent();
+            indent     = true;
+            start      = std::chrono::steady_clock::now();
+            log_module = module;
+            log_level  = level;
+            log_name   = func;
+        }
+    }
+    ~ScopeFunctionPerf() {
+        if (indent) {
+            pop_indent();
+            auto end = std::chrono::steady_clock::now();
+            auto ms  = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
+            logf(log_module, log_level, "%s: %d us", log_name, ms);
+        }
+    }
+};
+#endif
 
 }  // namespace loglet

@@ -18,7 +18,8 @@ class LppXerOutput : public streamline::Inspector<lpp::Message> {
 public:
     LppXerOutput(OutputConfig const& output) : mOutput(output) {}
 
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+    const char* name() const NOEXCEPT override { return "LppXerOutput"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
     OutputConfig const& mOutput;
@@ -28,7 +29,8 @@ class LppUperOutput : public streamline::Inspector<lpp::Message> {
 public:
     LppUperOutput(OutputConfig const& output) : mOutput(output) {}
 
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+    const char* name() const NOEXCEPT override { return "LppUperOutput"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
     OutputConfig const& mOutput;

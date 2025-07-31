@@ -25,14 +25,16 @@ struct Clone<CtrlMessage> {
 
 class CtrlPrint : public streamline::Inspector<CtrlMessage> {
 public:
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+    const char* name() const NOEXCEPT override { return "CtrlPrint"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 };
 
 class CtrlOutput : public streamline::Inspector<CtrlMessage> {
 public:
     CtrlOutput(OutputConfig const& config) : mConfig(config) {}
 
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+    const char* name() const NOEXCEPT override { return "CtrlOutput"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
     OutputConfig const& mConfig;
@@ -40,7 +42,8 @@ private:
 
 class CtrlEvents : public streamline::Inspector<CtrlMessage> {
 public:
-    void inspect(streamline::System&, DataType const& message) NOEXCEPT override;
+    const char* name() const NOEXCEPT override { return "CtrlEvents"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
     std::function<void(format::ctrl::CellId const&)>       on_cell_id;
     std::function<void(format::ctrl::IdentityImsi const&)> on_identity_imsi;

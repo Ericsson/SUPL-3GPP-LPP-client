@@ -111,7 +111,7 @@ public:
     /// @param[in] lpp_data The LPP encoded data.
     /// @param[in] lpp_data_size The size of the LPP encoded data.
     /// @return The generated RTCM messages.
-    static NODISCARD std::vector<Message> generate_framing(int message_id, void const* lpp_data,
+    NODISCARD static std::vector<Message> generate_framing(int message_id, void const* lpp_data,
                                                            size_t lpp_data_size) NOEXCEPT;
 
 private:

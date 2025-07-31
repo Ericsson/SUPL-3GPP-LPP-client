@@ -14,6 +14,7 @@ add_executable(example_client
     "processor/tokoro.cpp"
     "processor/test.cpp"
     "processor/possib_logger.cpp"
+    "processor/idokeido.cpp"
 )
 add_executable(examples::client ALIAS example_client)
 
@@ -49,6 +50,13 @@ if(INCLUDE_GENERATOR_TOKORO)
     target_link_libraries(example_client PRIVATE dependency::format::nav)
     target_link_libraries(example_client PRIVATE dependency::format::antex)
     target_link_libraries(example_client PRIVATE dependency::generator::tokoro)
+endif()
+
+if(INCLUDE_GENERATOR_IDOKEIDO)
+    target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_IDOKEIDO=1")
+    target_link_libraries(example_client PRIVATE dependency::format::nav)
+    target_link_libraries(example_client PRIVATE dependency::format::antex)
+    target_link_libraries(example_client PRIVATE dependency::generator::idokeido)
 endif()
 
 if(DATA_TRACING)

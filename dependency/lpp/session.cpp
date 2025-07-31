@@ -237,7 +237,7 @@ NextState Session::state_connect() {
         return NextState::make().next(State::DISCONNECTED);
     }
 
-    mSession = new supl::Session(supl::VERSION_2_0, mIdentity);
+    mSession = new supl::Session(supl::VERSION_2_1, mIdentity);
     if (!mSession->connect(mConnectionHost, mConnectionPort, mConnectionInterface)) {
         ERRORF("failed to connect to %s:%d (%s)", mConnectionHost.c_str(), mConnectionPort,
                mConnectionInterface.c_str());
@@ -287,10 +287,12 @@ NextState Session::state_handshake_send() {
     VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
+    // TODO: Create a SETCapabilities object with all the capabilities in the Session
     supl::SETCapabilities capabilities{};
     capabilities.posTechnology                         = {};
     capabilities.posTechnology.agpsSETassisted         = true;
     capabilities.posTechnology.agpsSETBased            = true;
+    capabilities.posTechnology.autonomousGPS           = true;
     capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
     capabilities.posProtocol.lpp.enabled               = true;
     capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;
@@ -334,6 +336,7 @@ NextState Session::state_posinit() {
     capabilities.posTechnology                         = {};
     capabilities.posTechnology.agpsSETassisted         = true;
     capabilities.posTechnology.agpsSETBased            = true;
+    capabilities.posTechnology.autonomousGPS           = true;
     capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
     capabilities.posProtocol.lpp.enabled               = true;
     capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;
@@ -343,6 +346,16 @@ NextState Session::state_posinit() {
     supl::POSINIT posinit{};
     posinit.sETCapabilities = capabilities;
     posinit.locationID.cell = mInitialCell;
+
+    // TODO: We probably need to make sure that we don't send more payloads than what is allowed
+    for (auto& pos : mPosQueue) {
+        // move pos.payloads to posinit.payloads
+        posinit.payloads.insert(posinit.payloads.end(),
+                                std::make_move_iterator(pos.payloads.begin()),
+                                std::make_move_iterator(pos.payloads.end()));
+    }
+    mPosQueue.clear();
+
     if (!mSession->send(posinit)) {
         ERRORF("failed to send SUPL POSINIT");
         return NextState::make().next(State::DISCONNECTED);
@@ -364,6 +377,11 @@ NextState Session::state_established() {
 NextState Session::state_message() {
     VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
+
+    if(!mPosQueue.empty()) {
+        DEBUGF("pos queue not empty");
+        // TODO: Send SUPL POS for queued messages
+    }
 
     if (!mSession->fill_receive_buffer()) {
         return NextState::make().next(State::DISCONNECTED);
@@ -414,7 +432,6 @@ void Session::cancel() {
 
 TransactionHandle Session::create_transaction(bool single_side_endable) {
     VSCOPE_FUNCTION();
-    ASSERT(mSession != nullptr, "session is null");
 
     auto transaction = allocate_transaction();
     if (!transaction.is_valid()) {
@@ -438,7 +455,6 @@ void Session::delete_transaction(TransactionHandle const& transaction) {
 bool Session::add_transaction(TransactionHandle const& transaction, bool single_side_endable) {
     VSCOPE_FUNCTIONF("%s,sse=%s", transaction.to_string().c_str(),
                      single_side_endable ? "true" : "false");
-    ASSERT(mSession != nullptr, "session is null");
 
     if (transaction.id() < 0 || transaction.id() > 255) {
         ERRORF("invalid transaction id");
@@ -557,10 +573,6 @@ TransactionHandle Session::allocate_transaction() {
 
 void Session::send(TransactionHandle const& handle, Message& message) {
     VSCOPE_FUNCTION();
-    if (!mSession) {
-        VERBOSEF("session is null");
-        return;
-    }
 
     DEBUGF("send message %s", handle.to_string().c_str());
     XVERBOSEF(&LOGLET_MODULE_REF2(lpp, print), "send:\n%s",
@@ -616,7 +628,15 @@ void Session::send(TransactionHandle const& handle, Message& message) {
 
     supl::POS pos{};
     pos.payloads.push_back(std::move(payload));
-    if (!mSession->send(pos)) {
+
+    if (!mSession) {
+        DEBUGF("session is null, queueing SUPL POS");
+        mPosQueue.push_back(std::move(pos));
+        if (mPosQueue.size() > 16) {
+            WARNF("too many queued SUPL POS");
+            mPosQueue.clear();
+        }
+    } else if (!mSession->send(pos)) {
         ERRORF("failed to send SUPL POS");
         mSession->disconnect();
         return;

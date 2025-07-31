@@ -76,7 +76,7 @@ public:
     }
 
     template <typename DataType>
-    void push(DataType&& data) {
+    void push(DataType&& data, uint64_t tag = 0) {
         FUNCTION_SCOPE();
         VERBOSEF("push %s", typeid(DataType).name());
         if (!mScheduler) {
@@ -86,7 +86,7 @@ public:
 
         auto queue = get_queue<DataType>();
         if (queue) {
-            queue->push(std::move(data));
+            queue->push(std::move(data), tag);
         }
     }
 

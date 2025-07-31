@@ -21,8 +21,8 @@ public:
 
 protected:
     NODISCARD uint8_t peek(uint32_t index) const NOEXCEPT;
-    NODISCARD void    skip(uint32_t length) NOEXCEPT;
-    NODISCARD void    skip(uint64_t length) NOEXCEPT { skip(static_cast<uint32_t>(length)); }
+    void              skip(uint32_t length) NOEXCEPT;
+    void              skip(uint64_t length) NOEXCEPT { skip(static_cast<uint32_t>(length)); }
 
     void copy_to_buffer(uint8_t* data, size_t length) NOEXCEPT;
 

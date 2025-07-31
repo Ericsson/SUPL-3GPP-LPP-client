@@ -67,6 +67,8 @@ public:
                mGenerationId == other.mGenerationId && mInitiator == other.mInitiator;
     }
 
+    NODISCARD bool operator!=(TransactionHandle const& other) const { return !(*this == other); }
+
     NODISCARD std::string       to_string() const;
     NODISCARD TransactionLookup lookup() const { return TransactionLookup{id(), initiator()}; }
 

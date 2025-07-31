@@ -55,6 +55,10 @@ namespace messages {
 
 static PeriodicAssistanceDataControlParameters_r15*
 periodic_assistance_data_request(PeriodicSessionHandle const& periodic_session) {
+    if (!periodic_session.is_valid()) {
+        return nullptr;
+    }
+
     auto ext1 = ALLOC_ZERO(PeriodicAssistanceDataControlParameters_r15::
                                PeriodicAssistanceDataControlParameters_r15__ext1);
     ext1->updateCapabilities_r15 =
