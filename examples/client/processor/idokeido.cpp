@@ -168,11 +168,11 @@ GLONASS L2 OF 6 2 2 3 2 3
 NavIC L5 A 2 7 0 N/A N/A 6 1
 Table 4: Signal identifier
 
-2 This signal belongs to the group of signals reported in the UBX messages that do not have an explicit sigId field.
-3 While not defined by NMEA 4.10, in this mode, u-blox receivers use system ID 4 for BeiDou and, if extended satellite
-numbering is enabled, system ID 1 for QZSS.
-4 BeiDou and QZSS signal ID are not defined in the NMEA protocol version 4.10. Values shown in the table are only valid for
-u-blox products and, for QZSS signal ID, if extended satellite numbering is enabled.
+2 This signal belongs to the group of signals reported in the UBX messages that do not have an
+explicit sigId field. 3 While not defined by NMEA 4.10, in this mode, u-blox receivers use system ID
+4 for BeiDou and, if extended satellite numbering is enabled, system ID 1 for QZSS. 4 BeiDou and
+QZSS signal ID are not defined in the NMEA protocol version 4.10. Values shown in the table are only
+valid for u-blox products and, for QZSS signal ID, if extended satellite numbering is enabled.
 UBXDOC-304424225-19967 - R01 1 General information Page 16 of 224
 C1-Public
 u-blox F20 HPG 2.02 - Interface description
@@ -180,41 +180,40 @@ UBX Protocol NMEA Protocol 4.10 NMEA Protocol 4.11
 Signal gnssId sigId System ID Signal ID System ID Signal ID
 */
 
-
 static SignalId signal_id_from_ubx(uint8_t gnss_id, uint8_t sv_id, uint8_t sig_id) {
-    if(gnss_id == 0) {
-        if(sig_id == 0) return SignalId::GPS_L1_CA;
-        if(sig_id == 3) return SignalId::GPS_L2_L2C_L;
-        if(sig_id == 4) return SignalId::GPS_L2_L2C_M;
-        if(sig_id == 6) return SignalId::GPS_L5_I;
-        if(sig_id == 7) return SignalId::GPS_L5_Q;
+    if (gnss_id == 0) {
+        if (sig_id == 0) return SignalId::GPS_L1_CA;
+        if (sig_id == 3) return SignalId::GPS_L2_L2C_L;
+        if (sig_id == 4) return SignalId::GPS_L2_L2C_M;
+        if (sig_id == 6) return SignalId::GPS_L5_I;
+        if (sig_id == 7) return SignalId::GPS_L5_Q;
         return {};
-    } else if(gnss_id == 1) {
-        if(sig_id == 0) return SignalId::GLONASS_G1_CA;
-        if(sig_id == 2) return SignalId::GLONASS_G2_CA;
+    } else if (gnss_id == 1) {
+        if (sig_id == 0) return SignalId::GLONASS_G1_CA;
+        if (sig_id == 2) return SignalId::GLONASS_G2_CA;
         return {};
-    } else if(gnss_id == 2) {
-        if(sig_id == 0) return SignalId::GALILEO_E1_C_NO_DATA;
-        if(sig_id == 1) return SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL;
-        if(sig_id == 3) return SignalId::GALILEO_E5A_I;
-        if(sig_id == 4) return SignalId::GALILEO_E5A_Q;
-        if(sig_id == 5) return SignalId::GALILEO_E5B_I;
-        if(sig_id == 6) return SignalId::GALILEO_E5B_Q;
-        if(sig_id == 8) return SignalId::GALILEO_E6_B;
-        if(sig_id == 9) return SignalId::GALILEO_E6_C;
-        if(sig_id == 10) return SignalId::GALILEO_E6_A;
+    } else if (gnss_id == 2) {
+        if (sig_id == 0) return SignalId::GALILEO_E1_C_NO_DATA;
+        if (sig_id == 1) return SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL;
+        if (sig_id == 3) return SignalId::GALILEO_E5A_I;
+        if (sig_id == 4) return SignalId::GALILEO_E5A_Q;
+        if (sig_id == 5) return SignalId::GALILEO_E5B_I;
+        if (sig_id == 6) return SignalId::GALILEO_E5B_Q;
+        if (sig_id == 8) return SignalId::GALILEO_E6_B;
+        if (sig_id == 9) return SignalId::GALILEO_E6_C;
+        if (sig_id == 10) return SignalId::GALILEO_E6_A;
         return {};
-    } else if(gnss_id == 3) {
-        if(sig_id == 0) return SignalId::BEIDOU_B1_I;
-        if(sig_id == 1) return SignalId::BEIDOU_B1_Q;
-        if(sig_id == 2) return SignalId::BEIDOU_B2_I;
-        if(sig_id == 3) return SignalId::BEIDOU_B2_Q;
-        if(sig_id == 4) return SignalId::BEIDOU_B3_I;
-        if(sig_id == 10) return SignalId::BEIDOU_B3_Q;
-        if(sig_id == 5) return SignalId::BEIDOU_B1C_P;
-        if(sig_id == 6) return SignalId::BEIDOU_B1C_D;
-        if(sig_id == 7) return SignalId::BEIDOU_B2A_P;
-        if(sig_id == 8) return SignalId::BEIDOU_B2A_D;
+    } else if (gnss_id == 3) {
+        if (sig_id == 0) return SignalId::BEIDOU_B1_I;
+        if (sig_id == 1) return SignalId::BEIDOU_B1_Q;
+        if (sig_id == 2) return SignalId::BEIDOU_B2_I;
+        if (sig_id == 3) return SignalId::BEIDOU_B2_Q;
+        if (sig_id == 4) return SignalId::BEIDOU_B3_I;
+        if (sig_id == 10) return SignalId::BEIDOU_B3_Q;
+        if (sig_id == 5) return SignalId::BEIDOU_B1C_P;
+        if (sig_id == 6) return SignalId::BEIDOU_B1C_D;
+        if (sig_id == 7) return SignalId::BEIDOU_B2A_P;
+        if (sig_id == 8) return SignalId::BEIDOU_B2A_D;
         return {};
     } else {
         return {};
@@ -227,8 +226,8 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
     if (!rawx) return;
 
     for (auto& m : rawx->measurements()) {
-        if(!m.trk_stat.pr_valid) continue;
-        if(!m.trk_stat.cp_valid) continue;
+        if (!m.trk_stat.pr_valid) continue;
+        if (!m.trk_stat.cp_valid) continue;
 
         auto satellite_id = satellite_id_from_ubx(m.gnss_id, m.sv_id);
         if (!satellite_id.is_valid()) continue;
@@ -236,21 +235,21 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
         auto signal_id = signal_id_from_ubx(m.gnss_id, m.sv_id, m.sig_id);
         if (!signal_id.is_valid()) continue;
 
-        auto tow = rawx->rcv_tow();
-        auto week = rawx->week();
-        auto tow_integer = static_cast<int64_t>(tow);
+        auto tow          = rawx->rcv_tow();
+        auto week         = rawx->week();
+        auto tow_integer  = static_cast<int64_t>(tow);
         auto tow_fraction = tow - tow_integer;
-        auto time = ts::Gps::from_week_tow(week, tow_integer, tow_fraction);
+        auto time         = ts::Gps::from_week_tow(week, tow_integer, tow_fraction);
 
         idokeido::RawObservation observation{
-            .time = ts::Tai{time},
-            .satellite_id = satellite_id,
-            .signal_id = signal_id,
-            .pseudo_range = m.pr_mes,
+            .time          = ts::Tai{time},
+            .satellite_id  = satellite_id,
+            .signal_id     = signal_id,
+            .pseudo_range  = m.pr_mes,
             .carrier_phase = m.cp_mes,
             .doppler       = m.do_mes,
-            .snr = m.cno * 1.0,
-            .lock_time              = m.locktime * 1e-3,
+            .snr           = m.cno * 1.0,
+            .lock_time     = m.locktime * 1e-3,
         };
 
         measurement(observation);
@@ -258,8 +257,7 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
 }
 
 template <typename T>
-void IdokeidoMeasurmentUbx<T>::inspect(streamline::System&, DataType const& message,
-                                         uint64_t tag) {
+void IdokeidoMeasurmentUbx<T>::inspect(streamline::System&, DataType const& message, uint64_t tag) {
     VSCOPE_FUNCTION();
     auto ptr = message.get();
     if (!ptr) return;
@@ -288,17 +286,17 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
 
     idokeido::SppConfiguration configuration{
         .frequency_mode   = idokeido::SppConfiguration::FrequencyMode::Single,
-        .elevation_cutoff = 15,
-        .outlier_cutoff   = 10,
-        .snr_cutoff       = 30,
-        .gnss =
-            {
-                .gps = true,
-                .glo = false,
-                .gal = false,
-                .bds = false,
-            },
         .weight_function       = idokeido::SppConfiguration::WeightFunction::Uniform,
+        .gnss =
+        {
+            .gps = true,
+            .glo = false,
+            .gal = false,
+            .bds = false,
+        },
+        .elevation_cutoff = 15,
+        .snr_cutoff       = 30,
+        .outlier_cutoff   = 10,
         .reject_cycle_slip     = true,
         .reject_halfcycle_slip = true,
         .reject_outliers       = true,
@@ -335,13 +333,19 @@ void IdokeidoSpp::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NO
 void IdokeidoSpp::measurement(idokeido::RawObservation const& observation) NOEXCEPT {
     VSCOPE_FUNCTION();
     ASSERT(mEngine, "engine is null");
-    INFOF("measurement: %s %s %s", observation.satellite_id.name(),
-          observation.signal_id.name(), observation.time.rtklib_time_string().c_str());
+    INFOF("measurement: %s %s %s", observation.satellite_id.name(), observation.signal_id.name(),
+          observation.time.rtklib_time_string().c_str());
+
+    mEngine->observation(observation);
 }
 
 void IdokeidoSpp::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     ASSERT(mEngine, "engine is null");
+
+    // TODO(ewasjon): This should not trigger on LPP message
+
+    mEngine->evaluate();
 }
 
 #endif
