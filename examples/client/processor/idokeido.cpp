@@ -280,32 +280,49 @@ template class IdokeidoMeasurmentUbx<IdokeidoSpp>;
 //
 
 IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& config,
-                         scheduler::Scheduler& scheduler)
-    : mOutput(output), mConfig(config), mScheduler(scheduler) {
+                         scheduler::Scheduler& scheduler, streamline::System& system)
+    : mOutput(output), mConfig(std::move(config)), mScheduler(scheduler), mSystem(system) {
     VSCOPE_FUNCTION();
+    mComputeTask = nullptr;
 
     idokeido::SppConfiguration configuration{
-        .frequency_mode   = idokeido::SppConfiguration::FrequencyMode::Single,
-        .weight_function       = idokeido::SppConfiguration::WeightFunction::Uniform,
+        .frequency_mode  = idokeido::SppConfiguration::FrequencyMode::Single,
+        .weight_function = idokeido::SppConfiguration::WeightFunction::Uniform,
         .gnss =
-        {
-            .gps = true,
-            .glo = false,
-            .gal = false,
-            .bds = false,
-        },
-        .elevation_cutoff = 15,
-        .snr_cutoff       = 30,
-        .outlier_cutoff   = 10,
+            {
+                .gps = true,
+                .glo = false,
+                .gal = false,
+                .bds = false,
+            },
+        .elevation_cutoff      = 15,
+        .snr_cutoff            = 30,
+        .outlier_cutoff        = 10,
         .reject_cycle_slip     = true,
         .reject_halfcycle_slip = true,
         .reject_outliers       = true,
     };
 
     mEphemerisEngine = std::unique_ptr<idokeido::EphemerisEngine>(new idokeido::EphemerisEngine{});
-    mEngine          = std::unique_ptr<idokeido::SppEngine>(
+    if (!mConfig.ephemeris_cache.empty()) {
+        VERBOSEF("using ephemeris cache: %s", mConfig.ephemeris_cache.c_str());
+        mEphemerisEngine->load_or_create_cache(mConfig.ephemeris_cache);
+    }
+
+    mEngine = std::unique_ptr<idokeido::SppEngine>(
         new idokeido::SppEngine{configuration, *mEphemerisEngine});
     mOutputTag = 0;
+
+    // Setup a periodic timer to generate every time step
+    auto interval = std::chrono::milliseconds(static_cast<int>(mConfig.update_rate * 1000.0));
+    mComputeTask  = std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
+    mComputeTask->callback = [this]() {
+        compute();
+    };
+
+    if (!mComputeTask->schedule(mScheduler)) {
+        WARNF("failed to schedule periodic task");
+    }
 }
 
 IdokeidoSpp::~IdokeidoSpp() {
@@ -333,19 +350,44 @@ void IdokeidoSpp::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NO
 void IdokeidoSpp::measurement(idokeido::RawObservation const& observation) NOEXCEPT {
     VSCOPE_FUNCTION();
     ASSERT(mEngine, "engine is null");
-    INFOF("measurement: %s %s %s", observation.satellite_id.name(), observation.signal_id.name(),
-          observation.time.rtklib_time_string().c_str());
+    VERBOSEF("measurement: %s %s %s", observation.satellite_id.name(), observation.signal_id.name(),
+             observation.time.rtklib_time_string().c_str());
+
+    if (observation.satellite_id.is_gps() && !mConfig.gps) return;
+    if (observation.satellite_id.is_glonass() && !mConfig.glonass) return;
+    if (observation.satellite_id.is_galileo() && !mConfig.galileo) return;
+    if (observation.satellite_id.is_beidou() && !mConfig.beidou) return;
 
     mEngine->observation(observation);
+}
+
+void IdokeidoSpp::compute() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mEngine, "engine is null");
+    auto solution = mEngine->evaluate();
+
+    if (solution.status == idokeido::Solution::Status::None) {
+        return;
+    }
+
+    auto semi_major = 1.0;
+    auto semi_minor = 1.0;
+
+    auto velocity   = lpp::VelocityShape::horizontal(0.0, 0.0);
+    auto horizontal = lpp::HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, 0.0);
+    auto vertical   = lpp::VerticalAccuracy::from_1sigma(1.0);
+
+    lpp::LocationInformation location{};
+    location.time     = solution.time;
+    location.location = lpp::LocationShape::ha_ellipsoid_altitude_with_uncertainty(
+        solution.latitude, solution.longitude, solution.altitude, horizontal, vertical);
+    location.velocity = velocity;
+    mSystem.push(std ::move(location));
 }
 
 void IdokeidoSpp::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     ASSERT(mEngine, "engine is null");
-
-    // TODO(ewasjon): This should not trigger on LPP message
-
-    mEngine->evaluate();
 }
 
 #endif

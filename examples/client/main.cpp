@@ -335,7 +335,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                                                     isprint(buffer[i + j]) ? buffer[i + j] : '.');
                         }
                     }
-                    
+
                     VERBOSEF("%s", print_buffer);
                     i += 16;
                 }
@@ -501,13 +501,8 @@ static void setup_location_stream(Program& program) {
         program.stream.add_consumer<NmeaLocation>(program.config.location_information);
     }
 
-    if (program.config.location_information.use_ubx_location ||
-        program.config.location_information.use_nmea_location) {
-        program.stream.add_inspector<LocationCollector>(program);
-        program.stream.add_inspector<MetricsCollector>(program);
-    } else {
-        WARNF("location information requires UBX or NMEA location");
-    }
+    program.stream.add_inspector<LocationCollector>(program);
+    program.stream.add_inspector<MetricsCollector>(program);
 }
 
 static void setup_control_stream(Program& program) {
@@ -634,8 +629,9 @@ static void setup_idokeido(Program& program) {
 #if defined(INCLUDE_GENERATOR_IDOKEIDO)
     if (program.config.idokeido.enabled) {
         auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
-            program.config.output, program.config.idokeido, program.scheduler);
+            program.config.output, program.config.idokeido, program.scheduler, program.stream);
         program.stream.add_inspector<IdokeidoEphemerisUbx<IdokeidoSpp>>(*idokeido_spp);
+        program.stream.add_inspector<IdokeidoMeasurmentUbx<IdokeidoSpp>>(*idokeido_spp);
     }
 #endif
 }
