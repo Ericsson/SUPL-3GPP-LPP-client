@@ -41,14 +41,6 @@ struct EqualModuleName {
     bool operator()(char const* a, char const* b) const { return strcmp(a, b) == 0; }
 };
 
-struct Module {
-    std::string          name;
-    uint64_t             hash;
-    Level                level;
-    Module*              parent;
-    std::vector<Module*> children;
-};
-
 static char const*        sPrefix       = nullptr;
 static Level              sLevel        = Level::Debug;
 static bool               sColorEnabled = false;
@@ -248,10 +240,6 @@ bool is_level_enabled(Level level) {
     return level >= sLevel;
 }
 
-bool is_module_level_enabled(LogModule const* module, Level level) {
-    return level >= module->level;
-}
-
 void push_indent() {
     sScopes.push_back({""});
 }
@@ -328,7 +316,7 @@ void log(LogModule const* module, Level level, char const* message) {
     auto indent_length         = static_cast<int>(sScopes.size() * 2);
     if (indent_length > 64) {
         indent_length = 64;
-    } else if(indent_length < 0) {
+    } else if (indent_length < 0) {
         indent_length = 0;
     }
     indent_buffer[indent_length] = '\0';
@@ -345,7 +333,7 @@ void logf(LogModule const* module, Level level, char const* format, ...) {
 }
 
 static char gLogBuffer[1024 * 1024];
-void vlogf(LogModule const* module, Level level, char const* format, va_list args) {
+void        vlogf(LogModule const* module, Level level, char const* format, va_list args) {
     vsnprintf(gLogBuffer, sizeof(gLogBuffer), format, args);
     log(module, level, gLogBuffer);
 }
@@ -426,5 +414,9 @@ void errorf(LogModule const* module, char const* format, ...) {
     verrorf(module, format, args);
     va_end(args);
 }
+
+#if FUNCTION_PERFORMANCE
+PerformanceStack* PerformanceStack::current = nullptr;
+#endif
 
 }  // namespace loglet
