@@ -333,6 +333,14 @@ struct TokoroConfig {
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
 struct IdokeidoConfig {
     bool enabled;
+
+    bool gps;
+    bool glonass;
+    bool galileo;
+    bool beidou;
+
+    double update_rate;
+    std::string ephemeris_cache;
 };
 #endif
 

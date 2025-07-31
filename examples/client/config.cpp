@@ -276,6 +276,10 @@ bool parse(int argc, char** argv, Config* config) {
 #endif
 
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
+        config->idokeido.gps &= config->gnss.gps;
+        config->idokeido.glonass &= config->gnss.glonass;
+        config->idokeido.galileo &= config->gnss.galileo;
+        config->idokeido.beidou &= config->gnss.beidou;
 #endif
 
         return true;
