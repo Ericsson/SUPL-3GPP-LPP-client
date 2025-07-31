@@ -56,6 +56,13 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
     payload.version            = version;
     payload.reserved0          = reserved0;
 
+    DEBUGF("rcv_tow=%f", rcv_tow);
+    DEBUGF("week=%u", week);
+    DEBUGF("leap_s=%d", leap_s);
+    DEBUGF("num_meas=%u", num_meas);
+    DEBUGF("rec_stat=0x%02X", rec_stat);
+    DEBUGF("version=%u", version);
+
     std::vector<raw::RxmRawxMeasurement> measurements;
     for (uint8_t i = 0; i < num_meas; i++) {
         auto pr_mes         = decoder.R8();
@@ -102,6 +109,7 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
         VERBOSEF("failed to decode measurements");
         return nullptr;
     } else {
+        VERBOSEF("decoded %zu measurements", measurements.size());
         return std::unique_ptr<Message>{
             new UbxRxmRawx(std::move(payload), std::move(measurements), std::move(data))};
     }
