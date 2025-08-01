@@ -11,3 +11,4 @@ compile_commands.json
 *Zone.Identifier
 scripts
 .cache
+*.swp
