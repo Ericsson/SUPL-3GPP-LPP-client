@@ -10,3 +10,4 @@ generated_files
 compile_commands.json
 *Zone.Identifier
 .cache
+*.swp
