@@ -4,6 +4,16 @@
 #include <generator/tokoro/coordinate.hpp>
 #include <loglet/loglet.hpp>
 
+#include "coordinates/ecef.hpp"
+#include "coordinates/enu.hpp"
+#include "coordinates/look_angles.hpp"
+
+#ifdef DATA_TRACING
+#include <datatrace/datatrace.hpp>
+#endif
+
+#include <iomanip>
+
 LOGLET_MODULE2(idokeido, spp);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(idokeido, spp)
 
@@ -19,10 +29,18 @@ SppEngine::SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_
     mLastObservationId         = -1;
     mEpochObservationCount     = 0;
     mEpochTotalObservationTime = 0;
+
+    mKlobucharModelSet = false;
 }
 
 SppEngine::~SppEngine() {
     FUNCTION_SCOPE();
+}
+
+void SppEngine::klobuchar_model(KlobucharModelParameters const& parameters) NOEXCEPT {
+    FUNCTION_SCOPE();
+    mKlobucharModelSet = true;
+    mKlobucharModel    = parameters;
 }
 
 static long absolute_signal_id(SatelliteId satellite_id, SignalId signal_id) {
@@ -77,6 +95,7 @@ void SppEngine::observation(RawObservation const& raw) NOEXCEPT {
 template <typename T>
 static std::string epf(T const& t) {
     std::stringstream ss;
+    ss << std::fixed << std::setprecision(8);
     ss << t;
     return ss.str();
 }
@@ -180,7 +199,7 @@ void SppEngine::compute_satellite_states(ts::Tai const& time) {
 
 static constexpr double SPEED_OF_LIGHT = 2.99792458e8;
 
-static double geometric_distance(Eigen::Vector3d const& a, Eigen::Vector3d const& b) {
+static double geometric_distance(Vector3 const& a, Vector3 const& b) {
     auto delta    = a - b;
     auto distance = delta.norm();
 
@@ -192,7 +211,7 @@ static double geometric_distance(Eigen::Vector3d const& a, Eigen::Vector3d const
 }
 
 void SppEngine::compute_satellite_state(Satellite& satellite, ts::Tai const& reception_time,
-                                        Eigen::Vector3d const& ground_position) {
+                                        Vector3 const& ground_position) {
     FUNCTION_SCOPE();
 
     // initial guess is that emission = reception
@@ -220,7 +239,7 @@ void SppEngine::compute_satellite_state(Satellite& satellite, ts::Tai const& rec
         // compute the pseudo-range (this is not the true range, as it contains the satellite orbit
         // error and the satellite clock error)
         auto pseudorange = geometric_distance(result.position, ground_position);
-        auto travel_time = pseudorange / SPEED_OF_LIGHT;
+        auto travel_time = pseudorange / constant::c;
         VERBOSEF("    range=%f, time=%f", i, pseudorange, travel_time);
 
         // the new emission time is the reception time minus the travel time
@@ -235,27 +254,56 @@ void SppEngine::compute_satellite_state(Satellite& satellite, ts::Tai const& rec
         }
     }
 
-    auto final_result           = mEphemerisEngine.evaluate(satellite.id, t_e);
-    satellite.reception_time    = t_r;
-    satellite.transmission_time = t_e;
-    satellite.position          = final_result.position;
-    satellite.velocity          = final_result.velocity;
-    satellite.clock =
-        final_result.clock + final_result.relativistic_correction - final_result.group_delay;
+    auto final_result                 = mEphemerisEngine.evaluate(satellite.id, t_e);
+    satellite.position                = final_result.position;
+    satellite.velocity                = final_result.velocity;
+    satellite.clock                   = final_result.clock;
+    satellite.group_delay             = final_result.group_delay;
+    satellite.relativistic_correction = final_result.relativistic_correction;
 
-#if 0
-    auto eph_result = mEphemerisEngine.evaluate(satellite.id, t_r);
-    DEBUGF("  [ eph] %03ld %s: %14.8f %14.8f %14.8f", satellite.id.absolute_id(),
-           satellite.id.name(), eph_result.position.x(), eph_result.position.y(),
-           eph_result.position.z());
-    DEBUGF("  [true] %03ld %s: %14.8f %14.8f %14.8f", satellite.id.absolute_id(),
-           satellite.id.name(), final_result.position.x(), final_result.position.y(),
-           final_result.position.z());
-    DEBUGF("  [diff] %03ld %s: %14.8f %14.8f %14.8f", satellite.id.absolute_id(),
-           satellite.id.name(), final_result.position.x() - eph_result.position.x(),
-           final_result.position.y() - eph_result.position.y(),
-           final_result.position.z() - eph_result.position.z());
-#endif
+    auto delta_position       = satellite.position - ground_position;
+    satellite.geometric_range = delta_position.norm();
+    satellite.line_of_sight   = delta_position.normalized();
+
+    auto travel_time            = satellite.geometric_range / constant::c;
+    satellite.reception_time    = t_r;
+    satellite.transmission_time = t_r + ts::Timestamp{-travel_time};
+    auto calculated_time        = satellite.transmission_time + ts::Timestamp{travel_time};
+
+    auto ground_llh = ecef_to_llh(ground_position, ellipsoid::WGS84);
+    auto enu        = ecef_to_enu_at_llh(ground_llh, satellite.line_of_sight);
+
+    LookAngles look_angles{};
+    if (!compute_look_angles(ground_position, enu, satellite.position, look_angles)) {
+        WARNF("failed to compute look angles");
+    }
+
+    satellite.azimuth   = look_angles.azimuth;
+    satellite.elevation = look_angles.elevation;
+    satellite.nadir     = look_angles.nadir;
+
+    DEBUGF("satellite state: %s", satellite.id.name());
+    DEBUGF("  position:       (%.14f, %.14f, %.14f)", satellite.position.x(),
+           satellite.position.y(), satellite.position.z());
+    DEBUGF("  velocity:       (%.14f, %.14f, %.14f)", satellite.velocity.x(),
+           satellite.velocity.y(), satellite.velocity.z());
+    DEBUGF("  line of sight:  (%.14f, %.14f, %.14f)", satellite.line_of_sight.x(),
+           satellite.line_of_sight.y(), satellite.line_of_sight.z());
+    DEBUGF("  clock bias:      %.14f", final_result.clock);
+    DEBUGF("  group delay:     %.14f", final_result.group_delay);
+    DEBUGF("  relativistic:    %.14f", final_result.relativistic_correction);
+    DEBUGF("  geometric range: %.14f", satellite.geometric_range);
+    DEBUGF("  t_e:               %s (GPS %.16f)", t_e.rtklib_time_string().c_str(),
+           ts::Gps{t_e}.time_of_week().full_seconds());
+           DEBUGF("  transmission time: %s (GPS %.16f)", t_e.rtklib_time_string().c_str(),
+           ts::Gps{t_e}.time_of_week().full_seconds());
+           DEBUGF("  reception time:    %s (GPS %.16f)", t_r.rtklib_time_string().c_str(),
+                  ts::Gps{t_r}.time_of_week().full_seconds());
+    DEBUGF("  calculated time:   %s (GPS %.16f)", calculated_time.rtklib_time_string().c_str(),
+           ts::Gps{calculated_time}.time_of_week().full_seconds());
+    DEBUGF("  elevation:         %.14f", satellite.elevation * constant::r2d);
+    DEBUGF("  azimuth:           %.14f", satellite.azimuth * constant::r2d);
+    DEBUGF("  nadir:             %.14f", satellite.nadir * constant::r2d);
 }
 
 Solution SppEngine::evaluate() NOEXCEPT {
@@ -311,17 +359,20 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
     // Initial guess position: (0,0,0), receiver bias: 0, this will _always_ converge to the
     // correct solution (if possible)
-    Eigen::Vector4d current = {0, 0, 0, 0};
+    Vector4 current = {0, 0, 0, 0};
     DEBUGF("initial guess: %14.8f %14.8f %14.8f %14.8f", current(0), current(1), current(2),
            current(3));
 
-    Eigen::MatrixXd residuals{satellite_count, 1};
-    Eigen::MatrixXd design_matrix{satellite_count, 4};
+    MatrixX residuals{satellite_count, 1};
+    MatrixX design_matrix{satellite_count, 4};
 
-    for (size_t it = 0; it < 10; ++it) {
+    for (size_t it = 0; it < 3; ++it) {
         DEBUGF("iteration %d: %14.8f %14.8f %14.8f %14.8f", it, current(0), current(1), current(2),
                current(3));
         // Compute the geometric range to the guess
+
+        auto ground_position = current.head<3>();
+        auto ground_llh      = ecef_to_llh(ground_position, ellipsoid::WGS84);
 
         size_t j = 0;
         for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
@@ -330,45 +381,79 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             auto& satellite   = mSatelliteStates[i];
             auto& observation = mObservationStates[satellite.main_observation_id];
 
-            auto ground_position = current.head<3>();
             compute_satellite_state(satellite, time, ground_position);
 
-            auto delta_position  = satellite.position - ground_position;
-            auto geometric_range = delta_position.norm();
-            auto line_of_sight   = delta_position.normalized();
+            if (satellite.elevation * constant::r2d < mConfiguration.elevation_cutoff) {
+                WARNF("reject: %03ld %s: %.2fdeg < %.2fdeg", satellite.id.absolute_id(),
+                      satellite.id.name(), satellite.elevation * constant::r2d,
+                      mConfiguration.elevation_cutoff);
+                continue;
+            }
 
-            auto pseudo_range =
-                observation.pseudo_range + SPEED_OF_LIGHT * (current(3) + satellite.clock);
+            auto i_delay = 0.0;
+            switch (mConfiguration.ionospheric_mode) {
+            case SppConfiguration::IonosphericMode::None: break;
+            case SppConfiguration::IonosphericMode::Navigation:
+                if (mKlobucharModelSet) {
+                    i_delay = mKlobucharModel.evaluate(time, satellite.elevation, satellite.azimuth,
+                                                       ground_llh);
+                } else {
+                    WARNF("ionospheric model not available");
+                }
+                break;
+            case SppConfiguration::IonosphericMode::Dual:
+                TODOF("implement dual ionospheric model");
+                break;
+            }
 
-            // Adjust the pseudo range to match the current epoch time
-            // auto epoch_time_delta = time.difference_seconds(observation.time);
-            // auto pseudo_range_adj = epoch_time_delta * c;
-            // pseudo_range += pseudo_range_adj;
+            auto f_mhz  = observation.signal_id.frequency();
+            auto i_bias = 40.3e13 * i_delay / (f_mhz * f_mhz);
+            auto t_bias = 0.0;
 
-            auto residual = geometric_range - pseudo_range;
-            DEBUGF("%14.4f %14.4f %14.4f %14.4f | %14.4f | %14.4fm | %s %s", line_of_sight.x(),
-                   line_of_sight.y(), line_of_sight.z(), SPEED_OF_LIGHT, residual,
-                   satellite.clock * SPEED_OF_LIGHT, satellite.id.name(),
-                   observation.signal_id.name());
+            auto receiver_clock_bias     = constant::c * current(3);
+            auto group_delay_bias        = constant::c * satellite.group_delay;
+            auto relativistic_clock_bias = constant::c * satellite.relativistic_correction;
+            auto satellite_clock_bias    = constant::c * satellite.clock;
 
-            design_matrix(j, 0) = line_of_sight.x();
-            design_matrix(j, 1) = line_of_sight.y();
-            design_matrix(j, 2) = line_of_sight.z();
-            design_matrix(j, 3) = SPEED_OF_LIGHT;
+            auto epoch_time_delta = time.difference_seconds(observation.time);
+            auto pseudo_range_adj = epoch_time_delta * constant::c;
+            auto pseudo_range     = satellite.geometric_range + receiver_clock_bias -
+                                relativistic_clock_bias + group_delay_bias - satellite_clock_bias +
+                                i_bias + t_bias + pseudo_range_adj;
+
+            auto residual = pseudo_range - observation.pseudo_range;
+            DEBUGF("%14.4f + [%14.4f + %14.4f - %14.4f] - %14.4f + %14.4f + %14.4f + %14.4f|%14.4f "
+                   "- %14.4f "
+                   "= %14.4fm|%5.2fdeg %5.2fdeg "
+                   "%.14fSTEC| "
+                   "%s %s",
+                   satellite.geometric_range, receiver_clock_bias, relativistic_clock_bias,
+                   group_delay_bias, satellite_clock_bias, i_bias, t_bias, pseudo_range_adj,
+                   pseudo_range, observation.pseudo_range, residual,
+                   satellite.elevation * constant::r2d, satellite.azimuth * constant::r2d, i_delay,
+                   satellite.id.name(), observation.signal_id.name());
+
+            design_matrix(j, 0) = satellite.line_of_sight.x();
+            design_matrix(j, 1) = satellite.line_of_sight.y();
+            design_matrix(j, 2) = satellite.line_of_sight.z();
+            design_matrix(j, 3) = constant::c;
 
             residuals(j, 0) = residual;
 
             j++;
         }
 
-        VERBOSEF("H:\n%s", epf(design_matrix).c_str());
-        VERBOSEF("R:\n%s", epf(residuals).c_str());
+        auto h_subset = design_matrix.topRows(j).eval();
+        auto r_subset = residuals.topRows(j).eval();
 
-        auto design_matrix_transpose = design_matrix.transpose();
+        DEBUGF("H:\n%s", epf(h_subset).c_str());
+        DEBUGF("R:\n%s", epf(r_subset).c_str());
+
+        auto h_transpose = h_subset.transpose();
 
         // Compute the solution
-        auto dTd      = design_matrix_transpose * design_matrix;
-        auto dTr      = design_matrix_transpose * residuals;
+        auto dTd      = h_transpose * h_subset;
+        auto dTr      = h_transpose * r_subset;
         auto solution = dTd.ldlt().solve(dTr).eval();
         DEBUGF("solution: %14.8f %14.8f %14.8f %14.8f (norm %14.8f)", solution(0), solution(1),
                solution(2), solution(3), solution.norm());
@@ -404,6 +489,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         }
     }
 
+    datatrace_report();
+
     auto final_position = current.head<3>();
     auto final_bias     = current(3);
     DEBUGF("final position: %14.4f %14.4f %14.4f", final_position.x(), final_position.y(),
@@ -433,6 +520,23 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
     mEpochTotalObservationTime = 0;
 
     return solution;
+}
+
+void SppEngine::datatrace_report() NOEXCEPT {
+    VSCOPE_FUNCTION();
+#ifdef DATA_TRACING
+    for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
+        if (!mSatelliteMask[i]) continue;
+        auto&                satellite = mSatelliteStates[i];
+        datatrace::Satellite dt_sat{};
+        dt_sat.position =
+            Float3{satellite.position.x(), satellite.position.y(), satellite.position.z()};
+        dt_sat.elevation = satellite.elevation * constant::r2d;
+        dt_sat.azimuth   = satellite.azimuth * constant::r2d;
+        dt_sat.nadir     = satellite.nadir * constant::r2d;
+        datatrace::report_satellite(satellite.reception_time, satellite.id.name(), dt_sat);
+    }
+#endif
 }
 
 }  // namespace idokeido

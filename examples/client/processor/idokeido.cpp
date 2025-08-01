@@ -4,6 +4,10 @@
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
 
+#include <iostream>
+#include <fstream>
+#include <ostream>
+
 LOGLET_MODULE2(p, ido);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ido)
 
@@ -16,6 +20,32 @@ void IdokeidoEphemerisUbx<T>::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
     if (!format::nav::gps::lnav::Subframe::decode(words, subframe)) {
         WARNF("failed to decode GPS LNAV subframe");
         return;
+    }
+
+    // Extract ionospheric parameters
+    if (subframe.how.subframe_id == 4) {
+        if (subframe.subframe4.sv_id == 56) {
+            idokeido::KlobucharModelParameters params{
+                .a = {subframe.subframe4.page18.a[0], subframe.subframe4.page18.a[1],
+                      subframe.subframe4.page18.a[2], subframe.subframe4.page18.a[3]},
+                .b = {subframe.subframe4.page18.b[0], subframe.subframe4.page18.b[1],
+                      subframe.subframe4.page18.b[2], subframe.subframe4.page18.b[3]},
+            };
+            // TODO(ewaison): Change to a better system
+            {
+                std::ofstream f("klobuchar_params.txt");
+                f << params.a[0] << std::endl;
+                f << params.a[1] << std::endl;
+                f << params.a[2] << std::endl;
+                f << params.a[3] << std::endl;
+                f << params.b[0] << std::endl;
+                f << params.b[1] << std::endl;
+                f << params.b[2] << std::endl;
+                f << params.b[3] << std::endl;
+                f.close();
+            }
+            process_klobuchar(params);
+        }
     }
 
     ephemeris::GpsEphemeris ephemeris{};
@@ -286,8 +316,9 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
     mComputeTask = nullptr;
 
     idokeido::SppConfiguration configuration{
-        .frequency_mode  = idokeido::SppConfiguration::FrequencyMode::Single,
-        .weight_function = idokeido::SppConfiguration::WeightFunction::Uniform,
+        .ionospheric_mode = idokeido::SppConfiguration::IonosphericMode::Navigation,
+        .weight_function  = idokeido::SppConfiguration::WeightFunction::Uniform,
+        .epoch_selection  = idokeido::SppConfiguration::EpochSelection::FirstObservation,
         .gnss =
             {
                 .gps = true,
@@ -295,6 +326,7 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
                 .gal = false,
                 .bds = false,
             },
+        .observation_window    = 0.1,
         .elevation_cutoff      = 15,
         .snr_cutoff            = 30,
         .outlier_cutoff        = 10,
@@ -313,6 +345,24 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
         new idokeido::SppEngine{configuration, *mEphemerisEngine});
     mOutputTag = 0;
 
+    // TODO(ewasjon): Change to a better system
+    {
+        std::ifstream file("klobuchar_params.txt");
+        if (file.is_open()) {
+            idokeido::KlobucharModelParameters params{};
+            file >> params.a[0];
+            file >> params.a[1];
+            file >> params.a[2];
+            file >> params.a[3];
+            file >> params.b[0];
+            file >> params.b[1];
+            file >> params.b[2];
+            file >> params.b[3];
+            process_klobuchar(params);
+        }
+
+    }
+
     // Setup a periodic timer to generate every time step
     auto interval = std::chrono::milliseconds(static_cast<int>(mConfig.update_rate * 1000.0));
     mComputeTask  = std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
@@ -327,6 +377,12 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
 
 IdokeidoSpp::~IdokeidoSpp() {
     VSCOPE_FUNCTION();
+}
+
+void IdokeidoSpp::process_klobuchar(idokeido::KlobucharModelParameters const& params) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mEngine, "engine is null");
+    mEngine->klobuchar_model(params);
 }
 
 void IdokeidoSpp::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
@@ -383,6 +439,11 @@ void IdokeidoSpp::compute() NOEXCEPT {
         solution.latitude, solution.longitude, solution.altitude, horizontal, vertical);
     location.velocity = velocity;
     mSystem.push(std ::move(location));
+
+    lpp::HaGnssMetrics metrics{};
+    metrics.fix_quality          = lpp::FixQuality::INVALID;
+    metrics.number_of_satellites = static_cast<long>(solution.satellite_count);
+    mSystem.push(std ::move(metrics));
 }
 
 void IdokeidoSpp::inspect(streamline::System&, DataType const& message, uint64_t) {
