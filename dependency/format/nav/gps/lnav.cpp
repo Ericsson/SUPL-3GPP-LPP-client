@@ -171,6 +171,80 @@ static bool decode_subframe3(Words const& words, Subframe3& subframe) {
     return true;
 }
 
+static bool decode_subframe4_page18(Words const& words, Subframe4::Page18& page) {
+    FUNCTION_SCOPE();
+
+    auto a0 = words.u8(68, 8);
+    auto a1 = words.u8(76, 8);
+    auto a2 = words.u8(90, 8);
+    auto a3 = words.u8(98, 8);
+
+    auto b0 = words.u8(106, 8);
+    auto b1 = words.u8(120, 8);
+    auto b2 = words.u8(128, 8);
+    auto b3 = words.u8(136, 8);
+
+    auto A1     = words.u32(150, 24);
+    auto A0_msb = words.u32(180, 24);
+    auto A0_lsb = words.u32(210, 8);
+    auto A0     = (static_cast<uint32_t>(A0_msb) << 24) | A0_lsb;
+
+    auto t_ot   = words.u32(218, 8);
+    auto wn_t   = words.u8(226, 8);
+    auto dt_ls  = words.u8(240, 8);
+    auto wn_lsf = words.u8(248, 8);
+    auto dn     = words.u8(256, 8);
+    auto dt_lsf = words.u8(270, 8);
+
+    page.a[0] = signed_scale(8, a0, -30);
+    page.a[1] = signed_scale(8, a1, -27);
+    page.a[2] = signed_scale(8, a2, -24);
+    page.a[3] = signed_scale(8, a3, -24);
+
+    page.b[0] = signed_scale(8, b0, 11);
+    page.b[1] = signed_scale(8, b1, 14);
+    page.b[2] = signed_scale(8, b2, 16);
+    page.b[3] = signed_scale(8, b3, 16);
+
+    VERBOSEF("subframe4_18: iono: a0: %g (%u), a1: %g (%u), a2: %g (%u), a3: %g (%u), b0: %g (%u), "
+             "b1: %g (%u), b2: %g (%u), b3: %g (%u)",
+             page.a[0], a0, page.a[1], a1, page.a[2], a2, page.a[3], a3, page.b[0], b0, page.b[1],
+             b1, page.b[2], b2, page.b[3], b3);
+
+    page.A0          = signed_scale(32, A0, -30);
+    page.A1          = signed_scale(24, A1, -50);
+    page.delta_t_ls  = signed_scale(8, dt_ls, 0);
+    page.t_ot        = unsigned_scale(t_ot, 12);
+    page.wn_t        = unsigned_scale(wn_t, 0);
+    page.wn_lsf      = unsigned_scale(wn_lsf, 0);
+    page.dn          = unsigned_scale(dn, 0);
+    page.delta_t_lsf = signed_scale(8, dt_lsf, 0);
+
+    VERBOSEF("subframe4_18:  utc: A0: %g (%u), A1: %g (%u), delta_t_ls: %g (%u), t_ot: %g (%u), "
+             "wn_t: %g (%u), wn_lsf: %g (%u), dn: %g (%u), delta_t_lsf: %g (%u)",
+             page.A0, A0, page.A1, A1, page.delta_t_ls, dt_ls, page.t_ot, t_ot, page.wn_t, wn_t,
+             page.wn_lsf, wn_lsf, page.dn, dn, page.delta_t_lsf, dt_lsf);
+    return true;
+}
+
+static bool decode_subframe4(Words const& words, Subframe4& subframe) {
+    FUNCTION_SCOPE();
+
+    auto data_id = words.u8(60, 2);
+    auto sv_id = words.u8(62, 6);
+
+    subframe.data_id = data_id;
+    subframe.sv_id = sv_id;
+
+    VERBOSEF("subframe4: data_id: %u, sv_id: %u (page_id: %i)", subframe.data_id, subframe.sv_id,
+            subframe.sv_id - 38);
+
+    switch (subframe.sv_id) {
+    case 56: return decode_subframe4_page18(words, subframe.page18);
+    default: return true;  // NOTE(ewasjon): Don't fail on unknown pages
+    }
+}
+
 bool Subframe::decode(Words const& words, Subframe& subframe) NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -197,6 +271,7 @@ bool Subframe::decode(Words const& words, Subframe& subframe) NOEXCEPT {
     case 1: return decode_subframe1(words, subframe.subframe1);
     case 2: return decode_subframe2(words, subframe.subframe2);
     case 3: return decode_subframe3(words, subframe.subframe3);
+    case 4: return decode_subframe4(words, subframe.subframe4);
     default: VERBOSEF("unsupported subframe id: %u", subframe.how.subframe_id); return true;
     }
 }
@@ -276,8 +351,8 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         }
 
         VERBOSEF("processing ephemeris for PRN %u (week: %u, IODE: %u)", prn,
-               internal_ephemeris.subframe1_data.week_number,
-               internal_ephemeris.subframe2_data.iode);
+                 internal_ephemeris.subframe1_data.week_number,
+                 internal_ephemeris.subframe2_data.iode);
 
         auto const& sf1 = internal_ephemeris.subframe1_data;
         auto const& sf2 = internal_ephemeris.subframe2_data;
@@ -305,7 +380,7 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         ephemeris.a                 = sf2.sqrt_a * sf2.sqrt_a;
         ephemeris.toe               = sf2.toe;
         ephemeris.fit_interval_flag = sf2.fit_interval_flag;
-        ephemeris.aodo              = sf2.aodo; // TODO(ewasjon): AODO is not a ephemeris field
+        ephemeris.aodo              = sf2.aodo;  // TODO(ewasjon): AODO is not a ephemeris field
         ephemeris.cic               = sf3.cic;
         ephemeris.omega0            = sf3.omega0;
         ephemeris.cis               = sf3.cis;
