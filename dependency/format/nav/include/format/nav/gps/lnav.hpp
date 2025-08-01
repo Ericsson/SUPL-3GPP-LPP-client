@@ -67,6 +67,30 @@ struct Subframe3 {
     double  idot;
 };
 
+struct Subframe4 {
+    struct Page18 {
+        // Ionospheric parameters
+        double a[4];
+        double b[4];
+        // UTC parameters
+        double A0;
+        double A1;
+        double delta_t_ls;
+        double t_ot;
+        double wn_t;
+        double wn_lsf;
+        double dn;
+        double delta_t_lsf;
+    };
+    
+    uint8_t data_id;
+    uint8_t sv_id;
+
+    union {
+        Subframe4::Page18 page18;
+    };
+};
+
 struct Subframe {
     Tlm tlm;
     How how;
@@ -75,6 +99,7 @@ struct Subframe {
         Subframe1 subframe1;
         Subframe2 subframe2;
         Subframe3 subframe3;
+        Subframe4 subframe4;
     };
 
     NODISCARD static bool decode(Words const& words, Subframe& subframe) NOEXCEPT;
