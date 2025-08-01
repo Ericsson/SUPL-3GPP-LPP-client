@@ -1,5 +1,8 @@
 #pragma once
 #include <core/core.hpp>
+#include <generator/idokeido/idokeido.hpp>
+#include <generator/idokeido/klobuchar.hpp>
+#include <generator/idokeido/satellite.hpp>
 
 #include <bitset>
 #include <memory>
@@ -7,7 +10,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include <Eigen/Eigen>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include <time/tai.hpp>
@@ -39,6 +41,8 @@ struct Solution {
     double latitude;
     double longitude;
     double altitude;
+
+    size_t satellite_count;
 };
 
 struct SppConfiguration {
@@ -48,7 +52,7 @@ struct SppConfiguration {
         Elevation,
     };
 
-    enum class FrequencyMode { Single, Dual };
+    enum class IonosphericMode { None, Navigation, Dual };
 
     enum class EpochSelection {
         FirstObservation,
@@ -56,9 +60,9 @@ struct SppConfiguration {
         MeanObservation,
     };
 
-    FrequencyMode  frequency_mode;
-    WeightFunction weight_function;
-    EpochSelection epoch_selection;
+    IonosphericMode ionospheric_mode;
+    WeightFunction  weight_function;
+    EpochSelection  epoch_selection;
 
     struct {
         bool gps;
@@ -81,15 +85,7 @@ struct SppConfiguration {
 class EphemerisEngine;
 class SppEngine {
 public:
-    struct Satellite {
-        SatelliteId     id;
-        ts::Tai         reception_time;
-        ts::Tai         transmission_time;
-        Eigen::Vector3d position;
-        Eigen::Vector3d velocity;
-        double          clock;
-        long            main_observation_id;
-    };
+ 
 
     struct Observation {
         ts::Tai     time;
@@ -105,6 +101,8 @@ public:
     SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_engine) NOEXCEPT;
     ~SppEngine();
 
+    void klobuchar_model(KlobucharModelParameters const& parameters) NOEXCEPT;
+
     /// Add an observation
     void observation(RawObservation const& observation) NOEXCEPT;
 
@@ -118,9 +116,11 @@ protected:
     void select_best_observations(ts::Tai const& time);
     void compute_satellite_states(ts::Tai const& time);
     void compute_satellite_state(Satellite& satellite, ts::Tai const& reception_time,
-                                 Eigen::Vector3d const& ground_position);
+                                 Vector3 const& ground_position);
 
     NODISCARD Satellite& find_satellite(SatelliteId id);
+
+    void datatrace_report() NOEXCEPT;
 
 private:
     SppConfiguration mConfiguration;
@@ -135,6 +135,9 @@ private:
 
     std::array<Satellite, SATELLITE_ID_MAX> mSatelliteStates;
     std::array<Observation, SIGNAL_ID_MAX>  mObservationStates;
+
+    KlobucharModelParameters mKlobucharModel;
+    bool                     mKlobucharModelSet;
 };
 
 }  // namespace idokeido
