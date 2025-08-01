@@ -23,6 +23,8 @@ public:
                 scheduler::Scheduler& scheduler, streamline::System& system);
     ~IdokeidoSpp() override;
 
+    void process_klobuchar(idokeido::KlobucharModelParameters const& params) NOEXCEPT;
+
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
@@ -50,6 +52,9 @@ class IdokeidoEphemerisUbx : public streamline::Inspector<UbxMessage> {
 public:
     IdokeidoEphemerisUbx(Base& base) : mBase(base) {}
 
+    void process_klobuchar(idokeido::KlobucharModelParameters const& params) NOEXCEPT {
+        mBase.process_klobuchar(params);
+    }
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
         mBase.process_ephemeris(ephemeris);
     }

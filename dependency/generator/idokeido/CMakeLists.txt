@@ -3,6 +3,11 @@ add_library(dependency_generator_idokeido STATIC
     "idokeido.cpp"
     "spp.cpp"
     "eph.cpp"
+    "coordinates/enu.cpp"
+    "coordinates/look_angles.cpp"
+    "coordinates/ecef.cpp"
+    "coordinates/reference_ellipsoid.cpp"
+    "models/klobuchar.cpp"
 )
 add_library(dependency::generator::idokeido ALIAS dependency_generator_idokeido)
 
@@ -37,6 +42,10 @@ if(INCLUDE_GENERATOR_TOKORO)
     target_link_libraries(dependency_generator_idokeido PRIVATE dependency::generator::tokoro)
 else()
     message(FATAL_ERROR "dependency_generator_idokeido requires INCLUDE_GENERATOR_TOKORO=ON")
+endif()
+
+if(DATA_TRACING)
+    target_link_libraries(dependency_generator_idokeido PRIVATE dependency::datatrace)
 endif()
 
 setup_target(dependency_generator_idokeido)
