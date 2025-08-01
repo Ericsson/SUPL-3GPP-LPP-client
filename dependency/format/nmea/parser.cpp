@@ -25,13 +25,11 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     // search for '$'
     for (;;) {
         if (buffer_length() < 1) {
-            // not enough data to search for '$'
             VERBOSEF("not enough data to search for '$'");
             return nullptr;
         }
 
         if (peek(0) == '$') {
-            // found '$'
             VERBOSEF("found '$'");
             break;
         }
@@ -44,15 +42,19 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto length = 1u;
     for (;;) {
         if (buffer_length() < length + 2) {
-            // not enough data to search for '\r\n'
             VERBOSEF("not enough data to search for '\\r\\n'");
             return nullptr;
         }
 
         if (peek(length + 0) == '\r' && peek(length + 1) == '\n') {
             VERBOSEF("found '\\r\\n'");
-            // found '\r\n'
             break;
+        }
+
+        if (peek(length + 0) == '$') {
+            VERBOSEF("found '$' while looking for '\\r\\n'");
+            skip(length);
+            return nullptr;
         }
 
         // skip one byte and try again
@@ -63,15 +65,16 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     std::string payload;
     payload.resize(length + 2);
     copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length + 2);
-    skip(length + 2);
 
     // check checksum
     auto result = checksum(payload);
     if (result != ChecksumResult::OK) {
         // checksum failed
         DEBUGF("checksum failed: \"%s\"", payload.c_str());
+        skip(1u);
         return nullptr;
     }
+    skip(length + 2);
 
     auto length_with_clrf = length + 2;
     auto prefix = parse_prefix(reinterpret_cast<uint8_t const*>(payload.data()), length_with_clrf);

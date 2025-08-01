@@ -9,6 +9,8 @@
 #include <format/lpp/uper_parser.hpp>
 #include <format/nmea/message.hpp>
 #include <format/nmea/parser.hpp>
+#include <format/rtcm/message.hpp>
+#include <format/rtcm/parser.hpp>
 #include <format/ubx/message.hpp>
 #include <format/ubx/parser.hpp>
 
@@ -38,6 +40,7 @@ struct Program {
     std::unique_ptr<lpp::Client>    client;
 
     std::vector<std::unique_ptr<format::nmea::Parser>>    nmea_parsers;
+    std::vector<std::unique_ptr<format::rtcm::Parser>>    rtcm_parsers;
     std::vector<std::unique_ptr<format::ubx::Parser>>     ubx_parsers;
     std::vector<std::unique_ptr<format::ctrl::Parser>>    ctrl_parsers;
     std::vector<std::unique_ptr<format::lpp::UperParser>> lpp_uper_parsers;

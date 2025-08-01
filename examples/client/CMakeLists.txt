@@ -7,6 +7,7 @@ add_executable(example_client
     "processor/location_information.cpp"
     "processor/ubx.cpp"
     "processor/nmea.cpp"
+    "processor/rtcm.cpp"
     "processor/lpp2rtcm.cpp"
     "processor/lpp2frame_rtcm.cpp"
     "processor/lpp2spartn.cpp"
@@ -23,6 +24,7 @@ target_link_libraries(example_client PRIVATE dependency::streamline)
 target_link_libraries(example_client PRIVATE dependency::io)
 target_link_libraries(example_client PRIVATE dependency::format::ubx)
 target_link_libraries(example_client PRIVATE dependency::format::nmea)
+target_link_libraries(example_client PRIVATE dependency::format::rtcm)
 target_link_libraries(example_client PRIVATE dependency::format::ctrl)
 target_link_libraries(example_client PRIVATE dependency::format::lpp)
 target_link_libraries(example_client PRIVATE dependency::scheduler)
