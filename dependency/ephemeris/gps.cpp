@@ -110,8 +110,8 @@ double GpsEphemeris::calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT
     return n / (1 - e * std::cos(e_k));
 }
 
-double GpsEphemeris::calculate_clock_bias(ts::Gps const& time, double e_k) const NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s, %g", ts::Utc(time).rtklib_time_string().c_str(), e_k);
+double GpsEphemeris::calculate_clock_bias(ts::Gps const& time) const NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s", ts::Utc(time).rtklib_time_string().c_str());
 
     // elapsed time since the clock data reference time
     auto t_k = calculate_elapsed_time_toc(time);
@@ -263,7 +263,7 @@ EphemerisResult GpsEphemeris::compute(ts::Gps const& time) const NOEXCEPT {
     VERBOSEF("dot_z_k: %f", dot_z_k);
 
     // calculate the clock bias
-    auto clock = calculate_clock_bias(time, e_k);
+    auto clock = calculate_clock_bias(time);
 
     EphemerisResult result{};
     result.position = Float3{x_k, y_k, z_k};

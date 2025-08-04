@@ -8,6 +8,7 @@ add_library(dependency_generator_idokeido STATIC
     "coordinates/ecef.cpp"
     "coordinates/reference_ellipsoid.cpp"
     "models/klobuchar.cpp"
+    "satellite_position.cpp"
 )
 add_library(dependency::generator::idokeido ALIAS dependency_generator_idokeido)
 
