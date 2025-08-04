@@ -21,5 +21,19 @@ static constexpr Scalar sc2r = pi;
 static constexpr Scalar c = 299792458.0;
 }
 
+
+
+inline Scalar geometric_distance(Vector3 const& a, Vector3 const& b) {
+    auto delta    = a - b;
+    auto distance = delta.norm();
+
+    // correct for rotation ECEF
+    auto dot_omega_e = 7.2921151467e-5;
+    auto correction  = dot_omega_e * (a.x() * b.y() - a.y() * b.x()) / constant::c;
+
+    return distance + correction;
+}
+
+
 }  // namespace idokeido
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <core/core.hpp>
+#include <generator/idokeido/idokeido.hpp>
 
 #include <bitset>
 #include <memory>
@@ -7,7 +8,6 @@
 #include <unordered_set>
 #include <vector>
 
-#include <Eigen/Eigen>
 #include <ephemeris/ephemeris.hpp>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
@@ -39,6 +39,8 @@ public:
     };
 
     Satellite evaluate(SatelliteId satellite_id, ts::Tai const& time) const NOEXCEPT;
+
+    Scalar clock_bias(SatelliteId satellite_id, ts::Tai const& time) const NOEXCEPT;
 
 protected:
     ephemeris::GpsEphemeris const* find_gps(SatelliteId    satellite_id,

@@ -355,4 +355,30 @@ EphemerisEngine::evaluate_bds(SatelliteId satellite_id, ts::Tai const& time,
     return {};
 }
 
+Scalar EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time) const NOEXCEPT {
+    FUNCTION_SCOPE();
+    if (satellite_id.is_gps()) {
+        auto eph = find_gps(satellite_id, time);
+        if (eph) {
+            auto gps_time   = ts::Gps(time);
+            auto clock_bias = eph->calculate_clock_bias(gps_time);
+            return clock_bias;
+        }
+    }
+    if (satellite_id.is_galileo()) {
+        auto eph = find_gal(satellite_id, time);
+        if (eph) {
+            TODOF("implement EphemerisEngine::clock_bias()");
+        }
+    }
+    if (satellite_id.is_beidou()) {
+        auto eph = find_bds(satellite_id, time);
+        if (eph) {
+            TODOF("implement EphemerisEngine::clock_bias()");
+        }
+    }
+
+    return 0.0;
+}
+
 }  // namespace idokeido

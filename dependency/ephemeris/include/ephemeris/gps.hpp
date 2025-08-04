@@ -85,7 +85,7 @@ struct GpsEphemeris {
     NODISCARD double calculate_elapsed_time(ts::Gps const& time, double reference) const NOEXCEPT;
     NODISCARD double calculate_elapsed_time_toe(ts::Gps const& time) const NOEXCEPT;
     NODISCARD double calculate_elapsed_time_toc(ts::Gps const& time) const NOEXCEPT;
-    NODISCARD double calculate_clock_bias(ts::Gps const& time, double e_k) const NOEXCEPT;
+    NODISCARD double calculate_clock_bias(ts::Gps const& time) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly(double t_k) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT;
     NODISCARD double calculate_relativistic_correction(Float3 const& position,
