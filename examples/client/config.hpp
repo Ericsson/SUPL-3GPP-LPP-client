@@ -9,6 +9,10 @@
 #include <generator/spartn2/generator.hpp>
 #endif
 
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+#include <generator/idokeido/idokeido.hpp>
+#endif
+
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -341,6 +345,12 @@ struct IdokeidoConfig {
 
     double update_rate;
     std::string ephemeris_cache;
+
+    idokeido::WeightFunction weight_function;
+    idokeido::EpochSelection epoch_selection;
+    idokeido::RelativisticModel relativistic_model;
+    idokeido::IonosphericMode ionospheric_mode;
+    double observation_window;
 };
 #endif
 

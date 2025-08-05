@@ -4,8 +4,8 @@
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
 
-#include <iostream>
 #include <fstream>
+#include <iostream>
 #include <ostream>
 
 LOGLET_MODULE2(p, ido);
@@ -316,17 +316,15 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
     mComputeTask = nullptr;
 
     idokeido::SppConfiguration configuration{
-        .ionospheric_mode = idokeido::SppConfiguration::IonosphericMode::Navigation,
-        .weight_function  = idokeido::SppConfiguration::WeightFunction::Uniform,
-        .epoch_selection  = idokeido::SppConfiguration::EpochSelection::FirstObservation,
-        .gnss =
-            {
-                .gps = true,
-                .glo = false,
-                .gal = false,
-                .bds = false,
-            },
-        .observation_window    = 0.1,
+        .relativistic_model    = config.relativistic_model,
+        .ionospheric_mode      = config.ionospheric_mode,
+        .weight_function       = config.weight_function,
+        .epoch_selection       = config.epoch_selection,
+        .gnss                  = {.gps = config.gps,
+                                  .glo = config.glonass,
+                                  .gal = config.galileo,
+                                  .bds = config.beidou},
+        .observation_window    = config.observation_window,
         .elevation_cutoff      = 15,
         .snr_cutoff            = 30,
         .outlier_cutoff        = 10,
@@ -360,7 +358,6 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
             file >> params.b[3];
             process_klobuchar(params);
         }
-
     }
 
     // Setup a periodic timer to generate every time step

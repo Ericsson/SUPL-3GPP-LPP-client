@@ -28,7 +28,7 @@ public:
     NODISCARD double    gmst(double ut1_utc) const;
 
     NODISCARD Timestamp timestamp() const { return tm; }
-    NODISCARD std::string rtklib_time_string() const;
+    NODISCARD std::string rtklib_time_string(int fraction_digits = 12) const;
     NODISCARD std::string rfc3339() const;
     NODISCARD std::string rinex_string() const;
     NODISCARD std::string rinex_filename() const;

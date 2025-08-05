@@ -26,7 +26,6 @@ struct Satellite {
 
     Scalar clock_bias;
     Scalar group_delay;
-    Scalar relativistic_correction;
 
     Scalar azimuth;
     Scalar elevation;
@@ -36,7 +35,9 @@ struct Satellite {
     SignalId observation_signal_id;
     Scalar pseudo_range;
 
-    void compute_position_and_velocity(EphemerisEngine const& ephemeris) NOEXCEPT;
+    RelativisticModel relativistic_model;
+
+    bool compute_position_and_velocity(EphemerisEngine const& ephemeris) NOEXCEPT;
 };
 
 }  // namespace idokeido

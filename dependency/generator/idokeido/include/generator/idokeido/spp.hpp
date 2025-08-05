@@ -10,56 +10,10 @@
 #include <unordered_set>
 #include <vector>
 
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
-#include <time/tai.hpp>
-
 namespace idokeido {
 
-struct RawObservation {
-    ts::Tai time;
-
-    SatelliteId satellite_id;
-    SignalId    signal_id;
-
-    double pseudo_range;   // meters
-    double carrier_phase;  // cycles
-    double doppler;        // Hz
-    double snr;            // dBHz
-    double lock_time;      // seconds
-};
-
-struct Solution {
-    enum class Status {
-        None,
-        Standard,
-    };
-
-    ts::Tai time;
-    Status  status;
-
-    double latitude;
-    double longitude;
-    double altitude;
-
-    size_t satellite_count;
-};
-
 struct SppConfiguration {
-    enum class WeightFunction {
-        Uniform,
-        Snr,
-        Elevation,
-    };
-
-    enum class IonosphericMode { None, Navigation, Dual };
-
-    enum class EpochSelection {
-        FirstObservation,
-        LastObservation,
-        MeanObservation,
-    };
-
+    RelativisticModel relativistic_model;
     IonosphericMode ionospheric_mode;
     WeightFunction  weight_function;
     EpochSelection  epoch_selection;
@@ -85,8 +39,6 @@ struct SppConfiguration {
 class EphemerisEngine;
 class SppEngine {
 public:
- 
-
     struct Observation {
         ts::Tai     time;
         SatelliteId satellite_id;
@@ -115,8 +67,6 @@ public:
 protected:
     void select_best_observations(ts::Tai const& time);
     void compute_satellite_states(ts::Tai const& time);
-    void compute_satellite_state(Satellite& satellite, ts::Tai const& reception_time,
-                                 Vector3 const& ground_position);
 
     NODISCARD Satellite& find_satellite(SatelliteId id);
 
