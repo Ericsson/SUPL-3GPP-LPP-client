@@ -34,12 +34,12 @@ struct DataField {
     static constexpr int         exponent { E        };
 
     static T convert(unsigned long long b) {
-        if      constexpr (sign==Sign::UNSIGNED)
-            return b * factor;
-        else if constexpr (sign==Sign::SIGNED)
-            return as_signed(b) * factor;
-        else if constexpr (sign==Sign::SIGNED_MAGNITUDE)
-            return as_signed_magnitude(b) * factor;
+        if       (sign==Sign::UNSIGNED)
+            return factor==1?b:b * factor;
+        else if  (sign==Sign::SIGNED)
+            return factor==1?as_signed(b):as_signed(b) * factor;
+        else if  (sign==Sign::SIGNED_MAGNITUDE)
+            return factor==1?as_signed_magnitude(b):as_signed_magnitude(b) * factor;
     }
 private:
     T d;
@@ -58,12 +58,12 @@ private:
                (n > 0)  ? pow2(n - 1) * 2.0 :
                           pow2(n + 1) / 2.0;
     }
-    static T constexpr _factor() {
-        return pow2(exponent) * (C==Conversion::SC2RAD  ? PI_DF : 
-                                 C==Conversion::MINUTE  ? 60    :
+    static double constexpr _factor() {
+        return pow2(exponent) * (C==Conversion::SC2RAD  ? PI_DF :
+                                 C==Conversion::MINUTE  ? 60.0  :
                                  C==Conversion::PICO100 ? 1e-10 : 1);
     }
-    static constexpr T factor { _factor() };
+    static constexpr T factor { static_cast<T>(_factor()) };
 };
 
 template<std::size_t N>
