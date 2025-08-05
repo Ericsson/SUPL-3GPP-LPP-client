@@ -60,8 +60,8 @@
     while (false)
 
 #ifdef DISABLE_TRACE
-#define XTRACEF(module, fmt, ...)
-#define TRACEF(fmt, ...)
+#define XTRACEF(module, /* fmt, */...)
+#define TRACEF(/* fmt, */...)
 #define XTRACE_INDENT_SCOPE(module)
 #define TRACE_INDENT_SCOPE()
 #else
@@ -73,8 +73,8 @@
 #endif
 
 #ifdef DISABLE_VERBOSE
-#define XVERBOSEF(module, fmt, ...)
-#define VERBOSEF(fmt, ...)
+#define XVERBOSEF(module, /* fmt, */...)
+#define VERBOSEF(/* fmt, */...)
 #define XVERBOSE_INDENT_SCOPE(module)
 #define VERBOSE_INDENT_SCOPE()
 #else
@@ -86,8 +86,8 @@
 #endif
 
 #ifdef DISABLE_DEBUG
-#define XDEBUGF(module, fmt, ...)
-#define DEBUGF(fmt, ...)
+#define XDEBUGF(module, /* fmt, */...)
+#define DEBUGF(/* fmt, */...)
 #define XDEBUG_INDENT_SCOPE(module)
 #define DEBUG_INDENT_SCOPE()
 #else
@@ -99,8 +99,8 @@
 #endif
 
 #ifdef DISABLE_INFO
-#define XINFOF(module, fmt, ...)
-#define INFOF(fmt, ...)
+#define XINFOF(module, /* fmt, */...)
+#define INFOF(/* fmt, */...)
 #define XINFO_INDENT_SCOPE(module)
 #define INFO_INDENT_SCOPE()
 #else
@@ -112,8 +112,8 @@
 #endif
 
 #ifdef DISABLE_NOTICE
-#define XNOTICEF(module, fmt, ...)
-#define NOTICEF(fmt, ...)
+#define XNOTICEF(module, /* fmt, */...)
+#define NOTICEF(/* fmt, */...)
 #define XNOTICE_INDENT_SCOPE(module)
 #define NOTICE_INDENT_SCOPE()
 #else
@@ -126,8 +126,8 @@
 #endif
 
 #ifdef DISABLE_WARNING
-#define XWARNF(module, fmt, ...)
-#define WARNF(fmt, ...)
+#define XWARNF(module, /* fmt, */...)
+#define WARNF(/* fmt, */...)
 #define XWARN_INDENT_SCOPE(module)
 #define WARN_INDENT_SCOPE()
 #else
@@ -139,8 +139,8 @@
 #endif
 
 #ifdef DISABLE_ERROR
-#define XERRORF(module, fmt, ...)
-#define ERRORF(fmt, ...)
+#define XERRORF(module, /*fmt, */...)
+#define ERRORF(/*fmt, */...)
 #define XERROR_INDENT_SCOPE(module)
 #define ERROR_INDENT_SCOPE()
 #else
@@ -152,19 +152,19 @@
 #endif
 
 #ifdef DISABLE_LOGGING
-#define TODOF(fmt, ...)
-#define XTODOF(module, fmt, ...)
+#define TODOF(/* fmt, */...)
+#define XTODOF(module, /* fmt, */...)
 #else
-#define TODOF(fmt, ...)                                                                            \
-    loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__,          \
+#define TODOF(/* fmt, */...)                                                                            \
+    loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" /* fmt, */__FILE__, __LINE__,          \
                    ##__VA_ARGS__)
-#define XTODOF(module, fmt, ...)                                                                   \
-    loglet::errorf(module, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+#define XTODOF(module, /* fmt, */...)                                                                   \
+    loglet::errorf(module, "!!! TODO !!! %s:%d\n" /* fmt, */__FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 
 #ifdef DISABLE_TRACE
 #define FUNCTION_SCOPE()
-#define FUNCTION_SCOPEF(fmt, ...)
+#define FUNCTION_SCOPEF(/* fmt, */...)
 #else
 
 #ifdef FUNCTION_PERFORMANCE
@@ -184,7 +184,7 @@
 #endif
 #endif
 
-#define VSCOPE_FUNCTIONF(fmt, ...) FUNCTION_SCOPEF(fmt, ##__VA_ARGS__)
+#define VSCOPE_FUNCTIONF(/*fmt, */...) FUNCTION_SCOPEF(/*fmt, */__VA_ARGS__)
 #define VSCOPE_FUNCTION() FUNCTION_SCOPE()
 
 #define UNREACHABLE()                                                                              \
