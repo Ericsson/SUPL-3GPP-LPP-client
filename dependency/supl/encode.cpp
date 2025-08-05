@@ -207,7 +207,7 @@ static SLPAddress encode_slp_address(Identity identity) {
 }
 
 static MCC* encode_mcc(uint64_t mcc_value) {
-    assert(mcc_value >= 0 && mcc_value <= 999);
+    assert(mcc_value <= 999);
 
     char tmp[8];
     sprintf(tmp, "%03" PRIu64, mcc_value);
@@ -223,7 +223,7 @@ static MCC* encode_mcc(uint64_t mcc_value) {
 }
 
 static MNC encode_mnc(uint64_t mnc_value) {
-    assert(mnc_value >= 0 && mnc_value <= 999);
+    assert(mnc_value <= 999);
 
     char tmp[8];
     sprintf(tmp, "%02" PRIu64, mnc_value);
@@ -254,7 +254,6 @@ static PhysCellId_t encode_physCellId(uint64_t id) {
 }
 
 static TrackingAreaCode_t encode_trackingAreaCode(uint64_t tac) {
-    ASSERT(tac >= 0, "invalid tracking area code");
     TrackingAreaCode_t tracking_area_code{};
     helper::BitStringBuilder{}.integer(0, 16, tac).into_bit_string(16, &tracking_area_code);
     return tracking_area_code;
@@ -276,7 +275,6 @@ static PhysCellIdNR_t encode_physCellIdNR(uint64_t id) {
 }
 
 static TrackingAreaCodeNR_t encode_trackingAreaCodeNR(uint64_t tac) {
-    ASSERT(tac >= 0, "invalid tracking area code");
     TrackingAreaCodeNR_t tracking_area_code{};
     helper::BitStringBuilder{}.integer(0, 24, tac).into_bit_string(24, &tracking_area_code);
     return tracking_area_code;

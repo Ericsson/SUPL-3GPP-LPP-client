@@ -33,6 +33,7 @@
 #include "processor/nmea.hpp"
 #include "processor/test.hpp"
 #include "processor/ubx.hpp"
+#include "processor/rtcm.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
@@ -165,7 +166,7 @@ static void client_location_information(Program& program, lpp::Client& client) {
     description.coordinate_type.ha_ellipsoid_point_with_scalable_uncertainty_ellipse = true;
     description.coordinate_type.ha_ellipsoid_point_with_uncertainty_ellipse          = true;
 
-    auto _ = client.start_periodic_location_information(description);
+    client.start_periodic_location_information(description);
     DEBUGF("started periodic location information");
 }
 
@@ -259,12 +260,14 @@ static void client_initialize(Program& program, lpp::Client&) {
 static void initialize_inputs(Program& program, InputConfig const& config) {
     for (auto const& input : config.inputs) {
         format::nmea::Parser*    nmea{};
+        format::rtcm::Parser*    rtcm{};
         format::ubx::Parser*     ubx{};
         format::ctrl::Parser*    ctrl{};
         format::lpp::UperParser* lpp_uper{};
         format::lpp::UperParser* lpp_uper_pad{};
 
         if ((input.format & INPUT_FORMAT_NMEA) != 0) nmea = new format::nmea::Parser{};
+        if ((input.format & INPUT_FORMAT_RTCM) != 0) rtcm = new format::rtcm::Parser{};
         if ((input.format & INPUT_FORMAT_UBX) != 0) ubx = new format::ubx::Parser{};
         if ((input.format & INPUT_FORMAT_CTRL) != 0) ctrl = new format::ctrl::Parser{};
         if ((input.format & INPUT_FORMAT_LPP_UPER) != 0) lpp_uper = new format::lpp::UperParser{};
@@ -283,17 +286,19 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         DEBUGF("input  %p: %s%s%s%s%s %s[%llX]", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
+               (input.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
                (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
                tag);
 
-        if (!nmea && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
+        if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
             WARNF("-- skipping input %p, no format specified", input.interface.get());
             continue;
         }
 
         if (nmea) program.nmea_parsers.push_back(std::unique_ptr<format::nmea::Parser>(nmea));
+        if (rtcm) program.rtcm_parsers.push_back(std::unique_ptr<format::rtcm::Parser>(rtcm));
         if (ubx) program.ubx_parsers.push_back(std::unique_ptr<format::ubx::Parser>(ubx));
         if (ctrl) program.ctrl_parsers.push_back(std::unique_ptr<format::ctrl::Parser>(ctrl));
         if (lpp_uper)
@@ -304,6 +309,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
 
         std::string event_name = input.interface->event_name();
         if (nmea) event_name += "+nmea";
+        if (rtcm) event_name += "+rtcm";
         if (ubx) event_name += "+ubx";
         if (ctrl) event_name += "+ctrl";
         if (lpp_uper) event_name += "+lpp-uper";
@@ -311,8 +317,8 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
 
         input.interface->schedule(program.scheduler);
         input.interface->set_event_name(event_name);
-        input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper, lpp_uper_pad,
-                                     tag](io::Input&, uint8_t* buffer, size_t count) {
+        input.interface->callback = [&program, &input, nmea, rtcm, ubx, ctrl, lpp_uper,
+                                     lpp_uper_pad, tag](io::Input&, uint8_t* buffer, size_t count) {
             if (loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
                 VERBOSEF("input %p: %zu bytes", input.interface.get(), count);
                 char print_buffer[512];
@@ -345,6 +351,16 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                 nmea->append(buffer, count);
                 for (;;) {
                     auto message = nmea->try_parse();
+                    if (!message) break;
+                    if (input.print) message->print();
+                    program.stream.push(std::move(message), tag);
+                }
+            }
+
+            if (rtcm) {
+                rtcm->append(buffer, count);
+                for (;;) {
+                    auto message = rtcm->try_parse();
                     if (!message) break;
                     if (input.print) message->print();
                     program.stream.push(std::move(message), tag);
@@ -411,9 +427,9 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     bool ubx_output      = false;
     bool ctrl_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
-    // TODO(ewasjon): bool rtcm_output   = false;
+    bool rtcm_output     = false;
 #ifdef DATA_TRACING
-    bool possib_output = false;
+    bool possib_output   = false;
 #endif
     bool location_output = false;
     bool test_output     = false;
@@ -431,18 +447,18 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                (output.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
                (output.format & OUTPUT_FORMAT_TEST) ? "test " : "");
 
-        if (output.lpp_xer_support()) lpp_xer_output = true;
+        if (output.lpp_xer_support()) lpp_xer_output   = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
-        if (output.nmea_support()) nmea_output = true;
-        if (output.ubx_support()) ubx_output = true;
-        if (output.ctrl_support()) ctrl_output = true;
+        if (output.nmea_support()) nmea_output         = true;
+        if (output.ubx_support()) ubx_output           = true;
+        if (output.ctrl_support()) ctrl_output         = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
-        // TODO(ewasjon): if (output.rtcm_support()) rtcm_output = true;
+        if (output.rtcm_support()) rtcm_output         = true;
 #ifdef DATA_TRACING
-        if (output.possib_support()) possib_output = true;
+        if (output.possib_support()) possib_output     = true;
 #endif
         if (output.location_support()) location_output = true;
-        if (output.test_support()) test_output = true;
+        if (output.test_support()) test_output         = true;
 
         output.include_tag_mask = program.config.get_tag(output.include_tags);
         output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
@@ -454,6 +470,7 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     if (lpp_uper_output) program.stream.add_inspector<LppUperOutput>(config);
     if (nmea_output) program.stream.add_inspector<NmeaOutput>(config);
     if (ubx_output) program.stream.add_inspector<UbxOutput>(config);
+    if (rtcm_output) program.stream.add_inspector<RtcmOutput>(config);
     if (ctrl_output) program.stream.add_inspector<CtrlOutput>(config);
 #ifdef DATA_TRACING
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
@@ -605,6 +622,7 @@ static void setup_tokoro(Program& program) {
         auto tokoro = program.stream.add_inspector<Tokoro>(
             program.config.output, program.config.tokoro, program.scheduler);
         program.stream.add_inspector<TokoroEphemerisUbx>(*tokoro);
+        program.stream.add_inspector<TokoroEphemerisRtcm>(*tokoro);
         program.stream.add_inspector<TokoroLocation>(*tokoro);
     }
 #endif
@@ -649,7 +667,9 @@ int main(int argc, char** argv) {
     loglet::set_level(config.logging.log_level);
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
-    for (auto const& [name, level] : config.logging.module_levels) {
+    for (auto const& name_level : config.logging.module_levels) {
+        auto name = name_level.first;
+        auto level = name_level.second;
         auto modules = loglet::get_modules(name);
         for (auto module : modules) {
             loglet::set_module_level(module, level);

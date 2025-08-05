@@ -11,6 +11,9 @@
 #include <format/nav/gal/inav.hpp>
 #include <format/nav/gps/lnav.hpp>
 #include <format/ubx/messages/rxm_sfrbx.hpp>
+#include <format/rtcm/1019.hpp>
+#include <format/rtcm/1042.hpp>
+#include <format/rtcm/1046.hpp>
 #include <generator/tokoro/constant.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
@@ -21,6 +24,7 @@
 #include "config.hpp"
 #include "lpp.hpp"
 #include "ubx.hpp"
+#include "rtcm.hpp"
 
 class Tokoro : public streamline::Inspector<lpp::Message> {
 public:
@@ -70,6 +74,29 @@ public:
     void handle_bds(format::ubx::RxmSfrbx* sfrbx);
 
     const char* name() const NOEXCEPT override { return "TokoroEphemerisUbx"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+
+private:
+    Tokoro&                                    mTokoro;
+    format::nav::gps::lnav::EphemerisCollector mGpsCollector;
+    format::nav::gal::InavEphemerisCollector   mGalCollector;
+    format::nav::D1Collector                   mBdsCollector;
+};
+
+class TokoroEphemerisRtcm : public streamline::Inspector<RtcmMessage> {
+public:
+    TokoroEphemerisRtcm(Tokoro& tokoro) : mTokoro(tokoro) {}
+
+    void handle_gps_lnav(format::rtcm::Rtcm1019* rtcm);
+    void handle_gps(format::rtcm::Rtcm1019* rtcm);
+
+    void handle_gal_inav(format::rtcm::Rtcm1046* rtcm);
+    void handle_gal(format::rtcm::Rtcm1046* rtcm);
+
+    void handle_bds_d1(format::rtcm::Rtcm1042* rtcm);
+    void handle_bds(format::rtcm::Rtcm1042* rtcm);
+
+    const char* name() const NOEXCEPT override { return "TokoroEphemerisRtcm"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
