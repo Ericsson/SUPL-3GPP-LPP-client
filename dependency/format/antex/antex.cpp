@@ -80,6 +80,7 @@ static bool is_end_of_frequency(std::string const& line) {
     return line.size() >= 80 && line.substr(60, 20) == "END OF FREQUENCY    ";
 }
 
+#if 0
 static bool is_start_of_frequency_rms(std::string const& line) {
     return line.size() >= 80 && line.substr(60, 20) == "START OF FREQ RMS   ";
 }
@@ -87,6 +88,7 @@ static bool is_start_of_frequency_rms(std::string const& line) {
 static bool is_end_of_frequency_rms(std::string const& line) {
     return line.size() >= 80 && line.substr(60, 20) == "END OF FREQ RMS     ";
 }
+#endif
 
 static bool is_north_east_up(std::string const& line) {
     return line.size() >= 80 && line.substr(60, 20) == "NORTH / EAST / UP   ";
@@ -512,7 +514,8 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
     }
 
     // Sort antennas by the inverse valid from time
-    for (auto& [satellite_id, antenna_list] : result->antennas) {
+    for (auto& sat_ant : result->antennas) {
+        auto& antenna_list = sat_ant.second;
         std::sort(antenna_list.begin(), antenna_list.end(),
                   [](std::unique_ptr<Antenna> const& a, std::unique_ptr<Antenna> const& b) {
                       return a->valid_from > b->valid_from;

@@ -450,6 +450,7 @@ char const* TcpClientOutput::state_to_string(State state) const NOEXCEPT {
     case State::STATE_DISCONNECTED: return "STATE_DISCONNECTED";
     case State::STATE_ERROR: return "STATE_ERROR";
     case State::STATE_RECONNECT: return "STATE_RECONNECT";
+    default: CORE_UNREACHABLE();
     }
 }
 
@@ -525,7 +526,7 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     return true;
 }
 
-bool TcpServerOutput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
+bool TcpServerOutput::do_cancel(scheduler::Scheduler&) NOEXCEPT {
     VSCOPE_FUNCTION();
 
     if (mListenerTask) {

@@ -426,7 +426,7 @@ void Printer::value(::PosProtocolVersion3GPP const& x) {
     pop('}');
 }
 
-void Printer::value(::PosProtocolVersion3GPP2 const& x) {
+void Printer::value(::PosProtocolVersion3GPP2 const&) {
     appendf("{ /* unsupported */ }");
 }
 
