@@ -42,14 +42,38 @@ void enu_basis_from_xyz(const Vector3& ecef, Vector3& east, Vector3& north, Vect
     enu_basis_from_llh(Vector3(lat, lon, r), east, north, up);
 }
 
+static Matrix3 xyz_to_enu_basis(const Vector3& xyz) NOEXCEPT {
+    auto sin_lat = sin(xyz.x());
+    auto cos_lat = cos(xyz.x());
+    auto cos_lon = cos(xyz.y());
+    auto sin_lon = sin(xyz.y());
+    
+    Matrix3 basis;
+    basis(0,0) = -sin_lon;
+    basis(0,1) = cos_lon;
+    basis(0,2) = 0.0;
+
+    basis(1,0) = -sin_lat * cos_lon;
+    basis(1,1) = -sin_lat * sin_lon;
+    basis(1,2) = cos_lat;
+
+    basis(2,0) = cos_lat * cos_lon;
+    basis(2,1) = cos_lat * sin_lon;
+    basis(2,2) = sin_lat;
+
+    VERBOSEF("basis: %+.4f %+.4f %+.4f", basis(0,0), basis(0,1), basis(0,2));
+    VERBOSEF("       %+.4f %+.4f %+.4f", basis(1,0), basis(1,1), basis(1,2));
+    VERBOSEF("       %+.4f %+.4f %+.4f", basis(2,0), basis(2,1), basis(2,2));
+
+    return basis;
+}
+
 Vector3 ecef_to_enu_at_llh(const Vector3& llh, const Vector3& ecef_vector)
 {
-    Vector3 east, north, up;
-    enu_basis_from_llh(llh, east, north, up);
+    VERBOSEF("vector: %+.4f %+.4f %+.4f", ecef_vector.x(), ecef_vector.y(), ecef_vector.z());
 
-    return east.dot(ecef_vector) * east +
-           north.dot(ecef_vector) * north +
-           up.dot(ecef_vector) * up;
+    auto basis = xyz_to_enu_basis(llh);
+    return basis * ecef_vector;
 }
 
 } // namespace tokoro

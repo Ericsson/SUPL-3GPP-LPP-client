@@ -32,15 +32,16 @@ public:
         Eigen::Vector3d position;
         Eigen::Vector3d velocity;
         double          clock;
-        double          relativistic_correction;
         double          group_delay;
 
         bool is_valid() const NOEXCEPT { return id.is_valid(); }
     };
 
-    Satellite evaluate(SatelliteId satellite_id, ts::Tai const& time) const NOEXCEPT;
+    bool evaluate(SatelliteId satellite_id, ts::Tai const& time,
+                  RelativisticModel relativistic_model, Satellite& result) const NOEXCEPT;
 
-    Scalar clock_bias(SatelliteId satellite_id, ts::Tai const& time) const NOEXCEPT;
+    bool clock_bias(SatelliteId satellite_id, ts::Tai const& time,
+                    Scalar& clock_bias) const NOEXCEPT;
 
 protected:
     ephemeris::GpsEphemeris const* find_gps(SatelliteId    satellite_id,
@@ -51,10 +52,13 @@ protected:
                                             ts::Tai const& time) const NOEXCEPT;
 
     Satellite evaluate_gps(SatelliteId satellite_id, ts::Tai const& time,
+                           RelativisticModel              relativistic_model,
                            ephemeris::GpsEphemeris const& eph) const NOEXCEPT;
     Satellite evaluate_gal(SatelliteId satellite_id, ts::Tai const& time,
+                           RelativisticModel              relativistic_model,
                            ephemeris::GalEphemeris const& eph) const NOEXCEPT;
     Satellite evaluate_bds(SatelliteId satellite_id, ts::Tai const& time,
+                           RelativisticModel              relativistic_model,
                            ephemeris::BdsEphemeris const& eph) const NOEXCEPT;
 
 private:

@@ -154,6 +154,16 @@ double GpsEphemeris::calculate_relativistic_correction(Float3 const& position,
     return t_r;
 }
 
+double GpsEphemeris::calculate_relativistic_correction_idc(double e_k) const NOEXCEPT {
+    FUNCTION_SCOPE();
+
+    auto e_sin   = std::sin(e_k);
+    auto delta_t = -2.0 * e_sin * e * std::sqrt(a * CONSTANT_MU) / (CONSTANT_C * CONSTANT_C);
+    VERBOSEF("delta_t: %+.14f", delta_t);
+
+    return delta_t;
+}
+
 double GpsEphemeris::calculate_group_delay() const NOEXCEPT {
     return tgd;
 }
@@ -269,6 +279,12 @@ EphemerisResult GpsEphemeris::compute(ts::Gps const& time) const NOEXCEPT {
     result.position = Float3{x_k, y_k, z_k};
     result.velocity = Float3{dot_x_k, dot_y_k, dot_z_k};
     result.clock    = clock;
+
+    // relativistic correction
+    auto rc_brdc  = calculate_relativistic_correction_idc(e_k);
+    auto rc_dotrv = calculate_relativistic_correction(result.position, result.velocity);
+    result.relativistic_correction_brdc  = rc_brdc;
+    result.relativistic_correction_dotrv = rc_dotrv;
     return result;
 }
 

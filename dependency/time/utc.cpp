@@ -163,9 +163,7 @@ double Utc::gmst(double ut1_utc) const {
     return fmod(gmst, 86400.0) * 3.1415926535897932 / 43200.0;
 }
 
-std::string Utc::rtklib_time_string() const {
-    constexpr int fraction_digits = 12;
-
+std::string Utc::rtklib_time_string(int fraction_digits) const {
     auto ts    = timestamp();
     auto epoch = date_from_utc(ts);
 

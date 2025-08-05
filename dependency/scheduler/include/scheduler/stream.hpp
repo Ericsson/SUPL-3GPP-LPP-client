@@ -45,10 +45,14 @@ public:
     void set_event_name(std::string const& name) { mStreamTask.set_event_name(name); }
 
 private:
+    static constexpr size_t BUFFER_SIZE = 16 * 1024;
+
     void forward(int dest_fd, size_t block_size);
 
     StreamTask mStreamTask;
     int        mSourceFd;
+    char       mBuffer[BUFFER_SIZE];
+    size_t     mLeftOverCount;
 };
 
 }  // namespace scheduler

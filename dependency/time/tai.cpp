@@ -25,8 +25,8 @@ Tai::Tai(Glo const& time) : Tai(Utc(time)) {}
 Tai::Tai(Gst const& time) : Tai(Utc(time)) {}
 Tai::Tai(Bdt const& time) : Tai(Utc(time)) {}
 
-std::string Tai::rtklib_time_string() const {
-    return Utc{*this}.rtklib_time_string();
+std::string Tai::rtklib_time_string(int fraction_digits) const {
+    return Utc{*this}.rtklib_time_string(fraction_digits);
 }
 
 Tai Tai::operator+(Timestamp delta) const {

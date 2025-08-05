@@ -9,15 +9,16 @@ LOGLET_MODULE2(idokeido, klobuchar);
 namespace idokeido {
 
 static Scalar sin_sc(Scalar x) {
-    return std::sin(x * constant::r2sc);
+    return std::sin(x * constant::sc2r);
 }
 static Scalar cos_sc(Scalar x) {
-    return std::cos(x * constant::r2sc);
+    return std::cos(x * constant::sc2r);
 }
 
 Scalar KlobucharModelParameters::evaluate(ts::Tai const& time, Scalar elevation, Scalar azimuth,
                                           Vector3 const& llh) const NOEXCEPT {
-    FUNCTION_SCOPEF("time=%s, elevation=%f, azimuth=%f, llh=(%f, %f, %f)", time, elevation, azimuth, llh.x(), llh.y(), llh.z());
+    FUNCTION_SCOPEF("time=%s, elevation=%f, azimuth=%f, llh=(%f, %f, %f)", time, elevation, azimuth,
+                    llh.x(), llh.y(), llh.z());
     VERBOSEF("a: %+.14f, %+14f, %+14f, %+14f", a[0], a[1], a[2], a[3]);
     VERBOSEF("b: %+.14f, %+14f, %+14f, %+14f", b[0], b[1], b[2], b[3]);
 
@@ -77,12 +78,16 @@ Scalar KlobucharModelParameters::evaluate(ts::Tai const& time, Scalar elevation,
     VERBOSEF("slant factor: %+.14f", slant_factor);
 
     // Compute the ionospheric delay
+    Scalar result = 5.0e-9;
     if (std::fabs(phase) <= 1.57) {
-        return constant::c * 5.0e-9 * slant_factor * amplitude *
-               (1.0 + phase * phase * (-0.5 + phase * phase / 24.0));
-    } else {
-        return constant::c * 5.0e-9 * slant_factor;
+        auto phase_sq = phase * phase;
+        result += amplitude * (1.0 + phase_sq * (-0.5 + phase_sq / 24.0));
     }
+
+    auto delay = constant::c * slant_factor * result;
+    VERBOSEF("delay: %+.14f", delay);
+
+    return delay;
 }
 
 }  // namespace idokeido

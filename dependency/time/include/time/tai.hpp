@@ -24,7 +24,7 @@ public:
     EXPLICIT Tai(Bdt const& time);
 
     NODISCARD Timestamp timestamp() const { return tm; }
-    NODISCARD std::string rtklib_time_string() const;
+    NODISCARD std::string rtklib_time_string(int fraction_digits = 12) const;
 
     Tai& add_seconds(double seconds) {
         tm.add(seconds);

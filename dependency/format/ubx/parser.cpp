@@ -94,6 +94,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     // parse payload
     Decoder              decoder(buffer + 6, length);
     std::vector<uint8_t> data(buffer, buffer + length + 8);
+    VERBOSEF("message class: %02X, message id: %02X, length: %u", message_class, message_id, length);
 
     switch (type) {
     case 0x0107: return UbxNavPvt::parse(decoder, std::move(data));
