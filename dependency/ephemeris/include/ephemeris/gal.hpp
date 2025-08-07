@@ -67,11 +67,12 @@ struct GalEphemeris {
     NODISCARD double calculate_elapsed_time(ts::Gst const& time, double reference) const NOEXCEPT;
     NODISCARD double calculate_elapsed_time_toe(ts::Gst const& time) const NOEXCEPT;
     NODISCARD double calculate_elapsed_time_toc(ts::Gst const& time) const NOEXCEPT;
-    NODISCARD double calculate_clock_bias(ts::Gst const& time, double e_k) const NOEXCEPT;
+    NODISCARD double calculate_clock_bias(ts::Gst const& time) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly(double t_k) const NOEXCEPT;
     NODISCARD double calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT;
     NODISCARD double calculate_relativistic_correction(Float3 const& position,
                                                        Float3 const& velocity) const NOEXCEPT;
+    NODISCARD double calculate_relativistic_correction_idc(double e_k) const NOEXCEPT;
 };
 
 }  // namespace ephemeris

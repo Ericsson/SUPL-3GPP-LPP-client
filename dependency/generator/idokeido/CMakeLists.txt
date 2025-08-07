@@ -4,6 +4,7 @@ add_library(dependency_generator_idokeido STATIC
     "idokeido.cpp"
     "spp.cpp"
     "eph.cpp"
+    "correction.cpp"
     "coordinates/enu.cpp"
     "coordinates/look_angles.cpp"
     "coordinates/ecef.cpp"

@@ -43,6 +43,9 @@ public:
     bool clock_bias(SatelliteId satellite_id, ts::Tai const& time,
                     Scalar& clock_bias) const NOEXCEPT;
 
+    bool find(SatelliteId satellite_id, ts::Tai const& time,
+              ephemeris::Ephemeris& ephemeris) const NOEXCEPT;
+
 protected:
     ephemeris::GpsEphemeris const* find_gps(SatelliteId    satellite_id,
                                             ts::Tai const& time) const NOEXCEPT;
