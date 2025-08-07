@@ -1,25 +1,34 @@
 #include "parser.hpp"
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE2(format, helper);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, helper)
+
 namespace format {
 namespace helper {
 
 static CONSTEXPR uint32_t PARSER_BUFFER_SIZE = 32 * 4096;
 
 Parser::Parser() NOEXCEPT : mBuffer(nullptr), mBufferCapacity(0), mBufferRead(0), mBufferWrite(0) {
+    FUNCTION_SCOPE();
     mBuffer         = new uint8_t[PARSER_BUFFER_SIZE];
     mBufferCapacity = PARSER_BUFFER_SIZE;
 }
 
 Parser::~Parser() NOEXCEPT {
+    FUNCTION_SCOPE();
     if (mBuffer != nullptr) {
         delete[] mBuffer;
     }
 }
 
 bool Parser::append(uint8_t* data, size_t length) NOEXCEPT {
+    FUNCTION_SCOPEF("%u bytes", length);
     auto length32 = static_cast<uint32_t>(length);
     if (length32 > mBufferCapacity) {
         // TODO(ewasjon): report error
+        DEBUGF("buffer capacity exceeded: %u > %u", length32, mBufferCapacity);
         return false;
     }
 
@@ -33,10 +42,12 @@ bool Parser::append(uint8_t* data, size_t length) NOEXCEPT {
         }
     }
 
+    DEBUGF("appended %u bytes", length32);
     return true;
 }
 
 void Parser::clear() NOEXCEPT {
+    FUNCTION_SCOPE();
     mBufferRead  = 0;
     mBufferWrite = 0;
 }
@@ -72,6 +83,7 @@ void Parser::skip(uint32_t length) NOEXCEPT {
 }
 
 void Parser::copy_to_buffer(uint8_t* data, size_t length) NOEXCEPT {
+    FUNCTION_SCOPEF("%u bytes", length);
     auto length32  = static_cast<uint32_t>(length);
     auto available = buffer_length();
     if (length32 > available) {
