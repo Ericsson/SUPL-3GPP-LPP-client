@@ -14,9 +14,9 @@ namespace idokeido {
 
 struct SppConfiguration {
     RelativisticModel relativistic_model;
-    IonosphericMode ionospheric_mode;
-    WeightFunction  weight_function;
-    EpochSelection  epoch_selection;
+    IonosphericMode   ionospheric_mode;
+    WeightFunction    weight_function;
+    EpochSelection    epoch_selection;
 
     struct {
         bool gps;
@@ -25,11 +25,11 @@ struct SppConfiguration {
         bool bds;
     } gnss;
 
-    double observation_window;
+    Scalar observation_window;
 
-    double elevation_cutoff;
-    double snr_cutoff;
-    double outlier_cutoff;
+    Scalar elevation_cutoff;
+    Scalar snr_cutoff;
+    Scalar outlier_cutoff;
 
     bool reject_cycle_slip;
     bool reject_halfcycle_slip;
@@ -39,15 +39,42 @@ struct SppConfiguration {
 class EphemerisEngine;
 class SppEngine {
 public:
+    struct Measurment {
+        ts::Tai  time;
+        SignalId signal_id;
+        Scalar   pseudo_range;
+        Scalar   carrier_phase;
+        Scalar   doppler;
+        Scalar   snr;
+        Scalar   lock_time;
+    };
+
     struct Observation {
-        ts::Tai     time;
-        SatelliteId satellite_id;
-        SignalId    signal_id;
-        double      pseudo_range;
-        double      carrier_phase;
-        double      doppler;
-        double      snr;
-        double      lock_time;
+        ts::Tai                    time;
+        SatelliteId                satellite_id;
+        size_t                     measurement_count;
+        std::bitset<SIGNAL_ABS_COUNT> measurement_mask;
+        std::array<Measurment, SIGNAL_ABS_COUNT> measurements;
+
+        Vector3 position;
+        Vector3 velocity;
+        Scalar clock_bias;
+        Scalar group_delay[SIGNAL_ABS_COUNT];
+
+        Scalar azimuth;
+        Scalar elevation;
+        Scalar nadir;
+
+        long selected0;
+        long selected1;
+
+        void add_measurement(Measurment const& measurment) NOEXCEPT {
+            auto id = measurment.signal_id.absolute_id();
+            if (id < 0 || id >= SIGNAL_ABS_COUNT) return;
+            measurement_mask[id] = true;
+            measurements[id] = measurment;
+            measurement_count += 1;
+        }
     };
 
     SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_engine) NOEXCEPT;
@@ -56,7 +83,7 @@ public:
     void klobuchar_model(KlobucharModelParameters const& parameters) NOEXCEPT;
 
     /// Add an observation
-    void observation(RawObservation const& observation) NOEXCEPT;
+    void add_measurement(RawMeasurement const& measurment) NOEXCEPT;
 
     /// Evaluate the SPP at next epoch
     NODISCARD Solution evaluate() NOEXCEPT;
@@ -68,23 +95,21 @@ protected:
     void select_best_observations(ts::Tai const& time);
     void compute_satellite_states(ts::Tai const& time);
 
-    NODISCARD Satellite& find_satellite(SatelliteId id);
-
     void datatrace_report() NOEXCEPT;
 
 private:
     SppConfiguration mConfiguration;
     EphemerisEngine& mEphemerisEngine;
-    long             mFirstObservationId;
-    long             mLastObservationId;
-    long             mEpochObservationCount;
-    double           mEpochTotalObservationTime;
 
-    std::bitset<SATELLITE_ID_MAX> mSatelliteMask;
-    std::bitset<SIGNAL_ID_MAX>    mObservationMask;
+    bool    mEpochFirstTimeSet;
+    ts::Tai mEpochFirstTime;
+    bool    mEpochLastTimeSet;
+    ts::Tai mEpochLastTime;
+    long    mEpochObservationCount;
+    double  mEpochTotalObservationTime;
 
-    std::array<Satellite, SATELLITE_ID_MAX> mSatelliteStates;
-    std::array<Observation, SIGNAL_ID_MAX>  mObservationStates;
+    std::bitset<SATELLITE_ID_MAX>             mObservationMask;
+    std::array<Observation, SATELLITE_ID_MAX> mObservations;
 
     KlobucharModelParameters mKlobucharModel;
     bool                     mKlobucharModelSet;

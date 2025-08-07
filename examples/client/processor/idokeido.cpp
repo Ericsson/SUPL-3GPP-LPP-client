@@ -271,7 +271,7 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
         auto tow_fraction = tow - tow_integer;
         auto time         = ts::Gps::from_week_tow(week, tow_integer, tow_fraction);
 
-        idokeido::RawObservation observation{
+        idokeido::RawMeasurement observation{
             .time          = ts::Tai{time},
             .satellite_id  = satellite_id,
             .signal_id     = signal_id,
@@ -400,7 +400,7 @@ void IdokeidoSpp::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NO
     mEphemerisEngine->add(ephemeris);
 }
 
-void IdokeidoSpp::measurement(idokeido::RawObservation const& observation) NOEXCEPT {
+void IdokeidoSpp::measurement(idokeido::RawMeasurement const& observation) NOEXCEPT {
     VSCOPE_FUNCTION();
     ASSERT(mEngine, "engine is null");
     VERBOSEF("measurement: %s %s %s", observation.satellite_id.name(), observation.signal_id.name(),
@@ -411,7 +411,7 @@ void IdokeidoSpp::measurement(idokeido::RawObservation const& observation) NOEXC
     if (observation.satellite_id.is_galileo() && !mConfig.galileo) return;
     if (observation.satellite_id.is_beidou() && !mConfig.beidou) return;
 
-    mEngine->observation(observation);
+    mEngine->add_measurement(observation);
 }
 
 void IdokeidoSpp::compute() NOEXCEPT {
