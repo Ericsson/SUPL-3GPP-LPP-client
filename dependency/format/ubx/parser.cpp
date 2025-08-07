@@ -25,6 +25,8 @@ char const* Parser::name() const NOEXCEPT {
 }
 
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
+    FUNCTION_SCOPEF("%u bytes", buffer_length());
+
     // search for frame boundary
     bool did_skip_anything = false;
     for (;;) {
