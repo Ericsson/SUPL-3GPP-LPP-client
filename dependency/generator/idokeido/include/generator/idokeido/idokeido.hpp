@@ -39,7 +39,7 @@ inline Scalar geometric_distance(Vector3 const& a, Vector3 const& b) {
     return distance + correction;
 }
 
-struct RawObservation {
+struct RawMeasurement {
     ts::Tai time;
 
     SatelliteId satellite_id;

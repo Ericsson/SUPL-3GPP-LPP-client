@@ -16,28 +16,19 @@
 namespace idokeido {
 
 class EphemerisEngine;
-struct Satellite {
+struct SatellitePosition {
     SatelliteId id;
     ts::Tai     receive_time;
     ts::Tai     transmit_time;
 
     Vector3 position;
     Vector3 velocity;
-
-    Scalar clock_bias;
-    Scalar group_delay;
-
-    Scalar azimuth;
-    Scalar elevation;
-    Scalar nadir;
-
-    ts::Tai observation_time;
-    SignalId observation_signal_id;
-    Scalar pseudo_range;
-
-    RelativisticModel relativistic_model;
-
-    bool compute_position_and_velocity(EphemerisEngine const& ephemeris) NOEXCEPT;
+    Scalar  clock_bias;
+    Scalar  group_delay;
 };
+
+bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_range,
+                        EphemerisEngine const& ephemeris, RelativisticModel relativistic_model,
+                        SatellitePosition& result) NOEXCEPT;
 
 }  // namespace idokeido

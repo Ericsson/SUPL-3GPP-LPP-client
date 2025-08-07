@@ -25,8 +25,8 @@ SppEngine::SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_
     FUNCTION_SCOPE();
     DEBUGF("idokeido single-point positoning");
 
-    mFirstObservationId        = -1;
-    mLastObservationId         = -1;
+    mEpochFirstTimeSet         = false;
+    mEpochLastTimeSet          = false;
     mEpochObservationCount     = 0;
     mEpochTotalObservationTime = 0;
 
@@ -51,8 +51,13 @@ static long absolute_signal_id(SatelliteId satellite_id, SignalId signal_id) {
     return sid * SIGNAL_ABS_COUNT + oid;
 }
 
-void SppEngine::observation(RawObservation const& raw) NOEXCEPT {
+void SppEngine::add_measurement(RawMeasurement const& raw) NOEXCEPT {
     FUNCTION_SCOPEF("%s %s", raw.satellite_id.name(), raw.signal_id.name());
+
+    if (!mConfiguration.gnss.gps && raw.satellite_id.is_gps()) return;
+    if (!mConfiguration.gnss.glo && raw.satellite_id.is_glonass()) return;
+    if (!mConfiguration.gnss.gal && raw.satellite_id.is_galileo()) return;
+    if (!mConfiguration.gnss.bds && raw.satellite_id.is_beidou()) return;
 
     auto satellite_id = raw.satellite_id.absolute_id();
     auto signal_id    = absolute_signal_id(raw.satellite_id, raw.signal_id);
@@ -63,28 +68,26 @@ void SppEngine::observation(RawObservation const& raw) NOEXCEPT {
     }
 
     // Mark that the satellite is active
-    mSatelliteMask[satellite_id]      = true;
-    mSatelliteStates[satellite_id].id = raw.satellite_id;
+    mObservationMask[satellite_id] = true;
 
-    // Add the observation
-    mObservationMask[signal_id]   = true;
-    mObservationStates[signal_id] = Observation{
+    auto& observation        = mObservations[satellite_id];
+    observation.satellite_id = raw.satellite_id;
+    observation.add_measurement(Measurment{
         .time          = raw.time,
-        .satellite_id  = raw.satellite_id,
         .signal_id     = raw.signal_id,
         .pseudo_range  = raw.pseudo_range,
         .carrier_phase = raw.carrier_phase,
         .doppler       = raw.doppler,
         .snr           = raw.snr,
         .lock_time     = raw.lock_time,
-    };
+    });
 
-    if (mFirstObservationId == -1) {
-        mFirstObservationId = signal_id;
+    if (!mEpochFirstTimeSet) {
+        mEpochFirstTimeSet = true;
+        mEpochFirstTime    = raw.time;
     }
-    if (mLastObservationId == -1) {
-        mLastObservationId = signal_id;
-    }
+    mEpochLastTimeSet = true;
+    mEpochLastTime    = raw.time;
     mEpochObservationCount += 1;
     mEpochTotalObservationTime += raw.time.timestamp().full_seconds();
 }
@@ -105,70 +108,110 @@ static std::string epft(T const& t) {
 void SppEngine::select_best_observations(ts::Tai const& time) {
     FUNCTION_SCOPE();
 
-    DEBUGF("selecting best observation for each satellite");
-    for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
-        if (!mSatelliteMask[i]) continue;
-
-        auto& satellite    = mSatelliteStates[i];
-        auto  satellite_id = satellite.id.absolute_id();
-        ASSERT(satellite_id >= 0, "invalid satellite id");
-
-        long   best_id  = -1;
-        double best_snr = 0.0;
-
-        for (long j = satellite_id * SIGNAL_ABS_COUNT; j < (satellite_id + 1) * SIGNAL_ABS_COUNT;
-             ++j) {
-            if (!mObservationMask[j]) continue;
-            auto& observation = mObservationStates[j];
-
-            auto time_diff = time.difference_seconds(observation.time);
-            if (time_diff < -mConfiguration.observation_window * 0.5 ||
-                time_diff > mConfiguration.observation_window * 0.5) {
-                WARNF("observation time out of window: %03ld:%04ld %s %s: %s %s", satellite_id, j,
-                      satellite.id.name(), observation.signal_id.name(),
-                      time.rtklib_time_string().c_str(),
-                      observation.time.rtklib_time_string().c_str());
-                mObservationMask[j] = false;
-                continue;
-            }
-
-            if (observation.snr < mConfiguration.snr_cutoff) {
-                WARNF("snr cutoff: %03ld:%04ld %s %s: %f < %f", satellite_id, j,
-                      satellite.id.name(), observation.signal_id.name(), observation.snr,
-                      mConfiguration.snr_cutoff);
-                mObservationMask[j] = false;
-                continue;
-            }
-
-            // TODO(ewasjon): REMOVE
-            if (observation.signal_id != SignalId::GPS_L1_CA) {
-                NOTICEF("ignoring %s", observation.signal_id.name());
-                mObservationMask[j] = false;
-                continue;
-            }
-
-            // TODO: reject observations with cycle slip
-            // TODO: reject stale observations
-            if (observation.snr > best_snr) {
-                best_id  = j;
-                best_snr = observation.snr;
-            }
+    for (size_t i = 0; i < mObservationMask.size(); ++i) {
+        if (!mObservationMask[i]) continue;
+        auto& observation = mObservations[i];
+        VERBOSEF("%03ld %s: %d measurments", observation.satellite_id.absolute_id(),
+                 observation.satellite_id.name(), observation.measurement_count);
+        for (size_t j = 0; j < observation.measurement_mask.size(); ++j) {
+            if (!observation.measurement_mask[j]) continue;
+            auto& measurement = observation.measurements[j];
+            VERBOSEF("  %12s: %s %+16.4f", measurement.signal_id.name(),
+                     measurement.time.rtklib_time_string().c_str(), measurement.pseudo_range);
         }
+    }
 
-        if (best_id >= 0) {
-            satellite.pseudo_range          = mObservationStates[best_id].pseudo_range;
-            satellite.observation_time      = mObservationStates[best_id].time;
-            satellite.observation_signal_id = mObservationStates[best_id].signal_id;
-            satellite.receive_time          = time;
-        } else {
-            mSatelliteMask[i] = false;
-            WARNF("no observation for satellite %03ld %s", satellite_id, satellite.id.name());
+    std::bitset<SIGNAL_ABS_COUNT> measurment_skip;
+
+    DEBUGF("selecting best observation for each satellite");
+    for (size_t i = 0; i < mObservationMask.size(); ++i) {
+        if (!mObservationMask[i]) continue;
+
+        auto& observation = mObservations[i];
+        if (observation.measurement_count == 0) {
+            WARNF("reject: %03ld %s: no measurement", observation.satellite_id.absolute_id(),
+                  observation.satellite_id.name());
+            mObservationMask[i] = false;
             continue;
         }
 
+        // Reset the observation
+        observation.selected0 = -1;
+        observation.selected1 = -1;
+        measurment_skip.reset();
+
+        // Discard measurement that is out of observation window
+        for (size_t j = 0; j < observation.measurement_mask.size(); ++j) {
+            if (!observation.measurement_mask[j]) continue;
+
+            auto& measurement = observation.measurements[j];
+            auto  time_diff   = time.difference_seconds(measurement.time);
+            if (time_diff < -mConfiguration.observation_window * 0.5) {
+                WARNF("measurement time out of window: %03ld:%04ld %s %s: %s out of %s", i, j,
+                      observation.satellite_id.name(), measurement.signal_id.name(),
+                      measurement.time.rtklib_time_string().c_str(),
+                      time.rtklib_time_string().c_str());
+                observation.measurement_mask[j] = false;
+                observation.measurement_count -= 1;
+                continue;
+            }
+
+            if (time_diff > mConfiguration.observation_window * 0.5) {
+                measurment_skip[j] = true;  // Skip this measurement, but don't discard it
+                continue;
+            }
+
+            // If the measurement is within the observation window, we need to align the
+            // pseudo-range to the epoch time
+            measurement.time = time;
+            measurement.pseudo_range += constant::c * time_diff;
+        }
+
+        // Discard measurement that are of unsupported signal
+        for (size_t j = 0; j < observation.measurement_mask.size(); ++j) {
+            if (!observation.measurement_mask[j]) continue;
+            if (measurment_skip[j]) continue;
+
+            auto& measurement = observation.measurements[j];
+
+            if (measurement.signal_id == SignalId::GPS_L1_CA) continue;
+
+            WARNF("unsupported signal: %03ld:%04ld %s %s: %s %s", i, j,
+                  observation.satellite_id.name(), measurement.signal_id.name(),
+                  time.rtklib_time_string().c_str(), measurement.time.rtklib_time_string().c_str());
+
+            observation.measurement_mask[j] = false;
+            observation.measurement_count -= 1;
+        }
+
+        // Select the best measurement based on SNR
+        long   best_id  = -1;
+        double best_snr = 0.0;
+
+        for (size_t j = 0; j < observation.measurement_mask.size(); ++j) {
+            if (!observation.measurement_mask[j]) continue;
+            if (measurment_skip[j]) continue;
+
+            auto& measurement = observation.measurements[j];
+            if (measurement.snr > best_snr) {
+                best_id  = j;
+                best_snr = measurement.snr;
+            }
+        }
+
+        if (best_id < 0) {
+            mObservationMask[i] = false;
+            WARNF("no measurement selected: %03ld %s", observation.satellite_id.absolute_id(),
+                  observation.satellite_id.name());
+            continue;
+        }
+
+        observation.selected0 = best_id;
+
         // TODO: find secondary observation with highest SNR for ionospheric 1-order estimation
 
-        DEBUGF("  %03ld %s: %04ld", satellite_id, satellite.id.name(), best_id);
+        DEBUGF("  %03ld %s: %04ld", observation.satellite_id.absolute_id(),
+               observation.satellite_id.name(), observation.selected0);
     }
 }
 
@@ -176,15 +219,34 @@ void SppEngine::compute_satellite_states(ts::Tai const& time) {
     FUNCTION_SCOPE();
 
     DEBUGF("computing satellite states");
-    for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
-        if (!mSatelliteMask[i]) continue;
+    for (size_t i = 0; i < mObservations.size(); ++i) {
+        if (!mObservationMask[i]) continue;
 
-        auto& satellite = mSatelliteStates[i];
-        if (!satellite.compute_position_and_velocity(mEphemerisEngine)) {
-            mSatelliteMask[i] = false;
-            WARNF("reject: %03ld %s: no position and velocity", satellite.id.absolute_id(),
-                  satellite.id.name());
+        auto& observation = mObservations[i];
+        if (observation.measurement_count == 0) continue;
+        if (observation.selected0 < 0) continue;
+
+        auto& measurement = observation.measurements[observation.selected0];
+
+        // Clear group delay
+        for (auto& group_delay : observation.group_delay) {
+            group_delay = 0.0;
         }
+
+        SatellitePosition result{};
+        if (!satellite_position(observation.satellite_id, time, measurement.pseudo_range,
+                                mEphemerisEngine, mConfiguration.relativistic_model, result)) {
+            mObservationMask[i] = false;
+            WARNF("reject: %03ld %s: no position and velocity",
+                  observation.satellite_id.absolute_id(), observation.satellite_id.name());
+            continue;
+        }
+
+        observation.time           = time;
+        observation.position       = result.position;
+        observation.velocity       = result.velocity;
+        observation.clock_bias     = result.clock_bias;
+        observation.group_delay[0] = result.group_delay;
     }
 }
 
@@ -193,20 +255,18 @@ Solution SppEngine::evaluate() NOEXCEPT {
 
     Solution solution{};
     if (mConfiguration.epoch_selection == EpochSelection::FirstObservation) {
-        if (mFirstObservationId >= 0) {
-            solution = evaluate(mObservationStates[mFirstObservationId].time);
+        if (mEpochFirstTimeSet) {
+            solution = evaluate(mEpochFirstTime);
         } else {
             WARNF("epoch selection: first observation not found");
         }
-    } else if (mConfiguration.epoch_selection ==
-               EpochSelection::LastObservation) {
-        if (mLastObservationId >= 0) {
-            solution = evaluate(mObservationStates[mLastObservationId].time);
+    } else if (mConfiguration.epoch_selection == EpochSelection::LastObservation) {
+        if (mEpochLastTimeSet) {
+            solution = evaluate(mEpochLastTime);
         } else {
             WARNF("epoch selection: last observation not found");
         }
-    } else if (mConfiguration.epoch_selection ==
-               EpochSelection::MeanObservation) {
+    } else if (mConfiguration.epoch_selection == EpochSelection::MeanObservation) {
         if (mEpochObservationCount > 0) {
             auto mean_time =
                 ts::Tai{ts::Timestamp{mEpochTotalObservationTime / mEpochObservationCount}};
@@ -224,14 +284,12 @@ Solution SppEngine::evaluate() NOEXCEPT {
 Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
     FUNCTION_SCOPEF("%s", time.rtklib_time_string().c_str());
     DEBUGF("evaluate: epoch %s", time.rtklib_time_string().c_str());
-    DEBUGF("evaluating %zu satellites and %zu observations", mSatelliteMask.count(),
-           mObservationMask.count());
 
     select_best_observations(time);
     compute_satellite_states(time);
 
     // We can only solve if we have enough satellites
-    auto satellite_count = mSatelliteMask.count();
+    auto satellite_count = mObservationMask.count();
     if (satellite_count < 4) {
         WARNF("not enough satellites: %d < 4", satellite_count);
         return Solution{};
@@ -239,6 +297,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
     DEBUGF("satellite available: %zu", satellite_count);
 
+#if 0
     DEBUGF("      TIME(GPST)       SAT R        P1(m)        P2(m)       L1(cyc)       L2(cyc)  "
            "D1(Hz)  D2(Hz) S1 S2 LLI");
     for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
@@ -259,6 +318,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                satellite.id.lpp_id().value + 1, satellite.position.x(), satellite.position.y(),
                satellite.position.z(), satellite.clock_bias * 1e9, 0.0);
     }
+#endif
 
     // Initial guess position: (0,0,0), receiver bias: 0, this will _always_ converge to the
     // correct solution (if possible)
@@ -282,74 +342,82 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                ground_llh.y() * constant::r2d, ground_llh.z());
 
         size_t j = 0;
-        for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
-            if (!mSatelliteMask[i]) continue;
+        for (size_t i = 0; i < mObservationMask.size(); ++i) {
+            if (!mObservationMask[i]) continue;
 
-            auto& satellite = mSatelliteStates[i];
+            auto& observation = mObservations[i];
+            if (observation.measurement_count == 0) continue;
+            if (observation.selected0 < 0) continue;
 
-            auto geometric_range = geometric_distance(satellite.position, ground_position);
-            auto line_of_sight   = (satellite.position - ground_position).normalized();
+            auto geometric_range = geometric_distance(observation.position, ground_position);
+            auto line_of_sight   = (observation.position - ground_position).normalized();
             auto enu             = ecef_to_enu_at_llh(ground_llh, line_of_sight);
 
             LookAngles look_angles;
-            if (!compute_look_angles(ground_position, enu, satellite.position, look_angles)) {
-                WARNF("reject: %03ld %s: compute_look_angles failed", satellite.id.absolute_id(),
-                      satellite.id.name());
+            if (!compute_look_angles(ground_position, enu, observation.position, look_angles)) {
+                WARNF("reject: %03ld %s: compute_look_angles failed",
+                      observation.satellite_id.absolute_id(), observation.satellite_id.name());
                 continue;
             }
 
-            satellite.elevation = look_angles.elevation;
-            satellite.azimuth   = look_angles.azimuth;
-            satellite.nadir     = look_angles.nadir;
+            observation.elevation = look_angles.elevation;
+            observation.azimuth   = look_angles.azimuth;
+            observation.nadir     = look_angles.nadir;
 
-            if (satellite.elevation * constant::r2d < mConfiguration.elevation_cutoff) {
-                WARNF("reject: %03ld %s: %.2fdeg < %.2fdeg", satellite.id.absolute_id(),
-                      satellite.id.name(), satellite.elevation * constant::r2d,
+            if (observation.elevation * constant::r2d < mConfiguration.elevation_cutoff) {
+                WARNF("reject: %03ld %s: %.2fdeg < %.2fdeg", observation.satellite_id.absolute_id(),
+                      observation.satellite_id.name(), observation.elevation * constant::r2d,
                       mConfiguration.elevation_cutoff);
                 continue;
             }
+
+            // TODO: We must align the measurement to a common time, otherwise we might use L1 and
+            // L2 without correction for code biases
+            auto& measurement = observation.measurements[observation.selected0];
+
+            auto tgd          = observation.group_delay[measurement.signal_id.absolute_id()];
+            auto pseudo_range = measurement.pseudo_range;
 
             auto i_delay = 0.0;
             switch (mConfiguration.ionospheric_mode) {
             case IonosphericMode::None: break;
             case IonosphericMode::Broadcast:
                 if (mKlobucharModelSet) {
-                    i_delay = mKlobucharModel.evaluate(time, satellite.elevation, satellite.azimuth,
-                                                       ground_llh);
+                    i_delay = mKlobucharModel.evaluate(time, observation.elevation,
+                                                       observation.azimuth, ground_llh);
                 } else {
                     WARNF("ionospheric model not available");
                 }
                 break;
-            case IonosphericMode::Dual:
-                TODOF("implement dual ionospheric model");
-                break;
+            case IonosphericMode::Dual: TODOF("implement dual ionospheric model"); break;
+            case IonosphericMode::Ssr: TODOF("implement ssr ionospheric model"); break;
             }
 
-            auto f_khz  = satellite.observation_signal_id.frequency();
+            auto f_khz  = measurement.signal_id.frequency();
             auto f_hz   = f_khz * 1e3;
             auto i_bias = 40.3e16 * i_delay / (f_hz * f_hz);
             auto t_bias = 0.0;
 
-            auto receiver_clock_bias  = current(3);
-            auto group_delay_bias     = constant::c * satellite.group_delay * 0.0;
-            auto satellite_clock_bias = constant::c * satellite.clock_bias;
+            // clock bias
+            auto rc_bias = current(3);
+            auto sc_bias = constant::c * observation.clock_bias;
 
-            auto epoch_time_delta = time.difference_seconds(satellite.observation_time);
-            auto pseudo_range_adj = epoch_time_delta * constant::c;
-            auto pseudo_range     = geometric_range + receiver_clock_bias + group_delay_bias -
-                                satellite_clock_bias + i_bias + t_bias + pseudo_range_adj;
+            auto s_code_bias = tgd * constant::c;
 
-            auto residual = satellite.pseudo_range - pseudo_range;
-            DEBUGF("%14.4f + [%14.4f + %14.4f] - %14.4f + %14.4f + %14.4f + %14.4f|%14.4f "
+            auto computed_range =
+                geometric_range + rc_bias - sc_bias + s_code_bias + i_bias + t_bias;
+            auto residual = pseudo_range - computed_range;
+
+            DEBUGF("%14.4f + (%14.4f - %14.4f) + %14.4f + %14.4f + %14.4f|%14.4f "
                    "- %14.4f "
                    "= %14.4fm|%5.2fdeg %6.2fdeg "
                    "%.4fSTEC| "
                    "%s %s",
-                   geometric_range, receiver_clock_bias, group_delay_bias, satellite_clock_bias,
-                   i_bias, t_bias, pseudo_range_adj, satellite.pseudo_range, pseudo_range, residual,
-                   satellite.elevation * constant::r2d, satellite.azimuth * constant::r2d, i_delay,
-                   satellite.id.name(), satellite.observation_signal_id.name());
-
+                   geometric_range, rc_bias, sc_bias, s_code_bias, i_bias, t_bias, pseudo_range,
+                   computed_range, residual, observation.elevation * constant::r2d,
+                   observation.azimuth * constant::r2d, i_delay, observation.satellite_id.name(),
+                   measurement.signal_id.name());
+#if 0
             printf("sat=%ld v=%.3f P=%.3f r=%.3f dtr=%.6f dts=%.6f dion=%.3f dtrp=%.3f\n",
                    satellite.id.lpp_id().value + 1, residual,
                    satellite.pseudo_range - group_delay_bias, geometric_range, receiver_clock_bias,
@@ -357,7 +425,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             printf("sat=%ld azel=%5.1f %4.1f res=%7.3f sig=%5.3f\n",
                    satellite.id.lpp_id().value + 1, satellite.azimuth * constant::r2d,
                    satellite.elevation * constant::r2d, residual, 0.0);
-
+#endif
             design_matrix(j, 0) = -line_of_sight.x();
             design_matrix(j, 1) = -line_of_sight.y();
             design_matrix(j, 2) = -line_of_sight.z();
@@ -440,8 +508,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         .altitude  = llh.z,
     };
 
-    mFirstObservationId        = -1;
-    mLastObservationId         = -1;
+    mEpochFirstTimeSet         = false;
+    mEpochLastTimeSet          = false;
     mEpochObservationCount     = 0;
     mEpochTotalObservationTime = 0;
 
@@ -451,16 +519,17 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 void SppEngine::datatrace_report() NOEXCEPT {
     VSCOPE_FUNCTION();
 #ifdef DATA_TRACING
-    for (size_t i = 0; i < mSatelliteMask.size(); ++i) {
-        if (!mSatelliteMask[i]) continue;
-        auto&                satellite = mSatelliteStates[i];
+    for (size_t i = 0; i < mObservationMask.size(); ++i) {
+        if (!mObservationMask[i]) continue;
+        auto&                satellite = mObservations[i];
         datatrace::Satellite dt_sat{};
         dt_sat.position =
             Float3{satellite.position.x(), satellite.position.y(), satellite.position.z()};
         dt_sat.elevation = satellite.elevation * constant::r2d;
         dt_sat.azimuth   = satellite.azimuth * constant::r2d;
         dt_sat.nadir     = satellite.nadir * constant::r2d;
-        datatrace::report_satellite(satellite.receive_time, satellite.id.name(), dt_sat);
+        // TODO(ewasjon): Wrong time?
+        datatrace::report_satellite(satellite.time, satellite.satellite_id.name(), dt_sat);
     }
 #endif
 }

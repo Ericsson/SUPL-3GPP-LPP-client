@@ -29,7 +29,7 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
 
-    void measurement(idokeido::RawObservation const& observation) NOEXCEPT;
+    void measurement(idokeido::RawMeasurement const& observation) NOEXCEPT;
 
     void compute() NOEXCEPT;
 
@@ -89,7 +89,7 @@ class IdokeidoMeasurmentUbx : public streamline::Inspector<UbxMessage> {
 public:
     IdokeidoMeasurmentUbx(Base& base) : mBase(base) {}
 
-    void measurement(idokeido::RawObservation const& observation) NOEXCEPT {
+    void measurement(idokeido::RawMeasurement const& observation) NOEXCEPT {
         mBase.measurement(observation);
     }
 
