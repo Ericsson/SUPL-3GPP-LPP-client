@@ -19,11 +19,13 @@ LOGLET_MODULE2(idokeido, spp);
 
 namespace idokeido {
 
-SppEngine::SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_engine) NOEXCEPT
+SppEngine::SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_engine,
+                     CorrectionCache& correction_cache) NOEXCEPT
     : mConfiguration(std::move(configuration)),
-      mEphemerisEngine(ephemeris_engine) {
+      mEphemerisEngine(ephemeris_engine),
+      mCorrectionCache(correction_cache) {
     FUNCTION_SCOPE();
-    DEBUGF("idokeido single-point positoning");
+    DEBUGF("idokeido single-point positioning");
 
     mEpochFirstTimeSet         = false;
     mEpochLastTimeSet          = false;
@@ -233,9 +235,19 @@ void SppEngine::compute_satellite_states(ts::Tai const& time) {
             group_delay = 0.0;
         }
 
+        // TODO(ewasjon): The ephemeris we should use here is the one that corresponds to when the
+        // satellite transmitted the signal. It might (very unlikely) not be the one that
+        // corresponds to the epoch time. Maybe the error is neglible?
+        if (!mEphemerisEngine.find(observation.satellite_id, time, observation.ephemeris)) {
+            mObservationMask[i] = false;
+            WARNF("reject: %03ld %s: no ephemeris", observation.satellite_id.absolute_id(),
+                  observation.satellite_id.name());
+            continue;
+        }
+
         SatellitePosition result{};
         if (!satellite_position(observation.satellite_id, time, measurement.pseudo_range,
-                                mEphemerisEngine, mConfiguration.relativistic_model, result)) {
+                                observation.ephemeris, mConfiguration.relativistic_model, result)) {
             mObservationMask[i] = false;
             WARNF("reject: %03ld %s: no position and velocity",
                   observation.satellite_id.absolute_id(), observation.satellite_id.name());

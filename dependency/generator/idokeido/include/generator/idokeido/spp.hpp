@@ -1,8 +1,10 @@
 #pragma once
 #include <core/core.hpp>
+#include <ephemeris/ephemeris.hpp>
 #include <generator/idokeido/idokeido.hpp>
 #include <generator/idokeido/klobuchar.hpp>
 #include <generator/idokeido/satellite.hpp>
+#include <generator/idokeido/correction.hpp>
 
 #include <bitset>
 #include <memory>
@@ -37,6 +39,7 @@ struct SppConfiguration {
 };
 
 class EphemerisEngine;
+class CorrectionCache;
 class SppEngine {
 public:
     struct Measurment {
@@ -50,16 +53,16 @@ public:
     };
 
     struct Observation {
-        ts::Tai                    time;
-        SatelliteId                satellite_id;
-        size_t                     measurement_count;
-        std::bitset<SIGNAL_ABS_COUNT> measurement_mask;
+        ts::Tai                                  time;
+        SatelliteId                              satellite_id;
+        size_t                                   measurement_count;
+        std::bitset<SIGNAL_ABS_COUNT>            measurement_mask;
         std::array<Measurment, SIGNAL_ABS_COUNT> measurements;
 
         Vector3 position;
         Vector3 velocity;
-        Scalar clock_bias;
-        Scalar group_delay[SIGNAL_ABS_COUNT];
+        Scalar  clock_bias;
+        Scalar  group_delay[SIGNAL_ABS_COUNT];
 
         Scalar azimuth;
         Scalar elevation;
@@ -68,16 +71,19 @@ public:
         long selected0;
         long selected1;
 
+        ephemeris::Ephemeris ephemeris;
+
         void add_measurement(Measurment const& measurment) NOEXCEPT {
             auto id = measurment.signal_id.absolute_id();
             if (id < 0 || id >= SIGNAL_ABS_COUNT) return;
             measurement_mask[id] = true;
-            measurements[id] = measurment;
+            measurements[id]     = measurment;
             measurement_count += 1;
         }
     };
 
-    SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_engine) NOEXCEPT;
+    SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_engine,
+              CorrectionCache& correction_cache) NOEXCEPT;
     ~SppEngine();
 
     void klobuchar_model(KlobucharModelParameters const& parameters) NOEXCEPT;
@@ -100,6 +106,7 @@ protected:
 private:
     SppConfiguration mConfiguration;
     EphemerisEngine& mEphemerisEngine;
+    CorrectionCache& mCorrectionCache;
 
     bool    mEpochFirstTimeSet;
     ts::Tai mEpochFirstTime;

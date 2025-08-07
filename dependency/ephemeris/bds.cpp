@@ -112,8 +112,8 @@ double BdsEphemeris::calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT
     return n / (1 - e * std::cos(e_k));
 }
 
-double BdsEphemeris::calculate_clock_bias(ts::Bdt const& time, double e_k) const NOEXCEPT {
-    VSCOPE_FUNCTIONF("%s, %g", ts::Utc(time).rtklib_time_string().c_str(), e_k);
+double BdsEphemeris::calculate_clock_bias(ts::Bdt const& time) const NOEXCEPT {
+    VSCOPE_FUNCTIONF("%s", ts::Utc(time).rtklib_time_string().c_str());
 
     // elapsed time since the clock data reference time
     auto t_k = calculate_elapsed_time_toc(time);
@@ -151,6 +151,16 @@ double BdsEphemeris::calculate_relativistic_correction(Float3 const& position,
     auto t_r = -2.0 * r_v / (CONSTANT_C * CONSTANT_C);
     VERBOSEF("t_r: %+.14f (%+.14fm)", t_r, t_r * CONSTANT_C);
     return t_r;
+}
+
+double BdsEphemeris::calculate_relativistic_correction_idc(double e_k) const NOEXCEPT {
+    FUNCTION_SCOPE();
+
+    auto e_sin   = std::sin(e_k);
+    auto delta_t = -2.0 * e_sin * e * std::sqrt(a * CONSTANT_MU) / (CONSTANT_C * CONSTANT_C);
+    VERBOSEF("delta_t: %+.14f", delta_t);
+
+    return delta_t;
 }
 
 EphemerisResult BdsEphemeris::compute(ts::Bdt const& time) const NOEXCEPT {
@@ -259,12 +269,18 @@ EphemerisResult BdsEphemeris::compute(ts::Bdt const& time) const NOEXCEPT {
     VERBOSEF("dot_z_k: %f", dot_z_k);
 
     // calculate the clock bias
-    auto clock = calculate_clock_bias(time, e_k);
+    auto clock = calculate_clock_bias(time);
 
     EphemerisResult result{};
     result.position = Float3{x_k, y_k, z_k};
     result.velocity = Float3{dot_x_k, dot_y_k, dot_z_k};
     result.clock    = clock;
+
+    // relativistic correction
+    auto rc_brdc  = calculate_relativistic_correction_idc(e_k);
+    auto rc_dotrv = calculate_relativistic_correction(result.position, result.velocity);
+    result.relativistic_correction_brdc  = rc_brdc;
+    result.relativistic_correction_dotrv = rc_dotrv;
     return result;
 }
 

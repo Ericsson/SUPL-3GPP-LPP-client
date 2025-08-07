@@ -12,6 +12,7 @@
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include <time/tai.hpp>
+#include <ephemeris/ephemeris.hpp>
 
 namespace idokeido {
 
@@ -29,6 +30,10 @@ struct SatellitePosition {
 
 bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_range,
                         EphemerisEngine const& ephemeris, RelativisticModel relativistic_model,
+                        SatellitePosition& result) NOEXCEPT;
+
+bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_range,
+                        ephemeris::Ephemeris const& ephemeris, RelativisticModel relativistic_model,
                         SatellitePosition& result) NOEXCEPT;
 
 }  // namespace idokeido

@@ -72,6 +72,15 @@ public:
         }
     }
 
+    NODISCARD double clock_bias(ts::Tai const& time) const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0.0;
+        case Type::GPS: return mGpsEphemeris.calculate_clock_bias(ts::Gps{time});
+        case Type::GAL: return mGalEphemeris.calculate_clock_bias(ts::Gst{time});
+        case Type::BDS: return mBdsEphemeris.calculate_clock_bias(ts::Bdt{time});
+        }
+    }
+
     NODISCARD double relativistic_correction(Float3 const& position,
                                              Float3 const& velocity) const NOEXCEPT {
         switch (mType) {
