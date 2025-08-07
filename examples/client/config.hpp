@@ -326,6 +326,7 @@ struct TokoroConfig {
     bool use_ionospheric_height_correction;
 
     std::string antex_file;
+    bool ignore_bitmask;
 };
 #endif
 

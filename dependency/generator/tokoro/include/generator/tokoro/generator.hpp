@@ -146,6 +146,7 @@ public:
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
+    void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
     void set_antex(std::unique_ptr<format::antex::Antex> antex) NOEXCEPT {
         mAntex = std::move(antex);
     }
@@ -177,6 +178,7 @@ private:
     bool mIodConsistencyCheck;
     bool mUseReceptionTimeForOrbitAndClockCorrections;
     bool mUseOrbitCorrectionInIteration;
+    bool mIgnoreBitmask;
 
     friend struct Satellite;
     friend class ReferenceStation;

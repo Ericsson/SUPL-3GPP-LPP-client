@@ -524,15 +524,18 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 //
 
 Generator::Generator() NOEXCEPT {
+    FUNCTION_SCOPE();
     mIodConsistencyCheck                         = false;
     mUseReceptionTimeForOrbitAndClockCorrections = false;
     mUseOrbitCorrectionInIteration               = false;
+    mIgnoreBitmask                               = false;
 }
 
 Generator::~Generator() NOEXCEPT = default;
 
 std::shared_ptr<ReferenceStation>
 Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCEPT {
+    FUNCTION_SCOPE();
     INFOF("define reference station:");
     INFOF("  ground position (itrf): (%f, %f, %f)", config.itrf_ground_position.x,
           config.itrf_ground_position.y, config.itrf_ground_position.z);
@@ -635,7 +638,26 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
         }
         correction_point_set.bitmask = bitmask;
 
-        mCorrectionPointSet.reset(new CorrectionPointSet(correction_point_set));
+        auto cps_ptr = new CorrectionPointSet(correction_point_set);
+
+        DEBUGF("  grid_point_count: %u", grid_point_count);
+        for (long i = 0; i < 64; i++) {
+            CorrectionPointInfo cpi{};
+            if (cps_ptr->array_to_index(i, &cpi)) {
+                DEBUGF("    %2ld: %2ld/%2ld %ld/%ld %s %+18.14f %+18.14f %+18.14f", i,
+                       cpi.absolute_index, cpi.array_index, cpi.latitude_index, cpi.longitude_index,
+                       cpi.is_valid ? "ok" : "--", cpi.position.x, cpi.position.y, cpi.position.z);
+            } else {
+                DEBUGF("    %2ld: invalid", i);
+            }
+        }
+
+        if (mIgnoreBitmask) {
+            NOTICEF("ignoring correction point bitmask");
+            cps_ptr->bitmask = 0xFFFFFFFFFFFFFFFF;
+        }
+
+        mCorrectionPointSet.reset(cps_ptr);
     } else {
         // TODO(ewasjon): [low-priority] Support list of correction points
         WARNF("unsupported correction point type");

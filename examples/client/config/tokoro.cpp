@@ -242,6 +242,13 @@ static args::ValueFlag<std::string> gAntexFile{
     {"tkr-antex-file"},
 };
 
+static args::Flag gIgnoreBitmask{
+    gGroup,
+    "ignore-bitmask",
+    "Ignore GNSS-SSR-CorrectionPoints bitmask",
+    {"tkr-ignore-bitmask"},
+};
+
 static void setup() {
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
@@ -292,6 +299,7 @@ static void parse(Config* config) {
     tokoro.time_step           = 1.0;
 
     tokoro.antex_file = "";
+    tokoro.ignore_bitmask = false;
 
     if (gEnable) tokoro.enabled = true;
     if (gNoGPS) tokoro.generate_gps = false;
@@ -374,6 +382,7 @@ static void parse(Config* config) {
     if (gUseTroposphericModel) tokoro.use_tropospheric_model = true;
     if (gUseIonosphericHeightCorrection) tokoro.use_ionospheric_height_correction = true;
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
+    if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
 }
 
 static void dump(TokoroConfig const& config) {
@@ -434,6 +443,7 @@ static void dump(TokoroConfig const& config) {
            config.use_ionospheric_height_correction ? "true" : "false");
 
     DEBUGF("antex file: \"%s\"", config.antex_file.c_str());
+    DEBUGF("ignore bitmask: %s", config.ignore_bitmask ? "true" : "false");
 }
 
 }  // namespace tokoro

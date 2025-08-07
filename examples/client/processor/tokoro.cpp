@@ -130,6 +130,7 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
     mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
     mGenerator->set_rtoc(mConfig.rtoc);
     mGenerator->set_ocit(mConfig.ocit);
+    mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
 
     if (!config.antex_file.empty()) {
         auto result = format::antex::Antex::from_file(config.antex_file);
