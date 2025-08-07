@@ -285,7 +285,8 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", 
+               tag_str.c_str(),
                tag);
 
         if (!nmea && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
@@ -336,7 +337,7 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                         }
                     }
 
-                    VERBOSEF("%s", print_buffer);
+                    TRACEF("%s", print_buffer);
                     i += 16;
                 }
             }
@@ -439,9 +440,10 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
         output.include_tag_mask = program.config.get_tag(output.include_tags);
         output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
 
-        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s | include=%s[%" PRIu64 "] | exclude=%s[%" PRIu64
+        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s%s | include=%s[%" PRIu64 "] | exclude=%s[%" PRIu64
                "]",
-               output.interface.get()->name(), (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
+               output.interface.get()->name(), 
+               (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
                (output.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
