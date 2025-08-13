@@ -339,8 +339,10 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
         mEphemerisEngine->load_or_create_cache(mConfig.ephemeris_cache);
     }
 
+    mCorrectionCache = std::unique_ptr<idokeido::CorrectionCache>(new idokeido::CorrectionCache{});
+
     mEngine = std::unique_ptr<idokeido::SppEngine>(
-        new idokeido::SppEngine{configuration, *mEphemerisEngine});
+        new idokeido::SppEngine{configuration, *mEphemerisEngine, *mCorrectionCache});
     mOutputTag = 0;
 
     // TODO(ewasjon): Change to a better system
@@ -446,6 +448,10 @@ void IdokeidoSpp::compute() NOEXCEPT {
 void IdokeidoSpp::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     ASSERT(mEngine, "engine is null");
+
+    if(message) {
+        mCorrectionCache->process(*message);
+    }
 }
 
 #endif

@@ -59,14 +59,18 @@ public:
         std::bitset<SIGNAL_ABS_COUNT>            measurement_mask;
         std::array<Measurment, SIGNAL_ABS_COUNT> measurements;
 
-        Vector3 position;
-        Vector3 velocity;
-        Scalar  clock_bias;
+        Vector3 eph_position;
+        Vector3 eph_velocity;
+        Scalar  eph_clock_bias;
         Scalar  group_delay[SIGNAL_ABS_COUNT];
 
         Scalar azimuth;
         Scalar elevation;
         Scalar nadir;
+
+        Vector3 true_position;
+        Vector3 true_velocity;
+        Scalar true_clock_bias;
 
         long selected0;
         long selected1;

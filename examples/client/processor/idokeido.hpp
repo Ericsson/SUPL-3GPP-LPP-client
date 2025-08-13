@@ -43,6 +43,7 @@ private:
     streamline::System&                        mSystem;
     std::unique_ptr<idokeido::SppEngine>       mEngine;
     std::unique_ptr<idokeido::EphemerisEngine> mEphemerisEngine;
+    std::unique_ptr<idokeido::CorrectionCache> mCorrectionCache;
     uint64_t                                   mOutputTag;
     std::unique_ptr<scheduler::PeriodicTask>   mComputeTask;
 };
