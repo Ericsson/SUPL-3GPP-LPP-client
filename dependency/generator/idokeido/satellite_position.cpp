@@ -1,3 +1,4 @@
+#include "correction.hpp"
 #include "eph.hpp"
 #include "satellite.hpp"
 
@@ -39,19 +40,21 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
         return false;
     }
 
-    result.position      = eph.position;
-    result.velocity      = eph.velocity;
-    result.clock_bias    = eph.clock;
-    result.group_delay   = eph.group_delay;
-    result.transmit_time = t;
-    result.receive_time  = receive_time;
-    result.id            = id;
+    result.transmit_time  = t;
+    result.receive_time   = receive_time;
+    result.id             = id;
+    result.eph_position   = eph.position;
+    result.eph_velocity   = eph.velocity;
+    result.eph_clock_bias = eph.clock;
+    result.group_delay    = eph.group_delay;
+
     return true;
 }
 
 bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_range,
                         ephemeris::Ephemeris const& ephemeris, RelativisticModel relativistic_model,
-                        SatellitePosition& result) NOEXCEPT {
+                        OrbitCorrection const* orbit_correction,
+                        SatellitePosition&     result) NOEXCEPT {
     FUNCTION_SCOPEF("%s", id.name());
 
     // Compute satellite transmit time based on pseudorange. This is an estimation, as the pseudo
@@ -81,13 +84,22 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
     case RelativisticModel::Dotrv: rc = eph.relativistic_correction_dotrv; break;
     };
 
-    result.id            = id;
-    result.transmit_time = t;
-    result.receive_time  = receive_time;
-    result.position      = {eph.position.x, eph.position.y, eph.position.z};
-    result.velocity      = {eph.velocity.x, eph.velocity.y, eph.velocity.z};
-    result.clock_bias    = eph.clock + rc;
-    result.group_delay   = 0.0;
+    result.id              = id;
+    result.transmit_time   = t;
+    result.receive_time    = receive_time;
+    result.eph_position    = {eph.position.x, eph.position.y, eph.position.z};
+    result.eph_velocity    = {eph.velocity.x, eph.velocity.y, eph.velocity.z};
+    result.eph_clock_bias  = eph.clock + rc;
+    result.group_delay     = 0.0;
+    result.true_position   = {eph.position.x, eph.position.y, eph.position.z};
+    result.true_velocity   = {eph.position.x, eph.position.y, eph.position.z};
+    result.true_clock_bias = eph.clock + rc;
+
+    if (orbit_correction) {
+        result.true_position =
+            orbit_correction->evaluate(t, result.eph_position, result.eph_velocity);
+    }
+
     return true;
 }
 

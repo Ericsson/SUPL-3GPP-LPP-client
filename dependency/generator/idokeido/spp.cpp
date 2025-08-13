@@ -245,9 +245,25 @@ void SppEngine::compute_satellite_states(ts::Tai const& time) {
             continue;
         }
 
+        OrbitCorrection const* orbit_correction = nullptr;
+        auto correction = mCorrectionCache.satellite_correction(observation.satellite_id);
+        if (correction) {
+            auto it = correction->orbit.find(observation.ephemeris.iod());
+            if (it != correction->orbit.end()) {
+                orbit_correction = &it->second;
+            }
+        }
+
+        if (!orbit_correction) {
+            NOTICEF("missing orbit correction: %03ld %s iod=%u",
+                    observation.satellite_id.absolute_id(), observation.satellite_id.name(),
+                    observation.ephemeris.iod());
+        }
+
         SatellitePosition result{};
         if (!satellite_position(observation.satellite_id, time, measurement.pseudo_range,
-                                observation.ephemeris, mConfiguration.relativistic_model, result)) {
+                                observation.ephemeris, mConfiguration.relativistic_model,
+                                orbit_correction, result)) {
             mObservationMask[i] = false;
             WARNF("reject: %03ld %s: no position and velocity",
                   observation.satellite_id.absolute_id(), observation.satellite_id.name());
@@ -255,10 +271,14 @@ void SppEngine::compute_satellite_states(ts::Tai const& time) {
         }
 
         observation.time           = time;
-        observation.position       = result.position;
-        observation.velocity       = result.velocity;
-        observation.clock_bias     = result.clock_bias;
+        observation.eph_position   = result.eph_position;
+        observation.eph_velocity   = result.eph_velocity;
+        observation.eph_clock_bias = result.eph_clock_bias;
         observation.group_delay[0] = result.group_delay;
+
+        observation.true_position   = result.true_position;
+        observation.true_velocity   = result.true_velocity;
+        observation.true_clock_bias = result.true_clock_bias;
     }
 }
 
@@ -353,6 +373,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         DEBUGF("ground llh:  %14.6f %14.6f %14.3f", ground_llh.x() * constant::r2d,
                ground_llh.y() * constant::r2d, ground_llh.z());
 
+        auto cps = mCorrectionCache.correction_point_set(ground_llh);
+
         size_t j = 0;
         for (size_t i = 0; i < mObservationMask.size(); ++i) {
             if (!mObservationMask[i]) continue;
@@ -361,12 +383,15 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             if (observation.measurement_count == 0) continue;
             if (observation.selected0 < 0) continue;
 
-            auto geometric_range = geometric_distance(observation.position, ground_position);
-            auto line_of_sight   = (observation.position - ground_position).normalized();
-            auto enu             = ecef_to_enu_at_llh(ground_llh, line_of_sight);
+            auto geometric_range = geometric_distance(observation.true_position, ground_position);
+            auto eph_geometric_range =
+                geometric_distance(observation.eph_position, ground_position);
+            auto line_of_sight = (observation.true_position - ground_position).normalized();
+            auto enu           = ecef_to_enu_at_llh(ground_llh, line_of_sight);
 
             LookAngles look_angles;
-            if (!compute_look_angles(ground_position, enu, observation.position, look_angles)) {
+            if (!compute_look_angles(ground_position, enu, observation.true_position,
+                                     look_angles)) {
                 WARNF("reject: %03ld %s: compute_look_angles failed",
                       observation.satellite_id.absolute_id(), observation.satellite_id.name());
                 continue;
@@ -383,6 +408,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                 continue;
             }
 
+            auto correction = mCorrectionCache.satellite_correction(observation.satellite_id);
+
             // TODO: We must align the measurement to a common time, otherwise we might use L1 and
             // L2 without correction for code biases
             auto& measurement = observation.measurements[observation.selected0];
@@ -390,20 +417,36 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             auto tgd          = observation.group_delay[measurement.signal_id.absolute_id()];
             auto pseudo_range = measurement.pseudo_range;
 
-            auto i_delay = 0.0;
+            Scalar i_residual   = 0.0;
+            Scalar i_polynomial = 0.0;
             switch (mConfiguration.ionospheric_mode) {
             case IonosphericMode::None: break;
             case IonosphericMode::Broadcast:
                 if (mKlobucharModelSet) {
-                    i_delay = mKlobucharModel.evaluate(time, observation.elevation,
-                                                       observation.azimuth, ground_llh);
+                    i_polynomial = mKlobucharModel.evaluate(time, observation.elevation,
+                                                            observation.azimuth, ground_llh);
                 } else {
                     WARNF("ionospheric model not available");
                 }
                 break;
             case IonosphericMode::Dual: TODOF("implement dual ionospheric model"); break;
-            case IonosphericMode::Ssr: TODOF("implement ssr ionospheric model"); break;
+            case IonosphericMode::Ssr: {
+                if (cps) {
+                    if (!cps->ionospheric_polynomial(ground_llh, observation.satellite_id,
+                                                     i_polynomial)) {
+                        DEBUGF("ionospheric polynomial not available");
+                    }
+                    if (!cps->ionospheric_residual(ground_llh, observation.satellite_id,
+                                                   i_residual)) {
+                        DEBUGF("ionospheric residual not available");
+                    }
+                } else {
+                    WARNF("ionospheric correction not available");
+                }
+            } break;
             }
+
+            auto i_delay = i_residual + i_polynomial;
 
             auto f_khz  = measurement.signal_id.frequency();
             auto f_hz   = f_khz * 1e3;
@@ -412,21 +455,36 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
             // clock bias
             auto rc_bias = current(3);
-            auto sc_bias = constant::c * observation.clock_bias;
+            auto sc_bias = constant::c * observation.true_clock_bias;
+            auto sc_corr = 0.0;
+            if (correction && correction->clock_valid) {
+                // NOTE(ewasjon): The clock correction is evaluated at the transmit time - not the
+                // epoch time
+                sc_corr = correction->clock.evaluate(observation.time);
+            }
 
-            auto s_code_bias = tgd * constant::c;
+            // code bias
+            auto iod         = observation.ephemeris.iod();
+            auto s_code_bias = 0.0;
+            if (correction) {
+                auto it = correction->code_bias.find(measurement.signal_id);
+                if (it != correction->code_bias.end()) {
+                    s_code_bias = it->second;
+                }
+            }
 
             auto computed_range =
-                geometric_range + rc_bias - sc_bias + s_code_bias + i_bias + t_bias;
+                geometric_range + rc_bias - sc_bias + sc_corr + s_code_bias + i_bias + t_bias;
             auto residual = pseudo_range - computed_range;
 
-            DEBUGF("%14.4f + (%14.4f - %14.4f) + %14.4f + %14.4f + %14.4f|%14.4f "
-                   "- %14.4f "
-                   "= %14.4fm|%5.2fdeg %6.2fdeg "
+            DEBUGF("%+14.4f (%+.4f %+12.4f) %+8.4f %+8.4f %+8.4f %+8.4f|%+14.4f "
+                   "- %+14.4f "
+                   "= %+14.4fm|%4u %+8.4f|%5.2fdeg %6.2fdeg "
                    "%.4fSTEC| "
                    "%s %s",
-                   geometric_range, rc_bias, sc_bias, s_code_bias, i_bias, t_bias, pseudo_range,
-                   computed_range, residual, observation.elevation * constant::r2d,
+                   geometric_range, rc_bias, -sc_bias, sc_corr, s_code_bias, i_bias, t_bias,
+                   pseudo_range, computed_range, residual, iod,
+                   geometric_range - eph_geometric_range, observation.elevation * constant::r2d,
                    observation.azimuth * constant::r2d, i_delay, observation.satellite_id.name(),
                    measurement.signal_id.name());
 #if 0
@@ -535,8 +593,8 @@ void SppEngine::datatrace_report() NOEXCEPT {
         if (!mObservationMask[i]) continue;
         auto&                satellite = mObservations[i];
         datatrace::Satellite dt_sat{};
-        dt_sat.position =
-            Float3{satellite.position.x(), satellite.position.y(), satellite.position.z()};
+        dt_sat.position  = Float3{satellite.true_position.x(), satellite.true_position.y(),
+                                 satellite.true_position.z()};
         dt_sat.elevation = satellite.elevation * constant::r2d;
         dt_sat.azimuth   = satellite.azimuth * constant::r2d;
         dt_sat.nadir     = satellite.nadir * constant::r2d;

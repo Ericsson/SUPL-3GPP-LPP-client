@@ -328,6 +328,31 @@ bool EphemerisEngine::evaluate(SatelliteId satellite_id, ts::Tai const& time,
     return false;
 }
 
+bool EphemerisEngine::find(SatelliteId satellite_id, ts::Tai const& time,
+                           ephemeris::Ephemeris& ephemeris) const NOEXCEPT {
+    FUNCTION_SCOPE();
+    if (satellite_id.is_gps()) {
+        auto eph = find_gps(satellite_id, time);
+        if (!eph) return false;
+        ephemeris = ephemeris::Ephemeris{*eph};
+        return true;
+    }
+    if (satellite_id.is_galileo()) {
+        auto eph = find_gal(satellite_id, time);
+        if (!eph) return false;
+        ephemeris = ephemeris::Ephemeris{*eph};
+        return true;
+    }
+    if (satellite_id.is_beidou()) {
+        auto eph = find_bds(satellite_id, time);
+        if (!eph) return false;
+        ephemeris = ephemeris::Ephemeris{*eph};
+        return true;
+    }
+
+    return false;
+}
+
 EphemerisEngine::Satellite
 EphemerisEngine::evaluate_gps(SatelliteId satellite_id, ts::Tai const& time,
                               RelativisticModel              relativistic_model,
@@ -371,7 +396,7 @@ EphemerisEngine::evaluate_bds(SatelliteId satellite_id, ts::Tai const& time,
 }
 
 bool EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time,
-                                 Scalar&           clock_bias) const NOEXCEPT {
+                                 Scalar& clock_bias) const NOEXCEPT {
     FUNCTION_SCOPE();
     if (satellite_id.is_gps()) {
         auto eph = find_gps(satellite_id, time);

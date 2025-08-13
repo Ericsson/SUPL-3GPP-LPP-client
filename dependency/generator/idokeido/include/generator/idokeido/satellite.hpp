@@ -9,10 +9,10 @@
 #include <unordered_set>
 #include <vector>
 
+#include <ephemeris/ephemeris.hpp>
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include <time/tai.hpp>
-#include <ephemeris/ephemeris.hpp>
 
 namespace idokeido {
 
@@ -22,11 +22,17 @@ struct SatellitePosition {
     ts::Tai     receive_time;
     ts::Tai     transmit_time;
 
-    Vector3 position;
-    Vector3 velocity;
-    Scalar  clock_bias;
+    Vector3 eph_position;
+    Vector3 eph_velocity;
+    Scalar  eph_clock_bias;
     Scalar  group_delay;
+
+    Vector3 true_position;
+    Vector3 true_velocity;
+    Scalar  true_clock_bias;
 };
+
+struct OrbitCorrection;
 
 bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_range,
                         EphemerisEngine const& ephemeris, RelativisticModel relativistic_model,
@@ -34,6 +40,7 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
 
 bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_range,
                         ephemeris::Ephemeris const& ephemeris, RelativisticModel relativistic_model,
-                        SatellitePosition& result) NOEXCEPT;
+                        OrbitCorrection const* orbit_correction,
+                        SatellitePosition&     result) NOEXCEPT;
 
 }  // namespace idokeido
