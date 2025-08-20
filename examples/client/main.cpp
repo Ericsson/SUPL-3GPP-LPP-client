@@ -322,23 +322,24 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
             if (loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
                 VERBOSEF("input %p: %zu bytes", input.interface.get(), count);
                 char print_buffer[512];
+                size_t print_length = sizeof(print_buffer);
                 for (size_t i = 0; i < count;) {
-                    int  print_count = 0;
+                    size_t  print_count = 0;
                     for (size_t j = 0; j < 16; j++) {
                         if (i + j < count) {
-                            print_count += snprintf(print_buffer + print_count,
-                                                    sizeof(print_buffer) - print_count, "%02X ",
-                                                    buffer[i + j]);
+                            print_count += static_cast<size_t>(snprintf(&print_buffer[print_count],
+                                                    print_length - print_count, "%02X ",
+                                                    buffer[i + j]));
                         } else {
-                            print_count += snprintf(print_buffer + print_count,
-                                                    sizeof(print_buffer) - print_count, "   ");
+                            print_count += static_cast<size_t>(snprintf(&print_buffer[print_count],
+                                                    print_length - print_count, "   "));
                         }
                     }
                     for (size_t j = 0; j < 16; j++) {
                         if (i + j < count) {
-                            print_count += snprintf(print_buffer + print_count,
-                                                    sizeof(print_buffer) - print_count, "%c",
-                                                    isprint(buffer[i + j]) ? buffer[i + j] : '.');
+                            print_count += static_cast<size_t>(snprintf(&print_buffer[print_count],
+                                                    print_length - print_count, "%c",
+                                                    isprint(buffer[i + j]) ? buffer[i + j] : '.'));
                         }
                     }
                     
@@ -592,7 +593,9 @@ static void setup_fake_location(Program& program) {
     };
 
     INFOF("enable fake location information");
-    program.fake_location_task->schedule(program.scheduler);
+    if(!program.fake_location_task->schedule(program.scheduler)) {
+        ERRORF("failed to schedule fake location information generation");
+    }
 }
 
 static void setup_lpp2osr(Program& program) {
@@ -628,7 +631,7 @@ static void setup_tokoro(Program& program) {
 #endif
 }
 
-static void setup_idokeido(Program& program) {
+static void setup_idokeido(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_IDOKEIDO)
     if (program.config.idokeido.enabled) {
         auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
@@ -667,9 +670,7 @@ int main(int argc, char** argv) {
     loglet::set_level(config.logging.log_level);
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
-    for (auto const& name_level : config.logging.module_levels) {
-        auto name = name_level.first;
-        auto level = name_level.second;
+    for (auto const& [name, level] : config.logging.module_levels) {
         auto modules = loglet::get_modules(name);
         for (auto module : modules) {
             loglet::set_module_level(module, level);
@@ -811,7 +812,7 @@ int main(int argc, char** argv) {
             // h-slp.%03d.%03d.pub.3gppnetwork.org
             char buffer[256];
             snprintf(buffer, sizeof(buffer),
-                     "h-slp.%03" PRIi64 ".%03" PRIi64 ".pub.3gppnetwork.org",
+                     "h-slp.%03" PRIu64 ".%03" PRIu64 ".pub.3gppnetwork.org",
                      program.cell->data.nr.mcc, program.cell->data.nr.mnc);
             program.config.location_server.host = buffer;
             INFOF("generated host: \"%s\"", program.config.location_server.host.c_str());
@@ -830,13 +831,13 @@ int main(int argc, char** argv) {
                 throw args::ValidationError("`imsi` must be at least 6 digits long");
             }
 
-            auto mcc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 3))) % 1000;
-            auto mnc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 6))) % 1000;
+            uint64_t mcc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 3))) % 1000;
+            uint64_t mnc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 6))) % 1000;
 
             // h-slp.%03d.%03d.pub.3gppnetwork.org
             char buffer[256];
             snprintf(buffer, sizeof(buffer),
-                     "h-slp.%03" PRIi64 ".%03" PRIi64 ".pub.3gppnetwork.org", mcc, mnc);
+                     "h-slp.%03" PRIu64 ".%03" PRIu64 ".pub.3gppnetwork.org", mcc, mnc);
             program.config.location_server.host = buffer;
             INFOF("generated host: \"%s\"", program.config.location_server.host.c_str());
         }
@@ -856,7 +857,9 @@ int main(int argc, char** argv) {
 
         client_initialize(program, *client);
 
-        reconnect_task.schedule(program.scheduler);
+        if(!reconnect_task.schedule(program.scheduler)) {
+            ERRORF("failed to schedule reconnect task");
+        }
         client->schedule(&program.scheduler);
     }
 

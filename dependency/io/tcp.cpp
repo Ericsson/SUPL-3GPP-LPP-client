@@ -110,8 +110,9 @@ bool TcpServerInput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     if (mListenerTask) {
-        mListenerTask->cancel();
+        auto result = mListenerTask->cancel();
         mListenerTask.reset();
+        return result;
     }
 
     return true;
@@ -562,8 +563,8 @@ void TcpServerOutput::remove_client(int fd) NOEXCEPT {
     VSCOPE_FUNCTIONF("%d", fd);
 
     auto client = std::find_if(mClientTasks.begin(), mClientTasks.end(),
-                               [fd](std::unique_ptr<scheduler::SocketTask>& client) {
-                                   return client->fd() == fd;
+                               [fd](std::unique_ptr<scheduler::SocketTask>& task) {
+                                   return task->fd() == fd;
                                });
 
     if (client != mClientTasks.end()) {

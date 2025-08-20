@@ -179,8 +179,8 @@ int main(int argc, char** argv) {
             hexdump(temp, length);
         }
 
-        for (auto& output : output.outputs) {
-            output->write(reinterpret_cast<uint8_t*>(temp), length);
+        for (auto& out : output.outputs) {
+            out->write(reinterpret_cast<uint8_t*>(temp), length);
         }
     }
 

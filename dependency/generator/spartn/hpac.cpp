@@ -265,22 +265,22 @@ void CorrectionData::add_correction(long gnss_id, GNSS_RealTimeIntegrity* rti) {
         if (!element->badSignalID) {
             auto& signal_list = satellite.mBadSignals;
             auto  signal_bs0  = helper::BitStringReader(&element->badSignalID->gnss_SignalIDs);
-            for (size_t i = 0; i < signal_bs0.count(); i++) {
-                if (!signal_bs0.get(i)) {
+            for (size_t j = 0; j < signal_bs0.count(); j++) {
+                if (!signal_bs0.get(j)) {
                     continue;
                 }
 
-                signal_list.push_back(i);
+                signal_list.push_back(static_cast<long>(j));
             }
 
             if (element->badSignalID->ext1 != nullptr) {
                 auto signal_bs1 = helper::BitStringReader(element->badSignalID->ext1->gnss_SignalIDs_Ext_r15);
-                for (size_t i = 0; i < signal_bs1.count(); i++) {
-                    if (!signal_bs1.get(i)) {
+                for (size_t j = 0; j < signal_bs1.count(); j++) {
+                    if (!signal_bs1.get(j)) {
                         continue;
                     }
 
-                    signal_list.push_back(i + 8);
+                    signal_list.push_back(static_cast<long>(j) + 8);
                 }
             }
         }

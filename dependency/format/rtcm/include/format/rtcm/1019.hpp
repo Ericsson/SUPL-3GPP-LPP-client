@@ -15,6 +15,7 @@ namespace rtcm{
 
 class Rtcm1019 final : public Message {
 public:
+    EXPLICIT Rtcm1019(DF002 type, std::vector<uint8_t> data) NOEXCEPT;
     ~Rtcm1019() override = default;
 
     Rtcm1019(Rtcm1019 const& other)

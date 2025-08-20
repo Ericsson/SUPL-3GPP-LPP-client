@@ -29,14 +29,14 @@ SingleSession::~SingleSession() {
     destroy();
 }
 
-void SingleSession::schedule(scheduler::Scheduler& scheduler) {
+bool SingleSession::schedule(scheduler::Scheduler& scheduler) {
     VSCOPE_FUNCTION();
-    mPeriodicTask.schedule(scheduler);
+    return mPeriodicTask.schedule(scheduler);
 }
 
-void SingleSession::cancel() {
+bool SingleSession::cancel() {
     VSCOPE_FUNCTION();
-    mPeriodicTask.cancel();
+    return mPeriodicTask.cancel();
 }
 
 void SingleSession::message(TransactionHandle const& transaction, Message message) {

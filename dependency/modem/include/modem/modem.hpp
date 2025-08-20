@@ -53,8 +53,8 @@ class Modem {
 public:
     EXPLICIT Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> output) NOEXCEPT;
 
-    void schedule(scheduler::Scheduler& scheduler);
-    void cancel();
+    NODISCARD bool schedule(scheduler::Scheduler& scheduler);
+    bool cancel();
 
     /// Enable echo-ing of commands.
     void enable_echo();

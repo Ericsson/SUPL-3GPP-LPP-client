@@ -34,5 +34,8 @@ void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, 
             out.interface->write(data, sizeof(data));
         }
     };
-    periodic_task->schedule(scheduler);
+    
+    if(!periodic_task->schedule(scheduler)) {
+        ERRORF("failed to schedule periodic task for test output");
+    }
 }

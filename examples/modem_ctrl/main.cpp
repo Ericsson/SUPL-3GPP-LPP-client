@@ -8,7 +8,7 @@
 #include <modem/modem.hpp>
 #include <scheduler/scheduler.hpp>
 
-static int start_server(int port) {
+static int start_server(uint16_t port) {
     auto socket = ::socket(AF_INET, SOCK_STREAM, 0);
     if (socket < 0) {
         perror("socket");
@@ -119,17 +119,17 @@ static int start_server(int port) {
                                 (cops.act >= 7 && cops.act < 11 ? "LTE" : "UNKNOWN")));
                 }
                 if (reg.mode != 0) {
-                    printf("CELL: %d:%d %s\n", reg.lac, reg.ci,
+                    printf("CELL: %u:%u %s\n", reg.lac, reg.ci,
                            (reg.act >= 0 && reg.act < 7 ?
                                 "GSM" :
                                 (reg.act >= 7 && reg.act < 11 ? "LTE" : "UNKNOWN")));
                 }
                 if (reg.mode != 0 && cops.format == 2) {
                     if (reg.is_gsm()) {
-                        snprintf(send_buffer, sizeof(send_buffer), "/CID,G,%d,%d,%d,%d", cops.mcc,
+                        snprintf(send_buffer, sizeof(send_buffer), "/CID,G,%d,%d,%u,%u", cops.mcc,
                                  cops.mnc, reg.lac, reg.ci);
                     } else {
-                        snprintf(send_buffer, sizeof(send_buffer), "/CID,L,%d,%d,%d,%d", cops.mcc,
+                        snprintf(send_buffer, sizeof(send_buffer), "/CID,L,%d,%d,%u,%u", cops.mcc,
                                  cops.mnc, reg.lac, reg.ci);
                     }
                     if (!send_command(client, send_buffer)) {
@@ -139,7 +139,11 @@ static int start_server(int port) {
                 }
             }
 
-            sleep(config.update_interval);
+            unsigned int sleep_seconds = 1;
+            if (config.update_interval > 1) {
+                sleep_seconds = static_cast<unsigned int>(config.update_interval); 
+            }
+            sleep(sleep_seconds);
         }
 
         ::close(client);

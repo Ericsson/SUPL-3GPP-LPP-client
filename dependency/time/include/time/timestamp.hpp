@@ -79,7 +79,7 @@ public:
     }
 
     NODISCARD bool operator==(Timestamp const& other) const {
-        return seconds() == other.seconds() && fraction() == other.fraction();
+        return seconds() == other.seconds() && fabs(fraction() - other.fraction()) < 1e-9;
     }
 
     NODISCARD bool operator<(Timestamp const& other) const {

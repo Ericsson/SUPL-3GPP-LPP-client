@@ -18,7 +18,7 @@ static args::Group control_group{
     args::Options::Global,
 };
 
-static args::ValueFlag<int> port{
+static args::ValueFlag<uint16_t> port{
     control_group, "port", "Control TCP port", {"port"}, args::Options::Single};
 
 static args::ValueFlag<int> update_interval{control_group,
@@ -173,7 +173,7 @@ Config parse_configuration(int argc, char** argv) {
             exit(0);
         }
 
-        auto port_value = 13226;
+        uint16_t port_value = 13226;
         if (port) {
             port_value = port.Get();
         }

@@ -22,6 +22,8 @@ struct DataField {
     DataField(T const& t) : d{t} { }
     operator T() const { return d; }
 
+    T value() const { return d; }
+
     DataField& operator=(T const& t) {
         d = t;
         return *this;
@@ -34,12 +36,21 @@ struct DataField {
     static constexpr int         exponent { E        };
 
     static T convert(unsigned long long b) {
-        if       (sign==Sign::UNSIGNED)
-            return factor==1?b:b * factor;
-        else if  (sign==Sign::SIGNED)
-            return factor==1?as_signed(b):as_signed(b) * factor;
-        else if  (sign==Sign::SIGNED_MAGNITUDE)
-            return factor==1?as_signed_magnitude(b):as_signed_magnitude(b) * factor;
+        if     constexpr  (sign==Sign::UNSIGNED)
+            return multiply_by_factor(b);
+        else if constexpr (sign==Sign::SIGNED)
+            return multiply_by_factor(as_signed(b));
+        else if constexpr (sign==Sign::SIGNED_MAGNITUDE)
+            return multiply_by_factor(as_signed_magnitude(b));
+    }
+
+    template<typename K>
+    static T multiply_by_factor(K value) {
+        if constexpr (C == Conversion::PICO100 || C == Conversion::MINUTE || C == Conversion::SC2RAD) {
+            return static_cast<T>(static_cast<double>(value) * factor);
+        } else {
+            return static_cast<T>(value);
+        }
     }
 private:
     T d;

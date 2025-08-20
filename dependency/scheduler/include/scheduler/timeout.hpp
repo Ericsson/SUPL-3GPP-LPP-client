@@ -11,7 +11,7 @@ public:
     ~TimeoutTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+     bool cancel() NOEXCEPT;
     NODISCARD bool is_scheduled() const NOEXCEPT {
         return mScheduler != nullptr;
     }

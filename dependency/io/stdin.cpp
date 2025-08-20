@@ -28,7 +28,10 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
-    mFdTask->set_fd(STDIN_FILENO);
+    if(!mFdTask->set_fd(STDIN_FILENO)) {
+        ERRORF("failed to set stdin fd");
+        return false;
+    }
     mFdTask->on_read = [this](int) {
         auto result = ::read(STDIN_FILENO, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", STDIN_FILENO, mBuffer, sizeof(mBuffer), result);
@@ -47,15 +50,14 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         cancel();
     };
 
-    mFdTask->schedule(scheduler);
-    return true;
+    return mFdTask->schedule(scheduler);
 }
 
 bool StdinInput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     if (mFdTask) {
-        mFdTask->cancel();
+        return mFdTask->cancel();
     }
 
     return true;

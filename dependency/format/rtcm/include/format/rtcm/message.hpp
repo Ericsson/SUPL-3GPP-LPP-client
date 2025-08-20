@@ -11,7 +11,7 @@ namespace rtcm {
 /// Base class for all messages.
 class Message {
 public:
-    EXPLICIT Message(std::vector<uint8_t> mData) NOEXCEPT;
+    EXPLICIT Message(DF002 type, std::vector<uint8_t> data) NOEXCEPT;
     virtual ~Message() NOEXCEPT;
 
     Message(Message const& other) : mData{other.mData} {}
@@ -31,31 +31,28 @@ public:
 
 protected:
     DF002 mType;
-private:
     std::vector<uint8_t> mData;
 };
 
 /// Unsupported or unknown message.
 class UnsupportedMessage final : public Message {
 public:
-    EXPLICIT UnsupportedMessage(unsigned type, std::vector<uint8_t> mData) NOEXCEPT;
+    EXPLICIT UnsupportedMessage(DF002 type, std::vector<uint8_t> mData) NOEXCEPT;
     ~UnsupportedMessage() override = default;
 
-    UnsupportedMessage(UnsupportedMessage const& other) : Message(other), type{other.type} {}
+    UnsupportedMessage(UnsupportedMessage const& other) : Message(other) {}
     UnsupportedMessage(UnsupportedMessage&&)                 = delete;
     UnsupportedMessage& operator=(UnsupportedMessage const&) = delete;
     UnsupportedMessage& operator=(UnsupportedMessage&&)      = delete;
 
     void                     print() const NOEXCEPT override;
     std::unique_ptr<Message> clone() const NOEXCEPT override;
-    // Should probably change to mType
-    const unsigned type;
 };
 
 /// Error message. This is used to indicate that the message could not be parsed.
 class ErrorMessage final : public Message {
 public:
-    EXPLICIT ErrorMessage(/* TODO */) NOEXCEPT;
+    EXPLICIT ErrorMessage(DF002 type, std::vector<uint8_t> mData) NOEXCEPT;
     ~ErrorMessage() override = default;
 
     ErrorMessage(ErrorMessage const& other) : Message(other) {}

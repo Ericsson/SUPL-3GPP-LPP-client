@@ -78,7 +78,7 @@ static char const* message_type_str(raw::RxmSfrbx const& payload) NOEXCEPT {
 }
 
 void RxmSfrbx::print() const NOEXCEPT {
-    printf("[%02X %02X] UBX-RXM-SRFBX: %u:%03u/%u \"%s\" %zd words\n", message_class(),
+    printf("[%02X %02X] UBX-RXM-SRFBX: %u:%03u/%u \"%s\" %zu words\n", message_class(),
            message_id(), mPayload.gnss_id, mPayload.sv_id, mPayload.sig_id,
            message_type_str(mPayload), mWords.size());
 }

@@ -11,15 +11,15 @@ Lpp2Rtcm::Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config)
     VSCOPE_FUNCTION();
     mGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator{});
     mFilter    = generator::rtcm::MessageFilter{};
-    mFilter.systems.gps     = config.generate_gps;
-    mFilter.systems.glonass = config.generate_glonass;
-    mFilter.systems.galileo = config.generate_galileo;
-    mFilter.systems.beidou  = config.generate_beidou;
+    mFilter.systems.gps     = mConfig.generate_gps;
+    mFilter.systems.glonass = mConfig.generate_glonass;
+    mFilter.systems.galileo = mConfig.generate_galileo;
+    mFilter.systems.beidou  = mConfig.generate_beidou;
 
-    if (config.msm_type == Lpp2RtcmConfig::MsmType::MSM4) mFilter.msm.force_msm4 = true;
-    if (config.msm_type == Lpp2RtcmConfig::MsmType::MSM5) mFilter.msm.force_msm5 = true;
-    if (config.msm_type == Lpp2RtcmConfig::MsmType::MSM6) mFilter.msm.force_msm6 = true;
-    if (config.msm_type == Lpp2RtcmConfig::MsmType::MSM7) mFilter.msm.force_msm7 = true;
+    if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM4) mFilter.msm.force_msm4 = true;
+    if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM5) mFilter.msm.force_msm5 = true;
+    if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM6) mFilter.msm.force_msm6 = true;
+    if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM7) mFilter.msm.force_msm7 = true;
 }
 
 Lpp2Rtcm::~Lpp2Rtcm() {

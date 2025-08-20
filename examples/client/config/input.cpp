@@ -470,10 +470,10 @@ static void dump(InputConfig const& config) {
                (input.format & INPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
                (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "LPP-UPER-PAD " : "");
         char tag_buffer[256];
-        auto tag_buffer_index = 0;
+        size_t tag_buffer_index = 0;
         for (auto const& tag : input.tags) {
-            tag_buffer_index += snprintf(tag_buffer + tag_buffer_index, 256 - tag_buffer_index,
-                                        "%s ", tag.c_str());
+            tag_buffer_index += static_cast<size_t>(snprintf(tag_buffer + tag_buffer_index, 256 - tag_buffer_index,
+                                        "%s ", tag.c_str()));
         }
         DEBUGF("tags: %s", tag_buffer);
 

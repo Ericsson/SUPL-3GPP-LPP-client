@@ -5,15 +5,15 @@
 namespace format {
 namespace rtcm {
 
-Message::Message(std::vector<uint8_t> mData) NOEXCEPT : mData{mData} {}
+Message::Message(DF002 type, std::vector<uint8_t> data) NOEXCEPT : mType{type}, mData{data} {}
 
 Message::~Message() NOEXCEPT = default;
 
-UnsupportedMessage::UnsupportedMessage(unsigned type, std::vector<uint8_t> mData) NOEXCEPT
-    : Message(mData), type{type} {}
+UnsupportedMessage::UnsupportedMessage(DF002 type, std::vector<uint8_t> data) NOEXCEPT
+    : Message(type, data) {}
 
 void UnsupportedMessage::print() const NOEXCEPT {
-    printf("[RTCM%x] UNSUPPORTED MESSAGE", type);
+    printf("[RTCM%4u] UNSUPPORTED: %zu bytes", mType.value(), mData.size());
 }
 
 std::unique_ptr<Message> UnsupportedMessage::clone() const NOEXCEPT {
@@ -23,11 +23,11 @@ std::unique_ptr<Message> UnsupportedMessage::clone() const NOEXCEPT {
 /** RTCM ErrorMessage
  */
 
-ErrorMessage::ErrorMessage() NOEXCEPT : Message({}) {
+ErrorMessage::ErrorMessage(DF002 type, std::vector<uint8_t> data) NOEXCEPT : Message(type, std::move(data)) {
 }
 
 void ErrorMessage::print() const NOEXCEPT {
-    printf("[RTCM] ERROR");
+    printf("[RTCM%4d] ERROR: %zu bytes", mType.value(), mData.size());
 }
 
 std::unique_ptr<Message> ErrorMessage::clone() const NOEXCEPT {

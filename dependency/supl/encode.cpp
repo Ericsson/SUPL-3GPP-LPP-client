@@ -96,7 +96,7 @@ static OCTET_STRING binary_encoded_octet(size_t max_length, uint64_t from) {
     octet.buf  = reinterpret_cast<uint8_t*>(calloc(1, octet.size));
     memset(octet.buf, 0xFF, octet.size);
 
-    auto length = 0;
+    size_t length = 0;
     auto data   = from;
     while (data > 0) {
         data /= 10;
@@ -284,10 +284,10 @@ static CellInfo encode_cellinfo(Cell cell) {
     if (cell.type == Cell::Type::GSM) {
         CellInfo result{};
         result.present               = CellInfo_PR_gsmCell;
-        result.choice.gsmCell.refMCC = cell.data.gsm.mcc;
-        result.choice.gsmCell.refMNC = cell.data.gsm.mnc;
-        result.choice.gsmCell.refLAC = cell.data.gsm.lac;
-        result.choice.gsmCell.refCI  = cell.data.gsm.ci;
+        result.choice.gsmCell.refMCC = static_cast<long>(cell.data.gsm.mcc);
+        result.choice.gsmCell.refMNC = static_cast<long>(cell.data.gsm.mnc);
+        result.choice.gsmCell.refLAC = static_cast<long>(cell.data.gsm.lac);
+        result.choice.gsmCell.refCI  = static_cast<long>(cell.data.gsm.ci);
         result.choice.gsmCell.tA     = NULL;
         result.choice.gsmCell.nMR    = NULL;
         return result;
@@ -443,7 +443,7 @@ static ::ApplicationID* encode_applicationid(ApplicationID const& app_id) {
     OCTET_STRING_fromString(&application_id->appName, app_name);
 
     auto appVersion = helper::asn1_allocate<IA5String_t>();
-    OCTET_STRING_fromBuf(appVersion, app_version, strlen(app_version));
+    OCTET_STRING_fromBuf(appVersion, app_version, static_cast<int>(strlen(app_version)));
     application_id->appVersion = appVersion;
     return application_id;
 }

@@ -58,7 +58,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         return nullptr;
     }
 
-    unsigned payload_length = (peek(1) & 0x03) << 8 | (peek(2));
+    auto payload_length = static_cast<unsigned>((peek(1) & 0x03) << 8 | (peek(2)));
     auto message_length = 1/*PREAMBLE*/ + 2/*LENGTH*/ + payload_length + 3/*CRC*/;
 
     // copy message to buffer
@@ -77,9 +77,9 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     }
     skip(message_length);
 
-    DF002 type = (message[3] << 4) | (message[4] >> 4);
+    DF002 type = static_cast<uint16_t>(message[3] << 4) | static_cast<uint16_t>(message[4] >> 4);
 
-    DEBUGF("decoding RTCM message of type: %04d", type);
+    DEBUGF("decoding RTCM message of type: %04d", type.value());
     switch (type) {
     case 1019: return Rtcm1019::parse(message);
     case 1042: return Rtcm1042::parse(message);
@@ -94,7 +94,7 @@ CRCResult Parser::crc(std::vector<uint8_t> const& buffer) {
     auto crc = 0u;
 
     for (uint8_t b : buffer) {
-        crc ^= b << 16;
+        crc ^= static_cast<uint32_t>(b << 16);
         for (int i=0;i<8;i++) {
             crc <<= 1;
             if (crc & 0x01000000)

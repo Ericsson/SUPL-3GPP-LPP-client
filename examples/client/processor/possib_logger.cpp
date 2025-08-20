@@ -9,6 +9,12 @@
 #include <iomanip>
 #include <sstream>
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
+#pragma GCC diagnostic ignored "-Wreserved-identifier"
+#pragma GCC diagnostic ignored "-Wundef"
+#pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <AssistanceDataSIBelement-r15.h>
 #include <BDS-DifferentialCorrections-r12.h>
@@ -72,6 +78,7 @@
 #include <SSR-PhaseBiasSignalList-r16.h>
 #include <SSR-URA-SatElement-r16.h>
 #include <SSR-URA-SatList-r16.h>
+#pragma GCC diagnostic pop
 
 LOGLET_MODULE2(p, possib);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, possib)
@@ -121,6 +128,11 @@ std::vector<uint8_t> LppPossibBuilder::encode_to_buffer(asn_TYPE_descriptor_s* d
     }
 }
 
+template <typename T>
+static T* alloc_element(size_t count = 1) {
+    return reinterpret_cast<T*>(calloc(1, sizeof(T) * count));
+}
+
 void LppPossibBuilder::log(char const* type, asn_TYPE_descriptor_s* def, void const* ptr,
                            std::unordered_map<std::string, std::string> const& params) {
     VSCOPE_FUNCTIONF("\"%s\"", type);
@@ -129,7 +141,7 @@ void LppPossibBuilder::log(char const* type, asn_TYPE_descriptor_s* def, void co
     std::vector<uint8_t> assistance_sib_buffer{};
     if (mIncludeWrap) {
         auto assistance_sib_element =
-            (AssistanceDataSIBelement_r15*)calloc(1, sizeof(AssistanceDataSIBelement_r15));
+            alloc_element<AssistanceDataSIBelement_r15>();
         assistance_sib_element->assistanceDataElement_r15.buf  = assistance_data_buffer.data();
         assistance_sib_element->assistanceDataElement_r15.size = assistance_data_buffer.size();
 
@@ -349,7 +361,7 @@ void LppPossibBuilder::process(long id, GNSS_RTK_FKP_Gradients_r15 const& x) {
     basic_log(id, "GNSS-RTK-FKP-Gradients-r15", &asn_DEF_GNSS_RTK_FKP_Gradients_r15, &x);
 }
 
-std::vector<size_t> LppPossibBuilder::encode_list_to_sizes(asn_TYPE_descriptor_s* descriptor,
+std::vector<size_t> LppPossibBuilder::encode_list_to_sizes_void(asn_TYPE_descriptor_s* descriptor,
                                                            void const** struct_ptr, int n) {
     std::vector<size_t> result;
     for (int i = 0; i < n; ++i) {
@@ -357,6 +369,8 @@ std::vector<size_t> LppPossibBuilder::encode_list_to_sizes(asn_TYPE_descriptor_s
     }
     return result;
 }
+
+
 
 static std::string to_json_array(std::vector<size_t> const& sizes) {
     std::stringstream result;
@@ -377,7 +391,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_OrbitCorrections_r15 const& x) 
     auto& list            = x.ssr_OrbitCorrectionList_r15.list;
     auto  satellite_count = list.count;
     auto  satellite_sizes = encode_list_to_sizes(&asn_DEF_SSR_OrbitCorrectionSatelliteElement_r15,
-                                                 (void const**)list.array, list.count);
+                                                 list.array, list.count);
 
     std::unordered_map<std::string, std::string> params;
     params["gnss_id"]         = gnss_name_from_id(id);
@@ -390,7 +404,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_ClockCorrections_r15 const& x) 
     auto& list            = x.ssr_ClockCorrectionList_r15.list;
     auto  satellite_count = list.count;
     auto  satellite_sizes = encode_list_to_sizes(&asn_DEF_SSR_ClockCorrectionSatelliteElement_r15,
-                                                 (void const**)list.array, list.count);
+                                                 list.array, list.count);
 
     std::unordered_map<std::string, std::string> params;
     params["gnss_id"]         = gnss_name_from_id(id);
@@ -403,7 +417,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_CodeBias_r15 const& x) {
     auto& list            = x.ssr_CodeBiasSatList_r15.list;
     auto  satellite_count = list.count;
     auto  satellite_sizes = encode_list_to_sizes(&asn_DEF_SSR_CodeBiasSatElement_r15,
-                                                 (void const**)list.array, list.count);
+                                                 list.array, list.count);
 
     auto signal_count = 0;
     auto signal_sizes = std::vector<size_t>();
@@ -414,7 +428,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_CodeBias_r15 const& x) {
         signal_count += element->ssr_CodeBiasSignalList_r15.list.count;
         for (auto size :
              encode_list_to_sizes(&asn_DEF_SSR_CodeBiasSignalElement_r15,
-                                  (void const**)element->ssr_CodeBiasSignalList_r15.list.array,
+                                  element->ssr_CodeBiasSignalList_r15.list.array,
                                   element->ssr_CodeBiasSignalList_r15.list.count)) {
             signal_sizes.push_back(size);
         }
@@ -433,7 +447,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_URA_r16 const& x) {
     auto& list            = x.ssr_URA_SatList_r16.list;
     auto  satellite_count = list.count;
     auto  satellite_sizes =
-        encode_list_to_sizes(&asn_DEF_SSR_URA_SatElement_r16, (void const**)list.array, list.count);
+        encode_list_to_sizes(&asn_DEF_SSR_URA_SatElement_r16, list.array, list.count);
 
     std::unordered_map<std::string, std::string> params;
     params["gnss_id"]         = gnss_name_from_id(id);
@@ -446,7 +460,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_PhaseBias_r16 const& x) {
     auto& list            = x.ssr_PhaseBiasSatList_r16.list;
     auto  satellite_count = list.count;
     auto  satellite_sizes = encode_list_to_sizes(&asn_DEF_SSR_PhaseBiasSatElement_r16,
-                                                 (void const**)list.array, list.count);
+                                                 list.array, list.count);
 
     auto signal_count = 0;
     auto signal_sizes = std::vector<size_t>();
@@ -457,7 +471,7 @@ void LppPossibBuilder::process(long id, GNSS_SSR_PhaseBias_r16 const& x) {
         signal_count += element->ssr_PhaseBiasSignalList_r16.list.count;
         for (auto size :
              encode_list_to_sizes(&asn_DEF_SSR_PhaseBiasSignalElement_r16,
-                                  (void const**)element->ssr_PhaseBiasSignalList_r16.list.array,
+                                  element->ssr_PhaseBiasSignalList_r16.list.array,
                                   element->ssr_PhaseBiasSignalList_r16.list.count)) {
             signal_sizes.push_back(size);
         }
@@ -618,9 +632,10 @@ void LppPossibBuilder::process(ProvideAssistanceData const& message) {
             ProvideAssistanceData__criticalExtensions__c1_PR_spare1:
             break;
         }
-    }
+    } break;
     case ProvideAssistanceData__criticalExtensions_PR::
         ProvideAssistanceData__criticalExtensions_PR_NOTHING:
+        break;
     case ProvideAssistanceData__criticalExtensions_PR::
         ProvideAssistanceData__criticalExtensions_PR_criticalExtensionsFuture:
         break;
@@ -663,8 +678,9 @@ void LppPossibBuilder::inspect(streamline::System& system, DataType const& messa
         case LPP_MessageBody__c1_PR::LPP_MessageBody__c1_PR_spare1:
         case LPP_MessageBody__c1_PR::LPP_MessageBody__c1_PR_spare0: break;
         }
-    }
+    } break;
     case LPP_MessageBody_PR::LPP_MessageBody_PR_NOTHING:
+    break;
     case LPP_MessageBody_PR::LPP_MessageBody_PR_messageClassExtension: break;
     }
 

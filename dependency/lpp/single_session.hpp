@@ -17,8 +17,8 @@ public:
     EXPLICIT SingleSession(Client* client, Session* session, TransactionHandle handle);
     virtual ~SingleSession();
 
-    void schedule(scheduler::Scheduler& scheduler);
-    void cancel();
+    NODISCARD bool schedule(scheduler::Scheduler& scheduler);
+    bool cancel();
 
     void message(TransactionHandle const& transaction, Message message);
 

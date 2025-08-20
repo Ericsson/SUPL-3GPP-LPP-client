@@ -15,7 +15,7 @@ public:
     virtual ~Input() NOEXCEPT;
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+    bool cancel() NOEXCEPT;
 
     std::function<void(Input&, uint8_t*, size_t)> callback;
 
