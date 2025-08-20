@@ -2,13 +2,12 @@
 #include "1019.hpp"
 #include "1042.hpp"
 #include "1046.hpp"
-#include "message.hpp"
 #include "helper.hpp"
+#include "message.hpp"
 
 #include <cstdio>
-#include <sstream>
 #include <iomanip>
-
+#include <sstream>
 
 #include <loglet/loglet.hpp>
 
@@ -54,12 +53,12 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     }
 
     if ((peek(1) & 0xFC) != 0) {
-        VERBOSEF("invalid padding bits: '%06b'", (peek(1) & 0xFC)>>2);
+        VERBOSEF("invalid padding bits: '%06b'", (peek(1) & 0xFC) >> 2);
         return nullptr;
     }
 
     auto payload_length = static_cast<unsigned>((peek(1) & 0x03) << 8 | (peek(2)));
-    auto message_length = 1/*PREAMBLE*/ + 2/*LENGTH*/ + payload_length + 3/*CRC*/;
+    auto message_length = 1 /*PREAMBLE*/ + 2 /*LENGTH*/ + payload_length + 3 /*CRC*/;
 
     // copy message to buffer
     std::vector<uint8_t> message;
@@ -84,21 +83,20 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     case 1019: return Rtcm1019::parse(message);
     case 1042: return Rtcm1042::parse(message);
     case 1046: return Rtcm1046::parse(message);
-    default:   return std::make_unique<UnsupportedMessage>(type, message);
+    default: return std::make_unique<UnsupportedMessage>(type, message);
     }
 }
 
 CRCResult Parser::crc(std::vector<uint8_t> const& buffer) {
     FUNCTION_SCOPE();
     auto polynomial = 0x1864CFBu;
-    auto crc = 0u;
+    auto crc        = 0u;
 
     for (uint8_t b : buffer) {
         crc ^= static_cast<uint32_t>(b << 16);
-        for (int i=0;i<8;i++) {
+        for (int i = 0; i < 8; i++) {
             crc <<= 1;
-            if (crc & 0x01000000)
-                crc ^= polynomial;
+            if (crc & 0x01000000) crc ^= polynomial;
         }
     }
     return (crc & 0xFFFFFF) == 0 ? CRCResult::OK : CRCResult::INVALID_VALUE;

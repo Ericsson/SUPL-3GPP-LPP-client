@@ -141,7 +141,7 @@ static int start_server(uint16_t port) {
 
             unsigned int sleep_seconds = 1;
             if (config.update_interval > 1) {
-                sleep_seconds = static_cast<unsigned int>(config.update_interval); 
+                sleep_seconds = static_cast<unsigned int>(config.update_interval);
             }
             sleep(sleep_seconds);
         }

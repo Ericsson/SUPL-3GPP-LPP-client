@@ -23,8 +23,8 @@ std::unique_ptr<Message> UnsupportedMessage::clone() const NOEXCEPT {
 /** RTCM ErrorMessage
  */
 
-ErrorMessage::ErrorMessage(DF002 type, std::vector<uint8_t> data) NOEXCEPT : Message(type, std::move(data)) {
-}
+ErrorMessage::ErrorMessage(DF002 type, std::vector<uint8_t> data) NOEXCEPT
+    : Message(type, std::move(data)) {}
 
 void ErrorMessage::print() const NOEXCEPT {
     printf("[RTCM%4d] ERROR: %zu bytes", mType.value(), mData.size());

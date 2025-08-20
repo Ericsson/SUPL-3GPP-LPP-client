@@ -102,9 +102,10 @@ protected:
     std::vector<uint8_t> encode_to_buffer(asn_TYPE_descriptor_s* descriptor,
                                           void const*            struct_ptr);
     std::vector<size_t>  encode_list_to_sizes_void(asn_TYPE_descriptor_s* descriptor,
-                                              void const** struct_ptr, int n);
-    template<typename T>
-    std::vector<size_t> encode_list_to_sizes(asn_TYPE_descriptor_s* descriptor, T const* struct_ptr, int n) {
+                                                   void const** struct_ptr, int n);
+    template <typename T>
+    std::vector<size_t> encode_list_to_sizes(asn_TYPE_descriptor_s* descriptor, T const* struct_ptr,
+                                             int n) {
         return encode_list_to_sizes(descriptor, reinterpret_cast<void const**>(&struct_ptr), n);
     }
 

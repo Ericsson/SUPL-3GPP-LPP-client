@@ -18,15 +18,16 @@ void RtcmPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
 void RtcmOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto& data = message->data();
-    auto size = data.size();
+    auto  size = data.size();
     for (auto& output : mOutput.outputs) {
         if (!output.rtcm_support()) continue;
-        if(!output.accept_tag(tag)) {
+        if (!output.accept_tag(tag)) {
             XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
         if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", message->type(), size, tag);
+            XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", message->type(), size,
+                   tag);
         }
 
         output.interface->write(data.data(), size);

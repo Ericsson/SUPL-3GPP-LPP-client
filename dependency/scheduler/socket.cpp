@@ -532,7 +532,7 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
         mReconnectTimeout.cancel();
-        if(!schedule(*scheduler)) {
+        if (!schedule(*scheduler)) {
             ERRORF("failed to schedule reconnect timeout");
         }
     };
@@ -559,7 +559,7 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
         mReconnectTimeout.cancel();
-        if(!schedule(*scheduler)) {
+        if (!schedule(*scheduler)) {
             ERRORF("failed to schedule reconnect timeout");
         }
     };
@@ -797,7 +797,7 @@ void TcpConnectTask::write() NOEXCEPT {
             // monitor for write events
             uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
             if (on_read) events |= EPOLLIN;
-            if(!mScheduler->update_epoll_fd(mFd, events, &mEvent)) {
+            if (!mScheduler->update_epoll_fd(mFd, events, &mEvent)) {
                 WARNF("failed to update epoll: write is not disabled");
             }
         }
@@ -847,7 +847,7 @@ void TcpConnectTask::error() NOEXCEPT {
     if (mShouldReconnect && mScheduler) {
         if (!mReconnectTimeout.is_scheduled()) {
             VERBOSEF("schedule reconnect");
-            if(!mReconnectTimeout.schedule(*mScheduler)) {
+            if (!mReconnectTimeout.schedule(*mScheduler)) {
                 ERRORF("failed to schedule reconnect timeout");
             }
         }
@@ -863,7 +863,7 @@ bool TcpConnectTask::schedule(Scheduler& scheduler) NOEXCEPT {
         if (mShouldReconnect) {
             if (!mReconnectTimeout.is_scheduled()) {
                 VERBOSEF("schedule reconnect");
-                if(!mReconnectTimeout.schedule(scheduler)) {
+                if (!mReconnectTimeout.schedule(scheduler)) {
                     ERRORF("failed to schedule reconnect timeout");
                 }
             }

@@ -97,7 +97,7 @@ static OCTET_STRING binary_encoded_octet(size_t max_length, uint64_t from) {
     memset(octet.buf, 0xFF, octet.size);
 
     size_t length = 0;
-    auto data   = from;
+    auto   data   = from;
     while (data > 0) {
         data /= 10;
         length++;

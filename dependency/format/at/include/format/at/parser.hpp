@@ -22,7 +22,7 @@ public:
 
     NODISCARD bool   has_lines() const NOEXCEPT { return !mLines.empty(); }
     NODISCARD size_t count() const NOEXCEPT { return mLines.size(); }
-    std::string skip_line() NOEXCEPT;
+    std::string      skip_line() NOEXCEPT;
     NODISCARD std::string const& peek_line() const NOEXCEPT;
 
 private:

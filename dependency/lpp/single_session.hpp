@@ -18,7 +18,7 @@ public:
     virtual ~SingleSession();
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler);
-    bool cancel();
+    bool           cancel();
 
     void message(TransactionHandle const& transaction, Message message);
 

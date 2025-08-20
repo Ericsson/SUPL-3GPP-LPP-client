@@ -1,6 +1,6 @@
 #pragma once
-#include <core/core.hpp>
 #include <cmath>
+#include <core/core.hpp>
 
 namespace ts {
 

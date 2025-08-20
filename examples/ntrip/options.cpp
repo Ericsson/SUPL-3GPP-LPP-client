@@ -263,7 +263,7 @@ static OutputOptions parse_output_options() {
         }
 
         auto iout = new io::TcpClientOutput(tcp_ip_address.Get(),
-                                                  static_cast<uint16_t>(tcp_port.Get()), true);
+                                            static_cast<uint16_t>(tcp_port.Get()), true);
         output_options.outputs.emplace_back(iout);
     }
 

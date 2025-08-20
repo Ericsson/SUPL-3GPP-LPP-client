@@ -184,7 +184,7 @@
 #endif
 #endif
 
-#define VSCOPE_FUNCTIONF(/*fmt, */...) FUNCTION_SCOPEF(/*fmt, */__VA_ARGS__)
+#define VSCOPE_FUNCTIONF(/*fmt, */...) FUNCTION_SCOPEF(/*fmt, */ __VA_ARGS__)
 #define VSCOPE_FUNCTION() FUNCTION_SCOPE()
 
 #define UNREACHABLE()                                                                              \
@@ -268,18 +268,18 @@ struct LogModule {
 
 #define LOGLET_MODULE(module)                                                                      \
     LOGLET_MODULE_FORWARD_REF(module);                                                             \
-     loglet::LogModule LOGLET_MODULE_REF(module) {                                                  \
+    loglet::LogModule LOGLET_MODULE_REF(module) {                                                  \
         nullptr, #module                                                                           \
     }
 #define LOGLET_MODULE2(parent, child)                                                              \
     LOGLET_MODULE_FORWARD_REF(parent);                                                             \
-    LOGLET_MODULE_FORWARD_REF2(parent, child); \
-     loglet::LogModule LOGLET_MODULE_REF2(parent, child) {                                          \
+    LOGLET_MODULE_FORWARD_REF2(parent, child);                                                     \
+    loglet::LogModule LOGLET_MODULE_REF2(parent, child) {                                          \
         &LOGLET_MODULE_REF(parent), #child                                                         \
     }
 #define LOGLET_MODULE3(parent, child, grandchild)                                                  \
     LOGLET_MODULE_FORWARD_REF2(parent, child);                                                     \
-    LOGLET_MODULE_FORWARD_REF3(parent, child, grandchild);                                                     \
+    LOGLET_MODULE_FORWARD_REF3(parent, child, grandchild);                                         \
     loglet::LogModule LOGLET_MODULE_REF3(parent, child, grandchild) {                              \
         &LOGLET_MODULE_REF2(parent, child), #grandchild                                            \
     }

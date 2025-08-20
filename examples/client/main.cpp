@@ -31,9 +31,9 @@
 #include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
 #include "processor/nmea.hpp"
+#include "processor/rtcm.hpp"
 #include "processor/test.hpp"
 #include "processor/ubx.hpp"
-#include "processor/rtcm.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
@@ -461,9 +461,9 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     bool ubx_output      = false;
     bool ctrl_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
-    bool rtcm_output     = false;
+    bool rtcm_output = false;
 #ifdef DATA_TRACING
-    bool possib_output   = false;
+    bool possib_output = false;
 #endif
     bool location_output = false;
     bool test_output     = false;
@@ -514,18 +514,18 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                output.include_tag_mask, otag_str.c_str(), output.exclude_tag_mask,
                stage_str.c_str());
 
-        if (output.lpp_xer_support()) lpp_xer_output   = true;
+        if (output.lpp_xer_support()) lpp_xer_output = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
-        if (output.nmea_support()) nmea_output         = true;
-        if (output.ubx_support()) ubx_output           = true;
-        if (output.ctrl_support()) ctrl_output         = true;
+        if (output.nmea_support()) nmea_output = true;
+        if (output.ubx_support()) ubx_output = true;
+        if (output.ctrl_support()) ctrl_output = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
-        if (output.rtcm_support()) rtcm_output         = true;
+        if (output.rtcm_support()) rtcm_output = true;
 #ifdef DATA_TRACING
-        if (output.possib_support()) possib_output     = true;
+        if (output.possib_support()) possib_output = true;
 #endif
         if (output.location_support()) location_output = true;
-        if (output.test_support()) test_output         = true;
+        if (output.test_support()) test_output = true;
 
         if (!output.stages.empty()) {
             auto last_stage = std::unique_ptr<OutputStage>(
@@ -670,7 +670,7 @@ static void setup_fake_location(Program& program) {
     };
 
     INFOF("enable fake location information");
-    if(!program.fake_location_task->schedule(program.scheduler)) {
+    if (!program.fake_location_task->schedule(program.scheduler)) {
         ERRORF("failed to schedule fake location information generation");
     }
 }
@@ -937,7 +937,7 @@ int main(int argc, char** argv) {
 
         client_initialize(program, *client);
 
-        if(!reconnect_task.schedule(program.scheduler)) {
+        if (!reconnect_task.schedule(program.scheduler)) {
             ERRORF("failed to schedule reconnect task");
         }
         client->schedule(&program.scheduler);

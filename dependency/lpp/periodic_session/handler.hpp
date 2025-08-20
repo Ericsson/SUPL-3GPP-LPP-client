@@ -21,7 +21,7 @@ public:
     NODISCARD virtual bool is_valid() const { return mHandle.is_valid(); }
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler);
-    bool cancel();
+    bool           cancel();
 
     void message(TransactionHandle const& transaction, Message message);
     void end(TransactionHandle const& transaction);
