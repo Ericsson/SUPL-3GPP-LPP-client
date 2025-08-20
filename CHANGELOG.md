@@ -2,6 +2,12 @@
 
 ## []
 
+- New WIP positioning engine `idokeido`
+- Fix forward task and missing data during fast reads
+- Input/output stage, see `chain=tlf`
+- New stage `tlf` - for reading and writing data in time-logged format
+- Function performance logging using `LOG_FUNCTION_PERFORMANCE=ON`
+
 ## [4.0.22] 2025-08-07
 
 - More satellite parameters in data-tracing
