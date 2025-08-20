@@ -50,7 +50,8 @@ void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message, uint64
                 }
             }
 
-            output.interface->write(sub_buffer, sub_size);
+            ASSERT(output.stage, "stage is null");
+            output.stage->write(OUTPUT_FORMAT_RTCM, sub_buffer, sub_size);
         }
     }
 }

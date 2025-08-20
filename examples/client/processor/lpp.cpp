@@ -27,7 +27,8 @@ void LppXerOutput::inspect(streamline::System&, DataType const& message, uint64_
         if (output.print) {
             XINFOF(OUTPUT_PRINT_MODULE, "lpp-xer: %zd bytes", size);
         }
-        output.interface->write(data, size);
+        ASSERT(output.stage, "stage is null");
+        output.stage->write(OUTPUT_FORMAT_LPP_XER, data, size);
     }
 }
 
@@ -48,6 +49,7 @@ void LppUperOutput::inspect(streamline::System&, DataType const& message, uint64
         if (output.print) {
             XINFOF(OUTPUT_PRINT_MODULE, "lpp-uper: %zd bytes", size);
         }
-        output.interface->write(data, size);
+        ASSERT(output.stage, "stage is null");
+        output.stage->write(OUTPUT_FORMAT_LPP_UPER, data, size);
     }
 }

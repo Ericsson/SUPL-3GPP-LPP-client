@@ -13,6 +13,10 @@
 #include <generator/idokeido/idokeido.hpp>
 #endif
 
+#include "output_format.hpp"
+#include "input_format.hpp"
+#include "stage.hpp"
+
 #include <memory>
 #include <string>
 #include <unordered_map>
@@ -43,34 +47,34 @@ struct IdentityConfig {
 LOGLET_MODULE_FORWARD_REF(output);
 #define OUTPUT_PRINT_MODULE &LOGLET_MODULE_REF(output)
 
-using OutputFormat                                   = uint64_t;
-constexpr static OutputFormat OUTPUT_FORMAT_NONE     = 0;
-constexpr static OutputFormat OUTPUT_FORMAT_UBX      = 1;
-constexpr static OutputFormat OUTPUT_FORMAT_NMEA     = 2;
-constexpr static OutputFormat OUTPUT_FORMAT_RTCM     = 4;
-constexpr static OutputFormat OUTPUT_FORMAT_CTRL     = 8;
-constexpr static OutputFormat OUTPUT_FORMAT_LPP_XER  = 16;
-constexpr static OutputFormat OUTPUT_FORMAT_LPP_UPER = 32;
-constexpr static OutputFormat OUTPUT_FORMAT_UNUSED64 = 64;
-constexpr static OutputFormat OUTPUT_FORMAT_SPARTN   = 128;
-constexpr static OutputFormat OUTPUT_FORMAT_LFR      = 256;
-constexpr static OutputFormat OUTPUT_FORMAT_POSSIB   = 512;
-constexpr static OutputFormat OUTPUT_FORMAT_LOCATION = 1024;
-constexpr static OutputFormat OUTPUT_FORMAT_TEST     = 1llu << 63;
-constexpr static OutputFormat OUTPUT_FORMAT_ALL =
-    OUTPUT_FORMAT_UBX | OUTPUT_FORMAT_NMEA | OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_CTRL |
-    OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_SPARTN | OUTPUT_FORMAT_LFR |
-    OUTPUT_FORMAT_POSSIB;
-
 struct OutputInterface {
-    OutputFormat                format;
-    std::unique_ptr<io::Output> interface;
-    bool                        print;
-    std::vector<std::string>    include_tags;
-    std::vector<std::string>    exclude_tags;
+    OutputFormat                 format;
+    std::unique_ptr<io::Output>  initial_interface;
+    std::unique_ptr<OutputStage> stage;
+    bool                         print;
+    std::vector<std::string>     include_tags;
+    std::vector<std::string>     exclude_tags;
+    std::vector<std::string>     stages;
 
     uint64_t include_tag_mask;
     uint64_t exclude_tag_mask;
+
+    static OutputInterface create(OutputFormat format, std::unique_ptr<io::Output> interface,
+                                  bool print, std::vector<std::string> include_tags,
+                                  std::vector<std::string> exclude_tags,
+                                  std::vector<std::string> stages) {
+        return {
+            format,
+            std::move(interface),
+            nullptr,
+            print,
+            std::move(include_tags),
+            std::move(exclude_tags),
+            std::move(stages),
+            0,
+            0,
+        };
+    }
 
     inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
     inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
@@ -95,23 +99,12 @@ struct OutputConfig {
     std::vector<OutputInterface> outputs;
 };
 
-using InputFormat                                      = uint64_t;
-constexpr static InputFormat INPUT_FORMAT_NONE         = 0;
-constexpr static InputFormat INPUT_FORMAT_UBX          = 1;
-constexpr static InputFormat INPUT_FORMAT_NMEA         = 2;
-constexpr static InputFormat INPUT_FORMAT_RTCM         = 4;
-constexpr static InputFormat INPUT_FORMAT_CTRL         = 8;
-constexpr static InputFormat INPUT_FORMAT_LPP_UPER     = 16;
-constexpr static InputFormat INPUT_FORMAT_LPP_UPER_PAD = 32;
-constexpr static InputFormat INPUT_FORMAT_ALL          = INPUT_FORMAT_UBX | INPUT_FORMAT_NMEA |
-                                                INPUT_FORMAT_RTCM | INPUT_FORMAT_CTRL |
-                                                INPUT_FORMAT_LPP_UPER;
-
 struct InputInterface {
     InputFormat                format;
     bool                       print;
     std::unique_ptr<io::Input> interface;
     std::vector<std::string>   tags;
+    std::vector<std::string>   stages;
 };
 
 struct InputConfig {
@@ -330,7 +323,7 @@ struct TokoroConfig {
     bool use_ionospheric_height_correction;
 
     std::string antex_file;
-    bool ignore_bitmask;
+    bool        ignore_bitmask;
 };
 #endif
 
@@ -343,14 +336,14 @@ struct IdokeidoConfig {
     bool galileo;
     bool beidou;
 
-    double update_rate;
+    double      update_rate;
     std::string ephemeris_cache;
 
-    idokeido::WeightFunction weight_function;
-    idokeido::EpochSelection epoch_selection;
+    idokeido::WeightFunction    weight_function;
+    idokeido::EpochSelection    epoch_selection;
     idokeido::RelativisticModel relativistic_model;
-    idokeido::IonosphericMode ionospheric_mode;
-    double observation_window;
+    idokeido::IonosphericMode   ionospheric_mode;
+    double                      observation_window;
 };
 #endif
 

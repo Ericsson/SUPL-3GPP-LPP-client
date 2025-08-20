@@ -22,16 +22,18 @@ void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, 
         uint8_t data[16 + 1] = "TESTTESTTESTTEST";
         DEBUGF("test: \"%s\"", data);
 
-        for (auto& out : output.outputs) {
-            if (!out.test_support()) continue;
-            if (!out.accept_tag(tag)) {
+        for (auto& output : output.outputs) {
+            if (!output.test_support()) continue;
+            if (!output.accept_tag(tag)) {
                 XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
                 continue;
             }
-            if (out.print) {
+            if (output.print) {
                 XINFOF(OUTPUT_PRINT_MODULE, "test: %zd bytes", sizeof(data));
             }
-            out.interface->write(data, sizeof(data));
+
+            ASSERT(output.stage, "stage is null");
+            output.stage->write(OUTPUT_FORMAT_TEST, data, sizeof(data));
         }
     };
     periodic_task->schedule(scheduler);

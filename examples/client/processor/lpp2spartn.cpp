@@ -83,7 +83,9 @@ void Lpp2Spartn::inspect(streamline::System&, DataType const& message, uint64_t 
                     XINFOF(OUTPUT_PRINT_MODULE, "spartn: %02X %02X (%zd bytes)", msg.message_type(),
                            msg.message_subtype(), data.size());
                 }
-                output.interface->write(data.data(), data.size());
+
+                ASSERT(output.stage, "stage is null");
+                output.stage->write(OUTPUT_FORMAT_SPARTN, data.data(), data.size());
             }
         }
     }

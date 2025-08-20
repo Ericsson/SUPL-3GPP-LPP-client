@@ -91,7 +91,8 @@ void PossibOutput::inspect(streamline::System&, DataType const& message, uint64_
             XINFOF(OUTPUT_PRINT_MODULE, "possib: %zd bytes", size);
         }
 
-        output.interface->write(data, size);
+        ASSERT(output.stage, "stage is null");
+        output.stage->write(OUTPUT_FORMAT_POSSIB, data, size);
     }
 }
 

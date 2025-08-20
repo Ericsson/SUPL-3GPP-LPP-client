@@ -56,6 +56,7 @@
 #endif
 
 #include "client.hpp"
+#include "processor/tlf.hpp"
 
 LOGLET_MODULE(client);
 LOGLET_MODULE(output);
@@ -256,8 +257,99 @@ static void client_initialize(Program& program, lpp::Client&) {
     program.client->set_hack_never_send_abort(program.config.location_server.hack_never_send_abort);
 }
 
-static void initialize_inputs(Program& program, InputConfig const& config) {
-    for (auto const& input : config.inputs) {
+static void process_input(Program& program, InputContext& p, InputFormat formats,
+                          uint8_t const* buffer, size_t count, uint64_t tag) {
+    VERBOSEF("input %s: %zu bytes", p.name.c_str(), count);
+#if !defined(DISABLE_VERBOSE)
+    if (loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
+        char print_buffer[512];
+        for (size_t i = 0; i < count;) {
+            int print_count = 0;
+            for (size_t j = 0; j < 16; j++) {
+                if (i + j < count) {
+                    print_count +=
+                        snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                                 "%02X ", buffer[i + j]);
+                } else {
+                    print_count += snprintf(print_buffer + print_count,
+                                            sizeof(print_buffer) - print_count, "   ");
+                }
+            }
+            for (size_t j = 0; j < 16; j++) {
+                if (i + j < count) {
+                    print_count +=
+                        snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                                 "%c", isprint(buffer[i + j]) ? buffer[i + j] : '.');
+                }
+            }
+
+            TRACEF("%s", print_buffer);
+            i += 16;
+        }
+    }
+#endif
+
+    if (p.nmea && (formats & INPUT_FORMAT_NMEA) != 0) {
+        p.nmea->append(buffer, count);
+        for (;;) {
+            auto message = p.nmea->try_parse();
+            if (!message) break;
+            if (p.input->print) message->print();
+            program.stream.push(std::move(message), tag);
+        }
+    }
+
+    if (p.ubx && (formats & INPUT_FORMAT_UBX) != 0) {
+        p.ubx->append(buffer, count);
+        for (;;) {
+            auto message = p.ubx->try_parse();
+            if (!message) break;
+            if (p.input->print) message->print();
+            program.stream.push(std::move(message), tag);
+        }
+    }
+
+    if (p.ctrl && (formats & INPUT_FORMAT_CTRL) != 0) {
+        p.ctrl->append(buffer, count);
+        for (;;) {
+            auto message = p.ctrl->try_parse();
+            if (!message) break;
+            if (p.input->print) message->print();
+            program.stream.push(std::move(message), tag);
+        }
+    }
+
+    if (p.lpp_uper && (formats & INPUT_FORMAT_LPP_UPER) != 0) {
+        p.lpp_uper->append(buffer, count);
+        for (;;) {
+            auto message = p.lpp_uper->try_parse();
+            if (!message) break;
+
+            auto lpp_message = lpp::Message{message};
+            if (p.input->print) {
+                lpp::print(lpp_message);
+            }
+            program.stream.push(std::move(lpp_message), tag);
+        }
+    }
+
+    if (p.lpp_uper_pad && (formats & INPUT_FORMAT_LPP_UPER_PAD) != 0) {
+        p.lpp_uper_pad->append(buffer, count);
+        for (;;) {
+            auto message = p.lpp_uper_pad->try_parse_provide_assistance_data();
+            if (!message) break;
+
+            if (p.input->print) {
+                lpp::print(message);
+            }
+
+            lpp::destroy(message);
+        }
+    }
+}
+
+static void initialize_inputs(Program& program, InputConfig& config) {
+    for (auto& input : config.inputs) {
         format::nmea::Parser*    nmea{};
         format::ubx::Parser*     ubx{};
         format::ctrl::Parser*    ctrl{};
@@ -280,28 +372,26 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         auto tag_str = tag_stream.str();
         auto tag     = program.config.get_tag(input.tags) | program.config.get_tag("input");
 
-        DEBUGF("input  %p: %s%s%s%s%s %s[%" PRIu64 "]", input.interface.get(),
+        std::stringstream stage_stream;
+        for (size_t i = 0; i < input.stages.size(); i++) {
+            if (i > 0) stage_stream << "->";
+            stage_stream << input.stages[i];
+        }
+
+        auto stage_str = stage_stream.str();
+
+        DEBUGF("input  %p: %s%s%s%s%s %s[%" PRIu64 "] | stages=%s", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", 
-               tag_str.c_str(),
-               tag);
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
+               tag, stage_str.c_str());
 
         if (!nmea && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
             WARNF("-- skipping input %p, no format specified", input.interface.get());
             continue;
         }
-
-        if (nmea) program.nmea_parsers.push_back(std::unique_ptr<format::nmea::Parser>(nmea));
-        if (ubx) program.ubx_parsers.push_back(std::unique_ptr<format::ubx::Parser>(ubx));
-        if (ctrl) program.ctrl_parsers.push_back(std::unique_ptr<format::ctrl::Parser>(ctrl));
-        if (lpp_uper)
-            program.lpp_uper_parsers.push_back(std::unique_ptr<format::lpp::UperParser>(lpp_uper));
-        if (lpp_uper_pad)
-            program.lpp_uper_parsers.push_back(
-                std::unique_ptr<format::lpp::UperParser>(lpp_uper_pad));
 
         std::string event_name = input.interface->event_name();
         if (nmea) event_name += "+nmea";
@@ -310,96 +400,39 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
         if (lpp_uper) event_name += "+lpp-uper";
         if (lpp_uper_pad) event_name += "+lpp-uper-pad";
 
-        input.interface->schedule(program.scheduler);
         input.interface->set_event_name(event_name);
-        input.interface->callback = [&program, &input, nmea, ubx, ctrl, lpp_uper, lpp_uper_pad,
-                                     tag](io::Input&, uint8_t* buffer, size_t count) {
-            if (loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
-                VERBOSEF("input %p: %zu bytes", input.interface.get(), count);
-                char print_buffer[512];
-                for (size_t i = 0; i < count;) {
-                    int print_count = 0;
-                    for (size_t j = 0; j < 16; j++) {
-                        if (i + j < count) {
-                            print_count += snprintf(print_buffer + print_count,
-                                                    sizeof(print_buffer) - print_count, "%02X ",
-                                                    buffer[i + j]);
-                        } else {
-                            print_count += snprintf(print_buffer + print_count,
-                                                    sizeof(print_buffer) - print_count, "   ");
-                        }
-                    }
-                    for (size_t j = 0; j < 16; j++) {
-                        if (i + j < count) {
-                            print_count += snprintf(print_buffer + print_count,
-                                                    sizeof(print_buffer) - print_count, "%c",
-                                                    isprint(buffer[i + j]) ? buffer[i + j] : '.');
-                        }
-                    }
 
-                    TRACEF("%s", print_buffer);
-                    i += 16;
-                }
-            }
+        auto context   = std::make_unique<InputContext>();
+        context->name  = std::move(event_name);
+        context->input = &input;
+        if (nmea) context->nmea = std::unique_ptr<format::nmea::Parser>(nmea);
+        if (ubx) context->ubx = std::unique_ptr<format::ubx::Parser>(ubx);
+        if (ctrl) context->ctrl = std::unique_ptr<format::ctrl::Parser>(ctrl);
+        if (lpp_uper) context->lpp_uper = std::unique_ptr<format::lpp::UperParser>(lpp_uper);
+        if (lpp_uper_pad)
+            context->lpp_uper_pad = std::unique_ptr<format::lpp::UperParser>(lpp_uper_pad);
 
-            if (nmea) {
-                nmea->append(buffer, count);
-                for (;;) {
-                    auto message = nmea->try_parse();
-                    if (!message) break;
-                    if (input.print) message->print();
-                    program.stream.push(std::move(message), tag);
-                }
-            }
+        auto context_ptr = context.get();
+        program.input_contexts.push_back(std::move(context));
 
-            if (ubx) {
-                ubx->append(buffer, count);
-                for (;;) {
-                    auto message = ubx->try_parse();
-                    if (!message) break;
-                    if (input.print) message->print();
-                    program.stream.push(std::move(message), tag);
-                }
-            }
-
-            if (ctrl) {
-                ctrl->append(buffer, count);
-                for (;;) {
-                    auto message = ctrl->try_parse();
-                    if (!message) break;
-                    if (input.print) message->print();
-                    program.stream.push(std::move(message), tag);
-                }
-            }
-
-            if (lpp_uper) {
-                lpp_uper->append(buffer, count);
-                for (;;) {
-                    auto message = lpp_uper->try_parse();
-                    if (!message) break;
-
-                    auto lpp_message = lpp::Message{message};
-                    if (input.print) {
-                        lpp::print(lpp_message);
-                    }
-                    program.stream.push(std::move(lpp_message), tag);
-                }
-            }
-
-            if (lpp_uper_pad) {
-                lpp_uper_pad->append(buffer, count);
-                for (;;) {
-                    auto message = lpp_uper_pad->try_parse_provide_assistance_data();
-                    if (!message) break;
-
-                    if (input.print) {
-                        lpp::print(message);
-                    }
-
-                    lpp::destroy(message);
-                }
-            }
+        auto stage = std::unique_ptr<InputStage>(
+            new InterfaceInputStage(std::move(input.interface), input.format));
+        stage->callback = [context_ptr, &program, tag](InputFormat format, uint8_t const* buffer,
+                                                       size_t length) {
+            process_input(program, *context_ptr, format, buffer, length, tag);
         };
+
+        for (auto const& stage_name : input.stages) {
+            if (stage_name == "tlf") {
+                stage = std::unique_ptr<InputStage>(new TlfInputStage(std::move(stage)));
+            } else {
+                ERRORF("unsupported stage: %s", stage_name.c_str());
+            }
+        }
+
+        stage->schedule(program.scheduler);
+
+        program.input_stages.push_back(std::move(stage));
     }
 }
 
@@ -419,7 +452,7 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     bool location_output = false;
     bool test_output     = false;
     for (auto& output : config.outputs) {
-        if (!output.interface) continue;
+        if (!output.initial_interface) continue;
 
         std::stringstream itag_stream;
         for (size_t i = 0; i < output.include_tags.size(); i++) {
@@ -440,9 +473,17 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
         output.include_tag_mask = program.config.get_tag(output.include_tags);
         output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
 
-        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s%s | include=%s[%" PRIu64 "] | exclude=%s[%" PRIu64
-               "]",
-               output.interface.get()->name(), 
+        std::stringstream stage_stream;
+        for (size_t i = 0; i < output.stages.size(); i++) {
+            if (i > 0) stage_stream << "->";
+            stage_stream << output.stages[i];
+        }
+
+        auto stage_str = stage_stream.str();
+
+        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s%s | include=%s[%" PRIu64
+               "] | exclude=%s[%" PRIu64 "] | stages=%s",
+               output.initial_interface.get()->name(),
                (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
@@ -454,7 +495,8 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                (output.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
                (output.format & OUTPUT_FORMAT_LOCATION) ? "location " : "",
                (output.format & OUTPUT_FORMAT_TEST) ? "test " : "", itag_str.c_str(),
-               output.include_tag_mask, otag_str.c_str(), output.exclude_tag_mask);
+               output.include_tag_mask, otag_str.c_str(), output.exclude_tag_mask,
+               stage_str.c_str());
 
         if (output.lpp_xer_support()) lpp_xer_output = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
@@ -469,7 +511,26 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
         if (output.location_support()) location_output = true;
         if (output.test_support()) test_output = true;
 
-        output.interface->schedule(program.scheduler);
+        if (!output.stages.empty()) {
+            auto last_stage = std::unique_ptr<OutputStage>(
+                new InterfaceOutputStage(std::move(output.initial_interface)));
+
+            for (int i = output.stages.size() - 1; i >= 0; i--) {
+                auto& stage_name = output.stages[i];
+                if (stage_name == "tlf") {
+                    last_stage = std::make_unique<TlfOutputStage>(std::move(last_stage));
+                } else {
+                    ERRORF("unsupported stage: %s", stage_name.c_str());
+                }
+            }
+
+            output.stage = std::move(last_stage);
+        }
+
+        ASSERT(output.stage, "stage is null");
+        if (!output.stage->schedule(program.scheduler)) {
+            ERRORF("failed to schedule output");
+        }
     }
 
     if (lpp_xer_output) program.stream.add_inspector<LppXerOutput>(config);
@@ -486,7 +547,7 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
 
 static void setup_location_stream(Program& program) {
     if (program.config.location_information.use_ubx_location) {
-        if (program.ubx_parsers.empty()) {
+        if (!program.has_ubx_parsers()) {
             WARNF("location from UBX enabled but no UBX input is configured");
         }
 
@@ -495,7 +556,7 @@ static void setup_location_stream(Program& program) {
     }
 
     if (program.config.location_information.use_nmea_location) {
-        if (program.nmea_parsers.empty()) {
+        if (!program.has_nmea_parsers()) {
             WARNF("location from NMEA enabled but no NMEA input is configured");
         }
 
@@ -508,7 +569,7 @@ static void setup_location_stream(Program& program) {
 }
 
 static void setup_control_stream(Program& program) {
-    if (program.ctrl_parsers.empty()) {
+    if (!program.has_ctrl_parsers()) {
         DEBUGF("no input with control messages, control messages will be ignored");
         return;
     }
@@ -755,7 +816,7 @@ int main(int argc, char** argv) {
                 WARNF("identity from command line will be ignored");
             }
 
-            if (program.ctrl_parsers.empty()) {
+            if (!program.has_ctrl_parsers()) {
                 ERRORF("no input with control messages, cannot wait for identity");
                 return 1;
             }
@@ -789,7 +850,7 @@ int main(int argc, char** argv) {
 
         if (program.config.assistance_data.wait_for_cell) {
             INFOF("waiting for cell information");
-            if (program.ctrl_parsers.empty()) {
+            if (!program.has_ctrl_parsers()) {
                 ERRORF("no input with control messages, cannot wait for cell information");
                 return 1;
             }
