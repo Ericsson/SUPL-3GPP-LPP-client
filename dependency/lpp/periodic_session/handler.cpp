@@ -32,14 +32,14 @@ PeriodicSession::~PeriodicSession() {
     destroy();
 }
 
-void PeriodicSession::schedule(scheduler::Scheduler& scheduler) {
+bool PeriodicSession::schedule(scheduler::Scheduler& scheduler) {
     VSCOPE_FUNCTION();
-    mPeriodicTask.schedule(scheduler);
+    return mPeriodicTask.schedule(scheduler);
 }
 
-void PeriodicSession::cancel() {
+bool PeriodicSession::cancel() {
     VSCOPE_FUNCTION();
-    mPeriodicTask.cancel();
+    return mPeriodicTask.cancel();
 }
 
 void PeriodicSession::handle_request_response(TransactionHandle const& transaction,

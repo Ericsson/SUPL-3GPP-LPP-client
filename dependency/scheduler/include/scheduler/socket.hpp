@@ -17,7 +17,7 @@ public:
     ~ListenerTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+     bool cancel() NOEXCEPT;
     NODISCARD bool is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
 
     NODISCARD int fd() const NOEXCEPT { return mListenerFd; }
@@ -43,7 +43,7 @@ public:
     ~TcpListenerTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+     bool cancel() NOEXCEPT;
     NODISCARD bool is_scheduled() const NOEXCEPT {
         return mListenerTask && mListenerTask->is_scheduled();
     }
@@ -66,7 +66,7 @@ public:
     ~UdpListenerTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+    bool cancel() NOEXCEPT;
     NODISCARD bool is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
 
     NODISCARD int fd() const NOEXCEPT { return mListenerFd; }
@@ -92,7 +92,7 @@ public:
     ~SocketTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+    bool cancel() NOEXCEPT;
     NODISCARD bool is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
 
     NODISCARD int fd() const NOEXCEPT { return mFd; }
@@ -120,7 +120,7 @@ public:
     ~TcpConnectTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+     bool cancel() NOEXCEPT;
     NODISCARD bool is_scheduled() const NOEXCEPT { return mIsScheduled; }
 
     NODISCARD int fd() const NOEXCEPT { return mFd; }

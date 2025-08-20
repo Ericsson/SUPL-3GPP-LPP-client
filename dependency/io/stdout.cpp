@@ -8,6 +8,10 @@
 
 #include <loglet/loglet.hpp>
 
+#ifdef stdout
+#undef stdout
+#endif
+
 LOGLET_MODULE2(io, stdout);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, stdout)
 
@@ -16,7 +20,7 @@ StdoutOutput::StdoutOutput() NOEXCEPT  = default;
 StdoutOutput::~StdoutOutput() NOEXCEPT = default;
 
 void StdoutOutput::write(uint8_t const* buffer, size_t length) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     auto result = ::write(STDOUT_FILENO, buffer, length);
     VERBOSEF("::write(%d, %p, %zu) = %d", STDOUT_FILENO, buffer, length, result);

@@ -115,7 +115,7 @@ void CorrectionData::add_correction(long                                 gnss_id
         auto dot_cross  = decode::dot_delta_CrossTrack_r15(satellite->dot_delta_CrossTrack_r15);
 
         auto& correction          = mOrbit[satellite_id];
-        correction.ssr_iod        = ssr_iod;
+        correction.ssr_iod        = static_cast<uint16_t>(ssr_iod);
         correction.iod            = iod;
         correction.reference_time = reference_time;
         correction.delta          = {radial, along_track, cross_track};
@@ -170,7 +170,7 @@ void CorrectionData::add_correction(long                                 gnss_id
 
         auto& clock_correction          = mClock[satellite_id];
         clock_correction.reference_time = reference_time;
-        clock_correction.ssr_iod        = ssr_iod;
+        clock_correction.ssr_iod        = static_cast<uint16_t>(ssr_iod);
         clock_correction.c0             = c0;
         clock_correction.c1             = c1;
         clock_correction.c2             = c2;
@@ -223,7 +223,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
             mSignals[satellite_id].insert(signal_id);
 
             CodeBiasCorrection correction{};
-            correction.ssr_iod                      = ssr_iod;
+            correction.ssr_iod                      = static_cast<uint16_t>(ssr_iod);
             correction.bias                         = decode::codeBias_r15(signal->codeBias_r15);
             signal_corrections.code_bias[signal_id] = correction;
 
@@ -273,7 +273,7 @@ void CorrectionData::add_correction(long                          gnss_id,
             mSignals[satellite_id].insert(signal_id);
 
             PhaseBiasCorrection correction{};
-            correction.ssr_iod                       = ssr_iod;
+            correction.ssr_iod                       = static_cast<uint16_t>(ssr_iod);
             correction.bias                          = decode::phaseBias_r16(signal->phaseBias_r16);
             signal_corrections.phase_bias[signal_id] = correction;
 

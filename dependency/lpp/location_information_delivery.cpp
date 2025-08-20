@@ -25,7 +25,9 @@ LocationInformationDelivery::LocationInformationDelivery(
         deliver();
     };
     if (mClient && mClient->mScheduler) {
-        mPeriodicTask.schedule(*mClient->mScheduler);
+        if(!mPeriodicTask.schedule(*mClient->mScheduler)) {
+            ERRORF("failed to schedule periodic location information delivery");
+        }
     }
 }
 

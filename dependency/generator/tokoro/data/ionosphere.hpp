@@ -42,7 +42,7 @@ struct IonosphericPolynomial {
     double reference_point_latitude;
     double reference_point_longitude;
     double quality_indicator;
-    double quality_indicator_valid;
+    bool quality_indicator_valid;
 };
 
 struct IonosphereGridPoint {

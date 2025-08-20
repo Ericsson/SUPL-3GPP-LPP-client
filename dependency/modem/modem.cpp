@@ -51,14 +51,14 @@ Modem::Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> outpu
     };
 }
 
-void Modem::schedule(scheduler::Scheduler& scheduler) {
+bool Modem::schedule(scheduler::Scheduler& scheduler) {
     VSCOPE_FUNCTION();
-    mInput->schedule(scheduler);
+    return mInput->schedule(scheduler);
 }
 
-void Modem::cancel() {
+bool Modem::cancel() {
     VSCOPE_FUNCTION();
-    mInput->cancel();
+    return mInput->cancel();
 }
 
 void Modem::enable_echo() {

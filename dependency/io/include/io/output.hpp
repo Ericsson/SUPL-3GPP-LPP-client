@@ -14,7 +14,7 @@ public:
     virtual char const* name() const NOEXCEPT = 0;
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+    bool cancel() NOEXCEPT;
 
     virtual void write(uint8_t const* buffer, size_t length) NOEXCEPT = 0;
 
