@@ -13,7 +13,7 @@ public:
     ~StreamTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+    bool cancel() NOEXCEPT;
 
     NODISCARD int fd() const NOEXCEPT { return mPipeFds[0]; }
 
@@ -38,7 +38,7 @@ public:
     ~ForwardStreamTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    NODISCARD bool cancel() NOEXCEPT;
+    bool cancel() NOEXCEPT;
 
     NODISCARD int fd() const NOEXCEPT { return mStreamTask.fd(); }
 

@@ -95,7 +95,7 @@ void eci_to_ecef_matrix(ts::Tai const& time, EciEarthParameters const& earth_par
     auto w = Mat3::rotate_y(-xp) * Mat3::rotate_x(-yp);
     auto u = (w * Mat3::rotate_z(gast)) * (n * p);
 
-#if EXTRA_VERBOSE
+#ifdef EXTRA_VERBOSE
     VERBOSEF("w:");
     VERBOSEF("  %+.14f %+.14f %+.14f", w.m[0], w.m[1], w.m[2]);
     VERBOSEF("  %+.14f %+.14f %+.14f", w.m[3], w.m[4], w.m[5]);

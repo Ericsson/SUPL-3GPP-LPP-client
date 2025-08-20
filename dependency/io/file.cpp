@@ -50,7 +50,10 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     mForwardFd = mStreamTask->fd();
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
-    mFdTask->set_fd(mForwardFd);
+    if(!mFdTask->set_fd(mForwardFd)) {
+        ERRORF("failed to set file fd");
+        return false;
+    }
     mFdTask->set_event_name("fd/" + mEventName);
     mFdTask->on_read = [this](int) {
         auto result = ::read(mForwardFd, mBuffer, sizeof(mBuffer));
@@ -70,8 +73,16 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         cancel();
     };
 
-    mStreamTask->schedule(scheduler);
-    mFdTask->schedule(scheduler);
+    auto stream_scheduled = mStreamTask->schedule(scheduler);
+    auto forward_scheduled = mFdTask->schedule(scheduler);
+    if(!stream_scheduled || !forward_scheduled) {
+        mStreamTask->cancel();
+        mFdTask->cancel();
+        mStreamTask.reset();
+        mFdTask.reset();
+        return false;
+    }
+
     return true;
 }
 

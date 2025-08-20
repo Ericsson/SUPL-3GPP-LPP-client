@@ -195,7 +195,7 @@ std::string Utc::rinex_string() const {
     std::array<char, 256> buffer;
     snprintf(buffer.data(), buffer.size(),
              "%04" PRId64 "%02" PRId64 "%02" PRId64 " %02" PRId64 "%02" PRId64 "%02" PRId64 " UTC",
-             epoch.year, epoch.month, epoch.day, epoch.hour, epoch.minutes, (int64_t)epoch.seconds);
+             epoch.year, epoch.month, epoch.day, epoch.hour, epoch.minutes, static_cast<int64_t>(epoch.seconds));
 
     return std::string{buffer.data()};
 }

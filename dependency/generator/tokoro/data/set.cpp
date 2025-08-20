@@ -37,7 +37,6 @@
 #endif
 
 LOGLET_MODULE3(tokoro, data, set);
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(tokoro, data, set)
 
 namespace generator {
 namespace tokoro {

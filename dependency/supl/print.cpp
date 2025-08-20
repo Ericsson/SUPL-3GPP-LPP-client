@@ -571,12 +571,12 @@ void Printer::value(::PosPayLoad const& value) {
     push('{');
     switch (static_cast<long>(value.present)) {
     case PosPayLoad_PR_NOTHING: field("type", "nothing"); break;
-    case PosPayLoad_PR_tia801payload: field("tia801-payload", value.choice.tia801payload);
-    case PosPayLoad_PR_rrcPayload: field("rrc-payload", value.choice.rrcPayload);
-    case PosPayLoad_PR_rrlpPayload: field("rrlp-payload", value.choice.rrlpPayload);
+    case PosPayLoad_PR_tia801payload: field("tia801-payload", value.choice.tia801payload); break;
+    case PosPayLoad_PR_rrcPayload: field("rrc-payload", value.choice.rrcPayload); break;
+    case PosPayLoad_PR_rrlpPayload: field("rrlp-payload", value.choice.rrlpPayload); break;
     case PosPayLoad_PR_ver2_PosPayLoad_extension:
-        field("ver2-pos-payload-extension", value.choice.ver2_PosPayLoad_extension);
-    default: field("type", "unsupported");
+        field("ver2-pos-payload-extension", value.choice.ver2_PosPayLoad_extension); break;
+    default: field("type", "unsupported"); break;
     }
     pop('}');
 }

@@ -201,8 +201,8 @@ static OutputOptions parse_output_options() {
     OutputOptions output_options{};
 
     if (file_path) {
-        auto file_output = new io::FileOutput(file_path.Get(), true, false, true);
-        output_options.outputs.emplace_back(file_output);
+        auto iout = new io::FileOutput(file_path.Get(), true, false, true);
+        output_options.outputs.emplace_back(iout);
     }
 
     if (serial_device || serial_baud_rate) {
@@ -248,9 +248,9 @@ static OutputOptions parse_output_options() {
             }
         }
 
-        auto serial_output =
+        auto iout =
             new io::SerialOutput(serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit);
-        output_options.outputs.emplace_back(serial_output);
+        output_options.outputs.emplace_back(iout);
     }
 
     if (tcp_ip_address || tcp_port) {
@@ -262,9 +262,9 @@ static OutputOptions parse_output_options() {
             throw args::RequiredError("tcp_port");
         }
 
-        auto tcp_output = new io::TcpClientOutput(tcp_ip_address.Get(),
+        auto iout = new io::TcpClientOutput(tcp_ip_address.Get(),
                                                   static_cast<uint16_t>(tcp_port.Get()), true);
-        output_options.outputs.emplace_back(tcp_output);
+        output_options.outputs.emplace_back(iout);
     }
 
     if (udp_ip_address || udp_port) {
@@ -276,14 +276,14 @@ static OutputOptions parse_output_options() {
             throw args::RequiredError("udp_port");
         }
 
-        auto udp_output =
+        auto iout =
             new io::UdpClientOutput(udp_ip_address.Get(), static_cast<uint16_t>(udp_port.Get()));
-        output_options.outputs.emplace_back(udp_output);
+        output_options.outputs.emplace_back(iout);
     }
 
     if (stdout_output_flag) {
-        auto stdout_output = new io::StdoutOutput();
-        output_options.outputs.emplace_back(stdout_output);
+        auto iout = new io::StdoutOutput();
+        output_options.outputs.emplace_back(iout);
     }
 
     return output_options;

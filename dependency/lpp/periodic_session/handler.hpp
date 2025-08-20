@@ -20,8 +20,8 @@ public:
 
     NODISCARD virtual bool is_valid() const { return mHandle.is_valid(); }
 
-    void schedule(scheduler::Scheduler& scheduler);
-    void cancel();
+    NODISCARD bool schedule(scheduler::Scheduler& scheduler);
+    bool cancel();
 
     void message(TransactionHandle const& transaction, Message message);
     void end(TransactionHandle const& transaction);

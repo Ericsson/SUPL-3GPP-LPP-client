@@ -46,10 +46,10 @@ struct AntexHeader {
 struct Frequency {
     FrequencyType                    type;
     Float3                           eccentricities;
-    double                           dazi{0.0f};
-    double                           zen1{0.0f};
-    double                           zen2{0.0f};
-    double                           dzen{0.0f};
+    double                           dazi{0.0};
+    double                           zen1{0.0};
+    double                           zen2{0.0};
+    double                           dzen{0.0};
     std::vector<double>              no_azimuth;
     std::vector<std::vector<double>> azimuths;
 
@@ -63,10 +63,10 @@ struct FrequencyRms {
 
 struct Antenna {
     SatelliteId id;
-    double      dazi{0.0f};
-    double      zen1{0.0f};
-    double      zen2{0.0f};
-    double      dzen{0.0f};
+    double      dazi{0.0};
+    double      zen1{0.0};
+    double      zen2{0.0};
+    double      dzen{0.0};
     int64_t     frequency_count{0};
     ts::Gps     valid_from;
     ts::Gps     valid_until;

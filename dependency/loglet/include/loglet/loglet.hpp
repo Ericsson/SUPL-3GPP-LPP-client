@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#if FUNCTION_PERFORMANCE
+#if defined(FUNCTION_PERFORMANCE)
 #include <chrono>
 #endif
 
@@ -32,7 +32,7 @@
     }
 #define LOGLET_INDENT_SCOPE(level) LOGLET_XINDENT_SCOPE(LOGLET_CURRENT_MODULE, level)
 
-#if FUNCTION_PERFORMANCE
+#if defined(FUNCTION_PERFORMANCE)
 #define LOGLET_XPERF_SCOPE(module, level)                                                          \
     loglet::ScopeFunctionPerf LOGLET_NAMEPASTE(loglet_scope_function_pref, __LINE__) {             \
         level, module, LOGLET_CURRENT_FUNCTION                                                     \
@@ -60,8 +60,8 @@
     while (false)
 
 #ifdef DISABLE_TRACE
-#define XTRACEF(module, /* fmt, */...)
-#define TRACEF(/* fmt, */...)
+#define XTRACEF(module, fmt, ...)
+#define TRACEF(fmt, ...)
 #define XTRACE_INDENT_SCOPE(module)
 #define TRACE_INDENT_SCOPE()
 #else
@@ -73,8 +73,8 @@
 #endif
 
 #ifdef DISABLE_VERBOSE
-#define XVERBOSEF(module, /* fmt, */...)
-#define VERBOSEF(/* fmt, */...)
+#define XVERBOSEF(module, fmt, ...)
+#define VERBOSEF(fmt, ...)
 #define XVERBOSE_INDENT_SCOPE(module)
 #define VERBOSE_INDENT_SCOPE()
 #else
@@ -86,8 +86,8 @@
 #endif
 
 #ifdef DISABLE_DEBUG
-#define XDEBUGF(module, /* fmt, */...)
-#define DEBUGF(/* fmt, */...)
+#define XDEBUGF(module, fmt, ...)
+#define DEBUGF(fmt, ...)
 #define XDEBUG_INDENT_SCOPE(module)
 #define DEBUG_INDENT_SCOPE()
 #else
@@ -99,8 +99,8 @@
 #endif
 
 #ifdef DISABLE_INFO
-#define XINFOF(module, /* fmt, */...)
-#define INFOF(/* fmt, */...)
+#define XINFOF(module, fmt, ...)
+#define INFOF(fmt, ...)
 #define XINFO_INDENT_SCOPE(module)
 #define INFO_INDENT_SCOPE()
 #else
@@ -112,8 +112,8 @@
 #endif
 
 #ifdef DISABLE_NOTICE
-#define XNOTICEF(module, /* fmt, */...)
-#define NOTICEF(/* fmt, */...)
+#define XNOTICEF(module, fmt, ...)
+#define NOTICEF(fmt, ...)
 #define XNOTICE_INDENT_SCOPE(module)
 #define NOTICE_INDENT_SCOPE()
 #else
@@ -126,8 +126,8 @@
 #endif
 
 #ifdef DISABLE_WARNING
-#define XWARNF(module, /* fmt, */...)
-#define WARNF(/* fmt, */...)
+#define XWARNF(module, fmt, ...)
+#define WARNF(fmt, ...)
 #define XWARN_INDENT_SCOPE(module)
 #define WARN_INDENT_SCOPE()
 #else
@@ -152,19 +152,19 @@
 #endif
 
 #ifdef DISABLE_LOGGING
-#define TODOF(/* fmt, */...)
-#define XTODOF(module, /* fmt, */...)
+#define TODOF(fmt, ...)
+#define XTODOF(module, fmt, ...)
 #else
-#define TODOF(/* fmt, */...)                                                                            \
-    loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" /* fmt, */__FILE__, __LINE__,          \
+#define TODOF(fmt, ...)                                                                            \
+    loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__,          \
                    ##__VA_ARGS__)
-#define XTODOF(module, /* fmt, */...)                                                                   \
-    loglet::errorf(module, "!!! TODO !!! %s:%d\n" /* fmt, */__FILE__, __LINE__, ##__VA_ARGS__)
+#define XTODOF(module, fmt, ...)                                                                   \
+    loglet::errorf(module, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
 #endif
 
 #ifdef DISABLE_TRACE
 #define FUNCTION_SCOPE()
-#define FUNCTION_SCOPEF(/* fmt, */...)
+#define FUNCTION_SCOPEF(fmt, ...)
 #else
 
 #ifdef FUNCTION_PERFORMANCE
@@ -246,8 +246,8 @@ struct LogModule {
     bool                    initialized;
     std::vector<LogModule*> children;
 
-    explicit LogModule(LogModule* parent, char const* name)
-        : parent(parent), name(name), level(Level::Info), initialized(false) {
+    explicit LogModule(LogModule* p, char const* n)
+        : parent(p), name(n), level(Level::Info), initialized(false) {
         preinit();
         register_module(this);
     }
@@ -267,16 +267,19 @@ struct LogModule {
     extern loglet::LogModule LOGLET_MODULE_REF3(name, child, grandchild)
 
 #define LOGLET_MODULE(module)                                                                      \
-    loglet::LogModule LOGLET_MODULE_REF(module) {                                                  \
+    LOGLET_MODULE_FORWARD_REF(module);                                                             \
+     loglet::LogModule LOGLET_MODULE_REF(module) {                                                  \
         nullptr, #module                                                                           \
     }
 #define LOGLET_MODULE2(parent, child)                                                              \
     LOGLET_MODULE_FORWARD_REF(parent);                                                             \
-    loglet::LogModule LOGLET_MODULE_REF2(parent, child) {                                          \
+    LOGLET_MODULE_FORWARD_REF2(parent, child); \
+     loglet::LogModule LOGLET_MODULE_REF2(parent, child) {                                          \
         &LOGLET_MODULE_REF(parent), #child                                                         \
     }
 #define LOGLET_MODULE3(parent, child, grandchild)                                                  \
     LOGLET_MODULE_FORWARD_REF2(parent, child);                                                     \
+    LOGLET_MODULE_FORWARD_REF3(parent, child, grandchild);                                                     \
     loglet::LogModule LOGLET_MODULE_REF3(parent, child, grandchild) {                              \
         &LOGLET_MODULE_REF2(parent, child), #grandchild                                            \
     }
@@ -345,7 +348,7 @@ struct ScopeFunction {
     }
 };
 
-#if FUNCTION_PERFORMANCE
+#if defined(FUNCTION_PERFORMANCE)
 struct PerformanceStack {
     PerformanceStack*                                  parent;
     LogModule const*                                   module;
