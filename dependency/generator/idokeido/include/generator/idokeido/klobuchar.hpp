@@ -10,7 +10,7 @@ struct KlobucharModelParameters {
     Scalar b[4];
 
     Scalar evaluate(ts::Tai const& time, Scalar elevation, Scalar azimuth,
-                                   Vector3 const& llh) const NOEXCEPT;
+                    Vector3 const& llh) const NOEXCEPT;
 };
 
 }  // namespace idokeido

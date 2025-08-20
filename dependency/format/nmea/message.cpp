@@ -32,9 +32,8 @@ std::unique_ptr<Message> UnsupportedMessage::clone() const NOEXCEPT {
 //
 //
 
-ErrorMessage::ErrorMessage(std::string prefix, std::string payload,
-                           std::string checksum) NOEXCEPT : Message(prefix, payload, checksum) {
-}
+ErrorMessage::ErrorMessage(std::string prefix, std::string payload, std::string checksum) NOEXCEPT
+    : Message(prefix, payload, checksum) {}
 
 void ErrorMessage::print() const NOEXCEPT {
     printf("[%5s] ERROR %s\n", prefix().c_str(), payload().c_str());

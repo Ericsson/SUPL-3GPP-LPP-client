@@ -20,7 +20,7 @@ void LppXerOutput::inspect(streamline::System&, DataType const& message, uint64_
 
     for (auto const& output : mOutput.outputs) {
         if (!output.lpp_xer_support()) continue;
-        if(!output.accept_tag(tag)) {
+        if (!output.accept_tag(tag)) {
             XDEBUGF(OUTPUT_PRINT_MODULE, "lpp-xer: tag %llX not accepted", tag);
             continue;
         }
@@ -42,7 +42,7 @@ void LppUperOutput::inspect(streamline::System&, DataType const& message, uint64
 
     for (auto const& output : mOutput.outputs) {
         if (!output.lpp_uper_support()) continue;
-        if(!output.accept_tag(tag)) {
+        if (!output.accept_tag(tag)) {
             XDEBUGF(OUTPUT_PRINT_MODULE, "lpp-uper: tag %llX not accepted", tag);
             continue;
         }

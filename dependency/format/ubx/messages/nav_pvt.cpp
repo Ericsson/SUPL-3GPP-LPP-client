@@ -69,7 +69,7 @@ double UbxNavPvt::p_dop() const NOEXCEPT {
 }
 
 time_t UbxNavPvt::timestamp() const NOEXCEPT {
-    struct tm tm {};
+    struct tm tm{};
     tm.tm_year  = mPayload.year - 1900;
     tm.tm_mon   = mPayload.month - 1;
     tm.tm_mday  = mPayload.day;

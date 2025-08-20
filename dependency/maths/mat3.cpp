@@ -18,9 +18,7 @@ Mat3 Mat3::rotate_y(double angle) NOEXCEPT {
     auto c = std::cos(angle);
     auto s = std::sin(angle);
     return {
-        c, 0, s, 
-        0, 1, 0, 
-        -s, 0, c,
+        c, 0, s, 0, 1, 0, -s, 0, c,
     };
 }
 
@@ -28,9 +26,7 @@ Mat3 Mat3::rotate_z(double angle) NOEXCEPT {
     auto c = std::cos(angle);
     auto s = std::sin(angle);
     return {
-        c, -s, 0, 
-        s, c, 0, 
-        0, 0, 1,
+        c, -s, 0, s, c, 0, 0, 0, 1,
     };
 }
 

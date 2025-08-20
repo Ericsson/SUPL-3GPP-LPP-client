@@ -13,8 +13,8 @@
 #include <generator/idokeido/idokeido.hpp>
 #endif
 
-#include "output_format.hpp"
 #include "input_format.hpp"
+#include "output_format.hpp"
 #include "stage.hpp"
 
 #include <memory>

@@ -249,7 +249,7 @@ void CorrectionCache::add_correction(long                         gnss_id,
     }
 }
 
-void CorrectionCache::add_correction(long                         gnss_id,
+void CorrectionCache::add_correction(long                          gnss_id,
                                      GNSS_SSR_PhaseBias_r16 const* correction) NOEXCEPT {
     if (!correction) return;
     FUNCTION_SCOPE();
@@ -285,8 +285,8 @@ void CorrectionCache::add_correction(long                         gnss_id,
             auto value     = decode::phaseBias_r16(signal->phaseBias_r16);
             sc.phase_bias[signal_id] = value;
 
-            VERBOSEF("phase bias: %4u %3s %-16s %+f", ssr_iod, satellite_id.name(), signal_id.name(),
-                     value);
+            VERBOSEF("phase bias: %4u %3s %-16s %+f", ssr_iod, satellite_id.name(),
+                     signal_id.name(), value);
         }
     }
 }
@@ -524,14 +524,14 @@ SatelliteCorrection const* CorrectionCache::satellite_correction(SatelliteId id)
 
 CorrectionPointSet const* CorrectionCache::correction_point_set(Vector3 const& llh) const NOEXCEPT {
     std::vector<CorrectionPointSet const*> correction_point_sets;
-    for(auto& [id, point_set] : mCorrectionPointSets) {
+    for (auto& [id, point_set] : mCorrectionPointSets) {
         if (point_set->contains(llh)) {
             correction_point_sets.push_back(point_set.get());
         }
     }
 
     // Sort by updated by
-    std::sort(correction_point_sets.begin(), correction_point_sets.end(), 
+    std::sort(correction_point_sets.begin(), correction_point_sets.end(),
               [](CorrectionPointSet const* a, CorrectionPointSet const* b) {
                   return a->updated_at < b->updated_at;
               });

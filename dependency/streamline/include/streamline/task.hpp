@@ -86,9 +86,9 @@ public:
                     inspector->inspect(mSystem, item.data, item.tag);
                     auto after_event = std::chrono::steady_clock::now();
                     VERBOSEF("inspector \"%s\" took %lld ms", inspector->name(),
-                           std::chrono::duration_cast<std::chrono::milliseconds>(after_event -
-                                                                                 before_event)
-                               .count());
+                             std::chrono::duration_cast<std::chrono::milliseconds>(after_event -
+                                                                                   before_event)
+                                 .count());
                 }
             }
 
@@ -115,9 +115,9 @@ public:
 
                 auto after_event = std::chrono::steady_clock::now();
                 VERBOSEF("consumer \"%s\" took %lld ms", consumer->name(),
-                       std::chrono::duration_cast<std::chrono::milliseconds>(after_event -
-                                                                             before_event)
-                           .count());
+                         std::chrono::duration_cast<std::chrono::milliseconds>(after_event -
+                                                                               before_event)
+                             .count());
 
                 it++;
             }

@@ -75,7 +75,7 @@ Timestamp Gps::time_of_week() const {
 
 NODISCARD Timestamp Gps::mod_timestamp() const {
     auto timestamp = tm;
-    while(timestamp.seconds() > WEEK_IN_SECONDS * 1024) {
+    while (timestamp.seconds() > WEEK_IN_SECONDS * 1024) {
         timestamp.subtract(WEEK_IN_SECONDS * 1024);
     }
     return timestamp;
@@ -137,7 +137,6 @@ static TimePoint timepoint_from_timestamp(Timestamp time) {
 TimePoint Gps::to_timepoint() const {
     return timepoint_from_timestamp(tm);
 }
-
 
 Gps Gps::now() {
     return Gps{Utc::now()};

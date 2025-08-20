@@ -1,10 +1,10 @@
 #pragma once
 #include <core/core.hpp>
 #include <ephemeris/ephemeris.hpp>
+#include <generator/idokeido/correction.hpp>
 #include <generator/idokeido/idokeido.hpp>
 #include <generator/idokeido/klobuchar.hpp>
 #include <generator/idokeido/satellite.hpp>
-#include <generator/idokeido/correction.hpp>
 
 #include <bitset>
 #include <memory>
@@ -70,7 +70,7 @@ public:
 
         Vector3 true_position;
         Vector3 true_velocity;
-        Scalar true_clock_bias;
+        Scalar  true_clock_bias;
 
         long selected0;
         long selected1;

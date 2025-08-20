@@ -58,4 +58,3 @@ AstronomicalArguments AstronomicalArguments::evaluate(double t) NOEXCEPT {
 
 }  // namespace tokoro
 }  // namespace generator
-

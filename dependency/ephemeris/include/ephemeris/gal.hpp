@@ -41,25 +41,25 @@ struct GalEphemeris {
 
     NODISCARD bool is_valid(ts::Gst const& time) const NOEXCEPT;
     NODISCARD bool match(GalEphemeris const& other) const NOEXCEPT {
-        if(prn != other.prn) return false;
-        if(week_number != other.week_number) return false;
-        if(iod_nav != other.iod_nav) return false;
-        if(lpp_iod != other.lpp_iod) return false;
-        if(std::abs(toe - other.toe) > 1e-3) return false;
-        if(std::abs(toc - other.toc) > 1e-3) return false;
+        if (prn != other.prn) return false;
+        if (week_number != other.week_number) return false;
+        if (iod_nav != other.iod_nav) return false;
+        if (lpp_iod != other.lpp_iod) return false;
+        if (std::abs(toe - other.toe) > 1e-3) return false;
+        if (std::abs(toc - other.toc) > 1e-3) return false;
         return true;
     }
     NODISCARD bool compare(GalEphemeris const& other) const NOEXCEPT {
-        if(week_number < other.week_number) return true;
-        if(week_number > other.week_number) return false;
-        if(toe < other.toe) return true;
-        if(toe > other.toe) return false;
-        if(toc < other.toc) return true;
-        if(toc > other.toc) return false;
-        if(lpp_iod < other.lpp_iod) return true;
-        if(lpp_iod > other.lpp_iod) return false;
-        if(iod_nav < other.iod_nav) return true;
-        if(iod_nav > other.iod_nav) return false;
+        if (week_number < other.week_number) return true;
+        if (week_number > other.week_number) return false;
+        if (toe < other.toe) return true;
+        if (toe > other.toe) return false;
+        if (toc < other.toc) return true;
+        if (toc > other.toc) return false;
+        if (lpp_iod < other.lpp_iod) return true;
+        if (lpp_iod > other.lpp_iod) return false;
+        if (iod_nav < other.iod_nav) return true;
+        if (iod_nav > other.iod_nav) return false;
         return false;
     }
     NODISCARD EphemerisResult compute(ts::Gst const& time) const NOEXCEPT;

@@ -23,7 +23,7 @@ public:
     NODISCARD uint64_t cell() const NOEXCEPT { return mCell; }
     NODISCARD bool     is_nr() const NOEXCEPT { return mIsNr; }
 
-    void          print() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
     NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
 private:

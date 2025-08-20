@@ -43,8 +43,8 @@ static std::vector<std::string> split(std::string const& str, char delim) {
 #include "config/logging.cpp"
 #include "config/output.cpp"
 #ifdef INCLUDE_GENERATOR_RTCM
-#include "config/lpp2rtcm.cpp"
 #include "config/lpp2frame_rtcm.cpp"
+#include "config/lpp2rtcm.cpp"
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
 #include "config/lpp2spartn.cpp"

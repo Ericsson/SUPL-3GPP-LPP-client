@@ -9,10 +9,10 @@ class Inspector {
 public:
     using DataType = T;
 
-    Inspector()                                                       = default;
-    virtual ~Inspector()                                              = default;
-    virtual void inspect(System&, DataType const& data, uint64_t tag) = 0;
-    virtual bool accept(System&, uint64_t) { return true; }
-    virtual const char* name() const NOEXCEPT = 0;
+    Inspector()                                                              = default;
+    virtual ~Inspector()                                                     = default;
+    virtual void        inspect(System&, DataType const& data, uint64_t tag) = 0;
+    virtual bool        accept(System&, uint64_t) { return true; }
+    virtual char const* name() const NOEXCEPT = 0;
 };
 }  // namespace streamline

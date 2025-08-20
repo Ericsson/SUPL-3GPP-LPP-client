@@ -7,7 +7,6 @@ LOGLET_MODULE2(p, tlf);
 
 constexpr static char MAGIC[4] = "TLF";
 
-
 OutputStage::OutputStage() NOEXCEPT : mScheduler(nullptr) {}
 OutputStage::~OutputStage() NOEXCEPT = default;
 
@@ -166,7 +165,8 @@ bool InterfaceInputStage::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
 }
 
 TlfInputStage::TlfInputStage(std::unique_ptr<InputStage> parent) NOEXCEPT
-    : mParent(std::move(parent)), mTask(std::chrono::milliseconds(100)) {
+    : mParent(std::move(parent)),
+      mTask(std::chrono::milliseconds(100)) {
     FUNCTION_SCOPE();
     mLastMessage = std::chrono::steady_clock::now();
 
@@ -175,9 +175,9 @@ TlfInputStage::TlfInputStage(std::unique_ptr<InputStage> parent) NOEXCEPT
         FUNCTION_SCOPEF("periodic task");
         DEBUGF("queue size = %zu", mQueue.size());
         auto now = std::chrono::steady_clock::now();
-        while(mQueue.size() > 0) {
+        while (mQueue.size() > 0) {
             auto& item = mQueue.front();
-            if(item.time <= now) {
+            if (item.time <= now) {
                 read(item.format, item.buffer.data(), item.buffer.size());
                 mQueue.pop();
             } else {
@@ -192,9 +192,9 @@ TlfInputStage::TlfInputStage(std::unique_ptr<InputStage> parent) NOEXCEPT
         mParser.append(buffer, length);
 
         std::vector<uint8_t> output;
-        TlfHeader header;
-        for(;;) {
-            if(!mParser.parse(header, output)) {
+        TlfHeader            header;
+        for (;;) {
+            if (!mParser.parse(header, output)) {
                 break;
             }
 
@@ -260,7 +260,7 @@ bool TlfParser::parse(TlfHeader& header, std::vector<uint8_t>& output) NOEXCEPT 
     output.resize(mBytesWanted);
     copy_to_buffer(output.data(), mBytesWanted);
     skip(mBytesWanted);
-    header = mHeader;
+    header       = mHeader;
     mBytesWanted = 0;
     return true;
 }

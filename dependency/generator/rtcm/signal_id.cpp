@@ -732,4 +732,3 @@ long SignalId::absolute_id() const {
 
     return mLppId;
 }
-

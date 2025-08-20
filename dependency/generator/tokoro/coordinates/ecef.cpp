@@ -6,8 +6,5 @@
 #include <maths/float3.hpp>
 
 namespace generator {
-namespace tokoro {
-
-
-}  // namespace tokoro
+namespace tokoro {}  // namespace tokoro
 }  // namespace generator

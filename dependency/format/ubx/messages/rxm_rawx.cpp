@@ -3,8 +3,8 @@
 #include "encoder.hpp"
 #include "parser.hpp"
 
-#include <stdio.h>
 #include <loglet/loglet.hpp>
+#include <stdio.h>
 
 LOGLET_MODULE2(ubx, rawx);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(ubx, rawx)

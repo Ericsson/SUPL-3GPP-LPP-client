@@ -61,12 +61,11 @@ public:
         return mAgeOfDifferentialCorrections;
     }
 
-    NODISCARD static std::unique_ptr<Message>
-    parse(std::string prefix, std::string const& payload, std::string checksum);
+    NODISCARD static std::unique_ptr<Message> parse(std::string prefix, std::string const& payload,
+                                                    std::string checksum);
 
 private:
-    EXPLICIT GgaMessage(std::string prefix, std::string payload,
-                            std::string checksum) NOEXCEPT;
+    EXPLICIT GgaMessage(std::string prefix, std::string payload, std::string checksum) NOEXCEPT;
 
     ts::Tai       mTimeOfDay;
     double        mLatitude;

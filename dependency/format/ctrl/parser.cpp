@@ -123,9 +123,8 @@ std::unique_ptr<Message> Parser::parse_cid(std::string const&              messa
     return std::unique_ptr<Message>(new CellId(message, mcc, mnc, tac, cell, is_nr));
 }
 
-std::unique_ptr<Message>
-Parser::parse_identity(std::string const&              message,
-                       std::vector<std::string> const& tokens) NOEXCEPT {
+std::unique_ptr<Message> Parser::parse_identity(std::string const&              message,
+                                                std::vector<std::string> const& tokens) NOEXCEPT {
     FUNCTION_SCOPE();
 
     if (tokens.size() < 2) {

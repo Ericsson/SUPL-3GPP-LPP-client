@@ -42,12 +42,11 @@ public:
     /// Get the vertical position error.
     NODISCARD double vertical_position_error() const NOEXCEPT { return mAltitudeError; }
 
-    NODISCARD static std::unique_ptr<Message>
-    parse(std::string prefix, std::string const& payload, std::string checksum);
+    NODISCARD static std::unique_ptr<Message> parse(std::string prefix, std::string const& payload,
+                                                    std::string checksum);
 
 private:
-    EXPLICIT GstMessage(std::string prefix, std::string payload,
-                             std::string checksum) NOEXCEPT;
+    EXPLICIT GstMessage(std::string prefix, std::string payload, std::string checksum) NOEXCEPT;
 
     double mRmsValue;
     double mSemiMajorError;
@@ -59,4 +58,4 @@ private:
 };
 
 }  // namespace nmea
-}  // namespace receiver
+}  // namespace format

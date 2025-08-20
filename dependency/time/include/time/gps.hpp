@@ -28,7 +28,7 @@ public:
     NODISCARD Timestamp timestamp() const { return tm; }
     NODISCARD Timestamp mod_timestamp() const;
 
-    NODISCARD Gps operator+(Timestamp delta) const { return Gps(tm + delta); }
+    NODISCARD Gps       operator+(Timestamp delta) const { return Gps(tm + delta); }
     NODISCARD Timestamp difference(Gps const& other) const;
 
     NODISCARD TimePoint to_timepoint() const;
@@ -36,7 +36,8 @@ public:
     NODISCARD static Gps now();
     NODISCARD static Gps from_day_tod(int64_t day, double tod);
     NODISCARD static Gps from_week_tow(int64_t week, int64_t tow, double fractions);
-    NODISCARD static Gps from_ymdhms(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t min, double seconds);
+    NODISCARD static Gps from_ymdhms(int64_t year, int64_t month, int64_t day, int64_t hour,
+                                     int64_t min, double seconds);
 
     NODISCARD static int64_t days_from_ymd(int64_t year, int64_t month, int64_t day);
 

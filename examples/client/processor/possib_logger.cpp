@@ -83,7 +83,7 @@ void PossibOutput::inspect(streamline::System&, DataType const& message, uint64_
     auto size     = sentence.size();
     for (auto const& output : mOutput.outputs) {
         if (!output.possib_support()) continue;
-        if(!output.accept_tag(tag)) {
+        if (!output.accept_tag(tag)) {
             XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
@@ -224,7 +224,8 @@ void LppPossibBuilder::process(GNSS_RTK_ReferenceStationInfo_r15 const& x) {
 }
 
 void LppPossibBuilder::process(GNSS_RTK_CommonObservationInfo_r15 const& x) {
-    basic_log("GNSS-RTK-CommonObservationInfo-r15", &asn_DEF_GNSS_RTK_CommonObservationInfo_r15, &x);
+    basic_log("GNSS-RTK-CommonObservationInfo-r15", &asn_DEF_GNSS_RTK_CommonObservationInfo_r15,
+              &x);
 }
 
 void LppPossibBuilder::process(GNSS_RTK_AuxiliaryStationData_r15 const& x) {
@@ -482,7 +483,8 @@ void LppPossibBuilder::process(long id, GNSS_SSR_GriddedCorrection_r16 const& x)
 }
 
 void LppPossibBuilder::process(long id, NavIC_DifferentialCorrections_r16 const& x) {
-    basic_log(id, "NavIC-DifferentialCorrections-r16", &asn_DEF_NavIC_DifferentialCorrections_r16, &x);
+    basic_log(id, "NavIC-DifferentialCorrections-r16", &asn_DEF_NavIC_DifferentialCorrections_r16,
+              &x);
 }
 
 void LppPossibBuilder::process(long id, NavIC_GridModelParameter_r16 const& x) {
@@ -628,7 +630,8 @@ void LppPossibBuilder::process(ProvideAssistanceData const& message) {
     }
 }
 
-void LppPossibBuilder::inspect(streamline::System& system, DataType const& message, uint64_t) noexcept {
+void LppPossibBuilder::inspect(streamline::System& system, DataType const& message,
+                               uint64_t) noexcept {
     VSCOPE_FUNCTION();
 
     if (!message) return;

@@ -213,8 +213,8 @@ std::string Utc::rinex_filename() const {
 }
 
 Utc Utc::now() {
-    struct timeval tv {};
-    struct tm      tm {};
+    struct timeval tv{};
+    struct tm      tm{};
 
     gettimeofday(&tv, nullptr);
     auto tt = gmtime_r(&tv.tv_sec, &tm);

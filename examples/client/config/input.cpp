@@ -251,7 +251,8 @@ static io::ParityBit parse_paritybit(std::string const& str) {
                            "'");
 }
 
-static std::unique_ptr<io::Input> parse_serial(std::unordered_map<std::string, std::string> const& options) {
+static std::unique_ptr<io::Input>
+parse_serial(std::unordered_map<std::string, std::string> const& options) {
     if (options.find("device") == options.end()) {
         throw args::RequiredError("--input serial: missing `device` option");
     }
@@ -320,7 +321,7 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
         return std::unique_ptr<io::Input>(
             new io::TcpClientInput(host, static_cast<uint16_t>(port), reconnect));
     } else if (options.find("path") != options.end()) {
-        auto path  = options.at("path");
+        auto path = options.at("path");
         return std::unique_ptr<io::Input>(new io::TcpClientInput(path, reconnect));
     } else {
         throw args::RequiredError("--input tcp-client: missing `host` and `port` or `path` option");
@@ -358,9 +359,10 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        return std::unique_ptr<io::Input>(new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
+        return std::unique_ptr<io::Input>(
+            new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
     } else if (options.find("path") != options.end()) {
-        auto path  = options.at("path");
+        auto path = options.at("path");
         return std::unique_ptr<io::Input>(new io::TcpServerInput(path));
     } else {
         throw args::RequiredError(
@@ -399,9 +401,10 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        return std::unique_ptr<io::Input>(new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
+        return std::unique_ptr<io::Input>(
+            new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
     } else if (options.find("path") != options.end()) {
-        auto path  = options.at("path");
+        auto path = options.at("path");
         return std::unique_ptr<io::Input>(new io::UdpServerInput(path));
     } else {
         throw args::RequiredError(

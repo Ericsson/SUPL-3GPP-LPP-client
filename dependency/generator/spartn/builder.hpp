@@ -21,7 +21,7 @@ public:
     inline void b(bool value) { bits(static_cast<uint64_t>(value), 1); }
 
     double double_to_bits(double min_range, double max_range, double resolution, double value,
-                        uint8_t bits);
+                          uint8_t bits);
 
     // TODO: float, double
     void        reserve(uint32_t bits);

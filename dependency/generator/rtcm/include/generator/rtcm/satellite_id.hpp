@@ -20,7 +20,6 @@
 
 #define SATELLITE_ID_MAX (BDS_ABS_MAX + 1)
 
-
 class SatelliteId {
 public:
     SatelliteId() = default;

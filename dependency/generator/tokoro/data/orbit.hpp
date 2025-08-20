@@ -36,6 +36,5 @@ struct OrbitCorrection {
                               Float3* output_cross, double* output_delta) const NOEXCEPT;
 };
 
-
 }  // namespace tokoro
 }  // namespace generator

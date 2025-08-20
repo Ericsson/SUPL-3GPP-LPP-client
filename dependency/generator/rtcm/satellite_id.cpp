@@ -102,7 +102,7 @@ Maybe<long> SatelliteId::as_msm() const {
 }
 
 long SatelliteId::absolute_id() const {
-    switch(mGnss) {
+    switch (mGnss) {
     case Gnss::GPS: return GPS_ABS_MIN + mLppId;
     case Gnss::GLONASS: return GLO_ABS_MIN + mLppId;
     case Gnss::GALILEO: return GAL_ABS_MIN + mLppId;

@@ -508,7 +508,8 @@ static char const* output_type(io::Output* output) {
 
 static void dump(OutputConfig const& config) {
     for (auto const& output : config.outputs) {
-        DEBUGF("%p: %s", output.initial_interface.get(), output_type(output.initial_interface.get()));
+        DEBUGF("%p: %s", output.initial_interface.get(),
+               output_type(output.initial_interface.get()));
         DEBUG_INDENT_SCOPE();
         DEBUGF("format: %s%s%s%s%s%s%s%s%s%s%s", (output.format & OUTPUT_FORMAT_UBX) ? "UBX " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "NMEA " : "",

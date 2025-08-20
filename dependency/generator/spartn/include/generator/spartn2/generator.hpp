@@ -15,7 +15,7 @@ namespace spartn {
 class Message {
 public:
     EXPLICIT Message(uint8_t message_type, uint8_t message_subtype, uint32_t message_time,
-                            std::vector<uint8_t>&& payload);
+                     std::vector<uint8_t>&& payload);
 
     /// Message type
     uint8_t message_type() const { return mMessageType; }

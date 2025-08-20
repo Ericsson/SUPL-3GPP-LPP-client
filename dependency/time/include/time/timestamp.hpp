@@ -47,7 +47,7 @@ public:
             mSeconds -= underflow;
             mFraction += static_cast<double>(underflow);
         }
-        
+
         while (mFraction >= 1.0) {
             auto overflow = static_cast<int64_t>(mFraction);
             mSeconds += overflow;

@@ -15,7 +15,7 @@ public:
     Lpp2FrameRtcm(OutputConfig const& output, Lpp2FrameRtcmConfig const& config)
         : mOutput(output), mConfig(config) {}
 
-    const char* name() const NOEXCEPT override { return "Lpp2FrameRtcm"; }
+    char const* name() const NOEXCEPT override { return "Lpp2FrameRtcm"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:

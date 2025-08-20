@@ -234,8 +234,8 @@ inline double stecResidualCorrection_r16(
 struct StecQualityIndicator {
     bool   invalid;
     double value;
-    int cls;
-    int val;
+    int    cls;
+    int    val;
 };
 
 inline StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
@@ -250,9 +250,9 @@ inline StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
     };
 
     auto value = bit_string.buf[0];
-    auto cls     = (value >> 5) & 0x7;
-    auto val     = (value >> 2) & 0x7;
-    auto index    = (8 * cls) + val;
+    auto cls   = (value >> 5) & 0x7;
+    auto val   = (value >> 2) & 0x7;
+    auto index = (8 * cls) + val;
 
     assert(index < 64);
     return StecQualityIndicator{
