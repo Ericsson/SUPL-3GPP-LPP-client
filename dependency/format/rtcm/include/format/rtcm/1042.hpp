@@ -11,15 +11,14 @@
 // Also maybe remove Message in Rtcm1042Message to be more uniform with other formats
 
 namespace format {
-namespace rtcm{
+namespace rtcm {
 
 class Rtcm1042 final : public Message {
 public:
     EXPLICIT Rtcm1042(DF002 type, std::vector<uint8_t> data) NOEXCEPT;
     ~Rtcm1042() override = default;
 
-    Rtcm1042(Rtcm1042 const& other)
-        : Message(other) {}
+    Rtcm1042(Rtcm1042 const& other) : Message(other) {}
     Rtcm1042(Rtcm1042&&)                 = delete;
     Rtcm1042& operator=(Rtcm1042 const&) = delete;
     Rtcm1042& operator=(Rtcm1042&&)      = delete;

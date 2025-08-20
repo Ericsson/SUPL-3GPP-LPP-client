@@ -41,16 +41,17 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
              decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16));
 
     size_t buffer_count = 0;
-    size_t buffer_size = sizeof(buffer) ;
+    size_t buffer_size  = sizeof(buffer);
 
     auto i           = 0;
     auto grid_points = correction_point_set.grid_points();
     for (auto gp : grid_points) {
         if (gp.id < 0) {
-            buffer_count += static_cast<size_t>(snprintf(buffer + buffer_count, buffer_size - buffer_count, "-- "));
+            buffer_count += static_cast<size_t>(
+                snprintf(buffer + buffer_count, buffer_size - buffer_count, "-- "));
         } else {
-            buffer_count +=
-                static_cast<size_t>(snprintf(buffer + buffer_count, buffer_size - buffer_count, "%02ld ", gp.id));
+            buffer_count += static_cast<size_t>(
+                snprintf(buffer + buffer_count, buffer_size - buffer_count, "%02ld ", gp.id));
         }
 
         if (++i % (correction_point_set.numberOfStepsLongitude_r16 + 1) == 0) {

@@ -31,7 +31,7 @@ class RtcmOutput : public streamline::Inspector<RtcmMessage> {
 public:
     RtcmOutput(OutputConfig const& output) : mOutput(output) {}
 
-    const char* name() const NOEXCEPT override { return "RtcmOutput"; }
+    char const* name() const NOEXCEPT override { return "RtcmOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:

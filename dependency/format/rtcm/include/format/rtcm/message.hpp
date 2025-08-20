@@ -30,7 +30,7 @@ public:
     virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
 
 protected:
-    DF002 mType;
+    DF002                mType;
     std::vector<uint8_t> mData;
 };
 

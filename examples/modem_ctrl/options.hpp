@@ -8,7 +8,7 @@
 #include <memory>
 
 struct Config {
-    int                         port;
+    uint16_t                    port;
     int                         update_interval;
     std::unique_ptr<io::Input>  input;
     std::unique_ptr<io::Output> output;

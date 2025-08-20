@@ -6,9 +6,9 @@
 #include "tokoro.hpp"
 
 #include <format/antex/antex.hpp>
+#include <format/rtcm/datafields.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
-#include <format/rtcm/datafields.hpp>
 
 LOGLET_MODULE2(p, tkr);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, tkr)
@@ -118,38 +118,38 @@ void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019* rtcm) {
     VSCOPE_FUNCTION();
 
     ephemeris::GpsEphemeris ephemeris{};
-    ephemeris.prn = rtcm->prn;
-    ephemeris.week_number = rtcm->week;
-    ephemeris.ca_or_p_on_l2 = rtcm->code_on_l2;
-    ephemeris.ura_index = rtcm->SV_ACCURACY;
-    ephemeris.sv_health = rtcm->SV_HEALTH;
-    ephemeris.lpp_iod = rtcm->iode;
-    ephemeris.iodc = rtcm->iodc;
-    ephemeris.iode = rtcm->iode;
-    ephemeris.aodo = 0;
-    ephemeris.toc = rtcm->t_oc;
-    ephemeris.toe = rtcm->t_oe;
-    ephemeris.tgd = rtcm->t_GD;
-    ephemeris.af2 = rtcm->a_f2;
-    ephemeris.af1 = rtcm->a_f1;
-    ephemeris.af0 = rtcm->a_f0;
-    ephemeris.crc = rtcm->C_rc;
-    ephemeris.crs = rtcm->C_rs;
-    ephemeris.cuc = rtcm->C_uc;
-    ephemeris.cus = rtcm->C_us;
-    ephemeris.cic = rtcm->C_ic;
-    ephemeris.cis = rtcm->C_is;
-    ephemeris.e = rtcm->e;
-    ephemeris.m0 = rtcm->M_0;
-    ephemeris.delta_n = rtcm->delta_n;
-    ephemeris.a = rtcm->sqrt_A * rtcm->sqrt_A;
-    ephemeris.i0 = rtcm->i_0;
-    ephemeris.omega0 = rtcm->OMEGA_0;
-    ephemeris.omega = rtcm->omega;
-    ephemeris.omega_dot = rtcm->OMEGADOT;
-    ephemeris.idot = rtcm->idot;
+    ephemeris.prn               = rtcm->prn;
+    ephemeris.week_number       = rtcm->week;
+    ephemeris.ca_or_p_on_l2     = rtcm->code_on_l2;
+    ephemeris.ura_index         = rtcm->SV_ACCURACY;
+    ephemeris.sv_health         = rtcm->SV_HEALTH;
+    ephemeris.lpp_iod           = rtcm->iode;
+    ephemeris.iodc              = rtcm->iodc;
+    ephemeris.iode              = rtcm->iode;
+    ephemeris.aodo              = 0;
+    ephemeris.toc               = rtcm->t_oc;
+    ephemeris.toe               = rtcm->t_oe;
+    ephemeris.tgd               = rtcm->t_GD;
+    ephemeris.af2               = rtcm->a_f2;
+    ephemeris.af1               = rtcm->a_f1;
+    ephemeris.af0               = rtcm->a_f0;
+    ephemeris.crc               = rtcm->C_rc;
+    ephemeris.crs               = rtcm->C_rs;
+    ephemeris.cuc               = rtcm->C_uc;
+    ephemeris.cus               = rtcm->C_us;
+    ephemeris.cic               = rtcm->C_ic;
+    ephemeris.cis               = rtcm->C_is;
+    ephemeris.e                 = rtcm->e;
+    ephemeris.m0                = rtcm->M_0;
+    ephemeris.delta_n           = rtcm->delta_n;
+    ephemeris.a                 = rtcm->sqrt_A * rtcm->sqrt_A;
+    ephemeris.i0                = rtcm->i_0;
+    ephemeris.omega0            = rtcm->OMEGA_0;
+    ephemeris.omega             = rtcm->omega;
+    ephemeris.omega_dot         = rtcm->OMEGADOT;
+    ephemeris.idot              = rtcm->idot;
     ephemeris.fit_interval_flag = rtcm->fit;
-    ephemeris.l2_p_data_flag = rtcm->L2_P_data_flag;
+    ephemeris.l2_p_data_flag    = rtcm->L2_P_data_flag;
 
     mTokoro.process_ephemeris(ephemeris);
 }
@@ -160,7 +160,7 @@ void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019* rtcm) {
     if (rtcm->type() == 1019) {
         handle_gps_lnav(rtcm);
     } else {
-        VERBOSEF("not rtcm 1019 but rtcm %d", rtcm-> type());
+        VERBOSEF("not rtcm 1019 but rtcm %d", rtcm->type());
     }
 }
 
@@ -168,36 +168,38 @@ void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042* rtcm) {
     VSCOPE_FUNCTION();
 
     ephemeris::BdsEphemeris ephemeris{};
-    ephemeris.prn = rtcm->prn;
-    ephemeris.week_number = rtcm->week_number; // Could have something to do with sow???
-    ephemeris.sv_health = rtcm->sv_health;
-    ephemeris.lpp_iod = static_cast<uint16_t>(static_cast<uint32_t>(rtcm->toe) >> 9);
-    ephemeris.iodc = (static_cast<uint32_t>(rtcm->toc) / 720) % 240;
-    ephemeris.iode = (static_cast<uint32_t>(rtcm->toe) / 720) % 240;
-    ephemeris.aode = rtcm->aode;
-    ephemeris.aodc = rtcm->aodc;
-    ephemeris.toc_time = ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toc), 0.0);
-    ephemeris.toe_time = ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toe), 0.0);
-    ephemeris.toc = rtcm->toc;
-    ephemeris.toe = rtcm->toe;
-    ephemeris.af2 = rtcm->af2;
-    ephemeris.af1 = rtcm->af1;
-    ephemeris.af0 = rtcm->af0;
-    ephemeris.crc = rtcm->crc;
-    ephemeris.crs = rtcm->crs;
-    ephemeris.cuc = rtcm->cuc;
-    ephemeris.cus = rtcm->cus;
-    ephemeris.cic = rtcm->cic;
-    ephemeris.cis = rtcm->cis;
-    ephemeris.e = rtcm->e;
-    ephemeris.m0 = rtcm->m0;
-    ephemeris.delta_n = rtcm->delta_n;
-    ephemeris.a = rtcm->sqrt_a * rtcm->sqrt_a;
-    ephemeris.i0 = rtcm->i0;
-    ephemeris.omega0 = rtcm->omega0;
-    ephemeris.omega = rtcm->omega;
+    ephemeris.prn         = rtcm->prn;
+    ephemeris.week_number = rtcm->week_number;  // Could have something to do with sow???
+    ephemeris.sv_health   = rtcm->sv_health;
+    ephemeris.lpp_iod     = static_cast<uint16_t>(static_cast<uint32_t>(rtcm->toe) >> 9);
+    ephemeris.iodc        = (static_cast<uint32_t>(rtcm->toc) / 720) % 240;
+    ephemeris.iode        = (static_cast<uint32_t>(rtcm->toe) / 720) % 240;
+    ephemeris.aode        = rtcm->aode;
+    ephemeris.aodc        = rtcm->aodc;
+    ephemeris.toc_time =
+        ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toc), 0.0);
+    ephemeris.toe_time =
+        ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toe), 0.0);
+    ephemeris.toc       = rtcm->toc;
+    ephemeris.toe       = rtcm->toe;
+    ephemeris.af2       = rtcm->af2;
+    ephemeris.af1       = rtcm->af1;
+    ephemeris.af0       = rtcm->af0;
+    ephemeris.crc       = rtcm->crc;
+    ephemeris.crs       = rtcm->crs;
+    ephemeris.cuc       = rtcm->cuc;
+    ephemeris.cus       = rtcm->cus;
+    ephemeris.cic       = rtcm->cic;
+    ephemeris.cis       = rtcm->cis;
+    ephemeris.e         = rtcm->e;
+    ephemeris.m0        = rtcm->m0;
+    ephemeris.delta_n   = rtcm->delta_n;
+    ephemeris.a         = rtcm->sqrt_a * rtcm->sqrt_a;
+    ephemeris.i0        = rtcm->i0;
+    ephemeris.omega0    = rtcm->omega0;
+    ephemeris.omega     = rtcm->omega;
     ephemeris.omega_dot = rtcm->omega_dot;
-    ephemeris.idot = rtcm->idot;
+    ephemeris.idot      = rtcm->idot;
 
     mTokoro.process_ephemeris(ephemeris);
 }
@@ -208,7 +210,7 @@ void TokoroEphemerisRtcm::handle_bds(format::rtcm::Rtcm1042* rtcm) {
     if (rtcm->type() == 1042) {
         handle_bds_d1(rtcm);
     } else {
-        VERBOSEF("not rtcm 1042 but rtcm %d", rtcm-> type());
+        VERBOSEF("not rtcm 1042 but rtcm %d", rtcm->type());
     }
 }
 
@@ -216,10 +218,10 @@ void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046* rtcm) {
     VSCOPE_FUNCTION();
 
     ephemeris::GalEphemeris ephemeris{};
-    ephemeris.prn = rtcm->prn;
+    ephemeris.prn         = rtcm->prn;
     ephemeris.week_number = rtcm->week_number;
-    ephemeris.lpp_iod = rtcm->iod_nav;
-    ephemeris.iod_nav = rtcm->iod_nav;
+    ephemeris.lpp_iod     = rtcm->iod_nav;
+    ephemeris.iod_nav     = rtcm->iod_nav;
 
     ephemeris.toc = rtcm->toc;
     ephemeris.toe = rtcm->toe;
@@ -235,16 +237,16 @@ void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046* rtcm) {
     ephemeris.cic = rtcm->cic;
     ephemeris.cis = rtcm->cis;
 
-    ephemeris.e = rtcm->e;
-    ephemeris.m0 = rtcm->m0;
+    ephemeris.e       = rtcm->e;
+    ephemeris.m0      = rtcm->m0;
     ephemeris.delta_n = rtcm->delta_n;
-    ephemeris.a = rtcm->sqrt_a * rtcm->sqrt_a;
+    ephemeris.a       = rtcm->sqrt_a * rtcm->sqrt_a;
 
-    ephemeris.i0 = rtcm->i0;
-    ephemeris.omega0 = rtcm->omega0;
-    ephemeris.omega = rtcm->omega;
+    ephemeris.i0        = rtcm->i0;
+    ephemeris.omega0    = rtcm->omega0;
+    ephemeris.omega     = rtcm->omega;
     ephemeris.omega_dot = rtcm->omega_dot;
-    ephemeris.idot = rtcm->idot;
+    ephemeris.idot      = rtcm->idot;
 
     mTokoro.process_ephemeris(ephemeris);
 }
@@ -255,7 +257,7 @@ void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046* rtcm) {
     if (rtcm->type() == 1046) {
         handle_gal_inav(rtcm);
     } else {
-        VERBOSEF("not rtcm 1046 but rtcm %d", rtcm-> type());
+        VERBOSEF("not rtcm 1046 but rtcm %d", rtcm->type());
     }
 }
 
