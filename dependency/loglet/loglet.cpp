@@ -261,44 +261,44 @@ void pop_indent() {
 
 static char const* level_to_string(Level level) {
     switch (level) {
-    case Level::Trace:    return "T";
-    case Level::Verbose:  return "V";
-    case Level::Debug:    return "D";
-    case Level::Info:     return "I";
-    case Level::Notice:   return "N";
-    case Level::Warning:  return "W";
-    case Level::Error:    return "E";
+    case Level::Trace: return "T";
+    case Level::Verbose: return "V";
+    case Level::Debug: return "D";
+    case Level::Info: return "I";
+    case Level::Notice: return "N";
+    case Level::Warning: return "W";
+    case Level::Error: return "E";
     case Level::Disabled: CORE_UNREACHABLE();
-    default:              CORE_UNREACHABLE();
+    default: CORE_UNREACHABLE();
     }
 }
 
 char const* level_to_full_string(Level level) {
     switch (level) {
-    case Level::Trace:    return "trace";
-    case Level::Verbose:  return "verbose";
-    case Level::Debug:    return "debug";
-    case Level::Info:     return "info";
-    case Level::Notice:   return "notice";
-    case Level::Warning:  return "warning";
-    case Level::Error:    return "error";
+    case Level::Trace: return "trace";
+    case Level::Verbose: return "verbose";
+    case Level::Debug: return "debug";
+    case Level::Info: return "info";
+    case Level::Notice: return "notice";
+    case Level::Warning: return "warning";
+    case Level::Error: return "error";
     case Level::Disabled: CORE_UNREACHABLE();
-    default:              CORE_UNREACHABLE();
+    default: CORE_UNREACHABLE();
     }
 }
 
 static char const* level_to_color(Level level) {
     if (!sColorEnabled) return "";
     switch (level) {
-    case Level::Trace:    return COLOR_CYAN;
-    case Level::Verbose:  return COLOR_BLUE;
-    case Level::Debug:    return COLOR_GREEN;
-    case Level::Info:     return COLOR_FOREGROUND;
-    case Level::Notice:   return COLOR_UNDERLINE COLOR_MAGENTA;
-    case Level::Warning:  return COLOR_UNDERLINE COLOR_YELLOW;
-    case Level::Error:    return COLOR_BOLD COLOR_RED;
+    case Level::Trace: return COLOR_CYAN;
+    case Level::Verbose: return COLOR_BLUE;
+    case Level::Debug: return COLOR_GREEN;
+    case Level::Info: return COLOR_FOREGROUND;
+    case Level::Notice: return COLOR_UNDERLINE COLOR_MAGENTA;
+    case Level::Warning: return COLOR_UNDERLINE COLOR_YELLOW;
+    case Level::Error: return COLOR_BOLD COLOR_RED;
     case Level::Disabled: CORE_UNREACHABLE();
-    default:              CORE_UNREACHABLE();
+    default: CORE_UNREACHABLE();
     }
 }
 
@@ -330,7 +330,7 @@ void log(LogModule const* module, Level level, char const* message) {
     auto indent_length         = static_cast<int>(sScopes.size() * 2);
     if (indent_length > 64) {
         indent_length = 64;
-    } else if(indent_length < 0) {
+    } else if (indent_length < 0) {
         indent_length = 0;
     }
     indent_buffer[indent_length] = '\0';
@@ -347,7 +347,7 @@ void logf(LogModule const* module, Level level, char const* format, ...) {
 }
 
 static char gLogBuffer[1024 * 1024];
-void vlogf(LogModule const* module, Level level, char const* format, va_list args) {
+void        vlogf(LogModule const* module, Level level, char const* format, va_list args) {
     vsnprintf(gLogBuffer, sizeof(gLogBuffer), format, args);
     log(module, level, gLogBuffer);
 }

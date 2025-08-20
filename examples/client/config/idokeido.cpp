@@ -23,22 +23,18 @@ static args::Flag gEnable{
     {"idokeido"},
 };
 
-static void setup() {
-
-}
+static void setup() {}
 
 static void parse(Config* config) {
-    auto& cfg            = config->idokeido;
-    cfg.enabled          = false;
-   
+    auto& cfg   = config->idokeido;
+    cfg.enabled = false;
+
     if (gEnable) cfg.enabled = true;
-    
 }
 
 static void dump(IdokeidoConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
-
 }
 
-}  // namespace tokoro
+}  // namespace idokeido

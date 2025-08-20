@@ -31,9 +31,9 @@
 #include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
 #include "processor/nmea.hpp"
+#include "processor/rtcm.hpp"
 #include "processor/test.hpp"
 #include "processor/ubx.hpp"
-#include "processor/rtcm.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
@@ -321,28 +321,28 @@ static void initialize_inputs(Program& program, InputConfig const& config) {
                                      lpp_uper_pad, tag](io::Input&, uint8_t* buffer, size_t count) {
             if (loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
                 VERBOSEF("input %p: %zu bytes", input.interface.get(), count);
-                char print_buffer[512];
+                char   print_buffer[512];
                 size_t print_length = sizeof(print_buffer);
                 for (size_t i = 0; i < count;) {
-                    size_t  print_count = 0;
+                    size_t print_count = 0;
                     for (size_t j = 0; j < 16; j++) {
                         if (i + j < count) {
                             print_count += static_cast<size_t>(snprintf(&print_buffer[print_count],
-                                                    print_length - print_count, "%02X ",
-                                                    buffer[i + j]));
+                                                                        print_length - print_count,
+                                                                        "%02X ", buffer[i + j]));
                         } else {
-                            print_count += static_cast<size_t>(snprintf(&print_buffer[print_count],
-                                                    print_length - print_count, "   "));
+                            print_count += static_cast<size_t>(snprintf(
+                                &print_buffer[print_count], print_length - print_count, "   "));
                         }
                     }
                     for (size_t j = 0; j < 16; j++) {
                         if (i + j < count) {
-                            print_count += static_cast<size_t>(snprintf(&print_buffer[print_count],
-                                                    print_length - print_count, "%c",
-                                                    isprint(buffer[i + j]) ? buffer[i + j] : '.'));
+                            print_count += static_cast<size_t>(
+                                snprintf(&print_buffer[print_count], print_length - print_count,
+                                         "%c", isprint(buffer[i + j]) ? buffer[i + j] : '.'));
                         }
                     }
-                    
+
                     VERBOSEF("%s", print_buffer);
                     i += 16;
                 }
@@ -428,9 +428,9 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     bool ubx_output      = false;
     bool ctrl_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
-    bool rtcm_output     = false;
+    bool rtcm_output = false;
 #ifdef DATA_TRACING
-    bool possib_output   = false;
+    bool possib_output = false;
 #endif
     bool location_output = false;
     bool test_output     = false;
@@ -448,18 +448,18 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                (output.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
                (output.format & OUTPUT_FORMAT_TEST) ? "test " : "");
 
-        if (output.lpp_xer_support()) lpp_xer_output   = true;
+        if (output.lpp_xer_support()) lpp_xer_output = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
-        if (output.nmea_support()) nmea_output         = true;
-        if (output.ubx_support()) ubx_output           = true;
-        if (output.ctrl_support()) ctrl_output         = true;
+        if (output.nmea_support()) nmea_output = true;
+        if (output.ubx_support()) ubx_output = true;
+        if (output.ctrl_support()) ctrl_output = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
-        if (output.rtcm_support()) rtcm_output         = true;
+        if (output.rtcm_support()) rtcm_output = true;
 #ifdef DATA_TRACING
-        if (output.possib_support()) possib_output     = true;
+        if (output.possib_support()) possib_output = true;
 #endif
         if (output.location_support()) location_output = true;
-        if (output.test_support()) test_output         = true;
+        if (output.test_support()) test_output = true;
 
         output.include_tag_mask = program.config.get_tag(output.include_tags);
         output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
@@ -593,7 +593,7 @@ static void setup_fake_location(Program& program) {
     };
 
     INFOF("enable fake location information");
-    if(!program.fake_location_task->schedule(program.scheduler)) {
+    if (!program.fake_location_task->schedule(program.scheduler)) {
         ERRORF("failed to schedule fake location information generation");
     }
 }
@@ -857,7 +857,7 @@ int main(int argc, char** argv) {
 
         client_initialize(program, *client);
 
-        if(!reconnect_task.schedule(program.scheduler)) {
+        if (!reconnect_task.schedule(program.scheduler)) {
             ERRORF("failed to schedule reconnect task");
         }
         client->schedule(&program.scheduler);

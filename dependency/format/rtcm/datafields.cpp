@@ -15,7 +15,7 @@ ostream& operator<<(ostream& os, const DF077 d) {
     return os << "      SV accuracy:      " << static_cast<int>(d) << " meters\n";
 }
 ostream& operator<<(ostream& os, const DF078 d) {
-    return os << "      GPS code on L2:   " << (d?"true":"false") << "\n";
+    return os << "      GPS code on L2:   " << (d ? "true" : "false") << "\n";
 }
 ostream& operator<<(ostream& os, const DF079 d) {
     return os << "      GPS IDOT:         " << static_cast<double>(d) << " radians\n";
@@ -87,10 +87,10 @@ ostream& operator<<(ostream& os, const DF102 d) {
     return os << "      GPS SV HEALTH:    " << static_cast<int>(d) << " \n";
 }
 ostream& operator<<(ostream& os, const DF103 d) {
-    return os << "      GPS L2 P flag:    " << (d?"OFF":"ON") << " \n";
+    return os << "      GPS L2 P flag:    " << (d ? "OFF" : "ON") << " \n";
 }
 ostream& operator<<(ostream& os, const DF137 d) {
-    return os << "      GPS Fit Interval: " << (d?">4 hours":"=4 hours") << " \n";
+    return os << "      GPS Fit Interval: " << (d ? ">4 hours" : "=4 hours") << " \n";
 }
 ostream& operator<<(ostream& os, const DF252 d) {
     return os << "      Galileo PRN:      " << static_cast<int>(d) << " \n";
@@ -107,4 +107,4 @@ ostream& operator<<(ostream& os, const DF290 d) {
 ostream& operator<<(ostream& os, const DF292 d) {
     return os << "      Galileo idot:     " << static_cast<double>(d) << " \n";
 }
-} // namespace std
+}  // namespace std

@@ -285,18 +285,18 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& confi
     VSCOPE_FUNCTION();
 
     idokeido::SppConfiguration configuration{
-        .frequency_mode   = idokeido::SppConfiguration::FrequencyMode::Single,
-        .weight_function       = idokeido::SppConfiguration::WeightFunction::Uniform,
+        .frequency_mode  = idokeido::SppConfiguration::FrequencyMode::Single,
+        .weight_function = idokeido::SppConfiguration::WeightFunction::Uniform,
         .gnss =
-        {
-            .gps = true,
-            .glo = false,
-            .gal = false,
-            .bds = false,
-        },
-        .elevation_cutoff = 15,
-        .snr_cutoff       = 30,
-        .outlier_cutoff   = 10,
+            {
+                .gps = true,
+                .glo = false,
+                .gal = false,
+                .bds = false,
+            },
+        .elevation_cutoff      = 15,
+        .snr_cutoff            = 30,
+        .outlier_cutoff        = 10,
         .reject_cycle_slip     = true,
         .reject_halfcycle_slip = true,
         .reject_outliers       = true,

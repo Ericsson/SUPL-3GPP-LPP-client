@@ -420,9 +420,9 @@ static CONSTEXPR double BDS_FREQ[24] = {
 };
 
 static CONSTEXPR const char* BDS_SIGNAL_NAMES[24] = {
-    "B1 I", "B1 Q", "B1 I+Q", "B3 I", "B3 Q", "B3 I+Q", "B2 I", "B2 Q", "B2 I+Q",
-    "B1C(D)", "B1C(P)", "B1C(D+P)", "B2a(D)", "B2a(P)", "B2a(D+P)",
-    "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+    "B1 I",     "B1 Q",     "B1 I+Q",   "B3 I",     "B3 Q",     "B3 I+Q",   "B2 I",     "B2 Q",
+    "B2 I+Q",   "B1C(D)",   "B1C(P)",   "B1C(D+P)", "B2a(D)",   "B2a(P)",   "B2a(D+P)", "Reserved",
+    "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
 struct SystemMapping {

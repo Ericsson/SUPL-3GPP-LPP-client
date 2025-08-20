@@ -14,7 +14,7 @@ enum class Initiator {
 
 template <>
 struct std::hash<lpp::Initiator> {
-    std::size_t operator()(const lpp::Initiator& k) const {
+    std::size_t operator()(lpp::Initiator const& k) const {
         return hash<long>()(k == lpp::Initiator::TargetDevice ? 0 : 1);
     }
 };

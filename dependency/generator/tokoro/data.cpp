@@ -1,5 +1,5 @@
-#include "data/correction.hpp"
 #include "constant.hpp"
+#include "data/correction.hpp"
 #include "decode.hpp"
 
 #pragma GCC diagnostic push
@@ -39,8 +39,5 @@
 LOGLET_MODULE2(tokoro, data);
 
 namespace generator {
-namespace tokoro {
-
-
-}  // namespace tokoro
+namespace tokoro {}  // namespace tokoro
 }  // namespace generator

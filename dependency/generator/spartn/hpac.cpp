@@ -274,7 +274,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_RealTimeIntegrity* rti) {
             }
 
             if (element->badSignalID->ext1 != nullptr) {
-                auto signal_bs1 = helper::BitStringReader(element->badSignalID->ext1->gnss_SignalIDs_Ext_r15);
+                auto signal_bs1 =
+                    helper::BitStringReader(element->badSignalID->ext1->gnss_SignalIDs_Ext_r15);
                 for (size_t j = 0; j < signal_bs1.count(); j++) {
                     if (!signal_bs1.get(j)) {
                         continue;

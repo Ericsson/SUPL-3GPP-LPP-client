@@ -9,7 +9,7 @@ LOGLET_MODULE_FORWARD_REF(ubx);
 
 namespace format {
 namespace ubx {
-    
+
 CfgValue CfgValue::from_l(bool value) NOEXCEPT {
     return CfgValue(Type::L, value);
 }

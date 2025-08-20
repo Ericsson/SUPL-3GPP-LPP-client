@@ -1,8 +1,8 @@
 #pragma once
+#include <lpp/assistance_data.hpp>
 #include <lpp/periodic_session.hpp>
 #include <lpp/transaction.hpp>
 #include <scheduler/periodic.hpp>
-#include <lpp/assistance_data.hpp>
 
 #include <chrono>
 #include <unordered_map>
@@ -18,7 +18,7 @@ public:
     virtual ~SingleSession();
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler);
-    bool cancel();
+    bool           cancel();
 
     void message(TransactionHandle const& transaction, Message message);
 

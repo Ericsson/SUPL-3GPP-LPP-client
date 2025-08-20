@@ -1,10 +1,10 @@
 #include "stdin.hpp"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
-#include <errno.h>
 
 #include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
@@ -28,7 +28,7 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
-    if(!mFdTask->set_fd(STDIN_FILENO)) {
+    if (!mFdTask->set_fd(STDIN_FILENO)) {
         ERRORF("failed to set stdin fd");
         return false;
     }

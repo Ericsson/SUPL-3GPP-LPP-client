@@ -90,7 +90,7 @@ void PossibOutput::inspect(streamline::System&, DataType const& message, uint64_
     auto size     = sentence.size();
     for (auto const& output : mOutput.outputs) {
         if (!output.possib_support()) continue;
-        if(!output.accept_tag(tag)) {
+        if (!output.accept_tag(tag)) {
             XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
@@ -140,8 +140,7 @@ void LppPossibBuilder::log(char const* type, asn_TYPE_descriptor_s* def, void co
 
     std::vector<uint8_t> assistance_sib_buffer{};
     if (mIncludeWrap) {
-        auto assistance_sib_element =
-            alloc_element<AssistanceDataSIBelement_r15>();
+        auto assistance_sib_element = alloc_element<AssistanceDataSIBelement_r15>();
         assistance_sib_element->assistanceDataElement_r15.buf  = assistance_data_buffer.data();
         assistance_sib_element->assistanceDataElement_r15.size = assistance_data_buffer.size();
 
@@ -235,7 +234,8 @@ void LppPossibBuilder::process(GNSS_RTK_ReferenceStationInfo_r15 const& x) {
 }
 
 void LppPossibBuilder::process(GNSS_RTK_CommonObservationInfo_r15 const& x) {
-    basic_log("GNSS-RTK-CommonObservationInfo-r15", &asn_DEF_GNSS_RTK_CommonObservationInfo_r15, &x);
+    basic_log("GNSS-RTK-CommonObservationInfo-r15", &asn_DEF_GNSS_RTK_CommonObservationInfo_r15,
+              &x);
 }
 
 void LppPossibBuilder::process(GNSS_RTK_AuxiliaryStationData_r15 const& x) {
@@ -362,15 +362,13 @@ void LppPossibBuilder::process(long id, GNSS_RTK_FKP_Gradients_r15 const& x) {
 }
 
 std::vector<size_t> LppPossibBuilder::encode_list_to_sizes_void(asn_TYPE_descriptor_s* descriptor,
-                                                           void const** struct_ptr, int n) {
+                                                                void const** struct_ptr, int n) {
     std::vector<size_t> result;
     for (int i = 0; i < n; ++i) {
         result.push_back(encode_to_buffer(descriptor, struct_ptr[i]).size());
     }
     return result;
 }
-
-
 
 static std::string to_json_array(std::vector<size_t> const& sizes) {
     std::stringstream result;
@@ -416,8 +414,8 @@ void LppPossibBuilder::process(long id, GNSS_SSR_ClockCorrections_r15 const& x) 
 void LppPossibBuilder::process(long id, GNSS_SSR_CodeBias_r15 const& x) {
     auto& list            = x.ssr_CodeBiasSatList_r15.list;
     auto  satellite_count = list.count;
-    auto  satellite_sizes = encode_list_to_sizes(&asn_DEF_SSR_CodeBiasSatElement_r15,
-                                                 list.array, list.count);
+    auto  satellite_sizes =
+        encode_list_to_sizes(&asn_DEF_SSR_CodeBiasSatElement_r15, list.array, list.count);
 
     auto signal_count = 0;
     auto signal_sizes = std::vector<size_t>();
@@ -426,10 +424,9 @@ void LppPossibBuilder::process(long id, GNSS_SSR_CodeBias_r15 const& x) {
         if (!element) continue;
 
         signal_count += element->ssr_CodeBiasSignalList_r15.list.count;
-        for (auto size :
-             encode_list_to_sizes(&asn_DEF_SSR_CodeBiasSignalElement_r15,
-                                  element->ssr_CodeBiasSignalList_r15.list.array,
-                                  element->ssr_CodeBiasSignalList_r15.list.count)) {
+        for (auto size : encode_list_to_sizes(&asn_DEF_SSR_CodeBiasSignalElement_r15,
+                                              element->ssr_CodeBiasSignalList_r15.list.array,
+                                              element->ssr_CodeBiasSignalList_r15.list.count)) {
             signal_sizes.push_back(size);
         }
     }
@@ -459,8 +456,8 @@ void LppPossibBuilder::process(long id, GNSS_SSR_URA_r16 const& x) {
 void LppPossibBuilder::process(long id, GNSS_SSR_PhaseBias_r16 const& x) {
     auto& list            = x.ssr_PhaseBiasSatList_r16.list;
     auto  satellite_count = list.count;
-    auto  satellite_sizes = encode_list_to_sizes(&asn_DEF_SSR_PhaseBiasSatElement_r16,
-                                                 list.array, list.count);
+    auto  satellite_sizes =
+        encode_list_to_sizes(&asn_DEF_SSR_PhaseBiasSatElement_r16, list.array, list.count);
 
     auto signal_count = 0;
     auto signal_sizes = std::vector<size_t>();
@@ -469,10 +466,9 @@ void LppPossibBuilder::process(long id, GNSS_SSR_PhaseBias_r16 const& x) {
         if (!element) continue;
 
         signal_count += element->ssr_PhaseBiasSignalList_r16.list.count;
-        for (auto size :
-             encode_list_to_sizes(&asn_DEF_SSR_PhaseBiasSignalElement_r16,
-                                  element->ssr_PhaseBiasSignalList_r16.list.array,
-                                  element->ssr_PhaseBiasSignalList_r16.list.count)) {
+        for (auto size : encode_list_to_sizes(&asn_DEF_SSR_PhaseBiasSignalElement_r16,
+                                              element->ssr_PhaseBiasSignalList_r16.list.array,
+                                              element->ssr_PhaseBiasSignalList_r16.list.count)) {
             signal_sizes.push_back(size);
         }
     }
@@ -495,7 +491,8 @@ void LppPossibBuilder::process(long id, GNSS_SSR_GriddedCorrection_r16 const& x)
 }
 
 void LppPossibBuilder::process(long id, NavIC_DifferentialCorrections_r16 const& x) {
-    basic_log(id, "NavIC-DifferentialCorrections-r16", &asn_DEF_NavIC_DifferentialCorrections_r16, &x);
+    basic_log(id, "NavIC-DifferentialCorrections-r16", &asn_DEF_NavIC_DifferentialCorrections_r16,
+              &x);
 }
 
 void LppPossibBuilder::process(long id, NavIC_GridModelParameter_r16 const& x) {
@@ -642,7 +639,8 @@ void LppPossibBuilder::process(ProvideAssistanceData const& message) {
     }
 }
 
-void LppPossibBuilder::inspect(streamline::System& system, DataType const& message, uint64_t) noexcept {
+void LppPossibBuilder::inspect(streamline::System& system, DataType const& message,
+                               uint64_t) noexcept {
     VSCOPE_FUNCTION();
 
     if (!message) return;
@@ -679,8 +677,7 @@ void LppPossibBuilder::inspect(streamline::System& system, DataType const& messa
         case LPP_MessageBody__c1_PR::LPP_MessageBody__c1_PR_spare0: break;
         }
     } break;
-    case LPP_MessageBody_PR::LPP_MessageBody_PR_NOTHING:
-    break;
+    case LPP_MessageBody_PR::LPP_MessageBody_PR_NOTHING: break;
     case LPP_MessageBody_PR::LPP_MessageBody_PR_messageClassExtension: break;
     }
 

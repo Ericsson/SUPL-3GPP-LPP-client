@@ -404,7 +404,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                    correction_point.absolute_index, correction_point.latitude_index,
                    correction_point.longitude_index, correction_point.position.x,
                    correction_point.position.y, correction_point.position.z);
-               // xer_fprint(stdout, &asn_DEF_GridElement_r16, element);
+            // xer_fprint(stdout, &asn_DEF_GridElement_r16, element);
 
             gnss_grid.add_point(correction_point);
         }

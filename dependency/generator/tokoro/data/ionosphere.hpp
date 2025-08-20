@@ -9,8 +9,8 @@
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
 
-#include "sv_id.hpp"
 #include "grid.hpp"
+#include "sv_id.hpp"
 
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
@@ -24,7 +24,6 @@ struct GNSS_SSR_GriddedCorrection_r16;
 
 namespace generator {
 namespace tokoro {
-
 
 struct IonosphericCorrection {
     double grid_residual;
@@ -43,7 +42,7 @@ struct IonosphericPolynomial {
     double reference_point_latitude;
     double reference_point_longitude;
     double quality_indicator;
-    bool quality_indicator_valid;
+    bool   quality_indicator_valid;
 };
 
 struct IonosphereGridPoint {
@@ -54,7 +53,6 @@ struct IonosphereGridPoint {
 struct IonosphereGrid {
     std::unordered_map<GridIndex, IonosphereGridPoint> points;
 };
-
 
 }  // namespace tokoro
 }  // namespace generator

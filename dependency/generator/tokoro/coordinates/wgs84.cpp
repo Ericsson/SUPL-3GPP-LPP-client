@@ -20,15 +20,15 @@ Float3 ecef_to_wgs84_old(Float3 ecef) NOEXCEPT {
         v    = constant::RE_WGS84 / std::sqrt(1.0 - e2 * sinp * sinp);
         z    = ecef.z + v * e2 * sinp;
     }
-    auto latitude  = r2 > 1E-12 ?
-                         std::atan(z / std::sqrt(r2)) :
-                         (ecef.z > 0.0 ? constant::PI_WGS84 / 2.0 : -constant::PI_WGS84 / 2.0);
-    auto longitude = r2 > 1E-12 ? std::atan2(ecef.y, ecef.x) : 0.0;
-    auto altitude  = std::sqrt(r2 + z * z) - v;
+    auto   latitude  = r2 > 1E-12 ?
+                           std::atan(z / std::sqrt(r2)) :
+                           (ecef.z > 0.0 ? constant::PI_WGS84 / 2.0 : -constant::PI_WGS84 / 2.0);
+    auto   longitude = r2 > 1E-12 ? std::atan2(ecef.y, ecef.x) : 0.0;
+    auto   altitude  = std::sqrt(r2 + z * z) - v;
     Float3 result{};
-    result.x  = latitude;
+    result.x = latitude;
     result.y = longitude;
-    result.z  = altitude;
+    result.z = altitude;
     return result;
 }
 }  // namespace tokoro

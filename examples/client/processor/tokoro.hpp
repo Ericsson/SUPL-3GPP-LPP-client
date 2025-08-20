@@ -10,10 +10,10 @@
 #include <format/nav/d1.hpp>
 #include <format/nav/gal/inav.hpp>
 #include <format/nav/gps/lnav.hpp>
-#include <format/ubx/messages/rxm_sfrbx.hpp>
 #include <format/rtcm/1019.hpp>
 #include <format/rtcm/1042.hpp>
 #include <format/rtcm/1046.hpp>
+#include <format/ubx/messages/rxm_sfrbx.hpp>
 #include <generator/tokoro/constant.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
@@ -23,8 +23,8 @@
 
 #include "config.hpp"
 #include "lpp.hpp"
-#include "ubx.hpp"
 #include "rtcm.hpp"
+#include "ubx.hpp"
 
 class Tokoro : public streamline::Inspector<lpp::Message> {
 public:
@@ -37,8 +37,8 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
 
-    const char* name() const NOEXCEPT override { return "Tokoro"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "Tokoro"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
     void vrs_mode_fixed();
     void vrs_mode_dynamic();
@@ -73,8 +73,8 @@ public:
     void handle_bds_d1(format::ubx::RxmSfrbx* sfrbx);
     void handle_bds(format::ubx::RxmSfrbx* sfrbx);
 
-    const char* name() const NOEXCEPT override { return "TokoroEphemerisUbx"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "TokoroEphemerisUbx"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Tokoro&                                    mTokoro;
@@ -96,8 +96,8 @@ public:
     void handle_bds_d1(format::rtcm::Rtcm1042* rtcm);
     void handle_bds(format::rtcm::Rtcm1042* rtcm);
 
-    const char* name() const NOEXCEPT override { return "TokoroEphemerisRtcm"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "TokoroEphemerisRtcm"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Tokoro&                                    mTokoro;
@@ -110,8 +110,8 @@ class TokoroLocation : public streamline::Inspector<lpp::LocationInformation> {
 public:
     TokoroLocation(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    const char* name() const NOEXCEPT override { return "TokoroLocation"; }
-    void inspect(streamline::System&, DataType const& location, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "TokoroLocation"; }
+    void        inspect(streamline::System&, DataType const& location, uint64_t tag) override;
 
 private:
     Tokoro& mTokoro;

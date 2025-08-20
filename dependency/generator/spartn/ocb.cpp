@@ -668,7 +668,8 @@ void Generator::generate_ocb(uint16_t iod) {
             auto do_use_satellite = true;
             if (rti_data) {
                 do_use_satellite = rti_data->can_use_satellite(satellite.id);
-                ERRORF("  CAN USE SATELLITE: %ld: %ld: %u", gnss_id, satellite.id, do_use_satellite);
+                ERRORF("  CAN USE SATELLITE: %ld: %ld: %u", gnss_id, satellite.id,
+                       do_use_satellite);
             }
 
             builder.sf013(!do_use_satellite);

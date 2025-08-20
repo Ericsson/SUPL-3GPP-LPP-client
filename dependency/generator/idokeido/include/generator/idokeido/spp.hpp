@@ -134,14 +134,14 @@ protected:
     NODISCARD Satellite& find_satellite(SatelliteId id);
 
 private:
-    SppConfiguration            mConfiguration;
-    EphemerisEngine&            mEphemerisEngine;
+    SppConfiguration mConfiguration;
+    EphemerisEngine& mEphemerisEngine;
 
     std::bitset<SATELLITE_ID_MAX> mSatelliteMask;
-    std::bitset<SIGNAL_ID_MAX> mObservationMask;
+    std::bitset<SIGNAL_ID_MAX>    mObservationMask;
 
     std::array<Satellite, SATELLITE_ID_MAX> mSatelliteStates;
-    std::array<Observation, SIGNAL_ID_MAX> mObservationStates;
+    std::array<Observation, SIGNAL_ID_MAX>  mObservationStates;
 };
 
 }  // namespace idokeido

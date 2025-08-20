@@ -378,7 +378,7 @@ NextState Session::state_message() {
     VSCOPE_FUNCTION();
     ASSERT(mSession != nullptr, "session is null");
 
-    if(!mPosQueue.empty()) {
+    if (!mPosQueue.empty()) {
         DEBUGF("pos queue not empty");
         // TODO: Send SUPL POS for queued messages
     }

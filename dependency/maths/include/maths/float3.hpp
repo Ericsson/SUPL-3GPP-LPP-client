@@ -10,7 +10,7 @@ struct Float3 {
 
     NODISCARD double length_squared() const NOEXCEPT;
     NODISCARD double length() const NOEXCEPT;
-    NODISCARD bool normalize() NOEXCEPT;
+    NODISCARD bool   normalize() NOEXCEPT;
 };
 
 NODISCARD Float3 operator+(Float3 a, Float3 b) NOEXCEPT;

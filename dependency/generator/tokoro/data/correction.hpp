@@ -14,13 +14,13 @@
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 
-#include "grid.hpp"
-#include "set.hpp"
-#include "ionosphere.hpp"
-#include "troposphere.hpp"
-#include "orbit.hpp"
 #include "clock.hpp"
+#include "grid.hpp"
+#include "ionosphere.hpp"
+#include "orbit.hpp"
+#include "set.hpp"
 #include "signal.hpp"
+#include "troposphere.hpp"
 
 namespace generator {
 namespace tokoro {

@@ -17,7 +17,7 @@ public:
     CONSTEXPR static uint8_t MESSAGE_ID = 0x8A;
 
     NODISCARD static uint32_t set(Encoder& encoder, CfgLayer layers, CfgKey key,
-                                        CfgValue value) NOEXCEPT;
+                                  CfgValue value) NOEXCEPT;
 };
 
 }  // namespace ubx

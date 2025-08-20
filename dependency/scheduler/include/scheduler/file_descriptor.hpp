@@ -12,7 +12,7 @@ public:
     ~FileDescriptorTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
-    bool cancel() NOEXCEPT;
+    bool           cancel() NOEXCEPT;
 
     /// Set the file descriptor to be monitored. Will cancel on-going tasks and return true if the
     /// task must be rescheduled.

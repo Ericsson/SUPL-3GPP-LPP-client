@@ -89,7 +89,7 @@ static int start_server(uint16_t port) {
         }
 
         modem::Cimi cimi{};
-        if(!device.get_cimi(scheduler, cimi)) {
+        if (!device.get_cimi(scheduler, cimi)) {
             printf("ERROR: failed to get CIMI\n");
             ::close(client);
             continue;
@@ -141,7 +141,7 @@ static int start_server(uint16_t port) {
 
             unsigned int sleep_seconds = 1;
             if (config.update_interval > 1) {
-                sleep_seconds = static_cast<unsigned int>(config.update_interval); 
+                sleep_seconds = static_cast<unsigned int>(config.update_interval);
             }
             sleep(sleep_seconds);
         }

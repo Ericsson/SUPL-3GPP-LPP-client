@@ -2,11 +2,11 @@
 #include "serial.hpp"
 
 #include <fcntl.h>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
-#include <sstream>
 
 #include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
@@ -246,14 +246,14 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     }
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
-    if(!mFdTask->set_fd(mFd)) {
+    if (!mFdTask->set_fd(mFd)) {
         ERRORF("failed to set file descriptor: " ERRNO_FMT, ERRNO_ARGS(errno));
         result = ::close(mFd);
         VERBOSEF("::close(%d) = %d", mFd, result);
         mFd = -1;
         return false;
     }
-    
+
     mFdTask->set_event_name("fd/" + mEventName);
     mFdTask->on_read = [this](int) {
         auto read_result = ::read(mFd, mBuffer, sizeof(mBuffer));

@@ -196,9 +196,7 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
     mSession.connect(mHost, mPort, mInterface);
     mSession.schedule(scheduler);
     scheduler->register_tick(this, [this]() {
-        TRACEF("tick: %zu sessions, %zu single sessions",
-                 mSessions.size(),
-                 mSingleSessions.size());
+        TRACEF("tick: %zu sessions, %zu single sessions", mSessions.size(), mSingleSessions.size());
         for (auto handle : mSessionsToDestroy) {
             deallocate_periodic_session_handle(handle);
         }

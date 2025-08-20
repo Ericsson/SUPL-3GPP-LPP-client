@@ -35,7 +35,7 @@ public:
     void L(bool value) NOEXCEPT;
     void CH(std::string const& value, uint32_t max_length) NOEXCEPT;
 
-    void                   pad(uint32_t length) NOEXCEPT;
+    void               pad(uint32_t length) NOEXCEPT;
     NODISCARD uint32_t remaining() const NOEXCEPT;
     NODISCARD bool     error() const NOEXCEPT;
     NODISCARD uint8_t* ptr() const NOEXCEPT;

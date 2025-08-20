@@ -24,7 +24,7 @@ void NmeaOutput::inspect(streamline::System&, DataType const& message, uint64_t 
     auto size     = sentence.size();
     for (auto const& output : mOutput.outputs) {
         if (!output.nmea_support()) continue;
-        if(!output.accept_tag(tag)) {
+        if (!output.accept_tag(tag)) {
             XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }

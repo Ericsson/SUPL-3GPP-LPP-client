@@ -1,8 +1,8 @@
 #pragma once
 #include <cassert>
+#include <cinttypes>
 #include <cstddef>
 #include <cstdint>
-#include <cinttypes>
 
 #ifndef EXPLICIT
 #define EXPLICIT explicit

@@ -443,7 +443,7 @@ static void parse(Config* config) {
     }
 
     for (auto& input : config->input.inputs) {
-        for(auto& tag : input.tags) {
+        for (auto& tag : input.tags) {
             config->register_tag(tag);
         }
     }
@@ -469,11 +469,11 @@ static void dump(InputConfig const& config) {
                (input.format & INPUT_FORMAT_CTRL) ? "CTRL " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
                (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "LPP-UPER-PAD " : "");
-        char tag_buffer[256];
+        char   tag_buffer[256];
         size_t tag_buffer_index = 0;
         for (auto const& tag : input.tags) {
-            tag_buffer_index += static_cast<size_t>(snprintf(tag_buffer + tag_buffer_index, 256 - tag_buffer_index,
-                                        "%s ", tag.c_str()));
+            tag_buffer_index += static_cast<size_t>(snprintf(
+                tag_buffer + tag_buffer_index, 256 - tag_buffer_index, "%s ", tag.c_str()));
         }
         DEBUGF("tags: %s", tag_buffer);
 

@@ -15,8 +15,8 @@
 #include <format/ubx/parser.hpp>
 
 #include <lpp/client.hpp>
-#include <lpp/session.hpp>
 #include <lpp/location_information.hpp>
+#include <lpp/session.hpp>
 #include <scheduler/periodic.hpp>
 
 #include "config.hpp"

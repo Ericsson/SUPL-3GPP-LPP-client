@@ -16,7 +16,7 @@ public:
 
     NODISCARD uint64_t imsi() const NOEXCEPT { return mImsi; }
 
-    void          print() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
     NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
 private:

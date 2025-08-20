@@ -42,7 +42,7 @@ struct RequestAssistanceData_Update {
     PeriodicSessionHandle periodic_session;
 };
 
-Message create_request_assistance_data(const RequestAssistanceData& request);
-Message create_request_assistance_data(const RequestAssistanceData_Update& request);
+Message create_request_assistance_data(RequestAssistanceData const& request);
+Message create_request_assistance_data(RequestAssistanceData_Update const& request);
 }  // namespace messages
 }  // namespace lpp

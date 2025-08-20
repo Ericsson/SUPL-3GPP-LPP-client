@@ -13,5 +13,5 @@ struct Mat3 {
     static Mat3 rotate_z(double angle) NOEXCEPT;
 };
 
-NODISCARD Mat3 operator*(Mat3 a, Mat3 b) NOEXCEPT;
+NODISCARD Mat3   operator*(Mat3 a, Mat3 b) NOEXCEPT;
 NODISCARD Float3 operator*(Mat3 a, Float3 b) NOEXCEPT;

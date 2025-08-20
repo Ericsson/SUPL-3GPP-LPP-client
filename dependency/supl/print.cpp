@@ -575,7 +575,8 @@ void Printer::value(::PosPayLoad const& value) {
     case PosPayLoad_PR_rrcPayload: field("rrc-payload", value.choice.rrcPayload); break;
     case PosPayLoad_PR_rrlpPayload: field("rrlp-payload", value.choice.rrlpPayload); break;
     case PosPayLoad_PR_ver2_PosPayLoad_extension:
-        field("ver2-pos-payload-extension", value.choice.ver2_PosPayLoad_extension); break;
+        field("ver2-pos-payload-extension", value.choice.ver2_PosPayLoad_extension);
+        break;
     default: field("type", "unsupported"); break;
     }
     pop('}');

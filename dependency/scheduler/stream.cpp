@@ -11,8 +11,7 @@ LOGLET_MODULE2(sched, stream);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, stream)
 
 namespace scheduler {
-StreamTask::StreamTask(size_t                              block_size,
-                       std::chrono::steady_clock::duration duration) NOEXCEPT
+StreamTask::StreamTask(size_t block_size, std::chrono::steady_clock::duration duration) NOEXCEPT
     : mPeriodicTask(duration),
       mBlockSize(block_size) {
     VSCOPE_FUNCTIONF("%zu, %ld ms", block_size,
@@ -68,9 +67,9 @@ bool StreamTask::cancel() NOEXCEPT {
 }
 
 ForwardStreamTask::ForwardStreamTask(int source_fd, size_t block_size,
-                                     std::chrono::steady_clock::duration duration)
-    NOEXCEPT : mStreamTask(block_size, duration),
-                         mSourceFd(source_fd) {
+                                     std::chrono::steady_clock::duration duration) NOEXCEPT
+    : mStreamTask(block_size, duration),
+      mSourceFd(source_fd) {
     VSCOPE_FUNCTIONF("%d, %zu, %ld ms", source_fd, block_size,
                      std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
     mStreamTask.callback = [this](int dest_fd, size_t data_size) {

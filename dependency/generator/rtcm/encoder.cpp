@@ -67,7 +67,7 @@ void Encoder::copy(std::vector<uint8_t> buffer) {
     mBitIndex = 0;
 }
 
-void Encoder::copy(const uint8_t* buffer, size_t size) {
+void Encoder::copy(uint8_t const* buffer, size_t size) {
     mBuffer.insert(mBuffer.end(), buffer, buffer + size);
     mBitIndex = 0;
 }

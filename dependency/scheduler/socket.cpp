@@ -57,7 +57,7 @@ void ListenerTask::event(struct epoll_event* event) NOEXCEPT {
 
 void ListenerTask::accept() NOEXCEPT {
     VSCOPE_FUNCTION();
-    struct sockaddr_storage addr_storage {};
+    struct sockaddr_storage addr_storage{};
     socklen_t               addr_len = sizeof(addr_storage);
     auto                    client_fd =
         ::accept(mListenerFd, reinterpret_cast<struct sockaddr*>(&addr_storage), &addr_len);
@@ -161,8 +161,8 @@ bool TcpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
     struct sockaddr* addr     = nullptr;
     socklen_t        addr_len = 0;
 
-    struct sockaddr_in addr_in {};
-    struct sockaddr_un addr_un {};
+    struct sockaddr_in addr_in{};
+    struct sockaddr_un addr_un{};
     if (!mAddress.empty()) {
         addr_in.sin_family = AF_INET;
         addr_in.sin_port   = htons(mPort);
@@ -321,8 +321,8 @@ bool UdpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
     struct sockaddr* addr     = nullptr;
     socklen_t        addr_len = 0;
 
-    struct sockaddr_in addr_in {};
-    struct sockaddr_un addr_un {};
+    struct sockaddr_in addr_in{};
+    struct sockaddr_un addr_un{};
     if (!mAddress.empty()) {
         addr_in.sin_family = AF_INET;
         addr_in.sin_port   = htons(mPort);
@@ -532,7 +532,7 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
         mReconnectTimeout.cancel();
-        if(!schedule(*scheduler)) {
+        if (!schedule(*scheduler)) {
             ERRORF("failed to schedule reconnect timeout");
         }
     };
@@ -551,7 +551,7 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     mConnected       = false;
     mShouldReconnect = should_reconnect;
 
-    mEvent.name = "socket";
+    mEvent.name  = "socket";
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
     };
@@ -559,7 +559,7 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
         mReconnectTimeout.cancel();
-        if(!schedule(*scheduler)) {
+        if (!schedule(*scheduler)) {
             ERRORF("failed to schedule reconnect timeout");
         }
     };
@@ -601,7 +601,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
     if (mHost.size() > 0) {
         // DNS lookup
         struct addrinfo* dns_result{};
-        struct addrinfo  hints {};
+        struct addrinfo  hints{};
         hints.ai_family   = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;
@@ -797,7 +797,7 @@ void TcpConnectTask::write() NOEXCEPT {
             // monitor for write events
             uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
             if (on_read) events |= EPOLLIN;
-            if(!mScheduler->update_epoll_fd(mFd, events, &mEvent)) {
+            if (!mScheduler->update_epoll_fd(mFd, events, &mEvent)) {
                 WARNF("failed to update epoll: write is not disabled");
             }
         }
@@ -847,7 +847,7 @@ void TcpConnectTask::error() NOEXCEPT {
     if (mShouldReconnect && mScheduler) {
         if (!mReconnectTimeout.is_scheduled()) {
             VERBOSEF("schedule reconnect");
-            if(!mReconnectTimeout.schedule(*mScheduler)) {
+            if (!mReconnectTimeout.schedule(*mScheduler)) {
                 ERRORF("failed to schedule reconnect timeout");
             }
         }
@@ -863,7 +863,7 @@ bool TcpConnectTask::schedule(Scheduler& scheduler) NOEXCEPT {
         if (mShouldReconnect) {
             if (!mReconnectTimeout.is_scheduled()) {
                 VERBOSEF("schedule reconnect");
-                if(!mReconnectTimeout.schedule(scheduler)) {
+                if (!mReconnectTimeout.schedule(scheduler)) {
                     ERRORF("failed to schedule reconnect timeout");
                 }
             }

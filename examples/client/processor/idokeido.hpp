@@ -28,8 +28,8 @@ public:
 
     void measurement(idokeido::RawObservation const& observation) NOEXCEPT;
 
-    const char* name() const NOEXCEPT override { return "IdokeidoSpp"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "IdokeidoSpp"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     OutputConfig const&                        mOutput;
@@ -64,8 +64,8 @@ public:
     void handle_bds_d1(format::ubx::RxmSfrbx* sfrbx);
     void handle_bds(format::ubx::RxmSfrbx* sfrbx);
 
-    const char* name() const NOEXCEPT override { return "IdokeidoEphemerisUbx"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "IdokeidoEphemerisUbx"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Base&                                      mBase;
@@ -85,8 +85,8 @@ public:
 
     void handle(format::ubx::UbxRxmRawx* rawx);
 
-    const char* name() const NOEXCEPT override { return "IdokeidoMeasurmentUbx"; }
-    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    char const* name() const NOEXCEPT override { return "IdokeidoMeasurmentUbx"; }
+    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     Base& mBase;

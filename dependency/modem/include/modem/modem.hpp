@@ -54,7 +54,7 @@ public:
     EXPLICIT Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> output) NOEXCEPT;
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler);
-    bool cancel();
+    bool           cancel();
 
     /// Enable echo-ing of commands.
     void enable_echo();

@@ -39,6 +39,5 @@ struct SignalCorrection {
     std::unordered_map<SignalId, PhaseBiasCorrection> phase_bias;
 };
 
-
 }  // namespace tokoro
 }  // namespace generator

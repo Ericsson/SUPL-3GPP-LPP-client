@@ -1,25 +1,24 @@
 #pragma once
 #include <bitset>
-#include "datatypes.hpp"
 #include <cmath>
 #include <iostream>
 #include <stdint.h>
+#include "datatypes.hpp"
 
 #define PI_DF 3.1415926535897932
 
 enum struct Conversion {
     NONE,
-    SC2RAD, // Semi circle to radians
-    MINUTE, // Multiply by 60
+    SC2RAD,  // Semi circle to radians
+    MINUTE,  // Multiply by 60
     PICO100,
 };
 
-
-template<int NUM, typename T, typename DT, int E = 0, Conversion C = Conversion::NONE>
+template <int NUM, typename T, typename DT, int E = 0, Conversion C = Conversion::NONE>
 struct DataField {
-    DataField( ) : d{} { }
+    DataField() : d{} {}
 
-    DataField(T const& t) : d{t} { }
+    DataField(T const& t) : d{t} {}
     operator T() const { return d; }
 
     T value() const { return d; }
@@ -30,66 +29,72 @@ struct DataField {
     }
 
     using InternalType = T;
-    static constexpr std::size_t num      { NUM      };
-    static constexpr std::size_t len      { DT::len  };
-    static constexpr Sign        sign     { DT::sign };
-    static constexpr int         exponent { E        };
+    static constexpr std::size_t num{NUM};
+    static constexpr std::size_t len{DT::len};
+    static constexpr Sign        sign{DT::sign};
+    static constexpr int         exponent{E};
 
     static T convert(unsigned long long b) {
-        if     constexpr  (sign==Sign::UNSIGNED)
+        if constexpr (sign == Sign::UNSIGNED)
             return multiply_by_factor(b);
-        else if constexpr (sign==Sign::SIGNED)
+        else if constexpr (sign == Sign::SIGNED)
             return multiply_by_factor(as_signed(b));
-        else if constexpr (sign==Sign::SIGNED_MAGNITUDE)
+        else if constexpr (sign == Sign::SIGNED_MAGNITUDE)
             return multiply_by_factor(as_signed_magnitude(b));
     }
 
-    template<typename K>
+    template <typename K>
     static T multiply_by_factor(K value) {
-        if constexpr (C == Conversion::PICO100 || C == Conversion::MINUTE || C == Conversion::SC2RAD) {
+        if constexpr (C == Conversion::PICO100 || C == Conversion::MINUTE ||
+                      C == Conversion::SC2RAD) {
             return static_cast<T>(static_cast<double>(value) * factor);
         } else {
             return static_cast<T>(value);
         }
     }
+
 private:
     T d;
 
     static signed long long as_signed(unsigned long long b) {
-        if (b&(1ull<<(len-1))) return static_cast<signed long long>(b|(~0ull<<len));
-        else                   return static_cast<signed long long>(b);
+        if (b & (1ull << (len - 1)))
+            return static_cast<signed long long>(b | (~0ull << len));
+        else
+            return static_cast<signed long long>(b);
     }
     static signed long long as_signed_magnitude(unsigned long long b) {
-        if (b&(1ull<<(len-1))) return static_cast<signed long long>(-(b&((1ull<<(len-1))-1ull)));
-        else                   return static_cast<signed long long>(b);
+        if (b & (1ull << (len - 1)))
+            return static_cast<signed long long>(-(b & ((1ull << (len - 1)) - 1ull)));
+        else
+            return static_cast<signed long long>(b);
     }
 
     static constexpr double pow2(int n) {
-        return (n == 0) ? 1.0               :
-               (n > 0)  ? pow2(n - 1) * 2.0 :
-                          pow2(n + 1) / 2.0;
+        return (n == 0) ? 1.0 : (n > 0) ? pow2(n - 1) * 2.0 : pow2(n + 1) / 2.0;
     }
     static double constexpr _factor() {
-        return pow2(exponent) * (C==Conversion::SC2RAD  ? PI_DF :
-                                 C==Conversion::MINUTE  ? 60.0  :
-                                 C==Conversion::PICO100 ? 1e-10 : 1);
+        return pow2(exponent) * (C == Conversion::SC2RAD  ? PI_DF :
+                                 C == Conversion::MINUTE  ? 60.0 :
+                                 C == Conversion::PICO100 ? 1e-10 :
+                                                            1);
     }
-    static constexpr T factor { static_cast<T>(_factor()) };
+    static constexpr T factor{static_cast<T>(_factor())};
 };
 
-template<std::size_t N>
+template <std::size_t N>
 unsigned long long getsubbits(std::bitset<N> data, std::size_t i, std::size_t l) {
-    auto d = (data >> (N-i-l) & std::bitset<N>((1ull<<l) - 1)).to_ullong();
+    auto d = (data >> (N - i - l) & std::bitset<N>((1ull << l) - 1)).to_ullong();
     return d;
 }
 
-template<std::size_t N, typename DF>
-void getdatafield(std::bitset<N> const& data, std::size_t& i, DF &dest) {
+template <std::size_t N, typename DF>
+void getdatafield(std::bitset<N> const& data, std::size_t& i, DF& dest) {
     auto bits = getsubbits(data, i, DF::len);
     dest      = DF::convert(bits);
     i += DF::len;
 }
 
+// clang-format off
 //                          Desired storage type in S3LP client
 //                            |       Data Type of Data Field in RTCM message
 //                            |         |     Exponent of first conversion factor
@@ -186,6 +191,7 @@ using DF512 = DataField<512, double  , df_int24 , -43, Conversion::SC2RAD >;
 using DF513 = DataField<513, double  , df_int10 ,   0, Conversion::PICO100>;
 using DF514 = DataField<514, double  , df_int10 ,   0, Conversion::PICO100>;
 using DF515 = DataField<515, uint8_t , df_bit<1>                          >; // Is uint8_t in ephem, bool?
+// clang-format on
 
 namespace std {
 ostream& operator<<(ostream& os, const DF002 d);
@@ -219,4 +225,4 @@ ostream& operator<<(ostream& os, const DF101 d);
 ostream& operator<<(ostream& os, const DF102 d);
 ostream& operator<<(ostream& os, const DF103 d);
 ostream& operator<<(ostream& os, const DF137 d);
-} // namespace std
+}  // namespace std

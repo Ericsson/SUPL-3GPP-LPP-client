@@ -19,7 +19,7 @@ void CtrlOutput::inspect(streamline::System&, DataType const& message, uint64_t 
     auto size    = payload.size();
     for (auto const& output : mConfig.outputs) {
         if (!output.ctrl_support()) continue;
-        if(!output.accept_tag(tag)) {
+        if (!output.accept_tag(tag)) {
             XDEBUGF(OUTPUT_PRINT_MODULE, "ctrl: tag %llX not accepted", tag);
             continue;
         }

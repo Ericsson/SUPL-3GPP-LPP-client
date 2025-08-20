@@ -97,7 +97,7 @@ static OCTET_STRING binary_encoded_octet(size_t max_length, uint64_t from) {
     memset(octet.buf, 0xFF, octet.size);
 
     size_t length = 0;
-    auto data   = from;
+    auto   data   = from;
     while (data > 0) {
         data /= 10;
         length++;
@@ -495,8 +495,8 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
     pdu_message.sETCapabilities = encode_setcapabilities(message.sETCapabilities);
     pdu_message.locationId      = encode_locationid(message.locationID);
 
-    if(message.payloads.size() > 0) {
-        auto suplpos = helper::asn1_allocate<SUPLPOS>();
+    if (message.payloads.size() > 0) {
+        auto suplpos        = helper::asn1_allocate<SUPLPOS>();
         suplpos->posPayLoad = encode_pospayload(message.payloads);
         pdu_message.sUPLPOS = suplpos;
     }

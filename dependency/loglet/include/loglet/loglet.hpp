@@ -50,8 +50,14 @@
 #endif
 
 // Macros for blocking argument evaluation if log level is disabled.
-#define AEB_BEGIN(level, module) do { if (loglet::is_module_level_enabled(module, level)) {
-#define AEB_END ; } } while (false) 
+#define AEB_BEGIN(level, module)                                                                   \
+    do {                                                                                           \
+        if (loglet::is_module_level_enabled(module, level)) {
+#define AEB_END                                                                                    \
+    ;                                                                                              \
+    }                                                                                              \
+    }                                                                                              \
+    while (false)
 
 #ifdef DISABLE_TRACE
 #define XTRACEF(module, fmt, ...)
@@ -59,7 +65,8 @@
 #define XTRACE_INDENT_SCOPE(module)
 #define TRACE_INDENT_SCOPE()
 #else
-#define XTRACEF(module, fmt, ...) AEB_BEGIN(loglet::Level::Trace, module) loglet::tracef(module, fmt, ##__VA_ARGS__) AEB_END
+#define XTRACEF(module, fmt, ...)                                                                  \
+    AEB_BEGIN(loglet::Level::Trace, module) loglet::tracef(module, fmt, ##__VA_ARGS__) AEB_END
 #define TRACEF(fmt, ...) XTRACEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XTRACE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Trace)
 #define TRACE_INDENT_SCOPE() XTRACE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -71,7 +78,8 @@
 #define XVERBOSE_INDENT_SCOPE(module)
 #define VERBOSE_INDENT_SCOPE()
 #else
-#define XVERBOSEF(module, fmt, ...) AEB_BEGIN(loglet::Level::Verbose, module) loglet::verbosef(module, fmt, ##__VA_ARGS__) AEB_END
+#define XVERBOSEF(module, fmt, ...)                                                                \
+    AEB_BEGIN(loglet::Level::Verbose, module) loglet::verbosef(module, fmt, ##__VA_ARGS__) AEB_END
 #define VERBOSEF(fmt, ...) XVERBOSEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XVERBOSE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Verbose)
 #define VERBOSE_INDENT_SCOPE() XVERBOSE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -83,7 +91,8 @@
 #define XDEBUG_INDENT_SCOPE(module)
 #define DEBUG_INDENT_SCOPE()
 #else
-#define XDEBUGF(module, fmt, ...) AEB_BEGIN(loglet::Level::Debug, module) loglet::debugf(module, fmt, ##__VA_ARGS__) AEB_END
+#define XDEBUGF(module, fmt, ...)                                                                  \
+    AEB_BEGIN(loglet::Level::Debug, module) loglet::debugf(module, fmt, ##__VA_ARGS__) AEB_END
 #define DEBUGF(fmt, ...) XDEBUGF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XDEBUG_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Debug)
 #define DEBUG_INDENT_SCOPE() XDEBUG_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -95,7 +104,8 @@
 #define XINFO_INDENT_SCOPE(module)
 #define INFO_INDENT_SCOPE()
 #else
-#define XINFOF(module, fmt, ...) AEB_BEGIN(loglet::Level::Info, module) loglet::infof(module, fmt, ##__VA_ARGS__) AEB_END
+#define XINFOF(module, fmt, ...)                                                                   \
+    AEB_BEGIN(loglet::Level::Info, module) loglet::infof(module, fmt, ##__VA_ARGS__) AEB_END
 #define INFOF(fmt, ...) XINFOF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XINFO_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Info)
 #define INFO_INDENT_SCOPE() XINFO_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -107,7 +117,8 @@
 #define XNOTICE_INDENT_SCOPE(module)
 #define NOTICE_INDENT_SCOPE()
 #else
-#define XNOTICEF(module, fmt, ...) AEB_BEGIN(loglet::Level::Notice, module) loglet::noticef(module, fmt, ##__VA_ARGS__) AEB_END
+#define XNOTICEF(module, fmt, ...)                                                                 \
+    AEB_BEGIN(loglet::Level::Notice, module) loglet::noticef(module, fmt, ##__VA_ARGS__) AEB_END
 #define NOTICEF(fmt, ...) XNOTICEF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XNOTICE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Notice)
 #define NOTICE_INDENT_SCOPE() XNOTICE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -120,7 +131,8 @@
 #define XWARN_INDENT_SCOPE(module)
 #define WARN_INDENT_SCOPE()
 #else
-#define XWARNF(module, fmt, ...) AEB_BEGIN(loglet::Level::Warning, module) loglet::warnf(module, fmt, ##__VA_ARGS__) AEB_END
+#define XWARNF(module, fmt, ...)                                                                   \
+    AEB_BEGIN(loglet::Level::Warning, module) loglet::warnf(module, fmt, ##__VA_ARGS__) AEB_END
 #define WARNF(fmt, ...) XWARNF(LOGLET_CURRENT_MODULE, fmt, ##__VA_ARGS__)
 #define XWARN_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Warning)
 #define WARN_INDENT_SCOPE() XWARN_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -132,7 +144,8 @@
 #define XERROR_INDENT_SCOPE(module)
 #define ERROR_INDENT_SCOPE()
 #else
-#define XERRORF(module, /*fmt, */...) AEB_BEGIN(loglet::Level::Error, module) loglet::errorf(module, /*fmt, */##__VA_ARGS__) AEB_END
+#define XERRORF(module, /*fmt, */...)                                                              \
+    AEB_BEGIN(loglet::Level::Error, module) loglet::errorf(module, /*fmt, */##__VA_ARGS__) AEB_END
 #define ERRORF(/*fmt, */...) XERRORF(LOGLET_CURRENT_MODULE, /*fmt, */##__VA_ARGS__)
 #define XERROR_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Error)
 #define ERROR_INDENT_SCOPE() XERROR_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
@@ -171,7 +184,7 @@
 #endif
 #endif
 
-#define VSCOPE_FUNCTIONF(/*fmt, */...) FUNCTION_SCOPEF(/*fmt, */__VA_ARGS__)
+#define VSCOPE_FUNCTIONF(/*fmt, */...) FUNCTION_SCOPEF(/*fmt, */ __VA_ARGS__)
 #define VSCOPE_FUNCTION() FUNCTION_SCOPE()
 
 #define UNREACHABLE()                                                                              \
@@ -255,18 +268,18 @@ struct LogModule {
 
 #define LOGLET_MODULE(module)                                                                      \
     LOGLET_MODULE_FORWARD_REF(module);                                                             \
-     loglet::LogModule LOGLET_MODULE_REF(module) {                                                  \
+    loglet::LogModule LOGLET_MODULE_REF(module) {                                                  \
         nullptr, #module                                                                           \
     }
 #define LOGLET_MODULE2(parent, child)                                                              \
     LOGLET_MODULE_FORWARD_REF(parent);                                                             \
-    LOGLET_MODULE_FORWARD_REF2(parent, child); \
-     loglet::LogModule LOGLET_MODULE_REF2(parent, child) {                                          \
+    LOGLET_MODULE_FORWARD_REF2(parent, child);                                                     \
+    loglet::LogModule LOGLET_MODULE_REF2(parent, child) {                                          \
         &LOGLET_MODULE_REF(parent), #child                                                         \
     }
 #define LOGLET_MODULE3(parent, child, grandchild)                                                  \
     LOGLET_MODULE_FORWARD_REF2(parent, child);                                                     \
-    LOGLET_MODULE_FORWARD_REF3(parent, child, grandchild);                                                     \
+    LOGLET_MODULE_FORWARD_REF3(parent, child, grandchild);                                         \
     loglet::LogModule LOGLET_MODULE_REF3(parent, child, grandchild) {                              \
         &LOGLET_MODULE_REF2(parent, child), #grandchild                                            \
     }

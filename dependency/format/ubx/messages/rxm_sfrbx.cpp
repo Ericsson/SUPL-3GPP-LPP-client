@@ -125,7 +125,8 @@ std::unique_ptr<Message> RxmSfrbx::parse(Decoder& decoder, std::vector<uint8_t> 
     if (decoder.error()) {
         return nullptr;
     } else {
-        return std::unique_ptr<Message>{new RxmSfrbx(std::move(payload), std::move(words), std::move(data))};
+        return std::unique_ptr<Message>{
+            new RxmSfrbx(std::move(payload), std::move(words), std::move(data))};
     }
 }
 

@@ -1,8 +1,8 @@
 #include "grid.hpp"
 #include "constant.hpp"
 #include "decode.hpp"
-#include "troposphere.hpp"
 #include "ionosphere.hpp"
+#include "troposphere.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
@@ -224,7 +224,7 @@ bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) cons
 void GridData::print_grid() {
     // Calculate the maximum length of the indices and data values
     int maxIndexLength = 1;
-    int maxDataLength = 1;
+    int maxDataLength  = 1;
 
     // Print the header
     std::stringstream ss;
@@ -240,7 +240,7 @@ void GridData::print_grid() {
         ss.clear();
         ss << std::setw(maxIndexLength) << y << "|";
         for (long x = 0; x <= mNumberOfStepsLongitude; x++) {
-            auto i = y * (mNumberOfStepsLongitude + 1) + x;
+            auto i          = y * (mNumberOfStepsLongitude + 1) + x;
             auto grid_point = mGridPoints[static_cast<size_t>(i)];
 
             if (grid_point.valid) {

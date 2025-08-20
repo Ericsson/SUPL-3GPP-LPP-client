@@ -32,7 +32,7 @@ public:
     NODISCARD std::string rfc3339() const;
     NODISCARD std::string rinex_string() const;
     NODISCARD std::string rinex_filename() const;
-    NODISCARD TimePoint time_point() const;
+    NODISCARD TimePoint   time_point() const;
 
     Utc& add(int64_t seconds) {
         tm.add(seconds);

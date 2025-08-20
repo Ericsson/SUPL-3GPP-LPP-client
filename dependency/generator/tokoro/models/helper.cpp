@@ -74,14 +74,14 @@ HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Float3 posit
     VERBOSEF("time_y: %f", time_y);
 
     auto lat_deg = position.x * constant::RAD2DEG;
-    auto cos_y = std::cos(2.0 * constant::PI * time_y);
+    auto cos_y   = std::cos(2.0 * constant::PI * time_y);
 
-    auto a_d = interpolate_coef(lat_deg, MAP_COEF[0]) -
-               interpolate_coef(lat_deg, MAP_COEF[3]) * cos_y;
-    auto b_d = interpolate_coef(lat_deg, MAP_COEF[1]) -
-               interpolate_coef(lat_deg, MAP_COEF[4]) * cos_y;
-    auto c_d = interpolate_coef(lat_deg, MAP_COEF[2]) -
-               interpolate_coef(lat_deg, MAP_COEF[5]) * cos_y;
+    auto a_d =
+        interpolate_coef(lat_deg, MAP_COEF[0]) - interpolate_coef(lat_deg, MAP_COEF[3]) * cos_y;
+    auto b_d =
+        interpolate_coef(lat_deg, MAP_COEF[1]) - interpolate_coef(lat_deg, MAP_COEF[4]) * cos_y;
+    auto c_d =
+        interpolate_coef(lat_deg, MAP_COEF[2]) - interpolate_coef(lat_deg, MAP_COEF[5]) * cos_y;
 
     VERBOSEF("a_d: %+f", a_d);
     VERBOSEF("b_d: %+f", b_d);

@@ -12,7 +12,7 @@ namespace format {
 namespace nav {
 
 struct D1Subframe1 {
-    uint32_t   sow;
+    uint32_t sow;
     uint8_t  sat_h1;
     uint8_t  aodc;
     uint8_t  urai;
@@ -29,7 +29,7 @@ struct D1Subframe1 {
 };
 
 struct D1Subframe2 {
-    uint32_t   sow;
+    uint32_t sow;
     double   delta_n;
     double   cuc;
     double   m0;
@@ -42,7 +42,7 @@ struct D1Subframe2 {
 };
 
 struct D1Subframe3 {
-    uint32_t   sow;
+    uint32_t sow;
     uint32_t toe_lsb;
     double   i0;
     double   cic;

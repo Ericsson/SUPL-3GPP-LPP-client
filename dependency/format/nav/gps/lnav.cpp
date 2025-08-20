@@ -276,8 +276,8 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         }
 
         VERBOSEF("processing ephemeris for PRN %u (week: %u, IODE: %u)", prn,
-               internal_ephemeris.subframe1_data.week_number,
-               internal_ephemeris.subframe2_data.iode);
+                 internal_ephemeris.subframe1_data.week_number,
+                 internal_ephemeris.subframe2_data.iode);
 
         auto const& sf1 = internal_ephemeris.subframe1_data;
         auto const& sf2 = internal_ephemeris.subframe2_data;
@@ -305,7 +305,7 @@ bool EphemerisCollector::process(uint8_t prn, lnav::Subframe const& subframe,
         ephemeris.a                 = sf2.sqrt_a * sf2.sqrt_a;
         ephemeris.toe               = sf2.toe;
         ephemeris.fit_interval_flag = sf2.fit_interval_flag;
-        ephemeris.aodo              = sf2.aodo; // TODO(ewasjon): AODO is not a ephemeris field
+        ephemeris.aodo              = sf2.aodo;  // TODO(ewasjon): AODO is not a ephemeris field
         ephemeris.cic               = sf3.cic;
         ephemeris.omega0            = sf3.omega0;
         ephemeris.cis               = sf3.cis;
