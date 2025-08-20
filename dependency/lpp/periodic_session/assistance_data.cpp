@@ -12,7 +12,7 @@ LOGLET_MODULE2(lpp, ad);
 namespace lpp {
 
 AssistanceDataHandler::AssistanceDataHandler(Client* client, Session* session,
-                                             PeriodicSessionHandle handle,
+                                             PeriodicSessionHandle         handle,
                                              PeriodicRequestAssistanceData data)
     : PeriodicSession(client, session, handle), mData(data) {
     VSCOPE_FUNCTION();

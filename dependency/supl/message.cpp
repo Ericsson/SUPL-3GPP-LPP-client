@@ -1,7 +1,7 @@
 #include "supl/message.hpp"
 
-#include <ULP-PDU.h>
 #include <OCTET_STRING.h>
+#include <ULP-PDU.h>
 
 namespace supl {
 

@@ -92,7 +92,7 @@ static void dump(DataTracingConfig const& config) {
     DEBUGF("username: \"%s\"", config.username.c_str());
     DEBUGF("password: \"%s\"", config.password.c_str());
     DEBUGF("possib-log:  %s", config.possib_log ? "true" : "false");
-    DEBUGF("possib-wrap: %s", config.possib_wrap ? "true" : "false"); 
+    DEBUGF("possib-wrap: %s", config.possib_wrap ? "true" : "false");
 }
 
 }  // namespace data_tracing

@@ -1,5 +1,5 @@
-#include "constant.hpp"
 #include "clock.hpp"
+#include "constant.hpp"
 #include "decode.hpp"
 
 #pragma GCC diagnostic push

@@ -1,7 +1,7 @@
 #include "ionosphere.hpp"
 #include "constant.hpp"
-#include "decode.hpp"
 #include "correction.hpp"
+#include "decode.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"

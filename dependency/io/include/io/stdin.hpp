@@ -20,6 +20,6 @@ protected:
 
 private:
     std::unique_ptr<scheduler::FileDescriptorTask> mFdTask;
-    uint8_t mBuffer[4096];
+    uint8_t                                        mBuffer[4096];
 };
 }  // namespace io

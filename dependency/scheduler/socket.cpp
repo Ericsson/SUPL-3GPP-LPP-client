@@ -57,7 +57,7 @@ void ListenerTask::event(struct epoll_event* event) NOEXCEPT {
 
 void ListenerTask::accept() NOEXCEPT {
     VSCOPE_FUNCTION();
-    struct sockaddr_storage addr_storage {};
+    struct sockaddr_storage addr_storage{};
     socklen_t               addr_len = sizeof(addr_storage);
     auto                    client_fd =
         ::accept(mListenerFd, reinterpret_cast<struct sockaddr*>(&addr_storage), &addr_len);
@@ -161,8 +161,8 @@ bool TcpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
     struct sockaddr* addr     = nullptr;
     socklen_t        addr_len = 0;
 
-    struct sockaddr_in addr_in {};
-    struct sockaddr_un addr_un {};
+    struct sockaddr_in addr_in{};
+    struct sockaddr_un addr_un{};
     if (!mAddress.empty()) {
         addr_in.sin_family = AF_INET;
         addr_in.sin_port   = htons(mPort);
@@ -321,8 +321,8 @@ bool UdpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
     struct sockaddr* addr     = nullptr;
     socklen_t        addr_len = 0;
 
-    struct sockaddr_in addr_in {};
-    struct sockaddr_un addr_un {};
+    struct sockaddr_in addr_in{};
+    struct sockaddr_un addr_un{};
     if (!mAddress.empty()) {
         addr_in.sin_family = AF_INET;
         addr_in.sin_port   = htons(mPort);
@@ -549,7 +549,7 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     mConnected       = false;
     mShouldReconnect = should_reconnect;
 
-    mEvent.name = "socket";
+    mEvent.name  = "socket";
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
     };
@@ -597,7 +597,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
     if (mHost.size() > 0) {
         // DNS lookup
         struct addrinfo* dns_result{};
-        struct addrinfo  hints {};
+        struct addrinfo  hints{};
         hints.ai_family   = AF_UNSPEC;
         hints.ai_socktype = SOCK_STREAM;
         hints.ai_protocol = IPPROTO_TCP;

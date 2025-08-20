@@ -11,7 +11,8 @@ namespace idokeido {
 bool compute_look_angles(Vector3 const& ground_ecef, Vector3 const& enu,
                          Vector3 const& satellite_ecef, LookAngles& look_angles) NOEXCEPT {
     FUNCTION_SCOPE();
-    VERBOSEF("ground_ecef:    %+.4f %+.4f %+.4f", ground_ecef.x(), ground_ecef.y(), ground_ecef.z());
+    VERBOSEF("ground_ecef:    %+.4f %+.4f %+.4f", ground_ecef.x(), ground_ecef.y(),
+             ground_ecef.z());
     VERBOSEF("satellite_ecef: %+.4f %+.4f %+.4f", satellite_ecef.x(), satellite_ecef.y(),
              satellite_ecef.z());
     VERBOSEF("enu:            %+.4f %+.4f %+.4f", enu.x(), enu.y(), enu.z());

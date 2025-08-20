@@ -8,5 +8,3 @@ struct GlobalPressureTempature {
 };
 
 GlobalPressureTempature gpt(double dmjd, double dlat, double dlon, double h_ell);
-
-

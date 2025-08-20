@@ -128,7 +128,8 @@ protected:
     PeriodicSession* find_by_periodic_session_handle(PeriodicSessionHandle const& session);
     PeriodicSession* find_by_request_transaction_handle(TransactionHandle const& transaction);
     PeriodicSession* find_by_periodic_transaction_handle(TransactionHandle const& transaction);
-    SingleSession* find_single_session_by_request_transaction_handle(TransactionHandle const& transaction);
+    SingleSession*
+    find_single_session_by_request_transaction_handle(TransactionHandle const& transaction);
 
 private:
     std::string                          mHost;

@@ -1,6 +1,6 @@
 #pragma once
-#include <maths/float3.hpp>
 #include <generator/tokoro/reference_ellipsoid.hpp>
+#include <maths/float3.hpp>
 
 namespace generator {
 namespace tokoro {
@@ -30,8 +30,5 @@ Float3 itrf_transform(Itrf from, Itrf to, double epoch, Float3 position);
 Float3 itrf89_to_etrf89(double epoch, Float3 position);
 Float3 etrf89_to_itrf89(double epoch, Float3 position);
 
-
-
-
-}
+}  // namespace tokoro
 }  // namespace generator

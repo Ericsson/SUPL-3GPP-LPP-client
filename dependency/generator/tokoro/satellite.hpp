@@ -4,9 +4,9 @@
 #include "models/earth_solid_tides.hpp"
 #include "models/phase_windup.hpp"
 #include "models/shapiro.hpp"
+#include "models/sun_moon.hpp"
 #include "observation.hpp"
 #include "sv_id.hpp"
-#include "models/sun_moon.hpp"
 
 #include <ephemeris/ephemeris.hpp>
 #include <generator/rtcm/satellite_id.hpp>
@@ -20,7 +20,7 @@ namespace tokoro {
 struct SatelliteState {
     ts::Tai reception_time;
     ts::Tai emission_time;
-    Float3 ground_position;
+    Float3  ground_position;
 
     /// Ephemeris Parameters
     Float3   eph_position;

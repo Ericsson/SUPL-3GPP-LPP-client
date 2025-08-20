@@ -11,7 +11,7 @@ public:
     EXPLICIT Output() NOEXCEPT;
     virtual ~Output() NOEXCEPT;
 
-    virtual const char* name() const NOEXCEPT = 0;
+    virtual char const* name() const NOEXCEPT = 0;
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler) NOEXCEPT;
     NODISCARD bool cancel() NOEXCEPT;

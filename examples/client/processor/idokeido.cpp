@@ -449,7 +449,7 @@ void IdokeidoSpp::inspect(streamline::System&, DataType const& message, uint64_t
     VSCOPE_FUNCTION();
     ASSERT(mEngine, "engine is null");
 
-    if(message) {
+    if (message) {
         mCorrectionCache->process(*message);
     }
 }

@@ -5,8 +5,7 @@
 namespace format {
 namespace ubx {
 
-uint32_t UbxCfgValset::set(Encoder& encoder, CfgLayer layers, CfgKey key,
-                           CfgValue value) NOEXCEPT {
+uint32_t UbxCfgValset::set(Encoder& encoder, CfgLayer layers, CfgKey key, CfgValue value) NOEXCEPT {
     auto expected_type = CfgValue::type_from_key(key);
     if (value.type() != expected_type || value.type() == CfgValue::UNKNOWN) {
         return 0;

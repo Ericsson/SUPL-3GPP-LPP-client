@@ -13,7 +13,8 @@ struct ReferenceEllipsoid {
     double eccentricity_sq;
     double eccentricity;
 
-    static CONSTEXPR ReferenceEllipsoid create(double semi_major_axis, double flattening, double eccentricity_sq) {
+    static CONSTEXPR ReferenceEllipsoid create(double semi_major_axis, double flattening,
+                                               double eccentricity_sq) {
         return {
             /* semi_major_axis */ semi_major_axis,
             /* semi_minor_axis */ semi_major_axis * (1.0 - flattening),
@@ -33,7 +34,7 @@ extern ReferenceEllipsoid const WGS84;
 extern ReferenceEllipsoid const GRS80;
 extern ReferenceEllipsoid const PZ90;
 extern ReferenceEllipsoid const PZ90_11;
-}
+}  // namespace ellipsoid
 
 }  // namespace tokoro
 }  // namespace generator

@@ -17,7 +17,6 @@ static bool parse_double(std::string const& token, double& value) {
         return false;
     }
 }
-    
 
 static bool parse_double_opt(std::string const& token, double& value) {
     try {
@@ -86,4 +85,4 @@ std::unique_ptr<Message> GstMessage::parse(std::string prefix, std::string const
 }
 
 }  // namespace nmea
-}  // namespace receiver
+}  // namespace format

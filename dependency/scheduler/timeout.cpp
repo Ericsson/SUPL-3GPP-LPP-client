@@ -21,7 +21,7 @@ TimeoutTask::TimeoutTask(std::chrono::steady_clock::duration duration) NOEXCEPT
       mDuration{duration},
       mTimerFd{-1} {
     VSCOPE_FUNCTION();
-    mEvent.name = "timeout";
+    mEvent.name  = "timeout";
     mEvent.event = [this](struct epoll_event* event) {
         if ((event->events & EPOLLIN) == 0) return;
 
@@ -76,7 +76,7 @@ bool TimeoutTask::schedule(Scheduler& scheduler) NOEXCEPT {
     auto nanoseconds =
         std::chrono::duration_cast<std::chrono::nanoseconds>(mDuration).count() % 1000000000;
 
-    struct itimerspec its {};
+    struct itimerspec its{};
     its.it_value.tv_sec     = seconds;
     its.it_value.tv_nsec    = nanoseconds;
     its.it_interval.tv_sec  = 0;

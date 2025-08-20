@@ -7,8 +7,8 @@
 #include <format/nav/gps/lnav.hpp>
 #include <format/ubx/messages/rxm_rawx.hpp>
 #include <format/ubx/messages/rxm_sfrbx.hpp>
-#include <generator/idokeido/spp.hpp>
 #include <generator/idokeido/eph.hpp>
+#include <generator/idokeido/spp.hpp>
 #include <lpp/location_information.hpp>
 #include <scheduler/periodic.hpp>
 #include <scheduler/scheduler.hpp>

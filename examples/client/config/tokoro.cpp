@@ -298,7 +298,7 @@ static void parse(Config* config) {
     tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
     tokoro.time_step           = 1.0;
 
-    tokoro.antex_file = "";
+    tokoro.antex_file     = "";
     tokoro.ignore_bitmask = false;
 
     if (gEnable) tokoro.enabled = true;

@@ -145,7 +145,7 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
 
         if (written != count) {
             DEBUGF("failed to write all data to destination: written: %ld, count: %ld", written,
-                    count);
+                   count);
             mLeftOverCount = static_cast<size_t>(count) - written;
             return;
         }

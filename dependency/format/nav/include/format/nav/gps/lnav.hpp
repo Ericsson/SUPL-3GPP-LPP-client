@@ -82,7 +82,7 @@ struct Subframe4 {
         double dn;
         double delta_t_lsf;
     };
-    
+
     uint8_t data_id;
     uint8_t sv_id;
 

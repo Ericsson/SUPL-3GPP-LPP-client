@@ -35,7 +35,7 @@ public:
     bool        L() NOEXCEPT;
     std::string CH(uint32_t length) NOEXCEPT;
 
-    void                     skip(uint32_t length) NOEXCEPT;
+    void               skip(uint32_t length) NOEXCEPT;
     NODISCARD uint32_t remaining() const NOEXCEPT;
     NODISCARD bool     error() const NOEXCEPT;
 

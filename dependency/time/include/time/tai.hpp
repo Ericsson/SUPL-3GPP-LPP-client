@@ -31,7 +31,7 @@ public:
         return *this;
     }
 
-    NODISCARD Tai operator+(Timestamp delta) const;
+    NODISCARD Tai       operator+(Timestamp delta) const;
     NODISCARD Timestamp difference(Tai const& other) const;
 
     NODISCARD double difference_seconds(Tai const& other) const;

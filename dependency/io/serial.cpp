@@ -2,11 +2,11 @@
 #include "serial.hpp"
 
 #include <fcntl.h>
+#include <sstream>
 #include <stdio.h>
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
-#include <sstream>
 
 #include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>

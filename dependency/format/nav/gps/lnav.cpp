@@ -231,13 +231,13 @@ static bool decode_subframe4(Words const& words, Subframe4& subframe) {
     FUNCTION_SCOPE();
 
     auto data_id = words.u8(60, 2);
-    auto sv_id = words.u8(62, 6);
+    auto sv_id   = words.u8(62, 6);
 
     subframe.data_id = data_id;
-    subframe.sv_id = sv_id;
+    subframe.sv_id   = sv_id;
 
     VERBOSEF("subframe4: data_id: %u, sv_id: %u (page_id: %i)", subframe.data_id, subframe.sv_id,
-            subframe.sv_id - 38);
+             subframe.sv_id - 38);
 
     switch (subframe.sv_id) {
     case 56: return decode_subframe4_page18(words, subframe.page18);

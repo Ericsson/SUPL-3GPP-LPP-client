@@ -10,9 +10,9 @@
 #include <args.hpp>
 #pragma GCC diagnostic pop
 
-#include <maths/float3.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <loglet/loglet.hpp>
+#include <maths/float3.hpp>
 
 using namespace generator::tokoro;
 

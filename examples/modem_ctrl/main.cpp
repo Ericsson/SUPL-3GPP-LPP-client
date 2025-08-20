@@ -89,7 +89,7 @@ static int start_server(int port) {
         }
 
         modem::Cimi cimi{};
-        if(!device.get_cimi(scheduler, cimi)) {
+        if (!device.get_cimi(scheduler, cimi)) {
             printf("ERROR: failed to get CIMI\n");
             ::close(client);
             continue;

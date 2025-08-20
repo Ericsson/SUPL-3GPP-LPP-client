@@ -9,8 +9,8 @@
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
 
-#include "sv_id.hpp"
 #include "grid.hpp"
+#include "sv_id.hpp"
 
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
@@ -38,7 +38,6 @@ struct TroposphereGridPoint {
 struct TroposphereGrid {
     std::unordered_map<GridIndex, TroposphereGridPoint> points;
 };
-
 
 }  // namespace tokoro
 }  // namespace generator

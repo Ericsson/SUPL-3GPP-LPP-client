@@ -13,8 +13,8 @@
 #include <format/ubx/parser.hpp>
 
 #include <lpp/client.hpp>
-#include <lpp/session.hpp>
 #include <lpp/location_information.hpp>
+#include <lpp/session.hpp>
 #include <scheduler/periodic.hpp>
 
 #include "config.hpp"
@@ -48,8 +48,8 @@ struct Program {
     std::unique_ptr<supl::Identity> identity;
     std::unique_ptr<lpp::Client>    client;
 
-    std::vector<std::unique_ptr<InputContext>>    input_contexts;
-    std::vector<std::unique_ptr<InputStage>>    input_stages;
+    std::vector<std::unique_ptr<InputContext>> input_contexts;
+    std::vector<std::unique_ptr<InputStage>>   input_stages;
 
     std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
 
@@ -60,7 +60,7 @@ struct Program {
 
     void update_gnss_metrics(lpp::HaGnssMetrics const& metrics) { latest_gnss_metrics = metrics; }
 
-    bool has_ctrl_parsers() const { 
+    bool has_ctrl_parsers() const {
         for (auto const& input : input_contexts) {
             if (input->ctrl) return true;
         }

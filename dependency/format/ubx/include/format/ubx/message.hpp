@@ -40,7 +40,8 @@ private:
 /// Unsupported or unknown message.
 class UnsupportedMessage final : public Message {
 public:
-    EXPLICIT UnsupportedMessage(uint8_t message_class, uint8_t message_id, std::vector<uint8_t> data) NOEXCEPT;
+    EXPLICIT UnsupportedMessage(uint8_t message_class, uint8_t message_id,
+                                std::vector<uint8_t> data) NOEXCEPT;
     ~UnsupportedMessage() override = default;
 
     UnsupportedMessage(UnsupportedMessage const& other) : Message(other) {}

@@ -1,8 +1,8 @@
 #include "earth_solid_tides.hpp"
 #include "constant.hpp"
-#include "satellite.hpp"
-#include "models/sun_moon.hpp"
 #include "coordinates/enu.hpp"
+#include "models/sun_moon.hpp"
+#include "satellite.hpp"
 
 #include <loglet/loglet.hpp>
 

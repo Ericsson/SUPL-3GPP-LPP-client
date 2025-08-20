@@ -1,6 +1,6 @@
 #include "sun_moon.hpp"
-#include "coordinates/eci.hpp"
 #include "constant.hpp"
+#include "coordinates/eci.hpp"
 #include "models/astronomical_arguments.hpp"
 
 #include <loglet/loglet.hpp>

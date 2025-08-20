@@ -10,8 +10,7 @@ namespace nmea {
 /// Base class for all messages.
 class Message {
 public:
-    EXPLICIT Message(std::string prefix, std::string payload,
-                         std::string checksum) NOEXCEPT;
+    EXPLICIT Message(std::string prefix, std::string payload, std::string checksum) NOEXCEPT;
     virtual ~Message() NOEXCEPT;
 
     Message(Message const& other)
@@ -47,7 +46,7 @@ private:
 class UnsupportedMessage final : public Message {
 public:
     EXPLICIT UnsupportedMessage(std::string prefix, std::string payload,
-                                    std::string checksum) NOEXCEPT;
+                                std::string checksum) NOEXCEPT;
     ~UnsupportedMessage() override = default;
 
     UnsupportedMessage(UnsupportedMessage const& other) : Message(other) {}
@@ -62,8 +61,7 @@ public:
 /// Error message. This is used to indicate that the message could not be parsed.
 class ErrorMessage final : public Message {
 public:
-    EXPLICIT ErrorMessage(std::string prefix, std::string payload,
-                              std::string checksum) NOEXCEPT;
+    EXPLICIT ErrorMessage(std::string prefix, std::string payload, std::string checksum) NOEXCEPT;
     ~ErrorMessage() override = default;
 
     ErrorMessage(ErrorMessage const& other) : Message(other) {}

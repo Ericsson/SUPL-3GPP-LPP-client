@@ -21,7 +21,7 @@ FileDescriptorTask::FileDescriptorTask() NOEXCEPT : on_read{},
                                                     mEvent{},
                                                     mFd{-1} {
     VSCOPE_FUNCTION();
-    mEvent.name = "fd";
+    mEvent.name  = "fd";
     mEvent.event = [this](struct epoll_event* event) {
         VERBOSEF("fd task: event: %d %s%s%s%s", mFd, (event->events & EPOLLIN) ? "read " : "",
                  (event->events & EPOLLOUT) ? "write " : "",

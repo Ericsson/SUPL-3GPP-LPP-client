@@ -201,7 +201,7 @@ struct HpacData {
 
 struct RealTimeIntegrityData {
     struct Satellite {
-        long id;
+        long              id;
         std::vector<long> mBadSignals;
     };
 

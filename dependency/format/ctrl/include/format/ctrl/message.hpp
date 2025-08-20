@@ -12,8 +12,7 @@ public:
     EXPLICIT Message(std::string payload) NOEXCEPT;
     virtual ~Message() NOEXCEPT;
 
-    Message(Message const& other)
-        : mPayload(other.mPayload) {}
+    Message(Message const& other) : mPayload(other.mPayload) {}
     Message(Message&&)                 = delete;
     Message& operator=(Message const&) = delete;
     Message& operator=(Message&&)      = delete;
@@ -30,5 +29,5 @@ public:
 private:
     std::string mPayload;
 };
-}  // namespace nmea
+}  // namespace ctrl
 }  // namespace format

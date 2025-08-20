@@ -6,7 +6,7 @@ namespace ubx {
 
 class Decoder;
 
-using CfgLayer                                  = uint8_t;
+using CfgLayer                            = uint8_t;
 CONSTEXPR static CfgLayer CFG_LAYER_RAM   = 0x01;
 CONSTEXPR static CfgLayer CFG_LAYER_BBR   = 0x02;
 CONSTEXPR static CfgLayer CFG_LAYER_FLASH = 0x04;
@@ -107,7 +107,7 @@ struct CfgValue {
     NODISCARD uint64_t u8() const NOEXCEPT;
 
     NODISCARD uint32_t size() const NOEXCEPT;
-    void                     serialize(Encoder& encoder) const NOEXCEPT;
+    void               serialize(Encoder& encoder) const NOEXCEPT;
 
 private:
     EXPLICIT CfgValue(Type type, bool value) NOEXCEPT;
@@ -126,5 +126,5 @@ private:
     } mValue;
 };
 
-}  // namespace ublox
-}  // namespace receiver
+}  // namespace ubx
+}  // namespace format

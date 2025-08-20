@@ -2,12 +2,12 @@
 #include <memory>
 #include <vector>
 
-#include <io/output.hpp>
 #include <io/file.hpp>
+#include <io/output.hpp>
 #include <io/serial.hpp>
+#include <io/stdout.hpp>
 #include <io/tcp.hpp>
 #include <io/udp.hpp>
-#include <io/stdout.hpp>
 
 /// Host options.
 struct HostOptions {
