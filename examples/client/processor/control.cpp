@@ -26,7 +26,8 @@ void CtrlOutput::inspect(streamline::System&, DataType const& message, uint64_t 
         if (output.print) {
             XINFOF(OUTPUT_PRINT_MODULE, "ctrl: %zd bytes", size);
         }
-        output.interface->write(data, size);
+        ASSERT(output.stage, "stage is null");
+        output.stage->write(OUTPUT_FORMAT_CTRL, data, size);
     }
 }
 

@@ -26,7 +26,9 @@ void UbxOutput::inspect(streamline::System&, DataType const& message, uint64_t t
         if (output.print) {
             XINFOF(OUTPUT_PRINT_MODULE, "ubx: %zd bytes", data.size());
         }
-        output.interface->write(data.data(), data.size());
+
+        ASSERT(output.stage, "stage is null");
+        output.stage->write(OUTPUT_FORMAT_UBX, data.data(), data.size());
     }
 }
 

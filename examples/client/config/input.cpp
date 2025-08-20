@@ -22,7 +22,8 @@ static args::ValueFlagList<std::string> gArgs{
     "Usage: --input <type>:<arguments>\n\n"
     "Arguments:\n"
     "  format=<fmt>[+<fmt>...]\n"
-    "  tags=<tag>[+<tag>...]\n\n"
+    "  tags=<tag>[+<tag>...]\n"
+    "  chain=<stage>[+<stage>...]\n\n"
     "Types and their specific arguments:\n"
     "  stdin:\n"
     "  file:\n"
@@ -48,6 +49,8 @@ static args::ValueFlagList<std::string> gArgs{
     "    port=<port>\n"
     "    path=<path>\n"
     "\n"
+    "Stages:\n"
+    "  tlf\n"
     "Formats:\n"
     "  all, ubx, nmea, rtcm, ctrl, lpp-uper, lpp-uper-pad\n",
     {"input"},
@@ -93,6 +96,29 @@ parse_format_list_from_options(std::unordered_map<std::string, std::string> cons
     return parse_format_list(options.at("format"));
 }
 
+static std::string parse_stage(std::string const& str) {
+    if (str == "tlf") return "tlf";
+    throw args::ValidationError("--output stage: invalid stage, got `" + str + "`");
+}
+
+static std::vector<std::string> parse_stages(std::string const& str) {
+    auto                     parts = split(str, '+');
+    std::vector<std::string> stages;
+    for (auto const& part : parts) {
+        stages.push_back(parse_stage(part));
+    }
+    return stages;
+}
+
+static std::vector<std::string>
+parse_stages_from_options(std::unordered_map<std::string, std::string> const& options) {
+    if (options.find("chain") == options.end()) {
+        return {};
+    } else {
+        return parse_stages(options.at("chain"));
+    }
+}
+
 static std::vector<std::string> parse_tags(std::string const& str) {
     auto parts = split(str, '+');
     return parts;
@@ -120,20 +146,13 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
     return options;
 }
 
-static InputInterface
+static std::unique_ptr<io::Input>
 parse_input_stdin(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto tags   = parse_tags_from_options(options);
-    auto print  = parse_bool_option(options, "stdin", "print", false);
-    auto input  = std::unique_ptr<io::Input>(new io::StdinInput());
-    return {format, print, std::move(input), tags};
+    return std::make_unique<io::StdinInput>();
 }
 
-static InputInterface
+static std::unique_ptr<io::Input>
 parse_input_file(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto tags   = parse_tags_from_options(options);
-    auto print  = parse_bool_option(options, "input", "print", false);
     if (options.find("path") == options.end()) {
         throw args::ValidationError("--input file: missing `path` option");
     }
@@ -151,9 +170,7 @@ parse_input_file(std::unordered_map<std::string, std::string> const& options) {
 
     auto tick_interval  = std::chrono::milliseconds(100);
     auto bytes_per_tick = static_cast<size_t>((bps + 9) / 10);
-
-    auto input = std::unique_ptr<io::Input>(new io::FileInput(path, bytes_per_tick, tick_interval));
-    return {format, print, std::move(input), tags};
+    return std::unique_ptr<io::Input>(new io::FileInput(path, bytes_per_tick, tick_interval));
 }
 
 static io::BaudRate parse_baudrate(std::string const& str) {
@@ -234,10 +251,7 @@ static io::ParityBit parse_paritybit(std::string const& str) {
                            "'");
 }
 
-static InputInterface parse_serial(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto tags   = parse_tags_from_options(options);
-    auto print  = parse_bool_option(options, "serial", "print", false);
+static std::unique_ptr<io::Input> parse_serial(std::unordered_map<std::string, std::string> const& options) {
     if (options.find("device") == options.end()) {
         throw args::RequiredError("--input serial: missing `device` option");
     }
@@ -260,17 +274,12 @@ static InputInterface parse_serial(std::unordered_map<std::string, std::string> 
     if (parity_bit_it != options.end()) parity_bit = parse_paritybit(parity_bit_it->second);
 
     auto device = options.at("device");
-    auto input  = std::unique_ptr<io::Input>(
+    return std::unique_ptr<io::Input>(
         new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
-    return {format, print, std::move(input), tags};
 }
 
-static InputInterface
+static std::unique_ptr<io::Input>
 parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto tags   = parse_tags_from_options(options);
-    auto print  = parse_bool_option(options, "tcp-client", "print", false);
-
     auto reconnect = true;
     if (options.find("reconnect") != options.end()) {
         if (options.at("reconnect") == "true") {
@@ -308,24 +317,18 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input = std::unique_ptr<io::Input>(
+        return std::unique_ptr<io::Input>(
             new io::TcpClientInput(host, static_cast<uint16_t>(port), reconnect));
-        return {format, print, std::move(input), tags};
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
-        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(path, reconnect));
-        return {format, print, std::move(input), tags};
+        return std::unique_ptr<io::Input>(new io::TcpClientInput(path, reconnect));
     } else {
         throw args::RequiredError("--input tcp-client: missing `host` and `port` or `path` option");
     }
 }
 
-static InputInterface
+static std::unique_ptr<io::Input>
 parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto tags   = parse_tags_from_options(options);
-    auto print  = parse_bool_option(options, "tcp-server", "print", false);
-
     if (options.find("listen") != options.end() || options.find("port") != options.end()) {
         if (options.find("port") == options.end()) {
             throw args::RequiredError("--input tcp-server: missing `port` option");
@@ -355,25 +358,18 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input =
-            std::unique_ptr<io::Input>(new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
-        return {format, print, std::move(input), tags};
+        return std::unique_ptr<io::Input>(new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
-        auto input = std::unique_ptr<io::Input>(new io::TcpServerInput(path));
-        return {format, print, std::move(input), tags};
+        return std::unique_ptr<io::Input>(new io::TcpServerInput(path));
     } else {
         throw args::RequiredError(
             "--input tcp-server: missing `listen` and `port` or `path` option");
     }
 }
 
-static InputInterface
+static std::unique_ptr<io::Input>
 parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto tags   = parse_tags_from_options(options);
-    auto print  = parse_bool_option(options, "udp-server", "print", false);
-
     if (options.find("listen") != options.end() || options.find("port") != options.end()) {
         if (options.find("port") == options.end()) {
             throw args::RequiredError("--input udp-server: missing `port` option");
@@ -403,13 +399,10 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
                 std::to_string(port) + "'");
         }
 
-        auto input =
-            std::unique_ptr<io::Input>(new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
-        return {format, print, std::move(input), tags};
+        return std::unique_ptr<io::Input>(new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
     } else if (options.find("path") != options.end()) {
         auto path  = options.at("path");
-        auto input = std::unique_ptr<io::Input>(new io::UdpServerInput(path));
-        return {format, print, std::move(input), tags};
+        return std::unique_ptr<io::Input>(new io::UdpServerInput(path));
     } else {
         throw args::RequiredError(
             "--input udp-server: missing `listen` and `port` or `path` option");
@@ -428,12 +421,23 @@ static InputInterface parse_interface(std::string const& source) {
         throw args::ValidationError("--input: invalid input, got `" + source + "`");
     }
 
-    if (parts[0] == "stdin") return parse_input_stdin(options);
-    if (parts[0] == "file") return parse_input_file(options);
-    if (parts[0] == "serial") return parse_serial(options);
-    if (parts[0] == "tcp-client") return parse_tcp_client(options);
-    if (parts[0] == "tcp-server") return parse_tcp_server(options);
-    if (parts[0] == "udp-server") return parse_udp_server(options);
+    auto format = parse_format_list_from_options(options);
+    auto tags   = parse_tags_from_options(options);
+    auto stages = parse_stages_from_options(options);
+    auto print  = parse_bool_option(options, parts[0], "print", false);
+
+    std::unique_ptr<io::Input> input;
+    if (parts[0] == "stdin") input = parse_input_stdin(options);
+    if (parts[0] == "file") input = parse_input_file(options);
+    if (parts[0] == "serial") input = parse_serial(options);
+    if (parts[0] == "tcp-client") input = parse_tcp_client(options);
+    if (parts[0] == "tcp-server") input = parse_tcp_server(options);
+    if (parts[0] == "udp-server") input = parse_udp_server(options);
+
+    if (input) {
+        return {format, print, std::move(input), tags, stages};
+    }
+
     throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");
 }
 

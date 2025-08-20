@@ -23,7 +23,7 @@ Parser::~Parser() NOEXCEPT {
     }
 }
 
-bool Parser::append(uint8_t* data, size_t length) NOEXCEPT {
+bool Parser::append(uint8_t const* data, size_t length) NOEXCEPT {
     FUNCTION_SCOPEF("%u bytes", length);
     auto length32 = static_cast<uint32_t>(length);
     if (length32 > mBufferCapacity) {

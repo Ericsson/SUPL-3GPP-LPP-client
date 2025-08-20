@@ -52,7 +52,8 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t ta
                 XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), size);
             }
 
-            output.interface->write(buffer, size);
+            ASSERT(output.stage, "stage is null");
+            output.stage->write(OUTPUT_FORMAT_RTCM, buffer, size);
         }
     }
 }

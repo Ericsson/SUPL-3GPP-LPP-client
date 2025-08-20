@@ -84,6 +84,7 @@ void LocationOutput::inspect(streamline::System&, DataType const& location, uint
             XINFOF(OUTPUT_PRINT_MODULE, "location: %zd bytes", size);
         }
 
-        output.interface->write(data, size);
+        ASSERT(output.stage, "stage is null");
+        output.stage->write(OUTPUT_FORMAT_LOCATION, data, size);
     }
 }

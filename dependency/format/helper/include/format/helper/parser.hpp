@@ -11,7 +11,7 @@ public:
     EXPLICIT Parser() NOEXCEPT;
     virtual ~Parser() NOEXCEPT;
 
-    bool append(uint8_t* data, size_t length) NOEXCEPT;
+    bool append(uint8_t const* data, size_t length) NOEXCEPT;
     void clear() NOEXCEPT;
 
     NODISCARD virtual char const* name() const NOEXCEPT = 0;

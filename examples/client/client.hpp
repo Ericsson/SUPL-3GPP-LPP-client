@@ -18,6 +18,17 @@
 #include <scheduler/periodic.hpp>
 
 #include "config.hpp"
+#include "stage.hpp"
+
+struct InputContext {
+    std::string                              name;
+    InputInterface const*                    input{};
+    std::unique_ptr<format::nmea::Parser>    nmea{};
+    std::unique_ptr<format::ubx::Parser>     ubx{};
+    std::unique_ptr<format::ctrl::Parser>    ctrl{};
+    std::unique_ptr<format::lpp::UperParser> lpp_uper{};
+    std::unique_ptr<format::lpp::UperParser> lpp_uper_pad{};
+};
 
 struct Program {
     Config               config;
@@ -37,10 +48,8 @@ struct Program {
     std::unique_ptr<supl::Identity> identity;
     std::unique_ptr<lpp::Client>    client;
 
-    std::vector<std::unique_ptr<format::nmea::Parser>>    nmea_parsers;
-    std::vector<std::unique_ptr<format::ubx::Parser>>     ubx_parsers;
-    std::vector<std::unique_ptr<format::ctrl::Parser>>    ctrl_parsers;
-    std::vector<std::unique_ptr<format::lpp::UperParser>> lpp_uper_parsers;
+    std::vector<std::unique_ptr<InputContext>>    input_contexts;
+    std::vector<std::unique_ptr<InputStage>>    input_stages;
 
     std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
 
@@ -50,4 +59,25 @@ struct Program {
     }
 
     void update_gnss_metrics(lpp::HaGnssMetrics const& metrics) { latest_gnss_metrics = metrics; }
+
+    bool has_ctrl_parsers() const { 
+        for (auto const& input : input_contexts) {
+            if (input->ctrl) return true;
+        }
+        return false;
+    }
+
+    bool has_nmea_parsers() const {
+        for (auto const& input : input_contexts) {
+            if (input->nmea) return true;
+        }
+        return false;
+    }
+
+    bool has_ubx_parsers() const {
+        for (auto const& input : input_contexts) {
+            if (input->ubx) return true;
+        }
+        return false;
+    }
 };
