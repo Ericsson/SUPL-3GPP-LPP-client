@@ -15,8 +15,6 @@ add_definitions(-D_POSIX_C_SOURCE=200809L)
 add_definitions(-DCLIENT_VERSION="4.0.21")
 add_definitions(-DCLIENT_VERSION_INT=0x040015)
 
-include(cmake/CPM.cmake)
-
 find_package(Threads REQUIRED)
 
 include(cmake/CPM.cmake)
