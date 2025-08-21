@@ -1,5 +1,6 @@
 #include "tlf.hpp"
 
+#include <string.h>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(p, tlf);

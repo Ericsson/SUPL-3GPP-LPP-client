@@ -10,7 +10,7 @@
 LOGLET_MODULE2(p, rtcm);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, rtcm)
 
-void RtcmPrint::inspect(streamline::System&, DataType const& message) NOEXCEPT {
+void RtcmPrint::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     message->print();
 }
@@ -30,6 +30,7 @@ void RtcmOutput::inspect(streamline::System&, DataType const& message, uint64_t 
                    tag);
         }
 
-        output.interface->write(data.data(), size);
+        ASSERT(output.stage, "stage is null");
+        output.stage->write(OUTPUT_FORMAT_RTCM, data.data(), size);
     }
 }

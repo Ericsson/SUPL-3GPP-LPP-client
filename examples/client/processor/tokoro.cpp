@@ -261,7 +261,7 @@ void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046* rtcm) {
     }
 }
 
-void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message) {
+void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     auto ptr = message.get();
     if (!ptr) return;
