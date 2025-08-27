@@ -300,7 +300,7 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         }
     }
 
-    if (p.rtcm && (formats & INPUT_FORMAT_RTCM) != 0){
+    if (p.rtcm && (formats & INPUT_FORMAT_RTCM) != 0) {
         p.rtcm->append(buffer, count);
         for (;;) {
             auto message = p.rtcm->try_parse();
@@ -527,10 +527,9 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
         if (output.location_support()) location_output = true;
         if (output.test_support()) test_output = true;
 
+        auto last_stage = std::unique_ptr<OutputStage>(
+            new InterfaceOutputStage(std::move(output.initial_interface)));
         if (!output.stages.empty()) {
-            auto last_stage = std::unique_ptr<OutputStage>(
-                new InterfaceOutputStage(std::move(output.initial_interface)));
-
             for (int i = output.stages.size() - 1; i >= 0; i--) {
                 auto& stage_name = output.stages[i];
                 if (stage_name == "tlf") {
@@ -539,9 +538,8 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                     ERRORF("unsupported stage: %s", stage_name.c_str());
                 }
             }
-
-            output.stage = std::move(last_stage);
         }
+        output.stage = std::move(last_stage);
 
         ASSERT(output.stage, "stage is null");
         if (!output.stage->schedule(program.scheduler)) {

@@ -2,6 +2,7 @@
 
 ## []
 
+- Fix output assert when not specifiy chain/stages
 - New WIP positioning engine `idokeido`
 - Fix forward task and missing data during fast reads
 - Input/output stage, see `chain=tlf`

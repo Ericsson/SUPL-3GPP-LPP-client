@@ -350,11 +350,6 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
 
 static std::unique_ptr<io::Output>
 parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto itags  = parse_itags_from_options(options);
-    auto otags  = parse_otags_from_options(options);
-    auto print  = parse_bool_option(options, "udp-client", "print", false);
-
     if (options.find("host") != options.end()) {
         if (options.find("host") == options.end()) {
             throw args::RequiredError("--output udp-client: missing `host` option");
@@ -395,11 +390,6 @@ parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
 
 static std::unique_ptr<io::Output>
 parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
-    auto format = parse_format_list_from_options(options);
-    auto itags  = parse_itags_from_options(options);
-    auto otags  = parse_otags_from_options(options);
-    auto print  = parse_bool_option(options, "tcp-server", "print", false);
-
     if (options.find("host") != options.end()) {
         if (options.find("host") == options.end()) {
             throw args::RequiredError("--output tcp-server: missing `host` option");
