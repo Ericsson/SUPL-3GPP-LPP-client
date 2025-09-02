@@ -644,7 +644,7 @@ void Generator::generate_ocb(uint16_t iod) {
                      satellite.phase_bias ? "P" : "-", satellite.ura ? "U" : "-");
         }
 
-        auto eos               = (message_id + 1) == messages.size();
+        auto eos               = ((message_id + 1) == messages.size());
         auto yaw_angle_present = false;
         auto subtype           = subtype_from_gnss_id(gnss_id);
 

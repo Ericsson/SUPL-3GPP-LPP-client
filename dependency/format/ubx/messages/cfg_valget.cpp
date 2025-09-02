@@ -21,13 +21,13 @@ void UbxCfgValget::print() const NOEXCEPT {
     printf("[%02X %02X] UBX-CFG-VALGET:\n", message_class(), message_id());
     printf("[.....]    version: %u\n", mPayload.version);
     printf("[.....]    layers:\n");
-    if (mPayload.layers & CFG_LAYER_RAM) {
+    if ((mPayload.layers & CFG_LAYER_RAM) != 0) {
         printf("[.....]        RAM\n");
     }
-    if (mPayload.layers & CFG_LAYER_BBR) {
+    if ((mPayload.layers & CFG_LAYER_BBR) != 0) {
         printf("[.....]        BBR\n");
     }
-    if (mPayload.layers & CFG_LAYER_FLASH) {
+    if ((mPayload.layers & CFG_LAYER_FLASH) != 0) {
         printf("[.....]        FLASH\n");
     }
     printf("[.....]    position: %u\n", mPayload.position);
@@ -55,6 +55,7 @@ void UbxCfgValget::print() const NOEXCEPT {
             break;
         case CfgValue::L:
         case CfgValue::UNKNOWN: printf("???\n"); break;
+        default:                printf("???\n"); break;
         }
     }
 }

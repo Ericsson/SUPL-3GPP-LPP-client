@@ -103,7 +103,7 @@ Arguments parse_arguments(int argc, char** argv) {
 
     
 
-    return Arguments{args::get(source_system), args::get(dest_system), args::get(epoch), args::get(position)};
+    return Arguments{source_itrf, dest_itrf, args::get(epoch), parse_positions(raw_positions)};
 }
 #endif
 
