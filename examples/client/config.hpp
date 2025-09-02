@@ -265,6 +265,7 @@ struct Lpp2SpartnConfig {
     bool                          generate_hpac;
     bool                          flip_grid_bitmask;
     bool                          flip_orbit_correction;
+    bool                          do_not_use_satellite;
 };
 #endif
 

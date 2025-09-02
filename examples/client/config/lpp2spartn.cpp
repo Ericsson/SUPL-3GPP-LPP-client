@@ -165,6 +165,12 @@ static args::Flag gFilterByOcb{
     "Filter out satellites in ionosphere corrections that do not have OCB corrections",
     {"l2s-filter-by-ocb"},
 };
+static args::Flag gDisableDoNotUseSatellite{
+    gGroup,
+    "disable-do-not-use-satellite",
+    "Disable the do not use satellite flag",
+    {"l2s-disable-dnu"},
+};
 
 static args::Group gSignalGroup{gGroup, "Signal:"};
 static args::Flag  gIgnoreL2L{
@@ -256,6 +262,7 @@ static args::Flag gSignFlipC11{
     {"l2s-sf-c11"},
 };
 
+
 static void setup() {
     gStecMethod.HelpChoices({"default", "discard", "residual"});
     gStecMethod.HelpDefault("default");
@@ -304,6 +311,8 @@ static void parse(Config* config) {
     lpp2spartn.sign_flip_c11            = false;
     lpp2spartn.sign_flip_stec_residuals = false;
 
+    lpp2spartn.do_not_use_satellite = true;
+
     if (gEnable) lpp2spartn.enabled = true;
     if (gNoGPS) lpp2spartn.generate_gps = false;
     if (gNoGLONASS) lpp2spartn.generate_glonass = false;
@@ -337,6 +346,8 @@ static void parse(Config* config) {
     if (gPhaseBiasNoCorrectionShift) lpp2spartn.phase_bias_correction_shift = false;
 
     if (gHydrostaticInZenith) lpp2spartn.hydrostatic_in_zenith = true;
+
+    if(gDisableDoNotUseSatellite) lpp2spartn.do_not_use_satellite = false;
 
     if (gStecMethod) {
         auto method = gStecMethod.Get();

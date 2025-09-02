@@ -110,6 +110,7 @@ public:
     void set_flip_orbit_correction(bool flip_orbit_correction) {
         mFlipOrbitCorrection = flip_orbit_correction;
     }
+    void set_do_not_use_satellite_position(bool value) { mDoNotUseSatellite = value; }
 
     /// Generate SPARTN messages based on LPP SSR messages.
     /// @param[in] lpp_message The LPP SSR message.
@@ -174,6 +175,7 @@ private:
     bool mSignFlipC11;
     bool mSignFlipStecResiduals;
     bool mFlipOrbitCorrection;
+    bool mDoNotUseSatellite;
 
     bool mGenerateGad;
     bool mGenerateOcb;
