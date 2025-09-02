@@ -44,6 +44,8 @@ static args::ValueFlagList<std::string> gArgs{
     "    host=<host>\n"
     "    port=<port>\n"
     "    path=<path>\n"
+    "  chunked-log:\n"
+    "    path=<base_path>\n"
     "\n"
     "Formats:\n"
     "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper, lrf, possib, location, test\n"
@@ -349,6 +351,15 @@ parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
 }
 
 static std::unique_ptr<io::Output>
+parse_chunked_log(std::unordered_map<std::string, std::string> const& options) {
+    if (options.find("path") == options.end()) {
+        throw args::ValidationError("--output chunked-log: missing `path` option");
+    }
+    auto path = options.at("path");
+    return std::unique_ptr<io::Output>(new ChunkedLogOutput(path));
+}
+
+static std::unique_ptr<io::Output>
 parse_udp_client(std::unordered_map<std::string, std::string> const& options) {
     if (options.find("host") != options.end()) {
         if (options.find("host") == options.end()) {
@@ -453,6 +464,7 @@ static OutputInterface parse_interface(std::string const& source) {
     if (parts[0] == "tcp-client") output = parse_tcp_client(options);
     if (parts[0] == "udp-client") output = parse_udp_client(options);
     if (parts[0] == "tcp-server") output = parse_tcp_server(options);
+    if (parts[0] == "chunked-log") output = parse_chunked_log(options);
 
     if (output) {
         return OutputInterface::create(format, std::move(output), print, std::move(itags),
@@ -493,6 +505,7 @@ static char const* output_type(io::Output* output) {
     if (dynamic_cast<io::SerialOutput*>(output)) return "serial";
     if (dynamic_cast<io::TcpClientOutput*>(output)) return "tcp-client";
     if (dynamic_cast<io::UdpClientOutput*>(output)) return "udp-client";
+    if (dynamic_cast<ChunkedLogOutput*>(output)) return "chunked-log";
     return "unknown";
 }
 

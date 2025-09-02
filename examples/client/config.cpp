@@ -6,6 +6,7 @@
 #include <io/tcp.hpp>
 #include <io/udp.hpp>
 #include <loglet/loglet.hpp>
+#include "processor/chunked_log.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"

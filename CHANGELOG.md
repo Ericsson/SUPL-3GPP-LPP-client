@@ -8,6 +8,7 @@
 - Input/output stage, see `chain=tlf`
 - New stage `tlf` - for reading and writing data in time-logged format
 - Function performance logging using `LOG_FUNCTION_PERFORMANCE=ON`
+- Added `chunked-log` output interface for hourly rotating log files with timestamp names
 
 ## [4.0.22] 2025-08-07
 

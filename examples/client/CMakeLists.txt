@@ -16,6 +16,7 @@ add_executable(example_client
     "processor/possib_logger.cpp"
     "processor/idokeido.cpp"
     "processor/tlf.cpp"
+    "processor/chunked_log.cpp"
 )
 add_executable(examples::client ALIAS example_client)
 
