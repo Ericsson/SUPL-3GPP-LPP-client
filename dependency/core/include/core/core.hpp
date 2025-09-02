@@ -30,9 +30,7 @@
 #ifndef NODISCARD
 #if defined(__has_cpp_attribute)
 #if __has_cpp_attribute(nodiscard)
-#if defined(__cplusplus) && __cplusplus >= 201703L
 #define NODISCARD [[nodiscard]]
-#endif
 #endif
 #endif
 #ifndef NODISCARD
@@ -48,14 +46,17 @@
 #endif
 #ifndef CORE_UNREACHABLE
 #define CORE_UNREACHABLE() core_unreachable()
+#ifndef CORE_UNREACHABLE_DEFINED
+#define CORE_UNREACHABLE_DEFINED
 __attribute__((noreturn)) inline void core_unreachable() {
     assert(false);
 }
 #endif
 #endif
+#endif
 
 #ifndef CORE_ASSERT
-#define CORE_ASSERT(cond, msg) assert((cond) && msg)
+#define CORE_ASSERT(cond, msg) do { assert((cond) && (msg)); } while(0)
 #endif
 
 #ifndef NORETURN
