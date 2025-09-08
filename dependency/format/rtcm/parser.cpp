@@ -10,6 +10,7 @@
 #include <sstream>
 
 #include <loglet/loglet.hpp>
+#include <cxx11_compat.hpp>
 
 LOGLET_MODULE2(format, rtcm);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, rtcm)

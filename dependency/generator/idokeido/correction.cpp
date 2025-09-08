@@ -2,12 +2,14 @@
 
 #include <generator/tokoro/coordinate.hpp>
 #include <loglet/loglet.hpp>
+#include <cxx11_compat.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
 #pragma GCC diagnostic ignored "-Wundef"
 #pragma GCC diagnostic ignored "-Wold-style-cast"
+#pragma GCC diagnostic ignored "-Wunused-function"
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
@@ -45,16 +47,6 @@ LOGLET_MODULE2(idokeido, corr);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(idokeido, corr)
 
 namespace idokeido {
-
-static uint8_t gnss_from_satellite_id(SatelliteId id) NOEXCEPT {
-    switch (id.gnss()) {
-    case SatelliteId::Gnss::GPS: return 0;
-    case SatelliteId::Gnss::GLONASS: return 1;
-    case SatelliteId::Gnss::GALILEO: return 2;
-    case SatelliteId::Gnss::BEIDOU: return 3;
-    default: UNREACHABLE();
-    }
-}
 
 static uint8_t gnss_from_id(long gnss_id) NOEXCEPT {
     switch (gnss_id) {

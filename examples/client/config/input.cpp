@@ -120,8 +120,7 @@ parse_stages_from_options(std::unordered_map<std::string, std::string> const& op
 }
 
 static std::vector<std::string> parse_tags(std::string const& str) {
-    auto parts = split(str, '+');
-    return parts;
+    return split(str, '+');
 }
 
 static std::vector<std::string>

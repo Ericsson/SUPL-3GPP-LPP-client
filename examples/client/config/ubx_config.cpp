@@ -375,7 +375,12 @@ static UbxConfigInterface parse_interface(std::string const& source) {
         throw args::ValidationError("--cfg-ubx: no options specified and no print mode (use 'options=', 'file=', or 'print=')");
     }
 
-    return {std::move(output), std::move(input), std::move(options), print_mode};
+    UbxConfigInterface result;
+    result.output_interface = std::move(output);
+    result.input_interface = std::move(input);
+    result.options = std::move(options);
+    result.print_mode = print_mode;
+    return result;
 }
 
 static void parse(Config* config) {

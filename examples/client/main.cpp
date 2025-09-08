@@ -1,4 +1,4 @@
-
+#include <cxx11_compat.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"

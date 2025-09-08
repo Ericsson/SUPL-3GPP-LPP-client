@@ -1,8 +1,9 @@
 #include "chunked_log.hpp"
+#include <cxx11_compat.hpp>
 
 #include <iomanip>
 #include <sstream>
-#include <filesystem>
+#include <sys/stat.h>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(p, chunked_log);
@@ -51,7 +52,10 @@ void ChunkedLogOutput::ensure_current_file() NOEXCEPT {
         mCurrentHour = current_hour;
         auto filename = generate_filename();
         
-        std::filesystem::create_directories(std::filesystem::path(filename).parent_path());
+        auto last_slash = filename.find_last_of('/');
+        if (last_slash != std::string::npos) {
+            create_directories_compat(filename.substr(0, last_slash));
+        }
         
         mCurrentFile = std::make_unique<std::ofstream>(filename, std::ios::binary | std::ios::app);
         if (!mCurrentFile->is_open()) {
