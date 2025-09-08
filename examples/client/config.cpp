@@ -59,6 +59,7 @@ static std::vector<std::string> split(std::string const& str, char delim) {
 #ifdef DATA_TRACING
 #include "config/data_tracing.cpp"
 #endif
+#include "config/ubx_config.cpp"
 
 void dump(Config* config) {
     DEBUGF("config:");
@@ -156,6 +157,12 @@ void dump(Config* config) {
         data_tracing::dump(config->data_tracing);
     }
 #endif
+
+    {
+        DEBUGF("ubx config:");
+        DEBUG_INDENT_SCOPE();
+        ubx_config::dump(config->ubx_config);
+    }
 }
 
 bool parse(int argc, char** argv, Config* config) {
@@ -188,6 +195,7 @@ bool parse(int argc, char** argv, Config* config) {
 #ifdef DATA_TRACING
     args::GlobalOptions data_tracing_globals{parser, data_tracing::gGroup};
 #endif
+    args::GlobalOptions ubx_config_globals{parser, ubx_config::gGroup};
 
     ls::setup();
     identity::setup();
@@ -213,6 +221,7 @@ bool parse(int argc, char** argv, Config* config) {
 #ifdef DATA_TRACING
     data_tracing::setup();
 #endif
+    ubx_config::setup();
 
     config->next_tag_bit_mask = 1;
     config->tag_to_bit_mask.clear();
@@ -249,6 +258,7 @@ bool parse(int argc, char** argv, Config* config) {
 #ifdef DATA_TRACING
         data_tracing::parse(config);
 #endif
+        ubx_config::parse(config);
 
         config->assistance_data.gps &= config->gnss.gps;
         config->assistance_data.glonass &= config->gnss.glonass;

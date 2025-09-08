@@ -12,3 +12,4 @@ compile_commands.json
 scripts
 .cache
 *.swp
+.amazonq/

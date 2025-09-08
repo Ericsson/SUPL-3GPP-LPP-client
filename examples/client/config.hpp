@@ -22,6 +22,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include <format/ubx/cfg.hpp>
+
 struct LocationServerConfig {
     std::string                  host;
     uint16_t                     port;
@@ -184,6 +186,24 @@ struct DataTracingConfig {
     bool possib_wrap;
 };
 #endif
+
+enum class UbxPrintMode {
+    NONE,
+    OPTIONS,
+    ALL
+};
+
+struct UbxConfigInterface {
+    std::unique_ptr<io::Output> output_interface;
+    std::unique_ptr<io::Input> input_interface;
+    std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> options;
+    UbxPrintMode print_mode = UbxPrintMode::NONE;
+};
+
+struct UbxConfigConfig {
+    std::vector<UbxConfigInterface> interfaces;
+    bool apply_and_exit = false;
+};
 
 struct LoggingConfig {
     loglet::Level                                  log_level;
@@ -373,6 +393,7 @@ struct Config {
 #ifdef DATA_TRACING
     DataTracingConfig data_tracing;
 #endif
+    UbxConfigConfig ubx_config;
 
     uint64_t                                  next_tag_bit_mask;
     std::unordered_map<std::string, uint64_t> tag_to_bit_mask;

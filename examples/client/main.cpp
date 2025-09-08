@@ -34,6 +34,7 @@
 #include "processor/rtcm.hpp"
 #include "processor/test.hpp"
 #include "processor/ubx.hpp"
+#include "processor/ubx_options.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
@@ -717,6 +718,24 @@ static void setup_idokeido(UNUSED Program& program) {
 #endif
 }
 
+static void apply_ubx_config(Program& program) {
+    if (program.config.ubx_config.interfaces.empty()) {
+        return;
+    }
+
+    INFOF("applying UBX configuration at startup");
+    UbxConfigApplicator applicator(program.config.ubx_config, program.scheduler);
+
+    if (!applicator.apply_configurations()) {
+        WARNF("failed to apply some UBX configurations");
+    }
+
+    if (program.config.ubx_config.apply_and_exit) {
+        INFOF("UBX configuration applied, exiting as requested");
+        exit(0);
+    }
+}
+
 int main(int argc, char** argv) {
     loglet::initialize();
 
@@ -796,6 +815,8 @@ int main(int argc, char** argv) {
 
     initialize_inputs(program, program.config.input);
     initialize_outputs(program, program.config.output);
+
+    apply_ubx_config(program);
 
     setup_location_stream(program);
     setup_control_stream(program);
