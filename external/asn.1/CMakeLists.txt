@@ -274,6 +274,7 @@ add_library(asn1::skeleton ALIAS asn1_skeleton)
 
 asn1_target_setup(asn1_skeleton)
 target_include_directories(asn1_skeleton PUBLIC "skeleton")
+set_property(TARGET asn1_skeleton PROPERTY C_STANDARD 99)
 
 #
 # SUPL ASN.1
