@@ -49,6 +49,7 @@ Lpp2Spartn::Lpp2Spartn(OutputConfig const& output, Lpp2SpartnConfig const& confi
 
     mGenerator->set_flip_grid_bitmask(mConfig.flip_grid_bitmask);
     mGenerator->set_flip_orbit_correction(mConfig.flip_orbit_correction);
+    mGenerator->set_do_not_use_satellite(mConfig.do_not_use_satellite);
 
     mGenerator->set_generate_gad(mConfig.generate_gad);
     mGenerator->set_generate_ocb(mConfig.generate_ocb);

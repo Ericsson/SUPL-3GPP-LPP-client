@@ -83,7 +83,7 @@ struct InavWord {
 
 class InavEphemerisCollector {
 public:
-    InavEphemerisCollector() NOEXCEPT = default;
+    InavEphemerisCollector() = default;
 
     bool process(uint8_t prn, InavWord const& word, ephemeris::GalEphemeris& ephemeris) NOEXCEPT;
 

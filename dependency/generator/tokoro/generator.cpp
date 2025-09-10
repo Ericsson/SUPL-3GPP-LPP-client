@@ -83,7 +83,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
     mLastRinexEpoch = mGenerationTime;
 }
 
-ReferenceStation::~ReferenceStation() NOEXCEPT = default;
+ReferenceStation::~ReferenceStation() = default;
 
 void ReferenceStation::initialize_satellites() NOEXCEPT {
     FUNCTION_SCOPE();
@@ -532,7 +532,7 @@ Generator::Generator() NOEXCEPT {
     mIgnoreBitmask                               = false;
 }
 
-Generator::~Generator() NOEXCEPT = default;
+Generator::~Generator() = default;
 
 std::shared_ptr<ReferenceStation>
 Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCEPT {

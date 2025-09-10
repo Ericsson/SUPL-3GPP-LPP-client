@@ -46,7 +46,7 @@ struct Observation {
 class Builder {
 public:
     explicit Builder(std::string path, double version) NOEXCEPT;
-    ~Builder() NOEXCEPT = default;
+    ~Builder() = default;
 
     void epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites);
     void observations(SatelliteId                                        id,
@@ -124,10 +124,12 @@ inline bool operator==(ObservationType const& a, ObservationType const& b) {
 }  // namespace rinex
 }  // namespace format
 
+namespace std {
 template <>
-struct std::hash<format::rinex::ObservationType> {
+struct hash<format::rinex::ObservationType> {
     std::size_t operator()(format::rinex::ObservationType const& type) const {
         return std::hash<int>()(static_cast<int>(type.kind)) ^
                std::hash<SignalId>()(type.signal_id);
     }
 };
+}  // namespace std

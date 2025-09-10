@@ -410,7 +410,9 @@ static void dump(const UbxConfigConfig& config) {
         }
         DEBUGF("print mode: %s", print_mode_str.c_str());
         
-        for (const auto& [key, value] : interface.options) {
+        for (const auto& entry : interface.options) {
+            const auto& key = entry.first;
+            const auto& value = entry.second;
             std::string value_str;
             switch (value.type()) {
             case format::ubx::CfgValue::Type::L:

@@ -1,5 +1,7 @@
 #include "float3.hpp"
 
+#include <cmath>
+
 double Float3::length_squared() const NOEXCEPT {
     return x * x + y * y + z * z;
 }

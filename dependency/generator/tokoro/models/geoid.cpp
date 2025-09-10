@@ -6,7 +6,8 @@
 LOGLET_MODULE2(tokoro, geoid);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, geoid)
 
-namespace generator::tokoro {
+namespace generator {
+namespace tokoro {
 
 static double interpb(double const* y, double a, double b) {
     return y[0] * (1.0 - a) * (1.0 - b) + y[1] * a * (1.0 - b) + y[2] * (1.0 - a) * b +
@@ -7650,4 +7651,5 @@ double Geoid::height(double latitude, double longitude, Model model) {
     return 0.0;
 }
 
-}  // namespace generator::tokoro
+}  // namespace tokoro
+}  // namespace generator

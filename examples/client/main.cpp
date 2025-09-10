@@ -1,5 +1,7 @@
 #include <cxx11_compat.hpp>
 
+#include <cmath>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
@@ -83,7 +85,7 @@ static void client_request(Program& program, lpp::Client& client) {
         // To ensure that a cell change event is triggered after the first
         // assistance data request, we need to invalidate the current cell
         // information by resetting the cell to the initial cell.
-        program.cell.reset(new supl::Cell{cell});
+        program.cell.reset(new supl::Cell(cell));
     }
 
     DEBUGF("request assistance data (GNSS)");
@@ -765,7 +767,9 @@ int main(int argc, char** argv) {
     loglet::set_level(config.logging.log_level);
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
-    for (auto const& [name, level] : config.logging.module_levels) {
+    for (auto const& entry : config.logging.module_levels) {
+        auto const& name = entry.first;
+        auto const& level = entry.second;
         auto modules = loglet::get_modules(name);
         for (auto module : modules) {
             loglet::set_module_level(module, level);
@@ -898,8 +902,8 @@ int main(int argc, char** argv) {
                 return !program.initial_cell;
             });
         } else {
-            program.initial_cell.reset(new supl::Cell{program.config.assistance_data.cell});
-            program.cell.reset(new supl::Cell{program.config.assistance_data.cell});
+            program.initial_cell.reset(new supl::Cell(program.config.assistance_data.cell));
+            program.cell.reset(new supl::Cell(program.config.assistance_data.cell));
         }
 
         if (program.config.location_server.slp_host_cell) {

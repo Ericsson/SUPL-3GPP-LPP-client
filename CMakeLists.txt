@@ -1,12 +1,14 @@
 cmake_minimum_required(VERSION 3.5)
 
-option(USE_CXX11 "Build with C++11 standard" OFF)
+if(NOT CMAKE_CXX_STANDARD)
+    set(CMAKE_CXX_STANDARD 20)
+endif()
 
-if(USE_CXX11)
-    set(CMAKE_CXX_STANDARD 11)
+if(CMAKE_CXX_STANDARD EQUAL 11)
+    set(USE_CXX11 ON)
     add_definitions(-DUSE_CXX11_COMPAT=1)
 else()
-    set(CMAKE_CXX_STANDARD 20)
+    set(USE_CXX11 OFF)
 endif()
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(CMAKE_CXX_EXTENSIONS OFF)

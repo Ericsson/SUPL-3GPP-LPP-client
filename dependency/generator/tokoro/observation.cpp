@@ -13,6 +13,7 @@
 #include "models/sun_moon.hpp"
 #include "satellite.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 #include <maths/mat3.hpp>
 #include <time/utc.hpp>

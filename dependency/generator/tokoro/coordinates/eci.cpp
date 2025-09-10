@@ -3,6 +3,7 @@
 #include "models/astronomical_arguments.hpp"
 #include "models/nutation.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 

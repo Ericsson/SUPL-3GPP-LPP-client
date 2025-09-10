@@ -30,8 +30,9 @@ private:
 
 }  // namespace lpp
 
+namespace std {
 template <>
-struct std::hash<lpp::PeriodicSessionHandle> {
+struct hash<lpp::PeriodicSessionHandle> {
     std::size_t operator()(lpp::PeriodicSessionHandle const& k) const {
         std::size_t result = 17;
         result             = result * 31 + hash<long>()(k.id());
@@ -39,3 +40,4 @@ struct std::hash<lpp::PeriodicSessionHandle> {
         return result;
     }
 };
+}  // namespace std

@@ -514,8 +514,8 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
     }
 
     // Sort antennas by the inverse valid from time
-    for (auto& [satellite_id, antenna_list] : result->antennas) {
-        std::sort(antenna_list.begin(), antenna_list.end(),
+    for (auto& pair : result->antennas) {
+        std::sort(pair.second.begin(), pair.second.end(),
                   [](std::unique_ptr<Antenna> const& a, std::unique_ptr<Antenna> const& b) {
                       return a->valid_from > b->valid_from;
                   });

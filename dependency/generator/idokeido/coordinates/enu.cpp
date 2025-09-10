@@ -1,5 +1,6 @@
 #include "enu.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(idokeido, enu);

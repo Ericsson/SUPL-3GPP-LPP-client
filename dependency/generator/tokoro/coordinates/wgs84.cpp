@@ -1,6 +1,7 @@
 #include "wgs84.hpp"
 #include "constant.hpp"
 
+#include <cmath>
 #include <math.h>
 
 namespace generator {

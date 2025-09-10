@@ -5,8 +5,8 @@ namespace io {
 /// Output to stdout.
 class StdoutOutput : public Output {
 public:
-    EXPLICIT StdoutOutput() NOEXCEPT;
-    ~StdoutOutput() NOEXCEPT override;
+    EXPLICIT StdoutOutput();
+    ~StdoutOutput() override;
 
     NODISCARD const char* name() const NOEXCEPT override { return "stdout"; }
 

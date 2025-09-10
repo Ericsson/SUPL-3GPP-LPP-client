@@ -5,6 +5,7 @@
 #include "generator.hpp"
 #include "models/helper.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
@@ -21,10 +22,10 @@ namespace generator {
 namespace tokoro {
 
 Satellite::Satellite(SatelliteId id, Float3 ground_position, Generator const& generator) NOEXCEPT
-    : mId{id},
-      mGroundPositionEcef{ground_position},
-      mEnabled{false},
-      mGenerator{generator} {
+    : mId(id),
+      mGroundPositionEcef(ground_position),
+      mEnabled(false),
+      mGenerator(generator) {
     mGroundPositionLlh = ecef_to_llh(mGroundPositionEcef, ellipsoid::WGS84);
     mCurrentState      = {};
     mNextState         = {};

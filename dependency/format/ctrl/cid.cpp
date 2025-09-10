@@ -13,7 +13,7 @@ CellId::CellId(std::string message, uint32_t mcc, uint32_t mnc, uint32_t tac, ui
                                       mCell(cell),
                                       mIsNr(is_nr) {}
 
-CellId::~CellId() NOEXCEPT = default;
+CellId::~CellId() = default;
 
 void CellId::print() const NOEXCEPT {
     printf("[  CID]: mcc=%u, mnc=%u, tac=%u, cell=%" PRIu64 ", a=%s", mMcc, mMnc, mTac, mCell,

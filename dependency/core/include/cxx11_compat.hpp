@@ -1,5 +1,12 @@
 #pragma once
 
+// C++17 if constexpr polyfill for C++11
+#if __cplusplus < 201703L
+#define CONSTEXPR_IF if
+#else
+#define CONSTEXPR_IF if constexpr
+#endif
+
 #ifdef USE_CXX11_COMPAT
 
 #include <memory>
@@ -16,20 +23,26 @@ template<typename T, typename... Args>
 
 }
 
-// C++17 if constexpr polyfill for C++11
-#if __cplusplus < 201703L
-#define CONSTEXPR_IF if
-#else
-#define CONSTEXPR_IF if constexpr
 #endif
 
 // C++17 std::filesystem::create_directories polyfill
-#if __cplusplus >= 201703L && __has_include(<filesystem>)
+#if __cplusplus >= 201703L
+#if __has_include(<filesystem>)
 #include <filesystem>
+#define HAS_CREATE_DIRECTORIES 1
 inline void create_directories_compat(const ::std::string& path) {
     ::std::filesystem::create_directories(path);
 }
-#else
+#endif
+#endif
+
+#ifndef HAS_CREATE_DIRECTORIES
+#include <string>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <errno.h>
+#include <string.h>
+#define HAS_CREATE_DIRECTORIES 1
 inline void create_directories_compat(const ::std::string& path) {
     ::std::string::size_type pos = 0;
     while ((pos = path.find('/', pos)) != ::std::string::npos) {
@@ -38,6 +51,4 @@ inline void create_directories_compat(const ::std::string& path) {
     }
     mkdir(path.c_str(), 0755);
 }
-#endif
-
 #endif

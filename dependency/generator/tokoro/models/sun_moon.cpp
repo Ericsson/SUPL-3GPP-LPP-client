@@ -3,6 +3,7 @@
 #include "coordinates/eci.hpp"
 #include "models/astronomical_arguments.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 

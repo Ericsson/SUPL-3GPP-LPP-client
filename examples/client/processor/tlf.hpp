@@ -66,7 +66,7 @@ struct TlfHeader {
     uint32_t length;
 };
 
-static_assert(sizeof(TlfHeader) == TLF_HEADER_LENGTH);
+static_assert(sizeof(TlfHeader) == TLF_HEADER_LENGTH, "TlfHeader size mismatch");
 
 class TlfParser : public format::helper::Parser {
 public:

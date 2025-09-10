@@ -1,5 +1,6 @@
 #include "nmea.hpp"
 
+#include <cmath>
 #include <format/nmea/epe.hpp>
 #include <format/nmea/gga.hpp>
 #include <format/nmea/gst.hpp>

@@ -2,7 +2,7 @@
 
 namespace io {
 Input::Input() NOEXCEPT : mEventName("input-unknown"), mScheduler(nullptr) {}
-Input::~Input() NOEXCEPT = default;
+Input::~Input() = default;
 
 bool Input::schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     if (mScheduler) {

@@ -149,11 +149,14 @@ static char const* level_to_string(loglet::Level level) {
     case loglet::Level::Error: return "error";
     case loglet::Level::Disabled: return "disabled";
     }
+    return "unknown";
 }
 
 static void dump(LoggingConfig const& config) {
     DEBUGF("log level: %s", level_to_string(config.log_level));
-    for (auto const& [module, level] : config.module_levels) {
+    for (auto const& entry : config.module_levels) {
+        auto const& module = entry.first;
+        auto const& level = entry.second;
         DEBUGF("module %s: %s", module.c_str(), level_to_string(level));
     }
 }

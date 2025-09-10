@@ -87,6 +87,13 @@ private:
 
 namespace std {
 template <>
+struct hash<SatelliteId::Gnss> {
+    std::size_t operator()(SatelliteId::Gnss const& k) const NOEXCEPT {
+        return std::hash<int>()(static_cast<int>(k));
+    }
+};
+
+template <>
 struct hash<SatelliteId> {
     std::size_t operator()(SatelliteId const& k) const NOEXCEPT {
         auto hash_gnss         = std::hash<int>()(static_cast<int>(k.gnss()));

@@ -10,7 +10,7 @@ Message::Message(uint8_t message_class, uint8_t message_id, std::vector<uint8_t>
       mId(message_id),
       mData(std::move(data)) {}
 
-Message::~Message() NOEXCEPT = default;
+Message::~Message() = default;
 
 UnsupportedMessage::UnsupportedMessage(uint8_t message_class, uint8_t message_id,
                                        std::vector<uint8_t> data) NOEXCEPT

@@ -83,8 +83,8 @@ void PeriodicSession::message(TransactionHandle const& transaction, Message mess
     // doesn't match one in the mRequestTransactions.
     if (mHackBadTransactionInitiator) {
         if (transaction.initiator() == Initiator::LocationServer) {
-            for (auto& [t, m] : mRequestTransactions) {
-                auto corrected_transaction = TransactionHandle{t};
+            for (auto& pair : mRequestTransactions) {
+                auto corrected_transaction = TransactionHandle{pair.first};
                 if (corrected_transaction.initiator() == Initiator::TargetDevice &&
                     corrected_transaction.id() == transaction.id()) {
                     WARNF("HACK: bad transaction initiator: %s", transaction.to_string().c_str());

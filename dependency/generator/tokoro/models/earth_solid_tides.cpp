@@ -4,6 +4,7 @@
 #include "models/sun_moon.hpp"
 #include "satellite.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(tokoro, est);

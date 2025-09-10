@@ -4,6 +4,7 @@ bin
 build
 build-armv7
 build-arm64
+build-*
 output.txt
 generated_files
 .vscode

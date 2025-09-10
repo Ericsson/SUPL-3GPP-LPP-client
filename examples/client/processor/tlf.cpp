@@ -9,7 +9,7 @@ LOGLET_MODULE2(p, tlf);
 constexpr static char MAGIC[4] = "TLF";
 
 OutputStage::OutputStage() NOEXCEPT : mScheduler(nullptr) {}
-OutputStage::~OutputStage() NOEXCEPT = default;
+OutputStage::~OutputStage() = default;
 
 bool OutputStage::schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     if (mScheduler) {
@@ -113,7 +113,7 @@ void TlfOutputStage::write(OutputFormat format, uint8_t const* buffer, size_t le
 //
 
 InputStage::InputStage() NOEXCEPT : mScheduler(nullptr) {}
-InputStage::~InputStage() NOEXCEPT = default;
+InputStage::~InputStage() = default;
 
 bool InputStage::schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     if (mScheduler) {

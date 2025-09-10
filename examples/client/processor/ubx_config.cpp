@@ -26,7 +26,9 @@ std::vector<uint8_t> UbxConfigApplicator::create_cfg_valset_message(
     }
 
     size_t total_size = 0;
-    for (const auto& [key, value] : options) {
+    for (const auto& entry : options) {
+        const auto& key = entry.first;
+        const auto& value = entry.second;
         total_size += 8 + 4 + value.size();
     }
 
@@ -35,7 +37,9 @@ std::vector<uint8_t> UbxConfigApplicator::create_cfg_valset_message(
     
     format::ubx::CfgLayer layers = format::ubx::CFG_LAYER_RAM | format::ubx::CFG_LAYER_BBR | format::ubx::CFG_LAYER_FLASH;
     
-    for (const auto& [key, value] : options) {
+    for (const auto& entry : options) {
+        const auto& key = entry.first;
+        const auto& value = entry.second;
         size_t msg_size = 64;
         std::vector<uint8_t> temp_buffer(msg_size);
         format::ubx::Encoder encoder(temp_buffer.data(), temp_buffer.size());
@@ -164,7 +168,9 @@ bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
     printf("%-40s %-12s %s\n", "Key Name", "Hex Key", "Value");
     printf("%-40s %-12s %s\n", "--------", "-------", "-----");
     
-    for (const auto& [key, value] : collected_values_) {
+    for (const auto& entry : collected_values_) {
+        const auto& key = entry.first;
+        const auto& value = entry.second;
         std::string key_name = format_cfg_key_name(key);
         std::string value_str;
         
@@ -204,7 +210,9 @@ bool UbxConfigApplicator::print_current_config(UbxConfigInterface& interface) {
 
     if (interface.print_mode == UbxPrintMode::OPTIONS) {
         std::vector<format::ubx::CfgKey> requested_keys;
-        for (const auto& [key, value] : interface.options) {
+        for (const auto& entry : interface.options) {
+            const auto& key = entry.first;
+            const auto& value = entry.second;
             requested_keys.push_back(key);
         }
         

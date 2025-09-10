@@ -68,7 +68,10 @@ std::string ChunkedLogOutput::generate_filename() NOEXCEPT {
     auto time_t = std::chrono::system_clock::to_time_t(mCurrentHour);
     auto tm = *std::gmtime(&time_t);
     
+    char time_buffer[32];
+    strftime(time_buffer, sizeof(time_buffer), "%Y%m%d_%H%M%S", &tm);
+    
     std::ostringstream oss;
-    oss << mBasePath << "_" << std::put_time(&tm, "%Y%m%d_%H%M%S") << ".log";
+    oss << mBasePath << "_" << time_buffer << ".log";
     return oss.str();
 }

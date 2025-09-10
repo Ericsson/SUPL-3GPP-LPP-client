@@ -108,7 +108,7 @@ struct Subframe {
 // Ephemeris takes LNAV subframes and processes them into a complete ephemeris
 class EphemerisCollector {
 public:
-    EphemerisCollector() NOEXCEPT = default;
+    EphemerisCollector() = default;
 
     bool process(uint8_t prn, Subframe const& subframe,
                  ephemeris::GpsEphemeris& ephemeris) NOEXCEPT;

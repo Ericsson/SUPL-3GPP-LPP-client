@@ -10,8 +10,8 @@ namespace ubx {
 
 class Parser : public format::helper::Parser {
 public:
-    EXPLICIT Parser() NOEXCEPT          = default;
-    virtual ~Parser() NOEXCEPT override = default;
+    EXPLICIT Parser()          = default;
+    virtual ~Parser() override = default;
 
     NODISCARD virtual char const* name() const NOEXCEPT override;
 

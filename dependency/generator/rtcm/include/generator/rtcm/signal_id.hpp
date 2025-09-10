@@ -158,6 +158,13 @@ public:
 
 namespace std {
 template <>
+struct hash<FrequencyType> {
+    std::size_t operator()(FrequencyType const& k) const NOEXCEPT {
+        return std::hash<int>()(static_cast<int>(k));
+    }
+};
+
+template <>
 struct hash<SignalId> {
     std::size_t operator()(SignalId const& k) const NOEXCEPT {
         auto hash_gnss   = std::hash<int>()(static_cast<int>(k.gnss()));

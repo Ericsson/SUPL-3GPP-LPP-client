@@ -1,6 +1,7 @@
 #include "mops.hpp"
 #include "constant.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 #include <math.h>
 #include <time/utc.hpp>
@@ -8,7 +9,8 @@
 LOGLET_MODULE2(tokoro, mops);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, mops)
 
-namespace generator::tokoro {
+namespace generator {
+namespace tokoro {
 
 // TODO(ewasjon): Investigate ny + DminS
 static double interpolate(double const* x, double const* y, int nx, UNUSED int ny, double xi) {
@@ -149,4 +151,5 @@ bool mops_tropospheric_delay(ts::Tai const& time, double latitude, double ellips
     return true;
 }
 
-}  // namespace generator::tokoro
+}  // namespace tokoro
+}  // namespace generator

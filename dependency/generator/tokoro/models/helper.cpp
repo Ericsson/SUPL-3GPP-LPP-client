@@ -1,5 +1,6 @@
 #include "helper.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 

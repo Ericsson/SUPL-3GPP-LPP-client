@@ -1,5 +1,7 @@
 #include "mat3.hpp"
 
+#include <cmath>
+
 Mat3 Mat3::identity() NOEXCEPT {
     return {
         1, 0, 0, 0, 1, 0, 0, 0, 1,

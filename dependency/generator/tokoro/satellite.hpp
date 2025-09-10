@@ -129,7 +129,6 @@ private:
 
     Generator const& mGenerator;
 };
-;
 
 }  // namespace tokoro
 }  // namespace generator

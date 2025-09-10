@@ -13,8 +13,8 @@ namespace lpp {
 
 class UperParser : public format::helper::Parser {
 public:
-    EXPLICIT UperParser() NOEXCEPT  = default;
-    ~UperParser() NOEXCEPT override = default;
+    EXPLICIT UperParser()  = default;
+    ~UperParser() override = default;
 
     NODISCARD virtual char const*           name() const NOEXCEPT override;
     NODISCARD LPP_Message*                  try_parse() NOEXCEPT;

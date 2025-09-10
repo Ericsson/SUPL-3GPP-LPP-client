@@ -12,9 +12,11 @@ enum class Initiator {
 
 }  // namespace lpp
 
+namespace std {
 template <>
-struct std::hash<lpp::Initiator> {
+struct hash<lpp::Initiator> {
     std::size_t operator()(lpp::Initiator const& k) const {
         return hash<long>()(k == lpp::Initiator::TargetDevice ? 0 : 1);
     }
 };
+}  // namespace std

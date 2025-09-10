@@ -85,8 +85,9 @@ private:
 
 }  // namespace lpp
 
+namespace std {
 template <>
-struct std::hash<lpp::TransactionHandle> {
+struct hash<lpp::TransactionHandle> {
     std::size_t operator()(lpp::TransactionHandle const& k) const {
         std::size_t result = 17;
         result             = result * 31 + hash<long>()(k.id());
@@ -97,7 +98,7 @@ struct std::hash<lpp::TransactionHandle> {
 };
 
 template <>
-struct std::hash<lpp::TransactionLookup> {
+struct hash<lpp::TransactionLookup> {
     std::size_t operator()(lpp::TransactionLookup const& k) const {
         std::size_t result = 17;
         result             = result * 31 + hash<long>()(k.id);
@@ -105,3 +106,4 @@ struct std::hash<lpp::TransactionLookup> {
         return result;
     }
 };
+}  // namespace std

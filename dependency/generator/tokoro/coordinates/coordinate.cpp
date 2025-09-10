@@ -1,6 +1,7 @@
 #include "coordinate.hpp"
 #include "constant.hpp"
 
+#include <cmath>
 #include <math.h>
 
 #include <loglet/loglet.hpp>

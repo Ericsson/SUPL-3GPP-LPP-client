@@ -2,7 +2,7 @@
 
 namespace io {
 Output::Output() NOEXCEPT : mScheduler(nullptr) {}
-Output::~Output() NOEXCEPT = default;
+Output::~Output() = default;
 
 bool Output::schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     if (mScheduler) {

@@ -1,6 +1,7 @@
 #include "look_angles.hpp"
 #include "reference_ellipsoid.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(idokeido, look_angles);

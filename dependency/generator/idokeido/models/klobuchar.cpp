@@ -1,5 +1,6 @@
 #include "klobuchar.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 #include <time/gps.hpp>
 

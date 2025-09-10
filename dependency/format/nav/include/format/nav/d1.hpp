@@ -68,7 +68,7 @@ struct D1Subframe {
 
 class D1Collector {
 public:
-    D1Collector() NOEXCEPT = default;
+    D1Collector() = default;
 
     bool process(uint8_t prn, D1Subframe const& subframe,
                  ephemeris::BdsEphemeris& ephemeris) NOEXCEPT;

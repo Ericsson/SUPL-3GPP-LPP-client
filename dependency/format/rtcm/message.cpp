@@ -7,7 +7,7 @@ namespace rtcm {
 
 Message::Message(DF002 type, std::vector<uint8_t> data) NOEXCEPT : mType{type}, mData{data} {}
 
-Message::~Message() NOEXCEPT = default;
+Message::~Message() = default;
 
 UnsupportedMessage::UnsupportedMessage(DF002 type, std::vector<uint8_t> data) NOEXCEPT
     : Message(type, data) {}

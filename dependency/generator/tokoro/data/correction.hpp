@@ -1,6 +1,9 @@
 #pragma once
 #include <core/core.hpp>
 
+#include <generator/rtcm/satellite_id.hpp>
+#include <generator/rtcm/signal_id.hpp>
+
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
@@ -10,9 +13,6 @@
 #include <time/tai.hpp>
 
 #include "sv_id.hpp"
-
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
 
 #include "clock.hpp"
 #include "grid.hpp"

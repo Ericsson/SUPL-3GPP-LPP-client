@@ -10,7 +10,7 @@ Message::Message(std::string prefix, std::string payload, std::string checksum) 
       mPayload(payload),
       mChecksum(checksum) {}
 
-Message::~Message() NOEXCEPT = default;
+Message::~Message() = default;
 
 //
 //

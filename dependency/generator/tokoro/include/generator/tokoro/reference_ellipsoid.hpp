@@ -1,6 +1,7 @@
 #pragma once
 #include <maths/float3.hpp>
 
+#include <cmath>
 #include <math.h>
 
 namespace generator {

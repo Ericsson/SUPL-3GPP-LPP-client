@@ -1,6 +1,7 @@
 #include "spp.hpp"
 #include "eph.hpp"
 
+#include <cmath>
 #include <generator/tokoro/coordinate.hpp>
 #include <loglet/loglet.hpp>
 
