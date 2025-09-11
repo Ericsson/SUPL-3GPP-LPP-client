@@ -1,1 +1,8 @@
 build
+build-*
+*.tar
+*.tar.gz
+*.zip
+*.deb
+*.rpm
+*.dmg

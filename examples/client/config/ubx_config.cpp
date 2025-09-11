@@ -19,9 +19,6 @@
 #include <args.hpp>
 #pragma GCC diagnostic pop
 
-LOGLET_MODULE(ubx_config);
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ubx_config)
-
 namespace ubx_config {
 
 args::Group gGroup{"Configuration:"};

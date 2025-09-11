@@ -27,6 +27,11 @@ add_definitions(-DCLIENT_VERSION_INT=0x040016)
 
 find_package(Threads REQUIRED)
 
+if(DATA_TRACING)
+    message(STATUS "DATA_TRACING is enabled, will enable CPM")
+    set(USE_CPM ON)
+endif()
+
 if(USE_CPM)
     include(cmake/CPM.cmake)
 endif()

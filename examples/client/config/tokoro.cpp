@@ -398,6 +398,7 @@ static void dump(TokoroConfig const& config) {
         switch (config.vrs_mode) {
         case TokoroConfig::VrsMode::Dynamic: return "dynamic";
         case TokoroConfig::VrsMode::Fixed: return "fixed";
+        default: return "unknown";
         }
     }());
 

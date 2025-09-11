@@ -588,6 +588,7 @@ char const* TcpConnectTask::state_to_string(State state) const NOEXCEPT {
     case STATE_CONNECTED: return "connected";
     case STATE_DISCONNECTED: return "disconnected";
     case STATE_ERROR: return "error";
+    CORE_UNREACHABLE_CASE;
     }
 }
 

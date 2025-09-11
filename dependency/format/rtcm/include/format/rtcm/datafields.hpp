@@ -46,9 +46,11 @@ struct DataField {
 
     template <typename K>
     static T multiply_by_factor(K value) {
-        CONSTEXPR_IF (C == Conversion::PICO100 || C == Conversion::MINUTE ||
-                      C == Conversion::SC2RAD) {
-            return static_cast<T>(static_cast<double>(value) * factor);
+        CONSTEXPR_IF (std::is_same<T, bool>::value) {
+            return static_cast<T>(value != 0);
+        } else CONSTEXPR_IF (C == Conversion::PICO100 || C == Conversion::MINUTE ||
+                             C == Conversion::SC2RAD) {
+            return static_cast<T>(static_cast<double>(value) * static_cast<double>(factor));
         } else {
             return static_cast<T>(value);
         }

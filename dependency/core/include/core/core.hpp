@@ -3,6 +3,7 @@
 #include <cinttypes>
 #include <cstddef>
 #include <cstdint>
+#include <cstdlib>
 
 #ifndef EXPLICIT
 #define EXPLICIT explicit
@@ -50,6 +51,7 @@
 #define CORE_UNREACHABLE_DEFINED
 __attribute__((noreturn)) inline void core_unreachable() {
     assert(false);
+    abort();
 }
 #endif
 #endif
@@ -69,3 +71,12 @@ __attribute__((noreturn)) inline void core_unreachable() {
 #define NORETURN
 #endif
 #endif
+
+#ifndef CORE_UNREACHABLE_CASE
+#if defined(__GNUC__) && __GNUC__ < 8
+#define CORE_UNREACHABLE_CASE default: CORE_UNREACHABLE()
+#else
+#define CORE_UNREACHABLE_CASE
+#endif
+#endif
+

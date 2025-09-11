@@ -354,7 +354,6 @@ public:
 
     // SF039 - Number of grid points present
     inline void sf039(uint8_t count) {
-        assert(count >= 0);
         assert(count <= 127);
         mBuilder.bits(count, 7);
     }

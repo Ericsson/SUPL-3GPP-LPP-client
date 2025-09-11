@@ -164,7 +164,7 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
 }
 
 static std::unique_ptr<io::Output>
-parse_stdout(std::unordered_map<std::string, std::string> const& options) {
+parse_stdout(std::unordered_map<std::string, std::string> const&) {
     auto output = std::unique_ptr<io::Output>(new io::StdoutOutput());
     return output;
 }

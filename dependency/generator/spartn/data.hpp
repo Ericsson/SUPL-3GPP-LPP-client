@@ -1,19 +1,15 @@
 #pragma once
 #include "time.hpp"
+#include <external_warnings.hpp>
 
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+EXTERNAL_WARNINGS_PUSH
 #include <GNSS-ID.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 struct OcbKey {
     long     gnss_id;

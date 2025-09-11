@@ -146,7 +146,7 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
 }
 
 static std::unique_ptr<io::Input>
-parse_input_stdin(std::unordered_map<std::string, std::string> const& options) {
+parse_input_stdin(std::unordered_map<std::string, std::string> const&) {
     return std::make_unique<io::StdinInput>();
 }
 

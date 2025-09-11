@@ -135,6 +135,7 @@ static char const* state_to_string(State state) {
     case State::MESSAGE: return "MESSAGE";
     case State::ERROR: return "ERROR";
     case State::EXIT: return "EXIT";
+    CORE_UNREACHABLE_CASE;
     }
 }
 

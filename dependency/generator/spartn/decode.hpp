@@ -216,6 +216,7 @@ inline double stecResidualCorrection_r16(
     case STEC_ResidualSatElement_r16__stecResidualCorrection_r16_PR_b16_r16:
         return static_cast<double>(correction.choice.b16_r16) * STEC_RESIDUAL_B16_RESOLUTION;
     case STEC_ResidualSatElement_r16__stecResidualCorrection_r16_PR_NOTHING: CORE_UNREACHABLE();
+    CORE_UNREACHABLE_CASE;
     }
 }
 

@@ -14,8 +14,8 @@ struct ReferenceEllipsoid {
     double eccentricity_sq;
     double eccentricity;
 
-    static CONSTEXPR ReferenceEllipsoid create(double semi_major_axis, double flattening,
-                                               double eccentricity_sq) {
+    static ReferenceEllipsoid create(double semi_major_axis, double flattening,
+                                      double eccentricity_sq) {
         return {
             /* semi_major_axis */ semi_major_axis,
             /* semi_minor_axis */ semi_major_axis * (1.0 - flattening),
@@ -25,7 +25,7 @@ struct ReferenceEllipsoid {
         };
     }
 
-    static CONSTEXPR ReferenceEllipsoid create(double semi_major_axis, double flattening) {
+    static ReferenceEllipsoid create(double semi_major_axis, double flattening) {
         return create(semi_major_axis, flattening, 2.0 * flattening - flattening * flattening);
     }
 };

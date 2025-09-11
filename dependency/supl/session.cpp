@@ -165,7 +165,7 @@ Session::Handshake Session::handle_handshake() {
 }
 
 bool Session::send(const START& message) {
-    VSCOPE_FUNCTIONF("START");
+    FUNCTION_SCOPEN("START");
     if (!is_connected()) {
         WARNF("not connected");
         return false;
@@ -182,7 +182,7 @@ bool Session::send(const START& message) {
 }
 
 bool Session::send(const POSINIT& message) {
-    VSCOPE_FUNCTIONF("POSINIT");
+    FUNCTION_SCOPEN("POSINIT");
     if (!is_connected()) {
         WARNF("not connected");
         return false;
@@ -199,7 +199,7 @@ bool Session::send(const POSINIT& message) {
 }
 
 bool Session::send(const POS& message) {
-    VSCOPE_FUNCTIONF("POS");
+    FUNCTION_SCOPEN("POS");
     if (!is_connected()) {
         WARNF("not connected");
         return false;

@@ -462,7 +462,7 @@ static ::Ver2_SUPL_START_extension* encode_start_extension(const START& message)
 }
 
 EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, const START& message) {
-    VSCOPE_FUNCTIONF("START");
+    FUNCTION_SCOPEN("START");
 
     auto ulp_pdu = create_message(UlpMessage_PR_msSUPLSTART, version);
     SUPL_DEFER {
@@ -482,7 +482,7 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, con
 
 EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
                       const POSINIT& message) {
-    VSCOPE_FUNCTIONF("POSINIT");
+    FUNCTION_SCOPEN("POSINIT");
 
     auto ulp_pdu = create_message(UlpMessage_PR_msSUPLPOSINIT, version);
     SUPL_DEFER {
@@ -506,7 +506,7 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
 }
 
 EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, const POS& message) {
-    VSCOPE_FUNCTIONF("POS");
+    FUNCTION_SCOPEN("POS");
 
     auto ulp_pdu = create_message(UlpMessage_PR_msSUPLPOS, version);
     SUPL_DEFER {
