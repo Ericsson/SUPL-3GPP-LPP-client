@@ -2,7 +2,7 @@
 
 ## []
 
-- Add C++11 compatibility support with `USE_CXX11` cmake option
+- Add C++11 compatibility support, use 'CXX_STANDARD' variable to set it
 - Fix output assert when not specifiy chain/stages
 - New WIP positioning engine `idokeido`
 - Fix forward task and missing data during fast reads
