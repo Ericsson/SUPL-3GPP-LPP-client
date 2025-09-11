@@ -1,0 +1,5 @@
+FROM s3lc-test-base
+
+RUN apt-get update
+RUN apt-get install -y clang-10
+RUN update-alternatives --install /usr/bin/cc cc /usr/bin/clang-10 60 --slave /usr/bin/c++ c++ /usr/bin/clang++-10

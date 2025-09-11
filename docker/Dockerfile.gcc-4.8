@@ -1,9 +1,5 @@
-FROM ubuntu:16.04
+FROM s3lc-test-base
 
 RUN apt-get update
-RUN apt-get upgrade -y
 RUN apt-get install -y gcc-4.8 g++-4.8
-RUN apt-get install -y cmake ninja-build
-RUN apt-get install -y libssl-dev
-RUN find / -name "gcc-*"
-RUN find / -name "g++-*"
+RUN update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-4.8 60 --slave /usr/bin/g++ g++ /usr/bin/g++-4.8
