@@ -396,13 +396,14 @@ static void initialize_inputs(Program& program, InputConfig& config) {
 
         auto stage_str = stage_stream.str();
 
-        DEBUGF("input  %p: %s%s%s%s%s %s[%" PRIu64 "] | stages=%s", input.interface.get(),
+        DEBUGF("input  %p: %s%s%s%s%s%s %s[%" PRIu64 "] | stages=%s", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", 
+               tag_str.c_str(),
                tag, stage_str.c_str());
 
         if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
