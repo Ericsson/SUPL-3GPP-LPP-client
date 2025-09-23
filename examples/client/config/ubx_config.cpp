@@ -1,11 +1,11 @@
-#include "../config.hpp"
 #include <format/ubx/cfg.hpp>
-#include <loglet/loglet.hpp>
+#include <fstream>
+#include <io/file.hpp>
 #include <io/serial.hpp>
 #include <io/tcp.hpp>
-#include <io/file.hpp>
-#include <fstream>
+#include <loglet/loglet.hpp>
 #include <sstream>
+#include "../config.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -21,7 +21,7 @@
 
 namespace ubx_config {
 
-args::Group gGroup{"Configuration:"};
+args::Group        gGroup{"Configuration:"};
 static args::Group gUbxGroup{gGroup, "UBX:"};
 
 static args::ValueFlagList<std::string> gInterfaces{
@@ -47,17 +47,13 @@ static args::ValueFlagList<std::string> gInterfaces{
     "  file:\n"
     "    path=<path>\n"
     "\n"
-    "Example: --cfg-ubx serial:device=/dev/ttyUSB0,options=CFG_KEY_RATE_MEAS=1000+CFG_KEY_UART1_ENABLED=true\n"
+    "Example: --cfg-ubx "
+    "serial:device=/dev/ttyUSB0,options=CFG_KEY_RATE_MEAS=1000+CFG_KEY_UART1_ENABLED=true\n"
     "Example: --cfg-ubx serial:device=/dev/ttyUSB0,file=/path/to/ubx_config.txt,print=options",
-    {"cfg-ubx"}
-};
+    {"cfg-ubx"}};
 
 static args::Flag gApplyAndExit{
-    gGroup,
-    "apply-and-exit",
-    "Apply configuration and exit",
-    {"cfg-apply-and-exit"}
-};
+    gGroup, "apply-and-exit", "Apply configuration and exit", {"cfg-apply-and-exit"}};
 
 static void setup() {}
 
@@ -71,7 +67,7 @@ static std::vector<std::string> split(std::string const& str, char delim) {
     return tokens;
 }
 
-static format::ubx::CfgKey parse_cfg_key(const std::string& key_str) {
+static format::ubx::CfgKey parse_cfg_key(std::string const& key_str) {
     // Map string keys to actual CFG_KEY values
     if (key_str == "CFG_KEY_RATE_MEAS") return format::ubx::CFG_KEY_RATE_MEAS;
     if (key_str == "CFG_KEY_NAVHPG_DGNSSMODE") return format::ubx::CFG_KEY_NAVHPG_DGNSSMODE;
@@ -89,7 +85,7 @@ static format::ubx::CfgKey parse_cfg_key(const std::string& key_str) {
     if (key_str == "CFG_KEY_UART1OUTPROT_RTCM3X") return format::ubx::CFG_KEY_UART1OUTPROT_RTCM3X;
     if (key_str == "CFG_KEY_MSGOUT_NAV_PVT_UART1") return format::ubx::CFG_KEY_MSGOUT_NAV_PVT_UART1;
     if (key_str == "CFG_KEY_INFMSG_UART1") return format::ubx::CFG_KEY_INFMSG_UART1;
-    
+
     // Try parsing as hex number
     try {
         if (key_str.substr(0, 2) == "0x" || key_str.substr(0, 2) == "0X") {
@@ -101,14 +97,16 @@ static format::ubx::CfgKey parse_cfg_key(const std::string& key_str) {
     }
 }
 
-static format::ubx::CfgValue parse_cfg_value(format::ubx::CfgKey key, const std::string& value_str) {
+static format::ubx::CfgValue parse_cfg_value(format::ubx::CfgKey key,
+                                             std::string const&  value_str) {
     auto type = format::ubx::CfgValue::type_from_key(key);
-    
+
     try {
         switch (type) {
         case format::ubx::CfgValue::Type::L:
             if (value_str == "true" || value_str == "1") return format::ubx::CfgValue::from_l(true);
-            if (value_str == "false" || value_str == "0") return format::ubx::CfgValue::from_l(false);
+            if (value_str == "false" || value_str == "0")
+                return format::ubx::CfgValue::from_l(false);
             throw std::invalid_argument("boolean value expected");
         case format::ubx::CfgValue::Type::U1:
             return format::ubx::CfgValue::from_u1(static_cast<uint8_t>(std::stoul(value_str)));
@@ -118,68 +116,71 @@ static format::ubx::CfgValue parse_cfg_value(format::ubx::CfgKey key, const std:
             return format::ubx::CfgValue::from_u4(std::stoul(value_str));
         case format::ubx::CfgValue::Type::U8:
             return format::ubx::CfgValue::from_u8(std::stoull(value_str));
-        default:
-            throw std::invalid_argument("unknown type");
+        default: throw std::invalid_argument("unknown type");
         }
     } catch (...) {
         throw args::ValidationError("--cfg-ubx: invalid value '" + value_str + "' for key");
     }
 }
 
-static std::pair<format::ubx::CfgKey, format::ubx::CfgValue> parse_option(const std::string& option) {
+static std::pair<format::ubx::CfgKey, format::ubx::CfgValue>
+parse_option(std::string const& option) {
     auto eq_pos = option.find('=');
     if (eq_pos == std::string::npos) {
         throw args::ValidationError("--cfg-ubx: missing '=' in option '" + option + "'");
     }
-    
-    auto key_str = option.substr(0, eq_pos);
+
+    auto key_str   = option.substr(0, eq_pos);
     auto value_str = option.substr(eq_pos + 1);
-    
-    auto key = parse_cfg_key(key_str);
+
+    auto key   = parse_cfg_key(key_str);
     auto value = parse_cfg_value(key, value_str);
-    
+
     return {key, value};
 }
 
-static std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> load_options_from_file(const std::string& filename) {
+static std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>>
+load_options_from_file(std::string const& filename) {
     std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> options;
-    std::ifstream file(filename);
-    
+    std::ifstream                                                      file(filename);
+
     if (!file.is_open()) {
         throw args::ValidationError("--cfg-ubx: cannot open file '" + filename + "'");
     }
-    
+
     std::string line;
-    int line_num = 0;
+    int         line_num = 0;
     while (std::getline(file, line)) {
         line_num++;
-        
+
         // Skip empty lines and comments
         if (line.empty() || line[0] == '#') continue;
-        
+
         try {
             options.push_back(parse_option(line));
-        } catch (const args::ValidationError& e) {
-            throw args::ValidationError("--cfg-ubx file line " + std::to_string(line_num) + ": " + e.what());
+        } catch (args::ValidationError const& e) {
+            throw args::ValidationError("--cfg-ubx file line " + std::to_string(line_num) + ": " +
+                                        e.what());
         }
     }
-    
+
     return options;
 }
 
-static std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> parse_options_list(const std::string& options_str) {
+static std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>>
+parse_options_list(std::string const& options_str) {
     std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> options;
     auto option_parts = split(options_str, '+');
-    
-    for (const auto& option : option_parts) {
+
+    for (auto const& option : option_parts) {
         options.push_back(parse_option(option));
     }
-    
+
     return options;
 }
 
 static std::unordered_map<std::string, std::string> parse_arguments(std::string const& str) {
-    auto parts = split(str, ',');
+    auto                                         parts = split(str, ',');
     std::unordered_map<std::string, std::string> arguments;
     for (auto const& part : parts) {
         auto kv = split(part, '=');
@@ -196,7 +197,8 @@ static io::BaudRate parse_baudrate(std::string const& str) {
     try {
         baud_rate = std::stol(str);
     } catch (...) {
-        throw args::ParseError("--cfg-ubx serial: `baudrate` must be an integer, got `" + str + "'");
+        throw args::ParseError("--cfg-ubx serial: `baudrate` must be an integer, got `" + str +
+                               "'");
     }
 
     if (baud_rate == 9600) return io::BaudRate::BR9600;
@@ -207,7 +209,8 @@ static io::BaudRate parse_baudrate(std::string const& str) {
     if (baud_rate == 230400) return io::BaudRate::BR230400;
     if (baud_rate == 460800) return io::BaudRate::BR460800;
     if (baud_rate == 921600) return io::BaudRate::BR921600;
-    throw args::ParseError("--cfg-ubx serial: `baudrate` must be a valid baud rate, got `" + str + "'");
+    throw args::ParseError("--cfg-ubx serial: `baudrate` must be a valid baud rate, got `" + str +
+                           "'");
 }
 
 static io::DataBits parse_databits(std::string const& str) {
@@ -215,7 +218,8 @@ static io::DataBits parse_databits(std::string const& str) {
     try {
         databits = std::stol(str);
     } catch (...) {
-        throw args::ParseError("--cfg-ubx serial: `databits` must be an integer, got `" + str + "'");
+        throw args::ParseError("--cfg-ubx serial: `databits` must be an integer, got `" + str +
+                               "'");
     }
 
     if (databits == 5) return io::DataBits::FIVE;
@@ -230,7 +234,8 @@ static io::StopBits parse_stopbits(std::string const& str) {
     try {
         stopbits = std::stol(str);
     } catch (...) {
-        throw args::ParseError("--cfg-ubx serial: `stopbits` must be an integer, got `" + str + "'");
+        throw args::ParseError("--cfg-ubx serial: `stopbits` must be an integer, got `" + str +
+                               "'");
     }
 
     if (stopbits == 1) return io::StopBits::ONE;
@@ -242,17 +247,19 @@ static io::ParityBit parse_paritybit(std::string const& str) {
     if (str == "none") return io::ParityBit::NONE;
     if (str == "odd") return io::ParityBit::ODD;
     if (str == "even") return io::ParityBit::EVEN;
-    throw args::ParseError("--cfg-ubx serial: `parity` must be none, odd, or even, got `" + str + "'");
+    throw args::ParseError("--cfg-ubx serial: `parity` must be none, odd, or even, got `" + str +
+                           "'");
 }
 
-static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>> parse_serial_interfaces(std::unordered_map<std::string, std::string> const& arguments) {
+static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>>
+parse_serial_interfaces(std::unordered_map<std::string, std::string> const& arguments) {
     if (arguments.find("device") == arguments.end()) {
         throw args::RequiredError("--cfg-ubx serial: missing `device` argument");
     }
 
-    auto baud_rate = io::BaudRate::BR115200;
-    auto data_bits = io::DataBits::EIGHT;
-    auto stop_bits = io::StopBits::ONE;
+    auto baud_rate  = io::BaudRate::BR115200;
+    auto data_bits  = io::DataBits::EIGHT;
+    auto stop_bits  = io::StopBits::ONE;
     auto parity_bit = io::ParityBit::NONE;
 
     auto baud_rate_it = arguments.find("baudrate");
@@ -268,12 +275,15 @@ static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>> parse_
     if (parity_bit_it != arguments.end()) parity_bit = parse_paritybit(parity_bit_it->second);
 
     auto device = arguments.at("device");
-    auto output = std::unique_ptr<io::Output>(new io::SerialOutput(device, baud_rate, data_bits, stop_bits, parity_bit));
-    auto input = std::unique_ptr<io::Input>(new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
+    auto output = std::unique_ptr<io::Output>(
+        new io::SerialOutput(device, baud_rate, data_bits, stop_bits, parity_bit));
+    auto input = std::unique_ptr<io::Input>(
+        new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
     return {std::move(output), std::move(input)};
 }
 
-static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>> parse_tcp_client_interfaces(std::unordered_map<std::string, std::string> const& arguments) {
+static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>>
+parse_tcp_client_interfaces(std::unordered_map<std::string, std::string> const& arguments) {
     if (arguments.find("host") != arguments.end()) {
         if (arguments.find("port") == arguments.end()) {
             throw args::RequiredError("--cfg-ubx tcp-client: missing `port` argument");
@@ -294,34 +304,40 @@ static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>> parse_
                 std::to_string(port) + "'");
         }
 
-        auto output = std::unique_ptr<io::Output>(new io::TcpClientOutput(host, static_cast<uint16_t>(port), false));
-        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(host, static_cast<uint16_t>(port), false));
+        auto output = std::unique_ptr<io::Output>(
+            new io::TcpClientOutput(host, static_cast<uint16_t>(port), false));
+        auto input = std::unique_ptr<io::Input>(
+            new io::TcpClientInput(host, static_cast<uint16_t>(port), false));
         return {std::move(output), std::move(input)};
     } else if (arguments.find("path") != arguments.end()) {
-        auto path = arguments.at("path");
+        auto path   = arguments.at("path");
         auto output = std::unique_ptr<io::Output>(new io::TcpClientOutput(path, false));
-        auto input = std::unique_ptr<io::Input>(new io::TcpClientInput(path, false));
+        auto input  = std::unique_ptr<io::Input>(new io::TcpClientInput(path, false));
         return {std::move(output), std::move(input)};
     } else {
-        throw args::RequiredError("--cfg-ubx tcp-client: missing `host` and `port` or `path` argument");
+        throw args::RequiredError(
+            "--cfg-ubx tcp-client: missing `host` and `port` or `path` argument");
     }
 }
 
-static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>> parse_file_interfaces(std::unordered_map<std::string, std::string> const& arguments) {
+static std::pair<std::unique_ptr<io::Output>, std::unique_ptr<io::Input>>
+parse_file_interfaces(std::unordered_map<std::string, std::string> const& arguments) {
     if (arguments.find("path") == arguments.end()) {
         throw args::RequiredError("--cfg-ubx file: missing `path` argument");
     }
 
-    auto path = arguments.at("path");
+    auto path   = arguments.at("path");
     auto output = std::unique_ptr<io::Output>(new io::FileOutput(path, false, true, true));
-    auto input = std::unique_ptr<io::Input>(new io::FileInput(path, 1024, std::chrono::milliseconds(100)));
+    auto input =
+        std::unique_ptr<io::Input>(new io::FileInput(path, 1024, std::chrono::milliseconds(100)));
     return {std::move(output), std::move(input)};
 }
 
-static UbxPrintMode parse_print_mode(const std::string& print_str) {
+static UbxPrintMode parse_print_mode(std::string const& print_str) {
     if (print_str == "options") return UbxPrintMode::OPTIONS;
     if (print_str == "all") return UbxPrintMode::ALL;
-    throw args::ValidationError("--cfg-ubx: invalid print mode, expected 'options' or 'all', got '" + print_str + "'");
+    throw args::ValidationError(
+        "--cfg-ubx: invalid print mode, expected 'options' or 'all', got '" + print_str + "'");
 }
 
 static UbxConfigInterface parse_interface(std::string const& source) {
@@ -330,24 +346,24 @@ static UbxConfigInterface parse_interface(std::string const& source) {
         throw args::ValidationError("--cfg-ubx: invalid format, expected <type>:<arguments>");
     }
 
-    auto type = parts[0];
+    auto type      = parts[0];
     auto arguments = parse_arguments(parts[1]);
 
     std::unique_ptr<io::Output> output;
-    std::unique_ptr<io::Input> input;
-    
+    std::unique_ptr<io::Input>  input;
+
     if (type == "serial") {
         auto interfaces = parse_serial_interfaces(arguments);
-        output = std::move(interfaces.first);
-        input = std::move(interfaces.second);
+        output          = std::move(interfaces.first);
+        input           = std::move(interfaces.second);
     } else if (type == "tcp-client") {
         auto interfaces = parse_tcp_client_interfaces(arguments);
-        output = std::move(interfaces.first);
-        input = std::move(interfaces.second);
+        output          = std::move(interfaces.first);
+        input           = std::move(interfaces.second);
     } else if (type == "file") {
         auto interfaces = parse_file_interfaces(arguments);
-        output = std::move(interfaces.first);
-        input = std::move(interfaces.second);
+        output          = std::move(interfaces.first);
+        input           = std::move(interfaces.second);
     } else {
         throw args::ValidationError("--cfg-ubx: invalid type, got `" + type + "`");
     }
@@ -369,36 +385,37 @@ static UbxConfigInterface parse_interface(std::string const& source) {
     }
 
     if (options.empty() && print_mode == UbxPrintMode::NONE) {
-        throw args::ValidationError("--cfg-ubx: no options specified and no print mode (use 'options=', 'file=', or 'print=')");
+        throw args::ValidationError("--cfg-ubx: no options specified and no print mode (use "
+                                    "'options=', 'file=', or 'print=')");
     }
 
     UbxConfigInterface result;
     result.output_interface = std::move(output);
-    result.input_interface = std::move(input);
-    result.options = std::move(options);
-    result.print_mode = print_mode;
+    result.input_interface  = std::move(input);
+    result.options          = std::move(options);
+    result.print_mode       = print_mode;
     return result;
 }
 
 static void parse(Config* config) {
-    for (const auto& interface_str : gInterfaces.Get()) {
+    for (auto const& interface_str : gInterfaces.Get()) {
         config->ubx_config.interfaces.push_back(parse_interface(interface_str));
     }
-    
+
     config->ubx_config.apply_and_exit = gApplyAndExit.Get();
 }
 
-static void dump(const UbxConfigConfig& config) {
+static void dump(UbxConfigConfig const& config) {
     DEBUGF("interfaces count: %zu", config.interfaces.size());
     DEBUGF("apply_and_exit: %s", config.apply_and_exit ? "true" : "false");
-    
+
     for (size_t i = 0; i < config.interfaces.size(); i++) {
-        const auto& interface = config.interfaces[i];
+        auto const& interface = config.interfaces[i];
         DEBUGF("interface %zu:", i);
         DEBUG_INDENT_SCOPE();
         DEBUGF("output: %s", interface.output_interface->name());
         DEBUGF("options count: %zu", interface.options.size());
-        
+
         std::string print_mode_str;
         switch (interface.print_mode) {
         case UbxPrintMode::NONE: print_mode_str = "none"; break;
@@ -406,30 +423,18 @@ static void dump(const UbxConfigConfig& config) {
         case UbxPrintMode::ALL: print_mode_str = "all"; break;
         }
         DEBUGF("print mode: %s", print_mode_str.c_str());
-        
-        for (const auto& entry : interface.options) {
-            const auto& key = entry.first;
-            const auto& value = entry.second;
+
+        for (auto const& entry : interface.options) {
+            auto const& key   = entry.first;
+            auto const& value = entry.second;
             std::string value_str;
             switch (value.type()) {
-            case format::ubx::CfgValue::Type::L:
-                value_str = value.l() ? "true" : "false";
-                break;
-            case format::ubx::CfgValue::Type::U1:
-                value_str = std::to_string(value.u1());
-                break;
-            case format::ubx::CfgValue::Type::U2:
-                value_str = std::to_string(value.u2());
-                break;
-            case format::ubx::CfgValue::Type::U4:
-                value_str = std::to_string(value.u4());
-                break;
-            case format::ubx::CfgValue::Type::U8:
-                value_str = std::to_string(value.u8());
-                break;
-            default:
-                value_str = "unknown";
-                break;
+            case format::ubx::CfgValue::Type::L: value_str = value.l() ? "true" : "false"; break;
+            case format::ubx::CfgValue::Type::U1: value_str = std::to_string(value.u1()); break;
+            case format::ubx::CfgValue::Type::U2: value_str = std::to_string(value.u2()); break;
+            case format::ubx::CfgValue::Type::U4: value_str = std::to_string(value.u4()); break;
+            case format::ubx::CfgValue::Type::U8: value_str = std::to_string(value.u8()); break;
+            default: value_str = "unknown"; break;
             }
             DEBUGF("  0x%08X = %s", key, value_str.c_str());
         }

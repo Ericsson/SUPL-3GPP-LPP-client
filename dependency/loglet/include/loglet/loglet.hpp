@@ -172,7 +172,7 @@
     NOTICEF("%s()", LOGLET_CURRENT_FUNCTION);                                                      \
     NOTICE_PERF_SCOPE()
 #define FUNCTION_SCOPEN(name)                                                                      \
-    NOTICEF("%s(%s)", LOGLET_CURRENT_FUNCTION, name);                                               \
+    NOTICEF("%s(%s)", LOGLET_CURRENT_FUNCTION, name);                                              \
     NOTICE_PERF_SCOPE()
 #define FUNCTION_SCOPEF(fmt, ...)                                                                  \
     NOTICEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                \

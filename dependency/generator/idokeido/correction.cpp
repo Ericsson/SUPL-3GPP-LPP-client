@@ -1,8 +1,8 @@
 #include "correction.hpp"
 
+#include <cxx11_compat.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <loglet/loglet.hpp>
-#include <cxx11_compat.hpp>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"

@@ -1,7 +1,7 @@
 #include "tlf.hpp"
 
-#include <string.h>
 #include <loglet/loglet.hpp>
+#include <string.h>
 
 LOGLET_MODULE2(p, tlf);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, tlf)

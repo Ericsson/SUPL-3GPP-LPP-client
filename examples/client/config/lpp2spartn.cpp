@@ -262,7 +262,6 @@ static args::Flag gSignFlipC11{
     {"l2s-sf-c11"},
 };
 
-
 static void setup() {
     gStecMethod.HelpChoices({"default", "discard", "residual"});
     gStecMethod.HelpDefault("default");
@@ -347,7 +346,7 @@ static void parse(Config* config) {
 
     if (gHydrostaticInZenith) lpp2spartn.hydrostatic_in_zenith = true;
 
-    if(gDisableDoNotUseSatellite) lpp2spartn.do_not_use_satellite = false;
+    if (gDisableDoNotUseSatellite) lpp2spartn.do_not_use_satellite = false;
 
     if (gStecMethod) {
         auto method = gStecMethod.Get();

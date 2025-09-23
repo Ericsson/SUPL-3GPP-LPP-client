@@ -10,18 +10,18 @@
 #ifdef USE_CXX11_COMPAT
 
 #include <memory>
-#include <utility>
 #include <string>
 #include <sys/stat.h>
+#include <utility>
 
 namespace std {
 
-template<typename T, typename... Args>
+template <typename T, typename... Args>
 ::std::unique_ptr<T> make_unique(Args&&... args) {
     return ::std::unique_ptr<T>(new T(::std::forward<Args>(args)...));
 }
 
-}
+}  // namespace std
 
 #endif
 
@@ -37,11 +37,11 @@ inline void create_directories_compat(const ::std::string& path) {
 #endif
 
 #ifndef HAS_CREATE_DIRECTORIES
+#include <errno.h>
+#include <string.h>
 #include <string>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <errno.h>
-#include <string.h>
 #define HAS_CREATE_DIRECTORIES 1
 inline void create_directories_compat(const ::std::string& path) {
     ::std::string::size_type pos = 0;

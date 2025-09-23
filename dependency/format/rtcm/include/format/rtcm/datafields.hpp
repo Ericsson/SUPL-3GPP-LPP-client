@@ -1,10 +1,10 @@
 #pragma once
 #include <bitset>
 #include <cmath>
-#include <stdint.h>
-#include <iostream>
-#include "datatypes.hpp"
 #include <cxx11_compat.hpp>
+#include <iostream>
+#include <stdint.h>
+#include "datatypes.hpp"
 
 #define PI_DF 3.1415926535897932
 
@@ -36,22 +36,23 @@ struct DataField {
     static constexpr int         exponent{E};
 
     static T convert(unsigned long long b) {
-        CONSTEXPR_IF (sign == Sign::UNSIGNED)
-            return multiply_by_factor(b);
-        else CONSTEXPR_IF (sign == Sign::SIGNED)
-            return multiply_by_factor(as_signed(b));
-        else CONSTEXPR_IF (sign == Sign::SIGNED_MAGNITUDE)
-            return multiply_by_factor(as_signed_magnitude(b));
+        CONSTEXPR_IF(sign == Sign::UNSIGNED)
+        return multiply_by_factor(b);
+        else CONSTEXPR_IF(sign == Sign::SIGNED) return multiply_by_factor(as_signed(b));
+        else CONSTEXPR_IF(sign ==
+                          Sign::SIGNED_MAGNITUDE) return multiply_by_factor(as_signed_magnitude(b));
     }
 
     template <typename K>
     static T multiply_by_factor(K value) {
-        CONSTEXPR_IF (std::is_same<T, bool>::value) {
+        CONSTEXPR_IF(std::is_same<T, bool>::value) {
             return static_cast<T>(value != 0);
-        } else CONSTEXPR_IF (C == Conversion::PICO100 || C == Conversion::MINUTE ||
-                             C == Conversion::SC2RAD) {
+        }
+        else CONSTEXPR_IF(C == Conversion::PICO100 || C == Conversion::MINUTE ||
+                          C == Conversion::SC2RAD) {
             return static_cast<T>(static_cast<double>(value) * static_cast<double>(factor));
-        } else {
+        }
+        else {
             return static_cast<T>(value);
         }
     }

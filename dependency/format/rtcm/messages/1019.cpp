@@ -1,11 +1,11 @@
 #include "1019.hpp"
 
 #include <bitset>
+#include <cxx11_compat.hpp>
 #include <datafields.hpp>
 #include <helper.hpp>
 #include <iostream>
 #include <loglet/loglet.hpp>
-#include <cxx11_compat.hpp>
 
 LOGLET_MODULE3(format, rtcm, rtcm1019);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, rtcm, rtcm1019)

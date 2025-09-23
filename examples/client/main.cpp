@@ -402,8 +402,7 @@ static void initialize_inputs(Program& program, InputConfig& config) {
                (input.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", 
-               tag_str.c_str(),
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
                tag, stage_str.c_str());
 
         if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
@@ -769,9 +768,9 @@ int main(int argc, char** argv) {
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
     for (auto const& entry : config.logging.module_levels) {
-        auto const& name = entry.first;
-        auto const& level = entry.second;
-        auto modules = loglet::get_modules(name);
+        auto const& name    = entry.first;
+        auto const& level   = entry.second;
+        auto        modules = loglet::get_modules(name);
         for (auto module : modules) {
             loglet::set_module_level(module, level);
         }

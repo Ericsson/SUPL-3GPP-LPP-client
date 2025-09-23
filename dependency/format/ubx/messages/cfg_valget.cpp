@@ -55,7 +55,7 @@ void UbxCfgValget::print() const NOEXCEPT {
             break;
         case CfgValue::L:
         case CfgValue::UNKNOWN: printf("???\n"); break;
-        default:                printf("???\n"); break;
+        default: printf("???\n"); break;
         }
     }
 }

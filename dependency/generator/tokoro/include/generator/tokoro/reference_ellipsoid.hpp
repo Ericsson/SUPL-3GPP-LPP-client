@@ -15,7 +15,7 @@ struct ReferenceEllipsoid {
     double eccentricity;
 
     static ReferenceEllipsoid create(double semi_major_axis, double flattening,
-                                      double eccentricity_sq) {
+                                     double eccentricity_sq) {
         return {
             /* semi_major_axis */ semi_major_axis,
             /* semi_minor_axis */ semi_major_axis * (1.0 - flattening),

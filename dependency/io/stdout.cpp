@@ -16,7 +16,7 @@ LOGLET_MODULE2(io, stdout);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, stdout)
 
 namespace io {
-StdoutOutput::StdoutOutput() = default;
+StdoutOutput::StdoutOutput()  = default;
 StdoutOutput::~StdoutOutput() = default;
 
 void StdoutOutput::write(uint8_t const* buffer, size_t length) NOEXCEPT {

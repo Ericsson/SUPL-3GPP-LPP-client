@@ -187,22 +187,18 @@ struct DataTracingConfig {
 };
 #endif
 
-enum class UbxPrintMode {
-    NONE,
-    OPTIONS,
-    ALL
-};
+enum class UbxPrintMode { NONE, OPTIONS, ALL };
 
 struct UbxConfigInterface {
-    std::unique_ptr<io::Output> output_interface;
-    std::unique_ptr<io::Input> input_interface;
+    std::unique_ptr<io::Output>                                        output_interface;
+    std::unique_ptr<io::Input>                                         input_interface;
     std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> options;
     UbxPrintMode print_mode = UbxPrintMode::NONE;
 };
 
 struct UbxConfigConfig {
     std::vector<UbxConfigInterface> interfaces;
-    bool apply_and_exit = false;
+    bool                            apply_and_exit = false;
 };
 
 struct LoggingConfig {

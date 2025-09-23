@@ -18,8 +18,8 @@ enum class CRCResult {
 class Message;
 class Parser : public format::helper::Parser {
 public:
-    EXPLICIT Parser()           = default;
-    virtual ~Parser()  override = default;
+    EXPLICIT Parser()          = default;
+    virtual ~Parser() override = default;
 
     NODISCARD virtual char const* name() const NOEXCEPT override;
 

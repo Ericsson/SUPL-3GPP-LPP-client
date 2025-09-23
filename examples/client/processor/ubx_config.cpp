@@ -1,49 +1,50 @@
-#include "ubx_options.hpp"
-#include <format/ubx/encoder.hpp>
+#include <chrono>
 #include <format/ubx/decoder.hpp>
-#include <format/ubx/parser.hpp>
+#include <format/ubx/encoder.hpp>
 #include <format/ubx/messages/cfg_valget.hpp>
 #include <format/ubx/messages/cfg_valset.hpp>
-#include <loglet/loglet.hpp>
+#include <format/ubx/parser.hpp>
 #include <io/output.hpp>
-#include <thread>
-#include <chrono>
 #include <iomanip>
+#include <loglet/loglet.hpp>
+#include <thread>
+#include "ubx_options.hpp"
 
 LOGLET_MODULE(ubx_config);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ubx_config)
 
-UbxConfigApplicator::UbxConfigApplicator(const UbxConfigConfig& config, scheduler::Scheduler& scheduler)
+UbxConfigApplicator::UbxConfigApplicator(const UbxConfigConfig& config,
+                                         scheduler::Scheduler&  scheduler)
     : config_(config), scheduler_(scheduler) {
     collected_values_.reserve(1000);
 }
 
 std::vector<uint8_t> UbxConfigApplicator::create_cfg_valset_message(
-    const std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>>& options) {
-    
+    std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> const& options) {
     if (options.empty()) {
         return {};
     }
 
     size_t total_size = 0;
-    for (const auto& entry : options) {
-        const auto& key = entry.first;
-        const auto& value = entry.second;
+    for (auto const& entry : options) {
+        auto const& key   = entry.first;
+        auto const& value = entry.second;
         total_size += 8 + 4 + value.size();
     }
 
     std::vector<uint8_t> message;
     message.reserve(total_size);
-    
-    format::ubx::CfgLayer layers = format::ubx::CFG_LAYER_RAM | format::ubx::CFG_LAYER_BBR | format::ubx::CFG_LAYER_FLASH;
-    
-    for (const auto& entry : options) {
-        const auto& key = entry.first;
-        const auto& value = entry.second;
-        size_t msg_size = 64;
+
+    format::ubx::CfgLayer layers =
+        format::ubx::CFG_LAYER_RAM | format::ubx::CFG_LAYER_BBR | format::ubx::CFG_LAYER_FLASH;
+
+    for (auto const& entry : options) {
+        auto const&          key      = entry.first;
+        auto const&          value    = entry.second;
+        size_t               msg_size = 64;
         std::vector<uint8_t> temp_buffer(msg_size);
         format::ubx::Encoder encoder(temp_buffer.data(), temp_buffer.size());
-        
+
         auto bytes_written = format::ubx::UbxCfgValset::set(encoder, layers, key, value);
         if (bytes_written > 0) {
             message.insert(message.end(), temp_buffer.begin(), temp_buffer.begin() + bytes_written);
@@ -55,47 +56,51 @@ std::vector<uint8_t> UbxConfigApplicator::create_cfg_valset_message(
     return message;
 }
 
-std::vector<uint8_t> UbxConfigApplicator::create_cfg_valget_message(const std::vector<format::ubx::CfgKey>& keys, uint16_t position) {
+std::vector<uint8_t>
+UbxConfigApplicator::create_cfg_valget_message(std::vector<format::ubx::CfgKey> const& keys,
+                                               uint16_t                                position) {
     if (keys.empty()) {
         return {};
     }
 
     std::vector<format::ubx::CfgKey> limited_keys;
-    size_t key_count = std::min(keys.size(), size_t(64));
+    size_t                           key_count = std::min(keys.size(), size_t(64));
     limited_keys.reserve(key_count);
     for (size_t i = 0; i < key_count; i++) {
         limited_keys.push_back(keys[i]);
     }
 
-    size_t msg_size = 64 + (limited_keys.size() * 4);
+    size_t               msg_size = 64 + (limited_keys.size() * 4);
     std::vector<uint8_t> message(msg_size);
     format::ubx::Encoder encoder(message.data(), message.size());
-    
-    auto bytes_written = format::ubx::UbxCfgValget::poll(encoder, format::ubx::CFG_LAYER_RAM, position, limited_keys);
-    
+
+    auto bytes_written = format::ubx::UbxCfgValget::poll(encoder, format::ubx::CFG_LAYER_RAM,
+                                                         position, limited_keys);
+
     if (bytes_written == 0) {
         ERRORF("failed to encode CFG-VALGET message");
         return {};
     }
-    
+
     message.resize(bytes_written);
     return message;
 }
 
 std::vector<uint8_t> UbxConfigApplicator::create_cfg_valget_all_message(uint16_t position) {
     std::vector<format::ubx::CfgKey> wildcard_keys = {0x0fffffff};
-    
-    size_t msg_size = 64;
+
+    size_t               msg_size = 64;
     std::vector<uint8_t> message(msg_size);
     format::ubx::Encoder encoder(message.data(), message.size());
-    
-    auto bytes_written = format::ubx::UbxCfgValget::poll(encoder, format::ubx::CFG_LAYER_RAM, position, wildcard_keys);
-    
+
+    auto bytes_written = format::ubx::UbxCfgValget::poll(encoder, format::ubx::CFG_LAYER_RAM,
+                                                         position, wildcard_keys);
+
     if (bytes_written == 0) {
         ERRORF("failed to encode CFG-VALGET all message");
         return {};
     }
-    
+
     message.resize(bytes_written);
     return message;
 }
@@ -118,22 +123,19 @@ std::string UbxConfigApplicator::format_cfg_key_name(format::ubx::CfgKey key) {
     case format::ubx::CFG_KEY_UART1OUTPROT_RTCM3X: return "CFG_KEY_UART1OUTPROT_RTCM3X";
     case format::ubx::CFG_KEY_MSGOUT_NAV_PVT_UART1: return "CFG_KEY_MSGOUT_NAV_PVT_UART1";
     case format::ubx::CFG_KEY_INFMSG_UART1: return "CFG_KEY_INFMSG_UART1";
-    default:
-        return "0x" + std::to_string(key);
+    default: return "0x" + std::to_string(key);
     }
 }
-
-
 
 bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
     collected_values_.clear();
     expected_position_ = 0;
-    has_more_data_ = true;
-    
+    has_more_data_     = true;
+
     printf("\n=== UBX Configuration (All Values) ===\n");
-    
+
     format::ubx::Parser parser;
-    
+
     interface.input_interface->callback = [&](io::Input&, uint8_t* data, size_t size) {
         parser.append(data, size);
         auto message = parser.try_parse();
@@ -141,16 +143,16 @@ bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
             waiting_for_response_ = false;
         }
     };
-    
+
     while (has_more_data_ && expected_position_ < 1000) {
         auto message = create_cfg_valget_all_message(expected_position_);
         if (message.empty()) break;
-        
+
         interface.output_interface->write(message.data(), message.size());
         waiting_for_response_ = true;
-        
+
         auto timeout = std::chrono::steady_clock::now() + std::chrono::seconds(2);
-        
+
         scheduler_.execute_while([&]() {
             if (std::chrono::steady_clock::now() > timeout) {
                 waiting_for_response_ = false;
@@ -158,80 +160,69 @@ bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
             }
             return waiting_for_response_;
         });
-        
+
         if (!waiting_for_response_) {
             WARNF("timeout waiting for VALGET response at position %u", expected_position_);
             break;
         }
     }
-    
+
     printf("%-40s %-12s %s\n", "Key Name", "Hex Key", "Value");
     printf("%-40s %-12s %s\n", "--------", "-------", "-----");
-    
-    for (const auto& entry : collected_values_) {
-        const auto& key = entry.first;
-        const auto& value = entry.second;
+
+    for (auto const& entry : collected_values_) {
+        auto const& key      = entry.first;
+        auto const& value    = entry.second;
         std::string key_name = format_cfg_key_name(key);
         std::string value_str;
-        
+
         switch (value.type()) {
-        case format::ubx::CfgValue::Type::L:
-            value_str = value.l() ? "true" : "false";
-            break;
-        case format::ubx::CfgValue::Type::U1:
-            value_str = std::to_string(value.u1());
-            break;
-        case format::ubx::CfgValue::Type::U2:
-            value_str = std::to_string(value.u2());
-            break;
-        case format::ubx::CfgValue::Type::U4:
-            value_str = std::to_string(value.u4());
-            break;
-        case format::ubx::CfgValue::Type::U8:
-            value_str = std::to_string(value.u8());
-            break;
-        default:
-            value_str = "unknown";
-            break;
+        case format::ubx::CfgValue::Type::L: value_str = value.l() ? "true" : "false"; break;
+        case format::ubx::CfgValue::Type::U1: value_str = std::to_string(value.u1()); break;
+        case format::ubx::CfgValue::Type::U2: value_str = std::to_string(value.u2()); break;
+        case format::ubx::CfgValue::Type::U4: value_str = std::to_string(value.u4()); break;
+        case format::ubx::CfgValue::Type::U8: value_str = std::to_string(value.u8()); break;
+        default: value_str = "unknown"; break;
         }
-        
+
         printf("%-40s 0x%08X   %s\n", key_name.c_str(), key, value_str.c_str());
     }
-    
+
     printf("\nTotal configuration items: %zu\n\n", collected_values_.size());
     return true;
 }
 
 bool UbxConfigApplicator::print_current_config(UbxConfigInterface& interface) {
-    if (!interface.output_interface->schedule(scheduler_) || !interface.input_interface->schedule(scheduler_)) {
+    if (!interface.output_interface->schedule(scheduler_) ||
+        !interface.input_interface->schedule(scheduler_)) {
         ERRORF("failed to schedule interfaces");
         return false;
     }
 
     if (interface.print_mode == UbxPrintMode::OPTIONS) {
         std::vector<format::ubx::CfgKey> requested_keys;
-        for (const auto& entry : interface.options) {
-            const auto& key = entry.first;
-            const auto& value = entry.second;
+        for (auto const& entry : interface.options) {
+            auto const& key   = entry.first;
+            auto const& value = entry.second;
             requested_keys.push_back(key);
         }
-        
+
         auto message = create_cfg_valget_message(requested_keys);
         if (message.empty()) return false;
-        
+
         interface.output_interface->write(message.data(), message.size());
-        
+
         printf("\n=== Current UBX Configuration (Requested Keys) ===\n");
         printf("%-40s %-12s %s\n", "Key Name", "Hex Key", "Value");
         printf("%-40s %-12s %s\n", "--------", "-------", "-----");
-        
+
         scheduler_.execute_timeout(std::chrono::milliseconds(500));
         printf("\n");
-        
+
     } else if (interface.print_mode == UbxPrintMode::ALL) {
         return collect_all_config(interface);
     }
-    
+
     return true;
 }
 
@@ -252,7 +243,7 @@ bool UbxConfigApplicator::apply_to_interface(UbxConfigInterface& interface) {
             success = false;
         } else {
             INFOF("applying %zu UBX options", interface.options.size());
-            
+
             if (!interface.output_interface->schedule(scheduler_)) {
                 ERRORF("failed to schedule output interface");
                 success = false;

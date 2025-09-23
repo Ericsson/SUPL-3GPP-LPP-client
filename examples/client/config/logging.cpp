@@ -156,7 +156,7 @@ static void dump(LoggingConfig const& config) {
     DEBUGF("log level: %s", level_to_string(config.log_level));
     for (auto const& entry : config.module_levels) {
         auto const& module = entry.first;
-        auto const& level = entry.second;
+        auto const& level  = entry.second;
         DEBUGF("module %s: %s", module.c_str(), level_to_string(level));
     }
 }

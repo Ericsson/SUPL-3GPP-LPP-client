@@ -10,11 +10,6 @@
 #include <format/nav/d1.hpp>
 #include <format/nav/gal/inav.hpp>
 #include <format/nav/gps/lnav.hpp>
-#include <format/ubx/messages/rxm_sfrbx.hpp>
-#include <generator/tokoro/constant.hpp>
-#include <format/rtcm/1019.hpp>
-#include <format/rtcm/1042.hpp>
-#include <format/rtcm/1046.hpp>
 #include <format/rtcm/1019.hpp>
 #include <format/rtcm/1042.hpp>
 #include <format/rtcm/1046.hpp>

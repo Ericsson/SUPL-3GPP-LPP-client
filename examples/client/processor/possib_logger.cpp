@@ -180,7 +180,7 @@ void LppPossibBuilder::log(char const* type, asn_TYPE_descriptor_s* def, void co
         }
         if (!params.empty()) {
             for (auto const& entry : params) {
-                auto const& key = entry.first;
+                auto const& key   = entry.first;
                 auto const& value = entry.second;
                 stream << ",\"" << key << "\":\"" << value << "\"";
             }

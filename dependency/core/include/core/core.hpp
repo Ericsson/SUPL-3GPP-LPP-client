@@ -58,7 +58,10 @@ __attribute__((noreturn)) inline void core_unreachable() {
 #endif
 
 #ifndef CORE_ASSERT
-#define CORE_ASSERT(cond, msg) do { assert((cond) && (msg)); } while(0)
+#define CORE_ASSERT(cond, msg)                                                                     \
+    do {                                                                                           \
+        assert((cond) && (msg));                                                                   \
+    } while (0)
 #endif
 
 #ifndef NORETURN
@@ -74,9 +77,9 @@ __attribute__((noreturn)) inline void core_unreachable() {
 
 #ifndef CORE_UNREACHABLE_CASE
 #if defined(__GNUC__) && __GNUC__ < 8
-#define CORE_UNREACHABLE_CASE default: CORE_UNREACHABLE()
+#define CORE_UNREACHABLE_CASE                                                                      \
+    default: CORE_UNREACHABLE()
 #else
 #define CORE_UNREACHABLE_CASE
 #endif
 #endif
-

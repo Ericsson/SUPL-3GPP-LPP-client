@@ -1,6 +1,6 @@
 #pragma once
-#include "time.hpp"
 #include <external_warnings.hpp>
+#include "time.hpp"
 
 #include <functional>
 #include <unordered_map>
