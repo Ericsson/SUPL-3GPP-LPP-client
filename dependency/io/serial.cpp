@@ -246,13 +246,8 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     }
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
-    if (!mFdTask->set_fd(mFd)) {
-        ERRORF("failed to set file descriptor: " ERRNO_FMT, ERRNO_ARGS(errno));
-        result = ::close(mFd);
-        VERBOSEF("::close(%d) = %d", mFd, result);
-        mFd = -1;
-        return false;
-    }
+    // Return value indicates rescheduling need, not failure - safe to ignore for new task
+    (void)mFdTask->set_fd(mFd);
 
     mFdTask->set_event_name("fd/" + mEventName);
     mFdTask->on_read = [this](int) {

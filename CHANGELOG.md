@@ -2,6 +2,7 @@
 
 ## []
 
+- Fix SerialInput incorrectly treating set_fd return value as error
 - Add C++11 compatibility support, use 'CMAKE_CXX_STANDARD' variable to set it
 - Fix output assert when not specifiy chain/stages
 - New WIP positioning engine `idokeido`
