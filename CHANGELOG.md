@@ -1,125 +1,169 @@
 # Changelog
 
-## []
+All notable changes to this project will be documented in this file.
 
-- Fix SerialInput incorrectly treating set_fd return value as error
-- Add C++11 compatibility support, use 'CMAKE_CXX_STANDARD' variable to set it
-- Fix output assert when not specifiy chain/stages
-- New WIP positioning engine `idokeido`
-- Fix forward task and missing data during fast reads
-- Input/output stage, see `chain=tlf`
-- New stage `tlf` - for reading and writing data in time-logged format
-- Function performance logging using `LOG_FUNCTION_PERFORMANCE=ON`
-- Added `chunked-log` output interface for hourly rotating log files with timestamp names
+## [Unreleased]
 
-## [4.0.22] 2025-08-07
+### Added
+- C++11 compatibility support via `CMAKE_CXX_STANDARD` variable
+- WIP positioning engine `idokeido`
+- Input/output stage with `chain=tlf` support
+- Stage `tlf` for reading and writing time-logged format data
+- Function performance logging with `LOG_FUNCTION_PERFORMANCE=ON`
+- Chunked-log output interface for hourly rotating log files with timestamp names
 
-- More satellite parameters in data-tracing
-- Message tagging support. Input (and other intermediate) messages can be tagged and filtered before use or output. See `tags`, `itags` and `otags`.
-- Better support for AGNSS via supl.google.com
-- Added support for missing AGNSS data using `--ad-assisted-gnss`
-- Support for single-shot request for assistance data
-- Support to specify if the cell is GSM using `--gsm-cell`
-- Added `--li-disable` to disable location information
-- Added `--ls-hack-never-send-abort` to bypass incorrect abort handling in location server
-- Initial cell will be used on reconnect. Use `--use-latest-cell-on-reconnect` to re-enable the previous behaviour
-- Initial cell will not be overwritten with the one from the control interface until the first RequestAssistanceData has been sent
-- Fix bug where inital client message still had color even when `--log-no-color` was enabled
-- Change color used by `INFO` logs from `WHITE` to `FOREGROUND` 
+### Fixed
+- SerialInput incorrectly treating set_fd return value as error
+- Output assert when chain/stages not specified
+- Forward task and missing data during fast reads
 
-## [4.0.21] 2025-07-16
+## [4.0.22] - 2025-08-07
 
-- Implement update_assistance_data
+### Added
+- Satellite parameters in data-tracing
+- Message tagging support with `tags`, `itags` and `otags` options
+- Support for missing AGNSS data using `--ad-assisted-gnss`
+- Single-shot request support for assistance data
+- GSM cell specification using `--gsm-cell`
+- `--li-disable` option to disable location information
+- `--ls-hack-never-send-abort` to bypass incorrect abort handling in location server
+- `--use-latest-cell-on-reconnect` option for reconnection behavior
 
-## [4.0.19] 2025-07-16
+### Changed
+- Initial cell used on reconnect by default
+- Initial cell preservation until first RequestAssistanceData is sent
+- INFO log color changed from WHITE to FOREGROUND
+- Improved AGNSS support via supl.google.com
 
-- Set `TCP_USER_TIMEOUT`
+### Fixed
+- Initial client message color when `--log-no-color` enabled 
 
-## [4.0.18] 2025-07-15
+## [4.0.21] - 2025-07-16
 
-- Shutdown socket on disconnect
-- Handle SUPL session termination in LPP
+### Added
+- Implementation of update_assistance_data
 
-## [4.0.17] 2025-07-14
+## [4.0.19] - 2025-07-16
 
+### Changed
+- Set TCP_USER_TIMEOUT for socket connections
+
+## [4.0.18] - 2025-07-15
+
+### Added
+- Socket shutdown on disconnect
+- SUPL session termination handling in LPP
+
+## [4.0.17] - 2025-07-14
+
+### Added
+- `--li-unsolicited` option
+- `--ad-disable` option
+- NMEA location support without GST/EPE and VTG
+
+### Changed
 - Disconnect on failed SUPL send
-- Fake location is now pushed through streamline
-- Support NMEA location without GST/EPE and VTG
-- Update posSIB logging names to conform to 3GPP LPP standard
-- `--li-unsolicited` implemented
-- `--ad-disable` implemented
-- Fix CMake truthiness checking on variables
+- Fake location now pushed through streamline
+- Updated posSIB logging names to conform to 3GPP LPP standard
 
-## [4.0.16] 2025-06-04
+### Fixed
+- CMake truthiness checking on variables
 
-- Fix incorrect handling of GST message with missing fields
-- Add support to output location information as json
-- Fix grid point bitmasking
+## [4.0.16] - 2025-06-04
 
-## [4.0.15] 2025-05-20
+### Added
+- JSON output support for location information
 
-- Fixed bug when using `llh_to_ecef` to generate the virtual reference station for Tokoro
-- Include per satelite/signal information in posSIB log
-- Added system to log data for posSIBs
-- Included `LPP-Broadcast-Definitions.asn` and generated the corresponding ASN.1 C source files
+### Fixed
+- Incorrect handling of GST message with missing fields
+- Grid point bitmasking
 
-## [4.0.14] 2025-04-14
+## [4.0.15] - 2025-05-20
 
-- Added `--ls-hack-bad-transaction-initiator` to bypass incorrect location server behaviour
-- Added logging when sending or receive LPP message
+### Added
+- Per satellite/signal information in posSIB log
+- System to log data for posSIBs
+- LPP-Broadcast-Definitions.asn and corresponding ASN.1 C source files
 
-## [4.0.11] 2025-04-07
+### Fixed
+- Bug when using llh_to_ecef to generate virtual reference station for Tokoro
 
-- Include `assistanceDataSupportList` in `ProvideCapabilities` for the default message send by the LPP Client
-- Only include GNSS supported by assistance data in `gnss-SupportList`
+## [4.0.14] - 2025-04-14
 
-## [4.0.10] 2025-04-03
+### Added
+- `--ls-hack-bad-transaction-initiator` to bypass incorrect location server behavior
+- Logging when sending or receiving LPP messages
 
-- More information included when printing SUPL message with `supl/print`
-- Added logging support of LPP messages via `lpp/print`
+## [4.0.11] - 2025-04-07
 
-## [4.0.9] 2025-04-03 
+### Changed
+- Include assistanceDataSupportList in ProvideCapabilities for default LPP Client message
+- Only include GNSS supported by assistance data in gnss-SupportList
 
-- Fix `agpsSETassisted`, `agpsSETBased`, and `agpsSETBasedPreferred`
+## [4.0.10] - 2025-04-03
 
-## [4.0.8] 2025-03-27 
+### Added
+- Enhanced SUPL message information when printing with supl/print
+- LPP message logging support via lpp/print
 
-- Updated loglet to use a new system for modules
-- Added `--log-tree` to visualize the logging modules and their logging level
-- Added `--ls-interface` to set the interface used by the location server connection
+## [4.0.9] - 2025-04-03
 
-## [4.0.7] 2025-03-20
+### Fixed
+- agpsSETassisted, agpsSETBased, and agpsSETBasedPreferred functionality
 
-- Fix decoding of IMSI identity
+## [4.0.8] - 2025-03-27
 
-## [4.0.6] 2025-03-18
+### Added
+- `--log-tree` to visualize logging modules and their levels
+- `--ls-interface` to set location server connection interface
 
-- Include Application ID details in SUPL
-- Use the initial cell in SUPL instead of a dummy cell
-- Added `--ad-delivery-amount`
-- Added `--ad-no-antenna-height`
+### Changed
+- Updated loglet to use new module system
 
-## [4.0.5] 2025-03-13
+## [4.0.7] - 2025-03-20
 
-- `--log-no-color` will also not print the reset color code
-- Update the digit order of SUPL identity encoding/decoding  
+### Fixed
+- IMSI identity decoding
 
-## [4.0.4] 2025-03-13
+## [4.0.6] - 2025-03-18
 
-- Added `--log-no-color` to disable colored logging output
-- Added `--log-flush` to flush logging after every line
+### Added
+- Application ID details in SUPL
+- `--ad-delivery-amount` option
+- `--ad-no-antenna-height` option
 
-## [4.0.3] 2025-03-12
+### Changed
+- Use initial cell in SUPL instead of dummy cell
 
-- Building and publishing containers to GHCR
+## [4.0.5] - 2025-03-13
 
-## [4.0.2] 2025-03-12
+### Changed
+- `--log-no-color` no longer prints reset color code
+- Updated digit order of SUPL identity encoding/decoding
 
-- TRACE/VERBOSE/DEBUG is now available in Release mode
-- Added `--output-print-everything` option to set/override `print=true` for every output
-- Added experimental `--output tcp-server:` for outputing as a TCP server to all connected clients.
-- Added new output format `test`. The test format will send the string `TESTTESTTESTTEST` every second to all outputs that includes the `test` format. This is useful for testing if a output is working as expected. 
+## [4.0.4] - 2025-03-13
 
-## [4.0.1] 2025-03-07
+### Added
+- `--log-no-color` to disable colored logging output
+- `--log-flush` to flush logging after every line
 
-Due to extensive architectural changes and improvements between versions 3.x and 4.0, a comprehensive changelog was not maintained. The upgrade includes significant modifications to core functionality and structure. Starting from version 4.0, all changes will be thoroughly documented in this changelog.
+## [4.0.3] - 2025-03-12
+
+### Added
+- Container building and publishing to GHCR
+
+## [4.0.2] - 2025-03-12
+
+### Added
+- TRACE/VERBOSE/DEBUG availability in Release mode
+- `--output-print-everything` option to override print=true for all outputs
+- Experimental `--output tcp-server:` for TCP server output to connected clients
+- Test output format sending TESTTESTTESTTEST every second for output validation
+
+## [4.0.1] - 2025-03-07
+
+### Changed
+- Major architectural overhaul from version 3.x
+- Comprehensive changelog documentation starting from version 4.0
+
+**Note:** Due to extensive changes between versions 3.x and 4.0, detailed migration information is available in the [Upgrade Guide](/UPGRADE_FROM_V3.md).
