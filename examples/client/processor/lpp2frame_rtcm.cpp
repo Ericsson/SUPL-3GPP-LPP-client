@@ -35,19 +35,17 @@ void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message, uint64
             if (!should_output) continue;
 
             if (!output.accept_tag(tag)) {
-                XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
                 continue;
             }
 
-            if (output.print) {
-                if (output_lfr) {
-                    XINFOF(OUTPUT_PRINT_MODULE, "lfr : %04d (%zd bytes)", submessage.id(),
-                           sub_size);
-                }
-                if (output_rtcm) {
-                    XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(),
-                           sub_size);
-                }
+            if (output_lfr) {
+                XDEBUGF(OUTPUT_PRINT_MODULE, "lfr : %04d (%zd bytes) tag=%llX", submessage.id(),
+                        sub_size, tag);
+            }
+            if (output_rtcm) {
+                XDEBUGF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", submessage.id(),
+                        sub_size, tag);
             }
 
             ASSERT(output.stage, "stage is null");

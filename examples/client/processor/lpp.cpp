@@ -21,12 +21,10 @@ void LppXerOutput::inspect(streamline::System&, DataType const& message, uint64_
     for (auto const& output : mOutput.outputs) {
         if (!output.lpp_xer_support()) continue;
         if (!output.accept_tag(tag)) {
-            XDEBUGF(OUTPUT_PRINT_MODULE, "lpp-xer: tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "lpp-xer: tag %llX not accepted", tag);
             continue;
         }
-        if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "lpp-xer: %zd bytes", size);
-        }
+        XDEBUGF(OUTPUT_PRINT_MODULE, "lpp-xer: (%zd bytes) tag=%llX", size, tag);
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_LPP_XER, data, size);
     }
@@ -43,12 +41,10 @@ void LppUperOutput::inspect(streamline::System&, DataType const& message, uint64
     for (auto const& output : mOutput.outputs) {
         if (!output.lpp_uper_support()) continue;
         if (!output.accept_tag(tag)) {
-            XDEBUGF(OUTPUT_PRINT_MODULE, "lpp-uper: tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "lpp-uper: tag %llX not accepted", tag);
             continue;
         }
-        if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "lpp-uper: %zd bytes", size);
-        }
+        XDEBUGF(OUTPUT_PRINT_MODULE, "lpp-uper: (%zd bytes) tag=%llX", size, tag);
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_LPP_UPER, data, size);
     }

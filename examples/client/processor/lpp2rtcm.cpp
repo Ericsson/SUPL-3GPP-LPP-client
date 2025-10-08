@@ -45,12 +45,11 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t ta
         for (auto const& output : mOutput.outputs) {
             if (!output.rtcm_support()) continue;
             if (!output.accept_tag(tag)) {
-                XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
                 continue;
             }
-            if (output.print) {
-                XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes)", submessage.id(), size);
-            }
+            XDEBUGF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", submessage.id(), size,
+                    tag);
 
             ASSERT(output.stage, "stage is null");
             output.stage->write(OUTPUT_FORMAT_RTCM, buffer, size);

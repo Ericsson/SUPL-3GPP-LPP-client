@@ -25,12 +25,11 @@ void UbxOutput::inspect(streamline::System&, DataType const& message, uint64_t t
     for (auto& output : mOutput.outputs) {
         if (!output.ubx_support()) continue;
         if (!output.accept_tag(tag)) {
-            XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
-        if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "ubx: %zd bytes", data.size());
-        }
+        XDEBUGF(OUTPUT_PRINT_MODULE, "ubx: %02X-%02X (%zd bytes) tag=%llX", message->msg_class(),
+                message->msg_id(), data.size(), tag);
 
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_UBX, data.data(), data.size());

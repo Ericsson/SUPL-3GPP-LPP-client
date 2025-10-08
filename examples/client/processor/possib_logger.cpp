@@ -91,12 +91,10 @@ void PossibOutput::inspect(streamline::System&, DataType const& message, uint64_
     for (auto const& output : mOutput.outputs) {
         if (!output.possib_support()) continue;
         if (!output.accept_tag(tag)) {
-            XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
-        if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "possib: %zd bytes", size);
-        }
+        XDEBUGF(OUTPUT_PRINT_MODULE, "possib: (%zd bytes) tag=%llX", size, tag);
 
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_POSSIB, data, size);

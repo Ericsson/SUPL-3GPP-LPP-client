@@ -53,7 +53,6 @@ struct OutputInterface {
     OutputFormat                 format;
     std::unique_ptr<io::Output>  initial_interface;
     std::unique_ptr<OutputStage> stage;
-    bool                         print;
     std::vector<std::string>     include_tags;
     std::vector<std::string>     exclude_tags;
     std::vector<std::string>     stages;
@@ -62,14 +61,13 @@ struct OutputInterface {
     uint64_t exclude_tag_mask;
 
     static OutputInterface create(OutputFormat format, std::unique_ptr<io::Output> interface,
-                                  bool print, std::vector<std::string> include_tags,
+                                  std::vector<std::string> include_tags,
                                   std::vector<std::string> exclude_tags,
                                   std::vector<std::string> stages) {
         return {
             format,
             std::move(interface),
             nullptr,
-            print,
             std::move(include_tags),
             std::move(exclude_tags),
             std::move(stages),

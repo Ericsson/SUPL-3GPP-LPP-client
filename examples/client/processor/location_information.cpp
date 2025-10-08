@@ -79,12 +79,10 @@ void LocationOutput::inspect(streamline::System&, DataType const& location, uint
     for (auto const& output : mOutput.outputs) {
         if (!output.location_support()) continue;
         if (!output.accept_tag(tag)) {
-            XDEBUGF(OUTPUT_PRINT_MODULE, "location: tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "location: tag %llX not accepted", tag);
             continue;
         }
-        if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "location: %zd bytes", size);
-        }
+        XDEBUGF(OUTPUT_PRINT_MODULE, "location: (%zd bytes) tag=%llX", size, tag);
 
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_LOCATION, data, size);

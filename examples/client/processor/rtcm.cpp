@@ -27,13 +27,11 @@ void RtcmOutput::inspect(streamline::System&, DataType const& message, uint64_t 
     for (auto& output : mOutput.outputs) {
         if (!output.rtcm_support()) continue;
         if (!output.accept_tag(tag)) {
-            XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
-        if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", message->type(), size,
-                   tag);
-        }
+        XDEBUGF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", message->type(), size,
+                tag);
 
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_RTCM, data.data(), size);

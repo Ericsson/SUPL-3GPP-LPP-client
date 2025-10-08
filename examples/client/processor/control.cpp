@@ -25,12 +25,10 @@ void CtrlOutput::inspect(streamline::System&, DataType const& message, uint64_t 
     for (auto const& output : mConfig.outputs) {
         if (!output.ctrl_support()) continue;
         if (!output.accept_tag(tag)) {
-            XDEBUGF(OUTPUT_PRINT_MODULE, "ctrl: tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "ctrl: tag %llX not accepted", tag);
             continue;
         }
-        if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "ctrl: %zd bytes", size);
-        }
+        XDEBUGF(OUTPUT_PRINT_MODULE, "ctrl: (%zd bytes) tag=%llX", size, tag);
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_CTRL, data, size);
     }

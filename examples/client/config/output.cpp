@@ -455,7 +455,6 @@ static OutputInterface parse_interface(std::string const& source) {
     auto itags  = parse_itags_from_options(options);
     auto otags  = parse_otags_from_options(options);
     auto stages = parse_stages_from_options(options);
-    auto print  = parse_bool_option(options, parts[0], "print", false);
 
     std::unique_ptr<io::Output> output{};
     if (parts[0] == "stdout") output = parse_stdout(options);
@@ -467,7 +466,7 @@ static OutputInterface parse_interface(std::string const& source) {
     if (parts[0] == "chunked-log") output = parse_chunked_log(options);
 
     if (output) {
-        return OutputInterface::create(format, std::move(output), print, std::move(itags),
+        return OutputInterface::create(format, std::move(output), std::move(itags),
                                        std::move(otags), std::move(stages));
     }
 
@@ -475,20 +474,11 @@ static OutputInterface parse_interface(std::string const& source) {
 }
 
 static void parse(Config* config) {
-    auto print_everything = false;
-    if (gPrintEverything) {
-        print_everything = true;
-    }
-
     for (auto const& output : gArgs.Get()) {
         config->output.outputs.push_back(parse_interface(output));
     }
 
     for (auto& output : config->output.outputs) {
-        if (print_everything) {
-            output.print = true;
-        }
-
         for (auto const& itag : output.include_tags) {
             config->register_tag(itag);
         }
