@@ -1,8 +1,8 @@
 #include "gga.hpp"
 #include "helper.hpp"
 
-#include <time/utc.hpp>
 #include <loglet/loglet.hpp>
+#include <time/utc.hpp>
 
 LOGLET_MODULE3(format, nmea, gga);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, nmea, gga)
@@ -105,9 +105,7 @@ static bool parse_fix_quality(std::string const& fix_quality, GgaFixQuality& qua
         case 4: quality = GgaFixQuality::RtkFixed; break;
         case 5: quality = GgaFixQuality::RtkFloat; break;
         case 6: quality = GgaFixQuality::DeadReckoning; break;
-        default:
-            VERBOSEF("invalid fix quality value: %d", value);
-            return false;
+        default: VERBOSEF("invalid fix quality value: %d", value); return false;
         }
 
         VERBOSEF("fix quality: %d", value);

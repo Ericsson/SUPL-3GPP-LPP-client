@@ -110,11 +110,7 @@ struct PrintInterface {
     static PrintInterface create(OutputFormat format, std::vector<std::string> include_tags,
                                  std::vector<std::string> exclude_tags) {
         return {
-            format,
-            std::move(include_tags),
-            std::move(exclude_tags),
-            0,
-            0,
+            format, std::move(include_tags), std::move(exclude_tags), 0, 0,
         };
     }
 
@@ -122,7 +118,9 @@ struct PrintInterface {
     inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
     inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
     inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
-    inline bool lpp_support() const { return (format & OUTPUT_FORMAT_LPP_XER) != 0 || (format & OUTPUT_FORMAT_LPP_UPER) != 0; }
+    inline bool lpp_support() const {
+        return (format & OUTPUT_FORMAT_LPP_XER) != 0 || (format & OUTPUT_FORMAT_LPP_UPER) != 0;
+    }
 
     inline bool accept_tag(uint64_t tag) const {
         return tag == 0 ||

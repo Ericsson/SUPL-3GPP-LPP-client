@@ -28,8 +28,8 @@ void UbxOutput::inspect(streamline::System&, DataType const& message, uint64_t t
             XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
-        XDEBUGF(OUTPUT_PRINT_MODULE, "ubx: %02X-%02X (%zd bytes) tag=%llX", message->message_class(),
-                message->message_id(), data.size(), tag);
+        XDEBUGF(OUTPUT_PRINT_MODULE, "ubx: %02X-%02X (%zd bytes) tag=%llX",
+                message->message_class(), message->message_id(), data.size(), tag);
 
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_UBX, data.data(), data.size());

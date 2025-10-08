@@ -23,7 +23,7 @@ public:
     NODISCARD virtual char const* name() const NOEXCEPT override;
 
     NODISCARD std::unique_ptr<Message> try_parse() NOEXCEPT;
-    NODISCARD ChecksumResult checksum(std::string const& buffer) const;
+    NODISCARD ChecksumResult           checksum(std::string const& buffer) const;
 
 protected:
     NODISCARD std::string parse_prefix(uint8_t const* data, uint32_t length) const NOEXCEPT;

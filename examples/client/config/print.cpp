@@ -128,8 +128,8 @@ static void dump(PrintConfig const& config) {
                (print.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (print.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (print.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
-               (print.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
-               itag_str.c_str(), print.include_tag_mask, xtag_str.c_str(), print.exclude_tag_mask);
+               (print.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "", itag_str.c_str(),
+               print.include_tag_mask, xtag_str.c_str(), print.exclude_tag_mask);
     }
 }
 

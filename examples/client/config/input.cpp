@@ -426,11 +426,11 @@ static InputInterface parse_interface(std::string const& source) {
         throw args::ValidationError("--input: invalid input, got `" + source + "`");
     }
 
-    auto format        = parse_format_list_from_options(options);
-    auto tags          = parse_tags_from_options(options);
-    auto stages        = parse_stages_from_options(options);
-    auto print         = parse_bool_option(options, parts[0], "print", false);
-    auto nmea_lf_only  = parse_bool_option(options, parts[0], "nmea_lf_only", false);
+    auto format       = parse_format_list_from_options(options);
+    auto tags         = parse_tags_from_options(options);
+    auto stages       = parse_stages_from_options(options);
+    auto print        = parse_bool_option(options, parts[0], "print", false);
+    auto nmea_lf_only = parse_bool_option(options, parts[0], "nmea_lf_only", false);
 
     std::unique_ptr<io::Input> input;
     if (parts[0] == "stdin") input = parse_input_stdin(options);

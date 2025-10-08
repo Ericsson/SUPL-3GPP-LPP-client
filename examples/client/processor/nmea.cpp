@@ -57,7 +57,8 @@ lpp::VelocityShape NmeaLocation::vtg_to_velocity(VtgMessage const& vtg) const {
 
 lpp::HorizontalAccuracy NmeaLocation::horizontal_accuracy(double semi_major, double semi_minor,
                                                           double orientation) const {
-    FUNCTION_SCOPEF("semi_major: %.2f, semi_minor: %.2f, orientation: %.2f", semi_major, semi_minor, orientation);
+    FUNCTION_SCOPEF("semi_major: %.2f, semi_minor: %.2f, orientation: %.2f", semi_major, semi_minor,
+                    orientation);
     if (mConfig.convert_confidence_95_to_68) {
         VERBOSEF("converting 95%% to 68%% confidence");
         semi_major = semi_major / 2.4477;
@@ -83,13 +84,15 @@ lpp::HorizontalAccuracy NmeaLocation::horizontal_accuracy(double semi_major, dou
 
 lpp::HorizontalAccuracy NmeaLocation::epe_to_horizontal(EpeMessage const& epe) const {
     FUNCTION_SCOPE();
-    VERBOSEF("EPE: semi_major=%.2f, semi_minor=%.2f, orientation=%.2f", epe.semi_major(), epe.semi_minor(), epe.orientation());
+    VERBOSEF("EPE: semi_major=%.2f, semi_minor=%.2f, orientation=%.2f", epe.semi_major(),
+             epe.semi_minor(), epe.orientation());
     return horizontal_accuracy(epe.semi_major(), epe.semi_minor(), epe.orientation());
 }
 
 lpp::HorizontalAccuracy NmeaLocation::gst_to_horizontal(GstMessage const& gst) const {
     FUNCTION_SCOPE();
-    VERBOSEF("GST: semi_major=%.2f, semi_minor=%.2f, orientation=%.2f", gst.semi_major(), gst.semi_minor(), gst.orientation());
+    VERBOSEF("GST: semi_major=%.2f, semi_minor=%.2f, orientation=%.2f", gst.semi_major(),
+             gst.semi_minor(), gst.orientation());
     return horizontal_accuracy(gst.semi_major(), gst.semi_minor(), gst.orientation());
 }
 
@@ -206,7 +209,8 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
                            lpp::VelocityShape velocity, lpp::HorizontalAccuracy horizontal,
                            lpp::VerticalAccuracy vertical) {
     VSCOPE_FUNCTION();
-    VERBOSEF("position: lat=%.8f, lon=%.8f, alt=%.2f", gga.latitude(), gga.longitude(), gga.altitude());
+    VERBOSEF("position: lat=%.8f, lon=%.8f, alt=%.2f", gga.latitude(), gga.longitude(),
+             gga.altitude());
     VERBOSEF("satellites: %d, hdop: %.2f", gga.satellites_in_view(), gga.h_dop());
 
     lpp::LocationInformation location{};
@@ -245,9 +249,8 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
         break;
     }
     auto hdop_val = metrics.hdop.value_or(0.0);
-    auto age_val = metrics.age_of_corrections.value_or(0.0);
-    TRACEF("pushing GNSS metrics: fix=%d, sats=%d, hdop=%.2f, age=%.2f", 
-           static_cast<int>(metrics.fix_quality), metrics.number_of_satellites, 
-           hdop_val, age_val);
+    auto age_val  = metrics.age_of_corrections.value_or(0.0);
+    TRACEF("pushing GNSS metrics: fix=%d, sats=%d, hdop=%.2f, age=%.2f",
+           static_cast<int>(metrics.fix_quality), metrics.number_of_satellites, hdop_val, age_val);
     system.push(std::move(metrics));
 }

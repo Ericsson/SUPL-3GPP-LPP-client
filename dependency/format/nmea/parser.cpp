@@ -38,9 +38,9 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         skip(1u);
     }
 
-    auto length = 1u;
+    auto length             = 1u;
     auto line_ending_length = mLfOnly ? 1u : 2u;
-    
+
     for (;;) {
         if (buffer_length() < length + line_ending_length) {
             VERBOSEF("not enough data to search for line ending");

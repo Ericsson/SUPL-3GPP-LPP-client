@@ -30,8 +30,7 @@ void RtcmOutput::inspect(streamline::System&, DataType const& message, uint64_t 
             XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
             continue;
         }
-        XDEBUGF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", message->type(), size,
-                tag);
+        XDEBUGF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", message->type(), size, tag);
 
         ASSERT(output.stage, "stage is null");
         output.stage->write(OUTPUT_FORMAT_RTCM, data.data(), size);

@@ -371,7 +371,8 @@ static void initialize_inputs(Program& program, InputConfig& config) {
         format::lpp::UperParser* lpp_uper{};
         format::lpp::UperParser* lpp_uper_pad{};
 
-        if ((input.format & INPUT_FORMAT_NMEA) != 0) nmea = new format::nmea::Parser{input.nmea_lf_only};
+        if ((input.format & INPUT_FORMAT_NMEA) != 0)
+            nmea = new format::nmea::Parser{input.nmea_lf_only};
         if ((input.format & INPUT_FORMAT_RTCM) != 0) rtcm = new format::rtcm::Parser{};
         if ((input.format & INPUT_FORMAT_UBX) != 0) ubx = new format::ubx::Parser{};
         if ((input.format & INPUT_FORMAT_CTRL) != 0) ctrl = new format::ctrl::Parser{};
