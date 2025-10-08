@@ -28,10 +28,8 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
-    if (!mFdTask->set_fd(STDIN_FILENO)) {
-        ERRORF("failed to set stdin fd");
-        return false;
-    }
+    // Return value indicates rescheduling need, not failure - safe to ignore for new task
+    (void)mFdTask->set_fd(STDIN_FILENO);
     mFdTask->on_read = [this](int) {
         auto result = ::read(STDIN_FILENO, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", STDIN_FILENO, mBuffer, sizeof(mBuffer), result);
