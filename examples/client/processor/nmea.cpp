@@ -44,17 +44,21 @@ NmeaLocation::NmeaLocation(LocationInformationConfig const& config)
 NmeaLocation::~NmeaLocation() = default;
 
 lpp::VelocityShape NmeaLocation::vtg_to_velocity(VtgMessage const& vtg) const {
-    return lpp::VelocityShape::horizontal(vtg.speed_over_ground(), vtg.true_course_over_ground());
+    FUNCTION_SCOPE();
+    auto speed  = vtg.speed_over_ground();
+    auto course = vtg.true_course_over_ground();
+    VERBOSEF("speed: %.2f m/s, course: %.2f deg", speed, course);
+    return lpp::VelocityShape::horizontal(speed, course);
 }
 
 lpp::HorizontalAccuracy NmeaLocation::horizontal_accuracy(double semi_major, double semi_minor,
                                                           double orientation) const {
+    FUNCTION_SCOPEF("semi_major: %.2f, semi_minor: %.2f, orientation: %.2f", semi_major, semi_minor, orientation);
     if (mConfig.convert_confidence_95_to_68) {
-        // 95% confidence to 68% confidence
-        // TODO(ewasjon): should this not be 1.95996 (sqrt(3.84)) from 1-degree chi-squared
-        // distribution?
+        VERBOSEF("converting 95%% to 68%% confidence");
         semi_major = semi_major / 2.4477;
         semi_minor = semi_minor / 2.4477;
+        VERBOSEF("adjusted: semi_major: %.2f, semi_minor: %.2f", semi_major, semi_minor);
     }
 
     auto horizontal_accuracy =
@@ -65,26 +69,38 @@ lpp::HorizontalAccuracy NmeaLocation::horizontal_accuracy(double semi_major, dou
     }
     if (mConfig.override_horizontal_confidence >= 0.0 &&
         mConfig.override_horizontal_confidence <= 1.0) {
+        VERBOSEF("overriding confidence: %.2f", mConfig.override_horizontal_confidence);
         horizontal_accuracy.confidence = mConfig.override_horizontal_confidence;
     }
 
+    TRACEF("horizontal accuracy: confidence=%.2f", horizontal_accuracy.confidence);
     return horizontal_accuracy;
 }
 
 lpp::HorizontalAccuracy NmeaLocation::epe_to_horizontal(EpeMessage const& epe) const {
+    FUNCTION_SCOPE();
+    VERBOSEF("EPE: semi_major=%.2f, semi_minor=%.2f, orientation=%.2f", epe.semi_major(), epe.semi_minor(), epe.orientation());
     return horizontal_accuracy(epe.semi_major(), epe.semi_minor(), epe.orientation());
 }
 
 lpp::HorizontalAccuracy NmeaLocation::gst_to_horizontal(GstMessage const& gst) const {
+    FUNCTION_SCOPE();
+    VERBOSEF("GST: semi_major=%.2f, semi_minor=%.2f, orientation=%.2f", gst.semi_major(), gst.semi_minor(), gst.orientation());
     return horizontal_accuracy(gst.semi_major(), gst.semi_minor(), gst.orientation());
 }
 
 lpp::VerticalAccuracy NmeaLocation::gst_to_vertical(GstMessage const& gst) const {
-    return lpp::VerticalAccuracy::from_1sigma(gst.vertical_position_error());
+    FUNCTION_SCOPE();
+    auto error = gst.vertical_position_error();
+    VERBOSEF("vertical error: %.2f m", error);
+    return lpp::VerticalAccuracy::from_1sigma(error);
 }
 
 lpp::VerticalAccuracy NmeaLocation::epe_to_vertical(EpeMessage const& epe) const {
-    return lpp::VerticalAccuracy::from_1sigma(epe.vertical_position_error());
+    FUNCTION_SCOPE();
+    auto error = epe.vertical_position_error();
+    VERBOSEF("vertical error: %.2f m", error);
+    return lpp::VerticalAccuracy::from_1sigma(error);
 }
 
 void NmeaLocation::consume(streamline::System& system, DataType&& message, uint64_t) NOEXCEPT {
@@ -93,6 +109,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
     auto received_new_message = false;
     auto gga                  = dynamic_cast<GgaMessage*>(message.get());
     if (gga) {
+        TRACEF("received GGA message");
         mGga.reset(gga);
         message.release();
         received_new_message = true;
@@ -100,6 +117,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
 
     auto vtg = dynamic_cast<VtgMessage*>(message.get());
     if (vtg) {
+        TRACEF("received VTG message");
         mVtg.reset(vtg);
         message.release();
         received_new_message = true;
@@ -107,6 +125,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
 
     auto gst = dynamic_cast<GstMessage*>(message.get());
     if (gst) {
+        TRACEF("received GST message");
         mGst.reset(gst);
         message.release();
         received_new_message = true;
@@ -114,29 +133,37 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
 
     auto epe = dynamic_cast<EpeMessage*>(message.get());
     if (epe) {
+        TRACEF("received EPE message");
         mEpe.reset(epe);
         message.release();
         received_new_message = true;
     }
 
     if (!received_new_message) {
+        VERBOSEF("unknown message type, ignoring");
         return;
     }
 
     if (!mGga) {
-        DEBUGF("nmea location require gga");
+        VERBOSEF("nmea location require gga");
         return;
     }
+
+    VERBOSEF("GGA fix quality: %d", static_cast<int>(mGga->fix_quality()));
 
     auto semi_major = 5.0;
     auto semi_minor = 5.0;
 
     if (mGga->fix_quality() == GgaFixQuality::RtkFixed) {
+        VERBOSEF("RTK fixed, using 0.05m accuracy");
         semi_major = 0.05;
         semi_minor = 0.05;
     } else if (mGga->fix_quality() == GgaFixQuality::RtkFloat) {
+        VERBOSEF("RTK float, using 0.5m accuracy");
         semi_major = 0.5;
         semi_minor = 0.5;
+    } else {
+        VERBOSEF("default accuracy: 5.0m");
     }
 
     auto velocity   = lpp::VelocityShape::horizontal(0.0, 0.0);
@@ -144,21 +171,28 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
     auto vertical   = lpp::VerticalAccuracy::from_1sigma(1.0);
 
     if (mGst) {
+        VERBOSEF("using GST for accuracy");
         horizontal = gst_to_horizontal(*mGst.get());
         vertical   = gst_to_vertical(*mGst.get());
     } else if (mEpe) {
+        VERBOSEF("using EPE for accuracy");
         horizontal = epe_to_horizontal(*mEpe.get());
         vertical   = epe_to_vertical(*mEpe.get());
     } else if (mConfig.nmea_require_gst) {
-        DEBUGF("nmea location require gst/epe");
+        VERBOSEF("nmea location require gst/epe");
         return;
+    } else {
+        VERBOSEF("using default accuracy values");
     }
 
     if (mVtg) {
+        VERBOSEF("using VTG for velocity");
         velocity = vtg_to_velocity(*mVtg.get());
     } else if (mConfig.nmea_require_vtg) {
-        DEBUGF("nmea location require vtg");
+        VERBOSEF("nmea location require vtg");
         return;
+    } else {
+        VERBOSEF("using default velocity (0.0 m/s)");
     }
 
     process(system, *mGga.get(), velocity, horizontal, vertical);
@@ -168,11 +202,15 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
                            lpp::VelocityShape velocity, lpp::HorizontalAccuracy horizontal,
                            lpp::VerticalAccuracy vertical) {
     VSCOPE_FUNCTION();
+    VERBOSEF("position: lat=%.8f, lon=%.8f, alt=%.2f", gga.latitude(), gga.longitude(), gga.altitude());
+    VERBOSEF("satellites: %d, hdop: %.2f", gga.satellites_in_view(), gga.h_dop());
+
     lpp::LocationInformation location{};
     location.time     = gga.time_of_day();
     location.location = lpp::LocationShape::ha_ellipsoid_altitude_with_uncertainty(
         gga.latitude(), gga.longitude(), gga.altitude(), horizontal, vertical);
     location.velocity = velocity;
+    TRACEF("pushing location information");
     system.push(std ::move(location));
 
     lpp::HaGnssMetrics metrics{};
@@ -202,5 +240,8 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
         metrics.fix_quality = lpp::FixQuality::DEAD_RECKONING;
         break;
     }
+    TRACEF("pushing GNSS metrics: fix=%d, sats=%d, hdop=%.2f, age=%.2f", 
+           static_cast<int>(metrics.fix_quality), metrics.number_of_satellites, 
+           metrics.hdop, metrics.age_of_corrections);
     system.push(std::move(metrics));
 }
