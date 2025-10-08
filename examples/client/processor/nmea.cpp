@@ -30,7 +30,7 @@ void NmeaOutput::inspect(streamline::System&, DataType const& message, uint64_t 
             continue;
         }
         if (output.print) {
-            XINFOF(OUTPUT_PRINT_MODULE, "nmea: %zd bytes", size);
+            INFOF("nmea: %zd bytes", size);
         }
 
         ASSERT(output.stage, "stage is null");
@@ -104,12 +104,12 @@ lpp::VerticalAccuracy NmeaLocation::epe_to_vertical(EpeMessage const& epe) const
 }
 
 void NmeaLocation::consume(streamline::System& system, DataType&& message, uint64_t) NOEXCEPT {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPEF("%s", message->prefix().c_str());
 
     auto received_new_message = false;
     auto gga                  = dynamic_cast<GgaMessage*>(message.get());
     if (gga) {
-        TRACEF("received GGA message");
+        TRACEF("received GGA message: %p -> %p", mGga.get(), gga);
         mGga.reset(gga);
         message.release();
         received_new_message = true;
@@ -117,7 +117,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
 
     auto vtg = dynamic_cast<VtgMessage*>(message.get());
     if (vtg) {
-        TRACEF("received VTG message");
+        TRACEF("received VTG message: %p -> %p", mVtg.get(), vtg);
         mVtg.reset(vtg);
         message.release();
         received_new_message = true;
@@ -125,7 +125,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
 
     auto gst = dynamic_cast<GstMessage*>(message.get());
     if (gst) {
-        TRACEF("received GST message");
+        TRACEF("received GST message: %p -> %p", mGst.get(), gst);
         mGst.reset(gst);
         message.release();
         received_new_message = true;
@@ -133,14 +133,14 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
 
     auto epe = dynamic_cast<EpeMessage*>(message.get());
     if (epe) {
-        TRACEF("received EPE message");
+        TRACEF("received EPE message: %p -> %p", mEpe.get(), epe);
         mEpe.reset(epe);
         message.release();
         received_new_message = true;
     }
 
     if (!received_new_message) {
-        VERBOSEF("unknown message type, ignoring");
+        VERBOSEF("unknown message type (%s), ignoring", message->prefix().c_str());
         return;
     }
 
