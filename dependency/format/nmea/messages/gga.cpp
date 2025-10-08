@@ -214,12 +214,16 @@ std::unique_ptr<Message> GgaMessage::parse(std::string prefix, std::string const
     FUNCTION_SCOPEF("%s,%s*%s", prefix.c_str(), payload.c_str(), checksum.c_str());
     auto tokens = split(payload, ',');
 
-    if (tokens.size() < 13) {
-        VERBOSEF("invalid token count: %zu (expected >= 13)", tokens.size());
+    if (tokens.size() < 12) {
+        VERBOSEF("invalid token count: %zu (expected >= 12)", tokens.size());
         return nullptr;
     }
 
-    VERBOSEF("token count: %zu", tokens.size());
+    if (tokens.size() == 12) {
+        VERBOSEF("token count: %zu (age of differential corrections missing)", tokens.size());
+    } else {
+        VERBOSEF("token count: %zu", tokens.size());
+    }
 
     // parse
     auto message = new GgaMessage(prefix, payload, checksum);
