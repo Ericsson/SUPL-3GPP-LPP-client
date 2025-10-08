@@ -202,10 +202,10 @@ static void parse(Config* config) {
 
     if (gWaitForCell) {
         ad.wait_for_cell = true;
-    } else {
+    } else if(ad.enabled || config->location_server.enabled) {
         if (!gMcc || !gMnc || !gTac || !gCi) {
             throw args::RequiredError(
-                "cell information is required, use `--mcc`, `--mnc`, `--tac`, `--ci`");
+                "cell information is required (for location server), use `--mcc`, `--mnc`, `--tac`, `--ci`");
         }
 
         if (gIsNr && gIsGsm) {
