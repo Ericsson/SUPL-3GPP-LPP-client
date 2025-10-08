@@ -25,12 +25,10 @@ void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, 
         for (auto& out : output.outputs) {
             if (!out.test_support()) continue;
             if (!out.accept_tag(tag)) {
-                XDEBUGF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
                 continue;
             }
-            if (out.print) {
-                XINFOF(OUTPUT_PRINT_MODULE, "test: %zd bytes", sizeof(data));
-            }
+            XDEBUGF(OUTPUT_PRINT_MODULE, "test: (%zd bytes) tag=%llX", sizeof(data), tag);
 
             ASSERT(out.stage, "stage is null");
             out.stage->write(OUTPUT_FORMAT_TEST, data, sizeof(data));
