@@ -9,7 +9,7 @@ namespace ubx {
 class Message {
 public:
     EXPLICIT Message(uint8_t message_class, uint8_t message_id, std::vector<uint8_t> data) NOEXCEPT;
-    virtual ~Message() NOEXCEPT;
+    virtual ~Message();
 
     Message(Message const& other) : mClass(other.mClass), mId(other.mId) {}
     Message(Message&&)                 = delete;

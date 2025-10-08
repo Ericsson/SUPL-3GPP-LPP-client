@@ -9,7 +9,7 @@ namespace io {
 class Output {
 public:
     EXPLICIT Output() NOEXCEPT;
-    virtual ~Output() NOEXCEPT;
+    virtual ~Output();
 
     virtual char const* name() const NOEXCEPT = 0;
 

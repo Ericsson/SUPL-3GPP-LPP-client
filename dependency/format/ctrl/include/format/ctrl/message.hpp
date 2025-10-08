@@ -10,7 +10,7 @@ namespace ctrl {
 class Message {
 public:
     EXPLICIT Message(std::string payload) NOEXCEPT;
-    virtual ~Message() NOEXCEPT;
+    virtual ~Message();
 
     Message(Message const& other) : mPayload(other.mPayload) {}
     Message(Message&&)                 = delete;

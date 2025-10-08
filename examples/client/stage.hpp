@@ -9,7 +9,7 @@
 class OutputStage {
 public:
     EXPLICIT OutputStage() NOEXCEPT;
-    virtual ~OutputStage() NOEXCEPT;
+    virtual ~OutputStage();
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler) NOEXCEPT;
     NODISCARD bool cancel() NOEXCEPT;
@@ -27,7 +27,7 @@ private:
 class InputStage {
 public:
     EXPLICIT InputStage() NOEXCEPT;
-    virtual ~InputStage() NOEXCEPT;
+    virtual ~InputStage();
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler) NOEXCEPT;
     NODISCARD bool cancel() NOEXCEPT;

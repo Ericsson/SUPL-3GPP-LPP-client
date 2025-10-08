@@ -8,7 +8,7 @@ class CellId : public Message {
 public:
     CellId(std::string message, uint32_t mcc, uint32_t mnc, uint32_t tac, uint64_t cell,
            bool is_nr) NOEXCEPT;
-    ~CellId() NOEXCEPT override;
+    ~CellId() override;
 
     CellId(CellId const& other)
         : Message(other), mMcc(other.mMcc), mMnc(other.mMnc), mTac(other.mTac), mCell(other.mCell),

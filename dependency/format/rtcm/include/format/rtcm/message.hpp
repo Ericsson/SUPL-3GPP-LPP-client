@@ -12,7 +12,7 @@ namespace rtcm {
 class Message {
 public:
     EXPLICIT Message(DF002 type, std::vector<uint8_t> data) NOEXCEPT;
-    virtual ~Message() NOEXCEPT;
+    virtual ~Message();
 
     Message(Message const& other) : mData{other.mData} {}
     Message(Message&&)                 = delete;

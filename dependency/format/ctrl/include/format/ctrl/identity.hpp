@@ -7,7 +7,7 @@ namespace ctrl {
 class IdentityImsi : public Message {
 public:
     IdentityImsi(std::string message, uint64_t imsi) NOEXCEPT;
-    ~IdentityImsi() NOEXCEPT override;
+    ~IdentityImsi() override;
 
     IdentityImsi(IdentityImsi const& other) : Message(other), mImsi(other.mImsi) {}
     IdentityImsi(IdentityImsi&&)                 = delete;

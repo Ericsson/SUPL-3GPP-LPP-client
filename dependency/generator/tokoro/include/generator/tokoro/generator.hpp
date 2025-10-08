@@ -46,7 +46,7 @@ class Generator;
 class ReferenceStation {
 public:
     ReferenceStation(Generator& generator, ReferenceStationConfig const& config) NOEXCEPT;
-    ~ReferenceStation() NOEXCEPT;
+    ~ReferenceStation();
 
     // Generate a new set of observations.
     bool generate(ts::Tai const& reception_time) NOEXCEPT;
@@ -136,7 +136,7 @@ private:
 class Generator {
 public:
     Generator() NOEXCEPT;
-    ~Generator() NOEXCEPT;
+    ~Generator();
 
     bool process_lpp(LPP_Message const& lpp_message) NOEXCEPT;
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;

@@ -12,7 +12,7 @@ namespace io {
 class Input {
 public:
     EXPLICIT Input() NOEXCEPT;
-    virtual ~Input() NOEXCEPT;
+    virtual ~Input();
 
     NODISCARD bool schedule(scheduler::Scheduler& scheduler) NOEXCEPT;
     bool           cancel() NOEXCEPT;

@@ -11,7 +11,7 @@ namespace nmea {
 class Message {
 public:
     EXPLICIT Message(std::string prefix, std::string payload, std::string checksum) NOEXCEPT;
-    virtual ~Message() NOEXCEPT;
+    virtual ~Message();
 
     Message(Message const& other)
         : mPrefix(other.mPrefix), mPayload(other.mPayload), mChecksum(other.mChecksum) {}
