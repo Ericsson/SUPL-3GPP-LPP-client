@@ -4,7 +4,7 @@
 #include <cxx11_compat.hpp>
 #include <datafields.hpp>
 #include <helper.hpp>
-#include <iostream>
+#include <stdio.h>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE3(format, rtcm, rtcm1019);
@@ -17,11 +17,37 @@ Rtcm1019::Rtcm1019(DF002 type, std::vector<uint8_t> data) NOEXCEPT
     : Message{type, std::move(data)} {}
 
 void Rtcm1019::print() const NOEXCEPT {
-    std::cout << "RTCM 1019 message\n"
-              << prn << week << SV_ACCURACY << code_on_l2 << idot << iode << t_oc << a_f2 << a_f1
-              << a_f0 << iodc << C_rs << delta_n << M_0 << C_uc << e << C_us << sqrt_A << t_oe
-              << C_ic << OMEGA_0 << C_is << i_0 << C_rc << omega << OMEGADOT << t_GD << SV_HEALTH
-              << L2_P_data_flag << fit << std::endl;
+    printf("[RTCM1019]\n");
+    printf("  prn:         %u\n", static_cast<unsigned>(prn.value()));
+    printf("  week:        %u\n", static_cast<unsigned>(week.value()));
+    printf("  sv_accuracy: %u\n", static_cast<unsigned>(SV_ACCURACY.value()));
+    printf("  code_on_l2:  %u\n", static_cast<unsigned>(code_on_l2.value()));
+    printf("  idot:        %.12e\n", idot.value());
+    printf("  iode:        %u\n", static_cast<unsigned>(iode.value()));
+    printf("  t_oc:        %.6f\n", t_oc.value());
+    printf("  a_f2:        %.12e\n", a_f2.value());
+    printf("  a_f1:        %.12e\n", a_f1.value());
+    printf("  a_f0:        %.12e\n", a_f0.value());
+    printf("  iodc:        %u\n", static_cast<unsigned>(iodc.value()));
+    printf("  C_rs:        %.6f\n", C_rs.value());
+    printf("  delta_n:     %.12e\n", delta_n.value());
+    printf("  M_0:         %.12e\n", M_0.value());
+    printf("  C_uc:        %.12e\n", C_uc.value());
+    printf("  e:           %.12e\n", e.value());
+    printf("  C_us:        %.12e\n", C_us.value());
+    printf("  sqrt_A:      %.6f\n", sqrt_A.value());
+    printf("  t_oe:        %.6f\n", t_oe.value());
+    printf("  C_ic:        %.12e\n", C_ic.value());
+    printf("  OMEGA_0:     %.12e\n", OMEGA_0.value());
+    printf("  C_is:        %.12e\n", C_is.value());
+    printf("  i_0:         %.12e\n", i_0.value());
+    printf("  C_rc:        %.6f\n", C_rc.value());
+    printf("  omega:       %.12e\n", omega.value());
+    printf("  OMEGADOT:    %.12e\n", OMEGADOT.value());
+    printf("  t_GD:        %.12e\n", t_GD.value());
+    printf("  SV_HEALTH:   %u\n", static_cast<unsigned>(SV_HEALTH.value()));
+    printf("  L2_P_flag:   %s\n", L2_P_data_flag.value() ? "true" : "false");
+    printf("  fit:         %s\n", fit.value() ? "true" : "false");
 }
 
 std::unique_ptr<Message> Rtcm1019::clone() const NOEXCEPT {

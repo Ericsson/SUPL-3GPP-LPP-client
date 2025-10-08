@@ -72,7 +72,8 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         std::ostringstream oss;
         for (auto b : message)
             oss << std::hex << std::setw(2) << std::setfill('0') << b;
-        DEBUGF("crc failed: \"%s\"", oss.str().c_str());
+        auto crc_str = oss.str();
+        DEBUGF("crc failed: \"%s\"", crc_str.c_str());
         return nullptr;
     }
     skip(message_length);

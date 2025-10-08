@@ -4,6 +4,7 @@
 #include <cxx11_compat.hpp>
 #include <datafields.hpp>
 #include <helper.hpp>
+#include <stdio.h>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE3(format, rtcm, rtcm1046);
@@ -16,12 +17,38 @@ Rtcm1046::Rtcm1046(DF002 type, std::vector<uint8_t> data) NOEXCEPT
     : Message{type, std::move(data)} {}
 
 void Rtcm1046::print() const NOEXCEPT {
-    std::cout << "RTCM 1046 message\n"
-              << prn << week_number << iod_nav << sisa_index << idot << toc << af2 << af1 << af0
-              << crs << delta_n << m0 << cuc << e << cus << sqrt_a << toe << cic << omega0 << cis
-              << i0 << crc << omega << omega_dot << BGD_E5a_E1 << BGD_E5b_E1 << E5b_signal_health
-              << E5b_data_validity << E1_B_signal_health << E1_B_data_validity << reserved
-              << std::endl;
+    printf("[RTCM1046]\n");
+    printf("  prn:                %u\n", static_cast<unsigned>(prn.value()));
+    printf("  week_number:        %u\n", static_cast<unsigned>(week_number.value()));
+    printf("  iod_nav:            %u\n", static_cast<unsigned>(iod_nav.value()));
+    printf("  sisa_index:         %u\n", static_cast<unsigned>(sisa_index.value()));
+    printf("  idot:               %.12e\n", idot.value());
+    printf("  toc:                %.6f\n", toc.value());
+    printf("  af2:                %.12e\n", af2.value());
+    printf("  af1:                %.12e\n", af1.value());
+    printf("  af0:                %.12e\n", af0.value());
+    printf("  crs:                %.6f\n", crs.value());
+    printf("  delta_n:            %.12e\n", delta_n.value());
+    printf("  m0:                 %.12e\n", m0.value());
+    printf("  cuc:                %.12e\n", cuc.value());
+    printf("  e:                  %.12e\n", e.value());
+    printf("  cus:                %.12e\n", cus.value());
+    printf("  sqrt_a:             %.6f\n", sqrt_a.value());
+    printf("  toe:                %.6f\n", toe.value());
+    printf("  cic:                %.12e\n", cic.value());
+    printf("  omega0:             %.12e\n", omega0.value());
+    printf("  cis:                %.12e\n", cis.value());
+    printf("  i0:                 %.12e\n", i0.value());
+    printf("  crc:                %.6f\n", crc.value());
+    printf("  omega:              %.12e\n", omega.value());
+    printf("  omega_dot:          %.12e\n", omega_dot.value());
+    printf("  BGD_E5a_E1:         %.12e\n", BGD_E5a_E1.value());
+    printf("  BGD_E5b_E1:         %.12e\n", BGD_E5b_E1.value());
+    printf("  E5b_signal_health:  %u\n", static_cast<unsigned>(E5b_signal_health.value()));
+    printf("  E5b_data_validity:  %s\n", E5b_data_validity.value() ? "true" : "false");
+    printf("  E1_B_signal_health: %u\n", static_cast<unsigned>(E1_B_signal_health.value()));
+    printf("  E1_B_data_validity: %s\n", E1_B_data_validity.value() ? "true" : "false");
+    printf("  reserved:           %u\n", static_cast<unsigned>(reserved.value()));
 }
 
 std::unique_ptr<Message> Rtcm1046::clone() const NOEXCEPT {
