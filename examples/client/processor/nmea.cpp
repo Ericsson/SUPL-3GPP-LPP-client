@@ -240,7 +240,9 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
         metrics.fix_quality = lpp::FixQuality::DEAD_RECKONING;
         break;
     }
-    TRACEF("pushing GNSS metrics: fix=%d, sats=%d, hdop=%.2f, age=%.2f", 
+    auto hdop_val = metrics.hdop.value_or(0.0);
+    auto age_val = metrics.age_of_corrections.value_or(0.0);
+           hdop_val, age_val);
            static_cast<int>(metrics.fix_quality), metrics.number_of_satellites, 
            metrics.hdop, metrics.age_of_corrections);
     system.push(std::move(metrics));

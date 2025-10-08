@@ -30,6 +30,13 @@ struct Optional {
     bool     has_value() const { return valid; }
     T const& const_value() const { return value; }
 
+    T value_or(T const& default_value) const {
+        if (valid)
+            return value;
+        else
+            return default_value;
+    }
+
     static Optional<T> invalid() { return Optional<T>{T{}, false}; }
 };
 
