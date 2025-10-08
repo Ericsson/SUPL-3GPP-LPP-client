@@ -56,9 +56,6 @@ static args::ValueFlagList<std::string> gArgs{
     {"output"},
 };
 
-static args::Flag gPrintEverything{
-    gGroup, "print-everything", "Print everything", {"output-print-everything"}};
-
 static void setup() {}
 
 static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,
