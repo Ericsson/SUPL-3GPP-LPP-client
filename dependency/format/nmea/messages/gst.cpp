@@ -10,19 +10,25 @@ namespace format {
 namespace nmea {
 
 static bool parse_double(std::string const& token, double& value) {
+    FUNCTION_SCOPEF("'%s'", token.c_str());
     try {
         value = std::stod(token);
+        VERBOSEF("parsed: %.6f", value);
         return true;
     } catch (...) {
+        VERBOSEF("exception parsing double: '%s'", token.c_str());
         return false;
     }
 }
 
 static bool parse_double_opt(std::string const& token, double& value) {
+    FUNCTION_SCOPEF("'%s'", token.c_str());
     try {
         value = std::stod(token);
+        VERBOSEF("parsed: %.6f", value);
         return true;
     } catch (...) {
+        VERBOSEF("failed to parse, using default: '%s'", token.c_str());
         value = 0;
         return true;
     }
@@ -55,14 +61,15 @@ std::unique_ptr<Message> GstMessage::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> GstMessage::parse(std::string prefix, std::string const& payload,
                                            std::string checksum) {
-    // split payload by ','
+    FUNCTION_SCOPEF("%s,%s*%s", prefix.c_str(), payload.c_str(), checksum.c_str());
     auto tokens = split(payload, ',');
 
-    // check number of tokens
     if (tokens.size() < 8) {
-        DEBUGF("invalid number of tokens: %zu", tokens.size());
+        VERBOSEF("invalid token count: %zu (expected >= 8)", tokens.size());
         return nullptr;
     }
+
+    VERBOSEF("token count: %zu", tokens.size());
 
     // parse
     auto message = new GstMessage(prefix, payload, checksum);
@@ -76,9 +83,10 @@ std::unique_ptr<Message> GstMessage::parse(std::string prefix, std::string const
     success &= parse_double(tokens[7], message->mAltitudeError);
 
     if (success) {
+        TRACEF("GST message parsed successfully");
         return std::unique_ptr<GstMessage>(message);
     } else {
-        DEBUGF("failed to parse message");
+        VERBOSEF("failed to parse GST message");
         delete message;
         return nullptr;
     }

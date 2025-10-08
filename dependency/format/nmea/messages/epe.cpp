@@ -10,10 +10,13 @@ namespace format {
 namespace nmea {
 
 static bool parse_double_opt(std::string const& token, double& value) {
+    FUNCTION_SCOPEF("'%s'", token.c_str());
     try {
         value = std::stod(token);
+        VERBOSEF("parsed: %.6f", value);
         return true;
     } catch (...) {
+        VERBOSEF("failed to parse, using default: '%s'", token.c_str());
         value = 0;
         return true;
     }
@@ -44,14 +47,15 @@ std::unique_ptr<Message> EpeMessage::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> EpeMessage::parse(std::string prefix, std::string const& payload,
                                            std::string checksum) {
-    // split payload by ','
+    FUNCTION_SCOPEF("%s,%s*%s", prefix.c_str(), payload.c_str(), checksum.c_str());
     auto tokens = split(payload, ',');
 
-    // check number of tokens
     if (tokens.size() < 6) {
-        DEBUGF("[--EPE] invalid number of tokens: %zu\n", tokens.size());
+        VERBOSEF("invalid token count: %zu (expected >= 6)", tokens.size());
         return nullptr;
     }
+
+    VERBOSEF("token count: %zu", tokens.size());
 
     // parse
     auto message = new EpeMessage(prefix, payload, checksum);
@@ -64,9 +68,10 @@ std::unique_ptr<Message> EpeMessage::parse(std::string prefix, std::string const
     success &= parse_double_opt(tokens[5], message->m3D);
 
     if (success) {
+        TRACEF("EPE message parsed successfully");
         return std::unique_ptr<EpeMessage>(message);
     } else {
-        DEBUGF("[--EPE] failed to parse message\n");
+        VERBOSEF("failed to parse EPE message");
         delete message;
         return nullptr;
     }

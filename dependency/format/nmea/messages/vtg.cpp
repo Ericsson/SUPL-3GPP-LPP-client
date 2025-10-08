@@ -10,35 +10,50 @@ namespace format {
 namespace nmea {
 
 static bool parse_double(std::string const& token, double& value) {
+    FUNCTION_SCOPEF("'%s'", token.c_str());
     try {
         value = std::stod(token);
+        VERBOSEF("parsed: %.6f", value);
         return true;
     } catch (...) {
-        DEBUGF("failed to parse double: \"%s\"", token.c_str());
+        VERBOSEF("exception parsing double: '%s'", token.c_str());
         return false;
     }
 }
 
 static bool parse_double_opt(std::string const& token, double& value) {
+    FUNCTION_SCOPEF("'%s'", token.c_str());
     try {
         value = std::stod(token);
+        VERBOSEF("parsed: %.6f", value);
         return true;
     } catch (...) {
+        VERBOSEF("failed to parse, using default: '%s'", token.c_str());
         value = 0;
         return true;
     }
 }
 
 static bool parse_mode_indicator(std::string const& token, ModeIndicator& mode_indicator) {
+    FUNCTION_SCOPEF("'%s'", token.c_str());
     if (token.size() != 1) {
-        DEBUGF("invalid mode indicator: \"%s\"", token.c_str());
+        VERBOSEF("invalid mode indicator length: '%s'", token.c_str());
         return false;
     }
 
     switch (token[0]) {
-    case 'A': mode_indicator = ModeIndicator::Autonomous; return true;
-    case 'D': mode_indicator = ModeIndicator::Differential; return true;
-    default: mode_indicator = ModeIndicator::Unknown; return true;
+    case 'A':
+        mode_indicator = ModeIndicator::Autonomous;
+        VERBOSEF("mode: Autonomous");
+        return true;
+    case 'D':
+        mode_indicator = ModeIndicator::Differential;
+        VERBOSEF("mode: Differential");
+        return true;
+    default:
+        mode_indicator = ModeIndicator::Unknown;
+        VERBOSEF("mode: Unknown");
+        return true;
     }
 }
 
@@ -70,14 +85,15 @@ std::unique_ptr<Message> VtgMessage::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> VtgMessage::parse(std::string prefix, std::string const& payload,
                                            std::string checksum) {
-    // split payload by ','
+    FUNCTION_SCOPEF("%s,%s*%s", prefix.c_str(), payload.c_str(), checksum.c_str());
     auto tokens = split(payload, ',');
 
-    // check number of tokens
     if (tokens.size() < 9) {
-        DEBUGF("invalid number of tokens: %zu", tokens.size());
+        VERBOSEF("invalid token count: %zu (expected >= 9)", tokens.size());
         return nullptr;
     }
+
+    VERBOSEF("token count: %zu", tokens.size());
 
     // parse
     auto message = new VtgMessage(prefix, payload, checksum);
@@ -90,9 +106,10 @@ std::unique_ptr<Message> VtgMessage::parse(std::string prefix, std::string const
     success &= parse_mode_indicator(tokens[8], message->mModeIndicator);
 
     if (success) {
+        TRACEF("VTG message parsed successfully");
         return std::unique_ptr<VtgMessage>(message);
     } else {
-        DEBUGF("failed to parse message");
+        VERBOSEF("failed to parse VTG message");
         delete message;
         return nullptr;
     }
