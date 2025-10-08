@@ -9,9 +9,14 @@
 LOGLET_MODULE2(p, ubx);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ubx)
 
-void UbxPrint::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
+void UbxPrint::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
-    message->print();
+    for (auto const& print : mConfig.prints) {
+        if (!print.ubx_support()) continue;
+        if (!print.accept_tag(tag)) continue;
+        message->print();
+        return;
+    }
 }
 
 void UbxOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {

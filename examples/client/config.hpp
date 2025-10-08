@@ -101,6 +101,41 @@ struct OutputConfig {
     std::vector<OutputInterface> outputs;
 };
 
+struct PrintInterface {
+    OutputFormat             format;
+    std::vector<std::string> include_tags;
+    std::vector<std::string> exclude_tags;
+
+    uint64_t include_tag_mask;
+    uint64_t exclude_tag_mask;
+
+    static PrintInterface create(OutputFormat format, std::vector<std::string> include_tags,
+                                 std::vector<std::string> exclude_tags) {
+        return {
+            format,
+            std::move(include_tags),
+            std::move(exclude_tags),
+            0,
+            0,
+        };
+    }
+
+    inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
+    inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
+    inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
+    inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
+    inline bool lpp_support() const { return (format & OUTPUT_FORMAT_LPP_XER) != 0 || (format & OUTPUT_FORMAT_LPP_UPER) != 0; }
+
+    inline bool accept_tag(uint64_t tag) const {
+        return tag == 0 ||
+               (((include_tag_mask & tag) || include_tag_mask == 0) && !(exclude_tag_mask & tag));
+    }
+};
+
+struct PrintConfig {
+    std::vector<PrintInterface> prints;
+};
+
 struct InputInterface {
     InputFormat                format;
     bool                       print;
@@ -371,6 +406,7 @@ struct Config {
     LocationInformationConfig location_information;
     OutputConfig              output;
     InputConfig               input;
+    PrintConfig               print;
     GnssConfig                gnss;
 #ifdef INCLUDE_GENERATOR_RTCM
     Lpp2RtcmConfig      lpp2rtcm;

@@ -13,9 +13,14 @@ LOGLET_MODULE2(p, nmea);
 
 using namespace format::nmea;
 
-void NmeaPrint::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
+void NmeaPrint::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
-    message->print();
+    for (auto const& print : mConfig.prints) {
+        if (!print.nmea_support()) continue;
+        if (!print.accept_tag(tag)) continue;
+        message->print();
+        return;
+    }
 }
 
 void NmeaOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
@@ -242,8 +247,8 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
     }
     auto hdop_val = metrics.hdop.value_or(0.0);
     auto age_val = metrics.age_of_corrections.value_or(0.0);
-           hdop_val, age_val);
+    TRACEF("pushing GNSS metrics: fix=%d, sats=%d, hdop=%.2f, age=%.2f", 
            static_cast<int>(metrics.fix_quality), metrics.number_of_satellites, 
-           metrics.hdop, metrics.age_of_corrections);
+           hdop_val, age_val);
     system.push(std::move(metrics));
 }

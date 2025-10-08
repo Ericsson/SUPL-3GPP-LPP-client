@@ -24,8 +24,13 @@ struct Clone<UbxMessage> {
 
 class UbxPrint : public streamline::Inspector<UbxMessage> {
 public:
+    UbxPrint(PrintConfig const& config) : mConfig(config) {}
+
     char const* name() const NOEXCEPT override { return "UbxPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
+
+private:
+    PrintConfig const& mConfig;
 };
 
 class UbxOutput : public streamline::Inspector<UbxMessage> {

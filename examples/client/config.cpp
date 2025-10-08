@@ -44,6 +44,7 @@ static std::vector<std::string> split(std::string const& str, char delim) {
 #include "config/location_server.cpp"
 #include "config/logging.cpp"
 #include "config/output.cpp"
+#include "config/print.cpp"
 #ifdef INCLUDE_GENERATOR_RTCM
 #include "config/lpp2frame_rtcm.cpp"
 #include "config/lpp2rtcm.cpp"
@@ -100,6 +101,12 @@ void dump(Config* config) {
         DEBUGF("output:");
         DEBUG_INDENT_SCOPE();
         output::dump(config->output);
+    }
+
+    {
+        DEBUGF("print:");
+        DEBUG_INDENT_SCOPE();
+        print::dump(config->print);
     }
 
     {
@@ -178,6 +185,7 @@ bool parse(int argc, char** argv, Config* config) {
     args::GlobalOptions location_information_globals{parser, li::gGroup};
     args::GlobalOptions input_globals{parser, input::gGroup};
     args::GlobalOptions output_globals{parser, output::gGroup};
+    args::GlobalOptions print_globals{parser, print::gGroup};
     args::GlobalOptions gnss_globals{parser, gnss::gGroup};
 #ifdef INCLUDE_GENERATOR_RTCM
     args::GlobalOptions lpp2rtcm_globals{parser, lpp2rtcm::gGroup};
@@ -204,6 +212,7 @@ bool parse(int argc, char** argv, Config* config) {
     li::setup();
     input::setup();
     output::setup();
+    print::setup();
     gnss::setup();
 #ifdef INCLUDE_GENERATOR_RTCM
     lpp2rtcm::setup();
@@ -241,6 +250,7 @@ bool parse(int argc, char** argv, Config* config) {
         li::parse(config);
         input::parse(config);
         output::parse(config);
+        print::parse(config);
         gnss::parse(config);
 #ifdef INCLUDE_GENERATOR_RTCM
         lpp2rtcm::parse(config);

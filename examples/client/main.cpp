@@ -563,6 +563,30 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     if (test_output) test_outputer(program.scheduler, config, program.config.get_tag("test"));
 }
 
+static void setup_print_inspectors(Program& program) {
+    VSCOPE_FUNCTION();
+
+    bool nmea_print = false;
+    bool ubx_print  = false;
+    bool rtcm_print = false;
+    bool ctrl_print = false;
+
+    for (auto& print : program.config.print.prints) {
+        print.include_tag_mask = program.config.get_tag(print.include_tags);
+        print.exclude_tag_mask = program.config.get_tag(print.exclude_tags);
+
+        if (print.nmea_support()) nmea_print = true;
+        if (print.ubx_support()) ubx_print = true;
+        if (print.rtcm_support()) rtcm_print = true;
+        if (print.ctrl_support()) ctrl_print = true;
+    }
+
+    if (nmea_print) program.stream.add_inspector<NmeaPrint>(program.config.print);
+    if (ubx_print) program.stream.add_inspector<UbxPrint>(program.config.print);
+    if (rtcm_print) program.stream.add_inspector<RtcmPrint>(program.config.print);
+    if (ctrl_print) program.stream.add_inspector<CtrlPrint>(program.config.print);
+}
+
 static void setup_location_stream(Program& program) {
     if (program.config.location_information.use_ubx_location) {
         if (!program.has_ubx_parsers()) {
@@ -819,6 +843,7 @@ int main(int argc, char** argv) {
 
     initialize_inputs(program, program.config.input);
     initialize_outputs(program, program.config.output);
+    setup_print_inspectors(program);
 
     apply_ubx_config(program);
 

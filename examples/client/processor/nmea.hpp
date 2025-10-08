@@ -28,8 +28,13 @@ struct Clone<NmeaMessage> {
 
 class NmeaPrint : public streamline::Inspector<NmeaMessage> {
 public:
+    NmeaPrint(PrintConfig const& config) : mConfig(config) {}
+
     char const* name() const NOEXCEPT override { return "NmeaPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
+
+private:
+    PrintConfig const& mConfig;
 };
 
 class NmeaOutput : public streamline::Inspector<NmeaMessage> {

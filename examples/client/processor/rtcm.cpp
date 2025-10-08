@@ -10,9 +10,14 @@
 LOGLET_MODULE2(p, rtcm);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, rtcm)
 
-void RtcmPrint::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
+void RtcmPrint::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {
     VSCOPE_FUNCTION();
-    message->print();
+    for (auto const& print : mConfig.prints) {
+        if (!print.rtcm_support()) continue;
+        if (!print.accept_tag(tag)) continue;
+        message->print();
+        return;
+    }
 }
 
 void RtcmOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {

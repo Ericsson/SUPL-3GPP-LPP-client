@@ -24,7 +24,13 @@ struct Clone<RtcmMessage> {
 
 class RtcmPrint : public streamline::Inspector<RtcmMessage> {
 public:
+    RtcmPrint(PrintConfig const& config) : mConfig(config) {}
+
+    char const* name() const NOEXCEPT override { return "RtcmPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
+
+private:
+    PrintConfig const& mConfig;
 };
 
 class RtcmOutput : public streamline::Inspector<RtcmMessage> {

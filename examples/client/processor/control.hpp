@@ -25,8 +25,13 @@ struct Clone<CtrlMessage> {
 
 class CtrlPrint : public streamline::Inspector<CtrlMessage> {
 public:
+    CtrlPrint(PrintConfig const& config) : mConfig(config) {}
+
     char const* name() const NOEXCEPT override { return "CtrlPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
+
+private:
+    PrintConfig const& mConfig;
 };
 
 class CtrlOutput : public streamline::Inspector<CtrlMessage> {
