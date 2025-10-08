@@ -140,6 +140,7 @@ struct InputInterface {
     std::unique_ptr<io::Input> interface;
     std::vector<std::string>   tags;
     std::vector<std::string>   stages;
+    bool                       nmea_lf_only;
 };
 
 struct InputConfig {

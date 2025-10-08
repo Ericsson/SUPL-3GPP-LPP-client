@@ -38,45 +38,52 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         skip(1u);
     }
 
-    // search for '\r\n'
     auto length = 1u;
+    auto line_ending_length = mLfOnly ? 1u : 2u;
+    
     for (;;) {
-        if (buffer_length() < length + 2) {
-            VERBOSEF("not enough data to search for '\\r\\n'");
+        if (buffer_length() < length + line_ending_length) {
+            VERBOSEF("not enough data to search for line ending");
             return nullptr;
         }
 
-        if (peek(length + 0) == '\r' && peek(length + 1) == '\n') {
-            VERBOSEF("found '\\r\\n'");
-            break;
+        bool found_ending = false;
+        if (mLfOnly) {
+            if (peek(length) == '\n') {
+                VERBOSEF("found '\\n'");
+                found_ending = true;
+            }
+        } else {
+            if (peek(length) == '\r' && peek(length + 1) == '\n') {
+                VERBOSEF("found '\\r\\n'");
+                found_ending = true;
+            }
         }
 
-        if (peek(length + 0) == '$') {
-            VERBOSEF("found '$' while looking for '\\r\\n'");
+        if (found_ending) break;
+
+        if (peek(length) == '$') {
+            VERBOSEF("found '$' while looking for line ending");
             skip(length);
             return nullptr;
         }
 
-        // skip one byte and try again
         length++;
     }
 
-    // copy message to buffer
     std::string payload;
-    payload.resize(length + 2);
-    copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length + 2);
+    payload.resize(length + line_ending_length);
+    copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length + line_ending_length);
 
-    // check checksum
     auto result = checksum(payload);
     if (result != ChecksumResult::OK) {
-        // checksum failed
         DEBUGF("checksum failed: \"%s\"", payload.c_str());
         skip(1u);
         return nullptr;
     }
-    skip(length + 2);
+    skip(length + line_ending_length);
 
-    auto length_with_clrf = length + 2;
+    auto length_with_clrf = length + line_ending_length;
     auto prefix = parse_prefix(reinterpret_cast<uint8_t const*>(payload.data()), length_with_clrf);
     if (prefix.empty()) {
         // invalid prefix
@@ -134,7 +141,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     }
 }
 
-ChecksumResult Parser::checksum(std::string const& buffer) {
+ChecksumResult Parser::checksum(std::string const& buffer) const {
     FUNCTION_SCOPE();
 
     auto fmt_end = buffer.find_last_of('*');
@@ -143,7 +150,8 @@ ChecksumResult Parser::checksum(std::string const& buffer) {
         return ChecksumResult::INVALID_STRING_NOSTAR;
     }
 
-    if (fmt_end + 3 /* *XY */ + 2 /* \r\n */ != buffer.size()) {
+    auto expected_length = fmt_end + 3 /* *XY */ + (mLfOnly ? 1 : 2);
+    if (expected_length != buffer.size()) {
         DEBUGF("invalid string: length");
         return ChecksumResult::INVALID_STRING_LENGTH;
     }
