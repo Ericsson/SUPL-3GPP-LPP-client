@@ -85,7 +85,9 @@ static args::Flag gTree{
     {"log-tree"},
 };
 
-void setup() {}
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
+}
 
 void parse(Config* config) {
     auto& logging     = config->logging;

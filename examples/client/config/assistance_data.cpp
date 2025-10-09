@@ -148,7 +148,8 @@ static args::Flag gNoAntennaHeight{
     {"ad-no-antenna-height"},
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gType.HelpChoices({"osr", "ssr"});
 
     gOsrObservations.HelpDefault("1");

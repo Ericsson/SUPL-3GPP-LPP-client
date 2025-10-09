@@ -35,7 +35,9 @@ static args::ValueFlagList<std::string> gArgs{
     {"print"},
 };
 
-void setup() {}
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
+}
 
 static OutputFormat parse_format(std::string const& str) {
     if (str == "ubx") return OUTPUT_FORMAT_UBX;

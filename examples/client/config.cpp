@@ -152,32 +152,32 @@ bool parse(int argc, char** argv, Config* config) {
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
 
-    ::ls::setup();
-    ::identity::setup();
-    ::ad::setup();
-    ::li::setup();
-    ::input::setup();
-    ::output::setup();
-    ::print::setup();
-    ::gnss::setup();
+    ::ls::setup(parser);
+    ::identity::setup(parser);
+    ::ad::setup(parser);
+    ::li::setup(parser);
+    ::input::setup(parser);
+    ::output::setup(parser);
+    ::print::setup(parser);
+    ::gnss::setup(parser);
 #ifdef INCLUDE_GENERATOR_RTCM
-    ::lpp2rtcm::setup();
-    ::lpp2frame_rtcm::setup();
+    ::lpp2rtcm::setup(parser);
+    ::lpp2frame_rtcm::setup(parser);
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
-    ::lpp2spartn::setup();
+    ::lpp2spartn::setup(parser);
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
-    ::tokoro::setup();
+    ::tokoro::setup(parser);
 #endif
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
-    ::idokeido::setup();
+    ::idokeido::setup(parser);
 #endif
-    ::logging::setup();
+    ::logging::setup(parser);
 #ifdef DATA_TRACING
-    ::data_tracing::setup();
+    ::data_tracing::setup(parser);
 #endif
-    ::ubx_config::setup();
+    ::ubx_config::setup(parser);
 
     config->next_tag_bit_mask = 1;
     config->tag_to_bit_mask.clear();

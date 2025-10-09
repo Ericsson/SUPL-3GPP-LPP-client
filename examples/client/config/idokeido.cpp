@@ -91,7 +91,8 @@ static args::ValueFlag<std::string> gWeightModel{
     {"ido-weight"},
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gRelativistic.HelpChoices({"none", "brdc", "dotrv"});
     gRelativistic.HelpDefault("brdc");
 

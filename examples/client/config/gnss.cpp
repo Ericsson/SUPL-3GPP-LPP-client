@@ -43,7 +43,9 @@ static args::Flag gBds{
     {"no-beidou", "no-bds"},
 };
 
-void setup() {}
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
+}
 
 void parse(Config* config) {
     auto& gnss   = config->gnss;

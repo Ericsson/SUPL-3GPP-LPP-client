@@ -252,7 +252,8 @@ static args::Flag gIgnoreBitmask{
     {"tkr-ignore-bitmask"},
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
 

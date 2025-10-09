@@ -39,7 +39,8 @@ static args::Flag gOutputInRtcm{
     {"l2f-rtcm"},
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gRtcmMessageId.HelpDefault("355");
 }
 

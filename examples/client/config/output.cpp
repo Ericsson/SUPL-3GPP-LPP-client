@@ -65,7 +65,9 @@ static args::ValueFlagList<std::string> gArgs{
     {"output"},
 };
 
-void setup() {}
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
+}
 
 static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,
                               std::string const& type, std::string const& key, bool default_value) {

@@ -116,7 +116,8 @@ static args::ValueFlag<double> gAltitude{
     gFakeLocationGroup, "meter", "Fake Altitude", {"li-fake-altitude"}, args::Options::Single,
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gUpdateRate.HelpDefault("1000");
     gLatitude.HelpDefault("69.06");
     gLongitude.HelpDefault("20.55");

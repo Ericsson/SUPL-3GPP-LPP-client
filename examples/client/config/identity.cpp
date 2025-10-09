@@ -35,7 +35,9 @@ static args::ValueFlag<std::string> gIpv4{
     gGroup, "ipv4", "IPv4 address", {"ipv4"}, args::Options::Single,
 };
 
-void setup() {}
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
+}
 
 void parse(Config* config) {
     if (gWaitForIdentity) config->identity.wait_for_identity = true;

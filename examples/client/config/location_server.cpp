@@ -69,7 +69,9 @@ static args::Flag gHackNeverSendAbort{
     {"ls-hack-never-send-abort"},
 };
 
-void setup() {}
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
+}
 
 void parse(Config* config) {
     auto& ls                          = config->location_server;

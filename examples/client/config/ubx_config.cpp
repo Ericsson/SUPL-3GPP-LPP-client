@@ -57,7 +57,9 @@ static args::ValueFlagList<std::string> gInterfaces{
 static args::Flag gApplyAndExit{
     gGroup, "apply-and-exit", "Apply configuration and exit", {"cfg-apply-and-exit"}};
 
-void setup() {}
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
+}
 
 
 

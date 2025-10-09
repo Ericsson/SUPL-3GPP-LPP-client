@@ -56,7 +56,8 @@ static args::Flag gPossibWrap{
     gGroup, "possib-wrap", "Include wrapped posSIB data", {"dt-possib-wrap"}, args::Options::Single,
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gPort.HelpDefault("1883");
 }
 

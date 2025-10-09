@@ -57,7 +57,8 @@ static args::ValueFlag<std::string> gMsmType{
     {"l2r-msm"},
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gMsmType.HelpDefault("any");
     gMsmType.HelpChoices({"any", "4", "5", "6", "7"});
 }

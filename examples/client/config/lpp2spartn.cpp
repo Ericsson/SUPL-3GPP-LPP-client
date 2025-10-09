@@ -265,7 +265,8 @@ static args::Flag gSignFlipC11{
     {"l2s-sf-c11"},
 };
 
-void setup() {
+void setup(args::ArgumentParser& parser) {
+    static args::GlobalOptions globals{parser, gGroup};
     gStecMethod.HelpChoices({"default", "discard", "residual"});
     gStecMethod.HelpDefault("default");
 }
