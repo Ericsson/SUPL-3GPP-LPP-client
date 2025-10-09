@@ -3,6 +3,8 @@
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
@@ -235,3 +237,5 @@ void dump(IdokeidoConfig const& config) {
 }
 
 }  // namespace idokeido
+
+#endif
