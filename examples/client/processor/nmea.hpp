@@ -75,5 +75,7 @@ private:
     std::unique_ptr<format::nmea::GstMessage> mGst;
     std::unique_ptr<format::nmea::EpeMessage> mEpe;
 
+    std::vector<std::string> mOrderReceived;
+
     LocationInformationConfig const& mConfig;
 };

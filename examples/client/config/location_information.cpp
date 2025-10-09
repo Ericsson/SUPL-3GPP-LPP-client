@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include <cctype>
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -80,6 +81,19 @@ static args::Flag gNmeaRequireVtg{
     "Require the NMEA VTG for location information",
     {"li-nmea-require-vgt"},
 };
+static args::ValueFlag<std::string> gNmeaOrder{
+    gGroup,
+    "order",
+    "Comma-separated list of NMEA message types that must be received in order before reporting position (e.g., gga,gst)",
+    {"li-nmea-order"},
+    args::Options::Single,
+};
+static args::Flag gNmeaOrderStrict{
+    gGroup,
+    "nmea-order-strict",
+    "Strict NMEA order mode: no other messages allowed between ordered messages",
+    {"li-nmea-order-strict"},
+};
 
 static args::Group gFakeLocationGroup{gGroup, "Fake Location:"};
 static args::Flag  gFakeLocation{
@@ -118,6 +132,8 @@ static void parse(Config* config) {
     li.override_horizontal_confidence = -1.0;
     li.nmea_require_gst               = false;
     li.nmea_require_vtg               = false;
+    li.nmea_order.clear();
+    li.nmea_order_strict              = false;
     li.fake.enabled                   = false;
     li.fake.latitude                  = 69.06;
     li.fake.longitude                 = 20.55;
@@ -149,6 +165,26 @@ static void parse(Config* config) {
         }
     }
 
+    if (gNmeaRequireGst) li.nmea_require_gst = true;
+    if (gNmeaRequireVtg) li.nmea_require_vtg = true;
+
+    if (gNmeaOrder) {
+        auto order = split(gNmeaOrder.Get(), ',');
+        li.nmea_order.clear();
+        for (auto type : order) {
+            for(auto& c : type) c = std::tolower(c);
+            if(type == "gga" || type == "gst" || type == "vtg" || type == "epe") {
+                li.nmea_order.push_back(std::move(type));
+            } else {
+                WARNF("unknown NMEA order type: %s", type.c_str());
+            }
+        }
+    }
+
+    if (gNmeaOrderStrict) {
+        li.nmea_order_strict = true;
+    }
+
     if (gFakeLocation) {
         li.fake.enabled = true;
         if (gLatitude) li.fake.latitude = gLatitude.Get();
@@ -167,6 +203,17 @@ static void dump(LocationInformationConfig const& config) {
            config.convert_confidence_95_to_68 ? "true" : "false");
     DEBUGF("output_ellipse_68: %s", config.output_ellipse_68 ? "true" : "false");
     DEBUGF("override_horizontal_confidence: %.1f", config.override_horizontal_confidence);
+    DEBUGF("nmea_require_gst: %s", config.nmea_require_gst ? "true" : "false");
+    DEBUGF("nmea_require_vtg: %s", config.nmea_require_vtg ? "true" : "false");
+    if (!config.nmea_order.empty()) {
+        std::string order_str;
+        for (size_t i = 0; i < config.nmea_order.size(); ++i) {
+            if (i > 0) order_str += ",";
+            order_str += config.nmea_order[i];
+        }
+        DEBUGF("nmea_order: %s", order_str.c_str());
+    }
+    DEBUGF("nmea_order_strict: %s", config.nmea_order_strict ? "true" : "false");
     DEBUGF("fake.enabled: %s", config.fake.enabled ? "true" : "false");
     DEBUGF("fake.latitude: %.8f", config.fake.latitude);
     DEBUGF("fake.longitude: %.8f", config.fake.longitude);
