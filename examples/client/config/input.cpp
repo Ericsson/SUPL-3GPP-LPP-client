@@ -445,8 +445,8 @@ static InputInterface parse_interface(std::string const& source) {
     if (parts[0] == "udp-server") input = parse_udp_server(options);
 
     if (input) {
-        return {format, print, std::move(input), tags, stages, nmea_lf_only, discard_errors,
-                discard_unknowns};
+        return {format, print,        std::move(input), tags,
+                stages, nmea_lf_only, discard_errors,   discard_unknowns};
     }
 
     throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");

@@ -4,8 +4,8 @@
 #include <cxx11_compat.hpp>
 #include <datafields.hpp>
 #include <helper.hpp>
-#include <stdio.h>
 #include <loglet/loglet.hpp>
+#include <stdio.h>
 
 LOGLET_MODULE3(format, rtcm, rtcm1046);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, rtcm, rtcm1046)

@@ -73,7 +73,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     std::vector<uint8_t> message;
     message.resize(message_length);
     copy_to_buffer(message.data(), message_length);
-    
+
     // check crc
     auto result = crc(message);
     if (result != CRCResult::OK) {
@@ -94,7 +94,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     }
 }
 
-static const uint32_t CRC24Q[256] = {
+static uint32_t const CRC24Q[256] = {
     0x00000000, 0x01864CFB, 0x028AD50D, 0x030C99F6, 0x0493E6E1, 0x0515AA1A, 0x061933EC, 0x079F7F17,
     0x08A18139, 0x0927CDC2, 0x0A2B5434, 0x0BAD18CF, 0x0C3267D8, 0x0DB42B23, 0x0EB8B2D5, 0x0F3EFE2E,
     0x10C54E89, 0x11430272, 0x124F9B84, 0x13C9D77F, 0x1456A868, 0x15D0E493, 0x16DC7D65, 0x175A319E,
@@ -129,7 +129,7 @@ static const uint32_t CRC24Q[256] = {
     0xF842FA2F, 0xF9C4B6D4, 0xFAC82F22, 0xFB4E63D9, 0xFCD11CCE, 0xFD575035, 0xFE5BC9C3, 0xFFDD8538,
 };
 
-static uint32_t crc24q_hash(const unsigned char* data, int len) {
+static uint32_t crc24q_hash(unsigned char const* data, int len) {
     uint32_t crc = 0;
     for (int i = 0; i < len; i++) {
         crc = (crc << 8U) ^ CRC24Q[data[i] ^ static_cast<unsigned char>(crc >> 16U)];

@@ -203,7 +203,7 @@ struct LocationInformationConfig {
     bool nmea_require_vtg;
 
     std::vector<std::string> nmea_order;
-    bool nmea_order_strict;
+    bool                     nmea_order_strict;
 
     FakeLocationInformationConfig fake;
 };

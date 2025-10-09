@@ -1,5 +1,5 @@
-#include "config.hpp"
 #include <cctype>
+#include "config.hpp"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -84,7 +84,8 @@ static args::Flag gNmeaRequireVtg{
 static args::ValueFlag<std::string> gNmeaOrder{
     gGroup,
     "order",
-    "Comma-separated list of NMEA message types that must be received in order before reporting position (e.g., gga,gst)",
+    "Comma-separated list of NMEA message types that must be received in order before reporting "
+    "position (e.g., gga,gst)",
     {"li-nmea-order"},
     args::Options::Single,
 };
@@ -133,11 +134,11 @@ static void parse(Config* config) {
     li.nmea_require_gst               = false;
     li.nmea_require_vtg               = false;
     li.nmea_order.clear();
-    li.nmea_order_strict              = false;
-    li.fake.enabled                   = false;
-    li.fake.latitude                  = 69.06;
-    li.fake.longitude                 = 20.55;
-    li.fake.altitude                  = 0.0;
+    li.nmea_order_strict = false;
+    li.fake.enabled      = false;
+    li.fake.latitude     = 69.06;
+    li.fake.longitude    = 20.55;
+    li.fake.altitude     = 0.0;
 
     if (gDisable) {
         li.enable = false;
@@ -172,8 +173,9 @@ static void parse(Config* config) {
         auto order = split(gNmeaOrder.Get(), ',');
         li.nmea_order.clear();
         for (auto type : order) {
-            for(auto& c : type) c = std::tolower(c);
-            if(type == "gga" || type == "gst" || type == "vtg" || type == "epe") {
+            for (auto& c : type)
+                c = std::tolower(c);
+            if (type == "gga" || type == "gst" || type == "vtg" || type == "epe") {
                 li.nmea_order.push_back(std::move(type));
             } else {
                 WARNF("unknown NMEA order type: %s", type.c_str());
