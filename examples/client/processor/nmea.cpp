@@ -115,14 +115,14 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
     FUNCTION_SCOPEF("%s", message->prefix().c_str());
 
     auto received_new_message = false;
-    auto message_type = std::string();
+    auto message_type         = std::string();
     auto gga                  = dynamic_cast<GgaMessage*>(message.get());
     if (gga) {
         TRACEF("received GGA message: %p -> %p", mGga.get(), gga);
         mGga.reset(gga);
         message.release();
         received_new_message = true;
-        message_type = "gga";
+        message_type         = "gga";
     }
 
     auto vtg = dynamic_cast<VtgMessage*>(message.get());
@@ -131,7 +131,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
         mVtg.reset(vtg);
         message.release();
         received_new_message = true;
-        message_type = "vtg";
+        message_type         = "vtg";
     }
 
     auto gst = dynamic_cast<GstMessage*>(message.get());
@@ -140,7 +140,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
         mGst.reset(gst);
         message.release();
         received_new_message = true;
-        message_type = "gst";
+        message_type         = "gst";
     }
 
     auto epe = dynamic_cast<EpeMessage*>(message.get());
@@ -149,7 +149,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
         mEpe.reset(epe);
         message.release();
         received_new_message = true;
-        message_type = "epe";
+        message_type         = "epe";
     }
 
     if (!received_new_message) {
@@ -158,40 +158,47 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
     }
 
     if (!mConfig.nmea_order.empty()) {
-        auto is_in_order = std::find(mConfig.nmea_order.begin(), mConfig.nmea_order.end(), message_type) != mConfig.nmea_order.end();
-        
-        if (mConfig.nmea_order_strict && !is_in_order) {
-            VERBOSEF("strict mode: ignoring %s (not in order list)", message_type.c_str());
-            mOrderReceived.clear();
-            return;
-        }
-        
-        if (is_in_order) {
+        if (mConfig.nmea_order[mOrderReceived.size()] != message_type) {
+            if (mConfig.nmea_order_strict) {
+                VERBOSEF("unexpected message type (%s, expected %s), resetting messages",
+                         message_type.c_str(), mConfig.nmea_order[mOrderReceived.size()].c_str());
+                mGga.reset();
+                mVtg.reset();
+                mGst.reset();
+                mEpe.reset();
+                mOrderReceived.clear();
+                return;
+            } else {
+                VERBOSEF("ignoring %s (expected %s)", message_type.c_str(),
+                         mConfig.nmea_order[mOrderReceived.size()].c_str());
+                return;
+            }
+        } else {
+            VERBOSEF("order tracking: received %s (%zu/%zu)", message_type.c_str(),
+                     mOrderReceived.size(), mConfig.nmea_order.size());
             mOrderReceived.push_back(message_type);
-            VERBOSEF("order tracking: received %s (%zu/%zu)", message_type.c_str(), mOrderReceived.size(), mConfig.nmea_order.size());
+        }
+
+        if (mOrderReceived.size() != mConfig.nmea_order.size()) {
+            VERBOSEF("order tracking: waiting for complete order (%zu/%zu)", mOrderReceived.size(),
+                     mConfig.nmea_order.size());
+            return;
         }
     }
 
     if (!mGga) {
         VERBOSEF("nmea location require gga");
+        if (!mConfig.nmea_order.empty() && mOrderReceived.size() == mConfig.nmea_order.size()) {
+            WARNF("nmea order list completed but no gga message received, gga is required to "
+                  "report position");
+            VERBOSEF("resetting messages after reporting position");
+            mGga.reset();
+            mVtg.reset();
+            mGst.reset();
+            mEpe.reset();
+            mOrderReceived.clear();
+        }
         return;
-    }
-
-    if (!mConfig.nmea_order.empty()) {
-        if (mOrderReceived.size() != mConfig.nmea_order.size()) {
-            VERBOSEF("waiting for complete order (%zu/%zu)", mOrderReceived.size(), mConfig.nmea_order.size());
-            return;
-        }
-        
-        for (size_t i = 0; i < mConfig.nmea_order.size(); ++i) {
-            if (mOrderReceived[i] != mConfig.nmea_order[i]) {
-                VERBOSEF("order mismatch at position %zu: expected %s, got %s", i, mConfig.nmea_order[i].c_str(), mOrderReceived[i].c_str());
-                mOrderReceived.clear();
-                return;
-            }
-        }
-        
-        VERBOSEF("order complete, processing position");
     }
 
     VERBOSEF("GGA fix quality: %d", static_cast<int>(mGga->fix_quality()));

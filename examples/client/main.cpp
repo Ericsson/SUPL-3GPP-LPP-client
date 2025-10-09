@@ -298,6 +298,11 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         for (;;) {
             auto message = p.nmea->try_parse();
             if (!message) break;
+            if (p.input->discard_errors && dynamic_cast<format::nmea::ErrorMessage*>(message.get()))
+                continue;
+            if (p.input->discard_unknowns &&
+                dynamic_cast<format::nmea::UnsupportedMessage*>(message.get()))
+                continue;
             if (p.input->print) message->print();
             program.stream.push(std::move(message), tag);
         }
@@ -308,6 +313,11 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         for (;;) {
             auto message = p.rtcm->try_parse();
             if (!message) break;
+            if (p.input->discard_errors && dynamic_cast<format::rtcm::ErrorMessage*>(message.get()))
+                continue;
+            if (p.input->discard_unknowns &&
+                dynamic_cast<format::rtcm::UnsupportedMessage*>(message.get()))
+                continue;
             if (p.input->print) message->print();
             program.stream.push(std::move(message));
         }
@@ -318,6 +328,9 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         for (;;) {
             auto message = p.ubx->try_parse();
             if (!message) break;
+            if (p.input->discard_unknowns &&
+                dynamic_cast<format::ubx::UnsupportedMessage*>(message.get()))
+                continue;
             if (p.input->print) message->print();
             program.stream.push(std::move(message), tag);
         }

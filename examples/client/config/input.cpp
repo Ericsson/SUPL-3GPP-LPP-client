@@ -51,6 +51,8 @@ static args::ValueFlagList<std::string> gArgs{
     "\n"
     "Options:\n"
     "  nmea_lf_only=<bool> (default=false)\n"
+    "  discard_errors=<bool> (default=false)\n"
+    "  discard_unknowns=<bool> (default=false)\n"
     "\n"
     "Stages:\n"
     "  tlf\n"
@@ -426,11 +428,13 @@ static InputInterface parse_interface(std::string const& source) {
         throw args::ValidationError("--input: invalid input, got `" + source + "`");
     }
 
-    auto format       = parse_format_list_from_options(options);
-    auto tags         = parse_tags_from_options(options);
-    auto stages       = parse_stages_from_options(options);
-    auto print        = parse_bool_option(options, parts[0], "print", false);
-    auto nmea_lf_only = parse_bool_option(options, parts[0], "nmea_lf_only", false);
+    auto format           = parse_format_list_from_options(options);
+    auto tags             = parse_tags_from_options(options);
+    auto stages           = parse_stages_from_options(options);
+    auto print            = parse_bool_option(options, parts[0], "print", false);
+    auto nmea_lf_only     = parse_bool_option(options, parts[0], "nmea_lf_only", false);
+    auto discard_errors   = parse_bool_option(options, parts[0], "discard_errors", false);
+    auto discard_unknowns = parse_bool_option(options, parts[0], "discard_unknowns", false);
 
     std::unique_ptr<io::Input> input;
     if (parts[0] == "stdin") input = parse_input_stdin(options);
@@ -441,7 +445,8 @@ static InputInterface parse_interface(std::string const& source) {
     if (parts[0] == "udp-server") input = parse_udp_server(options);
 
     if (input) {
-        return {format, print, std::move(input), tags, stages, nmea_lf_only};
+        return {format, print, std::move(input), tags, stages, nmea_lf_only, discard_errors,
+                discard_unknowns};
     }
 
     throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");
@@ -488,6 +493,8 @@ static void dump(InputConfig const& config) {
         DEBUGF("tags: %s", tag_str.c_str());
 
         DEBUGF("print: %s", input.print ? "true" : "false");
+        DEBUGF("discard_errors: %s", input.discard_errors ? "true" : "false");
+        DEBUGF("discard_unknowns: %s", input.discard_unknowns ? "true" : "false");
         if (input.format & INPUT_FORMAT_NMEA) {
             DEBUGF("nmea_lf_only: %s", input.nmea_lf_only ? "true" : "false");
         }

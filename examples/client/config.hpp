@@ -139,6 +139,8 @@ struct InputInterface {
     std::vector<std::string>   tags;
     std::vector<std::string>   stages;
     bool                       nmea_lf_only;
+    bool                       discard_errors;
+    bool                       discard_unknowns;
 };
 
 struct InputConfig {
