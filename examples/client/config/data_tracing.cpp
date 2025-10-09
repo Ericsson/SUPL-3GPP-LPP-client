@@ -3,6 +3,8 @@
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
+#ifdef DATA_TRACING
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
@@ -99,3 +101,5 @@ void dump(DataTracingConfig const& config) {
 }
 
 }  // namespace data_tracing
+
+#endif
