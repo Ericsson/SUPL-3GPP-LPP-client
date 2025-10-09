@@ -1,4 +1,13 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <io/file.hpp>
+#include <io/serial.hpp>
+#include <io/stdin.hpp>
+#include <io/stdout.hpp>
+#include <io/tcp.hpp>
+#include <io/udp.hpp>
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -61,7 +70,7 @@ static args::ValueFlagList<std::string> gArgs{
     {"input"},
 };
 
-static void setup() {}
+void setup() {}
 
 static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,
                               std::string const& type, std::string const& key, bool default_value) {
@@ -85,7 +94,7 @@ static InputFormat parse_format(std::string const& str) {
 }
 
 static InputFormat parse_format_list(std::string const& str) {
-    auto parts  = split(str, '+');
+    auto parts  = ::split(str, '+');
     auto format = INPUT_FORMAT_NONE;
     for (auto const& part : parts) {
         format |= parse_format(part);
@@ -107,7 +116,7 @@ static std::string parse_stage(std::string const& str) {
 }
 
 static std::vector<std::string> parse_stages(std::string const& str) {
-    auto                     parts = split(str, '+');
+    auto                     parts = ::split(str, '+');
     std::vector<std::string> stages;
     for (auto const& part : parts) {
         stages.push_back(parse_stage(part));
@@ -125,7 +134,7 @@ parse_stages_from_options(std::unordered_map<std::string, std::string> const& op
 }
 
 static std::vector<std::string> parse_tags(std::string const& str) {
-    return split(str, '+');
+    return ::split(str, '+');
 }
 
 static std::vector<std::string>
@@ -138,10 +147,10 @@ parse_tags_from_options(std::unordered_map<std::string, std::string> const& opti
 }
 
 static std::unordered_map<std::string, std::string> parse_options(std::string const& str) {
-    auto                                         parts = split(str, ',');
+    auto                                         parts = ::split(str, ',');
     std::unordered_map<std::string, std::string> options;
     for (auto const& part : parts) {
-        auto kv = split(part, '=');
+        auto kv = ::split(part, '=');
         if (kv.size() != 2) {
             throw args::ValidationError("--output: invalid option, got `" + part + "`");
         }
@@ -419,7 +428,7 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
 static InputInterface parse_interface(std::string const& source) {
     std::unordered_map<std::string, std::string> options;
 
-    auto parts = split(source, ':');
+    auto parts = ::split(source, ':');
     if (parts.size() == 1) {
         // No options
     } else if (parts.size() == 2) {
@@ -452,7 +461,7 @@ static InputInterface parse_interface(std::string const& source) {
     throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     for (auto const& input : gArgs.Get()) {
         config->input.inputs.push_back(parse_interface(input));
     }
@@ -474,7 +483,7 @@ static char const* input_type(io::Input* input) {
     return "unknown";
 }
 
-static void dump(InputConfig const& config) {
+void dump(InputConfig const& config) {
     for (auto const& input : config.inputs) {
         DEBUGF("%p: %s", input.interface.get(), input_type(input.interface.get()));
         DEBUG_INDENT_SCOPE();

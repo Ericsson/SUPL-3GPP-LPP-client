@@ -24,9 +24,7 @@
 LOGLET_MODULE2(client, config);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
-namespace config {
-
-static std::vector<std::string> split(std::string const& str, char delim) {
+std::vector<std::string> split(std::string const& str, char delim) {
     std::vector<std::string> tokens;
     std::string              token;
     std::istringstream       token_stream(str);
@@ -36,32 +34,7 @@ static std::vector<std::string> split(std::string const& str, char delim) {
     return tokens;
 }
 
-#include "config/assistance_data.cpp"
-#include "config/gnss.cpp"
-#include "config/identity.cpp"
-#include "config/input.cpp"
-#include "config/location_information.cpp"
-#include "config/location_server.cpp"
-#include "config/logging.cpp"
-#include "config/output.cpp"
-#include "config/print.cpp"
-#ifdef INCLUDE_GENERATOR_RTCM
-#include "config/lpp2frame_rtcm.cpp"
-#include "config/lpp2rtcm.cpp"
-#endif
-#ifdef INCLUDE_GENERATOR_SPARTN
-#include "config/lpp2spartn.cpp"
-#endif
-#ifdef INCLUDE_GENERATOR_TOKORO
-#include "config/tokoro.cpp"
-#endif
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-#include "config/idokeido.cpp"
-#endif
-#ifdef DATA_TRACING
-#include "config/data_tracing.cpp"
-#endif
-#include "config/ubx_config.cpp"
+namespace config {
 
 void dump(Config* config) {
     DEBUGF("config:");
@@ -70,61 +43,61 @@ void dump(Config* config) {
     {
         DEBUGF("location server:");
         DEBUG_INDENT_SCOPE();
-        ls::dump(config->location_server);
+        ::ls::dump(config->location_server);
     }
 
     {
         DEBUGF("identity:");
         DEBUG_INDENT_SCOPE();
-        identity::dump(config->identity);
+        ::identity::dump(config->identity);
     }
 
     {
         DEBUGF("assistance data:");
         DEBUG_INDENT_SCOPE();
-        ad::dump(config->assistance_data);
+        ::ad::dump(config->assistance_data);
     }
 
     {
         DEBUGF("location information:");
         DEBUG_INDENT_SCOPE();
-        li::dump(config->location_information);
+        ::li::dump(config->location_information);
     }
 
     {
         DEBUGF("input:");
         DEBUG_INDENT_SCOPE();
-        input::dump(config->input);
+        ::input::dump(config->input);
     }
 
     {
         DEBUGF("output:");
         DEBUG_INDENT_SCOPE();
-        output::dump(config->output);
+        ::output::dump(config->output);
     }
 
     {
         DEBUGF("print:");
         DEBUG_INDENT_SCOPE();
-        print::dump(config->print);
+        ::print::dump(config->print);
     }
 
     {
         DEBUGF("gnss:");
         DEBUG_INDENT_SCOPE();
-        gnss::dump(config->gnss);
+        ::gnss::dump(config->gnss);
     }
 
 #ifdef INCLUDE_GENERATOR_RTCM
     {
         DEBUGF("lpp2rtcm:");
         DEBUG_INDENT_SCOPE();
-        lpp2rtcm::dump(config->lpp2rtcm);
+        ::lpp2rtcm::dump(config->lpp2rtcm);
     }
     {
         DEBUGF("lpp2frame-rtcm:");
         DEBUG_INDENT_SCOPE();
-        lpp2frame_rtcm::dump(config->lpp2frame_rtcm);
+        ::lpp2frame_rtcm::dump(config->lpp2frame_rtcm);
     }
 #endif
 
@@ -132,7 +105,7 @@ void dump(Config* config) {
     {
         DEBUGF("lpp2spartn:");
         DEBUG_INDENT_SCOPE();
-        lpp2spartn::dump(config->lpp2spartn);
+        ::lpp2spartn::dump(config->lpp2spartn);
     }
 #endif
 
@@ -140,7 +113,7 @@ void dump(Config* config) {
     {
         DEBUGF("tokoro:");
         DEBUG_INDENT_SCOPE();
-        tokoro::dump(config->tokoro);
+        ::tokoro::dump(config->tokoro);
     }
 #endif
 
@@ -148,28 +121,28 @@ void dump(Config* config) {
     {
         DEBUGF("idokeido:");
         DEBUG_INDENT_SCOPE();
-        idokeido::dump(config->idokeido);
+        ::idokeido::dump(config->idokeido);
     }
 #endif
 
     {
         DEBUGF("logging:");
         DEBUG_INDENT_SCOPE();
-        logging::dump(config->logging);
+        ::logging::dump(config->logging);
     }
 
 #ifdef DATA_TRACING
     {
         DEBUGF("data tracing:");
         DEBUG_INDENT_SCOPE();
-        data_tracing::dump(config->data_tracing);
+        ::data_tracing::dump(config->data_tracing);
     }
 #endif
 
     {
         DEBUGF("ubx config:");
         DEBUG_INDENT_SCOPE();
-        ubx_config::dump(config->ubx_config);
+        ::ubx_config::dump(config->ubx_config);
     }
 }
 
@@ -179,59 +152,32 @@ bool parse(int argc, char** argv, Config* config) {
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
 
-    args::GlobalOptions location_server_globals{parser, ls::gGroup};
-    args::GlobalOptions identity_globals{parser, identity::gGroup};
-    args::GlobalOptions assistance_data_globals{parser, ad::gGroup};
-    args::GlobalOptions location_information_globals{parser, li::gGroup};
-    args::GlobalOptions input_globals{parser, input::gGroup};
-    args::GlobalOptions output_globals{parser, output::gGroup};
-    args::GlobalOptions print_globals{parser, print::gGroup};
-    args::GlobalOptions gnss_globals{parser, gnss::gGroup};
+    ::ls::setup();
+    ::identity::setup();
+    ::ad::setup();
+    ::li::setup();
+    ::input::setup();
+    ::output::setup();
+    ::print::setup();
+    ::gnss::setup();
 #ifdef INCLUDE_GENERATOR_RTCM
-    args::GlobalOptions lpp2rtcm_globals{parser, lpp2rtcm::gGroup};
-    args::GlobalOptions lpp2frame_rtcm_globals{parser, lpp2frame_rtcm::gGroup};
+    ::lpp2rtcm::setup();
+    ::lpp2frame_rtcm::setup();
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
-    args::GlobalOptions lpp2spartn_globals{parser, lpp2spartn::gGroup};
+    ::lpp2spartn::setup();
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
-    args::GlobalOptions tokoro_globals{parser, tokoro::gGroup};
+    ::tokoro::setup();
 #endif
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
-    args::GlobalOptions idokeido_globals{parser, idokeido::gGroup};
+    ::idokeido::setup();
 #endif
-    args::GlobalOptions logging_globals{parser, logging::gGroup};
+    ::logging::setup();
 #ifdef DATA_TRACING
-    args::GlobalOptions data_tracing_globals{parser, data_tracing::gGroup};
+    ::data_tracing::setup();
 #endif
-    args::GlobalOptions ubx_config_globals{parser, ubx_config::gGroup};
-
-    ls::setup();
-    identity::setup();
-    ad::setup();
-    li::setup();
-    input::setup();
-    output::setup();
-    print::setup();
-    gnss::setup();
-#ifdef INCLUDE_GENERATOR_RTCM
-    lpp2rtcm::setup();
-    lpp2frame_rtcm::setup();
-#endif
-#ifdef INCLUDE_GENERATOR_SPARTN
-    lpp2spartn::setup();
-#endif
-#ifdef INCLUDE_GENERATOR_TOKORO
-    tokoro::setup();
-#endif
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-    idokeido::setup();
-#endif
-    logging::setup();
-#ifdef DATA_TRACING
-    data_tracing::setup();
-#endif
-    ubx_config::setup();
+    ::ubx_config::setup();
 
     config->next_tag_bit_mask = 1;
     config->tag_to_bit_mask.clear();
@@ -244,32 +190,32 @@ bool parse(int argc, char** argv, Config* config) {
             return true;
         }
 
-        ls::parse(config);
-        identity::parse(config);
-        ad::parse(config);
-        li::parse(config);
-        input::parse(config);
-        output::parse(config);
-        print::parse(config);
-        gnss::parse(config);
+        ::ls::parse(config);
+        ::identity::parse(config);
+        ::ad::parse(config);
+        ::li::parse(config);
+        ::input::parse(config);
+        ::output::parse(config);
+        ::print::parse(config);
+        ::gnss::parse(config);
 #ifdef INCLUDE_GENERATOR_RTCM
-        lpp2rtcm::parse(config);
-        lpp2frame_rtcm::parse(config);
+        ::lpp2rtcm::parse(config);
+        ::lpp2frame_rtcm::parse(config);
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
-        lpp2spartn::parse(config);
+        ::lpp2spartn::parse(config);
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
-        tokoro::parse(config);
+        ::tokoro::parse(config);
 #endif
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
-        idokeido::parse(config);
+        ::idokeido::parse(config);
 #endif
-        logging::parse(config);
+        ::logging::parse(config);
 #ifdef DATA_TRACING
-        data_tracing::parse(config);
+        ::data_tracing::parse(config);
 #endif
-        ubx_config::parse(config);
+        ::ubx_config::parse(config);
 
         config->assistance_data.gps &= config->gnss.gps;
         config->assistance_data.glonass &= config->gnss.glonass;

@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -32,9 +35,9 @@ static args::ValueFlag<std::string> gIpv4{
     gGroup, "ipv4", "IPv4 address", {"ipv4"}, args::Options::Single,
 };
 
-static void setup() {}
+void setup() {}
 
-static void parse(Config* config) {
+void parse(Config* config) {
     if (gWaitForIdentity) config->identity.wait_for_identity = true;
 
     if (!config->location_server.enabled) {
@@ -60,7 +63,7 @@ static void parse(Config* config) {
     }
 }
 
-static void dump(IdentityConfig const& config) {
+void dump(IdentityConfig const& config) {
     DEBUGF("wait_for_identity: %s", config.wait_for_identity ? "true" : "false");
 
     if (config.msisdn) {

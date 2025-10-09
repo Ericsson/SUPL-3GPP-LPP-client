@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -82,9 +85,9 @@ static args::Flag gTree{
     {"log-tree"},
 };
 
-static void setup() {}
+void setup() {}
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& logging     = config->logging;
     logging.log_level = loglet::Level::Info;
     logging.color     = gNoColor ? false : true;
@@ -108,7 +111,7 @@ static void parse(Config* config) {
     }
 
     for (auto const& module : gModules) {
-        auto parts = split(module, '=');
+        auto parts = ::split(module, '=');
         if (parts.size() != 2) {
             throw args::ValidationError("invalid log module: `" + module + "`");
         }
@@ -152,7 +155,7 @@ static char const* level_to_string(loglet::Level level) {
     return "unknown";
 }
 
-static void dump(LoggingConfig const& config) {
+void dump(LoggingConfig const& config) {
     DEBUGF("log level: %s", level_to_string(config.log_level));
     for (auto const& entry : config.module_levels) {
         auto const& module = entry.first;

@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -40,9 +43,9 @@ static args::Flag gBds{
     {"no-beidou", "no-bds"},
 };
 
-static void setup() {}
+void setup() {}
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& gnss   = config->gnss;
     gnss.gps     = true;
     gnss.glonass = true;
@@ -55,7 +58,7 @@ static void parse(Config* config) {
     if (gBds) gnss.beidou = false;
 }
 
-static void dump(GnssConfig const& config) {
+void dump(GnssConfig const& config) {
     DEBUGF("gps:     %s", config.gps ? "enabled" : "disabled");
     DEBUGF("glonass: %s", config.glonass ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.galileo ? "enabled" : "disabled");

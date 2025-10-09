@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -54,12 +57,12 @@ static args::ValueFlag<std::string> gMsmType{
     {"l2r-msm"},
 };
 
-static void setup() {
+void setup() {
     gMsmType.HelpDefault("any");
     gMsmType.HelpChoices({"any", "4", "5", "6", "7"});
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& lpp2rtcm            = config->lpp2rtcm;
     lpp2rtcm.enabled          = false;
     lpp2rtcm.generate_gps     = true;
@@ -91,7 +94,7 @@ static void parse(Config* config) {
     }
 }
 
-static void dump(Lpp2RtcmConfig const& config) {
+void dump(Lpp2RtcmConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
 

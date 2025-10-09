@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -86,7 +89,7 @@ static args::ValueFlag<std::string> gWeightModel{
     {"ido-weight"},
 };
 
-static void setup() {
+void setup() {
     gRelativistic.HelpChoices({"none", "brdc", "dotrv"});
     gRelativistic.HelpDefault("brdc");
 
@@ -100,7 +103,7 @@ static void setup() {
     gWeightModel.HelpDefault("none");
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& cfg              = config->idokeido;
     cfg.enabled            = false;
     cfg.gps                = true;
@@ -184,7 +187,7 @@ static void parse(Config* config) {
     }
 }
 
-static void dump(IdokeidoConfig const& config) {
+void dump(IdokeidoConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
 

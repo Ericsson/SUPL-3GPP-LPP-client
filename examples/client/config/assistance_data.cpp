@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -145,7 +148,7 @@ static args::Flag gNoAntennaHeight{
     {"ad-no-antenna-height"},
 };
 
-static void setup() {
+void setup() {
     gType.HelpChoices({"osr", "ssr"});
 
     gOsrObservations.HelpDefault("1");
@@ -163,7 +166,7 @@ static void setup() {
     gDeliveryAmount.HelpDefault("32");
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& ad                        = config->assistance_data;
     ad.enabled                      = true;
     ad.wait_for_cell                = false;
@@ -290,7 +293,7 @@ static void parse(Config* config) {
         ad.delivery_amount = 32;
 }
 
-static void dump(AssistanceDataConfig const& config) {
+void dump(AssistanceDataConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
 

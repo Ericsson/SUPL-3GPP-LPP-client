@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -249,7 +252,7 @@ static args::Flag gIgnoreBitmask{
     {"tkr-ignore-bitmask"},
 };
 
-static void setup() {
+void setup() {
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
 
@@ -260,7 +263,7 @@ static void setup() {
     gDynamicDistThresholdArg.HelpDefault("5.0");
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& tokoro            = config->tokoro;
     tokoro.enabled          = false;
     tokoro.generate_gps     = true;
@@ -385,7 +388,7 @@ static void parse(Config* config) {
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
 }
 
-static void dump(TokoroConfig const& config) {
+void dump(TokoroConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
 

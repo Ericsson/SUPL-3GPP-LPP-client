@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -66,9 +69,9 @@ static args::Flag gHackNeverSendAbort{
     {"ls-hack-never-send-abort"},
 };
 
-static void setup() {}
+void setup() {}
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& ls                          = config->location_server;
     ls.enabled                        = true;
     ls.shutdown_on_disconnect         = false;
@@ -109,7 +112,7 @@ static void parse(Config* config) {
     if (gShutdownOnDisconnect) ls.shutdown_on_disconnect = true;
 }
 
-static void dump(LocationServerConfig const& config) {
+void dump(LocationServerConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
 

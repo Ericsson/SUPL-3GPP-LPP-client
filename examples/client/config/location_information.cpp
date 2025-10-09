@@ -1,5 +1,8 @@
 #include <cctype>
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -113,14 +116,14 @@ static args::ValueFlag<double> gAltitude{
     gFakeLocationGroup, "meter", "Fake Altitude", {"li-fake-altitude"}, args::Options::Single,
 };
 
-static void setup() {
+void setup() {
     gUpdateRate.HelpDefault("1000");
     gLatitude.HelpDefault("69.06");
     gLongitude.HelpDefault("20.55");
     gAltitude.HelpDefault("0.0");
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& li                          = config->location_information;
     li.enable                         = true;
     li.unsolicited                    = false;
@@ -170,7 +173,7 @@ static void parse(Config* config) {
     if (gNmeaRequireVtg) li.nmea_require_vtg = true;
 
     if (gNmeaOrder) {
-        auto order = split(gNmeaOrder.Get(), ',');
+        auto order = ::split(gNmeaOrder.Get(), ',');
         li.nmea_order.clear();
         for (auto type : order) {
             for (auto& c : type)
@@ -195,7 +198,7 @@ static void parse(Config* config) {
     }
 }
 
-static void dump(LocationInformationConfig const& config) {
+void dump(LocationInformationConfig const& config) {
     DEBUGF("unsolicited: %s", config.unsolicited ? "true" : "false");
     DEBUGF("update_rate_forced: %s", config.update_rate_forced ? "true" : "false");
     DEBUGF("update_rate_ms: %d ms", config.update_rate_ms);

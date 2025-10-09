@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -51,11 +54,11 @@ static args::Flag gPossibWrap{
     gGroup, "possib-wrap", "Include wrapped posSIB data", {"dt-possib-wrap"}, args::Options::Single,
 };
 
-static void setup() {
+void setup() {
     gPort.HelpDefault("1883");
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& dt            = config->data_tracing;
     dt.enabled          = false;
     dt.port             = 1883;
@@ -82,7 +85,7 @@ static void parse(Config* config) {
     }
 }
 
-static void dump(DataTracingConfig const& config) {
+void dump(DataTracingConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
 

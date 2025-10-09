@@ -1,4 +1,7 @@
-#include "config.hpp"
+#include "../config.hpp"
+#include <loglet/loglet.hpp>
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -36,11 +39,11 @@ static args::Flag gOutputInRtcm{
     {"l2f-rtcm"},
 };
 
-static void setup() {
+void setup() {
     gRtcmMessageId.HelpDefault("355");
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     auto& lpp2frame_rtcm           = config->lpp2frame_rtcm;
     lpp2frame_rtcm.enabled         = false;
     lpp2frame_rtcm.rtcm_message_id = 355;
@@ -57,7 +60,7 @@ static void parse(Config* config) {
     }
 }
 
-static void dump(Lpp2FrameRtcmConfig const& config) {
+void dump(Lpp2FrameRtcmConfig const& config) {
     DEBUGF("status: %s", config.enabled ? "enabled" : "disabled");
     if (!config.enabled) return;
 

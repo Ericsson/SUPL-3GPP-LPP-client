@@ -1,3 +1,4 @@
+#include "../config.hpp"
 #include <format/ubx/cfg.hpp>
 #include <fstream>
 #include <io/file.hpp>
@@ -5,7 +6,8 @@
 #include <io/tcp.hpp>
 #include <loglet/loglet.hpp>
 #include <sstream>
-#include "../config.hpp"
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -55,17 +57,9 @@ static args::ValueFlagList<std::string> gInterfaces{
 static args::Flag gApplyAndExit{
     gGroup, "apply-and-exit", "Apply configuration and exit", {"cfg-apply-and-exit"}};
 
-static void setup() {}
+void setup() {}
 
-static std::vector<std::string> split(std::string const& str, char delim) {
-    std::vector<std::string> tokens;
-    std::string              token;
-    std::istringstream       token_stream(str);
-    while (std::getline(token_stream, token, delim)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
+
 
 static format::ubx::CfgKey parse_cfg_key(std::string const& key_str) {
     // Map string keys to actual CFG_KEY values
@@ -170,7 +164,7 @@ load_options_from_file(std::string const& filename) {
 static std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>>
 parse_options_list(std::string const& options_str) {
     std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> options;
-    auto option_parts = split(options_str, '+');
+    auto option_parts = ::split(options_str, '+');
 
     for (auto const& option : option_parts) {
         options.push_back(parse_option(option));
@@ -180,10 +174,10 @@ parse_options_list(std::string const& options_str) {
 }
 
 static std::unordered_map<std::string, std::string> parse_arguments(std::string const& str) {
-    auto                                         parts = split(str, ',');
+    auto                                         parts = ::split(str, ',');
     std::unordered_map<std::string, std::string> arguments;
     for (auto const& part : parts) {
-        auto kv = split(part, '=');
+        auto kv = ::split(part, '=');
         if (kv.size() != 2) {
             throw args::ValidationError("--cfg-ubx: invalid argument, got `" + part + "`");
         }
@@ -341,7 +335,7 @@ static UbxPrintMode parse_print_mode(std::string const& print_str) {
 }
 
 static UbxConfigInterface parse_interface(std::string const& source) {
-    auto parts = split(source, ':');
+    auto parts = ::split(source, ':');
     if (parts.size() != 2) {
         throw args::ValidationError("--cfg-ubx: invalid format, expected <type>:<arguments>");
     }
@@ -397,7 +391,7 @@ static UbxConfigInterface parse_interface(std::string const& source) {
     return result;
 }
 
-static void parse(Config* config) {
+void parse(Config* config) {
     for (auto const& interface_str : gInterfaces.Get()) {
         config->ubx_config.interfaces.push_back(parse_interface(interface_str));
     }
@@ -405,7 +399,7 @@ static void parse(Config* config) {
     config->ubx_config.apply_and_exit = gApplyAndExit.Get();
 }
 
-static void dump(UbxConfigConfig const& config) {
+void dump(UbxConfigConfig const& config) {
     DEBUGF("interfaces count: %zu", config.interfaces.size());
     DEBUGF("apply_and_exit: %s", config.apply_and_exit ? "true" : "false");
 

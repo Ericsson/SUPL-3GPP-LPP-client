@@ -457,6 +457,116 @@ struct Config {
     }
 };
 
+std::vector<std::string> split(std::string const& str, char delim);
+
+LOGLET_MODULE_FORWARD_REF2(client, config);
+
+namespace ad {
+void setup();
+void parse(Config* config);
+void dump(AssistanceDataConfig const& config);
+}
+
+namespace gnss {
+void setup();
+void parse(Config* config);
+void dump(GnssConfig const& config);
+}
+
+namespace identity {
+void setup();
+void parse(Config* config);
+void dump(IdentityConfig const& config);
+}
+
+namespace input {
+void setup();
+void parse(Config* config);
+void dump(InputConfig const& config);
+}
+
+namespace li {
+void setup();
+void parse(Config* config);
+void dump(LocationInformationConfig const& config);
+}
+
+namespace ls {
+void setup();
+void parse(Config* config);
+void dump(LocationServerConfig const& config);
+}
+
+namespace logging {
+void setup();
+void parse(Config* config);
+void dump(LoggingConfig const& config);
+}
+
+namespace output {
+void setup();
+void parse(Config* config);
+void dump(OutputConfig const& config);
+}
+
+namespace print {
+void setup();
+void parse(Config* config);
+void dump(PrintConfig const& config);
+}
+
+#ifdef INCLUDE_GENERATOR_RTCM
+namespace lpp2rtcm {
+void setup();
+void parse(Config* config);
+void dump(Lpp2RtcmConfig const& config);
+}
+
+namespace lpp2frame_rtcm {
+void setup();
+void parse(Config* config);
+void dump(Lpp2FrameRtcmConfig const& config);
+}
+#endif
+
+#ifdef INCLUDE_GENERATOR_SPARTN
+namespace lpp2spartn {
+void setup();
+void parse(Config* config);
+void dump(Lpp2SpartnConfig const& config);
+}
+#endif
+
+#ifdef INCLUDE_GENERATOR_TOKORO
+namespace tokoro {
+void setup();
+void parse(Config* config);
+void dump(TokoroConfig const& config);
+}
+#endif
+
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+namespace idokeido {
+void setup();
+void parse(Config* config);
+void dump(IdokeidoConfig const& config);
+}
+#endif
+
+#ifdef DATA_TRACING
+namespace data_tracing {
+void setup();
+void parse(Config* config);
+void dump(DataTracingConfig const& config);
+}
+#endif
+
+namespace ubx_config {
+void setup();
+void parse(Config* config);
+void dump(UbxConfigConfig const& config);
+}
+
 namespace config {
 bool parse(int argc, char** argv, Config* config);
 void dump(Config* config);
