@@ -469,68 +469,68 @@ namespace ad {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(AssistanceDataConfig const& config);
-}
+}  // namespace ad
 
 namespace gnss {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(GnssConfig const& config);
-}
+}  // namespace gnss
 
 namespace identity {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(IdentityConfig const& config);
-}
+}  // namespace identity
 
 namespace input {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(InputConfig const& config);
-}
+}  // namespace input
 
 namespace li {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(LocationInformationConfig const& config);
-}
+}  // namespace li
 
 namespace ls {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(LocationServerConfig const& config);
-}
+}  // namespace ls
 
 namespace logging {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(LoggingConfig const& config);
-}
+}  // namespace logging
 
 namespace output {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(OutputConfig const& config);
-}
+}  // namespace output
 
 namespace print {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(PrintConfig const& config);
-}
+}  // namespace print
 
 #ifdef INCLUDE_GENERATOR_RTCM
 namespace lpp2rtcm {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(Lpp2RtcmConfig const& config);
-}
+}  // namespace lpp2rtcm
 
 namespace lpp2frame_rtcm {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(Lpp2FrameRtcmConfig const& config);
-}
+}  // namespace lpp2frame_rtcm
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
@@ -538,7 +538,7 @@ namespace lpp2spartn {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(Lpp2SpartnConfig const& config);
-}
+}  // namespace lpp2spartn
 #endif
 
 #ifdef INCLUDE_GENERATOR_TOKORO
@@ -546,7 +546,7 @@ namespace tokoro {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(TokoroConfig const& config);
-}
+}  // namespace tokoro
 #endif
 
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
@@ -554,7 +554,7 @@ namespace idokeido {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(IdokeidoConfig const& config);
-}
+}  // namespace idokeido
 #endif
 
 #ifdef DATA_TRACING
@@ -562,14 +562,14 @@ namespace data_tracing {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(DataTracingConfig const& config);
-}
+}  // namespace data_tracing
 #endif
 
 namespace ubx_config {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(UbxConfigConfig const& config);
-}
+}  // namespace ubx_config
 
 namespace config {
 bool parse(int argc, char** argv, Config* config);

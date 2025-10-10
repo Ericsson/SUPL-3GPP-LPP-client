@@ -1,11 +1,11 @@
-#include "../config.hpp"
 #include <io/file.hpp>
 #include <io/serial.hpp>
 #include <io/stdout.hpp>
 #include <io/tcp.hpp>
 #include <io/udp.hpp>
-#include "../processor/chunked_log.hpp"
 #include <loglet/loglet.hpp>
+#include "../config.hpp"
+#include "../processor/chunked_log.hpp"
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 

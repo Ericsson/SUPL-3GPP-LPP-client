@@ -1,6 +1,6 @@
 #include <cctype>
-#include "../config.hpp"
 #include <loglet/loglet.hpp>
+#include "../config.hpp"
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 

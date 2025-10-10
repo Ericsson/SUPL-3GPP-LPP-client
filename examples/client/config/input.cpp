@@ -1,4 +1,3 @@
-#include "../config.hpp"
 #include <cxx11_compat.hpp>
 #include <io/file.hpp>
 #include <io/serial.hpp>
@@ -7,6 +6,7 @@
 #include <io/tcp.hpp>
 #include <io/udp.hpp>
 #include <loglet/loglet.hpp>
+#include "../config.hpp"
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 

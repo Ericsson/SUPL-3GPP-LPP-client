@@ -1,5 +1,5 @@
-#include "../config.hpp"
 #include <loglet/loglet.hpp>
+#include "../config.hpp"
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
@@ -17,7 +17,7 @@
 
 namespace print {
 
-static args::Group gGroup{"Print:"};
+static args::Group                      gGroup{"Print:"};
 static args::ValueFlagList<std::string> gArgs{
     gGroup,
     "print",

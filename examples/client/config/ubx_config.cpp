@@ -1,4 +1,3 @@
-#include "../config.hpp"
 #include <format/ubx/cfg.hpp>
 #include <fstream>
 #include <io/file.hpp>
@@ -6,6 +5,7 @@
 #include <io/tcp.hpp>
 #include <loglet/loglet.hpp>
 #include <sstream>
+#include "../config.hpp"
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
@@ -60,8 +60,6 @@ static args::Flag gApplyAndExit{
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions globals{parser, gGroup};
 }
-
-
 
 static format::ubx::CfgKey parse_cfg_key(std::string const& key_str) {
     // Map string keys to actual CFG_KEY values
