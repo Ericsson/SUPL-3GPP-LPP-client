@@ -94,13 +94,16 @@ void TlfOutputStage::write(OutputFormat format, uint8_t const* buffer, size_t le
     auto diff_us     = std::chrono::duration_cast<std::chrono::microseconds>(diff).count();
     auto diff_us_u32 = static_cast<uint32_t>(diff_us);
 
-    auto header = TlfHeader{
-        .magic    = {MAGIC[0], MAGIC[1], MAGIC[2], MAGIC[3]},
-        .sequence = mSequence,
-        .format   = format,
-        .ms       = diff_us_u32,
-        .length   = static_cast<uint32_t>(length),
-    };
+    TlfHeader header{};
+    header.magic[0] = MAGIC[0];
+    header.magic[1] = MAGIC[1];
+    header.magic[2] = MAGIC[2];
+    header.magic[3] = MAGIC[3];
+    header.sequence = mSequence;
+    header.format   = format;
+    header.ms       = diff_us_u32;
+    header.length   = static_cast<uint32_t>(length);
+    
     mNext->write(OUTPUT_FORMAT_TLF, reinterpret_cast<uint8_t const*>(&header), sizeof(header));
     mNext->write(OUTPUT_FORMAT_TLF, buffer, length);
 
@@ -173,7 +176,7 @@ TlfInputStage::TlfInputStage(std::unique_ptr<InputStage> parent) NOEXCEPT
 
     mTask.set_event_name("TlfInputStage");
     mTask.callback = [this]() {
-        FUNCTION_SCOPEF("periodic task");
+        FUNCTION_SCOPEN("periodic task");
         DEBUGF("queue size = %zu", mQueue.size());
         auto now = std::chrono::steady_clock::now();
         while (mQueue.size() > 0) {

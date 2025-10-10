@@ -308,13 +308,17 @@ void Observation::compute_ranges() NOEXCEPT {
 
     auto stec_grid              = 0.0;
     auto stec_poly              = 0.0;
-    auto vtec_mapping           = 0.0;
     auto stec_height_correction = 0.0;
+#ifdef DATA_TRACING
+    auto vtec_mapping = 0.0;
+#endif
     if (mIonospheric.valid) {
         stec_grid              = 40.3e10 * mIonospheric.grid_residual / (mFrequency * mFrequency);
         stec_poly              = 40.3e10 * mIonospheric.poly_residual / (mFrequency * mFrequency);
-        vtec_mapping           = mIonospheric.vtec_mapping;
         stec_height_correction = mIonospheric.height_correction;
+#ifdef DATA_TRACING
+        vtec_mapping = mIonospheric.vtec_mapping;
+#endif
         VERBOSEF("stec_grid:    %+24.10f (%gTECU,%gkHz)", stec_grid, mIonospheric.grid_residual,
                  mFrequency);
         VERBOSEF("stec_poly:    %+24.10f (%gTECU,%gkHz)", stec_poly, mIonospheric.poly_residual,

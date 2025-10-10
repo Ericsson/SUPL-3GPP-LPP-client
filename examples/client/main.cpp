@@ -747,7 +747,7 @@ static void setup_tokoro(Program& program) {
 #endif
 }
 
-static void setup_idokeido(UNUSED Program& program) {
+static void setup_idokeido(Program& program) {
 #if defined(INCLUDE_GENERATOR_IDOKEIDO)
     if (program.config.idokeido.enabled) {
         auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
@@ -755,6 +755,8 @@ static void setup_idokeido(UNUSED Program& program) {
         program.stream.add_inspector<IdokeidoEphemerisUbx<IdokeidoSpp>>(*idokeido_spp);
         program.stream.add_inspector<IdokeidoMeasurmentUbx<IdokeidoSpp>>(*idokeido_spp);
     }
+#else
+    (void)program;
 #endif
 }
 

@@ -1,5 +1,6 @@
 #include "bit_string.hpp"
 #include <cassert>
+#include <cstring>
 #include <iostream>
 #include <sstream>
 
@@ -10,14 +11,14 @@ BitString::BitString(size_t bits) {
     buf         = nullptr;
     size        = 0;
     bits_unused = 0;
-    _asn_ctx    = {};
+    memset(&_asn_ctx, 0, sizeof(_asn_ctx));
     initialize(bits);
 }
 
 void BitString::destroy() {
     size        = 0;
     bits_unused = 0;
-    _asn_ctx    = {};
+    memset(&_asn_ctx, 0, sizeof(_asn_ctx));
     if (buf) {
         free(buf);
         buf = nullptr;

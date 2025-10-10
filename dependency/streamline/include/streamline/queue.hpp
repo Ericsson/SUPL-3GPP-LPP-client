@@ -28,8 +28,11 @@ public:
                   EVENT_QUEUE_SIZE);
             mQueue.pop();
         } else {
-            uint64_t value = 1;
-            write(mFd, &value, sizeof(value));
+            uint64_t value  = 1;
+            ssize_t  result = write(mFd, &value, sizeof(value));
+            if(result == -1) {
+                WARNF("failed to write to eventfd (%s)", strerror(errno));
+            }
         }
     }
 
@@ -43,7 +46,8 @@ public:
     int      get_fd() const { return mFd; }
     uint64_t poll_count() {
         uint64_t value;
-        read(mFd, &value, sizeof(value));
+        ssize_t  result = read(mFd, &value, sizeof(value));
+        (void)result;
         return value;
     }
 
