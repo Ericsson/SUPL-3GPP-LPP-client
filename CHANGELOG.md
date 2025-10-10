@@ -11,11 +11,29 @@ All notable changes to this project will be documented in this file.
 - Stage `tlf` for reading and writing time-logged format data
 - Function performance logging with `LOG_FUNCTION_PERFORMANCE=ON`
 - Chunked-log output interface for hourly rotating log files with timestamp names
+- Comprehensive logging support in modem-ctrl example with command-line flags
+- Hexdump functionality for verbose logging in modem dependency
+- `discard_errors` and `discard_unknowns` options to input parsers
+- NMEA message ordering to prevent incomplete location reports
+- Message print support via `--print` option
+- Support for NMEA ending in only LF via `nmea_lf_only` option
+- Support for GGA messages with only 12 values
+
+### Changed
+- Improved logging throughout modem dependency with detailed verbose output
+- Enhanced RTCM parsing and bitset performance
+- Better RTCM CRC check and logging
+- Improved NMEA processor logging and information output
 
 ### Fixed
+- All compiler warnings across the codebase
 - SerialInput incorrectly treating set_fd return value as error
 - Output assert when chain/stages not specified
 - Forward task and missing data during fast reads
+- Missing #ifdef guards
+- Remaining set_fd calls
+- NMEA processor logging issues
+- Cell requirement when `--ls-disable` and `--ad-disable` are used
 
 ## [4.0.22] - 2025-08-07
 
