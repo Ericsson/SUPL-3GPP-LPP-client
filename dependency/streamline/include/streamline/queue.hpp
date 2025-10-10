@@ -1,6 +1,7 @@
 #pragma once
 #include <core/core.hpp>
 
+#include <cstring>
 #include <mutex>
 #include <queue>
 #include <sys/eventfd.h>

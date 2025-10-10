@@ -383,9 +383,12 @@ void Client::process_request_location_information(lpp::TransactionHandle const& 
         return;
     }
 
-    auto reporting_amount_enum = (periodical_reporting->reportingAmount == nullptr ?
-                                      PeriodicalReportingCriteria__reportingAmount_ra1 :
-                                      *periodical_reporting->reportingAmount);
+    PeriodicalReportingCriteria__reportingAmount reporting_amount_enum;
+    if (periodical_reporting->reportingAmount == nullptr) {
+        reporting_amount_enum = PeriodicalReportingCriteria__reportingAmount_ra1;
+    } else {
+        reporting_amount_enum = static_cast<PeriodicalReportingCriteria__reportingAmount>(*periodical_reporting->reportingAmount);
+    }
     auto reporting_amount_unlimited =
         (reporting_amount_enum == PeriodicalReportingCriteria__reportingAmount_ra_Infinity);
     long reporting_amount = 0;

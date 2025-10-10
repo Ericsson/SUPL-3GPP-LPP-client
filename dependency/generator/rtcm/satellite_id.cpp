@@ -160,6 +160,7 @@ char const* SatelliteId::name() const {
     case Gnss::GLONASS: return (mLppId >= 0 && mLppId < 24) ? GLO_NAMES[mLppId] : "R--";
     case Gnss::GALILEO: return (mLppId >= 0 && mLppId < 36) ? GAL_NAMES[mLppId] : "E--";
     case Gnss::BEIDOU: return (mLppId >= 0 && mLppId < 63) ? BDS_NAMES[mLppId] : "C--";
-    case Gnss::UNKNOWN: return "U--"; CORE_UNREACHABLE_CASE;
+    case Gnss::UNKNOWN: return "U--";
     }
+    CORE_UNREACHABLE();
 }

@@ -76,7 +76,7 @@ __attribute__((noreturn)) inline void core_unreachable() {
 #endif
 
 #ifndef CORE_UNREACHABLE_CASE
-#if defined(__GNUC__) && __GNUC__ < 8
+#if defined(__GNUC__) && !defined(__clang__) && __GNUC__ < 8
 #define CORE_UNREACHABLE_CASE                                                                      \
     default: CORE_UNREACHABLE()
 #else

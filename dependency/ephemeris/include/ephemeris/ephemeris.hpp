@@ -32,8 +32,9 @@ public:
         case Type::NONE: return 0;
         case Type::GPS: return mGpsEphemeris.lpp_iod;
         case Type::GAL: return mGalEphemeris.lpp_iod;
-        case Type::BDS: return mBdsEphemeris.lpp_iod; CORE_UNREACHABLE_CASE;
+        case Type::BDS: return mBdsEphemeris.lpp_iod;
         }
+        CORE_UNREACHABLE();
     }
 
     NODISCARD uint16_t iode() const NOEXCEPT {
@@ -41,8 +42,9 @@ public:
         case Type::NONE: return 0;
         case Type::GPS: return mGpsEphemeris.iode;
         case Type::GAL: return mGalEphemeris.iod_nav;
-        case Type::BDS: return mBdsEphemeris.iode; CORE_UNREACHABLE_CASE;
+        case Type::BDS: return mBdsEphemeris.iode;
         }
+        CORE_UNREACHABLE();
     }
 
     NODISCARD uint16_t iodc() const NOEXCEPT {
@@ -50,8 +52,9 @@ public:
         case Type::NONE: return 0;
         case Type::GPS: return mGpsEphemeris.iodc;
         case Type::GAL: return mGalEphemeris.iod_nav;
-        case Type::BDS: return mBdsEphemeris.iodc; CORE_UNREACHABLE_CASE;
+        case Type::BDS: return mBdsEphemeris.iodc;
         }
+        CORE_UNREACHABLE();
     }
 
     NODISCARD bool is_valid(ts::Tai const& time) const NOEXCEPT {
@@ -59,8 +62,9 @@ public:
         case Type::NONE: return false;
         case Type::GPS: return mGpsEphemeris.is_valid(ts::Gps{time});
         case Type::GAL: return mGalEphemeris.is_valid(ts::Gst{time});
-        case Type::BDS: return mBdsEphemeris.is_valid(ts::Bdt{time}); CORE_UNREACHABLE_CASE;
+        case Type::BDS: return mBdsEphemeris.is_valid(ts::Bdt{time});
         }
+        CORE_UNREACHABLE();
     }
 
     NODISCARD EphemerisResult compute(ts::Tai const& time) const NOEXCEPT {
@@ -68,8 +72,9 @@ public:
         case Type::NONE: return EphemerisResult{};
         case Type::GPS: return mGpsEphemeris.compute(ts::Gps{time});
         case Type::GAL: return mGalEphemeris.compute(ts::Gst{time});
-        case Type::BDS: return mBdsEphemeris.compute(ts::Bdt{time}); CORE_UNREACHABLE_CASE;
+        case Type::BDS: return mBdsEphemeris.compute(ts::Bdt{time});
         }
+        CORE_UNREACHABLE();
     }
 
     NODISCARD double clock_bias(ts::Tai const& time) const NOEXCEPT {
@@ -77,10 +82,9 @@ public:
         case Type::NONE: return 0.0;
         case Type::GPS: return mGpsEphemeris.calculate_clock_bias(ts::Gps{time});
         case Type::GAL: return mGalEphemeris.calculate_clock_bias(ts::Gst{time});
-        case Type::BDS:
-            return mBdsEphemeris.calculate_clock_bias(ts::Bdt{time});
-            CORE_UNREACHABLE_CASE;
+        case Type::BDS: return mBdsEphemeris.calculate_clock_bias(ts::Bdt{time});
         }
+        CORE_UNREACHABLE();
     }
 
     NODISCARD double relativistic_correction(Float3 const& position,
@@ -89,10 +93,9 @@ public:
         case Type::NONE: return 0.0;
         case Type::GPS: return mGpsEphemeris.calculate_relativistic_correction(position, velocity);
         case Type::GAL: return mGalEphemeris.calculate_relativistic_correction(position, velocity);
-        case Type::BDS:
-            return mBdsEphemeris.calculate_relativistic_correction(position, velocity);
-            CORE_UNREACHABLE_CASE;
+        case Type::BDS: return mBdsEphemeris.calculate_relativistic_correction(position, velocity);
         }
+        CORE_UNREACHABLE();
     }
 
 private:

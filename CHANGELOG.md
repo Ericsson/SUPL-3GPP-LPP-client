@@ -26,7 +26,12 @@ All notable changes to this project will be documented in this file.
 - Improved NMEA processor logging and information output
 
 ### Fixed
-- All compiler warnings across the codebase
+- All compiler warnings in codebase (excluding external generated ASN.1 code)
+- CORE_UNREACHABLE_CASE macro incorrectly expanding on clang due to GCC compatibility defines
+- Control flow warnings in exhaustive switch statements by adding explicit CORE_UNREACHABLE() markers
+- Sign conversion warnings in modem hexdump by using size_t consistently
+- Enumerated/non-enumerated conditional expression warning in lpp client
+- Missing cstring header for strerror in streamline queue
 - SerialInput incorrectly treating set_fd return value as error
 - Output assert when chain/stages not specified
 - Forward task and missing data during fast reads

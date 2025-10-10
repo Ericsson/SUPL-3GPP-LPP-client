@@ -134,8 +134,9 @@ static char const* state_to_string(State state) {
     case State::ESTABLISHED: return "ESTABLISHED";
     case State::MESSAGE: return "MESSAGE";
     case State::ERROR: return "ERROR";
-    case State::EXIT: return "EXIT"; CORE_UNREACHABLE_CASE;
+    case State::EXIT: return "EXIT";
     }
+    CORE_UNREACHABLE();
 }
 
 void Session::connect(std::string const& host, uint16_t port, std::string const& interface) {

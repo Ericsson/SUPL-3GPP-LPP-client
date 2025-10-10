@@ -90,6 +90,7 @@ MATRIX = {
         ['-DUSE_ASAN=ON'],
         ['-DDISABLE_LOGGING=ON'],
         ['-DDATA_TRACING=ON'],
+        ['-DINCLUDE_GENERATOR_IDOKEIDO=ON'],
     ],
     'incompatible': {
         'gcc-4.8': ['-DUSE_ASAN=ON', '-DDATA_TRACING=ON'],

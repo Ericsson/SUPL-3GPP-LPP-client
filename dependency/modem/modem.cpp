@@ -18,19 +18,19 @@ static void hexdump(uint8_t const* data, size_t size) {
     
     char print_buffer[512];
     for (size_t i = 0; i < size;) {
-        int print_count = 0;
+        size_t print_count = 0;
         for (size_t j = 0; j < 16; j++) {
             if (i + j < size) {
-                print_count += snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
-                                       "%02X ", data[i + j]);
+                print_count += static_cast<size_t>(snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                                       "%02X ", data[i + j]));
             } else {
-                print_count += snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count, "   ");
+                print_count += static_cast<size_t>(snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count, "   "));
             }
         }
         for (size_t j = 0; j < 16; j++) {
             if (i + j < size) {
-                print_count += snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
-                                       "%c", isprint(data[i + j]) ? data[i + j] : '.');
+                print_count += static_cast<size_t>(snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                                       "%c", isprint(data[i + j]) ? data[i + j] : '.'));
             }
         }
         TRACEF("%s", print_buffer);

@@ -370,7 +370,7 @@ struct PerformanceStack {
         stack->parent      = current;
 
 #pragma GCC diagnostic push
-#if COMPILER_GCC
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wdangling-pointer"
 #endif
         current = stack;
