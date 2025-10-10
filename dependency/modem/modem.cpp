@@ -1,5 +1,7 @@
 #include "modem.hpp"
 
+#include <ctype.h>
+#include <inttypes.h>
 #include <loglet/loglet.hpp>
 #include <scheduler/scheduler.hpp>
 
@@ -8,23 +10,56 @@ LOGLET_MODULE(modem);
 
 namespace modem {
 
+#if !defined(DISABLE_VERBOSE)
+static void hexdump(uint8_t const* data, size_t size) {
+    if (!loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
+        return;
+    }
+    
+    char print_buffer[512];
+    for (size_t i = 0; i < size;) {
+        int print_count = 0;
+        for (size_t j = 0; j < 16; j++) {
+            if (i + j < size) {
+                print_count += snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                                       "%02X ", data[i + j]);
+            } else {
+                print_count += snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count, "   ");
+            }
+        }
+        for (size_t j = 0; j < 16; j++) {
+            if (i + j < size) {
+                print_count += snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                                       "%c", isprint(data[i + j]) ? data[i + j] : '.');
+            }
+        }
+        TRACEF("%s", print_buffer);
+        i += 16;
+    }
+}
+#endif
+
 Modem::Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> output) NOEXCEPT
     : mInput(std::move(input)),
       mOutput(std::move(output)) {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     mInput->callback = [this](io::Input&, uint8_t* buffer, size_t count) {
-        VERBOSEF("received %zu bytes", count);
+        DEBUGF("received %zu bytes", count);
+#if !defined(DISABLE_VERBOSE)
+        hexdump(buffer, count);
+#endif
         mParser.append(buffer, static_cast<uint32_t>(count));
         mParser.process();
 
         while (!mCallbacks.empty()) {
             if (!mParser.has_lines()) {
+                VERBOSEF("waiting for more data");
                 return;
             }
 
             auto state = mCallbacks.front();
-            VERBOSEF("wait for response to: \"%s\"", state.request.c_str());
+            DEBUGF("checking response for: \"%s\"", state.request.c_str());
 
             auto is_unsolicted = true;
             auto line          = mParser.peek_line();
@@ -38,13 +73,15 @@ Modem::Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> outpu
 
             if (is_unsolicted) {
                 auto unsolicited_line = mParser.skip_line();
-                VERBOSEF("unsolicited response: \"%s\"", unsolicited_line.c_str());
+                DEBUGF("unsolicited response: \"%s\"", unsolicited_line.c_str());
             } else {
                 auto result = state.callback(mParser);
 
-                // if the message was not fully processed, wait for more data
                 if (result != ResponseResult::MissingLines) {
                     mCallbacks.pop();
+                    VERBOSEF("response processed");
+                } else {
+                    VERBOSEF("waiting for more lines");
                 }
             }
         }
@@ -52,50 +89,72 @@ Modem::Modem(std::unique_ptr<io::Input> input, std::unique_ptr<io::Output> outpu
 }
 
 bool Modem::schedule(scheduler::Scheduler& scheduler) {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
     return mInput->schedule(scheduler);
 }
 
 bool Modem::cancel() {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
     return mInput->cancel();
 }
 
 void Modem::enable_echo() {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
+    DEBUGF("sending: ATE1");
+#if !defined(DISABLE_VERBOSE)
+    hexdump(reinterpret_cast<uint8_t const*>("ATE1\r\n"), 6);
+#endif
     mOutput->write(reinterpret_cast<uint8_t const*>("ATE1\r\n"), 6);
 }
 
 void Modem::disable_echo() {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
+    DEBUGF("sending: ATE0");
+#if !defined(DISABLE_VERBOSE)
+    hexdump(reinterpret_cast<uint8_t const*>("ATE0\r\n"), 6);
+#endif
     mOutput->write(reinterpret_cast<uint8_t const*>("ATE0\r\n"), 6);
 }
 
 void Modem::request(std::string const& command, ResponseCallback callback) {
-    VSCOPE_FUNCTION();
-    if (mOutput) {
-        uint8_t buffer[1024];
-        auto    length =
-            snprintf(reinterpret_cast<char*>(buffer), sizeof(buffer), "%s\r\n", command.c_str());
-
-        mCallbacks.emplace(ResponseState{command, callback});
-        mOutput->write(buffer, static_cast<size_t>(length));
+    FUNCTION_SCOPE();
+    if (!mOutput) {
+        ERRORF("output is null, cannot send request: %s", command.c_str());
+        return;
     }
+    
+    uint8_t buffer[1024];
+    auto    length =
+        snprintf(reinterpret_cast<char*>(buffer), sizeof(buffer), "%s\r\n", command.c_str());
+
+    DEBUGF("sending: %s", command.c_str());
+#if !defined(DISABLE_VERBOSE)
+    hexdump(buffer, static_cast<size_t>(length));
+#endif
+    mCallbacks.emplace(ResponseState{command, callback});
+    mOutput->write(buffer, static_cast<size_t>(length));
 }
 
 void Modem::request_no_response(std::string const& command) {
-    VSCOPE_FUNCTION();
-    if (mOutput) {
-        uint8_t buffer[1024];
-        auto    length =
-            snprintf(reinterpret_cast<char*>(buffer), sizeof(buffer), "%s\r\n", command.c_str());
-
-        mOutput->write(buffer, static_cast<size_t>(length));
+    FUNCTION_SCOPE();
+    if (!mOutput) {
+        ERRORF("output is null, cannot send request: %s", command.c_str());
+        return;
     }
+    
+    uint8_t buffer[1024];
+    auto    length =
+        snprintf(reinterpret_cast<char*>(buffer), sizeof(buffer), "%s\r\n", command.c_str());
+
+    DEBUGF("sending (no response): %s", command.c_str());
+#if !defined(DISABLE_VERBOSE)
+    hexdump(buffer, static_cast<size_t>(length));
+#endif
+    mOutput->write(buffer, static_cast<size_t>(length));
 }
 
 Modem::ResponseResult Modem::handle_cimi_query(format::at::Parser& parser, Cimi& cimi) {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // +CIMI<CR><LF>
     // 123456789012345<CR><LF>
@@ -103,6 +162,7 @@ Modem::ResponseResult Modem::handle_cimi_query(format::at::Parser& parser, Cimi&
     // OK<CR><LF>
 
     if (parser.count() != 4) {
+        VERBOSEF("waiting for 4 lines, have %zu", parser.count());
         return ResponseResult::MissingLines;
     }
 
@@ -111,14 +171,19 @@ Modem::ResponseResult Modem::handle_cimi_query(format::at::Parser& parser, Cimi&
     parser.skip_line();
     auto ok = parser.skip_line();
 
+    VERBOSEF("CIMI response: line=\"%s\" ok=\"%s\"", line.c_str(), ok.c_str());
+
     if (ok != "OK") {
+        VERBOSEF("response not OK: \"%s\"", ok.c_str());
         return ResponseResult::Failure;
     } else if (line.size() == 0) {
+        VERBOSEF("IMSI line is empty");
         return ResponseResult::Failure;
     }
 
     try {
         cimi.imsi = std::stoull(line);
+        DEBUGF("parsed IMSI: %" PRIu64, cimi.imsi);
         return ResponseResult::Success;
     } catch (std::exception const& e) {
         WARNF("failed to parse IMSI: \"%s\" %s", line.c_str(), e.what());
@@ -128,6 +193,7 @@ Modem::ResponseResult Modem::handle_cimi_query(format::at::Parser& parser, Cimi&
 }
 
 bool Modem::get_cimi(scheduler::Scheduler& scheduler, Cimi& cimi) {
+    FUNCTION_SCOPE();
     auto result = ResponseResult::Failure;
     auto called = false;
     request("AT+CIMI", [this, &cimi, &result, &called](format::at::Parser& parser) {
@@ -138,6 +204,7 @@ bool Modem::get_cimi(scheduler::Scheduler& scheduler, Cimi& cimi) {
         return result;
     });
 
+    DEBUGF("waiting for CIMI response");
     scheduler.execute_while([&]() {
         return !called;
     });
@@ -146,7 +213,7 @@ bool Modem::get_cimi(scheduler::Scheduler& scheduler, Cimi& cimi) {
 
 Modem::ResponseResult Modem::handle_creg_test(format::at::Parser& parser,
                                               SupportedCregModes& modes) {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // +CREG=?<CR><CR><LF>
     // +CREG: ...<CR><LF>
@@ -154,6 +221,7 @@ Modem::ResponseResult Modem::handle_creg_test(format::at::Parser& parser,
     // OK<CR><LF>
 
     if (parser.count() != 4) {
+        VERBOSEF("waiting for 4 lines, have %zu", parser.count());
         return ResponseResult::MissingLines;
     }
 
@@ -162,7 +230,10 @@ Modem::ResponseResult Modem::handle_creg_test(format::at::Parser& parser,
     parser.skip_line();
     auto ok = parser.skip_line();
 
+    VERBOSEF("CREG test response: data=\"%s\" ok=\"%s\"", data.c_str(), ok.c_str());
+
     if (ok != "OK") {
+        VERBOSEF("response not OK: \"%s\"", ok.c_str());
         return ResponseResult::Failure;
     }
 
@@ -180,10 +251,12 @@ Modem::ResponseResult Modem::handle_creg_test(format::at::Parser& parser,
         WARNF("unknown CREG mode: \"%s\"", data.c_str());
     }
 
+    DEBUGF("CREG modes: mode_0=%d mode_1=%d mode_2=%d", modes.mode_0, modes.mode_1, modes.mode_2);
     return ResponseResult::Success;
 }
 
 bool Modem::list_creg(scheduler::Scheduler& scheduler, SupportedCregModes& modes) {
+    FUNCTION_SCOPE();
     auto result = ResponseResult::Failure;
     auto called = false;
     request("AT+CREG=?", [this, &modes, &result, &called](format::at::Parser& parser) {
@@ -194,6 +267,7 @@ bool Modem::list_creg(scheduler::Scheduler& scheduler, SupportedCregModes& modes
         return result;
     });
 
+    DEBUGF("waiting for CREG test response");
     scheduler.execute_while([&]() {
         return !called;
     });
@@ -201,13 +275,15 @@ bool Modem::list_creg(scheduler::Scheduler& scheduler, SupportedCregModes& modes
 }
 
 void Modem::set_creg(int mode) {
+    FUNCTION_SCOPE();
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "AT+CREG=%d", mode);
+    DEBUGF("setting CREG mode to %d", mode);
     request_no_response(buffer);
 }
 
 Modem::ResponseResult Modem::handle_creg_query(format::at::Parser& parser, Creg& reg) {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // AT+CREG?<CR><LF>
     // +CREG: <n>,<stat>[,<lac>,<ci>[,<AcT>]]
@@ -215,6 +291,7 @@ Modem::ResponseResult Modem::handle_creg_query(format::at::Parser& parser, Creg&
     // OK<CR><LF>
 
     if (parser.count() != 4) {
+        VERBOSEF("waiting for 4 lines, have %zu", parser.count());
         return ResponseResult::MissingLines;
     }
 
@@ -223,9 +300,13 @@ Modem::ResponseResult Modem::handle_creg_query(format::at::Parser& parser, Creg&
     parser.skip_line();
     auto ok = parser.skip_line();
 
+    VERBOSEF("CREG query response: line=\"%s\" ok=\"%s\"", line.c_str(), ok.c_str());
+
     if (ok != "OK") {
+        VERBOSEF("response not OK: \"%s\"", ok.c_str());
         return ResponseResult::Failure;
     } else if (line.size() == 0) {
+        VERBOSEF("CREG line is empty");
         return ResponseResult::Failure;
     }
 
@@ -235,10 +316,12 @@ Modem::ResponseResult Modem::handle_creg_query(format::at::Parser& parser, Creg&
         return ResponseResult::Failure;
     }
 
+    DEBUGF("parsed CREG: mode=%d status=%d lac=%u ci=%u act=%d", reg.mode, reg.status, reg.lac, reg.ci, reg.act);
     return ResponseResult::Success;
 }
 
 bool Modem::get_creg(scheduler::Scheduler& scheduler, Creg& reg) {
+    FUNCTION_SCOPE();
     auto result = ResponseResult::Failure;
     auto called = false;
     request("AT+CREG?", [this, &reg, &result, &called](format::at::Parser& parser) {
@@ -249,6 +332,7 @@ bool Modem::get_creg(scheduler::Scheduler& scheduler, Creg& reg) {
         return result;
     });
 
+    DEBUGF("waiting for CREG query response");
     scheduler.execute_while([&]() {
         return !called;
     });
@@ -256,13 +340,15 @@ bool Modem::get_creg(scheduler::Scheduler& scheduler, Creg& reg) {
 }
 
 void Modem::set_cops(int format) {
+    FUNCTION_SCOPE();
     char buffer[1024];
     snprintf(buffer, sizeof(buffer), "AT+COPS=3,%d,", format);
+    DEBUGF("setting COPS format to %d", format);
     request_no_response(buffer);
 }
 
 Modem::ResponseResult Modem::handle_cops_query(format::at::Parser& parser, Cops& cops) {
-    VSCOPE_FUNCTION();
+    FUNCTION_SCOPE();
 
     // AT+COPS?<CR><LF>
     // +COPS: <mode>[,<format>,<oper>[,<AcT>]]
@@ -270,6 +356,7 @@ Modem::ResponseResult Modem::handle_cops_query(format::at::Parser& parser, Cops&
     // OK<CR><LF>
 
     if (parser.count() != 4) {
+        VERBOSEF("waiting for 4 lines, have %zu", parser.count());
         return ResponseResult::MissingLines;
     }
 
@@ -278,9 +365,13 @@ Modem::ResponseResult Modem::handle_cops_query(format::at::Parser& parser, Cops&
     parser.skip_line();
     auto ok = parser.skip_line();
 
+    VERBOSEF("COPS query response: line=\"%s\" ok=\"%s\"", line.c_str(), ok.c_str());
+
     if (ok != "OK") {
+        VERBOSEF("response not OK: \"%s\"", ok.c_str());
         return ResponseResult::Failure;
     } else if (line.size() == 0) {
+        VERBOSEF("COPS line is empty");
         return ResponseResult::Failure;
     }
 
@@ -296,6 +387,7 @@ Modem::ResponseResult Modem::handle_cops_query(format::at::Parser& parser, Cops&
             return ResponseResult::Failure;
         }
 
+        DEBUGF("parsed COPS: mode=%d format=%d mcc=%d mnc=%d act=%d", cops.mode, cops.format, cops.mcc, cops.mnc, cops.act);
         return ResponseResult::Success;
     } else {
         VERBOSEF("unsupported COPS mode/format: %d/%d", cops.mode, cops.format);
@@ -304,6 +396,7 @@ Modem::ResponseResult Modem::handle_cops_query(format::at::Parser& parser, Cops&
 }
 
 bool Modem::get_cops(scheduler::Scheduler& scheduler, Cops& cops) {
+    FUNCTION_SCOPE();
     auto result = ResponseResult::Failure;
     auto called = false;
     request("AT+COPS?", [this, &cops, &result, &called](format::at::Parser& parser) {
@@ -314,6 +407,7 @@ bool Modem::get_cops(scheduler::Scheduler& scheduler, Cops& cops) {
         return result;
     });
 
+    DEBUGF("waiting for COPS query response");
     scheduler.execute_while([&]() {
         return !called;
     });

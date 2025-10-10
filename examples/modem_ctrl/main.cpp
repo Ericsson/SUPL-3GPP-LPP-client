@@ -179,7 +179,6 @@ static int start_server(uint16_t port) {
 }
 
 int main(int argc, char** argv) {
-    FUNCTION_SCOPE();
     auto config = parse_configuration(argc, argv);
     
     loglet::set_level(config.logging.log_level);
