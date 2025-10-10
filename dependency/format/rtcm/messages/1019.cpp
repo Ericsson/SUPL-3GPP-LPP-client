@@ -56,26 +56,33 @@ std::unique_ptr<Message> Rtcm1019::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> Rtcm1019::parse(std::vector<uint8_t> data) {
     if (data.size() * 8 < 8 + 16 + 488 + 24) {
-        ERRORF("RTCM 1019 message created without enough data (requires %d bits, received %d bits)",
+        ERRORF("RTCM 1019 message without enough data (requires %d bits, received %d bits)",
                8 + 16 + 488 + 24, data.size() * 8);
         return std::make_unique<ErrorMessage>(1019, std::move(data));
     }
 
-    auto                           m = new Rtcm1019(1019, data);
-    std::bitset<8 + 16 + 488 + 24> bits{0UL};
-    for (auto b : data) {
-        std::bitset<8 + 16 + 488 + 24> const bs{b};
-        bits <<= 8;
-        bits |= bs;
+    if (data.size() * 8 > 8 + 16 + 488 + 24) {
+        WARNF("RTCM 1019 message with too much data (requires %d bits, received %d bits)",
+              8 + 16 + 488 + 24, data.size() * 8);
     }
 
+    std::bitset<8 + 16 + 488 + 24> bits;
+    for (std::size_t i = 0; i < (8 + 16 + 488 + 24) / 8; ++i) {
+        for (int j = 0; j < 8; ++j) {
+            bits[bits.size() - 1 - (i * 8 + j)] = (data[i] >> (7 - j)) & 1;
+        }
+    }
+
+    DF002       type;
     std::size_t i = 8 + 16;
-    getdatafield(bits, i, m->mType);
-    if (m->mType != 1019) {
-        ERRORF("RTCM 1019 message missmatched message number. should be '1019', was '%4d'",
-               m->mType.value());
+    getdatafield(bits, i, type);
+    if (type != 1019) {
+        ERRORF("RTCM 1019 message missmatched message number. should be '1019', was '%4d'", type);
         return std::make_unique<ErrorMessage>(1019, std::move(data));
     }
+
+    auto m   = new Rtcm1019(1019, data);
+    m->mType = DF002(1019);
     getdatafield(bits, i, m->prn);
     getdatafield(bits, i, m->week);
     getdatafield(bits, i, m->SV_ACCURACY);

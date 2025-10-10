@@ -1,6 +1,8 @@
 #include "datafields.hpp"
 #include <iostream>
 
+LOGLET_MODULE3(format, rtcm, datafield);
+
 namespace std {
 ostream& operator<<(ostream& os, const DF009 d) {
     return os << "      satellite id:     " << static_cast<int>(d) << "\n";

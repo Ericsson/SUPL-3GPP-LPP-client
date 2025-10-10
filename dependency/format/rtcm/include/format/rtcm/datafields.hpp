@@ -1,10 +1,15 @@
 #pragma once
 #include <bitset>
 #include <cmath>
-#include <cxx11_compat.hpp>
 #include <iostream>
 #include <stdint.h>
+
+#include <cxx11_compat.hpp>
+#include <loglet/loglet.hpp>
+
 #include "datatypes.hpp"
+
+LOGLET_MODULE_FORWARD_REF3(format, rtcm, datafield);
 
 #define PI_DF 3.1415926535897932
 
@@ -94,7 +99,9 @@ unsigned long long getsubbits(std::bitset<N> data, std::size_t i, std::size_t l)
 template <std::size_t N, typename DF>
 void getdatafield(std::bitset<N> const& data, std::size_t& i, DF& dest) {
     auto bits = getsubbits(data, i, DF::len);
-    dest      = DF::convert(bits);
+    XTRACEF(&LOGLET_MODULE_REF3(format, rtcm, datafield), "[%4zd-%zd]: df%03zd %llX", i, DF::len,
+            DF::num, bits);
+    dest = DF::convert(bits);
     i += DF::len;
 }
 
