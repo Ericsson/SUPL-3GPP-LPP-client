@@ -12,6 +12,16 @@
 #include <args.hpp>
 #pragma GCC diagnostic pop
 
+static args::Group logging_group{"Logging:"};
+static args::Flag  log_trace{logging_group, "trace", "Set log level to trace", {"trace"}};
+static args::Flag  log_verbose{logging_group, "verbose", "Set log level to verbose", {"verbose"}};
+static args::Flag  log_debug{logging_group, "debug", "Set log level to debug", {"debug"}};
+static args::Flag  log_info{logging_group, "info", "Set log level to info", {"info"}};
+static args::Flag  log_warning{logging_group, "warning", "Set log level to warning", {"warning"}};
+static args::Flag  log_error{logging_group, "error", "Set log level to error", {"error"}};
+static args::Flag  log_no_color{logging_group, "no-color", "Disable colored output", {"log-no-color"}};
+static args::Flag  log_flush{logging_group, "flush", "Flush log after each line", {"log-flush"}};
+
 static args::Group control_group{
     "Control:",
     args::Group::Validators::AllChildGroups,
@@ -162,6 +172,7 @@ Config parse_configuration(int argc, char** argv) {
         "even",
     });
 
+    parser.Add(logging_group);
     parser.Add(control_group);
     parser.Add(modem_group);
 
@@ -189,6 +200,25 @@ Config parse_configuration(int argc, char** argv) {
         Config config{};
         config.port            = port_value;
         config.update_interval = update_interval_value;
+        
+        config.logging.log_level = loglet::Level::Info;
+        config.logging.color     = !log_no_color;
+        config.logging.flush     = log_flush;
+        
+        if (log_trace) {
+            config.logging.log_level = loglet::Level::Trace;
+        } else if (log_verbose) {
+            config.logging.log_level = loglet::Level::Verbose;
+        } else if (log_debug) {
+            config.logging.log_level = loglet::Level::Debug;
+        } else if (log_info) {
+            config.logging.log_level = loglet::Level::Info;
+        } else if (log_warning) {
+            config.logging.log_level = loglet::Level::Warning;
+        } else if (log_error) {
+            config.logging.log_level = loglet::Level::Error;
+        }
+        
         parse_serial(config);
         return config;
     } catch (args::ValidationError const& e) {
