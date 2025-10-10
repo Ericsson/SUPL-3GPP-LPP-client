@@ -210,7 +210,7 @@ UBX Protocol NMEA Protocol 4.10 NMEA Protocol 4.11
 Signal gnssId sigId System ID Signal ID System ID Signal ID
 */
 
-static SignalId signal_id_from_ubx(uint8_t gnss_id, uint8_t sv_id, uint8_t sig_id) {
+static SignalId signal_id_from_ubx(uint8_t gnss_id, uint8_t, uint8_t sig_id) {
     if (gnss_id == 0) {
         if (sig_id == 0) return SignalId::GPS_L1_CA;
         if (sig_id == 3) return SignalId::GPS_L2_L2C_L;
@@ -287,7 +287,7 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
 }
 
 template <typename T>
-void IdokeidoMeasurmentUbx<T>::inspect(streamline::System&, DataType const& message, uint64_t tag) {
+void IdokeidoMeasurmentUbx<T>::inspect(streamline::System&, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     auto ptr = message.get();
     if (!ptr) return;
@@ -309,9 +309,9 @@ template class IdokeidoMeasurmentUbx<IdokeidoSpp>;
 //
 //
 
-IdokeidoSpp::IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& config,
+IdokeidoSpp::IdokeidoSpp(OutputConfig const&, IdokeidoConfig const& config,
                          scheduler::Scheduler& scheduler, streamline::System& system)
-    : mOutput(output), mConfig(std::move(config)), mScheduler(scheduler), mSystem(system) {
+    : mConfig(std::move(config)), mScheduler(scheduler), mSystem(system) {
     VSCOPE_FUNCTION();
     mComputeTask = nullptr;
 

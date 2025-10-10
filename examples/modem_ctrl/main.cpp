@@ -48,7 +48,7 @@ static int start_server(uint16_t port) {
     modem::Modem device{std::move(config.input), std::move(config.output)};
 
     scheduler::Scheduler scheduler{};
-    device.schedule(scheduler);
+    (void)device.schedule(scheduler);
 
     device.enable_echo();
 

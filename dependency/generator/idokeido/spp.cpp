@@ -415,7 +415,6 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             // L2 without correction for code biases
             auto& measurement = observation.measurements[observation.selected0];
 
-            auto tgd          = observation.group_delay[measurement.signal_id.absolute_id()];
             auto pseudo_range = measurement.pseudo_range;
 
             Scalar i_residual   = 0.0;
@@ -572,11 +571,12 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
     DEBUGF("time: %s", time.rtklib_time_string().c_str());
 
     Solution solution{
-        .time      = time,
-        .status    = Solution::Status::Standard,
-        .latitude  = llh.x * constant::r2d,
-        .longitude = llh.y * constant::r2d,
-        .altitude  = llh.z,
+        .time            = time,
+        .status          = Solution::Status::Standard,
+        .latitude        = llh.x * constant::r2d,
+        .longitude       = llh.y * constant::r2d,
+        .altitude        = llh.z,
+        .satellite_count = satellite_count,
     };
 
     mEpochFirstTimeSet         = false;

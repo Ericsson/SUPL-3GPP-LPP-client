@@ -378,18 +378,16 @@ EphemerisEngine::evaluate_gps(SatelliteId satellite_id, ts::Tai const& time,
 }
 
 EphemerisEngine::Satellite
-EphemerisEngine::evaluate_gal(SatelliteId satellite_id, ts::Tai const& time,
-                              RelativisticModel              relativistic_model,
-                              ephemeris::GalEphemeris const& eph) const NOEXCEPT {
+EphemerisEngine::evaluate_gal(SatelliteId, ts::Tai const&, RelativisticModel,
+                              ephemeris::GalEphemeris const&) const NOEXCEPT {
     FUNCTION_SCOPE();
     TODOF("implement EphemerisEngine::evaluate_gal()");
     return {};
 }
 
 EphemerisEngine::Satellite
-EphemerisEngine::evaluate_bds(SatelliteId satellite_id, ts::Tai const& time,
-                              RelativisticModel              relativistic_model,
-                              ephemeris::BdsEphemeris const& eph) const NOEXCEPT {
+EphemerisEngine::evaluate_bds(SatelliteId, ts::Tai const&, RelativisticModel,
+                              ephemeris::BdsEphemeris const&) const NOEXCEPT {
     FUNCTION_SCOPE();
     TODOF("implement EphemerisEngine::evaluate_gal()");
     return {};

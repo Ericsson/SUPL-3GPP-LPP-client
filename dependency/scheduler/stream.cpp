@@ -109,7 +109,7 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
             WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(errno));
             return;
         }
-        if (written != sizeof(mBuffer) - mLeftOverCount) {
+        if (static_cast<size_t>(written) != sizeof(mBuffer) - mLeftOverCount) {
             DEBUGF("failed to write to destination: only wrote %ld bytes", written);
             mLeftOverCount -= written;
             return;

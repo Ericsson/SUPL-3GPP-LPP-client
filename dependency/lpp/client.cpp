@@ -185,11 +185,11 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
     // If the client has sessions already, then we need to schedule
     // the sessions now.
     for (auto& session : mSessions) {
-        session.second->schedule(*scheduler);
+        (void)session.second->schedule(*scheduler);
     }
 
     for (auto& session : mSingleSessions) {
-        session.second->schedule(*scheduler);
+        (void)session.second->schedule(*scheduler);
     }
 
     mScheduler = scheduler;

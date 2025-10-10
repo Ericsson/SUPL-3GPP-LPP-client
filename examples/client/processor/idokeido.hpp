@@ -37,7 +37,6 @@ public:
     void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
-    OutputConfig const&                        mOutput;
     IdokeidoConfig const&                      mConfig;
     scheduler::Scheduler&                      mScheduler;
     streamline::System&                        mSystem;

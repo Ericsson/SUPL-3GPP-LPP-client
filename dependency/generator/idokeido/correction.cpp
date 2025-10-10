@@ -48,16 +48,6 @@ LOGLET_MODULE2(idokeido, corr);
 
 namespace idokeido {
 
-static uint8_t gnss_from_id(long gnss_id) NOEXCEPT {
-    switch (gnss_id) {
-    case GNSS_ID__gnss_id_gps: return 0;
-    case GNSS_ID__gnss_id_galileo: return 2;
-    case GNSS_ID__gnss_id_glonass: return 1;
-    case GNSS_ID__gnss_id_bds: return 3;
-    default: UNREACHABLE();
-    }
-}
-
 static SatelliteId::Gnss satellite_gnss_from_id(long gnss_id) {
     switch (gnss_id) {
     case GNSS_ID__gnss_id_gps: return SatelliteId::GPS;
@@ -92,7 +82,6 @@ void CorrectionCache::add_correction(long                                 gnss_i
     if (!correction) return;
     FUNCTION_SCOPE();
 
-    auto gnss           = gnss_from_id(gnss_id);
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
     auto ssr_iod    = decode::iod_ssr_r16(correction->iod_ssr_r15);
@@ -203,7 +192,6 @@ void CorrectionCache::add_correction(long                         gnss_id,
     if (!code_bias) return;
     FUNCTION_SCOPE();
 
-    auto gnss           = gnss_from_id(gnss_id);
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
 
@@ -288,7 +276,6 @@ void CorrectionCache::add_correction(long                                gnss_id
     if (!correction) return;
     FUNCTION_SCOPE();
 
-    auto gnss           = gnss_from_id(gnss_id);
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
     auto cps_id = static_cast<uint16_t>(correction->correctionPointSetID_r16);
@@ -356,7 +343,6 @@ void CorrectionCache::add_correction(long                                  gnss_
     if (!correction) return;
     FUNCTION_SCOPE();
 
-    auto gnss           = gnss_from_id(gnss_id);
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
     auto cps_id = static_cast<uint16_t>(correction->correctionPointSetID_r16);
@@ -380,13 +366,13 @@ void CorrectionCache::add_correction(long                                  gnss_
         grid_elements.push_back(element);
     }
 
-    for (long i = 0; i < cps->point_count; i++) {
+    for (size_t i = 0; i < static_cast<size_t>(cps->point_count); i++) {
         auto& point = cps->points[i];
-        if (!point.valid) continue;                               // skip invalid
-        if (point.array_index < 0) continue;                      // skip invalid
-        if (point.array_index >= grid_elements.size()) continue;  // skip invalid
+        if (!point.valid) continue;                                                  // skip invalid
+        if (point.array_index < 0) continue;                                         // skip invalid
+        if (point.array_index >= static_cast<long>(grid_elements.size())) continue;  // skip invalid
 
-        auto element = grid_elements[point.array_index];
+        auto element = grid_elements[static_cast<size_t>(point.array_index)];
 
         VERBOSEF("grid: %ld/%ld %+3.14f %+3.14f", point.array_index, point.absolute_index,
                  point.position.x() * constant::r2d, point.position.y() * constant::r2d);

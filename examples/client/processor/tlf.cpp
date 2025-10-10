@@ -49,7 +49,7 @@ bool InterfaceOutputStage::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT
     return mInterface->schedule(scheduler);
 }
 
-bool InterfaceOutputStage::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
+bool InterfaceOutputStage::do_cancel(scheduler::Scheduler&) NOEXCEPT {
     return mInterface->cancel();
 }
 
@@ -71,7 +71,7 @@ bool TlfOutputStage::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     return mNext->schedule(scheduler);
 }
 
-bool TlfOutputStage::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
+bool TlfOutputStage::do_cancel(scheduler::Scheduler&) NOEXCEPT {
     return mNext->cancel();
 }
 
@@ -161,7 +161,7 @@ bool InterfaceInputStage::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT 
     return mInterface->schedule(scheduler);
 }
 
-bool InterfaceInputStage::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
+bool InterfaceInputStage::do_cancel(scheduler::Scheduler&) NOEXCEPT {
     return mInterface->cancel();
 }
 
@@ -214,7 +214,7 @@ bool TlfInputStage::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     return mParent->schedule(scheduler);
 }
 
-bool TlfInputStage::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
+bool TlfInputStage::do_cancel(scheduler::Scheduler&) NOEXCEPT {
     return mParent->cancel();
 }
 

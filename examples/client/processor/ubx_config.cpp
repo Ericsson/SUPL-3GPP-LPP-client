@@ -27,7 +27,6 @@ std::vector<uint8_t> UbxConfigApplicator::create_cfg_valset_message(
 
     size_t total_size = 0;
     for (auto const& entry : options) {
-        auto const& key   = entry.first;
         auto const& value = entry.second;
         total_size += 8 + 4 + value.size();
     }
@@ -202,8 +201,7 @@ bool UbxConfigApplicator::print_current_config(UbxConfigInterface& interface) {
     if (interface.print_mode == UbxPrintMode::OPTIONS) {
         std::vector<format::ubx::CfgKey> requested_keys;
         for (auto const& entry : interface.options) {
-            auto const& key   = entry.first;
-            auto const& value = entry.second;
+            auto const& key = entry.first;
             requested_keys.push_back(key);
         }
 

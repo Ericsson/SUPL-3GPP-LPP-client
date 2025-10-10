@@ -9,9 +9,6 @@ LOGLET_MODULE2(idokeido, klobuchar);
 
 namespace idokeido {
 
-static Scalar sin_sc(Scalar x) {
-    return std::sin(x * constant::sc2r);
-}
 static Scalar cos_sc(Scalar x) {
     return std::cos(x * constant::sc2r);
 }

@@ -13,7 +13,6 @@ namespace ephemeris {
 CONSTEXPR static double CONSTANT_MU              = 3.986004418e14;
 CONSTEXPR static double CONSTANT_OMEGA_EARTH_DOT = 7.2921150e-5;
 CONSTEXPR static double CONSTANT_C               = 2.99792458e8;
-CONSTEXPR static double CONSTANT_PI              = 3.1415926535898;
 
 bool BdsEphemeris::is_valid(ts::Bdt const& time) const NOEXCEPT {
     if ((time.week() % 8192) != (week_number % 8192)) {

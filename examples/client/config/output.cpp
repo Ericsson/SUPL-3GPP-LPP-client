@@ -69,16 +69,6 @@ void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions globals{parser, gGroup};
 }
 
-static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,
-                              std::string const& type, std::string const& key, bool default_value) {
-    if (options.find(key) == options.end()) return default_value;
-    auto value = options.at(key);
-    if (value == "true") return true;
-    if (value == "false") return false;
-    throw args::ValidationError("--output " + type + ": `" + key + "` must be a boolean, got `" +
-                                value + "'");
-}
-
 static OutputFormat parse_format(std::string const& str) {
     if (str == "all") return OUTPUT_FORMAT_ALL;
     if (str == "ubx") return OUTPUT_FORMAT_UBX;

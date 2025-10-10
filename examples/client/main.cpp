@@ -463,7 +463,7 @@ static void initialize_inputs(Program& program, InputConfig& config) {
             }
         }
 
-        stage->schedule(program.scheduler);
+        (void)stage->schedule(program.scheduler);
 
         program.input_stages.push_back(std::move(stage));
     }
