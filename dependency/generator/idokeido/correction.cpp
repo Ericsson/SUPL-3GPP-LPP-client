@@ -502,9 +502,9 @@ SatelliteCorrection const* CorrectionCache::satellite_correction(SatelliteId id)
 
 CorrectionPointSet const* CorrectionCache::correction_point_set(Vector3 const& llh) const NOEXCEPT {
     std::vector<CorrectionPointSet const*> correction_point_sets;
-    for (auto& [id, point_set] : mCorrectionPointSets) {
-        if (point_set->contains(llh)) {
-            correction_point_sets.push_back(point_set.get());
+    for (auto const& entry : mCorrectionPointSets) {
+        if (entry.second->contains(llh)) {
+            correction_point_sets.push_back(entry.second.get());
         }
     }
 

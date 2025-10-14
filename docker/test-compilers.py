@@ -6,6 +6,8 @@ import sys
 import argparse
 import re
 import signal
+import time
+import json
 
 # Configuration paths
 DOCKER_DIR = 'docker'
@@ -16,6 +18,7 @@ TEST_DIR = f'{DOCKER_DIR}/build/tests'
 IMAGES = {
     's3lc-base:18.04': 'Dockerfile.base-18.04',
     's3lc-base:22.04': 'Dockerfile.base-22.04',
+    's3lc-base:24.04': 'Dockerfile.base-24.04',
 }
 
 COMPILERS = {
@@ -112,6 +115,29 @@ class Colors:
 def colorize(text, color):
     return f"{color}{text}{Colors.END}"
 
+def format_time(seconds):
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    elif seconds < 3600:
+        return f"{int(seconds // 60)}m {int(seconds % 60)}s"
+    else:
+        return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60)}m"
+
+def load_cached_result(test_dir):
+    result_file = f'{test_dir}/result.json'
+    if os.path.exists(result_file):
+        try:
+            with open(result_file, 'r') as f:
+                return json.load(f)
+        except:
+            return None
+    return None
+
+def save_result(test_dir, result, duration):
+    result_file = f'{test_dir}/result.json'
+    with open(result_file, 'w') as f:
+        json.dump({'result': result, 'duration': duration, 'timestamp': time.time()}, f)
+
 def image_name_to_path(image_name):
     return image_name.replace(':', '_').replace('/', '_')
 
@@ -167,7 +193,7 @@ def is_compatible(compiler, options):
 def test_name_from_config(compiler, build_type, cxx_std, options):
     return f"{compiler}-{build_type}-cxx{cxx_std}-{'-'.join(opt.replace('=', '-').replace('-D', '') for opt in options) if options else 'default'}"
 
-def test_configuration(compiler, build_type, cxx_std, options, results):
+def test_configuration(compiler, build_type, cxx_std, options, results, force_rebuild):
     config = test_name_from_config(compiler, build_type, cxx_std, options)
     
     test_data = {
@@ -175,11 +201,12 @@ def test_configuration(compiler, build_type, cxx_std, options, results):
         'build_type': build_type,
         'cxx_std': cxx_std,
         'options': options,
-        'result': None
+        'result': None,
+        'duration': 0
     }
 
     prefix = f"Testing {config}..."
-    print(f"{prefix:<80} ", end='')
+    print(f"{prefix:<80} ", end='', flush=True)
 
     if cxx_std not in COMPILERS[compiler]['cxx_standards']:
         print(colorize("SKIP", Colors.YELLOW))
@@ -195,8 +222,23 @@ def test_configuration(compiler, build_type, cxx_std, options, results):
     
     build_dir = f'{TEST_DIR}/{config}'
     os.makedirs(build_dir, exist_ok=True)
+    
+    # Check for cached result
+    if not force_rebuild:
+        cached = load_cached_result(build_dir)
+        if cached and os.path.exists(f'{build_dir}/build.log'):
+            test_data['result'] = cached.get('result')
+            test_data['duration'] = cached.get('duration', 0)
+            if test_data['result']:
+                print(colorize(f"PASS (cached, {format_time(test_data['duration'])})", Colors.GREEN))
+            else:
+                print(colorize(f"FAIL (cached, {format_time(test_data['duration'])})", Colors.RED))
+            results['tests'][config] = test_data
+            return
+    
     cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} {' '.join(options)} && ninja"
     
+    start_time = time.time()
     try:
         with open(f'{build_dir}/build.log', 'w') as log:
             log.write(f"Running: {cmake_cmd}\n")
@@ -207,16 +249,25 @@ def test_configuration(compiler, build_type, cxx_std, options, results):
                                    '--network=host',
                                    f's3lc-test:{compiler}', 'bash', '-c', cmake_cmd], 
                                   stdout=log, stderr=subprocess.STDOUT)
+        duration = time.time() - start_time
+        test_data['duration'] = duration
+        
         if result.returncode == 0:
-            print(colorize("PASS", Colors.GREEN))
+            print(colorize(f"PASS ({format_time(duration)})", Colors.GREEN))
+            test_data['result'] = True
         else:
-            print(colorize("FAIL", Colors.RED))
-        test_data['result'] = result.returncode == 0
+            print(colorize(f"FAIL ({format_time(duration)})", Colors.RED))
+            test_data['result'] = False
+        
+        save_result(build_dir, test_data['result'], duration)
     except Exception as e:
-        print(colorize("FAIL", Colors.RED))
+        duration = time.time() - start_time
+        test_data['duration'] = duration
+        print(colorize(f"FAIL ({format_time(duration)})", Colors.RED))
         test_data['result'] = False
-        with open(f'{build_dir}/build.log', 'w') as log:
-            log.write(f"Test failed with exception: {e}\n")
+        with open(f'{build_dir}/build.log', 'a') as log:
+            log.write(f"\nTest failed with exception: {e}\n")
+        save_result(build_dir, False, duration)
     
     results['tests'][config] = test_data
 
@@ -344,6 +395,9 @@ def print_results_matrix(results):
     failed = sum(1 for v in test_results if v is False)
     skipped = sum(1 for v in test_results if v == 'SKIP')
     
+    # Calculate total time
+    total_time = sum(test_data.get('duration', 0) for test_data in results.get('tests', {}).values())
+    
     # Add other results
     for category in ['images', 'compilers']:
         if category in results:
@@ -355,6 +409,7 @@ def print_results_matrix(results):
     total = len(all_results)
     
     print(f"\n{colorize('OVERALL:', Colors.BOLD)} {colorize(str(passed), Colors.GREEN)} passed, {colorize(str(failed), Colors.RED)} failed, {colorize(str(skipped), Colors.YELLOW)} skipped ({total} total)")
+    print(f"{colorize('TOTAL TIME:', Colors.BOLD)} {format_time(total_time)}")
     print(f"Log files saved in build directories")
     
     if failed > 0:
@@ -372,6 +427,7 @@ def main():
     parser.add_argument('--compiler', '-c', action='append', help='Run tests only for specific compilers')
     parser.add_argument('--build-type', '-b', choices=['Debug', 'Release'], help='Run tests only for specific build type')
     parser.add_argument('--cxx-std', '-s', choices=['11', '14', '17', '20'], help='Run tests only for specific C++ standard')
+    parser.add_argument('--force', action='store_true', help='Force rebuild all tests, ignore cached results')
     args = parser.parse_args()
     
     os.makedirs(IMAGE_DIR, exist_ok=True)
@@ -379,6 +435,7 @@ def main():
     os.makedirs(TEST_DIR, exist_ok=True)
     
     results = {'images': {}, 'compilers': {}, 'tests': {}}
+    start_time = time.time()
     
     def signal_handler(sig, frame):
         print(colorize("\n\nTest interrupted by user (CTRL+C)", Colors.YELLOW))
@@ -415,8 +472,10 @@ def main():
         ):
             config = test_name_from_config(compiler, build_type, cxx_std, options)
             if matches_filter(config, args.filter):
-                test_configuration(compiler, build_type, cxx_std, options, results)
+                test_configuration(compiler, build_type, cxx_std, options, results, args.force)
     
+    total_time = time.time() - start_time
+    print(f"\n{colorize('TOTAL ELAPSED TIME:', Colors.BOLD)} {format_time(total_time)}")
     print_results_matrix(results)
 
 if __name__ == '__main__':

@@ -6,6 +6,6 @@ struct Maybe {
     T    value;
     bool valid;
 
-    Maybe() : valid(false) {}
+    Maybe() : value(), valid(false) {}
     Maybe(T const& new_value) : value(new_value), valid(true) {}
 };

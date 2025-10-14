@@ -107,18 +107,19 @@ bool TcpClient::initialize_socket() {
         auto fd = socket(aip->ai_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
         VERBOSEF("::socket(%d, SOCK_STREAM | SOCK_NONBLOCK, 0) = %d", aip->ai_family, fd);
         if (fd < 0) {
-            WARNF("failed to create socket: %d (%s)", errno, strerror(errno));
+            WARNF("failed to create socket: " ERRNO_FMT, ERRNO_ARGS(errno));
             continue;
         }
 
         if (mInterface.length() > 0) {
             struct ifreq ifr;
             memset(&ifr, 0, sizeof(ifr));
-            strncpy(ifr.ifr_name, mInterface.c_str(), IFNAMSIZ);
+            strncpy(ifr.ifr_name, mInterface.c_str(), IFNAMSIZ - 1);
+            ifr.ifr_name[IFNAMSIZ - 1] = '\0';
             auto set_result = ::setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE,
                                            reinterpret_cast<void*>(&ifr), sizeof(ifr));
             if (set_result < 0) {
-                WARNF("failed to set SO_BINDTODEVICE: %d (%s)", errno, strerror(errno));
+                WARNF("failed to set SO_BINDTODEVICE: " ERRNO_FMT, ERRNO_ARGS(errno));
                 continue;
             }
         }
@@ -135,7 +136,7 @@ bool TcpClient::initialize_socket() {
                 return true;
             }
 
-            WARNF("failed to connect to %s: %d (%s)", addr_str.c_str(), errno, strerror(errno));
+            WARNF("failed to connect to %s: " ERRNO_FMT, addr_str.c_str(), ERRNO_ARGS(errno));
             VERBOSEF("closing socket %d", fd);
             close(fd);
             VERBOSEF("::close(%d)", fd);

@@ -32,7 +32,7 @@ public:
             uint64_t value  = 1;
             ssize_t  result = write(mFd, &value, sizeof(value));
             if(result == -1) {
-                WARNF("failed to write to eventfd (%s)", strerror(errno));
+                WARNF("failed to write to eventfd: " ERRNO_FMT, ERRNO_ARGS(errno));
             }
         }
     }

@@ -12,7 +12,7 @@ struct ReferenceEllipsoid {
     Scalar eccentricity_sq;
     Scalar eccentricity;
 
-    static constexpr ReferenceEllipsoid create(Scalar semi_major_axis, Scalar flattening,
+    static CONSTEXPR_CXX20 ReferenceEllipsoid create(Scalar semi_major_axis, Scalar flattening,
                                                Scalar eccentricity_sq) {
         return {
             /* semi_major_axis */ semi_major_axis,
@@ -23,7 +23,7 @@ struct ReferenceEllipsoid {
         };
     }
 
-    static CONSTEXPR ReferenceEllipsoid create(Scalar semi_major_axis, Scalar flattening) {
+    static CONSTEXPR_CXX20 ReferenceEllipsoid create(Scalar semi_major_axis, Scalar flattening) {
         return create(semi_major_axis, flattening, 2.0 * flattening - flattening * flattening);
     }
 };

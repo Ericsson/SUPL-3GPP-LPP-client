@@ -6,6 +6,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - C++11 compatibility support via `CMAKE_CXX_STANDARD` variable
+- CONSTEXPR_CXX20 macro for functions requiring C++20 constexpr support
 - WIP positioning engine `idokeido`
 - Input/output stage with `chain=tlf` support
 - Stage `tlf` for reading and writing time-logged format data
@@ -20,6 +21,8 @@ All notable changes to this project will be documented in this file.
 - Support for GGA messages with only 12 values
 
 ### Changed
+- CMake minimum version updated from 3.5 to 3.14 for CPM support
+- Docker base images updated to install CMake 3.14+ from Kitware for Ubuntu 18.04
 - Improved logging throughout modem dependency with detailed verbose output
 - Enhanced RTCM parsing and bitset performance
 - Better RTCM CRC check and logging
@@ -31,7 +34,13 @@ All notable changes to this project will be documented in this file.
 - Control flow warnings in exhaustive switch statements by adding explicit CORE_UNREACHABLE() markers
 - Sign conversion warnings in modem hexdump by using size_t consistently
 - Enumerated/non-enumerated conditional expression warning in lpp client
-- Missing cstring header for strerror in streamline queue
+- GCC 4.8 template context error by using ERRNO_FMT/ERRNO_ARGS instead of strerror directly
+- Int-in-bool-context warning in RTCM datafields by extracting multiplication result
+- Maybe-uninitialized warnings in RTCM extract functions by initializing Maybe value member
+- Strncpy truncation warning by ensuring null termination in interface name
+- CPM not being included when INCLUDE_GENERATOR_IDOKEIDO is enabled
+- C++17 structured bindings in idokeido replaced with C++11 compatible iteration
+- C++20 constexpr functions using std::sqrt made compatible with C++11/14 via CONSTEXPR_CXX20 macro
 - SerialInput incorrectly treating set_fd return value as error
 - Output assert when chain/stages not specified
 - Forward task and missing data during fast reads

@@ -17,6 +17,14 @@
 #define CONSTEXPR constexpr
 #endif
 
+#ifndef CONSTEXPR_CXX20
+#if __cplusplus >= 202002L
+#define CONSTEXPR_CXX20 constexpr
+#else
+#define CONSTEXPR_CXX20 inline
+#endif
+#endif
+
 #ifndef UNUSED
 #if defined(__has_cpp_attribute)
 #if __has_cpp_attribute(maybe_unused)

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.14)
 
 if(NOT CMAKE_CXX_STANDARD)
     set(CMAKE_CXX_STANDARD 20)
@@ -29,6 +29,11 @@ find_package(Threads REQUIRED)
 
 if(DATA_TRACING)
     message(STATUS "DATA_TRACING is enabled, will enable CPM")
+    set(USE_CPM ON)
+endif()
+
+if(INCLUDE_GENERATOR_IDOKEIDO)
+    message(STATUS "INCLUDE_GENERATOR_IDOKEIDO is enabled, will enable CPM")
     set(USE_CPM ON)
 endif()
 

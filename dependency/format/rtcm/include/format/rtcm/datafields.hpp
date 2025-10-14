@@ -55,7 +55,8 @@ struct DataField {
         }
         else CONSTEXPR_IF(C == Conversion::PICO100 || C == Conversion::MINUTE ||
                           C == Conversion::SC2RAD) {
-            return static_cast<T>(static_cast<double>(value) * static_cast<double>(factor));
+            auto result = static_cast<double>(value) * static_cast<double>(factor);
+            return static_cast<T>(result);
         }
         else {
             return static_cast<T>(value);
