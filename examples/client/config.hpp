@@ -37,6 +37,23 @@ struct LocationServerConfig {
     bool hack_never_send_abort;
 };
 
+struct AGnssConfig {
+    std::string                  host;
+    uint16_t                     port;
+    std::unique_ptr<std::string> interface;
+
+    bool enabled;
+    bool gps;
+    bool glonass;
+    bool galileo;
+    bool beidou;
+    long interval_seconds;
+
+    std::unique_ptr<uint64_t>    msisdn;
+    std::unique_ptr<uint64_t>    imsi;
+    std::unique_ptr<std::string> ipv4;
+};
+
 struct IdentityConfig {
     bool wait_for_identity;
     bool use_supl_identity_fix;
@@ -243,6 +260,7 @@ struct LoggingConfig {
     bool                                           color;
     bool                                           flush;
     bool                                           tree;
+    std::unique_ptr<std::string>                   log_file;
     std::unordered_map<std::string, loglet::Level> module_levels;
 };
 
@@ -403,6 +421,7 @@ struct IdokeidoConfig {
 
 struct Config {
     LocationServerConfig      location_server;
+    AGnssConfig               agnss;
     IdentityConfig            identity;
     AssistanceDataConfig      assistance_data;
     LocationInformationConfig location_information;
@@ -470,6 +489,12 @@ void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(AssistanceDataConfig const& config);
 }  // namespace ad
+
+namespace agnss {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+void dump(AGnssConfig const& config);
+}  // namespace agnss
 
 namespace gnss {
 void setup(args::ArgumentParser& parser);

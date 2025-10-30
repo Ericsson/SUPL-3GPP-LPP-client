@@ -84,6 +84,13 @@ static args::Flag gTree{
     "Show log tree",
     {"log-tree"},
 };
+static args::ValueFlag<std::string> gLogFile{
+    gGroup,
+    "file",
+    "Write log output to file",
+    {"log-file"},
+    args::Options::Single,
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions globals{parser, gGroup};
@@ -95,6 +102,10 @@ void parse(Config* config) {
     logging.color     = gNoColor ? false : true;
     logging.flush     = gFlush;
     logging.tree      = gTree;
+    
+    if (gLogFile) {
+        logging.log_file = std::unique_ptr<std::string>(new std::string(gLogFile.Get()));
+    }
 
     if (gTrace) {
         logging.log_level = loglet::Level::Trace;
