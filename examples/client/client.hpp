@@ -49,12 +49,14 @@ struct Program {
     std::unique_ptr<supl::Cell>     initial_cell;
     std::unique_ptr<supl::Cell>     cell;
     std::unique_ptr<supl::Identity> identity;
+    std::unique_ptr<supl::Identity> agnss_identity;
     std::unique_ptr<lpp::Client>    client;
 
     std::vector<std::unique_ptr<InputContext>> input_contexts;
     std::vector<std::unique_ptr<InputStage>>   input_stages;
 
     std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
+    std::unique_ptr<scheduler::PeriodicTask> agnss_task;
 
     void update_location_information(lpp::LocationInformation const& location) {
         latest_location_information           = location;

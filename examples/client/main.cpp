@@ -778,6 +778,85 @@ static void apply_ubx_config(Program& program) {
     }
 }
 
+static bool setup_agnss(Program& program) {
+    DEBUGF("[AGNSS] setup_agnss() called");
+    if (program.config.agnss.imsi) {
+        DEBUGF("[AGNSS] using IMSI identity");
+        program.agnss_identity = std::unique_ptr<supl::Identity>(
+            new supl::Identity(supl::Identity::imsi(*program.config.agnss.imsi)));
+    } else if (program.config.agnss.msisdn) {
+        DEBUGF("[AGNSS] using MSISDN identity");
+        program.agnss_identity = std::unique_ptr<supl::Identity>(
+            new supl::Identity(supl::Identity::msisdn(*program.config.agnss.msisdn)));
+    } else if (program.config.agnss.ipv4) {
+        uint8_t ipv4[4];
+        if (inet_pton(AF_INET, program.config.agnss.ipv4->c_str(), ipv4) != 1) {
+            ERRORF("invalid A-GNSS IPv4 address: %s", program.config.agnss.ipv4->c_str());
+            return false;
+        }
+        program.agnss_identity = std::unique_ptr<supl::Identity>(
+            new supl::Identity(supl::Identity::ipv4(ipv4)));
+    }
+
+    if (!program.agnss_identity && !program.identity) {
+        ERRORF("identity is required for A-GNSS client");
+        return false;
+    }
+    if (!program.cell) {
+        ERRORF("cell information is required for A-GNSS client");
+        return false;
+    }
+    DEBUGF("[AGNSS] setup complete");
+    return true;
+}
+
+static void request_agnss(Program& program) {
+    DEBUGF("[AGNSS] request_agnss() called");
+    if (!program.cell) return;
+
+    auto& agnss_identity = program.agnss_identity ? *program.agnss_identity : *program.identity;
+    auto agnss_client = new lpp::Client{
+        agnss_identity,
+        *program.cell,
+        program.config.agnss.host,
+        program.config.agnss.port,
+    };
+    if (program.config.agnss.interface) {
+        agnss_client->set_interface(*program.config.agnss.interface);
+    }
+
+    agnss_client->on_connected = [](lpp::Client&) {
+        INFOF("[AGNSS] connected to server");
+    };
+
+    agnss_client->on_disconnected = [agnss_client](lpp::Client&) {
+        INFOF("[AGNSS] disconnected from server");
+        delete agnss_client;
+    };
+
+    DEBUGF("[AGNSS] requesting assistance data");
+    auto cell = *program.cell.get();
+    agnss_client->request_assistance_data({
+        lpp::SingleRequestAssistanceData::Type::AGNSS,
+        cell,
+        {
+            program.config.agnss.gps,
+            program.config.agnss.glonass,
+            program.config.agnss.galileo,
+            program.config.agnss.beidou,
+        },
+        [&program](lpp::Client&, lpp::Message message) {
+            INFOF("[AGNSS] received assistance data");
+            program.stream.push(std::move(message));
+        },
+        [](lpp::Client&) {
+            ERRORF("[AGNSS] request failed");
+        },
+    });
+
+    agnss_client->schedule(&program.scheduler);
+}
+
 int main(int argc, char** argv) {
     loglet::initialize();
 
