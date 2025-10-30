@@ -42,8 +42,8 @@ void setup(args::ArgumentParser& parser) {
 void parse(Config* config) {
     if (gWaitForIdentity) config->identity.wait_for_identity = true;
 
-    if (!config->location_server.enabled) {
-        VERBOSEF("identity is only required when connecting to the location server\n");
+    if (!config->location_server.enabled && !config->agnss.enabled) {
+        VERBOSEF("identity is only required when connecting to the location server or A-GNSS\n");
         return;
     }
 

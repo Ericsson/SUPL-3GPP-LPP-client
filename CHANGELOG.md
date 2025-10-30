@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 - Example-client A-GNSS configuration with `--agnss-*` options
 - Example-client `--log-file` option to redirect log output to file
 - Loglet file output support via `set_output_file()`
+
+### Fixed
+- Example-client identity parsing now works when A-GNSS is enabled without location server
 - A-GNSS support via LPP with periodic requests, optional separate identity, and per-request client creation
 - C++11 compatibility support via `CMAKE_CXX_STANDARD` variable
 - CONSTEXPR_CXX20 macro for functions requiring C++20 constexpr support
