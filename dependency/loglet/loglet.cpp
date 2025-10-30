@@ -44,6 +44,7 @@ static char const*        sPrefix       = nullptr;
 static Level              sLevel        = Level::Debug;
 static bool               sColorEnabled = false;
 static bool               sAlwaysFlush  = false;
+static FILE*              sOutputFile   = nullptr;
 static std::vector<Scope> sScopes;
 
 static std::unordered_map<char const*, Module, HashModuleName, EqualModuleName> sModules;
@@ -223,6 +224,10 @@ void set_always_flush(bool flush) {
     sAlwaysFlush = flush;
 }
 
+void set_output_file(FILE* file) {
+    sOutputFile = file;
+}
+
 void set_module_level(LogModule* module, Level level) {
     module->level = level;
 }
@@ -303,10 +308,9 @@ void log(LogModule const* module, Level level, char const* message) {
     auto start_color = level_to_color(level);
     auto stop_color  = sColorEnabled ? COLOR_RESET : "";
 
-    auto file = stdout;
-    if (level == Level::Error || level == Level::Warning) {
+    auto file = sOutputFile ? sOutputFile : stdout;
+    if (!sOutputFile && (level == Level::Error || level == Level::Warning)) {
         file = stderr;
-        // flush stdout to ensure that the log messages are in order
         fflush(stdout);
     }
 

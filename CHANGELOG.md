@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Loglet file output support via `set_output_file()`
+- A-GNSS support via LPP with periodic requests, optional separate identity, and per-request client creation
 - C++11 compatibility support via `CMAKE_CXX_STANDARD` variable
 - CONSTEXPR_CXX20 macro for functions requiring C++20 constexpr support
 - WIP positioning engine `idokeido`

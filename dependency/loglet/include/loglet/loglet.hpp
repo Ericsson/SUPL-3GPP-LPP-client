@@ -297,6 +297,7 @@ void                    set_prefix(char const* prefix);
 void                    set_level(Level level);
 void                    set_color_enable(bool enabled);
 void                    set_always_flush(bool flush);
+void                    set_output_file(FILE* file);
 void                    set_module_level(LogModule* module, Level level);
 void                    disable_module(LogModule* module);
 bool                    is_module_enabled(LogModule const* module);
