@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Scheduler stream pipe buffer size optimization (64MB to 1MB)
 - Example-client A-GNSS integration with periodic task scheduling
 - Example-client A-GNSS client with periodic requests and per-request client creation
 - Example-client A-GNSS configuration with `--agnss-*` options

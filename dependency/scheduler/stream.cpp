@@ -35,6 +35,19 @@ StreamTask::StreamTask(size_t block_size, std::chrono::steady_clock::duration du
 
     VERBOSEF("pipe fds: %d, %d", mPipeFds[0], mPipeFds[1]);
 
+    size_t pipe_size = 64 * 1024 * 1024;
+    while (pipe_size >= 1024 * 1024) {
+        result = ::fcntl(write_fd(), F_SETPIPE_SZ, pipe_size);
+        if (result >= 0) {
+            VERBOSEF("pipe buffer size set to %zu bytes", pipe_size);
+            break;
+        }
+        pipe_size /= 2;
+    }
+    if (result < 0) {
+        VERBOSEF("failed to set pipe buffer size, using default");
+    }
+
     auto flags = ::fcntl(read_fd(), F_GETFL, 0);
     VERBOSEF("::fcntl(%d, F_GETFL, 0) = %d", read_fd(), flags);
     result = ::fcntl(read_fd(), F_SETFL, flags | O_NONBLOCK);
