@@ -954,12 +954,18 @@ int main(int argc, char** argv) {
     apply_ubx_config(program);
 
     setup_location_stream(program);
+    DEBUGF("setup_location_stream() completed");
     setup_control_stream(program);
+    DEBUGF("setup_control_stream() completed");
 
     setup_lpp2osr(program);
+    DEBUGF("setup_lpp2osr() completed");
     setup_lpp2spartn(program);
+    DEBUGF("setup_lpp2spartn() completed");
     setup_tokoro(program);
+    DEBUGF("setup_tokoro() completed");
     setup_idokeido(program);
+    DEBUGF("setup_idokeido() completed");
 
     if (program.config.location_information.fake.enabled) {
         setup_fake_location(program);
@@ -981,7 +987,7 @@ int main(int argc, char** argv) {
         }
     };
 
-    if (program.config.location_server.enabled) {
+    if (program.config.location_server.enabled || program.config.agnss.enabled) {
         if (program.config.identity.wait_for_identity) {
             INFOF("waiting for identity");
 
@@ -1017,10 +1023,13 @@ int main(int argc, char** argv) {
                 program.identity =
                     std::unique_ptr<supl::Identity>(new supl::Identity(supl::Identity::ipv4(ipv4)));
             } else {
-                ERRORF("you must provide an identity to connect to the location server");
+                ERRORF("you must provide an identity");
                 return 1;
             }
         }
+    }
+
+    if (program.config.location_server.enabled) {
 
         if (program.config.assistance_data.wait_for_cell) {
             INFOF("waiting for cell information");
@@ -1095,8 +1104,35 @@ int main(int argc, char** argv) {
             ERRORF("failed to schedule reconnect task");
         }
         client->schedule(&program.scheduler);
+    } else if (program.config.agnss.enabled && !program.config.assistance_data.wait_for_cell) {
+        DEBUGF("[AGNSS] initializing cell for A-GNSS (location server disabled)");
+        program.initial_cell.reset(new supl::Cell(program.config.assistance_data.cell));
+        program.cell.reset(new supl::Cell(program.config.assistance_data.cell));
     }
 
+    DEBUGF("[AGNSS] checking if A-GNSS is enabled: %s", program.config.agnss.enabled ? "yes" : "no");
+    if (program.config.agnss.enabled) {
+        DEBUGF("[AGNSS] calling setup_agnss()");
+        if (!setup_agnss(program)) {
+            return 1;
+        }
+
+        DEBUGF("[AGNSS] creating periodic task with interval %ld seconds", program.config.agnss.interval_seconds);
+        program.agnss_task.reset(new scheduler::PeriodicTask{std::chrono::seconds(program.config.agnss.interval_seconds)});
+        program.agnss_task->set_event_name("agnss-request");
+        program.agnss_task->callback = [&program]() {
+            request_agnss(program);
+        };
+
+        DEBUGF("[AGNSS] scheduling periodic task");
+        if (!program.agnss_task->schedule(program.scheduler)) {
+            ERRORF("failed to schedule A-GNSS task");
+        }
+        DEBUGF("[AGNSS] periodic task scheduled successfully");
+    }
+
+    DEBUGF("calling scheduler.execute()");
     program.scheduler.execute();
+    DEBUGF("scheduler.execute() returned");
     return 0;
 }
