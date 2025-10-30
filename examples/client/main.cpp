@@ -807,6 +807,17 @@ int main(int argc, char** argv) {
     loglet::set_level(config.logging.log_level);
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
+
+    if (config.logging.log_file) {
+        FILE* log_fp = fopen(config.logging.log_file->c_str(), "w");
+        if (!log_fp) {
+            ERRORF("failed to open log file: %s", config.logging.log_file->c_str());
+            return 1;
+        }
+        loglet::set_output_file(log_fp);
+        loglet::set_always_flush(true);
+    }
+
     for (auto const& entry : config.logging.module_levels) {
         auto const& name    = entry.first;
         auto const& level   = entry.second;
