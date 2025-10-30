@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Example-client A-GNSS configuration with `--agnss-*` options
 - Example-client `--log-file` option to redirect log output to file
 - Loglet file output support via `set_output_file()`
 - A-GNSS support via LPP with periodic requests, optional separate identity, and per-request client creation

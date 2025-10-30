@@ -47,6 +47,12 @@ void dump(Config* config) {
     }
 
     {
+        DEBUGF("agnss:");
+        DEBUG_INDENT_SCOPE();
+        ::agnss::dump(config->agnss);
+    }
+
+    {
         DEBUGF("identity:");
         DEBUG_INDENT_SCOPE();
         ::identity::dump(config->identity);
@@ -153,6 +159,7 @@ bool parse(int argc, char** argv, Config* config) {
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
 
     ::ls::setup(parser);
+    ::agnss::setup(parser);
     ::identity::setup(parser);
     ::ad::setup(parser);
     ::li::setup(parser);
@@ -191,6 +198,7 @@ bool parse(int argc, char** argv, Config* config) {
         }
 
         ::ls::parse(config);
+        ::agnss::parse(config);
         ::identity::parse(config);
         ::ad::parse(config);
         ::li::parse(config);
