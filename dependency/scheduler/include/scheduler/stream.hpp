@@ -9,7 +9,8 @@ namespace scheduler {
 class StreamTask {
 public:
     EXPLICIT
-    StreamTask(size_t block_size, std::chrono::steady_clock::duration duration) NOEXCEPT;
+    StreamTask(size_t block_size, std::chrono::steady_clock::duration duration,
+               bool disable_pipe_buffer_optimization = false) NOEXCEPT;
     ~StreamTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
@@ -34,7 +35,8 @@ class ForwardStreamTask {
 public:
     EXPLICIT
     ForwardStreamTask(int source_fd, size_t block_size,
-                      std::chrono::steady_clock::duration duration) NOEXCEPT;
+                      std::chrono::steady_clock::duration duration,
+                      bool disable_pipe_buffer_optimization = false) NOEXCEPT;
     ~ForwardStreamTask() NOEXCEPT;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
