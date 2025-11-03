@@ -223,19 +223,6 @@ def test_configuration(compiler, build_type, cxx_std, options, results, force_re
     build_dir = f'{TEST_DIR}/{config}'
     os.makedirs(build_dir, exist_ok=True)
     
-    # Check for cached result
-    if not force_rebuild:
-        cached = load_cached_result(build_dir)
-        if cached and os.path.exists(f'{build_dir}/build.log'):
-            test_data['result'] = cached.get('result')
-            test_data['duration'] = cached.get('duration', 0)
-            if test_data['result']:
-                print(colorize(f"PASS (cached, {format_time(test_data['duration'])})", Colors.GREEN))
-            else:
-                print(colorize(f"FAIL (cached, {format_time(test_data['duration'])})", Colors.RED))
-            results['tests'][config] = test_data
-            return
-    
     cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} {' '.join(options)} && ninja"
     
     start_time = time.time()

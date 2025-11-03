@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Compiler test script now relies on CMake/Ninja incremental builds instead of manual caching
+
 ### Added
 - Example-client `--input-disable-pipe-buffer-optimization` option
 - FileInput disable pipe buffer optimization parameter
