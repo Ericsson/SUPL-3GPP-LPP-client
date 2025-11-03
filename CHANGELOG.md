@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- Example-client `--input-disable-pipe-buffer-optimization` option
 - FileInput disable pipe buffer optimization parameter
 - Scheduler stream disable pipe buffer optimization option
 - Scheduler stream splice() support with conditional compilation via HAVE_SPLICE

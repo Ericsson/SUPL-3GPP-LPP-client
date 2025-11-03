@@ -70,6 +70,12 @@ static args::ValueFlagList<std::string> gArgs{
     "  all, ubx, nmea, rtcm, ctrl, lpp-uper, lpp-uper-pad\n",
     {"input"},
 };
+static args::Flag gDisablePipeBufferOptimization{
+    gGroup,
+    "disable-pipe-buffer-optimization",
+    "Disable pipe buffer size optimization for input streams",
+    {"input-disable-pipe-buffer-optimization"},
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions globals{parser, gGroup};
@@ -168,7 +174,7 @@ parse_input_stdin(std::unordered_map<std::string, std::string> const&) {
 }
 
 static std::unique_ptr<io::Input>
-parse_input_file(std::unordered_map<std::string, std::string> const& options) {
+parse_input_file(std::unordered_map<std::string, std::string> const& options, Config const* config) {
     if (options.find("path") == options.end()) {
         throw args::ValidationError("--input file: missing `path` option");
     }
@@ -186,7 +192,8 @@ parse_input_file(std::unordered_map<std::string, std::string> const& options) {
 
     auto tick_interval  = std::chrono::milliseconds(100);
     auto bytes_per_tick = static_cast<size_t>((bps + 9) / 10);
-    return std::unique_ptr<io::Input>(new io::FileInput(path, bytes_per_tick, tick_interval));
+    return std::unique_ptr<io::Input>(new io::FileInput(path, bytes_per_tick, tick_interval, 
+                                                         config->input.disable_pipe_buffer_optimization));
 }
 
 static io::BaudRate parse_baudrate(std::string const& str) {
@@ -428,7 +435,7 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
     }
 }
 
-static InputInterface parse_interface(std::string const& source) {
+static InputInterface parse_interface(std::string const& source, Config const* config) {
     std::unordered_map<std::string, std::string> options;
 
     auto parts = ::split(source, ':');
@@ -450,7 +457,7 @@ static InputInterface parse_interface(std::string const& source) {
 
     std::unique_ptr<io::Input> input;
     if (parts[0] == "stdin") input = parse_input_stdin(options);
-    if (parts[0] == "file") input = parse_input_file(options);
+    if (parts[0] == "file") input = parse_input_file(options, config);
     if (parts[0] == "serial") input = parse_serial(options);
     if (parts[0] == "tcp-client") input = parse_tcp_client(options);
     if (parts[0] == "tcp-server") input = parse_tcp_server(options);
@@ -465,8 +472,10 @@ static InputInterface parse_interface(std::string const& source) {
 }
 
 void parse(Config* config) {
+    config->input.disable_pipe_buffer_optimization = gDisablePipeBufferOptimization.Get();
+    
     for (auto const& input : gArgs.Get()) {
-        config->input.inputs.push_back(parse_interface(input));
+        config->input.inputs.push_back(parse_interface(input, config));
     }
 
     for (auto& input : config->input.inputs) {
