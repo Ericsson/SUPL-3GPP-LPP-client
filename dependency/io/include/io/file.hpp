@@ -17,7 +17,8 @@ class FileInput : public Input {
 public:
     using Duration = std::chrono::steady_clock::duration;
 
-    EXPLICIT FileInput(std::string path, size_t bytes_per_tick, Duration tick_interval) NOEXCEPT;
+    EXPLICIT FileInput(std::string path, size_t bytes_per_tick, Duration tick_interval,
+                       bool disable_pipe_buffer_optimization = false) NOEXCEPT;
     ~FileInput() NOEXCEPT override;
 
     NODISCARD std::string const& path() const NOEXCEPT { return mPath; }
@@ -32,6 +33,7 @@ private:
     std::string mPath;
     size_t      mBytesPerTick;
     Duration    mTickInterval;
+    bool        mDisablePipeBufferOptimization;
 
     int mFileFd;
     int mForwardFd;

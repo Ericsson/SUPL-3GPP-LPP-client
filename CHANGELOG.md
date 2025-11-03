@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Added
+- FileInput disable pipe buffer optimization parameter
 - Scheduler stream disable pipe buffer optimization option
 - Scheduler stream splice() support with conditional compilation via HAVE_SPLICE
 - Scheduler stream pipe buffer size optimization (64MB to 1MB)

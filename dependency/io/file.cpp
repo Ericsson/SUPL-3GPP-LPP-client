@@ -16,10 +16,12 @@ LOGLET_MODULE2(io, file);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, file)
 
 namespace io {
-FileInput::FileInput(std::string path, size_t bytes_per_tick, Duration tick_interval) NOEXCEPT
+FileInput::FileInput(std::string path, size_t bytes_per_tick, Duration tick_interval,
+                     bool disable_pipe_buffer_optimization) NOEXCEPT
     : mPath(std::move(path)),
       mBytesPerTick(bytes_per_tick),
       mTickInterval(tick_interval),
+      mDisablePipeBufferOptimization(disable_pipe_buffer_optimization),
       mFileFd(-1),
       mForwardFd(-1) {
     VSCOPE_FUNCTIONF("\"%s\", %zu, %zu ms", mPath.c_str(), mBytesPerTick,
@@ -45,7 +47,8 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         return false;
     }
 
-    mStreamTask.reset(new scheduler::ForwardStreamTask(mFileFd, mBytesPerTick, mTickInterval));
+    mStreamTask.reset(new scheduler::ForwardStreamTask(mFileFd, mBytesPerTick, mTickInterval,
+                                                        mDisablePipeBufferOptimization));
     mStreamTask->set_event_name("fst/" + mEventName);
     mForwardFd = mStreamTask->fd();
 
