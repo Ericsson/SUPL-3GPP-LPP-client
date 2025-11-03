@@ -3,6 +3,8 @@ option(USE_OPENSSL "USE_OPENSSL" OFF)
 option(USE_ASAN "USE_ASAN" OFF)
 option(ASN_DEBUG "ASN_DEBUG" OFF)
 
+option(HAVE_SPLICE "Enable splice() system call for zero-copy data transfer" ON)
+
 option(INCLUDE_GENERATOR_RTCM "Include RTCM generator" ON)
 option(INCLUDE_GENERATOR_SPARTN "Include SPARTN generator" ON)
 option(INCLUDE_GENERATOR_TOKORO "Include Tokoro generator" ON)

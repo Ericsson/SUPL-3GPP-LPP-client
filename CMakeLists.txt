@@ -55,6 +55,18 @@ if(DISABLE_STRERRORNAME_NP)
     add_definitions(-DDISABLE_STRERRORNAME_NP=1)
 endif()
 
+if(HAVE_SPLICE)
+    include(CheckSymbolExists)
+    list(APPEND CMAKE_REQUIRED_DEFINITIONS -D_GNU_SOURCE)
+    check_symbol_exists(splice "fcntl.h;unistd.h" SPLICE_EXISTS)
+    if(SPLICE_EXISTS)
+        add_definitions(-DHAVE_SPLICE=1)
+        message(STATUS "splice() system call is available")
+    else()
+        message(STATUS "splice() system call is not available")
+    endif()
+endif()
+
 add_subdirectory("dependency")
 add_subdirectory("external")
 

@@ -11,7 +11,8 @@ LOGLET_MODULE2(sched, stream);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, stream)
 
 namespace scheduler {
-StreamTask::StreamTask(size_t block_size, std::chrono::steady_clock::duration duration) NOEXCEPT
+StreamTask::StreamTask(size_t block_size, std::chrono::steady_clock::duration duration,
+                       bool disable_pipe_buffer_optimization) NOEXCEPT
     : mPeriodicTask(duration),
       mBlockSize(block_size) {
     VSCOPE_FUNCTIONF("%zu, %ld ms", block_size,
@@ -35,17 +36,19 @@ StreamTask::StreamTask(size_t block_size, std::chrono::steady_clock::duration du
 
     VERBOSEF("pipe fds: %d, %d", mPipeFds[0], mPipeFds[1]);
 
-    size_t pipe_size = 64 * 1024 * 1024;
-    while (pipe_size >= 1024 * 1024) {
-        result = ::fcntl(write_fd(), F_SETPIPE_SZ, pipe_size);
-        if (result >= 0) {
-            VERBOSEF("pipe buffer size set to %zu bytes", pipe_size);
-            break;
+    if (!disable_pipe_buffer_optimization) {
+        size_t pipe_size = 64 * 1024 * 1024;
+        while (pipe_size >= 1024 * 1024) {
+            result = ::fcntl(write_fd(), F_SETPIPE_SZ, pipe_size);
+            if (result >= 0) {
+                VERBOSEF("pipe buffer size set to %zu bytes", pipe_size);
+                break;
+            }
+            pipe_size /= 2;
         }
-        pipe_size /= 2;
-    }
-    if (result < 0) {
-        VERBOSEF("failed to set pipe buffer size, using default");
+        if (result < 0) {
+            VERBOSEF("failed to set pipe buffer size, using default");
+        }
     }
 
     auto flags = ::fcntl(read_fd(), F_GETFL, 0);
@@ -85,8 +88,9 @@ bool StreamTask::cancel() NOEXCEPT {
 }
 
 ForwardStreamTask::ForwardStreamTask(int source_fd, size_t block_size,
-                                     std::chrono::steady_clock::duration duration) NOEXCEPT
-    : mStreamTask(block_size, duration),
+                                     std::chrono::steady_clock::duration duration,
+                                     bool disable_pipe_buffer_optimization) NOEXCEPT
+    : mStreamTask(block_size, duration, disable_pipe_buffer_optimization),
       mSourceFd(source_fd) {
     VSCOPE_FUNCTIONF("%d, %zu, %ld ms", source_fd, block_size,
                      std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
@@ -133,6 +137,31 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
     size_t total = 0;
     while (total < block_size) {
         auto left = block_size - total;
+        
+#ifdef HAVE_SPLICE
+        auto spliced = ::splice(mSourceFd, nullptr, dest_fd, nullptr, left, SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
+        VERBOSEF("::splice(%d, NULL, %d, NULL, %zu, SPLICE_F_MOVE|SPLICE_F_NONBLOCK) = %ld", 
+                 mSourceFd, dest_fd, left, spliced);
+        
+        if (spliced > 0) {
+            total += static_cast<size_t>(spliced);
+            continue;
+        }
+        
+        if (spliced == 0) {
+            cancel();
+            break;
+        }
+        
+        if (errno != EINVAL && errno != ENOSYS) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                break;
+            }
+            ERRORF("splice failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            return;
+        }
+#endif
+        
         if (left > sizeof(mBuffer)) {
             left = sizeof(mBuffer);
         }
