@@ -173,7 +173,7 @@ bool Session::send(const START& message) {
 
     auto encoded_message = encode(mVersion, mSETSession, mSLPSession, message);
     if (encoded_message.size() == 0) {
-        fprintf(stderr, "ENCODE_FAILED!\n");
+        WARNF("encode failed");
         return false;
     }
 

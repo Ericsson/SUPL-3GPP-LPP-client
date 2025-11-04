@@ -65,6 +65,7 @@ TcpClient::~TcpClient() {
 }
 
 static std::string addr_to_string(const struct sockaddr* addr, socklen_t addrlen) {
+    VSCOPE_FUNCTION();
     if (!addr) {
         return "null";
     }
@@ -79,7 +80,7 @@ static std::string addr_to_string(const struct sockaddr* addr, socklen_t addrlen
         return "unknown";
     }
     host[sizeof(host) - 1] = '\0';
-    return host;
+    return std::string(host);
 }
 
 bool TcpClient::initialize_socket() {
@@ -138,7 +139,7 @@ bool TcpClient::initialize_socket() {
         }
 
         VERBOSEF("created socket %d", fd);
-
+        
         auto addr_str = addr_to_string(aip->ai_addr, aip->ai_addrlen);
         result        = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
         VERBOSEF("::connect(%d, %p, %u) = %d", fd, aip->ai_addr, aip->ai_addrlen, result);

@@ -48,9 +48,11 @@ static asn_enc_rval_t uper_encode_to_length(asn_TYPE_descriptor_t const* td,
 }
 
 static EncodedMessage encode_uper(ULP_PDU* pdu) {
-    // Determine the PDU length
+    VSCOPE_FUNCTION();
+
     auto result = uper_encode_to_length(&asn_DEF_ULP_PDU, nullptr, pdu);
     if (result.encoded < 0) {
+        VERBOSEF("uper_encode_to_length failed: %ld", result.encoded);
         return {};
     }
 
@@ -60,15 +62,15 @@ static EncodedMessage encode_uper(ULP_PDU* pdu) {
 
     pdu->length = static_cast<long>(length);
 
-    // Encode PDU as UPER
     result = uper_encode_to_buffer(&asn_DEF_ULP_PDU, nullptr, pdu, buffer, length);
     if (result.encoded < 0) {
+        VERBOSEF("uper_encode_to_buffer failed: %ld", result.encoded);
         return {};
     }
 
-    // Make sure that the PDU stayed intact and that length wasn't adjusted.
     auto new_length = static_cast<size_t>((result.encoded + 7) / 8);
     if (length != new_length) {
+        VERBOSEF("length mismatch: %zu != %zu", length, new_length);
         return {};
     }
 
@@ -80,7 +82,9 @@ static EncodedMessage encode_uper(ULP_PDU* pdu) {
 //
 
 static ULP_PDU* create_message(UlpMessage_PR present, Version version) {
+    VSCOPE_FUNCTION();
     auto message             = reinterpret_cast<ULP_PDU*>(calloc(1, sizeof(ULP_PDU)));
+    ASSERT(message, "out of memory");
     message->length          = 0;
     message->version.maj     = version.major;
     message->version.min     = version.minor;
@@ -91,9 +95,11 @@ static ULP_PDU* create_message(UlpMessage_PR present, Version version) {
 }
 
 static OCTET_STRING binary_encoded_octet(size_t max_length, uint64_t from) {
+    VSCOPE_FUNCTION();
     OCTET_STRING octet{};
     octet.size = max_length;
     octet.buf  = reinterpret_cast<uint8_t*>(calloc(1, octet.size));
+    ASSERT(octet.buf, "out of memory");
     memset(octet.buf, 0xFF, octet.size);
 
     size_t length = 0;
@@ -129,11 +135,13 @@ static OCTET_STRING octet_string_from(uint8_t const* data, size_t size) {
     OCTET_STRING octet{};
     octet.size = size;
     octet.buf  = reinterpret_cast<uint8_t*>(calloc(1, octet.size));
+    ASSERT(octet.buf, "out of memory");
     memcpy(octet.buf, data, size);
     return octet;
 }
 
 static IPAddress encode_ipaddress(Identity identity) {
+    VSCOPE_FUNCTION();
     if (identity.type == Identity::Type::IPV4) {
         IPAddress result{};
         result.present            = IPAddress_PR_ipv4Address;
@@ -151,6 +159,7 @@ static IPAddress encode_ipaddress(Identity identity) {
 }
 
 static SETId encode_setid(Identity identity) {
+    VSCOPE_FUNCTION();
     switch (identity.type) {
     case Identity::Type::MSISDN: {
         SETId result{};
@@ -181,6 +190,7 @@ static SETId encode_setid(Identity identity) {
 }
 
 static SLPAddress encode_slp_address(Identity identity) {
+    VSCOPE_FUNCTION();
     switch (identity.type) {
     case Identity::Type::IPV6:
     case Identity::Type::IPV4: {
@@ -207,7 +217,7 @@ static SLPAddress encode_slp_address(Identity identity) {
 }
 
 static MCC* encode_mcc(uint64_t mcc_value) {
-    assert(mcc_value <= 999);
+    ASSERT(mcc_value <= 999, "mcc_value must be <= 999");
 
     char tmp[8];
     sprintf(tmp, "%03" PRIu64, mcc_value);
@@ -223,7 +233,7 @@ static MCC* encode_mcc(uint64_t mcc_value) {
 }
 
 static MNC encode_mnc(uint64_t mnc_value) {
-    assert(mnc_value <= 999);
+    ASSERT(mnc_value <= 999, "mnc_value must be <= 999");
 
     char tmp[8];
     sprintf(tmp, "%02" PRIu64, mnc_value);
@@ -239,6 +249,7 @@ static MNC encode_mnc(uint64_t mnc_value) {
 }
 
 static CellGlobalIdEUTRA_t encode_cellGlobalIdEUTRA(uint64_t mcc, uint64_t mnc, uint64_t ci) {
+    VSCOPE_FUNCTION();
     CellIdentity_t cellIdentity{};
     helper::BitStringBuilder{}.integer(0, 28, ci).into_bit_string(28, &cellIdentity);
 
@@ -250,16 +261,19 @@ static CellGlobalIdEUTRA_t encode_cellGlobalIdEUTRA(uint64_t mcc, uint64_t mnc, 
 }
 
 static PhysCellId_t encode_physCellId(uint64_t id) {
+    VSCOPE_FUNCTION();
     return static_cast<long>(id);
 }
 
 static TrackingAreaCode_t encode_trackingAreaCode(uint64_t tac) {
+    VSCOPE_FUNCTION();
     TrackingAreaCode_t tracking_area_code{};
     helper::BitStringBuilder{}.integer(0, 16, tac).into_bit_string(16, &tracking_area_code);
     return tracking_area_code;
 }
 
 static CellGlobalIdNR_t encode_cellGlobalIdNR(uint64_t mcc, uint64_t mnc, uint64_t ci) {
+    VSCOPE_FUNCTION();
     CellIdentityNR_t cellIdentity{};
     helper::BitStringBuilder{}.integer(0, 36, ci).into_bit_string(36, &cellIdentity);
 
@@ -275,12 +289,14 @@ static PhysCellIdNR_t encode_physCellIdNR(uint64_t id) {
 }
 
 static TrackingAreaCodeNR_t encode_trackingAreaCodeNR(uint64_t tac) {
+    VSCOPE_FUNCTION();
     TrackingAreaCodeNR_t tracking_area_code{};
     helper::BitStringBuilder{}.integer(0, 24, tac).into_bit_string(24, &tracking_area_code);
     return tracking_area_code;
 }
 
 static CellInfo encode_cellinfo(Cell cell) {
+    VSCOPE_FUNCTION();
     CellInfo result{};
     memset(&result, 0, sizeof(CellInfo));
     
@@ -316,6 +332,7 @@ static CellInfo encode_cellinfo(Cell cell) {
         auto& nr_cell_list = nr_cell.servingCellInformation.list;
 
         auto serv_cell        = reinterpret_cast<ServCellNR*>(calloc(1, sizeof(ServCellNR)));
+        ASSERT(serv_cell, "out of memory");
         serv_cell->physCellId = encode_physCellIdNR(cell.data.nr.phys_id);
         serv_cell->arfcn_NR   = 0;
         serv_cell->cellGlobalId =
@@ -326,13 +343,14 @@ static CellInfo encode_cellinfo(Cell cell) {
         return result;
     }
 
-    assert(false);
-    return {};
+    UNREACHABLE();
 }
 
 static void encode_session(ULP_PDU* pdu, Session::SET& set, Session::SLP& slp) {
+    VSCOPE_FUNCTION();
     if (set.is_active) {
         auto setSessionID       = reinterpret_cast<SetSessionID*>(calloc(1, sizeof(SetSessionID)));
+        ASSERT(setSessionID, "out of memory");
         setSessionID->sessionId = set.id;
         setSessionID->setId     = encode_setid(set.identity);
         pdu->sessionID.setSessionID = setSessionID;
@@ -340,6 +358,7 @@ static void encode_session(ULP_PDU* pdu, Session::SET& set, Session::SLP& slp) {
 
     if (slp.is_active) {
         auto slpSessionID       = reinterpret_cast<SlpSessionID*>(calloc(1, sizeof(SlpSessionID)));
+        ASSERT(slpSessionID, "out of memory");
         slpSessionID->sessionID = octet_string_from(slp.id, 4);
         slpSessionID->slpId     = encode_slp_address(slp.identity);
         pdu->sessionID.slpSessionID = slpSessionID;
@@ -347,6 +366,7 @@ static void encode_session(ULP_PDU* pdu, Session::SET& set, Session::SLP& slp) {
 }
 
 static ::SETCapabilities encode_setcapabilities(supl::SETCapabilities const& sETCapabilities) {
+    VSCOPE_FUNCTION();
     ::PosProtocol posProtocol{};
     posProtocol.ver2_PosProtocol_extension = helper::asn1_allocate<Ver2_PosProtocol_extension>();
 
@@ -397,6 +417,7 @@ static ::SETCapabilities encode_setcapabilities(supl::SETCapabilities const& sET
 }
 
 static ::LocationId encode_locationid(supl::LocationID const& locationID) {
+    VSCOPE_FUNCTION();
     ::LocationId result{};
     result.cellInfo = encode_cellinfo(locationID.cell);
     result.status   = Status_current;
@@ -404,6 +425,7 @@ static ::LocationId encode_locationid(supl::LocationID const& locationID) {
 }
 
 static ::PosPayLoad encode_pospayload(std::vector<supl::Payload> const& payloads) {
+    VSCOPE_FUNCTION();
     auto lpppayload =
         helper::asn1_allocate<Ver2_PosPayLoad_extension::Ver2_PosPayLoad_extension__lPPPayload>();
     asn_sequence_empty(&lpppayload->list);
@@ -423,6 +445,7 @@ static ::PosPayLoad encode_pospayload(std::vector<supl::Payload> const& payloads
 }
 
 static ::ApplicationID* encode_applicationid(ApplicationID const& app_id) {
+    VSCOPE_FUNCTION();
     auto application_id = helper::asn1_allocate<::ApplicationID>();
 
     char app_provider[24 + 1];
@@ -454,6 +477,7 @@ static ::ApplicationID* encode_applicationid(ApplicationID const& app_id) {
 }
 
 static ::Ver2_SUPL_START_extension* encode_start_extension(const START& message) {
+    VSCOPE_FUNCTION();
     auto application_id = encode_applicationid(message.applicationID);
 
     if (!application_id) {

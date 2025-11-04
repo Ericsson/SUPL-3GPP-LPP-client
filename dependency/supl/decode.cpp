@@ -33,8 +33,11 @@ LOGLET_MODULE2(supl, decode);
 namespace supl {
 
 static Identity decode_identity(IPAddress& ip_address) {
+    VSCOPE_FUNCTION();
     switch (ip_address.present) {
-    case IPAddress_PR_NOTHING: return Identity::unknown();
+    case IPAddress_PR_NOTHING:
+        VERBOSEF("no IP address present");
+        return Identity::unknown();
     case IPAddress_PR_ipv4Address: {
         auto input = ip_address.choice.ipv4Address;
         assert(input.size == 4);
@@ -48,6 +51,7 @@ static Identity decode_identity(IPAddress& ip_address) {
     }
     }
 
+    VERBOSEF("unknown IP address type: %d", ip_address.present);
     return Identity::unknown();
 }
 
@@ -110,10 +114,12 @@ static Identity decode_identity(SETId& set_id) {
         return Identity::unknown();
     }
 
+    VERBOSEF("unknown SETId type: %d", set_id.present);
     return Identity::unknown();
 }
 
 static Identity decode_identity(SLPAddress_t& slp_address) {
+    VSCOPE_FUNCTION();
     switch (slp_address.present) {
     case SLPAddress_PR_NOTHING:
     case SLPAddress_PR_fQDN: {
@@ -128,6 +134,7 @@ static Identity decode_identity(SLPAddress_t& slp_address) {
     }
     }
 
+    VERBOSEF("unknown SLPAddress type: %d", slp_address.present);
     return Identity::unknown();
 }
 
@@ -135,12 +142,14 @@ static bool decode_session(Session::SET& set, Session::SLP& slp, ULP_PDU* pdu) {
     VSCOPE_FUNCTION();
 
     if (!pdu) {
+        VERBOSEF("pdu is null");
         return false;
     }
 
     auto set_session = pdu->sessionID.setSessionID;
     auto slp_session = pdu->sessionID.slpSessionID;
     if (!set_session || !slp_session) {
+        VERBOSEF("missing session: set=%p slp=%p", set_session, slp_session);
         return false;
     }
 
@@ -161,14 +170,17 @@ bool decode_response(Session::SET& set, Session::SLP& slp, RESPONSE& response, U
     VSCOPE_FUNCTION();
 
     if (!pdu) {
+        VERBOSEF("pdu is null");
         return false;
     }
 
     if (pdu->message.present != UlpMessage_PR_msSUPLRESPONSE) {
+        VERBOSEF("not SUPLRESPONSE: %d", pdu->message.present);
         return false;
     }
 
     if (!decode_session(set, slp, pdu)) {
+        VERBOSEF("decode_session failed");
         return false;
     }
 
@@ -179,15 +191,20 @@ bool decode_response(Session::SET& set, Session::SLP& slp, RESPONSE& response, U
 }
 
 bool decode_end(Session::SET& set, Session::SLP& slp, END&, ULP_PDU* pdu) {
+    VSCOPE_FUNCTION();
+
     if (!pdu) {
+        VERBOSEF("pdu is null");
         return false;
     }
 
     if (pdu->message.present != UlpMessage_PR_msSUPLEND) {
+        VERBOSEF("not SUPLEND: %d", pdu->message.present);
         return false;
     }
 
     if (!decode_session(set, slp, pdu)) {
+        VERBOSEF("decode_session failed");
         return false;
     }
 
@@ -196,6 +213,7 @@ bool decode_end(Session::SET& set, Session::SLP& slp, END&, ULP_PDU* pdu) {
 }
 
 Payload decode_payload(Payload::Type type, const OCTET_STRING& data) {
+    VSCOPE_FUNCTION();
     Payload payload{};
     payload.type = type;
     payload.data.resize(data.size);
@@ -204,15 +222,20 @@ Payload decode_payload(Payload::Type type, const OCTET_STRING& data) {
 }
 
 bool decode_pos(Session::SET& set, Session::SLP& slp, POS& pos, ULP_PDU* pdu) {
+    VSCOPE_FUNCTION();
+
     if (!pdu) {
+        VERBOSEF("pdu is null");
         return false;
     }
 
     if (pdu->message.present != UlpMessage_PR_msSUPLPOS) {
+        VERBOSEF("not SUPLPOS: %d", pdu->message.present);
         return false;
     }
 
     if (!decode_session(set, slp, pdu)) {
+        VERBOSEF("decode_session failed");
         return false;
     }
 
