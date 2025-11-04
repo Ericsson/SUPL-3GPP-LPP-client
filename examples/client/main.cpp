@@ -41,6 +41,7 @@
 #if defined(INCLUDE_GENERATOR_RTCM)
 #include "processor/lpp2frame_rtcm.hpp"
 #include "processor/lpp2rtcm.hpp"
+#include "processor/lpp2eph.hpp"
 #endif
 
 #if defined(INCLUDE_GENERATOR_SPARTN)
@@ -729,6 +730,10 @@ static void setup_lpp2osr(Program& program) {
     if (program.config.lpp2frame_rtcm.enabled) {
         program.stream.add_inspector<Lpp2FrameRtcm>(program.config.output,
                                                     program.config.lpp2frame_rtcm);
+    }
+
+    if (program.config.lpp2eph.enabled) {
+        program.stream.add_inspector<Lpp2Eph>(program.config.lpp2eph);
     }
 #endif
 }

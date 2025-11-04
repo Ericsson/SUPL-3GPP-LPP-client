@@ -304,6 +304,13 @@ struct Lpp2FrameRtcmConfig {
     int  rtcm_message_id;
     bool output_in_rtcm;
 };
+
+struct Lpp2EphConfig {
+    bool enabled;
+    bool gps;
+    bool galileo;
+    bool beidou;
+};
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
@@ -445,6 +452,7 @@ struct Config {
 #ifdef INCLUDE_GENERATOR_RTCM
     Lpp2RtcmConfig      lpp2rtcm;
     Lpp2FrameRtcmConfig lpp2frame_rtcm;
+    Lpp2EphConfig       lpp2eph;
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     Lpp2SpartnConfig lpp2spartn;
@@ -569,6 +577,12 @@ void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(Lpp2FrameRtcmConfig const& config);
 }  // namespace lpp2frame_rtcm
+
+namespace lpp2eph {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+void dump(Lpp2EphConfig const& config);
+}  // namespace lpp2eph
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
