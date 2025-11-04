@@ -158,6 +158,8 @@ void Scheduler::execute() NOEXCEPT {
         for (int i = 0; i < nfds; i++) {
             process_event(events[i]);
         }
+        
+        process_deferred();
     }
 }
 
@@ -215,6 +217,8 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
 
             process_event(events[i]);
         }
+
+        process_deferred();
     }
 }
 
@@ -254,6 +258,8 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
 
             process_event(events[i]);
         }
+
+        process_deferred();
     }
 }
 
@@ -297,6 +303,26 @@ void Scheduler::tick_callbacks() {
     for (auto& callback : mTickCallbacks) {
         if (callback.second) {
             callback.second();
+        }
+    }
+}
+
+void Scheduler::defer(std::function<void()> callback) NOEXCEPT {
+    mDeferredCallbacks.push_back(std::move(callback));
+}
+
+void Scheduler::process_deferred() {
+    auto callbacks = std::move(mDeferredCallbacks);
+    mDeferredCallbacks.clear();
+
+    if(callbacks.empty()) {
+        return;
+    }
+
+    DEBUGF("processing %zu deferred callbacks", callbacks.size());
+    for (auto& callback : callbacks) {
+        if (callback) {
+            callback();
         }
     }
 }
