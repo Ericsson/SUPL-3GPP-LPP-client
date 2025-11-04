@@ -57,7 +57,7 @@ static args::Flag gNoBeiDou{
 static args::ValueFlag<std::string> gVrsModeArg{
     gGroup,
     "vrs-mode",
-    "VRS mode",
+    "VRS mode: fixed, dynamic, or grid",
     {"tkr-vrs-mode"},
 };
 
@@ -73,6 +73,13 @@ static args::ValueFlag<double> gDynamicDistThresholdArg{
     "km",
     "Distance threshold for dynamic VRS mode (<= 0 means every time)",
     {"tkr-distance-threshold"},
+};
+
+static args::ValueFlag<std::string> gVrsGridPosition{
+    gGroup,
+    "east,north",
+    "VRS grid position (e.g., 1,1 for center of grid cell at 1 east, 1 north)",
+    {"tkr-vrs-grid-position"},
 };
 
 static args::ValueFlag<double> gFixedItrfX{
@@ -317,8 +324,10 @@ void parse(Config* config) {
             tokoro.vrs_mode = TokoroConfig::VrsMode::Dynamic;
         } else if (v == "fixed") {
             tokoro.vrs_mode = TokoroConfig::VrsMode::Fixed;
+        } else if (v == "grid") {
+            tokoro.vrs_mode = TokoroConfig::VrsMode::Grid;
         } else {
-            throw args::ValidationError("--tkr-vrs-mode must be 'fixed' or 'dynamic', got `" + v +
+            throw args::ValidationError("--tkr-vrs-mode must be 'fixed', 'dynamic', or 'grid', got `" + v +
                                         "`");
         }
     }
@@ -349,6 +358,27 @@ void parse(Config* config) {
         if (tokoro.time_step < 1.0) {
             throw args::ValidationError("--tkr-time-step must be greater than or equal 1.0, got `" +
                                         std::to_string(tokoro.time_step) + "`");
+        }
+    }
+
+    if (gVrsGridPosition) {
+        auto pos_str = gVrsGridPosition.Get();
+        auto comma = pos_str.find(',');
+        if (comma == std::string::npos) {
+            throw args::ValidationError("--tkr-vrs-grid-position must be in format 'east,north'");
+        }
+        try {
+            int east = std::stoi(pos_str.substr(0, comma));
+            int north = std::stoi(pos_str.substr(comma + 1));
+            tokoro.vrs_grid_position = std::make_unique<std::pair<int, int>>(east, north);
+        } catch (...) {
+            throw args::ValidationError("--tkr-vrs-grid-position must contain valid integers");
+        }
+    }
+
+    if (tokoro.vrs_mode == TokoroConfig::VrsMode::Grid) {
+        if (!tokoro.vrs_grid_position) {
+            throw args::RequiredError("--tkr-vrs-grid-position is required for grid VRS mode");
         }
     }
 
@@ -402,6 +432,7 @@ void dump(TokoroConfig const& config) {
         switch (config.vrs_mode) {
         case TokoroConfig::VrsMode::Dynamic: return "dynamic";
         case TokoroConfig::VrsMode::Fixed: return "fixed";
+        case TokoroConfig::VrsMode::Grid: return "grid";
         default: return "unknown";
         }
     }());
