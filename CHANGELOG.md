@@ -4,16 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Fixed
-- SUPL library now uses loglet properly with function tracing and correct asserts
-- A-GNSS processor prevents use-after-free by storing cell and identity by value
-- LPP client prevents double-free by clearing session client pointers before destruction
-- A-GNSS processor properly manages client lifetime during requests
-
-### Added
-- Scheduler defer() method to safely schedule cleanup callbacks after event processing
-- A-GNSS processor now prevents concurrent requests
-
 ### Changed
 - SUPL internal library updated to use loglet properly with function tracing, correct asserts, and verbose output on early exits
 - Example-client AGnssProcessor now takes cell and identity by const reference with validation
@@ -50,6 +40,10 @@ All notable changes to this project will be documented in this file.
 - Loglet file output support via `set_output_file()`
 
 ### Fixed
+- SUPL library now uses loglet properly with function tracing and correct asserts
+- A-GNSS processor prevents use-after-free by storing cell and identity by value
+- LPP client prevents double-free by clearing session client pointers before destruction
+- A-GNSS processor properly manages client lifetime during requests
 - Example-client A-GNSS processor now copies cell data to prevent use-after-free crashes
 - Example-client A-GNSS processor no longer destroys client during disconnect callback
 - LPP client now clears session client pointers before destruction to prevent double-free
