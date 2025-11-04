@@ -81,6 +81,7 @@ void AGnssProcessor::inspect(streamline::System& system, DataType const& message
 
 void AGnssProcessor::request_agnss(streamline::System& system) {
     FUNCTION_SCOPE();
+    DEBUGF("requesting A-GNSS");
     if (!mCell) {
         WARNF("agnss request failed: cell not set");
         return;
@@ -100,18 +101,21 @@ void AGnssProcessor::request_agnss(streamline::System& system) {
         client.reset();
     };
 
-    client->request_assistance_data({
-        lpp::SingleRequestAssistanceData::Type::AGNSS,
-        *mCell,
-        {mConfig.gps, mConfig.glonass, mConfig.galileo, mConfig.beidou},
-        [&system](lpp::Client&, lpp::Message message) {
-            DEBUGF("A-GNSS received assistance data");
-            system.push(std::move(message));
-        },
-        [](lpp::Client&) {
-            ERRORF("A-GNSS request failed");
-        },
-    });
+    if (!client->request_assistance_data({
+            lpp::SingleRequestAssistanceData::Type::AGNSS,
+            *mCell,
+            {mConfig.gps, mConfig.glonass, mConfig.galileo, mConfig.beidou},
+            [&system](lpp::Client&, lpp::Message message) {
+                DEBUGF("A-GNSS received assistance data");
+                system.push(std::move(message));
+            },
+            [](lpp::Client&) {
+                ERRORF("A-GNSS request failed");
+            },
+        })) {
+        WARNF("failed to request A-GNSS assistance data");
+        return;
+    }
 
     client->schedule(&mScheduler);
 }

@@ -17,7 +17,9 @@
 #include <GNSS-GenericAssistDataReqElement.h>
 #include <GNSS-ID.h>
 #include <GNSS-IonosphericModelReq.h>
+#include <GNSS-NavigationModelReq.h>
 #include <GNSS-PeriodicAssistDataReq-r15.h>
+#include <ReqNavListInfo.h>
 #include <GNSS-PeriodicControlParam-r15.h>
 #include <GNSS-RTK-ObservationsReq-r15.h>
 #include <GNSS-RTK-ReferenceStationInfoReq-r15.h>
@@ -298,6 +300,21 @@ static GNSS_AuxiliaryInformationReq* gnss_auxiliary_info_req(RequestAssistanceDa
     return nullptr;
 }
 
+static GNSS_NavigationModelReq* gnss_navigation_model_req(RequestAssistanceData const& request) {
+    if (request.navigation_model > 0) {
+        auto message = ALLOC_ZERO(GNSS_NavigationModelReq);
+        message->present = GNSS_NavigationModelReq_PR_reqNavList;
+        
+        auto& req_nav = message->choice.reqNavList;
+        helper::BitStringBuilder{}
+            .integer(0, 64, 0xFFFFFFFFFFFFFFFFULL)
+            .into_bit_string(64, &req_nav.svReqList);
+        
+        return message;
+    }
+    return nullptr;
+}
+
 static GNSS_RTK_ObservationsReq_r15*
 gnss_rtk_observations_req(RequestAssistanceData const& request) {
     if (request.rtk_observations > 0) {
@@ -419,6 +436,7 @@ gnss_generic_assist_data_req_element(RequestAssistanceData const& request, long 
     auto message                          = ALLOC_ZERO(GNSS_GenericAssistDataReqElement);
     message->gnss_ID.gnss_id              = gnss_id;
     message->gnss_AuxiliaryInformationReq = gnss_auxiliary_info_req(request, gnss_id);
+    message->gnss_NavigationModelReq      = gnss_navigation_model_req(request);
 
     auto rtk_observations = gnss_rtk_observations_req(request);
     auto rtk_bias_info    = glo_rtk_bias_information_req(request, gnss_id);
@@ -510,6 +528,11 @@ static void request_assistance_data_r9(RequestAssistanceData_r9_IEs& message,
 }
 
 Message create_request_assistance_data(RequestAssistanceData const& request) {
+    if (!request.gps && !request.glonass && !request.galileo && !request.bds) {
+        WARNF("no GNSS system specified for A-GNSS request");
+        return Message{nullptr};
+    }
+
     auto body               = ALLOC_ZERO(LPP_MessageBody);
     body->present           = LPP_MessageBody_PR_c1;
     body->choice.c1.present = LPP_MessageBody__c1_PR_requestAssistanceData;
