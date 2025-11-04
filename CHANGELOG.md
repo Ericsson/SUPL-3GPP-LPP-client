@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- Example-client A-GNSS GNSS flags now default to true and are masked by global GNSS settings
 - Compiler test script now relies on CMake/Ninja incremental builds instead of manual caching
 - Example-client A-GNSS now uses processor pattern with periodic and triggered modes
 - CMake minimum version updated from 3.5 to 3.14 for CPM support
@@ -15,6 +16,10 @@ All notable changes to this project will be documented in this file.
 - Improved NMEA processor logging and information output
 
 ### Added
+- Example-client lpp2eph processor to convert LPP assistance data to ephemeris messages
+- Example-client `--lpp2eph` option to enable LPP to ephemeris conversion
+- Example-client `--l2e-no-gps`, `--l2e-no-gal`, `--l2e-no-bds` options for lpp2eph
+- LPP client now requests navigation model for A-GNSS assistance data
 - Example-client `--input-disable-pipe-buffer-optimization` option
 - FileInput disable pipe buffer optimization parameter
 - Scheduler stream disable pipe buffer optimization option
@@ -31,6 +36,9 @@ All notable changes to this project will be documented in this file.
 - Loglet file output support via `set_output_file()`
 
 ### Fixed
+- LPP navigation model request now properly initializes reqNavList with satellite request bitmap
+- LPP lpp2eph processor now correctly handles nav_KeplerianSet orbit model format
+- LPP lpp2eph processor IOD extraction fixed for proper bit string parsing
 - Example-client cell information parsing now works when A-GNSS is enabled
 - Example-client identity parsing now works when A-GNSS is enabled without location server
 - A-GNSS support via LPP with periodic requests, optional separate identity, and per-request client creation

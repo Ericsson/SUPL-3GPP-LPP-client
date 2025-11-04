@@ -281,8 +281,15 @@ static TrackingAreaCodeNR_t encode_trackingAreaCodeNR(uint64_t tac) {
 }
 
 static CellInfo encode_cellinfo(Cell cell) {
+    CellInfo result{};
+    memset(&result, 0, sizeof(CellInfo));
+    
+    if (cell.type == Cell::Type::UNKNOWN) {
+        result.present = CellInfo_PR_NOTHING;
+        return result;
+    }
+    
     if (cell.type == Cell::Type::GSM) {
-        CellInfo result{};
         result.present               = CellInfo_PR_gsmCell;
         result.choice.gsmCell.refMCC = static_cast<long>(cell.data.gsm.mcc);
         result.choice.gsmCell.refMNC = static_cast<long>(cell.data.gsm.mnc);
@@ -292,7 +299,6 @@ static CellInfo encode_cellinfo(Cell cell) {
         result.choice.gsmCell.nMR    = NULL;
         return result;
     } else if (cell.type == Cell::Type::LTE) {
-        CellInfo result{};
         result.present                                = CellInfo_PR_ver2_CellInfo_extension;
         result.choice.ver2_CellInfo_extension.present = Ver2_CellInfo_extension_PR_lteCell;
 
@@ -303,7 +309,6 @@ static CellInfo encode_cellinfo(Cell cell) {
         lte_cell.trackingAreaCode = encode_trackingAreaCode(cell.data.lte.tac);
         return result;
     } else if (cell.type == Cell::Type::NR) {
-        CellInfo result{};
         result.present                                = CellInfo_PR_ver2_CellInfo_extension;
         result.choice.ver2_CellInfo_extension.present = Ver2_CellInfo_extension_PR_nrCell;
 
