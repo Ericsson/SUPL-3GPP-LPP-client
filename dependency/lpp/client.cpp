@@ -81,6 +81,12 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
 }
 
 Client::~Client() {
+    for (auto& [handle, session] : mSingleSessions) {
+        if (session) {
+            session->clear_client();
+        }
+    }
+    
     if (mScheduler) {
         mScheduler->unregister_tick(this);
     }

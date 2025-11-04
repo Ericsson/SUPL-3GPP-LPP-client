@@ -24,6 +24,8 @@ public:
 
     void try_destroy();
 
+    void clear_client() { mClient = nullptr; }
+
     void set_hack_never_send_abort(bool value) { mHackNeverSendAbort = value; }
 
     NODISCARD TransactionHandle const& transaction() const { return mTransaction; }
