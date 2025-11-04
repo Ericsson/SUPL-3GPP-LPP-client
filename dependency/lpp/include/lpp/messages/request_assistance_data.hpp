@@ -21,6 +21,7 @@ struct RequestAssistanceData {
     // not requested.
     long reference_time;
     long ionospheric_model;
+    long navigation_model;
 
     long rtk_observations;
     long rtk_residuals;
