@@ -27,7 +27,7 @@ static args::ValueFlagList<std::string> gArgs{
     "  itags=<tag>[+<tag>...]\n"
     "  xtags=<tag>[+<tag>...]\n\n"
     "Formats:\n"
-    "  ubx, nmea, rtcm, ctrl\n"
+    "  ubx, nmea, rtcm, ctrl, agnss\n"
     "Examples:\n"
     "  --print nmea\n"
     "  --print rtcm,itags=test\n"
@@ -44,6 +44,7 @@ static OutputFormat parse_format(std::string const& str) {
     if (str == "nmea") return OUTPUT_FORMAT_NMEA;
     if (str == "rtcm") return OUTPUT_FORMAT_RTCM;
     if (str == "ctrl") return OUTPUT_FORMAT_CTRL;
+    if (str == "agnss") return OUTPUT_FORMAT_AGNSS;
     throw args::ValidationError("--print format: invalid format, got `" + str + "`");
 }
 
@@ -129,11 +130,12 @@ void dump(PrintConfig const& config) {
         }
         auto xtag_str = xtag_stream.str();
 
-        DEBUGF("print: %s%s%s%s | include=%s[%" PRIu64 "] | exclude=%s[%" PRIu64 "]",
+        DEBUGF("print: %s%s%s%s%s | include=%s[%" PRIu64 "] | exclude=%s[%" PRIu64 "]",
                (print.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (print.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (print.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
-               (print.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "", itag_str.c_str(),
+               (print.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
+               (print.format & OUTPUT_FORMAT_AGNSS) ? "agnss " : "", itag_str.c_str(),
                print.include_tag_mask, xtag_str.c_str(), print.exclude_tag_mask);
     }
 }
