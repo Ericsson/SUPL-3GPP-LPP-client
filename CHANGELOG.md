@@ -4,7 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- SUPL library now uses loglet properly with function tracing and correct asserts
+- A-GNSS processor prevents use-after-free by storing cell and identity by value
+- LPP client prevents double-free by clearing session client pointers before destruction
+- A-GNSS processor properly manages client lifetime during requests
+
+### Added
+- Scheduler defer() method to safely schedule cleanup callbacks after event processing
+- A-GNSS processor now prevents concurrent requests
+
 ### Changed
+- SUPL internal library updated to use loglet properly with function tracing, correct asserts, and verbose output on early exits
+- Example-client AGnssProcessor now takes cell and identity by const reference with validation
 - Example-client A-GNSS GNSS flags now default to true and are masked by global GNSS settings
 - Compiler test script now relies on CMake/Ninja incremental builds instead of manual caching
 - Example-client A-GNSS now uses processor pattern with periodic and triggered modes
@@ -16,6 +28,8 @@ All notable changes to this project will be documented in this file.
 - Improved NMEA processor logging and information output
 
 ### Added
+- Scheduler defer() method to safely schedule cleanup callbacks after event processing
+- Example-client A-GNSS processor now prevents concurrent requests
 - Example-client lpp2eph processor to convert LPP assistance data to ephemeris messages
 - Example-client `--lpp2eph` option to enable LPP to ephemeris conversion
 - Example-client `--l2e-no-gps`, `--l2e-no-gal`, `--l2e-no-bds` options for lpp2eph
@@ -36,6 +50,10 @@ All notable changes to this project will be documented in this file.
 - Loglet file output support via `set_output_file()`
 
 ### Fixed
+- Example-client A-GNSS processor now copies cell data to prevent use-after-free crashes
+- Example-client A-GNSS processor no longer destroys client during disconnect callback
+- LPP client now clears session client pointers before destruction to prevent double-free
+- Example-client A-GNSS processor now properly keeps client alive during requests
 - LPP navigation model request now properly initializes reqNavList with satellite request bitmap
 - LPP lpp2eph processor now correctly handles nav_KeplerianSet orbit model format
 - LPP lpp2eph processor IOD extraction fixed for proper bit string parsing
