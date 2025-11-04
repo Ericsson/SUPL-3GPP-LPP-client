@@ -30,6 +30,7 @@ add_executable(example_client
     "processor/lpp2frame_rtcm.cpp"
     "processor/lpp2spartn.cpp"
     "processor/tokoro.cpp"
+    "processor/agnss.cpp"
     "processor/test.cpp"
     "processor/possib_logger.cpp"
     "processor/idokeido.cpp"
