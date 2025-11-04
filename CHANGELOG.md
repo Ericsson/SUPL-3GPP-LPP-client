@@ -6,6 +6,8 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Compiler test script now relies on CMake/Ninja incremental builds instead of manual caching
+- Example-client A-GNSS now uses processor pattern with periodic and triggered modes
+- Tokoro generate() no longer requires system parameter
 
 ### Added
 - Example-client `--input-disable-pipe-buffer-optimization` option
@@ -13,9 +15,13 @@ All notable changes to this project will be documented in this file.
 - Scheduler stream disable pipe buffer optimization option
 - Scheduler stream splice() support with conditional compilation via HAVE_SPLICE
 - Scheduler stream pipe buffer size optimization (64MB to 1MB)
-- Example-client A-GNSS integration with periodic task scheduling
-- Example-client A-GNSS client with periodic requests and per-request client creation
-- Example-client A-GNSS configuration with `--agnss-*` options
+- Example-client A-GNSS processor with periodic, triggered, and both modes
+- Example-client `--agnss-mode` and `--agnss-triggered-cooldown` options
+- Example-client `--print agnss` option to display missing ephemeris
+- Example-client `--tkr-vrs-mode=grid` and `--tkr-vrs-grid-position` for grid-based VRS
+- Tokoro generator missing ephemeris tracking with missing_ephemeris() method
+- Tokoro generator get_grid_position() helper for grid coordinate calculation
+- MissingEphemeris struct and MissingEphemerisPrint inspector
 - Example-client `--log-file` option to redirect log output to file
 - Loglet file output support via `set_output_file()`
 
