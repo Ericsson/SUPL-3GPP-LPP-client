@@ -15,11 +15,11 @@ void MissingEphemerisPrint::inspect(streamline::System&, DataType const& message
     }
 }
 
-AGnssProcessor::AGnssProcessor(AGnssConfig const& config, supl::Identity const* identity,
-                               supl::Identity const* agnss_identity, supl::Cell const* cell,
-                               scheduler::Scheduler& scheduler, streamline::System& stream)
-    : mConfig(config), mIdentity(identity), mAgnssIdentity(agnss_identity), mCell(cell),
-      mScheduler(scheduler), mSystem(&stream), mTriggeredRequestPending(false) {
+AGnssProcessor::AGnssProcessor(AGnssConfig const& config, supl::Identity const& identity,
+                               supl::Cell const& cell, scheduler::Scheduler& scheduler,
+                               streamline::System& stream)
+    : mConfig(config), mIdentity(identity), mCell(cell), mScheduler(scheduler), mSystem(&stream),
+      mTriggeredRequestPending(false) {
     FUNCTION_SCOPE();
     if (mConfig.mode == AGnssMode::Periodic || mConfig.mode == AGnssMode::Both) {
         mPeriodicTask.reset(
@@ -82,40 +82,42 @@ void AGnssProcessor::inspect(streamline::System& system, DataType const& message
 void AGnssProcessor::request_agnss(streamline::System& system) {
     FUNCTION_SCOPE();
     DEBUGF("requesting A-GNSS");
-    if (!mCell) {
-        WARNF("agnss request failed: cell not set");
+
+    if (mClient) {
+        WARNF("A-GNSS request already in progress");
         return;
     }
 
-    auto& identity = mAgnssIdentity ? *mAgnssIdentity : *mIdentity;
-    auto  client   = std::make_shared<lpp::Client>(identity, *mCell, mConfig.host, mConfig.port);
+    mClient = std::make_unique<lpp::Client>(mIdentity, mCell, mConfig.host, mConfig.port);
     if (mConfig.interface) {
-        client->set_interface(*mConfig.interface);
+        mClient->set_interface(*mConfig.interface);
     }
 
-    client->on_connected = [](lpp::Client&) {
+    mClient->on_connected = [](lpp::Client&) {
         DEBUGF("A-GNSS connected");
     };
-    client->on_disconnected = [client](lpp::Client&) mutable {
+    mClient->on_disconnected = [this](lpp::Client&) {
         DEBUGF("A-GNSS disconnected");
-        client.reset();
+        mScheduler.defer([this]() { mClient.reset(); });
     };
 
-    if (!client->request_assistance_data({
+    if (!mClient->request_assistance_data({
             lpp::SingleRequestAssistanceData::Type::AGNSS,
-            *mCell,
+            mCell,
             {mConfig.gps, mConfig.glonass, mConfig.galileo, mConfig.beidou},
             [&system](lpp::Client&, lpp::Message message) {
                 DEBUGF("A-GNSS received assistance data");
                 system.push(std::move(message));
             },
-            [](lpp::Client&) {
+            [this](lpp::Client&) {
                 ERRORF("A-GNSS request failed");
+                mScheduler.defer([this]() { mClient.reset(); });
             },
         })) {
         WARNF("failed to request A-GNSS assistance data");
+        mClient.reset();
         return;
     }
 
-    client->schedule(&mScheduler);
+    mClient->schedule(&mScheduler);
 }

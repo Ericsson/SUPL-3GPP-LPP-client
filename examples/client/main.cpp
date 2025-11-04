@@ -1073,9 +1073,15 @@ int main(int argc, char** argv) {
         if (!setup_agnss(program)) {
             return 1;
         }
-        program.stream.add_inspector<AGnssProcessor>(
-            program.config.agnss, program.identity.get(), program.agnss_identity.get(),
-            program.cell.get(), program.scheduler, program.stream);
+        if (!program.cell) {
+            WARNF("A-GNSS enabled but cell not set");
+        } else {
+            ASSERT(program.agnss_identity || program.identity, "at least one identity must be set");
+            auto& identity = program.agnss_identity ? *program.agnss_identity : *program.identity;
+            program.stream.add_inspector<AGnssProcessor>(program.config.agnss, identity,
+                                                         *program.cell, program.scheduler,
+                                                         program.stream);
+        }
     }
 
     program.scheduler.execute();

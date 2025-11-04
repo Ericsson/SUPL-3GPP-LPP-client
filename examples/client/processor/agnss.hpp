@@ -31,9 +31,9 @@ private:
 
 class AGnssProcessor : public streamline::Inspector<MissingEphemeris> {
 public:
-    AGnssProcessor(AGnssConfig const& config, supl::Identity const* identity,
-                   supl::Identity const* agnss_identity, supl::Cell const* cell,
-                   scheduler::Scheduler& scheduler, streamline::System& stream);
+    AGnssProcessor(AGnssConfig const& config, supl::Identity const& identity,
+                   supl::Cell const& cell, scheduler::Scheduler& scheduler,
+                   streamline::System& stream);
     ~AGnssProcessor();
 
     char const* name() const NOEXCEPT override { return "AGnssProcessor"; }
@@ -45,11 +45,11 @@ private:
     void schedule_triggered_request(streamline::System& system);
 
     AGnssConfig const&                                                  mConfig;
-    supl::Identity const*                                               mIdentity;
-    supl::Identity const*                                               mAgnssIdentity;
-    supl::Cell const*                                                   mCell;
+    supl::Identity                                                      mIdentity;
+    supl::Cell                                                          mCell;
     scheduler::Scheduler&                                               mScheduler;
     streamline::System*                                                 mSystem;
+    std::unique_ptr<lpp::Client>                                        mClient;
     std::unique_ptr<scheduler::PeriodicTask>                            mPeriodicTask;
     std::unique_ptr<scheduler::TimeoutTask>                             mTriggeredDelayTask;
     std::unordered_map<uint64_t, std::chrono::steady_clock::time_point> mRequestHistory;
