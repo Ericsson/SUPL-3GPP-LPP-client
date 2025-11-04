@@ -7,7 +7,12 @@ All notable changes to this project will be documented in this file.
 ### Changed
 - Compiler test script now relies on CMake/Ninja incremental builds instead of manual caching
 - Example-client A-GNSS now uses processor pattern with periodic and triggered modes
-- Tokoro generate() no longer requires system parameter
+- CMake minimum version updated from 3.5 to 3.14 for CPM support
+- Docker base images updated to install CMake 3.14+ from Kitware for Ubuntu 18.04
+- Improved logging throughout modem dependency with detailed verbose output
+- Enhanced RTCM parsing and bitset performance
+- Better RTCM CRC check and logging
+- Improved NMEA processor logging and information output
 
 ### Added
 - Example-client `--input-disable-pipe-buffer-optimization` option
@@ -43,16 +48,6 @@ All notable changes to this project will be documented in this file.
 - Message print support via `--print` option
 - Support for NMEA ending in only LF via `nmea_lf_only` option
 - Support for GGA messages with only 12 values
-
-### Changed
-- CMake minimum version updated from 3.5 to 3.14 for CPM support
-- Docker base images updated to install CMake 3.14+ from Kitware for Ubuntu 18.04
-- Improved logging throughout modem dependency with detailed verbose output
-- Enhanced RTCM parsing and bitset performance
-- Better RTCM CRC check and logging
-- Improved NMEA processor logging and information output
-
-### Fixed
 - All compiler warnings in codebase (excluding external generated ASN.1 code)
 - CORE_UNREACHABLE_CASE macro incorrectly expanding on clang due to GCC compatibility defines
 - Control flow warnings in exhaustive switch statements by adding explicit CORE_UNREACHABLE() markers
