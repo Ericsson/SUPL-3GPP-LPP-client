@@ -64,17 +64,22 @@ TcpClient::~TcpClient() {
     disconnect();
 }
 
-static std::string addr_to_string(const struct sockaddr* addr) {
+static std::string addr_to_string(const struct sockaddr* addr, socklen_t addrlen) {
+    if (!addr) {
+        return "null";
+    }
+    
     char host[1024];
-    auto result = ::getnameinfo(addr, sizeof(struct sockaddr), host, sizeof(host), nullptr, 0,
+    host[0] = '\0';
+    auto result = ::getnameinfo(addr, addrlen, host, sizeof(host), nullptr, 0,
                                 NI_NUMERICHOST);
-    VERBOSEF("::getnameinfo(%p, %zu, %p, %zu, %p, %d, NI_NUMERICHOST) = %d", addr,
-             sizeof(struct sockaddr), host, sizeof(host), nullptr, 0, result);
+    VERBOSEF("::getnameinfo(%p, %u, %p, %zu, %p, %d, NI_NUMERICHOST) = %d", addr,
+             addrlen, host, sizeof(host), nullptr, 0, result);
     if (result != 0) {
         return "unknown";
-    } else {
-        return host;
     }
+    host[sizeof(host) - 1] = '\0';
+    return host;
 }
 
 bool TcpClient::initialize_socket() {
@@ -86,6 +91,7 @@ bool TcpClient::initialize_socket() {
 
     struct addrinfo hint;
     memset(&hint, 0, sizeof(struct addrinfo));
+    hint.ai_family   = AF_UNSPEC;
     hint.ai_socktype = SOCK_STREAM;
 
     struct addrinfo *ailist, *aip;
@@ -104,8 +110,13 @@ bool TcpClient::initialize_socket() {
     };
 
     for (aip = ailist; aip; aip = aip->ai_next) {
-        auto fd = socket(aip->ai_family, SOCK_STREAM | SOCK_NONBLOCK, 0);
-        VERBOSEF("::socket(%d, SOCK_STREAM | SOCK_NONBLOCK, 0) = %d", aip->ai_family, fd);
+        if (!aip->ai_addr || aip->ai_addrlen == 0) {
+            WARNF("invalid address info: addr=%p addrlen=%u", aip->ai_addr, aip->ai_addrlen);
+            continue;
+        }
+
+        auto fd = socket(aip->ai_family, aip->ai_socktype | SOCK_NONBLOCK, aip->ai_protocol);
+        VERBOSEF("::socket(%d, %d | SOCK_NONBLOCK, %d) = %d", aip->ai_family, aip->ai_socktype, aip->ai_protocol, fd);
         if (fd < 0) {
             WARNF("failed to create socket: " ERRNO_FMT, ERRNO_ARGS(errno));
             continue;
@@ -119,16 +130,18 @@ bool TcpClient::initialize_socket() {
             auto set_result            = ::setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE,
                                                       reinterpret_cast<void*>(&ifr), sizeof(ifr));
             if (set_result < 0) {
-                WARNF("failed to set SO_BINDTODEVICE: " ERRNO_FMT, ERRNO_ARGS(errno));
+                WARNF("failed to bind socket to interface \"%s\": " ERRNO_FMT, mInterface.c_str(), ERRNO_ARGS(errno));
+                close(fd);
+                VERBOSEF("::close(%d)", fd);
                 continue;
             }
         }
 
         VERBOSEF("created socket %d", fd);
 
-        auto addr_str = addr_to_string(aip->ai_addr);
+        auto addr_str = addr_to_string(aip->ai_addr, aip->ai_addrlen);
         result        = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
-        VERBOSEF("::connect(%d, %p, %d) = %d", fd, aip->ai_addr, aip->ai_addrlen, result);
+        VERBOSEF("::connect(%d, %p, %u) = %d", fd, aip->ai_addr, aip->ai_addrlen, result);
         if (result != 0) {
             if (errno == EINPROGRESS) {
                 VERBOSEF("connection inprogress to %s", addr_str.c_str());
@@ -179,12 +192,22 @@ bool TcpClient::connect(std::string const& host, int port, std::string const& in
 
         mSSL = SSL_new(mSSLContext);
         if (!mSSL) {
+            SSL_CTX_free(mSSLContext);
+            mSSLContext = nullptr;
             return false;
         }
     }
 #endif
 
     if (!initialize_socket()) {
+#if defined(USE_OPENSSL)
+        if (mUseSSL) {
+            SSL_free(mSSL);
+            SSL_CTX_free(mSSLContext);
+            mSSL = nullptr;
+            mSSLContext = nullptr;
+        }
+#endif
         return false;
     }
 
@@ -265,25 +288,31 @@ bool TcpClient::disconnect() {
     }
 
 #if defined(USE_OPENSSL)
-    if (mUseSSL) {
+    if (mUseSSL && mSSL) {
         SSL_shutdown(mSSL);
         SSL_free(mSSL);
+        mSSL = nullptr;
+    }
+    
+    if (mSSLContext) {
         SSL_CTX_free(mSSLContext);
+        mSSLContext = nullptr;
     }
 
-    mSSLMethod  = nullptr;
-    mSSLContext = nullptr;
-    mSSL        = nullptr;
+    mSSLMethod = nullptr;
 #endif
 
-    auto result = shutdown(mSocket, SHUT_RDWR);
-    VERBOSEF("::shutdown(%d, SHUT_RDWR) = %d", mSocket, result);
+    if (mSocket >= 0) {
+        auto result = shutdown(mSocket, SHUT_RDWR);
+        VERBOSEF("::shutdown(%d, SHUT_RDWR) = %d", mSocket, result);
 
-    VERBOSEF("closing socket %d", mSocket);
-    close(mSocket);
-    VERBOSEF("::close(%d)", mSocket);
-    mSocket = -1;
-    mState  = State::DISCONNECTED;
+        VERBOSEF("closing socket %d", mSocket);
+        close(mSocket);
+        VERBOSEF("::close(%d)", mSocket);
+        mSocket = -1;
+    }
+
+    mState = State::DISCONNECTED;
     return true;
 }
 
