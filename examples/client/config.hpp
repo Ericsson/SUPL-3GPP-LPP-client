@@ -37,17 +37,25 @@ struct LocationServerConfig {
     bool hack_never_send_abort;
 };
 
+enum class AGnssMode {
+    Periodic,
+    Triggered,
+    Both,
+};
+
 struct AGnssConfig {
     std::string                  host;
     uint16_t                     port;
     std::unique_ptr<std::string> interface;
 
-    bool enabled;
-    bool gps;
-    bool glonass;
-    bool galileo;
-    bool beidou;
-    long interval_seconds;
+    bool      enabled;
+    AGnssMode mode;
+    bool      gps;
+    bool      glonass;
+    bool      galileo;
+    bool      beidou;
+    long      interval_seconds;
+    long      triggered_cooldown_seconds;
 
     std::unique_ptr<uint64_t>    msisdn;
     std::unique_ptr<uint64_t>    imsi;
@@ -135,6 +143,7 @@ struct PrintInterface {
     inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
     inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
     inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
+    inline bool agnss_support() const { return (format & OUTPUT_FORMAT_AGNSS) != 0; }
     inline bool lpp_support() const {
         return (format & OUTPUT_FORMAT_LPP_XER) != 0 || (format & OUTPUT_FORMAT_LPP_UPER) != 0;
     }
@@ -346,6 +355,7 @@ struct TokoroConfig {
     enum class VrsMode {
         Fixed,
         Dynamic,
+        Grid,
     };
 
     enum class GenerationStrategy {
@@ -366,6 +376,8 @@ struct TokoroConfig {
     VrsMode            vrs_mode;
     GenerationStrategy generation_strategy;
     double dynamic_distance_threshold;  // in km, <= 0.0 means no threshold (update every time)
+
+    std::unique_ptr<std::pair<int, int>> vrs_grid_position;  // east, north
 
     double fixed_itrf_x;
     double fixed_itrf_y;
