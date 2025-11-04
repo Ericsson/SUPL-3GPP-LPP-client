@@ -707,7 +707,10 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
     FUNCTION_SCOPE();
     if (sv_id.gnss() == SatelliteId::Gnss::GPS) {
         auto it = mGpsEphemeris.find(sv_id);
-        if (it == mGpsEphemeris.end()) return false;
+        if (it == mGpsEphemeris.end()) {
+            mMissingEphemeris.push_back({sv_id, iod});
+            return false;
+        }
         auto& list = it->second;
 
         auto gps_time = ts::Gps(time);
@@ -724,13 +727,17 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return true;
         }
 
+        mMissingEphemeris.push_back({sv_id, iod});
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GLONASS) {
         // TODO:
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GALILEO) {
         auto it = mGalEphemeris.find(sv_id);
-        if (it == mGalEphemeris.end()) return false;
+        if (it == mGalEphemeris.end()) {
+            mMissingEphemeris.push_back({sv_id, iod});
+            return false;
+        }
         auto& list = it->second;
 
         auto gal_time = ts::Gst(time);
@@ -747,10 +754,14 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return true;
         }
 
+        mMissingEphemeris.push_back({sv_id, iod});
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::BEIDOU) {
         auto it = mBdsEphemeris.find(sv_id);
-        if (it == mBdsEphemeris.end()) return false;
+        if (it == mBdsEphemeris.end()) {
+            mMissingEphemeris.push_back({sv_id, iod});
+            return false;
+        }
         auto& list = it->second;
 
         auto bds_time = ts::Bdt(time);
@@ -767,6 +778,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return true;
         }
 
+        mMissingEphemeris.push_back({sv_id, iod});
         return false;
     }
 
@@ -871,6 +883,13 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
               });
 
     DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
+}
+
+bool Generator::get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT {
+    if (!mCorrectionPointSet) return false;
+    *lat = mCorrectionPointSet->reference_point_latitude + north * mCorrectionPointSet->step_of_latitude;
+    *lon = mCorrectionPointSet->reference_point_longitude + east * mCorrectionPointSet->step_of_longitude;
+    return true;
 }
 
 }  // namespace tokoro

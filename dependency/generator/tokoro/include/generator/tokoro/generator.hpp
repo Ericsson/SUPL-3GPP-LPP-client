@@ -157,6 +157,16 @@ public:
     NODISCARD ts::Tai const& last_correction_data_time() const NOEXCEPT {
         return mLastCorrectionDataTime;
     }
+    
+    std::vector<std::pair<SatelliteId, uint32_t>> missing_ephemeris() NOEXCEPT {
+        return std::move(mMissingEphemeris);
+    }
+
+    CorrectionPointSet const* correction_point_set() const NOEXCEPT {
+        return mCorrectionPointSet.get();
+    }
+
+    bool get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT;
 
 private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;
@@ -179,6 +189,8 @@ private:
     bool mUseReceptionTimeForOrbitAndClockCorrections;
     bool mUseOrbitCorrectionInIteration;
     bool mIgnoreBitmask;
+    
+    mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;
 
     friend struct Satellite;
     friend class ReferenceStation;
