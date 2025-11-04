@@ -42,26 +42,26 @@ static args::ValueFlag<std::string> gInterface{
 static args::Flag gGps{
     gGroup,
     "gps",
-    "Request GPS assistance data",
-    {"agnss-gps"},
+    "Disable GPS assistance data",
+    {"agnss-no-gps"},
 };
 static args::Flag gGlonass{
     gGroup,
     "glonass",
-    "Request GLONASS assistance data",
-    {"agnss-glonass"},
+    "Disable GLONASS assistance data",
+    {"agnss-no-glonass", "agnss-no-glo"},
 };
 static args::Flag gGalileo{
     gGroup,
     "galileo",
-    "Request Galileo assistance data",
-    {"agnss-galileo"},
+    "Disable Galileo assistance data",
+    {"agnss-no-galileo", "agnss-no-gal"},
 };
 static args::Flag gBeidou{
     gGroup,
     "beidou",
-    "Request BeiDou assistance data",
-    {"agnss-beidou"},
+    "Disable BeiDou assistance data",
+    {"agnss-no-beidou", "agnss-no-bds"},
 };
 static args::ValueFlag<long> gInterval{
     gGroup, "interval", "Request interval in seconds (periodic mode)", {"agnss-interval"}, 60,
@@ -112,10 +112,16 @@ void parse(Config* config) {
         agnss.interface = std::unique_ptr<std::string>(new std::string(gInterface.Get()));
     }
 
-    agnss.gps                        = gGps.Get();
-    agnss.glonass                    = gGlonass.Get();
-    agnss.galileo                    = gGalileo.Get();
-    agnss.beidou                     = gBeidou.Get();
+    agnss.gps     = true;
+    agnss.glonass = true;
+    agnss.galileo = true;
+    agnss.beidou  = true;
+
+    if (gGps) agnss.gps = false;
+    if (gGlonass) agnss.glonass = false;
+    if (gGalileo) agnss.galileo = false;
+    if (gBeidou) agnss.beidou = false;
+
     agnss.interval_seconds           = gInterval.Get();
     agnss.triggered_cooldown_seconds = gTriggeredCooldown.Get();
 

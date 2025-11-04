@@ -105,6 +105,11 @@ void dump(Config* config) {
         DEBUG_INDENT_SCOPE();
         ::lpp2frame_rtcm::dump(config->lpp2frame_rtcm);
     }
+    {
+        DEBUGF("lpp2eph:");
+        DEBUG_INDENT_SCOPE();
+        ::lpp2eph::dump(config->lpp2eph);
+    }
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
@@ -170,6 +175,7 @@ bool parse(int argc, char** argv, Config* config) {
 #ifdef INCLUDE_GENERATOR_RTCM
     ::lpp2rtcm::setup(parser);
     ::lpp2frame_rtcm::setup(parser);
+    ::lpp2eph::setup(parser);
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     ::lpp2spartn::setup(parser);
@@ -209,6 +215,7 @@ bool parse(int argc, char** argv, Config* config) {
 #ifdef INCLUDE_GENERATOR_RTCM
         ::lpp2rtcm::parse(config);
         ::lpp2frame_rtcm::parse(config);
+        ::lpp2eph::parse(config);
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
         ::lpp2spartn::parse(config);
@@ -229,6 +236,11 @@ bool parse(int argc, char** argv, Config* config) {
         config->assistance_data.glonass &= config->gnss.glonass;
         config->assistance_data.galileo &= config->gnss.galileo;
         config->assistance_data.beidou &= config->gnss.beidou;
+
+        config->agnss.gps &= config->gnss.gps;
+        config->agnss.glonass &= config->gnss.glonass;
+        config->agnss.galileo &= config->gnss.galileo;
+        config->agnss.beidou &= config->gnss.beidou;
 
 #ifdef INCLUDE_GENERATOR_RTCM
         config->lpp2rtcm.generate_gps &= config->gnss.gps;
