@@ -133,7 +133,7 @@ public:
         for (T i = 0; i < bits; i++) {
             auto bit       = get(index + i);
             auto bit_index = bits - i - 1;
-            auto bit_value = X{bit ? 1 : 0};
+            auto bit_value = static_cast<X>(bit ? 1 : 0);
             value |= (bit_value << bit_index);
         }
 
