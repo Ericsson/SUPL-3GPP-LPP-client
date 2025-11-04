@@ -15,7 +15,7 @@
 
 struct MissingEphemeris {
     SatelliteId satellite_id;
-    uint32_t iod;
+    uint32_t    iod;
 };
 
 class MissingEphemerisPrint : public streamline::Inspector<MissingEphemeris> {
@@ -37,20 +37,21 @@ public:
     ~AGnssProcessor();
 
     char const* name() const NOEXCEPT override { return "AGnssProcessor"; }
-    void inspect(streamline::System& system, DataType const& message, uint64_t tag) NOEXCEPT override;
+    void        inspect(streamline::System& system, DataType const& message,
+                        uint64_t tag) NOEXCEPT override;
 
 private:
     void request_agnss(streamline::System& system);
     void schedule_triggered_request(streamline::System& system);
 
-    AGnssConfig const&                       mConfig;
-    supl::Identity const*                    mIdentity;
-    supl::Identity const*                    mAgnssIdentity;
-    supl::Cell const*                        mCell;
-    scheduler::Scheduler&                    mScheduler;
-    streamline::System*                      mSystem;
-    std::unique_ptr<scheduler::PeriodicTask> mPeriodicTask;
-    std::unique_ptr<scheduler::TimeoutTask>  mTriggeredDelayTask;
+    AGnssConfig const&                                                  mConfig;
+    supl::Identity const*                                               mIdentity;
+    supl::Identity const*                                               mAgnssIdentity;
+    supl::Cell const*                                                   mCell;
+    scheduler::Scheduler&                                               mScheduler;
+    streamline::System*                                                 mSystem;
+    std::unique_ptr<scheduler::PeriodicTask>                            mPeriodicTask;
+    std::unique_ptr<scheduler::TimeoutTask>                             mTriggeredDelayTask;
     std::unordered_map<uint64_t, std::chrono::steady_clock::time_point> mRequestHistory;
-    bool                                     mTriggeredRequestPending;
+    bool                                                                mTriggeredRequestPending;
 };

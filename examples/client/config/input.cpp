@@ -174,7 +174,8 @@ parse_input_stdin(std::unordered_map<std::string, std::string> const&) {
 }
 
 static std::unique_ptr<io::Input>
-parse_input_file(std::unordered_map<std::string, std::string> const& options, Config const* config) {
+parse_input_file(std::unordered_map<std::string, std::string> const& options,
+                 Config const*                                       config) {
     if (options.find("path") == options.end()) {
         throw args::ValidationError("--input file: missing `path` option");
     }
@@ -192,8 +193,8 @@ parse_input_file(std::unordered_map<std::string, std::string> const& options, Co
 
     auto tick_interval  = std::chrono::milliseconds(100);
     auto bytes_per_tick = static_cast<size_t>((bps + 9) / 10);
-    return std::unique_ptr<io::Input>(new io::FileInput(path, bytes_per_tick, tick_interval, 
-                                                         config->input.disable_pipe_buffer_optimization));
+    return std::unique_ptr<io::Input>(new io::FileInput(
+        path, bytes_per_tick, tick_interval, config->input.disable_pipe_buffer_optimization));
 }
 
 static io::BaudRate parse_baudrate(std::string const& str) {
@@ -473,7 +474,7 @@ static InputInterface parse_interface(std::string const& source, Config const* c
 
 void parse(Config* config) {
     config->input.disable_pipe_buffer_optimization = gDisablePipeBufferOptimization.Get();
-    
+
     for (auto const& input : gArgs.Get()) {
         config->input.inputs.push_back(parse_interface(input, config));
     }

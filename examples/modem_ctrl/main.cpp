@@ -6,9 +6,9 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include <loglet/loglet.hpp>
 #include <modem/modem.hpp>
 #include <scheduler/scheduler.hpp>
-#include <loglet/loglet.hpp>
 
 LOGLET_MODULE(modem_ctrl);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(modem_ctrl)
@@ -16,7 +16,7 @@ LOGLET_MODULE(modem_ctrl);
 static int start_server(uint16_t port) {
     FUNCTION_SCOPE();
     DEBUGF("starting server on port %u", port);
-    
+
     auto socket = ::socket(AF_INET, SOCK_STREAM, 0);
     if (socket < 0) {
         ERRORF("failed to create socket: %s", strerror(errno));
@@ -137,16 +137,20 @@ static int start_server(uint16_t port) {
                 ERRORF("failed to get COPS or CREG");
             } else {
                 if (cops.format == 2) {
-                    auto act_type = (cops.act >= 0 && cops.act < 7) ? "GSM" :
-                                   (cops.act >= 7 && cops.act < 11) ? "LTE" : "UNKNOWN";
+                    auto act_type = (cops.act >= 0 && cops.act < 7)  ? "GSM" :
+                                    (cops.act >= 7 && cops.act < 11) ? "LTE" :
+                                                                       "UNKNOWN";
                     INFOF("operator: %d:%d %s", cops.mcc, cops.mnc, act_type);
-                    VERBOSEF("COPS: format=%d mcc=%d mnc=%d act=%d", cops.format, cops.mcc, cops.mnc, cops.act);
+                    VERBOSEF("COPS: format=%d mcc=%d mnc=%d act=%d", cops.format, cops.mcc,
+                             cops.mnc, cops.act);
                 }
                 if (reg.mode != 0) {
-                    auto act_type = (reg.act >= 0 && reg.act < 7) ? "GSM" :
-                                   (reg.act >= 7 && reg.act < 11) ? "LTE" : "UNKNOWN";
+                    auto act_type = (reg.act >= 0 && reg.act < 7)  ? "GSM" :
+                                    (reg.act >= 7 && reg.act < 11) ? "LTE" :
+                                                                     "UNKNOWN";
                     INFOF("cell: %u:%u %s", reg.lac, reg.ci, act_type);
-                    VERBOSEF("CREG: mode=%d lac=%u ci=%u act=%d", reg.mode, reg.lac, reg.ci, reg.act);
+                    VERBOSEF("CREG: mode=%d lac=%u ci=%u act=%d", reg.mode, reg.lac, reg.ci,
+                             reg.act);
                 }
                 if (reg.mode != 0 && cops.format == 2) {
                     if (reg.is_gsm()) {
@@ -180,14 +184,14 @@ static int start_server(uint16_t port) {
 
 int main(int argc, char** argv) {
     auto config = parse_configuration(argc, argv);
-    
+
     loglet::set_level(config.logging.log_level);
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
-    
+
     INFOF("log level: %d", static_cast<int>(config.logging.log_level));
     DEBUGF("configuration parsed successfully");
-    
+
     loop(config);
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
     return 0;

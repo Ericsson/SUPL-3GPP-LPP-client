@@ -12,9 +12,8 @@ LOGLET_MODULE2(sched, stream);
 
 namespace scheduler {
 StreamTask::StreamTask(size_t block_size, std::chrono::steady_clock::duration duration,
-                       bool disable_pipe_buffer_optimization) NOEXCEPT
-    : mPeriodicTask(duration),
-      mBlockSize(block_size) {
+                       bool disable_pipe_buffer_optimization) NOEXCEPT : mPeriodicTask(duration),
+                                                                         mBlockSize(block_size) {
     VSCOPE_FUNCTIONF("%zu, %ld ms", block_size,
                      std::chrono::duration_cast<std::chrono::milliseconds>(duration).count());
     mPeriodicTask.callback = [this]() {
@@ -137,22 +136,23 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
     size_t total = 0;
     while (total < block_size) {
         auto left = block_size - total;
-        
+
 #ifdef HAVE_SPLICE
-        auto spliced = ::splice(mSourceFd, nullptr, dest_fd, nullptr, left, SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
-        VERBOSEF("::splice(%d, NULL, %d, NULL, %zu, SPLICE_F_MOVE|SPLICE_F_NONBLOCK) = %ld", 
+        auto spliced =
+            ::splice(mSourceFd, nullptr, dest_fd, nullptr, left, SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
+        VERBOSEF("::splice(%d, NULL, %d, NULL, %zu, SPLICE_F_MOVE|SPLICE_F_NONBLOCK) = %ld",
                  mSourceFd, dest_fd, left, spliced);
-        
+
         if (spliced > 0) {
             total += static_cast<size_t>(spliced);
             continue;
         }
-        
+
         if (spliced == 0) {
             cancel();
             break;
         }
-        
+
         if (errno != EINVAL && errno != ENOSYS) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
                 break;
@@ -161,7 +161,7 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
             return;
         }
 #endif
-        
+
         if (left > sizeof(mBuffer)) {
             left = sizeof(mBuffer);
         }

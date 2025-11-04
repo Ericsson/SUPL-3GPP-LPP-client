@@ -116,8 +116,8 @@ bool TcpClient::initialize_socket() {
             memset(&ifr, 0, sizeof(ifr));
             strncpy(ifr.ifr_name, mInterface.c_str(), IFNAMSIZ - 1);
             ifr.ifr_name[IFNAMSIZ - 1] = '\0';
-            auto set_result = ::setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE,
-                                           reinterpret_cast<void*>(&ifr), sizeof(ifr));
+            auto set_result            = ::setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE,
+                                                      reinterpret_cast<void*>(&ifr), sizeof(ifr));
             if (set_result < 0) {
                 WARNF("failed to set SO_BINDTODEVICE: " ERRNO_FMT, ERRNO_ARGS(errno));
                 continue;

@@ -327,8 +327,8 @@ void parse(Config* config) {
         } else if (v == "grid") {
             tokoro.vrs_mode = TokoroConfig::VrsMode::Grid;
         } else {
-            throw args::ValidationError("--tkr-vrs-mode must be 'fixed', 'dynamic', or 'grid', got `" + v +
-                                        "`");
+            throw args::ValidationError(
+                "--tkr-vrs-mode must be 'fixed', 'dynamic', or 'grid', got `" + v + "`");
         }
     }
 
@@ -363,13 +363,13 @@ void parse(Config* config) {
 
     if (gVrsGridPosition) {
         auto pos_str = gVrsGridPosition.Get();
-        auto comma = pos_str.find(',');
+        auto comma   = pos_str.find(',');
         if (comma == std::string::npos) {
             throw args::ValidationError("--tkr-vrs-grid-position must be in format 'east,north'");
         }
         try {
-            int east = std::stoi(pos_str.substr(0, comma));
-            int north = std::stoi(pos_str.substr(comma + 1));
+            int east                 = std::stoi(pos_str.substr(0, comma));
+            int north                = std::stoi(pos_str.substr(comma + 1));
             tokoro.vrs_grid_position = std::make_unique<std::pair<int, int>>(east, north);
         } catch (...) {
             throw args::ValidationError("--tkr-vrs-grid-position must contain valid integers");

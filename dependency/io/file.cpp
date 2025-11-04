@@ -48,7 +48,7 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     }
 
     mStreamTask.reset(new scheduler::ForwardStreamTask(mFileFd, mBytesPerTick, mTickInterval,
-                                                        mDisablePipeBufferOptimization));
+                                                       mDisablePipeBufferOptimization));
     mStreamTask->set_event_name("fst/" + mEventName);
     mForwardFd = mStreamTask->fd();
 

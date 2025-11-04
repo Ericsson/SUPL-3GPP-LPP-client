@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
-#include <vector>
 #include <unordered_map>
+#include <vector>
 
 #include <io/input.hpp>
 #include <io/output.hpp>
@@ -10,10 +10,10 @@
 #include <memory>
 
 struct LoggingConfig {
-    loglet::Level                              log_level;
+    loglet::Level                                  log_level;
     std::unordered_map<std::string, loglet::Level> module_levels;
-    bool                                       color;
-    bool                                       flush;
+    bool                                           color;
+    bool                                           flush;
 };
 
 struct Config {

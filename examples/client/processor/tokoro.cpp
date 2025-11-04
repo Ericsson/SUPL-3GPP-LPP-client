@@ -3,8 +3,8 @@
 #include "ephemeris/gal.hpp"
 #include "time/bdt.hpp"
 #if defined(INCLUDE_GENERATOR_TOKORO)
-#include "tokoro.hpp"
 #include "agnss.hpp"
+#include "tokoro.hpp"
 
 #include <format/antex/antex.hpp>
 #include <format/rtcm/datafields.hpp>
@@ -418,18 +418,18 @@ void Tokoro::vrs_mode_grid() {
     ASSERT(mGenerator, "generator is null");
     if (!mReferenceStation) {
         double lat, lon;
-        int east = mConfig.vrs_grid_position->first;
-        int north = mConfig.vrs_grid_position->second;
-        
+        int    east  = mConfig.vrs_grid_position->first;
+        int    north = mConfig.vrs_grid_position->second;
+
         if (!mGenerator->get_grid_position(east, north, &lat, &lon)) {
             WARNF("no correction point set available for grid mode");
             return;
         }
 
         Float3 llh{lat * generator::tokoro::constant::DEG2RAD,
-                  lon * generator::tokoro::constant::DEG2RAD, 0.0};
+                   lon * generator::tokoro::constant::DEG2RAD, 0.0};
         Float3 position = generator::tokoro::llh_to_ecef(llh, generator::tokoro::ellipsoid::WGS84);
-        
+
         INFOF("VRS grid position (%d,%d): lat=%.6f lon=%.6f", east, north, lat, lon);
 
         mReferenceStation =
@@ -583,7 +583,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
 void Tokoro::inspect(streamline::System& system, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
-    
+
     mSystem = &system;
 
     if (!message) {

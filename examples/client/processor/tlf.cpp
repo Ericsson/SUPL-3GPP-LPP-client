@@ -103,7 +103,7 @@ void TlfOutputStage::write(OutputFormat format, uint8_t const* buffer, size_t le
     header.format   = format;
     header.ms       = diff_us_u32;
     header.length   = static_cast<uint32_t>(length);
-    
+
     mNext->write(OUTPUT_FORMAT_TLF, reinterpret_cast<uint8_t const*>(&header), sizeof(header));
     mNext->write(OUTPUT_FORMAT_TLF, buffer, length);
 

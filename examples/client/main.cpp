@@ -797,8 +797,8 @@ static bool setup_agnss(Program& program) {
             ERRORF("invalid A-GNSS IPv4 address: %s", program.config.agnss.ipv4->c_str());
             return false;
         }
-        program.agnss_identity = std::unique_ptr<supl::Identity>(
-            new supl::Identity(supl::Identity::ipv4(ipv4)));
+        program.agnss_identity =
+            std::unique_ptr<supl::Identity>(new supl::Identity(supl::Identity::ipv4(ipv4)));
     }
 
     if (!program.agnss_identity && !program.identity) {
@@ -985,7 +985,6 @@ int main(int argc, char** argv) {
     }
 
     if (program.config.location_server.enabled) {
-
         if (program.config.assistance_data.wait_for_cell) {
             INFOF("waiting for cell information");
             if (!program.has_ctrl_parsers()) {

@@ -171,7 +171,7 @@ struct InputInterface {
 
 struct InputConfig {
     std::vector<InputInterface> inputs;
-    bool disable_pipe_buffer_optimization;
+    bool                        disable_pipe_buffer_optimization;
 };
 
 struct AssistanceDataConfig {

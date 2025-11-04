@@ -887,8 +887,10 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
 
 bool Generator::get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT {
     if (!mCorrectionPointSet) return false;
-    *lat = mCorrectionPointSet->reference_point_latitude + north * mCorrectionPointSet->step_of_latitude;
-    *lon = mCorrectionPointSet->reference_point_longitude + east * mCorrectionPointSet->step_of_longitude;
+    *lat = mCorrectionPointSet->reference_point_latitude +
+           north * mCorrectionPointSet->step_of_latitude;
+    *lon = mCorrectionPointSet->reference_point_longitude +
+           east * mCorrectionPointSet->step_of_longitude;
     return true;
 }
 

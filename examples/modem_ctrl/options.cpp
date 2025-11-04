@@ -19,8 +19,9 @@ static args::Flag  log_debug{logging_group, "debug", "Set log level to debug", {
 static args::Flag  log_info{logging_group, "info", "Set log level to info", {"info"}};
 static args::Flag  log_warning{logging_group, "warning", "Set log level to warning", {"warning"}};
 static args::Flag  log_error{logging_group, "error", "Set log level to error", {"error"}};
-static args::Flag  log_no_color{logging_group, "no-color", "Disable colored output", {"log-no-color"}};
-static args::Flag  log_flush{logging_group, "flush", "Flush log after each line", {"log-flush"}};
+static args::Flag  log_no_color{
+    logging_group, "no-color", "Disable colored output", {"log-no-color"}};
+static args::Flag log_flush{logging_group, "flush", "Flush log after each line", {"log-flush"}};
 
 static args::Group control_group{
     "Control:",
@@ -200,11 +201,11 @@ Config parse_configuration(int argc, char** argv) {
         Config config{};
         config.port            = port_value;
         config.update_interval = update_interval_value;
-        
+
         config.logging.log_level = loglet::Level::Info;
         config.logging.color     = !log_no_color;
         config.logging.flush     = log_flush;
-        
+
         if (log_trace) {
             config.logging.log_level = loglet::Level::Trace;
         } else if (log_verbose) {
@@ -218,7 +219,7 @@ Config parse_configuration(int argc, char** argv) {
         } else if (log_error) {
             config.logging.log_level = loglet::Level::Error;
         }
-        
+
         parse_serial(config);
         return config;
     } catch (args::ValidationError const& e) {

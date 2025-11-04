@@ -157,7 +157,7 @@ public:
     NODISCARD ts::Tai const& last_correction_data_time() const NOEXCEPT {
         return mLastCorrectionDataTime;
     }
-    
+
     std::vector<std::pair<SatelliteId, uint32_t>> missing_ephemeris() NOEXCEPT {
         return std::move(mMissingEphemeris);
     }
@@ -189,7 +189,7 @@ private:
     bool mUseReceptionTimeForOrbitAndClockCorrections;
     bool mUseOrbitCorrectionInIteration;
     bool mIgnoreBitmask;
-    
+
     mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;
 
     friend struct Satellite;

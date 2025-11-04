@@ -15,22 +15,25 @@ static void hexdump(uint8_t const* data, size_t size) {
     if (!loglet::is_module_level_enabled(LOGLET_CURRENT_MODULE, loglet::Level::Verbose)) {
         return;
     }
-    
+
     char print_buffer[512];
     for (size_t i = 0; i < size;) {
         size_t print_count = 0;
         for (size_t j = 0; j < 16; j++) {
             if (i + j < size) {
-                print_count += static_cast<size_t>(snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
-                                       "%02X ", data[i + j]));
+                print_count += static_cast<size_t>(snprintf(print_buffer + print_count,
+                                                            sizeof(print_buffer) - print_count,
+                                                            "%02X ", data[i + j]));
             } else {
-                print_count += static_cast<size_t>(snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count, "   "));
+                print_count += static_cast<size_t>(snprintf(
+                    print_buffer + print_count, sizeof(print_buffer) - print_count, "   "));
             }
         }
         for (size_t j = 0; j < 16; j++) {
             if (i + j < size) {
-                print_count += static_cast<size_t>(snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
-                                       "%c", isprint(data[i + j]) ? data[i + j] : '.'));
+                print_count += static_cast<size_t>(
+                    snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count, "%c",
+                             isprint(data[i + j]) ? data[i + j] : '.'));
             }
         }
         TRACEF("%s", print_buffer);
@@ -122,7 +125,7 @@ void Modem::request(std::string const& command, ResponseCallback callback) {
         ERRORF("output is null, cannot send request: %s", command.c_str());
         return;
     }
-    
+
     uint8_t buffer[1024];
     auto    length =
         snprintf(reinterpret_cast<char*>(buffer), sizeof(buffer), "%s\r\n", command.c_str());
@@ -141,7 +144,7 @@ void Modem::request_no_response(std::string const& command) {
         ERRORF("output is null, cannot send request: %s", command.c_str());
         return;
     }
-    
+
     uint8_t buffer[1024];
     auto    length =
         snprintf(reinterpret_cast<char*>(buffer), sizeof(buffer), "%s\r\n", command.c_str());
@@ -316,7 +319,8 @@ Modem::ResponseResult Modem::handle_creg_query(format::at::Parser& parser, Creg&
         return ResponseResult::Failure;
     }
 
-    DEBUGF("parsed CREG: mode=%d status=%d lac=%u ci=%u act=%d", reg.mode, reg.status, reg.lac, reg.ci, reg.act);
+    DEBUGF("parsed CREG: mode=%d status=%d lac=%u ci=%u act=%d", reg.mode, reg.status, reg.lac,
+           reg.ci, reg.act);
     return ResponseResult::Success;
 }
 
@@ -387,7 +391,8 @@ Modem::ResponseResult Modem::handle_cops_query(format::at::Parser& parser, Cops&
             return ResponseResult::Failure;
         }
 
-        DEBUGF("parsed COPS: mode=%d format=%d mcc=%d mnc=%d act=%d", cops.mode, cops.format, cops.mcc, cops.mnc, cops.act);
+        DEBUGF("parsed COPS: mode=%d format=%d mcc=%d mnc=%d act=%d", cops.mode, cops.format,
+               cops.mcc, cops.mnc, cops.act);
         return ResponseResult::Success;
     } else {
         VERBOSEF("unsupported COPS mode/format: %d/%d", cops.mode, cops.format);

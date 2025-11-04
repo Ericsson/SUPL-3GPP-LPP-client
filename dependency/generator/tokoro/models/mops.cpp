@@ -27,9 +27,9 @@ static double interpolate(double const* x, double const* y, int nx, int, double 
 bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
     VSCOPE_FUNCTIONF("%s, %+.8f", time.rtklib_time_string().c_str(), latitude * constant::RAD2DEG);
 
-    auto         latdeg     = latitude * constant::RAD2DEG;
-    double const dminN      = 28;
-    double const DminS      = 211; /* 28@north hemisphere, 211@south hemisphere */
+    auto         latdeg = latitude * constant::RAD2DEG;
+    double const dminN  = 28;
+    double const DminS  = 211; /* 28@north hemisphere, 211@south hemisphere */
     (void)DminS;
     double const interval[] = {15.0, 30.0, 45.0, 60.0, 75.0};
 

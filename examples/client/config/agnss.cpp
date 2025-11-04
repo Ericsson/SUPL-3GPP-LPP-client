@@ -19,26 +19,25 @@
 
 namespace agnss {
 
-static args::Group                  gGroup{"A-GNSS:"};
-static args::Flag gEnable{
+static args::Group gGroup{"A-GNSS:"};
+static args::Flag  gEnable{
     gGroup,
     "enable",
     "Enable A-GNSS client",
-    {"agnss-enable"},
+     {"agnss-enable"},
 };
 static args::ValueFlag<std::string> gHost{
-    gGroup,
-    "host",
-    "A-GNSS server hostname or IP address",
-    {"agnss-host"},
-    args::Options::Single,
+    gGroup, "host", "A-GNSS server hostname or IP address", {"agnss-host"}, args::Options::Single,
 };
 static args::ValueFlag<uint16_t> gPort{
     gGroup, "port", "A-GNSS server port", {"agnss-port"}, args::Options::Single,
 };
 static args::ValueFlag<std::string> gInterface{
-    gGroup, "interface", "Interface to use for A-GNSS server connection",
-    {"agnss-interface"}, args::Options::Single,
+    gGroup,
+    "interface",
+    "Interface to use for A-GNSS server connection",
+    {"agnss-interface"},
+    args::Options::Single,
 };
 static args::Flag gGps{
     gGroup,
@@ -71,7 +70,11 @@ static args::ValueFlag<std::string> gMode{
     gGroup, "mode", "A-GNSS mode: periodic, triggered, both", {"agnss-mode"}, "periodic",
 };
 static args::ValueFlag<long> gTriggeredCooldown{
-    gGroup, "cooldown", "Cooldown in seconds before re-requesting same ephemeris (triggered mode)", {"agnss-triggered-cooldown"}, 300,
+    gGroup,
+    "cooldown",
+    "Cooldown in seconds before re-requesting same ephemeris (triggered mode)",
+    {"agnss-triggered-cooldown"},
+    300,
 };
 static args::ValueFlag<uint64_t> gMsisdn{
     gGroup, "msisdn", "MSISDN identity", {"agnss-msisdn"}, args::Options::Single,
@@ -88,9 +91,9 @@ void setup(args::ArgumentParser& parser) {
 }
 
 void parse(Config* config) {
-    auto& agnss = config->agnss;
+    auto& agnss   = config->agnss;
     agnss.enabled = gEnable.Get();
-    
+
     if (!agnss.enabled) {
         return;
     }
@@ -109,11 +112,11 @@ void parse(Config* config) {
         agnss.interface = std::unique_ptr<std::string>(new std::string(gInterface.Get()));
     }
 
-    agnss.gps = gGps.Get();
-    agnss.glonass = gGlonass.Get();
-    agnss.galileo = gGalileo.Get();
-    agnss.beidou = gBeidou.Get();
-    agnss.interval_seconds = gInterval.Get();
+    agnss.gps                        = gGps.Get();
+    agnss.glonass                    = gGlonass.Get();
+    agnss.galileo                    = gGalileo.Get();
+    agnss.beidou                     = gBeidou.Get();
+    agnss.interval_seconds           = gInterval.Get();
     agnss.triggered_cooldown_seconds = gTriggeredCooldown.Get();
 
     auto mode_str = gMode.Get();
@@ -151,7 +154,9 @@ void dump(AGnssConfig const& config) {
     DEBUGF("glonass: %s", config.glonass ? "true" : "false");
     DEBUGF("galileo: %s", config.galileo ? "true" : "false");
     DEBUGF("beidou: %s", config.beidou ? "true" : "false");
-    DEBUGF("mode: %s", config.mode == AGnssMode::Periodic ? "periodic" : config.mode == AGnssMode::Triggered ? "triggered" : "both");
+    DEBUGF("mode: %s", config.mode == AGnssMode::Periodic  ? "periodic" :
+                       config.mode == AGnssMode::Triggered ? "triggered" :
+                                                             "both");
     DEBUGF("interval: %ld seconds", config.interval_seconds);
     DEBUGF("triggered_cooldown: %ld seconds", config.triggered_cooldown_seconds);
     if (config.msisdn) {
