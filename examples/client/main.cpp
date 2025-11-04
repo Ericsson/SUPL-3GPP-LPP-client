@@ -48,6 +48,7 @@
 #endif
 
 #if defined(INCLUDE_GENERATOR_TOKORO)
+#include "processor/agnss.hpp"
 #include "processor/tokoro.hpp"
 #endif
 
@@ -580,10 +581,11 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
 static void setup_print_inspectors(Program& program) {
     VSCOPE_FUNCTION();
 
-    bool nmea_print = false;
-    bool ubx_print  = false;
-    bool rtcm_print = false;
-    bool ctrl_print = false;
+    bool nmea_print  = false;
+    bool ubx_print   = false;
+    bool rtcm_print  = false;
+    bool ctrl_print  = false;
+    bool agnss_print = false;
 
     for (auto& print : program.config.print.prints) {
         print.include_tag_mask = program.config.get_tag(print.include_tags);
@@ -593,12 +595,16 @@ static void setup_print_inspectors(Program& program) {
         if (print.ubx_support()) ubx_print = true;
         if (print.rtcm_support()) rtcm_print = true;
         if (print.ctrl_support()) ctrl_print = true;
+        if (print.agnss_support()) agnss_print = true;
     }
 
     if (nmea_print) program.stream.add_inspector<NmeaPrint>(program.config.print);
     if (ubx_print) program.stream.add_inspector<UbxPrint>(program.config.print);
     if (rtcm_print) program.stream.add_inspector<RtcmPrint>(program.config.print);
     if (ctrl_print) program.stream.add_inspector<CtrlPrint>(program.config.print);
+#if defined(INCLUDE_GENERATOR_TOKORO)
+    if (agnss_print) program.stream.add_inspector<MissingEphemerisPrint>(program.config.print);
+#endif
 }
 
 static void setup_location_stream(Program& program) {
@@ -779,13 +785,10 @@ static void apply_ubx_config(Program& program) {
 }
 
 static bool setup_agnss(Program& program) {
-    DEBUGF("[AGNSS] setup_agnss() called");
     if (program.config.agnss.imsi) {
-        DEBUGF("[AGNSS] using IMSI identity");
         program.agnss_identity = std::unique_ptr<supl::Identity>(
             new supl::Identity(supl::Identity::imsi(*program.config.agnss.imsi)));
     } else if (program.config.agnss.msisdn) {
-        DEBUGF("[AGNSS] using MSISDN identity");
         program.agnss_identity = std::unique_ptr<supl::Identity>(
             new supl::Identity(supl::Identity::msisdn(*program.config.agnss.msisdn)));
     } else if (program.config.agnss.ipv4) {
@@ -806,55 +809,7 @@ static bool setup_agnss(Program& program) {
         ERRORF("cell information is required for A-GNSS client");
         return false;
     }
-    DEBUGF("[AGNSS] setup complete");
     return true;
-}
-
-static void request_agnss(Program& program) {
-    DEBUGF("[AGNSS] request_agnss() called");
-    if (!program.cell) return;
-
-    auto& agnss_identity = program.agnss_identity ? *program.agnss_identity : *program.identity;
-    auto agnss_client = new lpp::Client{
-        agnss_identity,
-        *program.cell,
-        program.config.agnss.host,
-        program.config.agnss.port,
-    };
-    if (program.config.agnss.interface) {
-        agnss_client->set_interface(*program.config.agnss.interface);
-    }
-
-    agnss_client->on_connected = [](lpp::Client&) {
-        INFOF("[AGNSS] connected to server");
-    };
-
-    agnss_client->on_disconnected = [agnss_client](lpp::Client&) {
-        INFOF("[AGNSS] disconnected from server");
-        delete agnss_client;
-    };
-
-    DEBUGF("[AGNSS] requesting assistance data");
-    auto cell = *program.cell.get();
-    agnss_client->request_assistance_data({
-        lpp::SingleRequestAssistanceData::Type::AGNSS,
-        cell,
-        {
-            program.config.agnss.gps,
-            program.config.agnss.glonass,
-            program.config.agnss.galileo,
-            program.config.agnss.beidou,
-        },
-        [&program](lpp::Client&, lpp::Message message) {
-            INFOF("[AGNSS] received assistance data");
-            program.stream.push(std::move(message));
-        },
-        [](lpp::Client&) {
-            ERRORF("[AGNSS] request failed");
-        },
-    });
-
-    agnss_client->schedule(&program.scheduler);
 }
 
 int main(int argc, char** argv) {
@@ -1110,29 +1065,15 @@ int main(int argc, char** argv) {
         program.cell.reset(new supl::Cell(program.config.assistance_data.cell));
     }
 
-    DEBUGF("[AGNSS] checking if A-GNSS is enabled: %s", program.config.agnss.enabled ? "yes" : "no");
     if (program.config.agnss.enabled) {
-        DEBUGF("[AGNSS] calling setup_agnss()");
         if (!setup_agnss(program)) {
             return 1;
         }
-
-        DEBUGF("[AGNSS] creating periodic task with interval %ld seconds", program.config.agnss.interval_seconds);
-        program.agnss_task.reset(new scheduler::PeriodicTask{std::chrono::seconds(program.config.agnss.interval_seconds)});
-        program.agnss_task->set_event_name("agnss-request");
-        program.agnss_task->callback = [&program]() {
-            request_agnss(program);
-        };
-
-        DEBUGF("[AGNSS] scheduling periodic task");
-        if (!program.agnss_task->schedule(program.scheduler)) {
-            ERRORF("failed to schedule A-GNSS task");
-        }
-        DEBUGF("[AGNSS] periodic task scheduled successfully");
+        program.stream.add_inspector<AGnssProcessor>(
+            program.config.agnss, program.identity.get(), program.agnss_identity.get(),
+            program.cell.get(), program.scheduler, program.stream);
     }
 
-    DEBUGF("calling scheduler.execute()");
     program.scheduler.execute();
-    DEBUGF("scheduler.execute() returned");
     return 0;
 }

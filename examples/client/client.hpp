@@ -56,7 +56,6 @@ struct Program {
     std::vector<std::unique_ptr<InputStage>>   input_stages;
 
     std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
-    std::unique_ptr<scheduler::PeriodicTask> agnss_task;
 
     void update_location_information(lpp::LocationInformation const& location) {
         latest_location_information           = location;
