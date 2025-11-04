@@ -4,6 +4,7 @@
 #include "time/bdt.hpp"
 #if defined(INCLUDE_GENERATOR_TOKORO)
 #include "tokoro.hpp"
+#include "agnss.hpp"
 
 #include <format/antex/antex.hpp>
 #include <format/rtcm/datafields.hpp>
@@ -289,7 +290,7 @@ void TokoroLocation::inspect(streamline::System&, DataType const& location, uint
 
 Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
                scheduler::Scheduler& scheduler)
-    : mOutput(output), mConfig(config), mScheduler(scheduler) {
+    : mOutput(output), mConfig(config), mScheduler(scheduler), mSystem(nullptr) {
     VSCOPE_FUNCTION();
     mGenerator = std::unique_ptr<generator::tokoro::Generator>(new generator::tokoro::Generator{});
     mReferenceStation = nullptr;
@@ -321,6 +322,7 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
             std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
         mPeriodicTask->callback = [this]() {
             ASSERT(mGenerator, "generator is null");
+            ASSERT(mSystem, "system is null");
             if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepLast) {
                 generate(mGenerator->last_correction_data_time());
             } else if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStep) {
@@ -336,6 +338,12 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
                 generate(aligned_time);
             } else {
                 WARNF("unsupported generation strategy");
+            }
+
+            auto missing = mGenerator->missing_ephemeris();
+            for (auto& entry : missing) {
+                MissingEphemeris msg{entry.first, entry.second};
+                mSystem->push(std::move(msg));
             }
         };
 
@@ -390,18 +398,44 @@ void Tokoro::vrs_mode_fixed() {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
     if (!mReferenceStation) {
+        Float3 itrf_position{mConfig.fixed_itrf_x, mConfig.fixed_itrf_y, mConfig.fixed_itrf_z};
+        Float3 rtcm_position{mConfig.fixed_rtcm_x, mConfig.fixed_rtcm_y, mConfig.fixed_rtcm_z};
+
         mReferenceStation =
             mGenerator->define_reference_station(generator::tokoro::ReferenceStationConfig{
-                Float3{
-                    mConfig.fixed_itrf_x,
-                    mConfig.fixed_itrf_y,
-                    mConfig.fixed_itrf_z,
-                },
-                Float3{
-                    mConfig.fixed_rtcm_x,
-                    mConfig.fixed_rtcm_y,
-                    mConfig.fixed_rtcm_z,
-                },
+                itrf_position,
+                rtcm_position,
+                mConfig.generate_gps,
+                mConfig.generate_glonass,
+                mConfig.generate_galileo,
+                mConfig.generate_beidou,
+            });
+    }
+}
+
+void Tokoro::vrs_mode_grid() {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    if (!mReferenceStation) {
+        double lat, lon;
+        int east = mConfig.vrs_grid_position->first;
+        int north = mConfig.vrs_grid_position->second;
+        
+        if (!mGenerator->get_grid_position(east, north, &lat, &lon)) {
+            WARNF("no correction point set available for grid mode");
+            return;
+        }
+
+        Float3 llh{lat * generator::tokoro::constant::DEG2RAD,
+                  lon * generator::tokoro::constant::DEG2RAD, 0.0};
+        Float3 position = generator::tokoro::llh_to_ecef(llh, generator::tokoro::ellipsoid::WGS84);
+        
+        INFOF("VRS grid position (%d,%d): lat=%.6f lon=%.6f", east, north, lat, lon);
+
+        mReferenceStation =
+            mGenerator->define_reference_station(generator::tokoro::ReferenceStationConfig{
+                position,
+                position,
                 mConfig.generate_gps,
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
@@ -490,6 +524,8 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     ASSERT(mGenerator, "generator is null");
     if (mConfig.vrs_mode == TokoroConfig::VrsMode::Fixed) {
         vrs_mode_fixed();
+    } else if (mConfig.vrs_mode == TokoroConfig::VrsMode::Grid) {
+        vrs_mode_grid();
     } else if (mConfig.vrs_mode == TokoroConfig::VrsMode::Dynamic) {
         vrs_mode_dynamic();
     } else {
@@ -544,9 +580,11 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     }
 }
 
-void Tokoro::inspect(streamline::System&, DataType const& message, uint64_t) {
+void Tokoro::inspect(streamline::System& system, DataType const& message, uint64_t) {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
+    
+    mSystem = &system;
 
     if (!message) {
         return;
@@ -559,6 +597,12 @@ void Tokoro::inspect(streamline::System&, DataType const& message, uint64_t) {
         } else {
             DEBUGF("skipping generation, no new assistance data");
         }
+    }
+
+    auto missing = mGenerator->missing_ephemeris();
+    for (auto& entry : missing) {
+        MissingEphemeris msg{entry.first, entry.second};
+        system.push(std::move(msg));
     }
 }
 

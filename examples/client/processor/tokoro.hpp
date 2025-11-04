@@ -18,6 +18,12 @@
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
 #include <lpp/location_information.hpp>
+
+namespace generator {
+namespace tokoro {
+struct CorrectionPointSet;
+}
+}  // namespace generator
 #include <scheduler/periodic.hpp>
 #include <scheduler/scheduler.hpp>
 
@@ -41,6 +47,7 @@ public:
     void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
     void vrs_mode_fixed();
+    void vrs_mode_grid();
     void vrs_mode_dynamic();
     void generate(ts::Tai const& generation_time);
 
@@ -52,6 +59,7 @@ private:
     OutputConfig const&                                  mOutput;
     TokoroConfig const&                                  mConfig;
     scheduler::Scheduler&                                mScheduler;
+    streamline::System*                                  mSystem;
     lpp::Optional<lpp::LocationShape>                    mLastUsedLocation;
     lpp::Optional<lpp::LocationShape>                    mLastLocation;
     std::unique_ptr<generator::tokoro::Generator>        mGenerator;
