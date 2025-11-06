@@ -110,6 +110,16 @@ void dump(Config* config) {
         DEBUG_INDENT_SCOPE();
         ::lpp2eph::dump(config->lpp2eph);
     }
+    {
+        DEBUGF("ubx2eph:");
+        DEBUG_INDENT_SCOPE();
+        ::ubx2eph::dump(config->ubx2eph);
+    }
+    {
+        DEBUGF("rtcm2eph:");
+        DEBUG_INDENT_SCOPE();
+        ::rtcm2eph::dump(config->rtcm2eph);
+    }
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
@@ -176,6 +186,8 @@ bool parse(int argc, char** argv, Config* config) {
     ::lpp2rtcm::setup(parser);
     ::lpp2frame_rtcm::setup(parser);
     ::lpp2eph::setup(parser);
+    ::ubx2eph::setup(parser);
+    ::rtcm2eph::setup(parser);
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     ::lpp2spartn::setup(parser);
@@ -216,6 +228,8 @@ bool parse(int argc, char** argv, Config* config) {
         ::lpp2rtcm::parse(config);
         ::lpp2frame_rtcm::parse(config);
         ::lpp2eph::parse(config);
+        ::ubx2eph::parse(config);
+        ::rtcm2eph::parse(config);
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
         ::lpp2spartn::parse(config);

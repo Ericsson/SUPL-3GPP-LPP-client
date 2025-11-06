@@ -42,6 +42,8 @@
 #include "processor/lpp2frame_rtcm.hpp"
 #include "processor/lpp2rtcm.hpp"
 #include "processor/lpp2eph.hpp"
+#include "processor/ubx2eph.hpp"
+#include "processor/rtcm2eph.hpp"
 #endif
 
 #if defined(INCLUDE_GENERATOR_SPARTN)
@@ -735,6 +737,14 @@ static void setup_lpp2osr(Program& program) {
     if (program.config.lpp2eph.enabled) {
         program.stream.add_inspector<Lpp2Eph>(program.config.lpp2eph);
     }
+
+    if (program.config.ubx2eph.enabled) {
+        program.stream.add_inspector<Ubx2Eph>(program.config.ubx2eph);
+    }
+
+    if (program.config.rtcm2eph.enabled) {
+        program.stream.add_inspector<Rtcm2Eph>(program.config.rtcm2eph);
+    }
 #endif
 }
 
@@ -751,8 +761,9 @@ static void setup_tokoro(Program& program) {
     if (program.config.tokoro.enabled) {
         auto tokoro = program.stream.add_inspector<Tokoro>(
             program.config.output, program.config.tokoro, program.scheduler);
-        program.stream.add_inspector<TokoroEphemerisUbx>(*tokoro);
-        program.stream.add_inspector<TokoroEphemerisRtcm>(*tokoro);
+        program.stream.add_inspector<TokoroEphemerisGps>(*tokoro);
+        program.stream.add_inspector<TokoroEphemerisGal>(*tokoro);
+        program.stream.add_inspector<TokoroEphemerisBds>(*tokoro);
         program.stream.add_inspector<TokoroLocation>(*tokoro);
     }
 #endif

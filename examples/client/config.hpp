@@ -311,6 +311,20 @@ struct Lpp2EphConfig {
     bool galileo;
     bool beidou;
 };
+
+struct Ubx2EphConfig {
+    bool enabled;
+    bool gps;
+    bool galileo;
+    bool beidou;
+};
+
+struct Rtcm2EphConfig {
+    bool enabled;
+    bool gps;
+    bool galileo;
+    bool beidou;
+};
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
@@ -453,6 +467,8 @@ struct Config {
     Lpp2RtcmConfig      lpp2rtcm;
     Lpp2FrameRtcmConfig lpp2frame_rtcm;
     Lpp2EphConfig       lpp2eph;
+    Ubx2EphConfig       ubx2eph;
+    Rtcm2EphConfig      rtcm2eph;
 #endif
 #ifdef INCLUDE_GENERATOR_SPARTN
     Lpp2SpartnConfig lpp2spartn;
@@ -583,6 +599,18 @@ void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(Lpp2EphConfig const& config);
 }  // namespace lpp2eph
+
+namespace ubx2eph {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+void dump(Ubx2EphConfig const& config);
+}  // namespace ubx2eph
+
+namespace rtcm2eph {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+void dump(Rtcm2EphConfig const& config);
+}  // namespace rtcm2eph
 #endif
 
 #ifdef INCLUDE_GENERATOR_SPARTN
