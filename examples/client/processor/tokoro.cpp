@@ -421,7 +421,7 @@ void Tokoro::vrs_mode_grid() {
         int    east  = mConfig.vrs_grid_position->first;
         int    north = mConfig.vrs_grid_position->second;
 
-        if (!mGenerator->get_grid_position(east, north, &lat, &lon)) {
+        if (!mGenerator->get_grid_cell_center_position(east, north, &lat, &lon)) {
             WARNF("no correction point set available for grid mode");
             return;
         }
@@ -430,7 +430,7 @@ void Tokoro::vrs_mode_grid() {
                    lon * generator::tokoro::constant::DEG2RAD, 0.0};
         Float3 position = generator::tokoro::llh_to_ecef(llh, generator::tokoro::ellipsoid::WGS84);
 
-        INFOF("VRS grid position (%d,%d): lat=%.6f lon=%.6f", east, north, lat, lon);
+        INFOF("VRS grid cell center (%d,%d): lat=%.6f lon=%.6f", east, north, lat, lon);
 
         mReferenceStation =
             mGenerator->define_reference_station(generator::tokoro::ReferenceStationConfig{
