@@ -572,7 +572,10 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
         return false;
     }
 
-    mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
+    if (!mCorrectionData) {
+        mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
+    }
+    mCorrectionData->mCorrectionPointSet = mCorrectionPointSet.get();
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
@@ -721,7 +724,13 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(gps_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
-            if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
+            // TODO(ewasjon): [low-priority] Due to a issue for one datafeed the lpp_iod for GPS
+            // uses IODE instead of IODC. As IODE by definition is the 8 lower bits of IODC let's
+            // just compare them. This could cause problem with ephemeris >6 hours but the time
+            // validity check should block that
+            auto eph_iode = ephemeris.lpp_iod & 0xFF;
+            auto wanted_iode = iod & 0xFF;  
+            if (eph_iode != wanted_iode && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
@@ -887,10 +896,21 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
 
 bool Generator::get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT {
     if (!mCorrectionPointSet) return false;
-    *lat = mCorrectionPointSet->reference_point_latitude +
+    ASSERT(lat, "lat is null");
+    ASSERT(lon, "lon is null");
+    *lat = mCorrectionPointSet->reference_point_latitude -
            north * mCorrectionPointSet->step_of_latitude;
     *lon = mCorrectionPointSet->reference_point_longitude +
            east * mCorrectionPointSet->step_of_longitude;
+    return true;
+}
+
+bool Generator::get_grid_cell_center_position(int east, int north, double* lat,
+                                              double* lon) const NOEXCEPT {
+    if (!get_grid_position(east, north, lat, lon)) return false;
+    ASSERT(mCorrectionPointSet, "correction point set not initialized");
+    *lat -= mCorrectionPointSet->step_of_latitude * 0.5;
+    *lon += mCorrectionPointSet->step_of_longitude * 0.5;
     return true;
 }
 
