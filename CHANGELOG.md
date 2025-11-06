@@ -16,18 +16,36 @@ All notable changes to this project will be documented in this file.
 - Enhanced RTCM parsing and bitset performance
 - Better RTCM CRC check and logging
 - Improved NMEA processor logging and information output
+- Example-client lpp2eph now correctly uses SatelliteId to convert LPP satellite IDs to PRNs
+- Example-client lpp2eph now correctly sets lpp_iod to full IOD bitstring value for SSR matching
+- Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
 - Scheduler defer() method to safely schedule cleanup callbacks after event processing
 - Example-client A-GNSS processor now prevents concurrent requests
 - Example-client lpp2eph processor to convert LPP assistance data to ephemeris messages
+- Example-client ubx2eph processor to convert UBX messages to ephemeris messages
+- Example-client rtcm2eph processor to convert RTCM messages to ephemeris messages
+- Example-client tokoro now uses ephemeris inspector pattern instead of direct ephemeris processing
+- SatelliteId prn() method to convert LPP ID to PRN
+- Tokoro generator get_grid_cell_center_position() to get center of grid cell
 - Example-client `--lpp2eph` option to enable LPP to ephemeris conversion
+- Example-client `--ubx2eph` option to enable UBX to ephemeris conversion
+- Example-client `--rtcm2eph` option to enable RTCM to ephemeris conversion
 - Example-client `--l2e-no-gps`, `--l2e-no-gal`, `--l2e-no-bds` options for lpp2eph
+- Example-client `--u2e-no-gps`, `--u2e-no-gal`, `--u2e-no-bds` options for ubx2eph
+- Example-client `--r2e-no-gps`, `--r2e-no-gal`, `--r2e-no-bds` options for rtcm2eph
 - LPP client now requests navigation model for A-GNSS assistance data
 - Example-client `--input-disable-pipe-buffer-optimization` option
 - FileInput disable pipe buffer optimization parameter
 - Scheduler stream disable pipe buffer optimization option
 - Scheduler stream splice() support with conditional compilation via HAVE_SPLICE
+
+### Fixed
+- Example-client lpp2eph ephemeris scale factors for all GNSS (APowerHalf: 2⁻¹⁹, Crc/Crs: 2⁻⁵ for GPS/Galileo and 2⁻⁶ for BeiDou, keplerToe: 60s)
+- Tokoro generator get_grid_position now correctly handles north-west reference point (latitude decreases going south)
+- Tokoro CorrectionData now correctly receives correction point set pointer
+- Tokoro generator now preserves existing CorrectionData when processing incremental LPP updates
 - Scheduler stream pipe buffer size optimization (64MB to 1MB)
 - Example-client A-GNSS processor with periodic, triggered, and both modes
 - Example-client `--agnss-mode` and `--agnss-triggered-cooldown` options
