@@ -74,13 +74,19 @@ struct GridPoint {
 
 struct TroposphericCorrection;
 struct GridData {
+    enum class GridStatus {
+        Success,
+        PositionOutsideGrid,
+        MissingSatelliteData,
+    };
+
     GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
     GridPoint const* find_with_absolute_index(long absolute_index) const NOEXCEPT;
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
                        GridPoint const*& br) const NOEXCEPT;
 
-    bool ionospheric(SatelliteId sv_id, Float3 llh, double& ionospheric_residual) const NOEXCEPT;
-    bool tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
+    GridStatus ionospheric(SatelliteId sv_id, Float3 llh, double& ionospheric_residual) const NOEXCEPT;
+    GridStatus tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
         mCorrectionPointSetId   = correction_point_set.set_id;

@@ -120,51 +120,49 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
     return true;
 }
 
-bool GridData::ionospheric(SatelliteId sv_id, Float3 llh,
+GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
                            double& ionospheric_residual) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    // if we're inside 4 points, bilinear interpolation
     GridPoint const* tl = nullptr;
     GridPoint const* tr = nullptr;
     GridPoint const* bl = nullptr;
     GridPoint const* br = nullptr;
-    if (find_4_points(llh, tl, tr, bl, br)) {
-        VERBOSEF("bilinear interpolation");
-
-        if (!tl->has_ionospheric_residual(sv_id) || !tr->has_ionospheric_residual(sv_id) ||
-            !bl->has_ionospheric_residual(sv_id) || !br->has_ionospheric_residual(sv_id)) {
-            VERBOSEF("ionospheric correction not found");
-            return false;
-        }
-
-        auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
-        auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
-
-        VERBOSEF("dx: %+.14f", dx);
-        VERBOSEF("dy: %+.14f", dy);
-
-        auto tl_value = tl->ionospheric_residual.at(sv_id);
-        auto tr_value = tr->ionospheric_residual.at(sv_id);
-        auto bl_value = bl->ionospheric_residual.at(sv_id);
-        auto br_value = br->ionospheric_residual.at(sv_id);
-
-        VERBOSEF("tl: %ld/%ld: %+.14f", tl->array_index, tl->absolute_index, tl_value);
-        VERBOSEF("tr: %ld/%ld: %+.14f", tr->array_index, tr->absolute_index, tr_value);
-        VERBOSEF("bl: %ld/%ld: %+.14f", bl->array_index, bl->absolute_index, bl_value);
-        VERBOSEF("br: %ld/%ld: %+.14f", br->array_index, br->absolute_index, br_value);
-
-        ionospheric_residual = interpolate(interpolate(tl_value, bl_value, dx),
-                                           interpolate(tr_value, br_value, dx), dy);
-        VERBOSEF("ionospheric: %+.14f", ionospheric_residual);
-        return true;
+    if (!find_4_points(llh, tl, tr, bl, br)) {
+        return GridStatus::PositionOutsideGrid;
     }
 
-    // TODO(ewasjon): support other interpolation methods
-    return false;
+    VERBOSEF("bilinear interpolation");
+
+    if (!tl->has_ionospheric_residual(sv_id) || !tr->has_ionospheric_residual(sv_id) ||
+        !bl->has_ionospheric_residual(sv_id) || !br->has_ionospheric_residual(sv_id)) {
+        VERBOSEF("ionospheric correction not found");
+        return GridStatus::MissingSatelliteData;
+    }
+
+    auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
+    auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
+
+    VERBOSEF("dx: %+.14f", dx);
+    VERBOSEF("dy: %+.14f", dy);
+
+    auto tl_value = tl->ionospheric_residual.at(sv_id);
+    auto tr_value = tr->ionospheric_residual.at(sv_id);
+    auto bl_value = bl->ionospheric_residual.at(sv_id);
+    auto br_value = br->ionospheric_residual.at(sv_id);
+
+    VERBOSEF("tl: %ld/%ld: %+.14f", tl->array_index, tl->absolute_index, tl_value);
+    VERBOSEF("tr: %ld/%ld: %+.14f", tr->array_index, tr->absolute_index, tr_value);
+    VERBOSEF("bl: %ld/%ld: %+.14f", bl->array_index, bl->absolute_index, bl_value);
+    VERBOSEF("br: %ld/%ld: %+.14f", br->array_index, br->absolute_index, br_value);
+
+    ionospheric_residual = interpolate(interpolate(tl_value, bl_value, dx),
+                                       interpolate(tr_value, br_value, dx), dy);
+    VERBOSEF("ionospheric: %+.14f", ionospheric_residual);
+    return GridStatus::Success;
 }
 
-bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT {
+GridData::GridStatus GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     // if we're inside 4 points, bilinear interpolation
@@ -178,7 +176,7 @@ bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) cons
         if (!tl->has_tropospheric_data() || !tr->has_tropospheric_data() ||
             !bl->has_tropospheric_data() || !br->has_tropospheric_data()) {
             VERBOSEF("tropospheric correction not found");
-            return false;
+            return GridStatus::MissingSatelliteData;
         }
 
         auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
@@ -215,10 +213,10 @@ bool GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) cons
         VERBOSEF("tropospheric wet: %+.14f", correction.wet);
         VERBOSEF("tropospheric dry: %+.14f", correction.dry);
 
-        return true;
+        return GridStatus::Success;
     }
 
-    return false;
+    return GridStatus::PositionOutsideGrid;
 }
 
 void GridData::print_grid() {

@@ -48,19 +48,23 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
     FUNCTION_SCOPE();
 
     if (mCorrectionPointSet == nullptr) {
-        WARNF("tropospheric correction grid not available");
+        WARNF("tropospheric correction grid not available: no correction point set (missing assistance data)");
         return false;
     }
 
     auto grid_it = mGrid.find(sv_id.gnss());
     if (grid_it == mGrid.end()) {
-        WARNF("tropospheric correction for satellite not found");
+        WARNF("tropospheric correction grid not available: no grid for GNSS (missing assistance data)");
         return false;
     }
 
     auto& grid = grid_it->second;
-    if (!grid.tropospheric(llh, correction)) {
-        VERBOSEF("tropospheric correction not found");
+    auto status = grid.tropospheric(llh, correction);
+    if (status == GridData::GridStatus::PositionOutsideGrid) {
+        WARNF("tropospheric correction not available: position outside grid");
+        return false;
+    } else if (status == GridData::GridStatus::MissingSatelliteData) {
+        WARNF("tropospheric correction not available: missing grid point data");
         return false;
     }
 
