@@ -47,6 +47,7 @@ public:
     NODISCARD Maybe<long> as_df009() const;
     NODISCARD Maybe<long> as_df038() const;
     NODISCARD Maybe<long> as_msm() const;
+    NODISCARD Maybe<uint8_t> prn() const;
 
     NODISCARD long absolute_id() const;
 

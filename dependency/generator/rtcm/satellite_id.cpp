@@ -101,6 +101,14 @@ Maybe<long> SatelliteId::as_msm() const {
     }
 }
 
+Maybe<uint8_t> SatelliteId::prn() const {
+    if (mLppId >= 0 && mLppId < LPP_SATELLITE_ID_LIMIT) {
+        return static_cast<uint8_t>(mLppId + 1);
+    } else {
+        return Maybe<uint8_t>();
+    }
+}
+
 long SatelliteId::absolute_id() const {
     switch (mGnss) {
     case Gnss::GPS: return GPS_ABS_MIN + mLppId;
