@@ -68,6 +68,45 @@ private:
     uint64_t                                             mOutputTag;
 };
 
+class TokoroEphemerisGps : public streamline::Inspector<ephemeris::GpsEphemeris> {
+public:
+    TokoroEphemerisGps(Tokoro& tokoro) : mTokoro(tokoro) {}
+
+    char const* name() const NOEXCEPT override { return "TokoroEphemerisGps"; }
+    void inspect(streamline::System&, DataType const& eph, uint64_t) override {
+        mTokoro.process_ephemeris(eph);
+    }
+
+private:
+    Tokoro& mTokoro;
+};
+
+class TokoroEphemerisGal : public streamline::Inspector<ephemeris::GalEphemeris> {
+public:
+    TokoroEphemerisGal(Tokoro& tokoro) : mTokoro(tokoro) {}
+
+    char const* name() const NOEXCEPT override { return "TokoroEphemerisGal"; }
+    void inspect(streamline::System&, DataType const& eph, uint64_t) override {
+        mTokoro.process_ephemeris(eph);
+    }
+
+private:
+    Tokoro& mTokoro;
+};
+
+class TokoroEphemerisBds : public streamline::Inspector<ephemeris::BdsEphemeris> {
+public:
+    TokoroEphemerisBds(Tokoro& tokoro) : mTokoro(tokoro) {}
+
+    char const* name() const NOEXCEPT override { return "TokoroEphemerisBds"; }
+    void inspect(streamline::System&, DataType const& eph, uint64_t) override {
+        mTokoro.process_ephemeris(eph);
+    }
+
+private:
+    Tokoro& mTokoro;
+};
+
 class TokoroEphemerisUbx : public streamline::Inspector<UbxMessage> {
 public:
     TokoroEphemerisUbx(Tokoro& tokoro) : mTokoro(tokoro) {}
