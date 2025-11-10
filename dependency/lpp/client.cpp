@@ -81,9 +81,9 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
 }
 
 Client::~Client() {
-    for (auto& [handle, session] : mSingleSessions) {
-        if (session) {
-            session->clear_client();
+    for (auto& pair : mSingleSessions) {
+        if (pair.second) {
+            pair.second->clear_client();
         }
     }
     

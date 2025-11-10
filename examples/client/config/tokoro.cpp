@@ -1,3 +1,4 @@
+#include <cxx11_compat.hpp>
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 

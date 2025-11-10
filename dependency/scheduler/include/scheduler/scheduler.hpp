@@ -5,6 +5,7 @@
 #include <functional>
 #include <sys/epoll.h>
 #include <unordered_map>
+#include <vector>
 
 namespace scheduler {
 struct EpollEvent {

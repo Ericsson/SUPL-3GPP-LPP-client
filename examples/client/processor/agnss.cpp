@@ -1,5 +1,6 @@
 #include "agnss.hpp"
 
+#include <cxx11_compat.hpp>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(p, agnss);
