@@ -11,7 +11,7 @@ LOGLET_MODULE(sched);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(sched)
 
 namespace scheduler {
-Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1), mInterruptFd(-1), mEpollCount(0) {
+Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1), mInterruptFd(-1), mEpollCount(0), mInterrupted(false) {
     VSCOPE_FUNCTION();
 
     mEpollFd = ::epoll_create1(0);
@@ -139,6 +139,11 @@ void Scheduler::execute() NOEXCEPT {
             return;
         }
 
+        if (mInterrupted) {
+            DEBUGF("interrupted");
+            return;
+        }
+
         tick_callbacks();
 
         // Wait for a file descriptor to become ready.
@@ -177,6 +182,11 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
 
     struct epoll_event events[EVENT_COUNT];
     for (;;) {
+        if (mInterrupted) {
+            DEBUGF("interrupted");
+            return;
+        }
+
         // Calculate the timeout for epoll_pwait.
         now = std::chrono::steady_clock::now();
         if (now >= end) {
@@ -233,6 +243,11 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
 
     struct epoll_event events[EVENT_COUNT];
     for (;;) {
+        if (mInterrupted) {
+            DEBUGF("interrupted");
+            return;
+        }
+
         if (!condition()) {
             return;
         }
@@ -263,9 +278,26 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
     }
 }
 
+void Scheduler::interrupt() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    if (mInterruptFd == -1) {
+        WARNF("interrupt_fd is not initialized");
+        return;
+    }
+
+    mInterrupted = true;
+    uint64_t value = 1;
+    auto result = ::write(mInterruptFd, &value, sizeof(value));
+    VERBOSEF("::write(%d, %p, %zu) = %ld", mInterruptFd, &value, sizeof(value), result);
+    if (result == -1) {
+        ERRORF("failed to write to eventfd: " ERRNO_FMT, ERRNO_ARGS(errno));
+    }
+}
+
 void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
     if (event.data.fd == mInterruptFd) {
         DEBUGF("interrupt event");
+        mInterrupted = true;
         // Clear the eventfd.
         uint64_t value;
         auto     result = ::read(mInterruptFd, &value, sizeof(value));

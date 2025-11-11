@@ -21,6 +21,7 @@ public:
     void execute() NOEXCEPT;
     void execute_timeout(std::chrono::steady_clock::duration duration) NOEXCEPT;
     void execute_while(std::function<bool()> condition) NOEXCEPT;
+    void interrupt() NOEXCEPT;
 
     void register_tick(void* unique_ptr, std::function<void()> callback) NOEXCEPT;
     void unregister_tick(void* unique_ptr) NOEXCEPT;
@@ -40,6 +41,7 @@ private:
     int mEpollFd;
     int mInterruptFd;
     int mEpollCount;
+    bool mInterrupted;
 
     std::unordered_map<void*, std::function<void()>> mTickCallbacks;
     std::vector<std::function<void()>>               mDeferredCallbacks;
