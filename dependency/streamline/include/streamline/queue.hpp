@@ -9,7 +9,9 @@
 
 #include <loglet/loglet.hpp>
 
-#define EVENT_QUEUE_SIZE 2048
+#ifndef EVENT_QUEUE_SIZE
+#define EVENT_QUEUE_SIZE 128
+#endif
 
 LOGLET_MODULE_FORWARD_REF(streamline);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(streamline)

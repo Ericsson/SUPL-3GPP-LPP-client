@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- Streamline queue size default reduced from 2048 to 128 (configurable via EVENT_QUEUE_SIZE)
 - SUPL internal library updated to use loglet properly with function tracing, correct asserts, and verbose output on early exits
 - Example-client AGnssProcessor now takes cell and identity by const reference with validation
 - Example-client A-GNSS GNSS flags now default to true and are masked by global GNSS settings
