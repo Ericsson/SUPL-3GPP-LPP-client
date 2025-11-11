@@ -119,10 +119,14 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
         DEBUGF("writing left over %ld bytes", mLeftOverCount);
         auto offset  = sizeof(mBuffer) - mLeftOverCount;
         auto written = ::write(dest_fd, mBuffer + offset, sizeof(mBuffer) - offset);
-        VERBOSEF("write(%d, %p, %ld) = %ld", dest_fd, mBuffer + offset, sizeof(mBuffer) - offset,
+        VERBOSEF("::write(%d, %p, %ld) = %ld", dest_fd, mBuffer + offset, sizeof(mBuffer) - offset,
                  written);
         if (written < 0) {
-            WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(errno));
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                TRACEF("pipe full, will retry leftover data next tick");
+            } else {
+                WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(errno));
+            }
             return;
         }
         if (static_cast<size_t>(written) != sizeof(mBuffer) - mLeftOverCount) {
@@ -174,13 +178,18 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
         }
         if (count == 0) {
             cancel();
+            if (on_complete) on_complete();
             break;
         }
 
         auto written = ::write(dest_fd, mBuffer, static_cast<size_t>(count));
-        VERBOSEF("write(%d, %p, %ld) = %ld", dest_fd, mBuffer, count, written);
+        VERBOSEF("::write(%d, %p, %ld) = %ld", dest_fd, mBuffer, count, written);
         if (written < 0) {
-            WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(errno));
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                TRACEF("pipe full, saving %ld bytes for next tick", count);
+            } else {
+                WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(errno));
+            }
             mLeftOverCount = static_cast<size_t>(count);
             return;
         }

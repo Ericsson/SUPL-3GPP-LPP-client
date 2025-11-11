@@ -46,6 +46,8 @@ public:
 
     void set_event_name(std::string const& name) { mStreamTask.set_event_name(name); }
 
+    std::function<void()> on_complete;
+
 private:
     static constexpr size_t BUFFER_SIZE = 16 * 1024;
 
