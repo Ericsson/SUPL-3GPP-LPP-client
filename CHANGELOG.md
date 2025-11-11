@@ -22,6 +22,7 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Input on_complete callback for detecting when inputs finish (EOF, disconnect)
 - Scheduler defer() method to safely schedule cleanup callbacks after event processing
 - Example-client A-GNSS processor now prevents concurrent requests
 - Example-client lpp2eph processor to convert LPP assistance data to ephemeris messages

@@ -18,6 +18,7 @@ public:
     bool           cancel() NOEXCEPT;
 
     std::function<void(Input&, uint8_t*, size_t)> callback;
+    std::function<void()>                         on_complete;
 
     NODISCARD std::string const& event_name() const NOEXCEPT { return mEventName; }
 

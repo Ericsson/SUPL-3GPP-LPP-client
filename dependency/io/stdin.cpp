@@ -36,6 +36,13 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         if (result < 0) {
             ERRORF("failed to read from stdin: " ERRNO_FMT, ERRNO_ARGS(errno));
             cancel();
+            if (on_complete) on_complete();
+            return;
+        }
+
+        if (result == 0) {
+            cancel();
+            if (on_complete) on_complete();
             return;
         }
 
@@ -44,8 +51,8 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
     mFdTask->on_error = [this](int) {
-        // NOTE(ewasjon): I am not sure what to do here.
         cancel();
+        if (on_complete) on_complete();
     };
 
     return mFdTask->schedule(scheduler);

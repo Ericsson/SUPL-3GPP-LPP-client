@@ -161,6 +161,13 @@ bool TcpClientInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         if (result < 0) {
             ERRORF("failed to read from socket: " ERRNO_FMT, ERRNO_ARGS(errno));
             mConnectTask->cancel();
+            if (!mReconnect && on_complete) on_complete();
+            return;
+        }
+
+        if (result == 0) {
+            mConnectTask->cancel();
+            if (!mReconnect && on_complete) on_complete();
             return;
         }
 

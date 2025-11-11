@@ -260,8 +260,8 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
     mFdTask->on_error = [this](int) {
-        // NOTE: I am not sure what to do here.
         cancel();
+        if (on_complete) on_complete();
     };
 
     if (!mFdTask->schedule(scheduler)) {

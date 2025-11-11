@@ -50,6 +50,10 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     mStreamTask.reset(new scheduler::ForwardStreamTask(mFileFd, mBytesPerTick, mTickInterval,
                                                        mDisablePipeBufferOptimization));
     mStreamTask->set_event_name("fst/" + mEventName);
+    mStreamTask->on_complete = [this]() {
+        VERBOSEF("ForwardStreamTask completed (EOF)");
+        if (on_complete) on_complete();
+    };
     mForwardFd = mStreamTask->fd();
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
@@ -62,6 +66,15 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         if (result < 0) {
             ERRORF("failed to read from file: " ERRNO_FMT, ERRNO_ARGS(errno));
             cancel();
+            VERBOSEF("calling on_complete (error)");
+            if (on_complete) on_complete();
+            return;
+        }
+
+        if (result == 0) {
+            cancel();
+            VERBOSEF("calling on_complete (EOF)");
+            if (on_complete) on_complete();
             return;
         }
 
@@ -70,8 +83,9 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
     mFdTask->on_error = [this](int) {
-        // NOTE(ewasjon): I am not sure what to do here.
         cancel();
+        VERBOSEF("calling on_complete (on_error)");
+        if (on_complete) on_complete();
     };
 
     auto stream_scheduled  = mStreamTask->schedule(scheduler);
