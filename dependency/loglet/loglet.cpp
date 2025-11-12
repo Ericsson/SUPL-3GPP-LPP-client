@@ -261,8 +261,7 @@ static char const* level_to_string(Level level) {
     case Level::Notice: return "N";
     case Level::Warning: return "W";
     case Level::Error: return "E";
-    case Level::Disabled: CORE_UNREACHABLE();
-    default: CORE_UNREACHABLE();
+    case Level::Disabled: CORE_UNREACHABLE(); CORE_UNREACHABLE_CASE
     }
 }
 
@@ -275,8 +274,7 @@ char const* level_to_full_string(Level level) {
     case Level::Notice: return "notice";
     case Level::Warning: return "warning";
     case Level::Error: return "error";
-    case Level::Disabled: CORE_UNREACHABLE();
-    default: CORE_UNREACHABLE();
+    case Level::Disabled: CORE_UNREACHABLE(); CORE_UNREACHABLE_CASE
     }
 }
 
@@ -290,8 +288,7 @@ static char const* level_to_color(Level level) {
     case Level::Notice: return COLOR_UNDERLINE COLOR_MAGENTA;
     case Level::Warning: return COLOR_UNDERLINE COLOR_YELLOW;
     case Level::Error: return COLOR_BOLD COLOR_RED;
-    case Level::Disabled: CORE_UNREACHABLE();
-    default: CORE_UNREACHABLE();
+    case Level::Disabled: CORE_UNREACHABLE(); CORE_UNREACHABLE_CASE
     }
 }
 
@@ -421,7 +418,7 @@ void errorf(LogModule const* module, char const* format, ...) {
     va_end(args);
 }
 
-#if FUNCTION_PERFORMANCE
+#ifdef FUNCTION_PERFORMANCE
 PerformanceStack* PerformanceStack::current = nullptr;
 #endif
 

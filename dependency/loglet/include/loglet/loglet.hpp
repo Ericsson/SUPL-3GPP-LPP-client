@@ -66,8 +66,8 @@
 #define TRACE_INDENT_SCOPE()
 #else
 #define XTRACEF(module, ...)                                                                       \
-    AEB_BEGIN(loglet::Level::Trace, module) loglet::tracef(module, ##__VA_ARGS__) AEB_END
-#define TRACEF(...) XTRACEF(LOGLET_CURRENT_MODULE, ##__VA_ARGS__)
+    AEB_BEGIN(loglet::Level::Trace, module) loglet::tracef(module, __VA_ARGS__) AEB_END
+#define TRACEF(...) XTRACEF(LOGLET_CURRENT_MODULE, __VA_ARGS__)
 #define XTRACE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Trace)
 #define TRACE_INDENT_SCOPE() XTRACE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
 #endif
@@ -79,8 +79,8 @@
 #define VERBOSE_INDENT_SCOPE()
 #else
 #define XVERBOSEF(module, ...)                                                                     \
-    AEB_BEGIN(loglet::Level::Verbose, module) loglet::verbosef(module, ##__VA_ARGS__) AEB_END
-#define VERBOSEF(...) XVERBOSEF(LOGLET_CURRENT_MODULE, ##__VA_ARGS__)
+    AEB_BEGIN(loglet::Level::Verbose, module) loglet::verbosef(module, __VA_ARGS__) AEB_END
+#define VERBOSEF(...) XVERBOSEF(LOGLET_CURRENT_MODULE, __VA_ARGS__)
 #define XVERBOSE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Verbose)
 #define VERBOSE_INDENT_SCOPE() XVERBOSE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
 #endif
@@ -92,8 +92,8 @@
 #define DEBUG_INDENT_SCOPE()
 #else
 #define XDEBUGF(module, ...)                                                                       \
-    AEB_BEGIN(loglet::Level::Debug, module) loglet::debugf(module, ##__VA_ARGS__) AEB_END
-#define DEBUGF(...) XDEBUGF(LOGLET_CURRENT_MODULE, ##__VA_ARGS__)
+    AEB_BEGIN(loglet::Level::Debug, module) loglet::debugf(module, __VA_ARGS__) AEB_END
+#define DEBUGF(...) XDEBUGF(LOGLET_CURRENT_MODULE, __VA_ARGS__)
 #define XDEBUG_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Debug)
 #define DEBUG_INDENT_SCOPE() XDEBUG_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
 #endif
@@ -105,8 +105,8 @@
 #define INFO_INDENT_SCOPE()
 #else
 #define XINFOF(module, ...)                                                                        \
-    AEB_BEGIN(loglet::Level::Info, module) loglet::infof(module, ##__VA_ARGS__) AEB_END
-#define INFOF(...) XINFOF(LOGLET_CURRENT_MODULE, ##__VA_ARGS__)
+    AEB_BEGIN(loglet::Level::Info, module) loglet::infof(module, __VA_ARGS__) AEB_END
+#define INFOF(...) XINFOF(LOGLET_CURRENT_MODULE, __VA_ARGS__)
 #define XINFO_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Info)
 #define INFO_INDENT_SCOPE() XINFO_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
 #endif
@@ -118,8 +118,8 @@
 #define NOTICE_INDENT_SCOPE()
 #else
 #define XNOTICEF(module, ...)                                                                      \
-    AEB_BEGIN(loglet::Level::Notice, module) loglet::noticef(module, ##__VA_ARGS__) AEB_END
-#define NOTICEF(...) XNOTICEF(LOGLET_CURRENT_MODULE, ##__VA_ARGS__)
+    AEB_BEGIN(loglet::Level::Notice, module) loglet::noticef(module, __VA_ARGS__) AEB_END
+#define NOTICEF(...) XNOTICEF(LOGLET_CURRENT_MODULE, __VA_ARGS__)
 #define XNOTICE_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Notice)
 #define NOTICE_INDENT_SCOPE() XNOTICE_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
 #define NOTICE_PERF_SCOPE() LOGLET_XPERF_SCOPE(LOGLET_CURRENT_MODULE, loglet::Level::Notice)
@@ -132,8 +132,8 @@
 #define WARN_INDENT_SCOPE()
 #else
 #define XWARNF(module, ...)                                                                        \
-    AEB_BEGIN(loglet::Level::Warning, module) loglet::warnf(module, ##__VA_ARGS__) AEB_END
-#define WARNF(...) XWARNF(LOGLET_CURRENT_MODULE, ##__VA_ARGS__)
+    AEB_BEGIN(loglet::Level::Warning, module) loglet::warnf(module, __VA_ARGS__) AEB_END
+#define WARNF(...) XWARNF(LOGLET_CURRENT_MODULE, __VA_ARGS__)
 #define XWARN_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Warning)
 #define WARN_INDENT_SCOPE() XWARN_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
 #endif
@@ -145,8 +145,8 @@
 #define ERROR_INDENT_SCOPE()
 #else
 #define XERRORF(module, ...)                                                                       \
-    AEB_BEGIN(loglet::Level::Error, module) loglet::errorf(module, ##__VA_ARGS__) AEB_END
-#define ERRORF(...) XERRORF(LOGLET_CURRENT_MODULE, ##__VA_ARGS__)
+    AEB_BEGIN(loglet::Level::Error, module) loglet::errorf(module, __VA_ARGS__) AEB_END
+#define ERRORF(...) XERRORF(LOGLET_CURRENT_MODULE, __VA_ARGS__)
 #define XERROR_INDENT_SCOPE(module) LOGLET_XINDENT_SCOPE(module, loglet::Level::Error)
 #define ERROR_INDENT_SCOPE() XERROR_INDENT_SCOPE(LOGLET_CURRENT_MODULE)
 #endif
@@ -157,9 +157,9 @@
 #else
 #define TODOF(fmt, ...)                                                                            \
     loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__,          \
-                   ##__VA_ARGS__)
+                   __VA_ARGS__)
 #define XTODOF(module, fmt, ...)                                                                   \
-    loglet::errorf(module, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__, ##__VA_ARGS__)
+    loglet::errorf(module, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__, __VA_ARGS__)
 #endif
 
 #ifdef DISABLE_TRACE
@@ -175,7 +175,7 @@
     NOTICEF("%s(%s)", LOGLET_CURRENT_FUNCTION, name);                                              \
     NOTICE_PERF_SCOPE()
 #define FUNCTION_SCOPEF(fmt, ...)                                                                  \
-    NOTICEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                \
+    NOTICEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, __VA_ARGS__);                                  \
     NOTICE_PERF_SCOPE()
 #else
 #define FUNCTION_SCOPE()                                                                           \
@@ -185,7 +185,7 @@
     TRACEF("%s(%s)", LOGLET_CURRENT_FUNCTION, name);                                               \
     TRACE_INDENT_SCOPE()
 #define FUNCTION_SCOPEF(fmt, ...)                                                                  \
-    TRACEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, ##__VA_ARGS__);                                 \
+    TRACEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, __VA_ARGS__);                                   \
     TRACE_INDENT_SCOPE()
 #endif
 #endif
