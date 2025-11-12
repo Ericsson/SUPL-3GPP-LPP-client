@@ -1,9 +1,6 @@
 #pragma once
 #include <maths/float3.hpp>
 
-#include <cmath>
-#include <math.h>
-
 namespace generator {
 namespace tokoro {
 
@@ -15,19 +12,9 @@ struct ReferenceEllipsoid {
     double eccentricity;
 
     static ReferenceEllipsoid create(double semi_major_axis, double flattening,
-                                     double eccentricity_sq) {
-        return {
-            /* semi_major_axis */ semi_major_axis,
-            /* semi_minor_axis */ semi_major_axis * (1.0 - flattening),
-            /* flattening */ flattening,
-            /* eccentricity_sq */ eccentricity_sq,
-            /* eccentricity */ std::sqrt(eccentricity_sq),
-        };
-    }
+                                     double eccentricity_sq);
 
-    static ReferenceEllipsoid create(double semi_major_axis, double flattening) {
-        return create(semi_major_axis, flattening, 2.0 * flattening - flattening * flattening);
-    }
+    static ReferenceEllipsoid create(double semi_major_axis, double flattening);
 };
 
 namespace ellipsoid {

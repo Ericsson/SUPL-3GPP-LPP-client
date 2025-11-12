@@ -1,6 +1,7 @@
 #pragma once
 #include "constant.hpp"
 
+#include <cmath>
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
 

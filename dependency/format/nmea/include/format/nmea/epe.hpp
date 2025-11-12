@@ -1,7 +1,6 @@
 #pragma once
 #include <format/nmea/message.hpp>
 
-#include <cmath>
 #include <memory>
 
 #include <time/tai.hpp>
@@ -48,18 +47,16 @@ public:
     NODISCARD double horizontal_position_error() const NOEXCEPT { return m2D; }
 
     /// Get semi-major axis.
-    NODISCARD double semi_major() const NOEXCEPT { return m2D / sqrt(2); }
+    NODISCARD double semi_major() const NOEXCEPT;
 
     /// Get semi-minor axis.
-    NODISCARD double semi_minor() const NOEXCEPT { return m2D / sqrt(2); }
+    NODISCARD double semi_minor() const NOEXCEPT;
 
     /// Get the orientation of the semi-major axis.
     NODISCARD double orientation() const NOEXCEPT { return 0; }
 
     /// Get the vertical position error.
-    NODISCARD double vertical_position_error() const NOEXCEPT {
-        return sqrt((m3D * m3D) - (m2D * m2D));
-    }
+    NODISCARD double vertical_position_error() const NOEXCEPT;
 
     // TODO(ehedpon) Implement conversion from north, east and down error to latitude and longitude.
     // Also unclear if vertical error is sigma_v or if it needs to be converted from down

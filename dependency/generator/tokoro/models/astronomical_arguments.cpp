@@ -1,6 +1,7 @@
 #include "astronomical_arguments.hpp"
 #include "constant.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(tokoro, astarg);

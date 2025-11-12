@@ -6,6 +6,7 @@ add_library(dependency_time STATIC
     "bdt.cpp"
     "tai.cpp"
     "utc.cpp"
+    "timestamp.cpp"
 )
 
 add_library(dependency::time ALIAS dependency_time)

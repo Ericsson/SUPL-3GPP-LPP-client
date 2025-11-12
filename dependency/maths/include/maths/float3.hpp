@@ -1,8 +1,6 @@
 #pragma once
 #include <core/core.hpp>
 
-#include <math.h>
-
 struct Float3 {
     double x;
     double y;

@@ -1,6 +1,7 @@
 #include "epe.hpp"
 #include "helper.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE3(format, nmea, epe);
@@ -8,6 +9,18 @@ LOGLET_MODULE3(format, nmea, epe);
 
 namespace format {
 namespace nmea {
+
+double EpeMessage::semi_major() const NOEXCEPT {
+    return m2D / sqrt(2);
+}
+
+double EpeMessage::semi_minor() const NOEXCEPT {
+    return m2D / sqrt(2);
+}
+
+double EpeMessage::vertical_position_error() const NOEXCEPT {
+    return sqrt((m3D * m3D) - (m2D * m2D));
+}
 
 static bool parse_double_opt(std::string const& token, double& value) {
     FUNCTION_SCOPEF("'%s'", token.c_str());
