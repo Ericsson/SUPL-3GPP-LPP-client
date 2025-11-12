@@ -4,12 +4,9 @@
 #include "supl/pos.hpp"
 #include "supl/response.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <FQDN.h>
 #include <MCC-MNC-Digit.h>
 #include <MCC.h>
@@ -23,7 +20,7 @@
 #include <ULP-PDU.h>
 #include <UTCTime.h>
 #include <Ver2-PosProtocol-extension.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <loglet/loglet.hpp>
 

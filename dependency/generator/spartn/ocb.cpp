@@ -5,12 +5,9 @@
 #include "message.hpp"
 #include "time.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <GNSS-SSR-ClockCorrections-r15.h>
 #include <GNSS-SSR-CodeBias-r15.h>
 #include <GNSS-SSR-OrbitCorrections-r15.h>
@@ -30,7 +27,7 @@
 #include <SSR-PhaseBiasSignalList-r16.h>
 #include <SSR-URA-SatElement-r16.h>
 #include <SSR-URA-SatList-r16.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <algorithm>
 #include <map>

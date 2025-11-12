@@ -1,14 +1,11 @@
 #include "extract.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <GNSS-ID.h>
 #include <GNSS-SystemTime.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <time/bdt.hpp>
 #include <time/glo.hpp>

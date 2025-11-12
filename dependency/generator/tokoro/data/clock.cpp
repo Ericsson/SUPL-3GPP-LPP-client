@@ -5,11 +5,9 @@
 #include <time/gps.hpp>
 #include <time/utc.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <GNSS-SSR-ClockCorrections-r15.h>
 #include <GNSS-SSR-CodeBias-r15.h>
 #include <GNSS-SSR-GriddedCorrection-r16.h>
@@ -27,7 +25,7 @@
 #include <STEC-ResidualSatList-r16.h>
 #include <STEC-SatElement-r16.h>
 #include <TropospericDelayCorrection-r16.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 #include <generator/rtcm/satellite_id.hpp>

@@ -2,12 +2,9 @@
 #include "print.hpp"
 #include "supl.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <ApplicationID.h>
 #include <FQDN.h>
 #include <MCC-MNC-Digit.h>
@@ -26,7 +23,7 @@
 #include <Ver2-PosProtocol-extension.h>
 #include <Ver2-SUPL-START-extension.h>
 #include <per_encoder.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 #include <asn.1/helper.hpp>

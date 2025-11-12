@@ -1,12 +1,9 @@
 
 #include "lpp/messages/request_assistance_data.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <A-GNSS-RequestAssistanceData.h>
 #include <CommonIEsRequestAssistanceData.h>
 #include <ECGI.h>
@@ -42,7 +39,7 @@
 #include <PeriodicSessionID-r15.h>
 #include <ReqNavListInfo.h>
 #include <RequestAssistanceData.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 #include <loglet/loglet.hpp>

@@ -9,17 +9,14 @@
 
 #include <loglet/loglet.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <CommonIEsRequestLocationInformation.h>
 #include <PeriodicalReportingCriteria.h>
 #include <ProvideAssistanceData-r9-IEs.h>
 #include <RequestLocationInformation-r9-IEs.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 LOGLET_MODULE2(lpp, client);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, client)

@@ -1,11 +1,8 @@
 #include "lpp/provide_capabilities.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <A-GNSS-ProvideCapabilities.h>
 #include <AssistanceDataSupportList.h>
 #include <CommonIEsProvideCapabilities.h>
@@ -33,7 +30,7 @@
 #include <PositioningModes.h>
 #include <ProvideCapabilities-r9-IEs.h>
 #include <ProvideCapabilities.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 

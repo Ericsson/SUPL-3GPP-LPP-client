@@ -7,11 +7,9 @@
 #include "observation.hpp"
 #include "satellite.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
@@ -24,7 +22,7 @@
 #include <SSR-CodeBiasSignalElement-r15.h>
 #include <SSR-PhaseBiasSatElement-r16.h>
 #include <SSR-PhaseBiasSignalElement-r16.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <algorithm>
 #include <map>

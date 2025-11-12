@@ -2,12 +2,9 @@
 
 #include <string>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <KeyIdentity.h>
 #include <MAC.h>
 #include <MCC.h>
@@ -19,7 +16,7 @@
 #include <ULP-PDU.h>
 #include <Ver2-PosProtocol-extension.h>
 #include <Version.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 LOGLET_MODULE2(supl, print);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(supl, print)

@@ -1,11 +1,10 @@
 #include "data.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <GNSS-ID.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 namespace generator {
 namespace spartn {

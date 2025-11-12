@@ -1,13 +1,12 @@
 #include "decode.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <BIT_STRING.h>
 #include <GNSS-SignalID.h>
 #include <STEC-ResidualSatElement-r16.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <cmath>
 #include <loglet/loglet.hpp>

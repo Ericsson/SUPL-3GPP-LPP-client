@@ -3,11 +3,9 @@
 #include "generator.hpp"
 #include "message.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <BadSignalElement.h>
 #include <GNSS-ID.h>
 #include <GNSS-RealTimeIntegrity.h>
@@ -20,7 +18,7 @@
 #include <STEC-SatElement-r16.h>
 #include <STEC-SatList-r16.h>
 #include <TropospericDelayCorrection-r16.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <algorithm>
 #include <cmath>

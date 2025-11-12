@@ -4,12 +4,9 @@
 #include <generator/tokoro/coordinate.hpp>
 #include <loglet/loglet.hpp>
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
-#pragma GCC diagnostic ignored "-Wreserved-identifier"
-#pragma GCC diagnostic ignored "-Wundef"
-#pragma GCC diagnostic ignored "-Wold-style-cast"
-#pragma GCC diagnostic ignored "-Wunused-function"
+#include <external_warnings.hpp>
+
+EXTERNAL_WARNINGS_PUSH
 #include <A-GNSS-ProvideAssistanceData.h>
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
@@ -34,7 +31,7 @@
 #include <STEC-ResidualSatList-r16.h>
 #include <STEC-SatElement-r16.h>
 #include <TropospericDelayCorrection-r16.h>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 #include "decode.hpp"
