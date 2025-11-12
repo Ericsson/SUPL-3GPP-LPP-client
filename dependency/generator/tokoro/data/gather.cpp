@@ -461,7 +461,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                 }
 
                 auto ionospheric =
-                    decode::stecResidualCorrection_r16(satellite->stecResidualCorrection_r16);
+                    decode::stecResidualCorrection_r16(&satellite->stecResidualCorrection_r16);
 
                 grid_point->ionospheric_valid                  = true;
                 grid_point->ionospheric_residual[satellite_id] = ionospheric;

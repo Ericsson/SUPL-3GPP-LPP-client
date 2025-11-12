@@ -4,6 +4,7 @@ add_library(dependency_generator_tokoro STATIC
     "satellite.cpp"
     "data.cpp"
     "observation.cpp"
+    "decode.cpp"
 
     "models/helper.cpp"
     "models/mops.cpp"

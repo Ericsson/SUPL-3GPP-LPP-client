@@ -797,7 +797,7 @@ static std::vector<StecResidual> compute_stec_residuals(CorrectionPointSet& corr
             result.push_back({gp.id, remaining_polynomial_residual, true});
         } else {
             auto& element  = *it->second;
-            auto  residual = decode::stecResidualCorrection_r16(element.stecResidualCorrection_r16);
+            auto  residual = decode::stecResidualCorrection_r16(&element.stecResidualCorrection_r16);
             if (sign_flip_stec_residuals) residual = -residual;
             result.push_back({gp.id, residual + remaining_polynomial_residual, false});
         }

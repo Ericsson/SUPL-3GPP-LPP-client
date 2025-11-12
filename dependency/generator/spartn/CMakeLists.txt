@@ -8,6 +8,9 @@ add_library(dependency_generator_spartn2 STATIC
     "time.cpp"
     "builder.cpp"
     "message.cpp"
+    "data.cpp"
+    "decode.cpp"
+    "constant.cpp"
 )
 add_library(dependency::generator::spartn2 ALIAS dependency_generator_spartn2)
 

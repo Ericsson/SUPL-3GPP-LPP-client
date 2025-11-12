@@ -8,6 +8,7 @@ add_library(dependency_generator_idokeido STATIC
     "orbit.cpp"
     "ionosphere.cpp"
     "correction.cpp"
+    "decode.cpp"
     "coordinates/enu.cpp"
     "coordinates/look_angles.cpp"
     "coordinates/ecef.cpp"

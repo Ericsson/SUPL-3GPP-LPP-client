@@ -1,15 +1,10 @@
 #pragma once
-#include <external_warnings.hpp>
 #include "time.hpp"
 
 #include <functional>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
-
-EXTERNAL_WARNINGS_PUSH
-#include <GNSS-ID.h>
-EXTERNAL_WARNINGS_POP
 
 struct OcbKey {
     long     gnss_id;
@@ -253,15 +248,7 @@ struct CorrectionData {
     void add_correction(long gnss_id, GNSS_RealTimeIntegrity* integrity);
 };
 
-inline uint8_t subtype_from_gnss_id(long gnss_id) {
-    if (gnss_id == GNSS_ID__gnss_id_gps) return 0;
-    if (gnss_id == GNSS_ID__gnss_id_glonass) return 1;
-    if (gnss_id == GNSS_ID__gnss_id_galileo) return 2;
-    if (gnss_id == GNSS_ID__gnss_id_bds) return 3;
-    if (gnss_id == GNSS_ID__gnss_id_qzss) return 4;
-
-    CORE_UNREACHABLE();
-}
+uint8_t subtype_from_gnss_id(long gnss_id);
 
 }  // namespace spartn
 }  // namespace generator

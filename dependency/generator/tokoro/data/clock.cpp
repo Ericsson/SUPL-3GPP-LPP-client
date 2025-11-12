@@ -2,6 +2,9 @@
 #include "constant.hpp"
 #include "decode.hpp"
 
+#include <time/gps.hpp>
+#include <time/utc.hpp>
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wreserved-macro-identifier"
 #pragma GCC diagnostic ignored "-Wreserved-identifier"
