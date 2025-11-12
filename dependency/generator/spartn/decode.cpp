@@ -163,9 +163,10 @@ double stec_C11_r16(long* value) {
 }
 
 double stecResidualCorrection_r16(void const* correction_ptr) {
-    auto& correction = *static_cast<
-        STEC_ResidualSatElement_r16::STEC_ResidualSatElement_r16__stecResidualCorrection_r16 const*>(
-        correction_ptr);
+    auto& correction =
+        *static_cast<STEC_ResidualSatElement_r16::
+                         STEC_ResidualSatElement_r16__stecResidualCorrection_r16 const*>(
+            correction_ptr);
     switch (correction.present) {
     case STEC_ResidualSatElement_r16__stecResidualCorrection_r16_PR_b7_r16:
         return static_cast<double>(correction.choice.b7_r16) * STEC_RESIDUAL_B7_RESOLUTION;
