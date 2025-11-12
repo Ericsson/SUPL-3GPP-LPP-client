@@ -61,8 +61,6 @@ All notable changes to this project will be documented in this file.
 - MissingEphemeris struct and MissingEphemerisPrint inspector
 - Example-client `--log-file` option to redirect log output to file
 - Loglet file output support via `set_output_file()`
-
-### Fixed
 - SUPL library now uses loglet properly with function tracing and correct asserts
 - A-GNSS processor prevents use-after-free by storing cell and identity by value
 - LPP client prevents double-free by clearing session client pointers before destruction

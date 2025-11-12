@@ -67,6 +67,15 @@ if(HAVE_SPLICE)
     endif()
 endif()
 
+if(USE_TIMETRACE)
+    # Add clang +19 -ftimetrace flag
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19)
+            add_compile_options(-ftime-trace)
+        endif()
+    endif()
+endif()
+
 add_subdirectory("dependency")
 add_subdirectory("external")
 
