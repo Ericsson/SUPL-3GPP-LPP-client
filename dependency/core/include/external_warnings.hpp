@@ -8,7 +8,9 @@
             _Pragma("clang diagnostic ignored \"-Wreserved-identifier\"")                          \
                 _Pragma("clang diagnostic ignored \"-Wundef\"")                                    \
                     _Pragma("clang diagnostic ignored \"-Wold-style-cast\"")                       \
-                        _Pragma("clang diagnostic ignored \"-Wunused-function\"")
+                        _Pragma("clang diagnostic ignored \"-Wunused-function\"")                  \
+                            _Pragma("clang diagnostic ignored \"-Wreserved-macro-identifier\"")    \
+                                _Pragma("clang diagnostic ignored \"-Wreserved-identifier\"")
 
 #define EXTERNAL_WARNINGS_POP _Pragma("clang diagnostic pop")
 

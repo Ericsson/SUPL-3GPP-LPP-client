@@ -13,6 +13,10 @@
 #define NOEXCEPT noexcept
 #endif
 
+#ifndef OVERRIDE
+#define OVERRIDE override
+#endif
+
 #ifndef CONSTEXPR
 #define CONSTEXPR constexpr
 #endif
