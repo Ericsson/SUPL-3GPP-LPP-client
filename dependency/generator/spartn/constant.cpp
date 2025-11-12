@@ -7,7 +7,6 @@ EXTERNAL_WARNINGS_PUSH
 EXTERNAL_WARNINGS_POP
 
 #define X 255
-#define INVALID_MAPPING 255
 
 static CONSTEXPR uint8_t GPS_TO_SPARTN[24] = {
     0,  // L1 C/A -> L1C
@@ -385,7 +384,7 @@ static CONSTEXPR uint8_t BDS_MAPPING[24] = {
 #define BDS_B1 1561.098
 #define BDS_B1B3 1575.42
 #define BDS_B2a 1176.45
-#define BDS_B2b 1207.14
+// #define BDS_B2b 1207.14
 #define BDS_B2ab 1191.795
 #define BDS_B3 1268.52
 static CONSTEXPR double BDS_FREQ[24] = {
