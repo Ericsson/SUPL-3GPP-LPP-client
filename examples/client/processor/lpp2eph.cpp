@@ -132,7 +132,7 @@ void Lpp2Eph::process_gps_navigation_model(streamline::System&         system,
         eph.tgd = clock.navTgd * 1e-31;
 
         auto gps_time = ts::Gps::from_week_tow(eph.week_number, static_cast<int64_t>(eph.toe), 0.0);
-        INFOF("GPS ephemeris %s: PRN=%u lpp_iod=%u toe=%s now=%s", satellite_id.name(), eph.prn,
+        DEBUGF("GPS ephemeris %s: PRN=%u lpp_iod=%u toe=%s now=%s", satellite_id.name(), eph.prn,
               eph.lpp_iod, ts::Tai(gps_time).rtklib_time_string().c_str(),
               ts::Tai::now().rtklib_time_string().c_str());
         system.push(std::move(eph));
@@ -250,7 +250,7 @@ void Lpp2Eph::process_gal_navigation_model(streamline::System&         system,
         }
 
         auto gal_time = ts::Gst::from_week_tow(eph.week_number, static_cast<int64_t>(eph.toe), 0.0);
-        INFOF("Galileo ephemeris: PRN=%u lpp_iod=%u toe=%s", eph.prn, eph.lpp_iod,
+        DEBUGF("Galileo ephemeris: PRN=%u lpp_iod=%u toe=%s", eph.prn, eph.lpp_iod,
               ts::Tai(gal_time).rtklib_time_string().c_str());
         system.push(std::move(eph));
     }
@@ -309,7 +309,7 @@ void Lpp2Eph::process_bds_navigation_model(streamline::System&         system,
         eph.week_number = current_week;
 
         auto bds_time = ts::Bdt::from_week_tow(eph.week_number, static_cast<int64_t>(eph.toe), 0.0);
-        INFOF("BeiDou ephemeris: PRN=%u lpp_iod=%u toe=%s", eph.prn, eph.lpp_iod,
+        DEBUGF("BeiDou ephemeris: PRN=%u lpp_iod=%u toe=%s", eph.prn, eph.lpp_iod,
               ts::Tai(bds_time).rtklib_time_string().c_str());
         system.push(std::move(eph));
     }

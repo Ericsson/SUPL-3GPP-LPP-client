@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Input on_complete callback for detecting when inputs finish (EOF, disconnect)
+- Auto-shutdown on input completion with `--input-shutdown-on-complete` and `--input-shutdown-delay`
 - Scheduler interrupt() method to cleanly stop execute loops
 - Scheduler defer() method to safely schedule cleanup callbacks after event processing
 - Example-client A-GNSS processor now prevents concurrent requests

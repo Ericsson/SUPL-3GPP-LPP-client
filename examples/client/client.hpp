@@ -18,6 +18,7 @@
 #include <lpp/location_information.hpp>
 #include <lpp/session.hpp>
 #include <scheduler/periodic.hpp>
+#include <scheduler/timeout.hpp>
 
 #include "config.hpp"
 #include "stage.hpp"
@@ -56,6 +57,10 @@ struct Program {
     std::vector<std::unique_ptr<InputStage>>   input_stages;
 
     std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
+
+    std::atomic<int>                          active_inputs{0};
+    bool                                      shutdown_scheduled{false};
+    std::unique_ptr<scheduler::TimeoutTask>   shutdown_task;
 
     void update_location_information(lpp::LocationInformation const& location) {
         latest_location_information           = location;

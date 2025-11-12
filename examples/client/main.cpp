@@ -21,6 +21,7 @@
 #include <lpp/assistance_data.hpp>
 #include <lpp/messages/provide_location_information.hpp>
 #include <lpp/provide_capabilities.hpp>
+#include <scheduler/timeout.hpp>
 
 #include <arpa/inet.h>
 #include <unistd.h>
@@ -437,6 +438,31 @@ static void initialize_inputs(Program& program, InputConfig& config) {
         if (lpp_uper_pad) event_name += "+lpp-uper-pad";
 
         input.interface->set_event_name(event_name);
+
+        if (program.config.input.shutdown_on_complete && !input.exclude_from_shutdown) {
+            program.active_inputs++;
+            DEBUGF("registered input for shutdown tracking (active_inputs=%d)",
+                   program.active_inputs.load());
+            input.interface->on_complete = [&program]() {
+                auto remaining = --program.active_inputs;
+                DEBUGF("input completed (active_inputs=%d)", remaining);
+                if (remaining == 0 && !program.shutdown_scheduled) {
+                    program.shutdown_scheduled = true;
+                    INFOF("all inputs completed, scheduling shutdown in %ld ms",
+                          program.config.input.shutdown_delay.count());
+                    program.shutdown_task.reset(
+                        new scheduler::TimeoutTask(program.config.input.shutdown_delay));
+                    program.shutdown_task->callback = [&program]() {
+                        INFOF("shutdown timeout expired, interrupting scheduler");
+                        program.scheduler.interrupt();
+                    };
+                    if (!program.shutdown_task->schedule(program.scheduler)) {
+                        ERRORF("failed to schedule shutdown task");
+                        program.shutdown_task.reset();
+                    }
+                }
+            };
+        }
 
         auto context   = std::make_unique<InputContext>();
         context->name  = std::move(event_name);

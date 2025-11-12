@@ -63,6 +63,7 @@ static args::ValueFlagList<std::string> gArgs{
     "  nmea_lf_only=<bool> (default=false)\n"
     "  discard_errors=<bool> (default=false)\n"
     "  discard_unknowns=<bool> (default=false)\n"
+    "  exclude_from_shutdown=<bool> (default=false)\n"
     "\n"
     "Stages:\n"
     "  tlf\n"
@@ -76,6 +77,19 @@ static args::Flag gDisablePipeBufferOptimization{
     "Disable pipe buffer size optimization for input streams",
     {"input-disable-pipe-buffer-optimization"},
 };
+static args::Flag gShutdownOnComplete{
+    gGroup,
+    "shutdown-on-complete",
+    "Shutdown when all inputs complete (e.g., file EOF, disconnected serial/tcp)",
+    {"input-shutdown-on-complete"},
+};
+static args::ValueFlag<int> gShutdownDelay{
+    gGroup,
+    "milliseconds",
+    "Delay before shutdown to allow queue draining (default: 1000ms)",
+    {"input-shutdown-delay"},
+    1000,
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions globals{parser, gGroup};
@@ -85,6 +99,7 @@ static bool parse_bool_option(std::unordered_map<std::string, std::string> const
                               std::string const& type, std::string const& key, bool default_value) {
     if (options.find(key) == options.end()) return default_value;
     auto value = options.at(key);
+    if (value.empty()) return true;
     if (value == "true") return true;
     if (value == "false") return false;
     throw args::ValidationError("--input " + type + ": `" + key + "` must be a boolean, got `" +
@@ -160,10 +175,13 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
     std::unordered_map<std::string, std::string> options;
     for (auto const& part : parts) {
         auto kv = ::split(part, '=');
-        if (kv.size() != 2) {
+        if (kv.size() == 1) {
+            options[kv[0]] = "";
+        } else if (kv.size() == 2) {
+            options[kv[0]] = kv[1];
+        } else {
             throw args::ValidationError("--output: invalid option, got `" + part + "`");
         }
-        options[kv[0]] = kv[1];
     }
     return options;
 }
@@ -181,10 +199,10 @@ parse_input_file(std::unordered_map<std::string, std::string> const& options,
     }
 
     auto path = options.at("path");
-    auto bps  = 128 * 10;
+    auto bps  = 128ULL * 10;
     if (options.find("bps") != options.end()) {
         try {
-            bps = std::stoi(options.at("bps"));
+            bps = std::stoull(options.at("bps"));
         } catch (...) {
             throw args::ParseError("--input file: `bps` must be an integer, got `" +
                                    options.at("bps") + "'");
@@ -455,6 +473,8 @@ static InputInterface parse_interface(std::string const& source, Config const* c
     auto nmea_lf_only     = parse_bool_option(options, parts[0], "nmea_lf_only", false);
     auto discard_errors   = parse_bool_option(options, parts[0], "discard_errors", false);
     auto discard_unknowns = parse_bool_option(options, parts[0], "discard_unknowns", false);
+    auto exclude_from_shutdown =
+        parse_bool_option(options, parts[0], "exclude_from_shutdown", false);
 
     std::unique_ptr<io::Input> input;
     if (parts[0] == "stdin") input = parse_input_stdin(options);
@@ -465,8 +485,15 @@ static InputInterface parse_interface(std::string const& source, Config const* c
     if (parts[0] == "udp-server") input = parse_udp_server(options);
 
     if (input) {
-        return {format, print,        std::move(input), tags,
-                stages, nmea_lf_only, discard_errors,   discard_unknowns};
+        return {format,
+                print,
+                std::move(input),
+                tags,
+                stages,
+                nmea_lf_only,
+                discard_errors,
+                discard_unknowns,
+                exclude_from_shutdown};
     }
 
     throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");
@@ -474,6 +501,8 @@ static InputInterface parse_interface(std::string const& source, Config const* c
 
 void parse(Config* config) {
     config->input.disable_pipe_buffer_optimization = gDisablePipeBufferOptimization.Get();
+    config->input.shutdown_on_complete             = gShutdownOnComplete.Get();
+    config->input.shutdown_delay = std::chrono::milliseconds(gShutdownDelay.Get());
 
     for (auto const& input : gArgs.Get()) {
         config->input.inputs.push_back(parse_interface(input, config));

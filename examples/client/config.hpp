@@ -167,11 +167,14 @@ struct InputInterface {
     bool                       nmea_lf_only;
     bool                       discard_errors;
     bool                       discard_unknowns;
+    bool                       exclude_from_shutdown;
 };
 
 struct InputConfig {
     std::vector<InputInterface> inputs;
     bool                        disable_pipe_buffer_optimization;
+    bool                        shutdown_on_complete;
+    std::chrono::milliseconds   shutdown_delay;
 };
 
 struct AssistanceDataConfig {
