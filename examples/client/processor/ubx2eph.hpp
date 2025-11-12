@@ -28,7 +28,7 @@ private:
     void handle_bds_d1(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
     void handle_bds(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
 
-    Ubx2EphConfig const&                   mConfig;
+    Ubx2EphConfig const&                       mConfig;
     format::nav::gps::lnav::EphemerisCollector mGpsCollector;
     format::nav::gal::InavEphemerisCollector   mGalCollector;
     format::nav::D1Collector                   mBdsCollector;

@@ -35,9 +35,7 @@ namespace supl {
 static Identity decode_identity(IPAddress& ip_address) {
     VSCOPE_FUNCTION();
     switch (ip_address.present) {
-    case IPAddress_PR_NOTHING:
-        VERBOSEF("no IP address present");
-        return Identity::unknown();
+    case IPAddress_PR_NOTHING: VERBOSEF("no IP address present"); return Identity::unknown();
     case IPAddress_PR_ipv4Address: {
         auto input = ip_address.choice.ipv4Address;
         assert(input.size == 4);

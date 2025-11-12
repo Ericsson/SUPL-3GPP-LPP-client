@@ -728,8 +728,8 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             // uses IODE instead of IODC. As IODE by definition is the 8 lower bits of IODC let's
             // just compare them. This could cause problem with ephemeris >6 hours but the time
             // validity check should block that
-            auto eph_iode = ephemeris.lpp_iod & 0xFF;
-            auto wanted_iode = iod & 0xFF;  
+            auto eph_iode    = ephemeris.lpp_iod & 0xFF;
+            auto wanted_iode = iod & 0xFF;
             if (eph_iode != wanted_iode && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());

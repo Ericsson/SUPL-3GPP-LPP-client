@@ -69,13 +69,12 @@ static std::string addr_to_string(const struct sockaddr* addr, socklen_t addrlen
     if (!addr) {
         return "null";
     }
-    
+
     char host[1024];
-    host[0] = '\0';
-    auto result = ::getnameinfo(addr, addrlen, host, sizeof(host), nullptr, 0,
-                                NI_NUMERICHOST);
-    VERBOSEF("::getnameinfo(%p, %u, %p, %zu, %p, %d, NI_NUMERICHOST) = %d", addr,
-             addrlen, host, sizeof(host), nullptr, 0, result);
+    host[0]     = '\0';
+    auto result = ::getnameinfo(addr, addrlen, host, sizeof(host), nullptr, 0, NI_NUMERICHOST);
+    VERBOSEF("::getnameinfo(%p, %u, %p, %zu, %p, %d, NI_NUMERICHOST) = %d", addr, addrlen, host,
+             sizeof(host), nullptr, 0, result);
     if (result != 0) {
         return "unknown";
     }
@@ -117,7 +116,8 @@ bool TcpClient::initialize_socket() {
         }
 
         auto fd = socket(aip->ai_family, aip->ai_socktype | SOCK_NONBLOCK, aip->ai_protocol);
-        VERBOSEF("::socket(%d, %d | SOCK_NONBLOCK, %d) = %d", aip->ai_family, aip->ai_socktype, aip->ai_protocol, fd);
+        VERBOSEF("::socket(%d, %d | SOCK_NONBLOCK, %d) = %d", aip->ai_family, aip->ai_socktype,
+                 aip->ai_protocol, fd);
         if (fd < 0) {
             WARNF("failed to create socket: " ERRNO_FMT, ERRNO_ARGS(errno));
             continue;
@@ -131,7 +131,8 @@ bool TcpClient::initialize_socket() {
             auto set_result            = ::setsockopt(fd, SOL_SOCKET, SO_BINDTODEVICE,
                                                       reinterpret_cast<void*>(&ifr), sizeof(ifr));
             if (set_result < 0) {
-                WARNF("failed to bind socket to interface \"%s\": " ERRNO_FMT, mInterface.c_str(), ERRNO_ARGS(errno));
+                WARNF("failed to bind socket to interface \"%s\": " ERRNO_FMT, mInterface.c_str(),
+                      ERRNO_ARGS(errno));
                 close(fd);
                 VERBOSEF("::close(%d)", fd);
                 continue;
@@ -139,7 +140,7 @@ bool TcpClient::initialize_socket() {
         }
 
         VERBOSEF("created socket %d", fd);
-        
+
         auto addr_str = addr_to_string(aip->ai_addr, aip->ai_addrlen);
         result        = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
         VERBOSEF("::connect(%d, %p, %u) = %d", fd, aip->ai_addr, aip->ai_addrlen, result);
@@ -205,7 +206,7 @@ bool TcpClient::connect(std::string const& host, int port, std::string const& in
         if (mUseSSL) {
             SSL_free(mSSL);
             SSL_CTX_free(mSSLContext);
-            mSSL = nullptr;
+            mSSL        = nullptr;
             mSSLContext = nullptr;
         }
 #endif
@@ -294,7 +295,7 @@ bool TcpClient::disconnect() {
         SSL_free(mSSL);
         mSSL = nullptr;
     }
-    
+
     if (mSSLContext) {
         SSL_CTX_free(mSSLContext);
         mSSLContext = nullptr;

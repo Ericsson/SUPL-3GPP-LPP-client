@@ -85,7 +85,8 @@ struct GridData {
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
                        GridPoint const*& br) const NOEXCEPT;
 
-    GridStatus ionospheric(SatelliteId sv_id, Float3 llh, double& ionospheric_residual) const NOEXCEPT;
+    GridStatus ionospheric(SatelliteId sv_id, Float3 llh,
+                           double& ionospheric_residual) const NOEXCEPT;
     GridStatus tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {

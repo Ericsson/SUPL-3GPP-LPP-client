@@ -19,11 +19,11 @@ public:
                         uint64_t tag) NOEXCEPT override;
 
 private:
-    void process_gps_navigation_model(streamline::System& system,
+    void process_gps_navigation_model(streamline::System&         system,
                                       GNSS_NavigationModel const& nav_model) NOEXCEPT;
-    void process_gal_navigation_model(streamline::System& system,
+    void process_gal_navigation_model(streamline::System&         system,
                                       GNSS_NavigationModel const& nav_model) NOEXCEPT;
-    void process_bds_navigation_model(streamline::System& system,
+    void process_bds_navigation_model(streamline::System&         system,
                                       GNSS_NavigationModel const& nav_model) NOEXCEPT;
 
     Lpp2EphConfig const& mConfig;

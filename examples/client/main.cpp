@@ -40,11 +40,11 @@
 #include "processor/ubx_options.hpp"
 
 #if defined(INCLUDE_GENERATOR_RTCM)
+#include "processor/lpp2eph.hpp"
 #include "processor/lpp2frame_rtcm.hpp"
 #include "processor/lpp2rtcm.hpp"
-#include "processor/lpp2eph.hpp"
-#include "processor/ubx2eph.hpp"
 #include "processor/rtcm2eph.hpp"
+#include "processor/ubx2eph.hpp"
 #endif
 
 #if defined(INCLUDE_GENERATOR_SPARTN)
@@ -1115,9 +1115,8 @@ int main(int argc, char** argv) {
         } else {
             ASSERT(program.agnss_identity || program.identity, "at least one identity must be set");
             auto& identity = program.agnss_identity ? *program.agnss_identity : *program.identity;
-            program.stream.add_inspector<AGnssProcessor>(program.config.agnss, identity,
-                                                         *program.cell, program.scheduler,
-                                                         program.stream);
+            program.stream.add_inspector<AGnssProcessor>(
+                program.config.agnss, identity, *program.cell, program.scheduler, program.stream);
         }
     }
 

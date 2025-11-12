@@ -19,7 +19,6 @@
 #include <GNSS-IonosphericModelReq.h>
 #include <GNSS-NavigationModelReq.h>
 #include <GNSS-PeriodicAssistDataReq-r15.h>
-#include <ReqNavListInfo.h>
 #include <GNSS-PeriodicControlParam-r15.h>
 #include <GNSS-RTK-ObservationsReq-r15.h>
 #include <GNSS-RTK-ReferenceStationInfoReq-r15.h>
@@ -41,6 +40,7 @@
 #include <NCGI-r15.h>
 #include <PeriodicAssistanceDataControlParameters-r15.h>
 #include <PeriodicSessionID-r15.h>
+#include <ReqNavListInfo.h>
 #include <RequestAssistanceData.h>
 #pragma GCC diagnostic pop
 
@@ -302,14 +302,14 @@ static GNSS_AuxiliaryInformationReq* gnss_auxiliary_info_req(RequestAssistanceDa
 
 static GNSS_NavigationModelReq* gnss_navigation_model_req(RequestAssistanceData const& request) {
     if (request.navigation_model > 0) {
-        auto message = ALLOC_ZERO(GNSS_NavigationModelReq);
+        auto message     = ALLOC_ZERO(GNSS_NavigationModelReq);
         message->present = GNSS_NavigationModelReq_PR_reqNavList;
-        
+
         auto& req_nav = message->choice.reqNavList;
         helper::BitStringBuilder{}
             .integer(0, 64, 0xFFFFFFFFFFFFFFFFULL)
             .into_bit_string(64, &req_nav.svReqList);
-        
+
         return message;
     }
     return nullptr;

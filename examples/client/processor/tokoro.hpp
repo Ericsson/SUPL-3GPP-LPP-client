@@ -73,7 +73,7 @@ public:
     TokoroEphemerisGps(Tokoro& tokoro) : mTokoro(tokoro) {}
 
     char const* name() const NOEXCEPT override { return "TokoroEphemerisGps"; }
-    void inspect(streamline::System&, DataType const& eph, uint64_t) override {
+    void        inspect(streamline::System&, DataType const& eph, uint64_t) override {
         mTokoro.process_ephemeris(eph);
     }
 
@@ -86,7 +86,7 @@ public:
     TokoroEphemerisGal(Tokoro& tokoro) : mTokoro(tokoro) {}
 
     char const* name() const NOEXCEPT override { return "TokoroEphemerisGal"; }
-    void inspect(streamline::System&, DataType const& eph, uint64_t) override {
+    void        inspect(streamline::System&, DataType const& eph, uint64_t) override {
         mTokoro.process_ephemeris(eph);
     }
 
@@ -99,7 +99,7 @@ public:
     TokoroEphemerisBds(Tokoro& tokoro) : mTokoro(tokoro) {}
 
     char const* name() const NOEXCEPT override { return "TokoroEphemerisBds"; }
-    void inspect(streamline::System&, DataType const& eph, uint64_t) override {
+    void        inspect(streamline::System&, DataType const& eph, uint64_t) override {
         mTokoro.process_ephemeris(eph);
     }
 

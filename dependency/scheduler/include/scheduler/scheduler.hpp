@@ -38,9 +38,9 @@ private:
     void tick_callbacks();
     void process_deferred();
 
-    int mEpollFd;
-    int mInterruptFd;
-    int mEpollCount;
+    int  mEpollFd;
+    int  mInterruptFd;
+    int  mEpollCount;
     bool mInterrupted;
 
     std::unordered_map<void*, std::function<void()>> mTickCallbacks;

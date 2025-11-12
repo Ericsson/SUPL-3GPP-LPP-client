@@ -83,7 +83,7 @@ static EncodedMessage encode_uper(ULP_PDU* pdu) {
 
 static ULP_PDU* create_message(UlpMessage_PR present, Version version) {
     VSCOPE_FUNCTION();
-    auto message             = reinterpret_cast<ULP_PDU*>(calloc(1, sizeof(ULP_PDU)));
+    auto message = reinterpret_cast<ULP_PDU*>(calloc(1, sizeof(ULP_PDU)));
     ASSERT(message, "out of memory");
     message->length          = 0;
     message->version.maj     = version.major;
@@ -299,12 +299,12 @@ static CellInfo encode_cellinfo(Cell cell) {
     VSCOPE_FUNCTION();
     CellInfo result{};
     memset(&result, 0, sizeof(CellInfo));
-    
+
     if (cell.type == Cell::Type::UNKNOWN) {
         result.present = CellInfo_PR_NOTHING;
         return result;
     }
-    
+
     if (cell.type == Cell::Type::GSM) {
         result.present               = CellInfo_PR_gsmCell;
         result.choice.gsmCell.refMCC = static_cast<long>(cell.data.gsm.mcc);
@@ -331,7 +331,7 @@ static CellInfo encode_cellinfo(Cell cell) {
         auto& nr_cell      = result.choice.ver2_CellInfo_extension.choice.nrCell;
         auto& nr_cell_list = nr_cell.servingCellInformation.list;
 
-        auto serv_cell        = reinterpret_cast<ServCellNR*>(calloc(1, sizeof(ServCellNR)));
+        auto serv_cell = reinterpret_cast<ServCellNR*>(calloc(1, sizeof(ServCellNR)));
         ASSERT(serv_cell, "out of memory");
         serv_cell->physCellId = encode_physCellIdNR(cell.data.nr.phys_id);
         serv_cell->arfcn_NR   = 0;
@@ -349,18 +349,18 @@ static CellInfo encode_cellinfo(Cell cell) {
 static void encode_session(ULP_PDU* pdu, Session::SET& set, Session::SLP& slp) {
     VSCOPE_FUNCTION();
     if (set.is_active) {
-        auto setSessionID       = reinterpret_cast<SetSessionID*>(calloc(1, sizeof(SetSessionID)));
+        auto setSessionID = reinterpret_cast<SetSessionID*>(calloc(1, sizeof(SetSessionID)));
         ASSERT(setSessionID, "out of memory");
-        setSessionID->sessionId = set.id;
-        setSessionID->setId     = encode_setid(set.identity);
+        setSessionID->sessionId     = set.id;
+        setSessionID->setId         = encode_setid(set.identity);
         pdu->sessionID.setSessionID = setSessionID;
     }
 
     if (slp.is_active) {
-        auto slpSessionID       = reinterpret_cast<SlpSessionID*>(calloc(1, sizeof(SlpSessionID)));
+        auto slpSessionID = reinterpret_cast<SlpSessionID*>(calloc(1, sizeof(SlpSessionID)));
         ASSERT(slpSessionID, "out of memory");
-        slpSessionID->sessionID = octet_string_from(slp.id, 4);
-        slpSessionID->slpId     = encode_slp_address(slp.identity);
+        slpSessionID->sessionID     = octet_string_from(slp.id, 4);
+        slpSessionID->slpId         = encode_slp_address(slp.identity);
         pdu->sessionID.slpSessionID = slpSessionID;
     }
 }

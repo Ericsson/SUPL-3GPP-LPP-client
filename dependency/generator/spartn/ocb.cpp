@@ -669,7 +669,7 @@ void Generator::generate_ocb(uint16_t iod) {
             if (rti_data && mDoNotUseSatellite) {
                 do_use_satellite = rti_data->can_use_satellite(satellite.id);
                 VERBOSEF("  CAN USE SATELLITE: %ld: %ld: %s %u", gnss_id, satellite.id,
-                       do_use_satellite ? "YES" : " NO", do_use_satellite);
+                         do_use_satellite ? "YES" : " NO", do_use_satellite);
             }
 
             builder.sf013(!do_use_satellite);

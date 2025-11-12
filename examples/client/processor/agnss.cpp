@@ -99,7 +99,9 @@ void AGnssProcessor::request_agnss(streamline::System& system) {
     };
     mClient->on_disconnected = [this](lpp::Client&) {
         DEBUGF("A-GNSS disconnected");
-        mScheduler.defer([this]() { mClient.reset(); });
+        mScheduler.defer([this]() {
+            mClient.reset();
+        });
     };
 
     if (!mClient->request_assistance_data({
@@ -112,7 +114,9 @@ void AGnssProcessor::request_agnss(streamline::System& system) {
             },
             [this](lpp::Client&) {
                 ERRORF("A-GNSS request failed");
-                mScheduler.defer([this]() { mClient.reset(); });
+                mScheduler.defer([this]() {
+                    mClient.reset();
+                });
             },
         })) {
         WARNF("failed to request A-GNSS assistance data");

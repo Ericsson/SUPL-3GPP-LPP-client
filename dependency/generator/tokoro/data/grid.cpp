@@ -121,7 +121,7 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
 }
 
 GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
-                           double& ionospheric_residual) const NOEXCEPT {
+                                           double& ionospheric_residual) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     GridPoint const* tl = nullptr;
@@ -156,13 +156,14 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
     VERBOSEF("bl: %ld/%ld: %+.14f", bl->array_index, bl->absolute_index, bl_value);
     VERBOSEF("br: %ld/%ld: %+.14f", br->array_index, br->absolute_index, br_value);
 
-    ionospheric_residual = interpolate(interpolate(tl_value, bl_value, dx),
-                                       interpolate(tr_value, br_value, dx), dy);
+    ionospheric_residual =
+        interpolate(interpolate(tl_value, bl_value, dx), interpolate(tr_value, br_value, dx), dy);
     VERBOSEF("ionospheric: %+.14f", ionospheric_residual);
     return GridStatus::Success;
 }
 
-GridData::GridStatus GridData::tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT {
+GridData::GridStatus GridData::tropospheric(Float3                  llh,
+                                            TroposphericCorrection& correction) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     // if we're inside 4 points, bilinear interpolation

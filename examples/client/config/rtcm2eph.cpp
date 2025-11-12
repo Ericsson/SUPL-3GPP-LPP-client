@@ -49,11 +49,11 @@ void setup(args::ArgumentParser& parser) {
 }
 
 void parse(Config* config) {
-    auto& rtcm2eph      = config->rtcm2eph;
-    rtcm2eph.enabled    = false;
-    rtcm2eph.gps        = true;
-    rtcm2eph.galileo    = true;
-    rtcm2eph.beidou     = true;
+    auto& rtcm2eph   = config->rtcm2eph;
+    rtcm2eph.enabled = false;
+    rtcm2eph.gps     = true;
+    rtcm2eph.galileo = true;
+    rtcm2eph.beidou  = true;
 
     if (gEnable) rtcm2eph.enabled = true;
     if (gNoGps) rtcm2eph.gps = false;

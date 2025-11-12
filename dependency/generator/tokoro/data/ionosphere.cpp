@@ -97,9 +97,12 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
         if (status == GridData::GridStatus::Success) {
             has_gridded = true;
         } else if (status == GridData::GridStatus::PositionOutsideGrid) {
-            WARNF("ionospheric correction not available for %s: position outside grid", sv_id.name());
+            WARNF("ionospheric correction not available for %s: position outside grid",
+                  sv_id.name());
         } else if (status == GridData::GridStatus::MissingSatelliteData) {
-            WARNF("ionospheric correction not available for %s: satellite data missing from grid points", sv_id.name());
+            WARNF("ionospheric correction not available for %s: satellite data missing from grid "
+                  "points",
+                  sv_id.name());
         }
     } else if (!has_polynomial) {
         WARNF("ionospheric correction not available: no grid for GNSS (missing assistance data)");

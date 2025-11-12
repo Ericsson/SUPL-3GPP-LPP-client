@@ -11,7 +11,10 @@ LOGLET_MODULE(sched);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(sched)
 
 namespace scheduler {
-Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1), mInterruptFd(-1), mEpollCount(0), mInterrupted(false) {
+Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1),
+                                  mInterruptFd(-1),
+                                  mEpollCount(0),
+                                  mInterrupted(false) {
     VSCOPE_FUNCTION();
 
     mEpollFd = ::epoll_create1(0);
@@ -163,7 +166,7 @@ void Scheduler::execute() NOEXCEPT {
         for (int i = 0; i < nfds; i++) {
             process_event(events[i]);
         }
-        
+
         process_deferred();
     }
 }
@@ -285,9 +288,9 @@ void Scheduler::interrupt() NOEXCEPT {
         return;
     }
 
-    mInterrupted = true;
-    uint64_t value = 1;
-    auto result = ::write(mInterruptFd, &value, sizeof(value));
+    mInterrupted    = true;
+    uint64_t value  = 1;
+    auto     result = ::write(mInterruptFd, &value, sizeof(value));
     VERBOSEF("::write(%d, %p, %zu) = %ld", mInterruptFd, &value, sizeof(value), result);
     if (result == -1) {
         ERRORF("failed to write to eventfd: " ERRNO_FMT, ERRNO_ARGS(errno));
@@ -347,7 +350,7 @@ void Scheduler::process_deferred() {
     auto callbacks = std::move(mDeferredCallbacks);
     mDeferredCallbacks.clear();
 
-    if(callbacks.empty()) {
+    if (callbacks.empty()) {
         return;
     }
 

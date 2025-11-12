@@ -167,7 +167,8 @@ public:
     }
 
     bool get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT;
-    bool get_grid_cell_center_position(int east, int north, double* lat, double* lon) const NOEXCEPT;
+    bool get_grid_cell_center_position(int east, int north, double* lat,
+                                       double* lon) const NOEXCEPT;
 
 private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;

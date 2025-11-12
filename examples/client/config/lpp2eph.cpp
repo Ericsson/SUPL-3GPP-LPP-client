@@ -49,11 +49,11 @@ void setup(args::ArgumentParser& parser) {
 }
 
 void parse(Config* config) {
-    auto& lpp2eph      = config->lpp2eph;
-    lpp2eph.enabled    = false;
-    lpp2eph.gps        = true;
-    lpp2eph.galileo    = true;
-    lpp2eph.beidou     = true;
+    auto& lpp2eph   = config->lpp2eph;
+    lpp2eph.enabled = false;
+    lpp2eph.gps     = true;
+    lpp2eph.galileo = true;
+    lpp2eph.beidou  = true;
 
     if (gEnable) lpp2eph.enabled = true;
     if (gNoGps) lpp2eph.gps = false;

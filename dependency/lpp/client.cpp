@@ -86,7 +86,7 @@ Client::~Client() {
             pair.second->clear_client();
         }
     }
-    
+
     if (mScheduler) {
         mScheduler->unregister_tick(this);
     }
@@ -157,9 +157,9 @@ bool Client::request_assistance_data(SingleRequestAssistanceData const& request_
     message_description.bds              = request_assistance_data.gnss.beidou;
 
     if (request_assistance_data.type == SingleRequestAssistanceData::Type::AGNSS) {
-        message_description.reference_time     = 1;
-        message_description.ionospheric_model  = 1;
-        message_description.navigation_model   = 1;
+        message_description.reference_time    = 1;
+        message_description.ionospheric_model = 1;
+        message_description.navigation_model  = 1;
     } else {
         WARNF("unknown RequestAssistanceData type");
         return false;
