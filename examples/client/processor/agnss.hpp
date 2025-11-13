@@ -34,7 +34,7 @@ public:
     AGnssProcessor(AGnssConfig const& config, supl::Identity const& identity,
                    supl::Cell const& cell, scheduler::Scheduler& scheduler,
                    streamline::System& stream);
-    ~AGnssProcessor();
+    ~AGnssProcessor() override;
 
     char const* name() const NOEXCEPT override { return "AGnssProcessor"; }
     void        inspect(streamline::System& system, DataType const& message,

@@ -13,7 +13,7 @@
 class InterfaceOutputStage : public OutputStage {
 public:
     EXPLICIT InterfaceOutputStage(std::unique_ptr<io::Output> interface) NOEXCEPT;
-    ~InterfaceOutputStage() NOEXCEPT;
+    ~InterfaceOutputStage() NOEXCEPT override;
 
     void write(OutputFormat format, uint8_t const* buffer, size_t length) NOEXCEPT override;
 
