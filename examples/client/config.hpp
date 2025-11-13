@@ -273,6 +273,8 @@ struct LoggingConfig {
     bool                                           color;
     bool                                           flush;
     bool                                           tree;
+    bool                                           report_errors;
+    bool                                           use_stderr;
     std::unique_ptr<std::string>                   log_file;
     std::unordered_map<std::string, loglet::Level> module_levels;
 };
@@ -515,8 +517,6 @@ struct Config {
         return tag_bit_mask;
     }
 };
-
-std::vector<std::string> split(std::string const& str, char delim);
 
 LOGLET_MODULE_FORWARD_REF2(client, config);
 

@@ -1,3 +1,4 @@
+#include <core/string.hpp>
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 
@@ -49,7 +50,7 @@ static OutputFormat parse_format(std::string const& str) {
 }
 
 static std::vector<std::string> parse_tags(std::string const& str) {
-    auto parts = ::split(str, '+');
+    auto parts = core::split(str, '+');
     return parts;
 }
 
@@ -72,10 +73,10 @@ parse_xtags_from_options(std::unordered_map<std::string, std::string> const& opt
 }
 
 static std::unordered_map<std::string, std::string> parse_options(std::string const& str) {
-    auto                                         parts = ::split(str, ',');
+    auto                                         parts = core::split(str, ',');
     std::unordered_map<std::string, std::string> options;
     for (size_t i = 1; i < parts.size(); i++) {
-        auto kv = ::split(parts[i], '=');
+        auto kv = core::split(parts[i], '=');
         if (kv.size() != 2) {
             throw args::ValidationError("--print: invalid option, got `" + parts[i] + "`");
         }
@@ -85,7 +86,7 @@ static std::unordered_map<std::string, std::string> parse_options(std::string co
 }
 
 static PrintInterface parse_interface(std::string const& source) {
-    auto parts = ::split(source, ',');
+    auto parts = core::split(source, ',');
     if (parts.empty()) {
         throw args::ParseError("--print: empty format");
     }

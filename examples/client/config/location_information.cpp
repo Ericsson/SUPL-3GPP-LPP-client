@@ -1,4 +1,5 @@
 #include <cctype>
+#include <core/string.hpp>
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 
@@ -174,7 +175,7 @@ void parse(Config* config) {
     if (gNmeaRequireVtg) li.nmea_require_vtg = true;
 
     if (gNmeaOrder) {
-        auto order = ::split(gNmeaOrder.Get(), ',');
+        auto order = core::split(gNmeaOrder.Get(), ',');
         li.nmea_order.clear();
         for (auto type : order) {
             for (auto& c : type)

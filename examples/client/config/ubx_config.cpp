@@ -1,3 +1,4 @@
+#include <core/string.hpp>
 #include <format/ubx/cfg.hpp>
 #include <fstream>
 #include <io/file.hpp>
@@ -164,7 +165,7 @@ load_options_from_file(std::string const& filename) {
 static std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>>
 parse_options_list(std::string const& options_str) {
     std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> options;
-    auto option_parts = ::split(options_str, '+');
+    auto option_parts = core::split(options_str, '+');
 
     for (auto const& option : option_parts) {
         options.push_back(parse_option(option));
@@ -174,10 +175,10 @@ parse_options_list(std::string const& options_str) {
 }
 
 static std::unordered_map<std::string, std::string> parse_arguments(std::string const& str) {
-    auto                                         parts = ::split(str, ',');
+    auto                                         parts = core::split(str, ',');
     std::unordered_map<std::string, std::string> arguments;
     for (auto const& part : parts) {
-        auto kv = ::split(part, '=');
+        auto kv = core::split(part, '=');
         if (kv.size() != 2) {
             throw args::ValidationError("--cfg-ubx: invalid argument, got `" + part + "`");
         }
@@ -335,7 +336,7 @@ static UbxPrintMode parse_print_mode(std::string const& print_str) {
 }
 
 static UbxConfigInterface parse_interface(std::string const& source) {
-    auto parts = ::split(source, ':');
+    auto parts = core::split(source, ':');
     if (parts.size() != 2) {
         throw args::ValidationError("--cfg-ubx: invalid format, expected <type>:<arguments>");
     }

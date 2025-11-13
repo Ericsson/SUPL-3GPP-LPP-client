@@ -1,3 +1,4 @@
+#include <core/string.hpp>
 #include <cxx11_compat.hpp>
 #include <io/file.hpp>
 #include <io/serial.hpp>
@@ -118,7 +119,7 @@ static InputFormat parse_format(std::string const& str) {
 }
 
 static InputFormat parse_format_list(std::string const& str) {
-    auto parts  = ::split(str, '+');
+    auto parts  = core::split(str, '+');
     auto format = INPUT_FORMAT_NONE;
     for (auto const& part : parts) {
         format |= parse_format(part);
@@ -140,7 +141,7 @@ static std::string parse_stage(std::string const& str) {
 }
 
 static std::vector<std::string> parse_stages(std::string const& str) {
-    auto                     parts = ::split(str, '+');
+    auto                     parts = core::split(str, '+');
     std::vector<std::string> stages;
     for (auto const& part : parts) {
         stages.push_back(parse_stage(part));
@@ -158,7 +159,7 @@ parse_stages_from_options(std::unordered_map<std::string, std::string> const& op
 }
 
 static std::vector<std::string> parse_tags(std::string const& str) {
-    return ::split(str, '+');
+    return core::split(str, '+');
 }
 
 static std::vector<std::string>
@@ -171,10 +172,10 @@ parse_tags_from_options(std::unordered_map<std::string, std::string> const& opti
 }
 
 static std::unordered_map<std::string, std::string> parse_options(std::string const& str) {
-    auto                                         parts = ::split(str, ',');
+    auto                                         parts = core::split(str, ',');
     std::unordered_map<std::string, std::string> options;
     for (auto const& part : parts) {
-        auto kv = ::split(part, '=');
+        auto kv = core::split(part, '=');
         if (kv.size() == 1) {
             options[kv[0]] = "";
         } else if (kv.size() == 2) {
@@ -457,7 +458,7 @@ parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
 static InputInterface parse_interface(std::string const& source, Config const* config) {
     std::unordered_map<std::string, std::string> options;
 
-    auto parts = ::split(source, ':');
+    auto parts = core::split(source, ':');
     if (parts.size() == 1) {
         // No options
     } else if (parts.size() == 2) {

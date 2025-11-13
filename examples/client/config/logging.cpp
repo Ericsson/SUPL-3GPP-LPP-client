@@ -1,3 +1,4 @@
+#include <core/string.hpp>
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 
@@ -93,11 +94,13 @@ void setup(args::ArgumentParser& parser) {
 }
 
 void parse(Config* config) {
-    auto& logging     = config->logging;
-    logging.log_level = loglet::Level::Info;
-    logging.color     = gNoColor ? false : true;
-    logging.flush     = gFlush;
-    logging.tree      = gTree;
+    auto& logging         = config->logging;
+    logging.log_level     = loglet::Level::Info;
+    logging.color         = gNoColor ? false : true;
+    logging.flush         = gFlush;
+    logging.tree          = gTree;
+    logging.report_errors = gNoReportErrors ? false : true;
+    logging.use_stderr    = gNoStderr ? false : true;
 
     if (gLogFile) {
         logging.log_file = std::unique_ptr<std::string>(new std::string(gLogFile.Get()));
@@ -120,7 +123,7 @@ void parse(Config* config) {
     }
 
     for (auto const& module : gModules) {
-        auto parts = ::split(module, '=');
+        auto parts = core::split(module, '=');
         if (parts.size() != 2) {
             throw args::ValidationError("invalid log module: `" + module + "`");
         }
