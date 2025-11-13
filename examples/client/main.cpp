@@ -1,4 +1,5 @@
 #include <cxx11_compat.hpp>
+#include <version.hpp>
 
 #include <cmath>
 
@@ -873,7 +874,11 @@ int main(int argc, char** argv) {
     loglet::set_level(loglet::Level::Error);
 #endif
 
-    INFOF("S3LC Client (" CLIENT_VERSION ")");
+    INFOF("S3LC Client %s", CLIENT_VERSION);
+    INFOF("  Commit: %s%s (%s)", GIT_COMMIT_HASH, GIT_DIRTY ? "-dirty" : "", GIT_BRANCH);
+    INFOF("  Built: %s [%s]", BUILD_DATE, BUILD_TYPE);
+    INFOF("  Compiler: %s", BUILD_COMPILER);
+    INFOF("  Platform: %s (%s)", BUILD_SYSTEM, BUILD_ARCH);
 
     Config config{};
     if (!config::parse(argc, argv, &config)) {

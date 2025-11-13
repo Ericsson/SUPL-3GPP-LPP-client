@@ -181,7 +181,12 @@ int main(int argc, char** argv) {
     try {
         parser.ParseCLI(argc, argv);
         if (version) {
-            std::cout << "Control Toggle (" << CLIENT_VERSION << ")" << std::endl;
+            std::cout << "Control Toggle " << CLIENT_VERSION << std::endl;
+            std::cout << "  Commit: " << GIT_COMMIT_HASH << (GIT_DIRTY ? "-dirty" : "") << " ("
+                      << GIT_BRANCH << ")" << std::endl;
+            std::cout << "  Built: " << BUILD_DATE << " [" << BUILD_TYPE << "]" << std::endl;
+            std::cout << "  Compiler: " << BUILD_COMPILER << std::endl;
+            std::cout << "  Platform: " << BUILD_SYSTEM << " (" << BUILD_ARCH << ")" << std::endl;
             return 1;
         }
 

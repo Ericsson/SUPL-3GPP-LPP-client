@@ -7,6 +7,7 @@
 #include <loglet/loglet.hpp>
 #include <time/gps.hpp>
 #include <time/utc.hpp>
+#include <version.hpp>
 
 LOGLET_MODULE2(format, rinex);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, rinex)

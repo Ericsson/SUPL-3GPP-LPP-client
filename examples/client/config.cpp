@@ -1,4 +1,5 @@
 #include "config.hpp"
+#include <core/string.hpp>
 #include <cxx11_compat.hpp>
 #include <io/file.hpp>
 #include <io/serial.hpp>
@@ -7,6 +8,7 @@
 #include <io/tcp.hpp>
 #include <io/udp.hpp>
 #include <loglet/loglet.hpp>
+#include <version.hpp>
 #include "processor/chunked_log.hpp"
 
 #pragma GCC diagnostic push
@@ -211,7 +213,11 @@ bool parse(int argc, char** argv, Config* config) {
     try {
         parser.ParseCLI(argc, argv);
         if (version) {
-            std::cout << "S3LC Client (" << CLIENT_VERSION << ")" << std::endl;
+            printf("S3LC Client %s\n", CLIENT_VERSION);
+            printf("  Commit: %s%s (%s)\n", GIT_COMMIT_HASH, GIT_DIRTY ? "-dirty" : "", GIT_BRANCH);
+            printf("  Built: %s [%s]\n", BUILD_DATE, BUILD_TYPE);
+            printf("  Compiler: %s\n", BUILD_COMPILER);
+            printf("  Platform: %s (%s)\n", BUILD_SYSTEM, BUILD_ARCH);
             return true;
         }
 

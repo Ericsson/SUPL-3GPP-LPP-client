@@ -11,6 +11,7 @@
 #include <supl/start.hpp>
 
 #include <external_warnings.hpp>
+#include <version.hpp>
 
 EXTERNAL_WARNINGS_PUSH
 #include "Initiator.h"
