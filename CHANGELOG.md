@@ -5,6 +5,8 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- Eliminated 1MB global buffer by using direct vfprintf formatting
+- Hardened loglet to preserve errno, report internal errors, and avoid redundant fflush
 - ForwardStreamTask no longer warns on EAGAIN/EWOULDBLOCK (expected when pipe is full)
 - Streamline queue size default reduced from 2048 to 128 (configurable via EVENT_QUEUE_SIZE)
 - SUPL internal library updated to use loglet properly with function tracing, correct asserts, and verbose output on early exits
@@ -23,6 +25,9 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added build version information including git commit, branch, build date, compiler, and platform
+- Exposed new loglet options in example-client via `--log-no-report-errors` and `--log-no-stderr` flags
+- Added loglet options: `set_report_errors()` and `set_use_stderr()`
 - Optional static analyzers: clang-tidy, cppcheck, IWYU
 - Input on_complete callback for detecting when inputs finish (EOF, disconnect)
 - Auto-shutdown on input completion with `--input-shutdown-on-complete` and `--input-shutdown-delay`
@@ -48,6 +53,7 @@ All notable changes to this project will be documented in this file.
 - Scheduler stream splice() support with conditional compilation via HAVE_SPLICE
 
 ### Fixed
+- Fixed errno race conditions where logging calls clobbered errno before checking EINPROGRESS/EAGAIN/EWOULDBLOCK
 - Example-client lpp2eph ephemeris scale factors for all GNSS (APowerHalf: 2⁻¹⁹, Crc/Crs: 2⁻⁵ for GPS/Galileo and 2⁻⁶ for BeiDou, keplerToe: 60s)
 - Tokoro generator get_grid_position now correctly handles north-west reference point (latitude decreases going south)
 - Tokoro CorrectionData now correctly receives correction point set pointer
