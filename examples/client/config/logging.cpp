@@ -1,20 +1,13 @@
 #include <core/string.hpp>
+#include <external_warnings.hpp>
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma GCC diagnostic ignored "-Wnewline-eof"
-#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
-#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
-#pragma GCC diagnostic ignored "-Wsuggest-override"
-#pragma GCC diagnostic ignored "-Wshadow-field"
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+EXTERNAL_WARNINGS_PUSH
 #include <args.hpp>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 namespace logging {
 
@@ -84,6 +77,18 @@ static args::Flag gTree{
     "tree",
     "Show log tree",
     {"log-tree"},
+};
+static args::Flag gNoReportErrors{
+    gGroup,
+    "no-report-errors",
+    "Disable loglet internal error reporting",
+    {"log-no-report-errors"},
+};
+static args::Flag gNoStderr{
+    gGroup,
+    "no-stderr",
+    "Output warnings/errors to stdout instead of stderr",
+    {"log-no-stderr"},
 };
 static args::ValueFlag<std::string> gLogFile{
     gGroup, "file", "Write log output to file", {"log-file"}, args::Options::Single,

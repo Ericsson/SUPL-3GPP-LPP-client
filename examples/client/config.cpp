@@ -11,30 +11,13 @@
 #include <version.hpp>
 #include "processor/chunked_log.hpp"
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma GCC diagnostic ignored "-Wnewline-eof"
-#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
-#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
-#pragma GCC diagnostic ignored "-Wsuggest-override"
-#pragma GCC diagnostic ignored "-Wshadow-field"
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#include <external_warnings.hpp>
+EXTERNAL_WARNINGS_PUSH
 #include <args.hpp>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 LOGLET_MODULE2(client, config);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
-
-std::vector<std::string> split(std::string const& str, char delim) {
-    std::vector<std::string> tokens;
-    std::string              token;
-    std::istringstream       token_stream(str);
-    while (std::getline(token_stream, token, delim)) {
-        tokens.push_back(token);
-    }
-    return tokens;
-}
 
 namespace config {
 

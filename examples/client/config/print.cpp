@@ -4,17 +4,10 @@
 
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma GCC diagnostic ignored "-Wnewline-eof"
-#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
-#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
-#pragma GCC diagnostic ignored "-Wsuggest-override"
-#pragma GCC diagnostic ignored "-Wshadow-field"
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#include <external_warnings.hpp>
+EXTERNAL_WARNINGS_PUSH
 #include <args.hpp>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 namespace print {
 
