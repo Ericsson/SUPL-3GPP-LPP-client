@@ -181,7 +181,7 @@ bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
         case format::ubx::CfgValue::Type::U2: value_str = std::to_string(value.u2()); break;
         case format::ubx::CfgValue::Type::U4: value_str = std::to_string(value.u4()); break;
         case format::ubx::CfgValue::Type::U8: value_str = std::to_string(value.u8()); break;
-        default: value_str = "unknown"; break;
+        case format::ubx::CfgValue::Type::UNKNOWN: value_str = "unknown"; break;
         }
 
         printf("%-40s 0x%08X   %s\n", key_name.c_str(), key, value_str.c_str());

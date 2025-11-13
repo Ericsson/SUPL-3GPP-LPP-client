@@ -460,8 +460,8 @@ char const* TcpClientOutput::state_to_string(State state) const NOEXCEPT {
     case State::STATE_DISCONNECTED: return "STATE_DISCONNECTED";
     case State::STATE_ERROR: return "STATE_ERROR";
     case State::STATE_RECONNECT: return "STATE_RECONNECT";
-    default: CORE_UNREACHABLE();
     }
+    CORE_UNREACHABLE();
 }
 
 //

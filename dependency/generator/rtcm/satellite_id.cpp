@@ -116,8 +116,8 @@ long SatelliteId::absolute_id() const {
     case Gnss::GALILEO: return GAL_ABS_MIN + mLppId;
     case Gnss::BEIDOU: return BDS_ABS_MIN + mLppId;
     case Gnss::UNKNOWN: return -1;
-    default: return -1;
     }
+    return -1;
 }
 
 SatelliteId::Gnss SatelliteId::gnss() const {
