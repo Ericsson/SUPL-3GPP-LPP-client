@@ -1,0 +1,9 @@
+[
+  { include: ["<bits/std_abs.h>", "private", "<cmath>", "public"] },
+  { include: ["<bits/types/struct_tm.h>", "private", "<ctime>", "public"] },
+  { include: ["<bits/types/time_t.h>", "private", "<ctime>", "public"] },
+  { symbol: ["std::string", "private", "<string>", "public"] },
+  { symbol: ["std::vector", "private", "<vector>", "public"] },
+  { symbol: ["std::unique_ptr", "private", "<memory>", "public"] },
+  { symbol: ["std::shared_ptr", "private", "<memory>", "public"] },
+]

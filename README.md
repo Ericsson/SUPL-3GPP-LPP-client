@@ -48,5 +48,13 @@ Build the project:
 ninja
 ```
 
+### Static Analysis (Optional)
+Enable static analyzers during build:
+```bash
+cmake .. -GNinja -DENABLE_CLANG_TIDY=ON
+cmake .. -GNinja -DENABLE_CPPCHECK=ON
+cmake .. -GNinja -DENABLE_IWYU=ON
+```
+
 ## License
 See [LICENSE](/LICENSE.txt) file.

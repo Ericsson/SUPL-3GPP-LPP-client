@@ -16,6 +16,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(example LANGUAGES C CXX)
 
+include(cmake/clang-tidy.cmake)
+include(cmake/cppcheck.cmake)
+include(cmake/iwyu.cmake)
 include(cmake/color.cmake)
 include(cmake/vars.cmake)
 include(cmake/compiler.cmake)

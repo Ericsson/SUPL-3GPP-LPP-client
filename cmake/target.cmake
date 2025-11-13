@@ -69,4 +69,15 @@ function(setup_target target)
         target_compile_options(${target} PRIVATE -fsanitize=address,undefined,leak)
         target_link_libraries(${target} PRIVATE -fsanitize=address,undefined,leak)
     endif (USE_ASAN)
+
+    if(DEFINED ${target}_DISABLE_ANALYZERS)
+        get_target_property(target_type ${target} TYPE)
+        if(NOT target_type STREQUAL "INTERFACE_LIBRARY")
+            set_target_properties(${target} PROPERTIES
+                CXX_CLANG_TIDY ""
+                CXX_CPPCHECK ""
+                CXX_INCLUDE_WHAT_YOU_USE ""
+            )
+        endif()
+    endif()
 endfunction()

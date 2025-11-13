@@ -275,6 +275,11 @@ add_library(asn1::skeleton ALIAS asn1_skeleton)
 asn1_target_setup(asn1_skeleton)
 target_include_directories(asn1_skeleton PUBLIC "skeleton")
 set_property(TARGET asn1_skeleton PROPERTY C_STANDARD 99)
+set_target_properties(asn1_skeleton PROPERTIES
+    C_CLANG_TIDY ""
+    C_CPPCHECK ""
+    C_INCLUDE_WHAT_YOU_USE ""
+)
 
 #
 # SUPL ASN.1
@@ -289,6 +294,11 @@ add_library(asn1::generated::supl ALIAS asn1_supl_generated)
 asn1_target_setup(asn1_supl_generated)
 target_link_libraries(asn1_supl_generated PUBLIC asn1::skeleton)
 target_include_directories(asn1_supl_generated PUBLIC "supl_generated")
+set_target_properties(asn1_supl_generated PROPERTIES
+    C_CLANG_TIDY ""
+    C_CPPCHECK ""
+    C_INCLUDE_WHAT_YOU_USE ""
+)
 
 #
 # 3GPP LPP ASN.1
@@ -303,6 +313,11 @@ add_library(asn1::generated::lpp ALIAS asn1_lpp_generated)
 asn1_target_setup(asn1_lpp_generated)
 target_link_libraries(asn1_lpp_generated PUBLIC asn1::skeleton)
 target_include_directories(asn1_lpp_generated PUBLIC "lpp_generated")
+set_target_properties(asn1_lpp_generated PROPERTIES
+    C_CLANG_TIDY ""
+    C_CPPCHECK ""
+    C_INCLUDE_WHAT_YOU_USE ""
+)
 
 #
 # Helper

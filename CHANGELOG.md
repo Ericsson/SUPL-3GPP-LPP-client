@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Optional static analyzers: clang-tidy, cppcheck, IWYU
 - Input on_complete callback for detecting when inputs finish (EOF, disconnect)
 - Auto-shutdown on input completion with `--input-shutdown-on-complete` and `--input-shutdown-delay`
 - Scheduler interrupt() method to cleanly stop execute loops
