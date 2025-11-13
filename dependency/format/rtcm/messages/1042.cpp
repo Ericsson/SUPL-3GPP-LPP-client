@@ -66,7 +66,7 @@ std::unique_ptr<Message> Rtcm1042::parse(std::vector<uint8_t> data) {
 
     std::bitset<8 + 16 + 512 + 24> bits;
     for (std::size_t i = 0; i < (8 + 16 + 512 + 24) / 8; ++i) {
-        for (int j = 0; j < 8; ++j) {
+        for (std::size_t j = 0; j < 8; ++j) {
             bits[bits.size() - 1 - (i * 8 + j)] = (data[i] >> (7 - j)) & 1;
         }
     }
@@ -75,7 +75,8 @@ std::unique_ptr<Message> Rtcm1042::parse(std::vector<uint8_t> data) {
     std::size_t i = 8 + 16;
     getdatafield(bits, i, type);
     if (type != 1042) {
-        ERRORF("RTCM 1042 message missmatched message number. should be '1042', was '%4d'", type);
+        ERRORF("RTCM 1042 message missmatched message number. should be '1042', was '%4d'",
+               type.value());
         return std::make_unique<ErrorMessage>(1042, std::move(data));
     }
 
