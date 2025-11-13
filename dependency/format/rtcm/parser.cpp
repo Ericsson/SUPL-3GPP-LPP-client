@@ -129,9 +129,9 @@ static uint32_t const CRC24Q[256] = {
     0xF842FA2F, 0xF9C4B6D4, 0xFAC82F22, 0xFB4E63D9, 0xFCD11CCE, 0xFD575035, 0xFE5BC9C3, 0xFFDD8538,
 };
 
-static uint32_t crc24q_hash(unsigned char const* data, int len) {
+static uint32_t crc24q_hash(unsigned char const* data, size_t len) {
     uint32_t crc = 0;
-    for (int i = 0; i < len; i++) {
+    for (size_t i = 0; i < len; i++) {
         crc = (crc << 8U) ^ CRC24Q[data[i] ^ static_cast<unsigned char>(crc >> 16U)];
     }
 
