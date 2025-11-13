@@ -270,18 +270,19 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
             int print_count = 0;
             for (size_t j = 0; j < 16; j++) {
                 if (i + j < count) {
-                    print_count +=
-                        snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                    print_count += snprintf(print_buffer + print_count,
+                                            sizeof(print_buffer) - static_cast<size_t>(print_count),
                                  "%02X ", buffer[i + j]);
                 } else {
-                    print_count += snprintf(print_buffer + print_count,
-                                            sizeof(print_buffer) - print_count, "   ");
+                    print_count +=
+                        snprintf(print_buffer + print_count,
+                                 sizeof(print_buffer) - static_cast<size_t>(print_count), "   ");
                 }
             }
             for (size_t j = 0; j < 16; j++) {
                 if (i + j < count) {
-                    print_count +=
-                        snprintf(print_buffer + print_count, sizeof(print_buffer) - print_count,
+                    print_count += snprintf(print_buffer + print_count,
+                                            sizeof(print_buffer) - static_cast<size_t>(print_count),
                                  "%c", isprint(buffer[i + j]) ? buffer[i + j] : '.');
                 }
             }
@@ -571,8 +572,8 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
         auto last_stage = std::unique_ptr<OutputStage>(
             new InterfaceOutputStage(std::move(output.initial_interface)));
         if (!output.stages.empty()) {
-            for (int i = output.stages.size() - 1; i >= 0; i--) {
-                auto& stage_name = output.stages[i];
+            for (size_t i = output.stages.size(); i > 0; i--) {
+                auto& stage_name = output.stages[i - 1];
                 if (stage_name == "tlf") {
                     last_stage = std::make_unique<TlfOutputStage>(std::move(last_stage));
                 } else {

@@ -132,7 +132,7 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
         }
         if (static_cast<size_t>(written) != sizeof(mBuffer) - mLeftOverCount) {
             DEBUGF("failed to write to destination: only wrote %ld bytes", written);
-            mLeftOverCount -= written;
+            mLeftOverCount -= static_cast<size_t>(written);
             return;
         }
         mLeftOverCount = 0;
@@ -200,7 +200,7 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
         if (written != count) {
             DEBUGF("failed to write all data to destination: written: %ld, count: %ld", written,
                    count);
-            mLeftOverCount = static_cast<size_t>(count) - written;
+            mLeftOverCount = static_cast<size_t>(count) - static_cast<size_t>(written);
             return;
         }
 

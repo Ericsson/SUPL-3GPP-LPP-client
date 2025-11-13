@@ -42,7 +42,7 @@ std::vector<uint8_t> UbxConfigApplicator::create_cfg_valset_message(
         auto const&          value    = entry.second;
         size_t               msg_size = 64;
         std::vector<uint8_t> temp_buffer(msg_size);
-        format::ubx::Encoder encoder(temp_buffer.data(), temp_buffer.size());
+        format::ubx::Encoder encoder(temp_buffer.data(), static_cast<uint32_t>(temp_buffer.size()));
 
         auto bytes_written = format::ubx::UbxCfgValset::set(encoder, layers, key, value);
         if (bytes_written > 0) {
@@ -71,7 +71,7 @@ UbxConfigApplicator::create_cfg_valget_message(std::vector<format::ubx::CfgKey> 
 
     size_t               msg_size = 64 + (limited_keys.size() * 4);
     std::vector<uint8_t> message(msg_size);
-    format::ubx::Encoder encoder(message.data(), message.size());
+    format::ubx::Encoder encoder(message.data(), static_cast<uint32_t>(message.size()));
 
     auto bytes_written = format::ubx::UbxCfgValget::poll(encoder, format::ubx::CFG_LAYER_RAM,
                                                          position, limited_keys);
@@ -90,7 +90,7 @@ std::vector<uint8_t> UbxConfigApplicator::create_cfg_valget_all_message(uint16_t
 
     size_t               msg_size = 64;
     std::vector<uint8_t> message(msg_size);
-    format::ubx::Encoder encoder(message.data(), message.size());
+    format::ubx::Encoder encoder(message.data(), static_cast<uint32_t>(message.size()));
 
     auto bytes_written = format::ubx::UbxCfgValget::poll(encoder, format::ubx::CFG_LAYER_RAM,
                                                          position, wildcard_keys);

@@ -128,7 +128,7 @@ public:
     template <typename X, typename T>
     X integer(T index, T bits) const {
         assert(bits <= 64);
-        assert(bits <= sizeof(X) * 8);
+        assert(bits <= static_cast<T>(sizeof(X) * 8));
         X value = 0;
         for (T i = 0; i < bits; i++) {
             auto bit       = get(index + i);
