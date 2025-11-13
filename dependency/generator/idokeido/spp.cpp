@@ -71,9 +71,10 @@ void SppEngine::add_measurement(RawMeasurement const& raw) NOEXCEPT {
     }
 
     // Mark that the satellite is active
-    mObservationMask[satellite_id] = true;
+    auto sat_idx              = static_cast<size_t>(satellite_id);
+    mObservationMask[sat_idx] = true;
 
-    auto& observation        = mObservations[satellite_id];
+    auto& observation        = mObservations[sat_idx];
     observation.satellite_id = raw.satellite_id;
     observation.add_measurement(Measurment{
         .time          = raw.time,
@@ -101,11 +102,6 @@ static std::string epf(T const& t) {
     ss << std::fixed << std::setprecision(8);
     ss << t;
     return ss.str();
-}
-
-template <typename T>
-static std::string epft(T const& t) {
-    return epf(t.transpose());
 }
 
 void SppEngine::select_best_observations(ts::Tai const& time) {
@@ -197,7 +193,7 @@ void SppEngine::select_best_observations(ts::Tai const& time) {
 
             auto& measurement = observation.measurements[j];
             if (measurement.snr > best_snr) {
-                best_id  = j;
+                best_id  = static_cast<long>(j);
                 best_snr = measurement.snr;
             }
         }
@@ -229,7 +225,7 @@ void SppEngine::compute_satellite_states(ts::Tai const& time) {
         if (observation.measurement_count == 0) continue;
         if (observation.selected0 < 0) continue;
 
-        auto& measurement = observation.measurements[observation.selected0];
+        auto& measurement = observation.measurements[static_cast<size_t>(observation.selected0)];
 
         // Clear group delay
         for (auto& group_delay : observation.group_delay) {
@@ -301,9 +297,9 @@ Solution SppEngine::evaluate() NOEXCEPT {
         }
     } else if (mConfiguration.epoch_selection == EpochSelection::MeanObservation) {
         if (mEpochObservationCount > 0) {
-            auto mean_time =
-                ts::Tai{ts::Timestamp{mEpochTotalObservationTime / mEpochObservationCount}};
-            solution = evaluate(mean_time);
+            auto mean_time = ts::Tai{ts::Timestamp{mEpochTotalObservationTime /
+                                                   static_cast<double>(mEpochObservationCount)}};
+            solution       = evaluate(mean_time);
         } else {
             WARNF("epoch selection: mean observation not found");
         }
@@ -376,7 +372,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
         auto cps = mCorrectionCache.correction_point_set(ground_llh);
 
-        size_t j = 0;
+        long j = 0;
         for (size_t i = 0; i < mObservationMask.size(); ++i) {
             if (!mObservationMask[i]) continue;
 
@@ -413,7 +409,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
             // TODO: We must align the measurement to a common time, otherwise we might use L1 and
             // L2 without correction for code biases
-            auto& measurement = observation.measurements[observation.selected0];
+            auto& measurement =
+                observation.measurements[static_cast<size_t>(observation.selected0)];
 
             auto pseudo_range = measurement.pseudo_range;
 
@@ -429,7 +426,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                     WARNF("ionospheric model not available");
                 }
                 break;
-            case IonosphericMode::Dual: TODOF("implement dual ionospheric model"); break;
+            case IonosphericMode::Dual: TODO("implement dual ionospheric model"); break;
             case IonosphericMode::Ssr: {
                 if (cps) {
                     if (!cps->ionospheric_polynomial(ground_llh, observation.satellite_id,
@@ -467,9 +464,9 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             auto iod         = observation.ephemeris.iod();
             auto s_code_bias = 0.0;
             if (correction) {
-                auto it = correction->code_bias.find(measurement.signal_id);
-                if (it != correction->code_bias.end()) {
-                    s_code_bias = it->second;
+                auto bias_it = correction->code_bias.find(measurement.signal_id);
+                if (bias_it != correction->code_bias.end()) {
+                    s_code_bias = bias_it->second;
                 }
             }
 

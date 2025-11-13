@@ -397,6 +397,8 @@ void Client::process_request_location_information(lpp::TransactionHandle const& 
     auto reporting_amount_unlimited =
         (reporting_amount_enum == PeriodicalReportingCriteria__reportingAmount_ra_Infinity);
     long reporting_amount = 0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wcovered-switch-default"
     switch (reporting_amount_enum) {
     case PeriodicalReportingCriteria__reportingAmount_ra1: reporting_amount = 1; break;
     case PeriodicalReportingCriteria__reportingAmount_ra2: reporting_amount = 2; break;
@@ -406,8 +408,9 @@ void Client::process_request_location_information(lpp::TransactionHandle const& 
     case PeriodicalReportingCriteria__reportingAmount_ra32: reporting_amount = 32; break;
     case PeriodicalReportingCriteria__reportingAmount_ra64: reporting_amount = 64; break;
     case PeriodicalReportingCriteria__reportingAmount_ra_Infinity: reporting_amount = 0; break;
-    default: WARNF("unknown reporting amount"); return;
+    default: WARNF("unknown reporting amount: %ld", reporting_amount_enum); return;
     }
+#pragma GCC diagnostic pop
 
     std::chrono::seconds reporting_interval{1};
     switch (periodical_reporting->reportingInterval) {
