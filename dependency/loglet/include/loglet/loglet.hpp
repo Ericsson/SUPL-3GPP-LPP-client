@@ -152,9 +152,12 @@
 #endif
 
 #ifdef DISABLE_LOGGING
+#define TODO(msg)
 #define TODOF(...)
 #define XTODOF(module, ...)
 #else
+#define TODO(msg)                                                                                  \
+    loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" msg, __FILE__, __LINE__)
 #define TODOF(fmt, ...)                                                                            \
     loglet::errorf(LOGLET_CURRENT_MODULE, "!!! TODO !!! %s:%d\n" fmt, __FILE__, __LINE__,          \
                    __VA_ARGS__)

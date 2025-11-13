@@ -434,8 +434,8 @@ void dump(TokoroConfig const& config) {
         case TokoroConfig::VrsMode::Dynamic: return "dynamic";
         case TokoroConfig::VrsMode::Fixed: return "fixed";
         case TokoroConfig::VrsMode::Grid: return "grid";
-        default: return "unknown";
         }
+        return "unknown";
     }());
 
     DEBUGF("generation strategy: %s", [&]() {
@@ -444,8 +444,8 @@ void dump(TokoroConfig const& config) {
         case TokoroConfig::GenerationStrategy::TimeStep: return "time step";
         case TokoroConfig::GenerationStrategy::TimeStepAligned: return "time step aligned";
         case TokoroConfig::GenerationStrategy::TimeStepLast: return "time step last";
-        default: return "unknown";
         }
+        return "unknown";
     }());
 
     DEBUGF("dynamic distance threshold: %f km", config.dynamic_distance_threshold);

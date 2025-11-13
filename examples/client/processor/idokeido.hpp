@@ -101,3 +101,6 @@ public:
 private:
     Base& mBase;
 };
+
+extern template class IdokeidoEphemerisUbx<IdokeidoSpp>;
+extern template class IdokeidoMeasurmentUbx<IdokeidoSpp>;

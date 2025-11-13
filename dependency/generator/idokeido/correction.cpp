@@ -410,7 +410,7 @@ void CorrectionCache::add_correction(long                                  gnss_
                 }
 
                 auto ionospheric =
-                    decode::stecResidualCorrection_r16(satellite->stecResidualCorrection_r16);
+                    decode::stecResidualCorrection_r16(&satellite->stecResidualCorrection_r16);
 
                 point.has_ionospheric                    = true;
                 point.ionospheric_residual[satellite_id] = ionospheric;

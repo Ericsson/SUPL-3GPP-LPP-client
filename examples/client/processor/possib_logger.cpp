@@ -265,7 +265,7 @@ void LppPossibBuilder::process(GNSS_SSR_IOD_Update_r18 const& x) {
 }
 
 void LppPossibBuilder::process(GNSS_CommonAssistData const& x) {
-    VSCOPE_FUNCTIONF("GNSS_CommonAssistData");
+    FUNCTION_SCOPEN("GNSS_CommonAssistData");
     if (x.gnss_ReferenceTime) process(*x.gnss_ReferenceTime);
     if (x.gnss_ReferenceLocation) process(*x.gnss_ReferenceLocation);
     if (x.gnss_IonosphericModel) process(*x.gnss_IonosphericModel);
@@ -587,7 +587,7 @@ void LppPossibBuilder::process(GNSS_GenericAssistDataElement const& x) {
 }
 
 void LppPossibBuilder::process(GNSS_GenericAssistData const& message) {
-    VSCOPE_FUNCTIONF("GNSS_GenericAssistData");
+    FUNCTION_SCOPEN("GNSS_GenericAssistData");
     for (int i = 0; i < message.list.count; i++) {
         auto element = message.list.array[i];
         if (element) process(*element);
@@ -595,23 +595,23 @@ void LppPossibBuilder::process(GNSS_GenericAssistData const& message) {
 }
 
 void LppPossibBuilder::process(A_GNSS_ProvideAssistanceData const& message) {
-    VSCOPE_FUNCTIONF("A_GNSS_ProvideAssistanceData");
+    FUNCTION_SCOPEN("A_GNSS_ProvideAssistanceData");
     if (message.gnss_CommonAssistData) process(*message.gnss_CommonAssistData);
     if (message.gnss_GenericAssistData) process(*message.gnss_GenericAssistData);
 }
 
 void LppPossibBuilder::process(CommonIEsProvideAssistanceData const&) {
-    VSCOPE_FUNCTIONF("CommonIEsProvideAssistanceData");
+    FUNCTION_SCOPEN("CommonIEsProvideAssistanceData");
 }
 
 void LppPossibBuilder::process(ProvideAssistanceData_r9_IEs const& message) {
-    VSCOPE_FUNCTIONF("ProvideAssistanceData_r9_IEs");
+    FUNCTION_SCOPEN("ProvideAssistanceData_r9_IEs");
     if (message.commonIEsProvideAssistanceData) process(*message.commonIEsProvideAssistanceData);
     if (message.a_gnss_ProvideAssistanceData) process(*message.a_gnss_ProvideAssistanceData);
 }
 
 void LppPossibBuilder::process(ProvideAssistanceData const& message) {
-    VSCOPE_FUNCTIONF("ProvideAssistanceData");
+    FUNCTION_SCOPEN("ProvideAssistanceData");
 
     switch (message.criticalExtensions.present) {
     case ProvideAssistanceData__criticalExtensions_PR::

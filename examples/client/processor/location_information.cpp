@@ -63,7 +63,6 @@ void LocationOutput::inspect(streamline::System&, DataType const& location, uint
             result << ",\"vertical-accuracy\": ";
             vertical_accuracy_json(result, shape.data.haepaue.vertical_accuracy);
             break;
-        default: result << "\"type\": \"unknown\""; break;
         }
 
         result << "}";

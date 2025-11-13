@@ -381,7 +381,7 @@ EphemerisEngine::Satellite
 EphemerisEngine::evaluate_gal(SatelliteId, ts::Tai const&, RelativisticModel,
                               ephemeris::GalEphemeris const&) const NOEXCEPT {
     FUNCTION_SCOPE();
-    TODOF("implement EphemerisEngine::evaluate_gal()");
+    TODO("implement EphemerisEngine::evaluate_gal()");
     return {};
 }
 
@@ -389,7 +389,7 @@ EphemerisEngine::Satellite
 EphemerisEngine::evaluate_bds(SatelliteId, ts::Tai const&, RelativisticModel,
                               ephemeris::BdsEphemeris const&) const NOEXCEPT {
     FUNCTION_SCOPE();
-    TODOF("implement EphemerisEngine::evaluate_gal()");
+    TODO("implement EphemerisEngine::evaluate_bds()");
     return {};
 }
 
@@ -409,7 +409,7 @@ bool EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time,
     if (satellite_id.is_galileo()) {
         auto eph = find_gal(satellite_id, time);
         if (eph) {
-            TODOF("implement EphemerisEngine::clock_bias()");
+            TODO("implement EphemerisEngine::clock_bias()");
         }
 
         return false;
@@ -417,7 +417,7 @@ bool EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time,
     if (satellite_id.is_beidou()) {
         auto eph = find_bds(satellite_id, time);
         if (eph) {
-            TODOF("implement EphemerisEngine::clock_bias()");
+            TODO("implement EphemerisEngine::clock_bias()");
         }
 
         return false;

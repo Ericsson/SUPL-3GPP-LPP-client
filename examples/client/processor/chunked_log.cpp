@@ -35,7 +35,8 @@ void ChunkedLogOutput::write(uint8_t const* buffer, size_t length) NOEXCEPT {
     ensure_current_file();
 
     if (mCurrentFile && mCurrentFile->is_open()) {
-        mCurrentFile->write(reinterpret_cast<char const*>(buffer), length);
+        mCurrentFile->write(reinterpret_cast<char const*>(buffer),
+                            static_cast<std::streamsize>(length));
         mCurrentFile->flush();
     }
 }

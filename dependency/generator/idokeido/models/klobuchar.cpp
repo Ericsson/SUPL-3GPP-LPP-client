@@ -15,8 +15,9 @@ static Scalar cos_sc(Scalar x) {
 
 Scalar KlobucharModelParameters::evaluate(ts::Tai const& time, Scalar elevation, Scalar azimuth,
                                           Vector3 const& llh) const NOEXCEPT {
-    FUNCTION_SCOPEF("time=%s, elevation=%f, azimuth=%f, llh=(%f, %f, %f)", time, elevation, azimuth,
-                    llh.x(), llh.y(), llh.z());
+    FUNCTION_SCOPEF("time=%s, elevation=%f, azimuth=%f, llh=(%f, %f, %f)",
+                    time.rtklib_time_string().c_str(), elevation, azimuth, llh.x(), llh.y(),
+                    llh.z());
     VERBOSEF("a: %+.14f, %+14f, %+14f, %+14f", a[0], a[1], a[2], a[3]);
     VERBOSEF("b: %+.14f, %+14f, %+14f, %+14f", b[0], b[1], b[2], b[3]);
 

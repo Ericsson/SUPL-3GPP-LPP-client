@@ -272,7 +272,7 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
                 if (i + j < count) {
                     print_count += snprintf(print_buffer + print_count,
                                             sizeof(print_buffer) - static_cast<size_t>(print_count),
-                                 "%02X ", buffer[i + j]);
+                                            "%02X ", buffer[i + j]);
                 } else {
                     print_count +=
                         snprintf(print_buffer + print_count,
@@ -283,7 +283,7 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
                 if (i + j < count) {
                     print_count += snprintf(print_buffer + print_count,
                                             sizeof(print_buffer) - static_cast<size_t>(print_count),
-                                 "%c", isprint(buffer[i + j]) ? buffer[i + j] : '.');
+                                            "%c", isprint(buffer[i + j]) ? buffer[i + j] : '.');
                 }
             }
 

@@ -57,7 +57,9 @@ void AGnssProcessor::schedule_triggered_request(streamline::System& system) {
         mTriggeredRequestPending = false;
         if (mSystem) request_agnss(*mSystem);
     };
-    mTriggeredDelayTask->schedule(mScheduler);
+    if (!mTriggeredDelayTask->schedule(mScheduler)) {
+        ERRORF("failed to schedule A-GNSS triggered delay task");
+    }
 }
 
 void AGnssProcessor::inspect(streamline::System& system, DataType const& message,
