@@ -41,20 +41,20 @@ function(asn1_target_setup target)
         target_compile_definitions(${target} PUBLIC "ASN_DISABLE_PRINT_SUPPORT=1")
     endif()
 
-    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+    # Force optimizations for ASN.1 code even in Debug builds
+    # ASN.1 decoding is performance-critical and the generated code is stable
+    if (CMAKE_CXX_COMPILER_ID STREQUAL "Clang" OR CMAKE_C_COMPILER_ID STREQUAL "Clang")
         target_compile_options(${target} PRIVATE
+            "-O3"
             "-Wno-parentheses-equality" 
             "-Wno-unused-but-set-variable"
         )
-    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-
+    elseif (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_C_COMPILER_ID STREQUAL "GNU")
+        target_compile_options(${target} PRIVATE "-O3")
     endif()
 
-    # TODO(ewasjon): I don't think the ASN.1 generated code should be compiled with ASAN.
-    if (USE_ASAN)
-        target_compile_options(${target} PRIVATE -fsanitize=address,undefined,leak)
-        target_link_libraries(${target} PRIVATE -fsanitize=address,undefined,leak)
-    endif ()
+    # ASN.1 generated code should not be compiled with ASAN as it significantly
+    # impacts performance (6+ second delays observed in encoding/decoding)
 endfunction()
 
 #
@@ -280,6 +280,9 @@ set_target_properties(asn1_skeleton PROPERTIES
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
 )
+# Explicitly disable ASAN for ASN.1 code
+target_compile_options(asn1_skeleton PRIVATE -fno-sanitize=all)
+target_link_options(asn1_skeleton PRIVATE -fno-sanitize=all)
 
 #
 # SUPL ASN.1
@@ -299,6 +302,9 @@ set_target_properties(asn1_supl_generated PROPERTIES
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
 )
+# Explicitly disable ASAN for ASN.1 code
+target_compile_options(asn1_supl_generated PRIVATE -fno-sanitize=all)
+target_link_options(asn1_supl_generated PRIVATE -fno-sanitize=all)
 
 #
 # 3GPP LPP ASN.1
@@ -318,6 +324,9 @@ set_target_properties(asn1_lpp_generated PROPERTIES
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
 )
+# Explicitly disable ASAN for ASN.1 code
+target_compile_options(asn1_lpp_generated PRIVATE -fno-sanitize=all)
+target_link_options(asn1_lpp_generated PRIVATE -fno-sanitize=all)
 
 #
 # Helper
