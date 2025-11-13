@@ -179,7 +179,7 @@ bool decode_response(Session::SET& set, Session::SLP& slp, RESPONSE& response, U
         return false;
     }
 
-    print(loglet::Level::Verbose, pdu);
+    print(loglet::Level::Trace, pdu);
     auto message       = &pdu->message.choice.msSUPLRESPONSE;
     response.posMethod = static_cast<RESPONSE::PosMethod>(message->posMethod);
     return true;
@@ -203,7 +203,7 @@ bool decode_end(Session::SET& set, Session::SLP& slp, END&, ULP_PDU* pdu) {
         return false;
     }
 
-    print(loglet::Level::Verbose, pdu);
+    print(loglet::Level::Trace, pdu);
     return true;
 }
 
@@ -265,7 +265,7 @@ bool decode_pos(Session::SET& set, Session::SLP& slp, POS& pos, ULP_PDU* pdu) {
         }
     }
 
-    print(loglet::Level::Verbose, pdu);
+    print(loglet::Level::Trace, pdu);
     return true;
 }
 

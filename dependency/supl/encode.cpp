@@ -502,7 +502,7 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, con
     pdu_message.locationId                = encode_locationid(message.locationID);
     pdu_message.ver2_SUPL_START_extension = encode_start_extension(message);
 
-    print(loglet::Level::Verbose, ulp_pdu);
+    print(loglet::Level::Trace, ulp_pdu);
     return encode_uper(ulp_pdu);
 }
 
@@ -527,7 +527,7 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
         pdu_message.sUPLPOS = suplpos;
     }
 
-    print(loglet::Level::Verbose, ulp_pdu);
+    print(loglet::Level::Trace, ulp_pdu);
     return encode_uper(ulp_pdu);
 }
 
@@ -544,7 +544,7 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, con
     auto& pdu_message      = ulp_pdu->message.choice.msSUPLPOS;
     pdu_message.posPayLoad = encode_pospayload(message.payloads);
 
-    print(loglet::Level::Verbose, ulp_pdu);
+    print(loglet::Level::Trace, ulp_pdu);
     return encode_uper(ulp_pdu);
 }
 

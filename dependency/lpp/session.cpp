@@ -19,6 +19,7 @@ EXTERNAL_WARNINGS_PUSH
 #include "LPP-TransactionID.h"
 EXTERNAL_WARNINGS_POP
 
+#include <chrono>
 #include <sstream>
 
 LOGLET_MODULE2(lpp, session);
@@ -164,6 +165,7 @@ void Session::process() {
             return;
         }
 
+        auto      state_start = std::chrono::steady_clock::now();
         NextState result{};
         switch (mState) {
         case State::UNKNOWN: result = state_unknown(); break;
@@ -180,6 +182,10 @@ void Session::process() {
         case State::MESSAGE: result = state_message(); break;
         case State::EXIT: UNREACHABLE();
         }
+        auto state_end = std::chrono::steady_clock::now();
+        auto state_ms =
+            std::chrono::duration_cast<std::chrono::milliseconds>(state_end - state_start).count();
+        VERBOSEF("state %s took %lld ms", state_to_string(mState), state_ms);
 
         if (!result.schedule) {
             VERBOSEF("next: state: %s", state_to_string(result.next_state));
@@ -574,8 +580,7 @@ void Session::send(TransactionHandle const& handle, Message& message) {
     VSCOPE_FUNCTION();
 
     DEBUGF("send message %s", handle.to_string().c_str());
-    XVERBOSEF(&LOGLET_MODULE_REF2(lpp, print), "send:\n%s",
-              encode_lpp_message_xer(message).c_str());
+    XTRACEF(&LOGLET_MODULE_REF2(lpp, print), "send:\n%s", encode_lpp_message_xer(message).c_str());
 
     // Ensure that the message doesn't already have a transactionID set and that endTransaction
     // is false
@@ -686,14 +691,25 @@ void Session::process_lpp_payload(supl::Payload const& payload) {
     ASSERT(mSession != nullptr, "session is null");
     ASSERT(payload.type == supl::Payload::Type::LPP, "invalid payload type");
 
-    auto message = decode_lpp_message(payload.data.data(), payload.data.size());
+    auto decode_start = std::chrono::steady_clock::now();
+    auto message      = decode_lpp_message(payload.data.data(), payload.data.size());
+    auto decode_end   = std::chrono::steady_clock::now();
+    auto decode_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(decode_end - decode_start).count();
+
+    if (decode_ms > 100) {
+        WARNF("LPP decode took %lld ms (payload size: %zu bytes)", decode_ms, payload.data.size());
+    } else {
+        VERBOSEF("LPP decode took %lld ms (payload size: %zu bytes)", decode_ms,
+                 payload.data.size());
+    }
+
     if (!message) {
         WARNF("failed to decode LPP message");
         return;
     }
 
-    XVERBOSEF(&LOGLET_MODULE_REF2(lpp, print), "recv:\n%s",
-              encode_lpp_message_xer(message).c_str());
+    XTRACEF(&LOGLET_MODULE_REF2(lpp, print), "recv:\n%s", encode_lpp_message_xer(message).c_str());
 
     if (!message->transactionID) {
         WARNF("missing transaction id");

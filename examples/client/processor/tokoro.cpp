@@ -1,3 +1,4 @@
+#include <chrono>
 #include <cstdint>
 #include "ephemeris/bds.hpp"
 #include "ephemeris/gal.hpp"
@@ -522,6 +523,8 @@ void Tokoro::vrs_mode_dynamic() {
 void Tokoro::generate(ts::Tai const& generation_time) {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
+
+    auto vrs_start = std::chrono::steady_clock::now();
     if (mConfig.vrs_mode == TokoroConfig::VrsMode::Fixed) {
         vrs_mode_fixed();
     } else if (mConfig.vrs_mode == TokoroConfig::VrsMode::Grid) {
@@ -532,6 +535,10 @@ void Tokoro::generate(ts::Tai const& generation_time) {
         WARNF("unsupported VRS mode");
         return;
     }
+    auto vrs_end = std::chrono::steady_clock::now();
+    auto vrs_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(vrs_end - vrs_start).count();
+    VERBOSEF("VRS mode setup took %lld ms", vrs_ms);
 
     if (!mReferenceStation) {
         WARNF("reference station is null");
@@ -554,7 +561,12 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_use_ionospheric_height_correction(
         mConfig.use_ionospheric_height_correction);
 
+    auto gen_start = std::chrono::steady_clock::now();
     mReferenceStation->generate(generation_time);
+    auto gen_end = std::chrono::steady_clock::now();
+    auto gen_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(gen_end - gen_start).count();
+    VERBOSEF("reference station generate took %lld ms", gen_ms);
 
     auto messages = mReferenceStation->produce();
     INFOF("generated %d RTCM messages", messages.size());
@@ -590,10 +602,21 @@ void Tokoro::inspect(streamline::System& system, DataType const& message, uint64
         return;
     }
 
+    auto process_start       = std::chrono::steady_clock::now();
     auto new_assistance_data = mGenerator->process_lpp(*message.get());
+    auto process_end         = std::chrono::steady_clock::now();
+    auto process_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(process_end - process_start).count();
+    VERBOSEF("process_lpp took %lld ms", process_ms);
+
     if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
         if (new_assistance_data) {
+            auto gen_start = std::chrono::steady_clock::now();
             generate(mGenerator->last_correction_data_time());
+            auto gen_end = std::chrono::steady_clock::now();
+            auto gen_ms =
+                std::chrono::duration_cast<std::chrono::milliseconds>(gen_end - gen_start).count();
+            VERBOSEF("generate took %lld ms", gen_ms);
         } else {
             DEBUGF("skipping generation, no new assistance data");
         }

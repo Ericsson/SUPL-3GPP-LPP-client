@@ -14,6 +14,7 @@ EXTERNAL_WARNINGS_PUSH
 #include <ULP-PDU.h>
 EXTERNAL_WARNINGS_POP
 
+#include <chrono>
 #include <loglet/loglet.hpp>
 
 #define UPER_DECODE_BUFFER_SIZE (64 * 1024)
@@ -241,8 +242,19 @@ ULP_PDU* Session::parse_receive_buffer() {
     asn_codec_ctx_t stack_ctx{};
     stack_ctx.max_stack_size = 1024 * 1024 * 4;
 
-    auto result = uper_decode_complete(&stack_ctx, &asn_DEF_ULP_PDU,
-                                       reinterpret_cast<void**>(&ulp_pdu), buffer, size);
+    auto decode_start = std::chrono::steady_clock::now();
+    auto result       = uper_decode_complete(&stack_ctx, &asn_DEF_ULP_PDU,
+                                             reinterpret_cast<void**>(&ulp_pdu), buffer, size);
+    auto decode_end   = std::chrono::steady_clock::now();
+    auto decode_ms =
+        std::chrono::duration_cast<std::chrono::milliseconds>(decode_end - decode_start).count();
+
+    if (decode_ms > 100) {
+        WARNF("SUPL decode took %lld ms (buffer size: %zu bytes)", decode_ms, size);
+    } else {
+        VERBOSEF("SUPL decode took %lld ms (buffer size: %zu bytes)", decode_ms, size);
+    }
+
     DEBUGF("uper_decode_complete(): %s %zd",
            (result.code == RC_FAIL ? "RC_FAIL" : (result.code == RC_WMORE ? "RC_WMORE" : "RC_OK")),
            result.consumed);
