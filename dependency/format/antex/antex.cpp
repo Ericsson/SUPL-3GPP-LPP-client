@@ -257,11 +257,11 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
             }
 
             DEBUGF("antenna: %s", antenna->id.name());
-            DEBUGF("  dazi: %f", antenna->dazi);
-            DEBUGF("  zen1: %f", antenna->zen1);
-            DEBUGF("  zen2: %f", antenna->zen2);
-            DEBUGF("  dzen: %f", antenna->dzen);
-            DEBUGF("  frequency count: %ld", antenna->frequency_count);
+            VERBOSEF("  dazi: %f", antenna->dazi);
+            VERBOSEF("  zen1: %f", antenna->zen1);
+            VERBOSEF("  zen2: %f", antenna->zen2);
+            VERBOSEF("  dzen: %f", antenna->dzen);
+            VERBOSEF("  frequency count: %ld", antenna->frequency_count);
 
             while (std::getline(stream, line)) {
                 TRACEF("line: %s", line.c_str());
@@ -307,8 +307,8 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                     antenna->valid_from_set = true;
                     antenna->valid_from =
                         ts::Gps::from_ymdhms(year, month, day, hour, minute, second);
-                    DEBUGF("  valid from: %s",
-                           ts::Utc{antenna->valid_from}.rtklib_time_string().c_str());
+                    VERBOSEF("  valid from: %s",
+                             ts::Utc{antenna->valid_from}.rtklib_time_string().c_str());
                 } else if (is_valid_until(line)) {
                     auto valid_until_year_str   = trim(line.substr(0, 6));
                     auto valid_until_month_str  = trim(line.substr(6, 6));
@@ -347,8 +347,8 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                     antenna->valid_until_set = true;
                     antenna->valid_until =
                         ts::Gps::from_ymdhms(year, month, day, hour, minute, second);
-                    DEBUGF("  valid until: %s",
-                           ts::Utc{antenna->valid_until}.rtklib_time_string().c_str());
+                    VERBOSEF("  valid until: %s",
+                             ts::Utc{antenna->valid_until}.rtklib_time_string().c_str());
                 } else if (is_start_of_frequency(line)) {
                     auto frequency = std::unique_ptr<Frequency>(new Frequency{});
                     TRACEF("---------------- start of frequency ----------------");
@@ -429,17 +429,17 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                     }
 
                     auto element_count =
-                        (int64_t)((antenna->zen2 - antenna->zen1) / antenna->dzen) + 1;
+                        static_cast<size_t>((antenna->zen2 - antenna->zen1) / antenna->dzen) + 1;
                     auto expected_length = 8 + 8 * element_count;
-                    TRACEF("  %f - %f = %f / %f, expected %" PRId64, antenna->zen2, antenna->zen1,
+                    TRACEF("  %f - %f = %f / %f, expected %zu", antenna->zen2, antenna->zen1,
                            antenna->zen2 - antenna->zen1, antenna->dzen, element_count);
-                    if (line.size() != (size_t)expected_length) {
-                        ERRORF("expected no azimuth length %" PRId64 ", got %zu", expected_length,
+                    if (line.size() != expected_length) {
+                        ERRORF("expected no azimuth length %zu, got %zu", expected_length,
                                line.size());
                         return nullptr;
                     }
 
-                    for (int64_t i = 0; i < element_count; i++) {
+                    for (size_t i = 0; i < element_count; i++) {
                         auto   no_azimuth_str = trim(line.substr(8 + 8 * i, 8));
                         double no_azimuth;
                         if (!parse_float(no_azimuth_str, no_azimuth)) {
@@ -451,34 +451,33 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                     }
 
                     if (antenna->dazi > 0.0) {
-                        auto dazi_count = (int64_t)(360.0 / antenna->dazi) + 1;
-                        for (int64_t i = 0; i < dazi_count; i++) {
+                        auto dazi_count = static_cast<size_t>(360.0 / antenna->dazi) + 1;
+                        for (size_t i = 0; i < dazi_count; i++) {
                             if (!std::getline(stream, line)) {
-                                ERRORF("failed to read azimuth %ld", i);
+                                ERRORF("failed to read azimuth %zu", i);
                                 return nullptr;
                             }
 
                             TRACEF("  AZI: %s", line.c_str());
-                            auto azimuth_str = trim(line.substr(0, 8));
-                            auto azimuth     = 0.0;
-                            if (!parse_float(azimuth_str, azimuth)) {
-                                ERRORF("failed to parse azimuth %ld: %s", i, azimuth_str.c_str());
+                            auto azimuth_str   = trim(line.substr(0, 8));
+                            auto azimuth_value = 0.0;
+                            if (!parse_float(azimuth_str, azimuth_value)) {
+                                ERRORF("failed to parse azimuth %zu: %s", i, azimuth_str.c_str());
                                 return nullptr;
                             }
 
-                            auto expected_length = 8 + 8 * element_count;
-                            if (line.size() != (size_t)expected_length) {
-                                ERRORF("expected azimuth length %ld, got %zu", expected_length,
+                            if (line.size() != expected_length) {
+                                ERRORF("expected azimuth length %zu, got %zu", expected_length,
                                        line.size());
                                 return nullptr;
                             }
 
                             std::vector<double> values;
-                            for (int64_t j = 0; j < element_count; j++) {
+                            for (size_t j = 0; j < element_count; j++) {
                                 auto   value_str = trim(line.substr(8 + 8 * j, 8));
                                 double value;
                                 if (!parse_float(value_str, value)) {
-                                    ERRORF("failed to parse value %ld %ld: %s", i, j,
+                                    ERRORF("failed to parse value %zu %zu: %s", i, j,
                                            value_str.c_str());
                                     return nullptr;
                                 }
@@ -551,17 +550,17 @@ bool Frequency::phase_variation(double azimuth_rad, double nadir_rad,
     if (nadir > zen2) nadir = zen2;
 
     auto nadir_index  = (nadir - zen1) / dzen;
-    auto nadir_index1 = (int)nadir_index;
+    auto nadir_index1 = static_cast<size_t>(nadir_index);
     auto nadir_index2 = nadir_index1 + 1;
-    auto nadir_frac   = nadir_index - nadir_index1;
-    VERBOSEF("nad: %d %d %.4f (%.4f) (%7.4f < %7.4f < %7.4f) %.4f", nadir_index1, nadir_index2,
+    auto nadir_frac   = nadir_index - static_cast<double>(nadir_index1);
+    VERBOSEF("nad: %zu %zu %.4f (%.4f) (%7.4f < %7.4f < %7.4f) %.4f", nadir_index1, nadir_index2,
              nadir_frac, nadir_index, zen1, nadir_rad * RAD_TO_DEG, zen2, dzen);
     if (azimuths.empty()) {
-        if ((size_t)nadir_index1 >= no_azimuth.size()) {
-            VERBOSEF("nad index oob: %zu %d", no_azimuth.size(), nadir_index1);
+        if (nadir_index1 >= no_azimuth.size()) {
+            VERBOSEF("nad index oob: %zu %zu", no_azimuth.size(), nadir_index1);
             return false;
-        } else if ((size_t)nadir_index2 >= no_azimuth.size()) {
-            VERBOSEF("nad index oob: %zu %d", no_azimuth.size(), nadir_index2);
+        } else if (nadir_index2 >= no_azimuth.size()) {
+            VERBOSEF("nad index oob: %zu %zu", no_azimuth.size(), nadir_index2);
             return false;
         }
 
@@ -573,27 +572,27 @@ bool Frequency::phase_variation(double azimuth_rad, double nadir_rad,
         return true;
     } else {
         auto azi        = (azimuth / dazi);
-        auto azi_index1 = (int)azi;
+        auto azi_index1 = static_cast<size_t>(azi);
         auto azi_index2 = azi_index1 + 1;
-        auto azi_frac   = azi - azi_index1;
-        VERBOSEF("azi: %d %d %.4f (%.4f) (%7.4f < %7.4f < %7.4f) %.4f", azi_index1, azi_index2,
+        auto azi_frac   = azi - static_cast<double>(azi_index1);
+        VERBOSEF("azi: %zu %zu %.4f (%.4f) (%7.4f < %7.4f < %7.4f) %.4f", azi_index1, azi_index2,
                  azi_frac, azi, 0.0, azimuth_rad * RAD_TO_DEG, 360.0, dazi);
 
-        if ((size_t)azi_index1 >= azimuths.size()) {
-            VERBOSEF("azi index oob: %zu %d", azimuths.size(), azi_index1);
+        if (azi_index1 >= azimuths.size()) {
+            VERBOSEF("azi index oob: %zu %zu", azimuths.size(), azi_index1);
             return false;
-        } else if ((size_t)azi_index2 >= azimuths.size()) {
-            VERBOSEF("azi index oob: %zu %d", azimuths.size(), azi_index2);
+        } else if (azi_index2 >= azimuths.size()) {
+            VERBOSEF("azi index oob: %zu %zu", azimuths.size(), azi_index2);
             return false;
         }
 
         auto& values1 = azimuths[azi_index1];
         auto& values2 = azimuths[azi_index2];
-        if ((size_t)nadir_index1 >= values1.size()) {
-            VERBOSEF("nad index oob: %zu %d", values1.size(), nadir_index1);
+        if (nadir_index1 >= values1.size()) {
+            VERBOSEF("nad index oob: %zu %zu", values1.size(), nadir_index1);
             return false;
-        } else if ((size_t)nadir_index2 >= values1.size()) {
-            VERBOSEF("nad index oob: %zu %d", values1.size(), nadir_index2);
+        } else if (nadir_index2 >= values1.size()) {
+            VERBOSEF("nad index oob: %zu %zu", values1.size(), nadir_index2);
             return false;
         }
 
@@ -605,9 +604,9 @@ bool Frequency::phase_variation(double azimuth_rad, double nadir_rad,
         auto v1    = v10 + (v11 - v10) * nadir_frac;
         auto value = v0 + (v1 - v0) * azi_frac;
 
-        DEBUGF("%.4f %.4f = %.4f", v00, v01, v0);
-        DEBUGF("%.4f %.4f = %.4f", v10, v11, v1);
-        DEBUGF("      azimuth = %.4f", value);
+        VERBOSEF("%.4f %.4f = %.4f", v00, v01, v0);
+        VERBOSEF("%.4f %.4f = %.4f", v10, v11, v1);
+        VERBOSEF("      azimuth = %.4f", value);
         phase_variation.value = value * MM_TO_M;
         return true;
     }
