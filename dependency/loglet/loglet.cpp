@@ -44,6 +44,8 @@ static char const*        sPrefix       = nullptr;
 static Level              sLevel        = Level::Debug;
 static bool               sColorEnabled = false;
 static bool               sAlwaysFlush  = false;
+static bool               sReportErrors = true;
+static bool               sUseStderr    = true;
 static FILE*              sOutputFile   = nullptr;
 static std::vector<Scope> sScopes;
 
@@ -228,6 +230,14 @@ void set_output_file(FILE* file) {
     sOutputFile = file;
 }
 
+void set_report_errors(bool enabled) {
+    sReportErrors = enabled;
+}
+
+void set_use_stderr(bool enabled) {
+    sUseStderr = enabled;
+}
+
 void set_module_level(LogModule* module, Level level) {
     module->level = level;
 }
@@ -292,27 +302,51 @@ static char const* level_to_color(Level level) {
     }
 }
 
-void log(LogModule const* module, Level level, char const* message) {
+static inline void report_error(char const* message) {
+    if (!sReportErrors) return;
+    auto error_color = sColorEnabled ? "\033[41;97m" : "";
+    auto reset_color = sColorEnabled ? COLOR_RESET : "";
+    fprintf(stderr, "%sloglet: %s%s\n", error_color, message, reset_color);
+}
+
+static inline void report_errorf(char const* format, int error_code) {
+    if (!sReportErrors) return;
+    auto error_color = sColorEnabled ? "\033[41;97m" : "";
+    auto reset_color = sColorEnabled ? COLOR_RESET : "";
+    fprintf(stderr, "%sloglet: %s: %s%s\n", error_color, format, strerror(error_code), reset_color);
+}
+
+void vlog(LogModule const* module, Level level, char const* format, va_list args) {
     if (!is_module_level_enabled(module, level)) {
         return;
     }
 
+    auto saved_errno = errno;
+
     auto        now   = std::chrono::system_clock::now();
     std::time_t now_c = std::chrono::system_clock::to_time_t(now);
     char        buffer[64];
-    strftime(buffer, sizeof(buffer), "%y%m%d %H:%M:%S", std::localtime(&now_c));
+    auto        tm_ptr = std::localtime(&now_c);
+    if (!tm_ptr) {
+        report_errorf("localtime failed", errno);
+        errno = saved_errno;
+        return;
+    }
+    if (strftime(buffer, sizeof(buffer), "%y%m%d %H:%M:%S", tm_ptr) == 0) {
+        report_error("strftime failed");
+        errno = saved_errno;
+        return;
+    }
 
     auto start_color = level_to_color(level);
     auto stop_color  = sColorEnabled ? COLOR_RESET : "";
 
-    auto file = sOutputFile ? sOutputFile : stdout;
-    if (!sOutputFile && (level == Level::Error || level == Level::Warning)) {
+    auto file        = sOutputFile ? sOutputFile : stdout;
+    auto needs_flush = sAlwaysFlush;
+    if (!sOutputFile && sUseStderr && (level == Level::Error || level == Level::Warning)) {
         file = stderr;
         fflush(stdout);
-    }
-
-    if (sAlwaysFlush) {
-        fflush(file);
+        needs_flush = true;
     }
 
     char indent_buffer[64 + 1] = "                                                                ";
@@ -323,50 +357,69 @@ void log(LogModule const* module, Level level, char const* message) {
         indent_length = 0;
     }
     indent_buffer[indent_length] = '\0';
-    fprintf(file, "%s%s%s[%-*s] %s%s%s\n", start_color, level_to_string(level), buffer,
-            static_cast<int>(sGlobalData ? sGlobalData->max_full_name_length : 16),
-            module->full_name.c_str(), indent_buffer, message, stop_color);
+
+    if (fprintf(file, "%s%s%s[%-*s] %s", start_color, level_to_string(level), buffer,
+                static_cast<int>(sGlobalData ? sGlobalData->max_full_name_length : 16),
+                module->full_name.c_str(), indent_buffer) < 0) {
+        report_errorf("fprintf failed", errno);
+        errno = saved_errno;
+        return;
+    }
+
+    if (vfprintf(file, format, args) < 0) {
+        report_errorf("vfprintf failed", errno);
+        errno = saved_errno;
+        return;
+    }
+
+    if (fprintf(file, "%s\n", stop_color) < 0) {
+        report_errorf("fprintf failed", errno);
+    }
+
+    if (needs_flush && fflush(file) != 0) {
+        report_errorf("fflush failed", errno);
+    }
+
+    errno = saved_errno;
 }
 
 void logf(LogModule const* module, Level level, char const* format, ...) {
     va_list args;
     va_start(args, format);
-    vlogf(module, level, format, args);
+    vlog(module, level, format, args);
     va_end(args);
 }
 
-static char gLogBuffer[1024 * 1024];
-void        vlogf(LogModule const* module, Level level, char const* format, va_list args) {
-    vsnprintf(gLogBuffer, sizeof(gLogBuffer), format, args);
-    log(module, level, gLogBuffer);
+void vlogf(LogModule const* module, Level level, char const* format, va_list args) {
+    vlog(module, level, format, args);
 }
 
 void vtracef(LogModule const* module, char const* format, va_list args) {
-    vlogf(module, Level::Trace, format, args);
+    vlog(module, Level::Trace, format, args);
 }
 
 void vverbosef(LogModule const* module, char const* format, va_list args) {
-    vlogf(module, Level::Verbose, format, args);
+    vlog(module, Level::Verbose, format, args);
 }
 
 void vdebugf(LogModule const* module, char const* format, va_list args) {
-    vlogf(module, Level::Debug, format, args);
+    vlog(module, Level::Debug, format, args);
 }
 
 void vinfof(LogModule const* module, char const* format, va_list args) {
-    vlogf(module, Level::Info, format, args);
+    vlog(module, Level::Info, format, args);
 }
 
 void vnoticef(LogModule const* module, char const* format, va_list args) {
-    vlogf(module, Level::Notice, format, args);
+    vlog(module, Level::Notice, format, args);
 }
 
 void vwarnf(LogModule const* module, char const* format, va_list args) {
-    vlogf(module, Level::Warning, format, args);
+    vlog(module, Level::Warning, format, args);
 }
 
 void verrorf(LogModule const* module, char const* format, va_list args) {
-    vlogf(module, Level::Error, format, args);
+    vlog(module, Level::Error, format, args);
 }
 
 void tracef(LogModule const* module, char const* format, ...) {

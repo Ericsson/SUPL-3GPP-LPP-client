@@ -298,6 +298,8 @@ void                    set_level(Level level);
 void                    set_color_enable(bool enabled);
 void                    set_always_flush(bool flush);
 void                    set_output_file(FILE* file);
+void                    set_report_errors(bool enabled);
+void                    set_use_stderr(bool enabled);
 void                    set_module_level(LogModule* module, Level level);
 void                    disable_module(LogModule* module);
 bool                    is_module_enabled(LogModule const* module);
@@ -308,7 +310,7 @@ char const*             level_to_full_string(Level level);
 void push_indent();
 void pop_indent();
 
-void log(LogModule const* module, Level level, char const* message);
+void vlog(LogModule const* module, Level level, char const* format, va_list args);
 void logf(LogModule const* module, Level level, char const* format, ...);
 void vlogf(LogModule const* module, Level level, char const* format, va_list args);
 
