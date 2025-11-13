@@ -8,12 +8,16 @@ import re
 import signal
 import time
 import json
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 
 # Configuration paths
-DOCKER_DIR = 'docker'
-IMAGE_DIR = f'{DOCKER_DIR}/build/images'
-COMPILER_DIR = f'{DOCKER_DIR}/build/compilers'
-TEST_DIR = f'{DOCKER_DIR}/build/tests'
+SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+DOCKER_DIR = SCRIPT_DIR
+BUILD_DIR = os.path.join(SCRIPT_DIR, 'build')
+IMAGE_DIR = os.path.join(BUILD_DIR, 'images')
+COMPILER_DIR = os.path.join(BUILD_DIR, 'compilers')
+TEST_DIR = os.path.join(BUILD_DIR, 'tests')
 
 IMAGES = {
     's3lc-base:18.04': 'Dockerfile.base-18.04',
@@ -81,7 +85,7 @@ COMPILERS = {
         'package': 'clang-19',
         'setup': 'RUN update-alternatives --install /usr/bin/cc cc /usr/bin/clang-19 60 --slave /usr/bin/c++ c++ /usr/bin/clang++-19',
         'cxx_standards': ['11', '14', '17', '20'],
-    },
+    }
 }
 
 MATRIX = {
@@ -124,7 +128,7 @@ def format_time(seconds):
         return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60)}m"
 
 def load_cached_result(test_dir):
-    result_file = f'{test_dir}/result.json'
+    result_file = os.path.join(test_dir, 'result.json')
     if os.path.exists(result_file):
         try:
             with open(result_file, 'r') as f:
@@ -134,7 +138,7 @@ def load_cached_result(test_dir):
     return None
 
 def save_result(test_dir, result, duration):
-    result_file = f'{test_dir}/result.json'
+    result_file = os.path.join(test_dir, 'result.json')
     with open(result_file, 'w') as f:
         json.dump({'result': result, 'duration': duration, 'timestamp': time.time()}, f)
 
@@ -142,47 +146,73 @@ def image_name_to_path(image_name):
     return image_name.replace(':', '_').replace('/', '_')
 
 def build_base_images(results):
+    project_root = os.path.dirname(SCRIPT_DIR)
     for image_name, dockerfile in IMAGES.items():
         print(f"Building base image {image_name}...")
-        image_dir = f'{IMAGE_DIR}/{image_name_to_path(image_name)}'
+        image_dir = os.path.join(IMAGE_DIR, image_name_to_path(image_name))
         os.makedirs(image_dir, exist_ok=True)
         try:
-            with open(f'{image_dir}/build.log', 'w') as log:
+            with open(os.path.join(image_dir, 'build.log'), 'w') as log:
                 log.write(f"Building base image {image_name}...\n")
-                subprocess.run(['docker', 'build', '-f', f'{DOCKER_DIR}/{dockerfile}', '-t', image_name, '.', '--network=host'], 
+                subprocess.run(['docker', 'build', '-f', os.path.join(DOCKER_DIR, dockerfile), '-t', image_name, project_root, '--network=host'], 
                              stdout=log, stderr=subprocess.STDOUT, check=True)
             results['images'][image_name] = True
         except Exception as e:
             results['images'][image_name] = False
-            with open(f'{image_dir}/build.log', 'w') as log:
+            with open(os.path.join(image_dir, 'build.log'), 'w') as log:
                 log.write(f"Base build failed: {e}\n")
             return False
     return True
 
 def generate_dockerfile(compiler, compiler_config):
-    with open(f'{DOCKER_DIR}/Dockerfile.template', 'r') as f:
+    if compiler_config.get('cross'):
+        return
+    
+    with open(os.path.join(DOCKER_DIR, 'Dockerfile.template'), 'r') as f:
         template = f.read()
     
-    compiler_file = f'{COMPILER_DIR}/Dockerfile.{compiler}'
+    compiler_file = os.path.join(COMPILER_DIR, f'Dockerfile.{compiler}')
     dockerfile = template.replace('{{BASE_IMAGE}}', compiler_config['image']).replace('{{COMPILER_PACKAGE}}', compiler_config['package']).replace('{{COMPILER_SETUP}}', compiler_config['setup'])
     
     with open(compiler_file, 'w') as f:
         f.write(dockerfile)
 
+def build_cross_toolchain(platform):
+    print(f"Building cross-compilation toolchain for {platform}...")
+    result = subprocess.run([
+        'docker', 'build',
+        '-f', os.path.join(DOCKER_DIR, 'Dockerfile.crosstool'),
+        '--build-arg', f'PLATFORM={platform}',
+        '-t', f's3lc-cross:{platform}',
+        DOCKER_DIR
+    ], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    return result.returncode == 0
+
 def build_compiler_image(compiler, results):
+    project_root = os.path.dirname(SCRIPT_DIR)
+    compiler_config = COMPILERS[compiler]
+    
+    if compiler_config.get('cross'):
+        platform = compiler_config['platform']
+        if not build_cross_toolchain(platform):
+            results['compilers'][compiler] = False
+            return False
+        results['compilers'][compiler] = True
+        return True
+    
     print(f"Building {compiler}...")
-    compiler_dir = f'{COMPILER_DIR}/{compiler}'
+    compiler_dir = os.path.join(COMPILER_DIR, compiler)
     os.makedirs(compiler_dir, exist_ok=True)
     try:
-        with open(f'{compiler_dir}/build.log', 'w') as log:
+        with open(os.path.join(compiler_dir, 'build.log'), 'w') as log:
             log.write(f"Building {compiler}...\n")
-            result = subprocess.run(['docker', 'build', '-f', f'{COMPILER_DIR}/Dockerfile.{compiler}', '-t', f's3lc-test:{compiler}', '.', '--network=host'], 
+            result = subprocess.run(['docker', 'build', '-f', os.path.join(COMPILER_DIR, f'Dockerfile.{compiler}'), '-t', f's3lc-test:{compiler}', project_root, '--network=host'], 
                                   stdout=log, stderr=subprocess.STDOUT)
         results['compilers'][compiler] = result.returncode == 0
         return result.returncode == 0
     except Exception as e:
         results['compilers'][compiler] = False
-        with open(f'{compiler_dir}/build.log', 'w') as log:
+        with open(os.path.join(compiler_dir, 'build.log'), 'w') as log:
             log.write(f"Build failed with exception: {e}\n")
         return False
 
@@ -193,8 +223,10 @@ def is_compatible(compiler, options):
 def test_name_from_config(compiler, build_type, cxx_std, options):
     return f"{compiler}-{build_type}-cxx{cxx_std}-{'-'.join(opt.replace('=', '-').replace('-D', '') for opt in options) if options else 'default'}"
 
-def test_configuration(compiler, build_type, cxx_std, options, results, force_rebuild):
+def test_configuration(compiler, build_type, cxx_std, options, results, force_rebuild, print_lock=None):
+    project_root = os.path.dirname(SCRIPT_DIR)
     config = test_name_from_config(compiler, build_type, cxx_std, options)
+    compiler_config = COMPILERS[compiler]
     
     test_data = {
         'compiler': compiler,
@@ -205,54 +237,68 @@ def test_configuration(compiler, build_type, cxx_std, options, results, force_re
         'duration': 0
     }
 
+    def print_status(msg):
+        if print_lock:
+            with print_lock:
+                print(msg)
+        else:
+            print(msg)
+
     prefix = f"Testing {config}..."
-    print(f"{prefix:<80} ", end='', flush=True)
+    print_status(f"{prefix:<80} ")
 
     if cxx_std not in COMPILERS[compiler]['cxx_standards']:
-        print(colorize("SKIP", Colors.YELLOW))
+        print_status(f"{prefix:<80} {colorize('SKIP', Colors.YELLOW)}")
         test_data['result'] = 'SKIP'
         results['tests'][config] = test_data
         return
         
     if not is_compatible(compiler, options):
-        print(colorize("SKIP", Colors.YELLOW))
+        print_status(f"{prefix:<80} {colorize('SKIP', Colors.YELLOW)}")
         test_data['result'] = 'SKIP'
         results['tests'][config] = test_data
         return
     
-    build_dir = f'{TEST_DIR}/{config}'
+    build_dir = os.path.join(TEST_DIR, config)
     os.makedirs(build_dir, exist_ok=True)
     
-    cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} {' '.join(options)} && ninja"
+    toolchain_arg = ''
+    if compiler_config.get('cross'):
+        platform = compiler_config['platform']
+        toolchain_arg = f'-DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-{platform}.cmake'
+    
+    cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} {toolchain_arg} {' '.join(options)} && ninja"
+    
+    image_name = compiler_config['image'] if compiler_config.get('cross') else f's3lc-test:{compiler}'
     
     start_time = time.time()
     try:
-        with open(f'{build_dir}/build.log', 'w') as log:
+        with open(os.path.join(build_dir, 'build.log'), 'w') as log:
             log.write(f"Running: {cmake_cmd}\n")
             result = subprocess.run(['docker', 'run', '--rm', 
-                                   '-v', f'{os.getcwd()}:/src:ro',
+                                   '-v', f'{project_root}:/src:ro',
                                    '-v', f'{os.path.abspath(build_dir)}:/build',
                                    '-w', '/build', 
                                    '--network=host',
-                                   f's3lc-test:{compiler}', 'bash', '-c', cmake_cmd], 
+                                   image_name, 'bash', '-c', cmake_cmd], 
                                   stdout=log, stderr=subprocess.STDOUT)
         duration = time.time() - start_time
         test_data['duration'] = duration
         
         if result.returncode == 0:
-            print(colorize(f"PASS ({format_time(duration)})", Colors.GREEN))
+            print_status(f"{prefix:<80} {colorize(f'PASS ({format_time(duration)})', Colors.GREEN)}")
             test_data['result'] = True
         else:
-            print(colorize(f"FAIL ({format_time(duration)})", Colors.RED))
+            print_status(f"{prefix:<80} {colorize(f'FAIL ({format_time(duration)})', Colors.RED)}")
             test_data['result'] = False
         
         save_result(build_dir, test_data['result'], duration)
     except Exception as e:
         duration = time.time() - start_time
         test_data['duration'] = duration
-        print(colorize(f"FAIL ({format_time(duration)})", Colors.RED))
+        print_status(f"{prefix:<80} {colorize(f'FAIL ({format_time(duration)})', Colors.RED)}")
         test_data['result'] = False
-        with open(f'{build_dir}/build.log', 'a') as log:
+        with open(os.path.join(build_dir, 'build.log'), 'a') as log:
             log.write(f"\nTest failed with exception: {e}\n")
         save_result(build_dir, False, duration)
     
@@ -415,6 +461,7 @@ def main():
     parser.add_argument('--build-type', '-b', choices=['Debug', 'Release'], help='Run tests only for specific build type')
     parser.add_argument('--cxx-std', '-s', choices=['11', '14', '17', '20'], help='Run tests only for specific C++ standard')
     parser.add_argument('--force', action='store_true', help='Force rebuild all tests, ignore cached results')
+    parser.add_argument('--jobs', '-j', type=int, default=1, help='Number of parallel jobs (default: 1)')
     args = parser.parse_args()
     
     os.makedirs(IMAGE_DIR, exist_ok=True)
@@ -436,7 +483,6 @@ def main():
         print_results_matrix(results)
         return
     
-    # Filter compilers
     compilers_to_test = args.compiler if args.compiler else COMPILERS.keys()
     build_types = [args.build_type] if args.build_type else MATRIX['build_types']
     cxx_standards = [args.cxx_std] if args.cxx_std else MATRIX['cxx_standards']
@@ -451,15 +497,26 @@ def main():
         if not build_compiler_image(compiler, results):
             print(colorize(f"Skipping tests for {compiler} due to build failure", Colors.YELLOW))
             continue
-            
-        for build_type, cxx_std, options in itertools.product(
-            build_types, 
-            cxx_standards, 
-            MATRIX['cmake_options']
-        ):
+    
+    test_configs = []
+    for compiler in compilers_to_test:
+        if compiler not in COMPILERS or not results['compilers'].get(compiler):
+            continue
+        for build_type, cxx_std, options in itertools.product(build_types, cxx_standards, MATRIX['cmake_options']):
             config = test_name_from_config(compiler, build_type, cxx_std, options)
             if matches_filter(config, args.filter):
-                test_configuration(compiler, build_type, cxx_std, options, results, args.force)
+                test_configs.append((compiler, build_type, cxx_std, options))
+    
+    if args.jobs > 1:
+        print_lock = threading.Lock()
+        with ThreadPoolExecutor(max_workers=args.jobs) as executor:
+            futures = [executor.submit(test_configuration, compiler, build_type, cxx_std, options, results, args.force, print_lock) 
+                      for compiler, build_type, cxx_std, options in test_configs]
+            for future in as_completed(futures):
+                future.result()
+    else:
+        for compiler, build_type, cxx_std, options in test_configs:
+            test_configuration(compiler, build_type, cxx_std, options, results, args.force)
     
     total_time = time.time() - start_time
     print(f"\n{colorize('TOTAL ELAPSED TIME:', Colors.BOLD)} {format_time(total_time)}")

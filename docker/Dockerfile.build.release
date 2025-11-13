@@ -1,0 +1,16 @@
+ARG BUILDER_IMAGE
+FROM ${BUILDER_IMAGE}
+
+ARG TOOLCHAIN_FILE
+ARG CMAKE_ARGS
+ARG BUILD_CACHE_ID=default
+COPY . /src
+USER root
+RUN mkdir -p /build /artifacts && chown builder:builder /build /artifacts
+USER builder
+WORKDIR /build
+RUN --mount=type=cache,target=/build,id=build-cache-release-${BUILD_CACHE_ID},uid=1000,gid=1000 \
+    cmake /src -GNinja -DCMAKE_BUILD_TYPE=Release ${TOOLCHAIN_FILE:+-DCMAKE_TOOLCHAIN_FILE=${TOOLCHAIN_FILE}} ${CMAKE_ARGS} && \
+    ninja && \
+    cp example-* /artifacts/
+

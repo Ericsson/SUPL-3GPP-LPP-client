@@ -1,0 +1,6 @@
+ARG RUNTIME_BASE
+FROM ${RUNTIME_BASE}
+ARG TARGET
+COPY ${TARGET} /usr/local/bin/${TARGET}
+RUN ln -s /usr/local/bin/${TARGET} /usr/local/bin/entrypoint
+ENTRYPOINT ["/usr/local/bin/entrypoint"]

@@ -1,0 +1,6 @@
+FROM alpine:latest
+ARG TUPLE
+RUN mkdir -p /lib/arm-linux-gnueabihf /usr/local/bin
+COPY libs/${TUPLE}/ /lib/arm-linux-gnueabihf/
+ENV LD_LIBRARY_PATH=/lib/arm-linux-gnueabihf
+RUN ln -s /lib/arm-linux-gnueabihf/ld-linux-armhf.so.3 /lib/ld-linux-armhf.so.3

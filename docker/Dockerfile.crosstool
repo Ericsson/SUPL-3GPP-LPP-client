@@ -1,0 +1,53 @@
+FROM ubuntu:20.04
+
+ARG PLATFORM
+ARG CROSSTOOL_VERSION=1.28.0
+ARG DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    autoconf \
+    bison \
+    flex \
+    gawk \
+    help2man \
+    libncurses-dev \
+    libtool-bin \
+    texinfo \
+    unzip \
+    wget \
+    xz-utils \
+    python3 \
+    git \
+    cmake \
+    ninja-build \
+    libssl-dev \
+    file \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+RUN wget http://crosstool-ng.org/download/crosstool-ng/crosstool-ng-${CROSSTOOL_VERSION}.tar.xz && \
+    tar xf crosstool-ng-${CROSSTOOL_VERSION}.tar.xz && \
+    cd crosstool-ng-${CROSSTOOL_VERSION} && \
+    ./configure --prefix=/opt/crosstool-ng && \
+    make && make install && \
+    cd .. && rm -rf crosstool-ng-*
+
+ENV PATH="/opt/crosstool-ng/bin:${PATH}"
+
+RUN apt-get update && apt-get install -y \
+    rsync \
+    python3-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m builder
+USER builder
+WORKDIR /home/builder
+
+ARG CONFIG_PATH
+COPY --chown=builder:builder ${CONFIG_PATH} /home/builder/.config
+RUN --mount=type=cache,target=/home/builder/src,uid=1000,gid=1000,id=crosstool-tarballs-${PLATFORM}-${CROSSTOOL_VERSION} \
+    --mount=type=cache,target=/home/builder/.build,uid=1000,gid=1000,id=crosstool-build-${PLATFORM}-${CROSSTOOL_VERSION} \
+    ct-ng build || (echo "Build failed, but cache preserved for next attempt" && exit 1)
+
+ENV PATH="/home/builder/x-tools/$(ct-ng show-tuple 2>/dev/null || echo aarch64-rpi-linux-gnu)/bin:${PATH}"
