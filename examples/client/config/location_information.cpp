@@ -172,7 +172,7 @@ void parse(Config* config) {
         li.nmea_order.clear();
         for (auto type : order) {
             for (auto& c : type)
-                c = std::tolower(c);
+                c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
             if (type == "gga" || type == "gst" || type == "vtg" || type == "epe") {
                 li.nmea_order.push_back(std::move(type));
             } else {

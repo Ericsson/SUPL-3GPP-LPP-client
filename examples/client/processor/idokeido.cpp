@@ -268,7 +268,7 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
         auto tow          = rawx->rcv_tow();
         auto week         = rawx->week();
         auto tow_integer  = static_cast<int64_t>(tow);
-        auto tow_fraction = tow - tow_integer;
+        auto tow_fraction = tow - static_cast<double>(tow_integer);
         auto time         = ts::Gps::from_week_tow(week, tow_integer, tow_fraction);
 
         idokeido::RawMeasurement observation{
@@ -277,9 +277,9 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
             .signal_id     = signal_id,
             .pseudo_range  = m.pr_mes,
             .carrier_phase = m.cp_mes,
-            .doppler       = m.do_mes,
-            .snr           = m.cno * 1.0,
-            .lock_time     = m.locktime * 1e-3,
+            .doppler       = static_cast<double>(m.do_mes),
+            .snr           = static_cast<double>(m.cno),
+            .lock_time     = static_cast<double>(m.locktime) * 1e-3,
         };
 
         measurement(observation);

@@ -109,7 +109,7 @@ void EphemerisEngine::save_cache() NOEXCEPT {
     header.gps_count = gps_count;
     header.gal_count = gal_count;
     header.bds_count = bds_count;
-    header.timestamp = time(nullptr);
+    header.timestamp = static_cast<uint64_t>(time(nullptr));
     file.write(reinterpret_cast<char const*>(&header), sizeof(header));
 
     // Write GPS ephemeris

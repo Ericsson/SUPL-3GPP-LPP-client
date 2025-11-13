@@ -204,7 +204,7 @@ TlfInputStage::TlfInputStage(std::unique_ptr<InputStage> parent) NOEXCEPT
 
             auto next_time = mLastMessage + std::chrono::milliseconds(header.ms);
             mQueue.push({next_time, header.format, std::move(output)});
-            DEBUGF("added message at %f", next_time.time_since_epoch().count() / 1.0e9);
+            DEBUGF("added message at %f", static_cast<double>(next_time.time_since_epoch().count()) / 1.0e9);
         }
     };
 }
