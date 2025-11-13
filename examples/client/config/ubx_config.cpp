@@ -17,7 +17,7 @@ EXTERNAL_WARNINGS_POP
 
 namespace ubx_config {
 
-args::Group        gGroup{"Configuration:"};
+static args::Group gGroup{"Configuration:"};
 static args::Group gUbxGroup{gGroup, "UBX:"};
 
 static args::ValueFlagList<std::string> gInterfaces{
@@ -77,9 +77,9 @@ static format::ubx::CfgKey parse_cfg_key(std::string const& key_str) {
     // Try parsing as hex number
     try {
         if (key_str.substr(0, 2) == "0x" || key_str.substr(0, 2) == "0X") {
-            return std::stoul(key_str, nullptr, 16);
+            return static_cast<format::ubx::CfgKey>(std::stoul(key_str, nullptr, 16));
         }
-        return std::stoul(key_str, nullptr, 10);
+        return static_cast<format::ubx::CfgKey>(std::stoul(key_str, nullptr, 10));
     } catch (...) {
         throw args::ValidationError("--cfg-ubx: invalid key '" + key_str + "'");
     }
@@ -101,11 +101,12 @@ static format::ubx::CfgValue parse_cfg_value(format::ubx::CfgKey key,
         case format::ubx::CfgValue::Type::U2:
             return format::ubx::CfgValue::from_u2(static_cast<uint16_t>(std::stoul(value_str)));
         case format::ubx::CfgValue::Type::U4:
-            return format::ubx::CfgValue::from_u4(std::stoul(value_str));
+            return format::ubx::CfgValue::from_u4(static_cast<uint32_t>(std::stoul(value_str)));
         case format::ubx::CfgValue::Type::U8:
             return format::ubx::CfgValue::from_u8(std::stoull(value_str));
-        default: throw std::invalid_argument("unknown type");
+        case format::ubx::CfgValue::Type::UNKNOWN: throw std::invalid_argument("unknown type");
         }
+        throw std::invalid_argument("unknown type");
     } catch (...) {
         throw args::ValidationError("--cfg-ubx: invalid value '" + value_str + "' for key");
     }
@@ -422,7 +423,7 @@ void dump(UbxConfigConfig const& config) {
             case format::ubx::CfgValue::Type::U2: value_str = std::to_string(value.u2()); break;
             case format::ubx::CfgValue::Type::U4: value_str = std::to_string(value.u4()); break;
             case format::ubx::CfgValue::Type::U8: value_str = std::to_string(value.u8()); break;
-            default: value_str = "unknown"; break;
+            case format::ubx::CfgValue::Type::UNKNOWN: value_str = "unknown"; break;
             }
             DEBUGF("  0x%08X = %s", key, value_str.c_str());
         }

@@ -80,7 +80,7 @@ public:
         void add_measurement(Measurment const& measurment) NOEXCEPT {
             auto id = measurment.signal_id.absolute_id();
             if (id < 0 || static_cast<size_t>(id) >= SIGNAL_ABS_COUNT) return;
-            auto idx = static_cast<size_t>(id);
+            auto idx              = static_cast<size_t>(id);
             measurement_mask[idx] = true;
             measurements[idx]     = measurment;
             measurement_count += 1;

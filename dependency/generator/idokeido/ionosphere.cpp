@@ -66,13 +66,13 @@ bool CorrectionPointSet::ionospheric_residual(Vector3 const& llh, SatelliteId sv
         auto it = point.ionospheric_residual.find(sv_id);
         if (it == point.ionospheric_residual.end()) continue;
 
-        auto position =
+        auto point_position =
             Vector3{point.position.x() * constant::r2d, point.position.y() * constant::r2d, 0};
-        auto residual = it->second;
+        auto point_residual = it->second;
         residuals.push_back({
-            .position = position,
-            .residual = residual,
-            .distance = (ref - position).norm(),
+            .position = point_position,
+            .residual = point_residual,
+            .distance = (ref - point_position).norm(),
         });
     }
 

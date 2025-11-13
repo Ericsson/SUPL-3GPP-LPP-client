@@ -82,7 +82,7 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
     case RelativisticModel::None: rc = 0.0; break;
     case RelativisticModel::Broadcast: rc = eph.relativistic_correction_brdc; break;
     case RelativisticModel::Dotrv: rc = eph.relativistic_correction_dotrv; break;
-    };
+    }
 
     result.id              = id;
     result.transmit_time   = t;

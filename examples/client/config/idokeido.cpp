@@ -1,9 +1,9 @@
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
-
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
+
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
@@ -205,8 +205,8 @@ void dump(IdokeidoConfig const& config) {
         case ::idokeido::RelativisticModel::None: return "none";
         case ::idokeido::RelativisticModel::Broadcast: return "broadcast";
         case ::idokeido::RelativisticModel::Dotrv: return "dotrv";
-        default: return "unknown";
         }
+        return "unknown";
     }());
     DEBUGF("ionospheric_mode: %s", [&]() {
         switch (config.ionospheric_mode) {
@@ -214,8 +214,8 @@ void dump(IdokeidoConfig const& config) {
         case ::idokeido::IonosphericMode::Broadcast: return "broadcast";
         case ::idokeido::IonosphericMode::Dual: return "dual";
         case ::idokeido::IonosphericMode::Ssr: return "ssr";
-        default: return "unknown";
         }
+        return "unknown";
     }());
     DEBUGF("weight_function: %s", [&]() {
         switch (config.weight_function) {
@@ -223,16 +223,16 @@ void dump(IdokeidoConfig const& config) {
         case ::idokeido::WeightFunction::Snr: return "snr";
         case ::idokeido::WeightFunction::Elevation: return "elevation";
         case ::idokeido::WeightFunction::Variance: return "variance";
-        default: return "unknown";
         }
+        return "unknown";
     }());
     DEBUGF("epoch_selection: %s", [&]() {
         switch (config.epoch_selection) {
         case ::idokeido::EpochSelection::FirstObservation: return "first";
         case ::idokeido::EpochSelection::LastObservation: return "last";
         case ::idokeido::EpochSelection::MeanObservation: return "mean";
-        default: return "unknown";
         }
+        return "unknown";
     }());
     DEBUGF("observation_window: %fs", config.observation_window);
 }
