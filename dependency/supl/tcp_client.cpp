@@ -133,7 +133,7 @@ bool TcpClient::initialize_socket() {
             if (set_result < 0) {
                 WARNF("failed to bind socket to interface \"%s\": " ERRNO_FMT, mInterface.c_str(),
                       ERRNO_ARGS(errno));
-                close(fd);
+                ::close(fd);
                 VERBOSEF("::close(%d)", fd);
                 continue;
             }
@@ -141,19 +141,20 @@ bool TcpClient::initialize_socket() {
 
         VERBOSEF("created socket %d", fd);
 
-        auto addr_str = addr_to_string(aip->ai_addr, aip->ai_addrlen);
-        result        = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
+        auto addr_str    = addr_to_string(aip->ai_addr, aip->ai_addrlen);
+        result           = ::connect(fd, aip->ai_addr, aip->ai_addrlen);
+        auto saved_errno = errno;
         VERBOSEF("::connect(%d, %p, %u) = %d", fd, aip->ai_addr, aip->ai_addrlen, result);
         if (result != 0) {
-            if (errno == EINPROGRESS) {
+            if (saved_errno == EINPROGRESS) {
                 VERBOSEF("connection inprogress to %s", addr_str.c_str());
                 mSocket = fd;
                 return true;
             }
 
-            WARNF("failed to connect to %s: " ERRNO_FMT, addr_str.c_str(), ERRNO_ARGS(errno));
+            WARNF("failed to connect to %s: " ERRNO_FMT, addr_str.c_str(), ERRNO_ARGS(saved_errno));
             VERBOSEF("closing socket %d", fd);
-            close(fd);
+            ::close(fd);
             VERBOSEF("::close(%d)", fd);
             continue;
         } else {

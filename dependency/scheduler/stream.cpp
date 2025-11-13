@@ -117,15 +117,16 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
 
     if (mLeftOverCount > 0) {
         DEBUGF("writing left over %ld bytes", mLeftOverCount);
-        auto offset  = sizeof(mBuffer) - mLeftOverCount;
-        auto written = ::write(dest_fd, mBuffer + offset, sizeof(mBuffer) - offset);
+        auto offset      = sizeof(mBuffer) - mLeftOverCount;
+        auto written     = ::write(dest_fd, mBuffer + offset, sizeof(mBuffer) - offset);
+        auto saved_errno = errno;
         VERBOSEF("::write(%d, %p, %ld) = %ld", dest_fd, mBuffer + offset, sizeof(mBuffer) - offset,
                  written);
         if (written < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK) {
                 TRACEF("pipe full, will retry leftover data next tick");
             } else {
-                WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(errno));
+                WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
             }
             return;
         }
@@ -144,6 +145,7 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
 #ifdef HAVE_SPLICE
         auto spliced =
             ::splice(mSourceFd, nullptr, dest_fd, nullptr, left, SPLICE_F_MOVE | SPLICE_F_NONBLOCK);
+        auto splice_errno = errno;
         VERBOSEF("::splice(%d, NULL, %d, NULL, %zu, SPLICE_F_MOVE|SPLICE_F_NONBLOCK) = %ld",
                  mSourceFd, dest_fd, left, spliced);
 
@@ -157,11 +159,11 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
             break;
         }
 
-        if (errno != EINVAL && errno != ENOSYS) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        if (splice_errno != EINVAL && splice_errno != ENOSYS) {
+            if (splice_errno == EAGAIN || splice_errno == EWOULDBLOCK) {
                 break;
             }
-            ERRORF("splice failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            ERRORF("splice failed: " ERRNO_FMT, ERRNO_ARGS(splice_errno));
             return;
         }
 #endif
@@ -182,13 +184,14 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
             break;
         }
 
-        auto written = ::write(dest_fd, mBuffer, static_cast<size_t>(count));
+        auto written     = ::write(dest_fd, mBuffer, static_cast<size_t>(count));
+        auto saved_errno = errno;
         VERBOSEF("::write(%d, %p, %ld) = %ld", dest_fd, mBuffer, count, written);
         if (written < 0) {
-            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK) {
                 TRACEF("pipe full, saving %ld bytes for next tick", count);
             } else {
-                WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(errno));
+                WARNF("failed to write to destination: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
             }
             mLeftOverCount = static_cast<size_t>(count);
             return;

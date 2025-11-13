@@ -363,19 +363,21 @@ bool TcpClientOutput::connect() NOEXCEPT {
     VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", mFd, fcntl_flags | O_NONBLOCK, fcntl_reslut);
 
     auto result = ::connect(mFd, reinterpret_cast<struct sockaddr*>(&mAddress), mAddressLength);
+    auto saved_errno = errno;
     VERBOSEF("::connect(%d, %p, %d) = %d", mFd, &mAddress, mAddressLength, result);
     if (result < 0) {
-        if (errno == EINPROGRESS) {
+        if (saved_errno == EINPROGRESS) {
             // connection is in progress
             VERBOSEF("connection in progress");
             mState = STATE_CONNECTING;
         } else {
             if (mHost.size() > 0) {
-                WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
+                WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort,
+                      ERRNO_ARGS(saved_errno));
             } else if (mPath.size() > 0) {
-                WARNF("connect failed: \"%s\", " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(errno));
+                WARNF("connect failed: \"%s\", " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(saved_errno));
             } else {
-                WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+                WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
             }
             mState = STATE_ERROR;
             return false;
