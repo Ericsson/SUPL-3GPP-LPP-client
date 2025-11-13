@@ -16,6 +16,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(example LANGUAGES C CXX)
 
+set(CLIENT_VERSION "4.0.22")
+set(CLIENT_VERSION_INT "0x040016")
+
 include(cmake/clang-tidy.cmake)
 include(cmake/cppcheck.cmake)
 include(cmake/iwyu.cmake)
@@ -23,10 +26,10 @@ include(cmake/color.cmake)
 include(cmake/vars.cmake)
 include(cmake/compiler.cmake)
 include(cmake/target.cmake)
+include(cmake/git-version.cmake)
 
 add_definitions(-D_POSIX_C_SOURCE=200809L)
-add_definitions(-DCLIENT_VERSION="4.0.22")
-add_definitions(-DCLIENT_VERSION_INT=0x040016)
+include_directories(${CMAKE_BINARY_DIR}/generated)
 
 find_package(Threads REQUIRED)
 

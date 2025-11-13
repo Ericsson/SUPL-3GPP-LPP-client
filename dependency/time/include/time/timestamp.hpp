@@ -89,17 +89,7 @@ struct TimePoint {
 
 class LeapSeconds {
 public:
-    NODISCARD static int64_t count() {
-#define LAST_UPDATE_CHECKED 0x040016
-#ifndef CLIENT_VERSION_INT
-#error "Please define CLIENT_VERSION_INT"
-#endif
-#if LAST_UPDATE_CHECKED < CLIENT_VERSION_INT
-#error "Please update the leap seconds table"
-#endif
-        // TODO(ewasjon): This should be based on a provided input time.
-        return 37;  // TODO(ewasjon): SHOULD NOT BE HARDCODED!
-    }
+    NODISCARD static int64_t count();
 };
 
 }  // namespace ts
