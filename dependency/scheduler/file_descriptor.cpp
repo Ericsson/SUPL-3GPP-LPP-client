@@ -14,6 +14,12 @@ LOGLET_MODULE2(sched, task);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, task)
 
 namespace scheduler {
+
+static CONSTEXPR uint32_t EPOLL_IN  = EPOLLIN;
+static CONSTEXPR uint32_t EPOLL_OUT = EPOLLOUT;
+static CONSTEXPR uint32_t EPOLL_ERR = EPOLLERR;
+static CONSTEXPR uint32_t EPOLL_HUP = EPOLLHUP;
+
 FileDescriptorTask::FileDescriptorTask() NOEXCEPT : on_read{},
                                                     on_error{},
                                                     on_write{},
@@ -23,16 +29,16 @@ FileDescriptorTask::FileDescriptorTask() NOEXCEPT : on_read{},
     VSCOPE_FUNCTION();
     mEvent.name  = "fd";
     mEvent.event = [this](struct epoll_event* event) {
-        VERBOSEF("fd task: event: %d %s%s%s%s", mFd, (event->events & EPOLLIN) ? "read " : "",
-                 (event->events & EPOLLOUT) ? "write " : "",
-                 (event->events & EPOLLERR) ? "error " : "",
-                 (event->events & EPOLLHUP) ? "hup " : "");
-        if ((event->events & EPOLLIN) != 0 && this->on_read) {
+        auto events = event->events;
+        VERBOSEF("fd task: event: %d %s%s%s%s", mFd, (events & EPOLL_IN) ? "read " : "",
+                 (events & EPOLL_OUT) ? "write " : "", (events & EPOLL_ERR) ? "error " : "",
+                 (events & EPOLL_HUP) ? "hup " : "");
+        if ((events & EPOLL_IN) != 0 && this->on_read) {
             TRACE_INDENT_SCOPE();
             this->on_read(mFd);
         }
 
-        if ((event->events & EPOLLOUT) != 0 && this->on_write) {
+        if ((events & EPOLL_OUT) != 0 && this->on_write) {
             TRACE_INDENT_SCOPE();
             this->on_write(mFd);
         }

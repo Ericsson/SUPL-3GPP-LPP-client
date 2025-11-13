@@ -17,6 +17,13 @@ LOGLET_MODULE2(sched, socket);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, socket)
 
 namespace scheduler {
+
+static CONSTEXPR uint32_t EPOLL_IN    = EPOLLIN;
+static CONSTEXPR uint32_t EPOLL_OUT   = EPOLLOUT;
+static CONSTEXPR uint32_t EPOLL_ERR   = EPOLLERR;
+static CONSTEXPR uint32_t EPOLL_HUP   = EPOLLHUP;
+static CONSTEXPR uint32_t EPOLL_RDHUP = EPOLLRDHUP;
+
 ListenerTask::ListenerTask(int listener_fd) NOEXCEPT : mScheduler{nullptr},
                                                        mEvent{},
                                                        mListenerFd{listener_fd} {
@@ -40,17 +47,18 @@ ListenerTask::~ListenerTask() NOEXCEPT {
 }
 
 void ListenerTask::event(struct epoll_event* event) NOEXCEPT {
+    auto events = event->events;
     VERBOSEF("event(%p) fd=%d events: %s%s%s%s%s", event, mListenerFd,
-             (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
-             (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
-             (event->events & EPOLLRDHUP) ? "rdhup " : "");
+             (events & EPOLL_IN) ? "read " : "", (events & EPOLL_OUT) ? "write " : "",
+             (events & EPOLL_ERR) ? "error " : "", (events & EPOLL_HUP) ? "hup " : "",
+             (events & EPOLL_RDHUP) ? "rdhup " : "");
     TRACE_INDENT_SCOPE();
 
-    if ((event->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
+    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
         if (on_error) {
             this->on_error(*this);
         }
-    } else if ((event->events & EPOLLIN) != 0) {
+    } else if ((events & EPOLL_IN) != 0) {
         this->accept();
     }
 }
@@ -291,17 +299,18 @@ UdpListenerTask::~UdpListenerTask() NOEXCEPT {
 }
 
 void UdpListenerTask::event(struct epoll_event* event) NOEXCEPT {
+    auto events = event->events;
     VERBOSEF("event(%p) fd=%d events: %s%s%s%s%s", event, mListenerFd,
-             (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
-             (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
-             (event->events & EPOLLRDHUP) ? "rdhup " : "");
+             (events & EPOLL_IN) ? "read " : "", (events & EPOLL_OUT) ? "write " : "",
+             (events & EPOLL_ERR) ? "error " : "", (events & EPOLL_HUP) ? "hup " : "",
+             (events & EPOLL_RDHUP) ? "rdhup " : "");
     TRACE_INDENT_SCOPE();
 
-    if ((event->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
+    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
         if (on_error) {
             this->on_error(*this);
         }
-    } else if ((event->events & EPOLLIN) != 0) {
+    } else if ((events & EPOLL_IN) != 0) {
         if (on_read) {
             this->on_read(*this);
         }
@@ -435,21 +444,21 @@ SocketTask::~SocketTask() NOEXCEPT {
 }
 
 void SocketTask::event(struct epoll_event* event) NOEXCEPT {
-    VERBOSEF("event(%p) fd=%d events: %s%s%s%s%s", event, mFd,
-             (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
-             (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
-             (event->events & EPOLLRDHUP) ? "rdhup " : "");
+    auto events = event->events;
+    VERBOSEF("event(%p) fd=%d events: %s%s%s%s%s", event, mFd, (events & EPOLL_IN) ? "read " : "",
+             (events & EPOLL_OUT) ? "write " : "", (events & EPOLL_ERR) ? "error " : "",
+             (events & EPOLL_HUP) ? "hup " : "", (events & EPOLL_RDHUP) ? "rdhup " : "");
     TRACE_INDENT_SCOPE();
 
-    if ((event->events & EPOLLIN) != 0) {
+    if ((events & EPOLL_IN) != 0) {
         this->read();
     }
 
-    if ((event->events & EPOLLOUT) != 0) {
+    if ((events & EPOLL_OUT) != 0) {
         this->write();
     }
 
-    if ((event->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
+    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
         this->error();
     }
 }
@@ -761,20 +770,21 @@ void TcpConnectTask::disconnect() NOEXCEPT {
 }
 
 void TcpConnectTask::event(struct epoll_event* event) NOEXCEPT {
+    auto events = event->events;
     VERBOSEF("event(%p) (state=%s) fd=%d events: %s%s%s%s%s", event, state_to_string(mState), mFd,
-             (event->events & EPOLLIN) ? "read " : "", (event->events & EPOLLOUT) ? "write " : "",
-             (event->events & EPOLLERR) ? "error " : "", (event->events & EPOLLHUP) ? "hup " : "",
-             (event->events & EPOLLRDHUP) ? "rdhup " : "");
+             (events & EPOLL_IN) ? "read " : "", (events & EPOLL_OUT) ? "write " : "",
+             (events & EPOLL_ERR) ? "error " : "", (events & EPOLL_HUP) ? "hup " : "",
+             (events & EPOLL_RDHUP) ? "rdhup " : "");
     TRACE_INDENT_SCOPE();
 
-    if ((event->events & (EPOLLERR | EPOLLHUP | EPOLLRDHUP)) != 0) {
+    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
         this->error();
     } else {
-        if ((event->events & EPOLLIN) != 0) {
+        if ((events & EPOLL_IN) != 0) {
             this->read();
         }
 
-        if ((event->events & EPOLLOUT) != 0) {
+        if ((events & EPOLL_OUT) != 0) {
             this->write();
         }
     }
