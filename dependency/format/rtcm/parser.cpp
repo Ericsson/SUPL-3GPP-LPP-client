@@ -78,6 +78,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto result = crc(message);
     if (result != CRCResult::OK) {
         skip(1u);
+        DEBUGF("checksum failed");
         return nullptr;
     }
 
@@ -85,7 +86,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 
     DF002 type = static_cast<uint16_t>(message[3] << 4) | static_cast<uint16_t>(message[4] >> 4);
 
-    DEBUGF("decoding RTCM message of type: %04d", type.value());
+    DEBUGF("rtcm: %04d, data: %zu bytes", type.value(), message.size());
     switch (type) {
     case 1019: return Rtcm1019::parse(message);
     case 1042: return Rtcm1042::parse(message);

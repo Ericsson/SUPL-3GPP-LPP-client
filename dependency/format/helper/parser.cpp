@@ -42,7 +42,7 @@ bool Parser::append(uint8_t const* data, size_t length) NOEXCEPT {
         }
     }
 
-    DEBUGF("appended %u bytes", length32);
+    VERBOSEF("appended %u bytes", length32);
     return true;
 }
 

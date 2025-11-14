@@ -56,12 +56,12 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
     payload.version            = version;
     payload.reserved0          = reserved0;
 
-    DEBUGF("rcv_tow=%f", rcv_tow);
-    DEBUGF("week=%u", week);
-    DEBUGF("leap_s=%d", leap_s);
-    DEBUGF("num_meas=%u", num_meas);
-    DEBUGF("rec_stat=0x%02X", rec_stat);
-    DEBUGF("version=%u", version);
+    VERBOSEF("rcv_tow=%f", rcv_tow);
+    VERBOSEF("week=%u", week);
+    VERBOSEF("leap_s=%d", leap_s);
+    VERBOSEF("num_meas=%u", num_meas);
+    VERBOSEF("rec_stat=0x%02X", rec_stat);
+    VERBOSEF("version=%u", version);
 
     std::vector<raw::RxmRawxMeasurement> measurements;
     for (uint8_t i = 0; i < num_meas; i++) {

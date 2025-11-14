@@ -103,7 +103,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     auto data_length   = data_end - data_start;
     auto data_payload  = payload.substr(data_start, data_length);
     auto data_checksum = payload.substr(data_end + 1, data_end + 3);
-    DEBUGF("prefix: %s, data: %s", prefix.c_str(), data_payload.c_str());
+    DEBUGF("nmea: %s, data: %s", prefix.c_str(), data_payload.c_str());
 
     // parse message
     if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {
