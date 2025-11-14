@@ -1,6 +1,6 @@
+#include <cstring>
 #include <netinet/in.h>
 #include <sstream>
-#include <string.h>
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>

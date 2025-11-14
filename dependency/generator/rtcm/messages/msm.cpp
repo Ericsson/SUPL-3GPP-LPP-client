@@ -4,9 +4,9 @@
 #include "helper.hpp"
 
 #include <algorithm>
+#include <cinttypes>
 #include <cmath>
 #include <cstdio>
-#include <inttypes.h>
 
 #include <time/bdt.hpp>
 #include <time/glo.hpp>

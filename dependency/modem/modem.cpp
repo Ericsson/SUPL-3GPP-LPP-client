@@ -1,7 +1,7 @@
 #include "modem.hpp"
 
-#include <ctype.h>
-#include <inttypes.h>
+#include <cctype>
+#include <cinttypes>
 #include <loglet/loglet.hpp>
 #include <scheduler/scheduler.hpp>
 

@@ -1,8 +1,8 @@
 #include "options.hpp"
 
-#include <inttypes.h>
+#include <cinttypes>
+#include <cstring>
 #include <netinet/in.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 

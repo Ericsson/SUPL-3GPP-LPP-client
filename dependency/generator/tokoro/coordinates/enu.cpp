@@ -1,8 +1,8 @@
 #include "constant.hpp"
 #include "coordinate.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
-#include <math.h>
 
 LOGLET_MODULE2(tokoro, enu);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, enu)

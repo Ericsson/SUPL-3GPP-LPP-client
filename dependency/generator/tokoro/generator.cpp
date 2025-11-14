@@ -25,8 +25,8 @@ EXTERNAL_WARNINGS_PUSH
 EXTERNAL_WARNINGS_POP
 
 #include <algorithm>
+#include <cmath>
 #include <map>
-#include <math.h>
 #include <unordered_map>
 
 #include <ephemeris/ephemeris.hpp>

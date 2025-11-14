@@ -1,6 +1,6 @@
 #include "encoder.hpp"
+#include <cinttypes>
 #include <cstdio>
-#include <inttypes.h>
 #include "crc_24q.hpp"
 
 void Encoder::append_bit(uint8_t bit) {

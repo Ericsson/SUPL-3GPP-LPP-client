@@ -1,9 +1,9 @@
 #include "file_descriptor.hpp"
 
-#include <errno.h>
+#include <cerrno>
+#include <cstring>
 #include <fcntl.h>
 #include <functional>
-#include <string.h>
 #include <sys/eventfd.h>
 #include <sys/timerfd.h>
 #include <unistd.h>

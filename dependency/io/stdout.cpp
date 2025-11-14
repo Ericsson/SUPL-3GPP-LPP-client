@@ -1,9 +1,9 @@
 #include "stdout.hpp"
 
-#include <errno.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <fcntl.h>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <loglet/loglet.hpp>

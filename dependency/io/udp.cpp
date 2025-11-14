@@ -1,14 +1,14 @@
 #include "udp.hpp"
 
 #include <arpa/inet.h>
-#include <errno.h>
+#include <cerrno>
+#include <cstdio>
+#include <cstring>
 #include <fcntl.h>
 #include <functional>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <poll.h>
-#include <stdio.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <unistd.h>

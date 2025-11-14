@@ -1,7 +1,6 @@
 #include "ecef.hpp"
 
 #include <cmath>
-#include <math.h>
 
 namespace idokeido {
 

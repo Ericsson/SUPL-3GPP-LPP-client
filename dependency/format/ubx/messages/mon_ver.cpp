@@ -34,8 +34,8 @@ std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder, std::vector<uint8_t>
     auto extension_count = (decoder.remaining() - 40) / 30;
 
     auto payload       = raw::MonVer{};
-    payload.sw_version = decoder.CH(30);
-    payload.hw_version = decoder.CH(10);
+    payload.sw_version = decoder.ch(30);
+    payload.hw_version = decoder.ch(10);
     payload.extensions.reserve(extension_count);
     for (uint32_t i = 0; i < extension_count; ++i) {
         payload.extensions.push_back(decoder.ch(30));

@@ -1,7 +1,7 @@
 #include "messages/nav_pvt.hpp"
 #include "decoder.hpp"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <time/utc.hpp>
 

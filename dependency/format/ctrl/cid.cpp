@@ -1,6 +1,6 @@
 #include "cid.hpp"
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace format {
 namespace ctrl {

@@ -1,7 +1,6 @@
+#include <cmath>
 #include <cxx11_compat.hpp>
 #include <version.hpp>
-
-#include <cmath>
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH

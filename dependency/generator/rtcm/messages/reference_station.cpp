@@ -2,7 +2,7 @@
 #include "encoder.hpp"
 #include "helper.hpp"
 
-#include <stdio.h>
+#include <cstdio>
 
 using namespace generator::rtcm;
 

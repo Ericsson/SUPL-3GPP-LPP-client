@@ -1,7 +1,7 @@
 #include "scheduler/scheduler.hpp"
 
+#include <cstring>
 #include <stdexcept>
-#include <string.h>
 #include <sys/eventfd.h>
 #include <unistd.h>
 

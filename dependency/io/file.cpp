@@ -1,9 +1,9 @@
 #include "file.hpp"
 
+#include <cstdio>
+#include <cstring>
 #include <fcntl.h>
 #include <sstream>
-#include <stdio.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <scheduler/file_descriptor.hpp>

@@ -3,7 +3,7 @@
 #include "encoder.hpp"
 #include "parser.hpp"
 
-#include <stdio.h>
+#include <cstdio>
 
 #include <loglet/loglet.hpp>
 

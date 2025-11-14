@@ -1,8 +1,8 @@
 #include "stream.hpp"
 
-#include <errno.h>
+#include <cerrno>
+#include <cstring>
 #include <fcntl.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <loglet/loglet.hpp>

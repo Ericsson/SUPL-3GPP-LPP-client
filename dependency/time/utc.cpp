@@ -6,10 +6,10 @@
 #include "tai.hpp"
 
 #include <array>
-#include <inttypes.h>
-#include <math.h>
+#include <cinttypes>
+#include <cmath>
+#include <ctime>
 #include <sys/time.h>
-#include <time.h>
 
 namespace ts {
 

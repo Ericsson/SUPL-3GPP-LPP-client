@@ -1,6 +1,6 @@
 #include "message.hpp"
 
-#include <stdio.h>
+#include <cstdio>
 
 namespace format {
 namespace rtcm {

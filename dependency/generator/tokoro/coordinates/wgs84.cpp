@@ -2,7 +2,6 @@
 #include "constant.hpp"
 
 #include <cmath>
-#include <math.h>
 
 namespace generator {
 namespace tokoro {

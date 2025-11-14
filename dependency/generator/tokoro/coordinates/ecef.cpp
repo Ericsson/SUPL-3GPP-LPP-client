@@ -1,7 +1,7 @@
 #include "ecef.hpp"
 #include "constant.hpp"
 
-#include <math.h>
+#include <cmath>
 
 #include <maths/float3.hpp>
 
