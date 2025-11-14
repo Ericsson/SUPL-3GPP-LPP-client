@@ -3,6 +3,7 @@
 #include <time/bdt.hpp>
 
 LOGLET_MODULE2(p, rtcm2eph);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, rtcm2eph)
 
 void Rtcm2Eph::handle_gps_lnav(streamline::System& system, format::rtcm::Rtcm1019* rtcm) NOEXCEPT {

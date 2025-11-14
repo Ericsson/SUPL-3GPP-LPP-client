@@ -16,6 +16,7 @@
 #include <iomanip>
 
 LOGLET_MODULE2(idokeido, spp);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(idokeido, spp)
 
 namespace idokeido {

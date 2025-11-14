@@ -13,6 +13,7 @@
 #endif
 
 LOGLET_MODULE2(io, stdout);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(io, stdout)
 
 namespace io {

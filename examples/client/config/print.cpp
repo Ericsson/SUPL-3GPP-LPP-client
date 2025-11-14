@@ -2,6 +2,7 @@
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #include <external_warnings.hpp>

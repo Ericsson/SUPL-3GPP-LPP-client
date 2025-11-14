@@ -41,6 +41,7 @@ EXTERNAL_WARNINGS_POP
 #endif
 
 LOGLET_MODULE2(idokeido, corr);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(idokeido, corr)
 
 namespace idokeido {

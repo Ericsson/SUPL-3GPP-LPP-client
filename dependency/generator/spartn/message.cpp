@@ -12,6 +12,7 @@ EXTERNAL_WARNINGS_POP
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(spartn, message);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, message)
 
 #define GNSS_ID_GPS 0

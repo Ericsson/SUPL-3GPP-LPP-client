@@ -11,6 +11,7 @@
 #include <scheduler/scheduler.hpp>
 
 LOGLET_MODULE(modem_ctrl);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(modem_ctrl)
 
 static int start_server(uint16_t port) {

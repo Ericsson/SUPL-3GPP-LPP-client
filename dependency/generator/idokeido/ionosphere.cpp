@@ -6,6 +6,7 @@
 #include "idw.hpp"
 
 LOGLET_MODULE2(idokeido, iono);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(idokeido, iono)
 
 namespace idokeido {

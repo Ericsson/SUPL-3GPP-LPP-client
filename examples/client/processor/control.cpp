@@ -5,6 +5,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(p, ctrl);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ctrl)
 
 void CtrlPrint::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {

@@ -8,6 +8,7 @@
 #include <time/utc.hpp>
 
 LOGLET_MODULE2(format, antex);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, antex)
 
 namespace format {

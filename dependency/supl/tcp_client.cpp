@@ -12,6 +12,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(supl, tcp);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(supl, tcp)
 
 namespace supl {

@@ -5,6 +5,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE3(idokeido, sat, pos);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(idokeido, sat, pos)
 
 namespace idokeido {

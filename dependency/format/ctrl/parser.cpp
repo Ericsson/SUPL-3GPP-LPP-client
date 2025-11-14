@@ -7,6 +7,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE(ctrl);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ctrl)
 
 namespace format {

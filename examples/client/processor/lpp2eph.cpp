@@ -24,6 +24,7 @@ EXTERNAL_WARNINGS_PUSH
 EXTERNAL_WARNINGS_POP
 
 LOGLET_MODULE2(p, lpp2eph);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, lpp2eph)
 
 void Lpp2Eph::inspect(streamline::System& system, DataType const& message, uint64_t) NOEXCEPT {

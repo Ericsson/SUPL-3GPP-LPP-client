@@ -25,6 +25,7 @@ EXTERNAL_WARNINGS_POP
 #include <time/gps.hpp>
 
 LOGLET_MODULE2(lpp, pli);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, pli)
 
 #define ALLOC_ZERO(type) reinterpret_cast<type*>(calloc(1, sizeof(type)))

@@ -4,6 +4,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE3(format, nmea, gst);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, nmea, gst)
 
 namespace format {

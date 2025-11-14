@@ -5,6 +5,7 @@
 #include <scheduler/scheduler.hpp>
 
 LOGLET_MODULE2(p, test);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, test)
 
 static std::unique_ptr<scheduler::PeriodicTask> gPeriodicTask = nullptr;

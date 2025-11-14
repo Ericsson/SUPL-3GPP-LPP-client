@@ -6,6 +6,7 @@
 #include <lpp/session.hpp>
 
 LOGLET_MODULE2(p, l2f);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2f)
 
 void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {

@@ -5,6 +5,7 @@
 #include <time/gps.hpp>
 
 LOGLET_MODULE2(idokeido, klobuchar);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(idokeido, klobuchar)
 
 namespace idokeido {

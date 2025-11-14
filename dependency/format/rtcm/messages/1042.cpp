@@ -8,6 +8,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE3(format, rtcm, rtcm1042);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(format, rtcm, rtcm1042)
 
 namespace format {

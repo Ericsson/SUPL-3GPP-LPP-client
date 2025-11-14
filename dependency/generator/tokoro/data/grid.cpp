@@ -40,6 +40,7 @@ EXTERNAL_WARNINGS_POP
 #endif
 
 LOGLET_MODULE3(tokoro, data, grid);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(tokoro, data, grid)
 
 namespace generator {

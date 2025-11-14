@@ -24,6 +24,7 @@ EXTERNAL_WARNINGS_POP
 
 LOGLET_MODULE2(lpp, session);
 LOGLET_MODULE2(lpp, print);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, session)
 
 namespace lpp {

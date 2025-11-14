@@ -47,6 +47,7 @@ EXTERNAL_WARNINGS_POP
 #define ALLOC_ZERO(type) reinterpret_cast<type*>(calloc(1, sizeof(type)))
 
 LOGLET_MODULE2(lpp, rad);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(lpp, rad)
 
 namespace lpp {

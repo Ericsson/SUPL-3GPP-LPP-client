@@ -7,6 +7,7 @@
 #include <cmath>
 
 LOGLET_MODULE2(p, ubx);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ubx)
 
 void UbxPrint::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {

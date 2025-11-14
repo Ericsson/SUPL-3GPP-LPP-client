@@ -7,6 +7,7 @@
 #include <sys/stat.h>
 
 LOGLET_MODULE2(p, chunked_log);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, chunked_log)
 
 ChunkedLogOutput::ChunkedLogOutput(std::string const& base_path) NOEXCEPT : mBasePath(base_path),

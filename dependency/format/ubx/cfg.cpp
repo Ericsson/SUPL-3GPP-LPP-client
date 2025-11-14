@@ -5,6 +5,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE_FORWARD_REF(ubx);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ubx)
 
 namespace format {

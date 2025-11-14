@@ -8,6 +8,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE(sched);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(sched)
 
 namespace scheduler {

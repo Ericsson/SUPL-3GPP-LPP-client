@@ -9,6 +9,7 @@
 #include <ostream>
 
 LOGLET_MODULE2(p, ido);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ido)
 
 template <typename T>

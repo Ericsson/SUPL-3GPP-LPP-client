@@ -7,6 +7,7 @@
 #include <time/utc.hpp>
 
 LOGLET_MODULE2(p, li);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, li)
 
 void LocationCollector::inspect(streamline::System&, DataType const& location, uint64_t) NOEXCEPT {

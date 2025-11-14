@@ -6,6 +6,7 @@
 #include <scheduler/scheduler.hpp>
 
 LOGLET_MODULE(modem);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(modem)
 
 namespace modem {

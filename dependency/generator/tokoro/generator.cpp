@@ -36,6 +36,7 @@ EXTERNAL_WARNINGS_POP
 #include <time/utc.hpp>
 
 LOGLET_MODULE(tokoro);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(tokoro)
 
 namespace generator {

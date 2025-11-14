@@ -8,6 +8,7 @@
 #include "config.hpp"
 
 LOGLET_MODULE2(p, rtcm);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, rtcm)
 
 void RtcmPrint::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {

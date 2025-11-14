@@ -5,6 +5,7 @@
 #include <time/utc.hpp>
 
 LOGLET_MODULE2(tokoro, helper);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, helper)
 
 namespace generator {

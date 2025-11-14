@@ -2,6 +2,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(p, ubx2eph);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, ubx2eph)
 
 void Ubx2Eph::handle_gps_lnav(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT {

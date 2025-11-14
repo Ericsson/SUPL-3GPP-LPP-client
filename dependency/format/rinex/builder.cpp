@@ -10,6 +10,7 @@
 #include <version.hpp>
 
 LOGLET_MODULE2(format, rinex);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(format, rinex)
 
 namespace format {

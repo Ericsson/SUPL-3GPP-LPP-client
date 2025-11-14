@@ -6,6 +6,7 @@
 #include <time/utc.hpp>
 
 LOGLET_MODULE(eph);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(eph)
 
 namespace ephemeris {

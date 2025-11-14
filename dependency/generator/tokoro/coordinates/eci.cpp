@@ -8,6 +8,7 @@
 #include <time/utc.hpp>
 
 LOGLET_MODULE2(tokoro, eci);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, eci)
 
 namespace generator {

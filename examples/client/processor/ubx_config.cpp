@@ -11,6 +11,7 @@
 #include "ubx_options.hpp"
 
 LOGLET_MODULE(ubx_config);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ubx_config)
 
 UbxConfigApplicator::UbxConfigApplicator(const UbxConfigConfig& config,

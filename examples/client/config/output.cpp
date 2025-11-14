@@ -8,6 +8,7 @@
 #include "../config.hpp"
 #include "../processor/chunked_log.hpp"
 
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 #include <external_warnings.hpp>

@@ -81,6 +81,7 @@
 #pragma GCC diagnostic pop
 
 LOGLET_MODULE2(p, possib);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, possib)
 
 void PossibOutput::inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT {

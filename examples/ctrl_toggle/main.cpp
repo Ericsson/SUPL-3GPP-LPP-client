@@ -15,6 +15,7 @@ EXTERNAL_WARNINGS_POP
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE(ctrl_toggle);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ctrl_toggle)
 
 struct Cell {

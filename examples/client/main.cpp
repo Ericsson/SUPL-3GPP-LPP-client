@@ -63,6 +63,7 @@ EXTERNAL_WARNINGS_POP
 LOGLET_MODULE(client);
 LOGLET_MODULE(output);
 LOGLET_MODULE(p);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client)
 
 static void client_request(Program& program, lpp::Client& client) {

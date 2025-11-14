@@ -25,6 +25,7 @@ EXTERNAL_WARNINGS_POP
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE_FORWARD_REF(spartn);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(spartn)
 
 namespace generator {

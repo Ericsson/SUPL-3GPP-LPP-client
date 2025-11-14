@@ -29,6 +29,7 @@ EXTERNAL_WARNINGS_POP
 #include <asn.1/helper.hpp>
 
 LOGLET_MODULE2(supl, encode);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(supl, encode)
 
 namespace supl {

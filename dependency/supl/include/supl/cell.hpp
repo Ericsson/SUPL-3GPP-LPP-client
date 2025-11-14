@@ -3,6 +3,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE_FORWARD_REF(supl);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(supl)
 
 namespace supl {

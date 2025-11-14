@@ -10,6 +10,7 @@
 #include <lpp/location_information.hpp>
 
 LOGLET_MODULE2(p, nmea);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, nmea)
 
 using namespace format::nmea;

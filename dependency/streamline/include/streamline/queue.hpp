@@ -14,6 +14,7 @@
 #endif
 
 LOGLET_MODULE_FORWARD_REF(streamline);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(streamline)
 
 namespace streamline {

@@ -4,6 +4,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(idokeido, enu);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(idokeido, enu)
 
 namespace idokeido {

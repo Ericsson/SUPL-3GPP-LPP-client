@@ -4,6 +4,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(tokoro, geoid);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, geoid)
 
 namespace generator {

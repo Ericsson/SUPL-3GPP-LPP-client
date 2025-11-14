@@ -4,6 +4,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(p, l2r);
+#undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2r)
 
 Lpp2Rtcm::Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config)
