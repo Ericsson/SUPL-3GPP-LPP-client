@@ -21,8 +21,8 @@ public:
     EpeMessage& operator=(EpeMessage const&) = delete;
     EpeMessage& operator=(EpeMessage&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     /// ----- EPE source messages -----
 

@@ -4,6 +4,8 @@
 #include <maths/float3.hpp>
 #include <time/bdt.hpp>
 
+#include <cmath>
+
 namespace ephemeris {
 
 struct BdsEphemeris {
@@ -52,8 +54,8 @@ struct BdsEphemeris {
         if (iode != other.iode) return false;
         if (iodc != other.iodc) return false;
         if (lpp_iod != other.lpp_iod) return false;
-        if (std::abs(toe - other.toe) > 1e-3) return false;
-        if (std::abs(toc - other.toc) > 1e-3) return false;
+        if (std::fabs(toe - other.toe) > 1e-3) return false;
+        if (std::fabs(toc - other.toc) > 1e-3) return false;
         if (sv_health != other.sv_health) return false;
         return true;
     }

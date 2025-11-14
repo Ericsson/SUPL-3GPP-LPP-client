@@ -147,7 +147,7 @@ protected:
         StateError,
     };
 
-    char const* state_to_string(State state) const NOEXCEPT;
+    NODISCARD char const* state_to_string(State state) const NOEXCEPT;
 
     State                   mState;
     Scheduler*              mScheduler;

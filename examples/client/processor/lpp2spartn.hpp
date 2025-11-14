@@ -14,8 +14,8 @@ public:
     Lpp2Spartn(OutputConfig const& output, Lpp2SpartnConfig const& config);
     ~Lpp2Spartn() override;
 
-    char const* name() const NOEXCEPT override { return "Lpp2Spartn"; }
-    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    NODISCARD char const* name() const NOEXCEPT override { return "Lpp2Spartn"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     std::unique_ptr<generator::spartn::Generator> mGenerator;

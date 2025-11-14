@@ -24,7 +24,7 @@ public:
     virtual void print() const NOEXCEPT = 0;
 
     /// Clone the message.
-    virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
+    NODISCARD virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
 
 private:
     std::string mPayload;

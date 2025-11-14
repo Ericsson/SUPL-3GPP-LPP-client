@@ -27,7 +27,7 @@ struct DataField {
     DataField(T const& t) : mValue{t} {}
     operator T() const { return mValue; }
 
-    T value() const { return mValue; }
+    NODISCARD T value() const { return mValue; }
 
     DataField& operator=(T const& t) {
         mValue = t;

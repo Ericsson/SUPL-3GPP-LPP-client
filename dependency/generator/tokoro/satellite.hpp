@@ -76,8 +76,10 @@ public:
     NODISCARD double average_code_range() const NOEXCEPT;
     NODISCARD double average_phase_range_rate() const NOEXCEPT;
 
-    void                            reset_observations() NOEXCEPT { mObservations.clear(); }
-    std::vector<Observation> const& observations() const NOEXCEPT { return mObservations; }
+    void      reset_observations() NOEXCEPT { mObservations.clear(); }
+    NODISCARD std::vector<Observation> const& observations() const NOEXCEPT {
+        return mObservations;
+    }
 
     Observation& initialize_observation(SignalId signal_id) NOEXCEPT {
         mObservations.emplace_back(*this, signal_id, mGroundPositionEcef);

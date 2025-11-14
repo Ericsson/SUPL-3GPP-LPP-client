@@ -10,8 +10,8 @@ public:
     EXPLICIT ChunkedLogOutput(std::string const& base_path) NOEXCEPT;
     ~ChunkedLogOutput() NOEXCEPT override;
 
-    void        write(uint8_t const* buffer, size_t length) NOEXCEPT override;
-    char const* name() const NOEXCEPT override { return "chunked-log"; }
+    void                  write(uint8_t const* buffer, size_t length) NOEXCEPT override;
+    NODISCARD char const* name() const NOEXCEPT override { return "chunked-log"; }
 
 protected:
     NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;

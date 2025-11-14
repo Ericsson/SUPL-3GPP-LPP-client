@@ -22,7 +22,7 @@ class MissingEphemerisPrint : public streamline::Inspector<MissingEphemeris> {
 public:
     MissingEphemerisPrint(PrintConfig const& config) : mConfig(config) {}
 
-    char const* name() const NOEXCEPT override { return "MissingEphemerisPrint"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "MissingEphemerisPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:

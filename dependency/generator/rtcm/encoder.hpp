@@ -26,7 +26,7 @@ public:
     void checksum();
 
     std::vector<uint8_t> buffer();
-    size_t               byte_count() const { return mBuffer.size(); }
+    NODISCARD size_t     byte_count() const { return mBuffer.size(); }
 
 private:
     std::vector<uint8_t> mBuffer;

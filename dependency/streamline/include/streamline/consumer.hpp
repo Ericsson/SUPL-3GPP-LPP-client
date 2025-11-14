@@ -9,10 +9,10 @@ class Consumer {
 public:
     using DataType = T;
 
-    Consumer()                                                          = default;
-    virtual ~Consumer()                                                 = default;
-    virtual void        consume(System&, DataType&& data, uint64_t tag) = 0;
-    virtual bool        accept(System&, uint64_t) { return true; }
-    virtual char const* name() const NOEXCEPT = 0;
+    Consumer()                                                                    = default;
+    virtual ~Consumer()                                                           = default;
+    virtual void                  consume(System&, DataType&& data, uint64_t tag) = 0;
+    virtual bool                  accept(System&, uint64_t) { return true; }
+    NODISCARD virtual char const* name() const NOEXCEPT = 0;
 };
 }  // namespace streamline

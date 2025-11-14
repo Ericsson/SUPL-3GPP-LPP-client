@@ -124,8 +124,8 @@ public:
     /// Age of correction data.
     NODISCARD double age_of_correction_data() const NOEXCEPT;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     NODISCARD static std::unique_ptr<Message> parse(Decoder&             decoder,
                                                     std::vector<uint8_t> data) NOEXCEPT;

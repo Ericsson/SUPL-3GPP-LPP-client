@@ -18,11 +18,11 @@ public:
                      std::vector<uint8_t>&& payload);
 
     /// Message type
-    uint8_t message_type() const { return mMessageType; }
+    NODISCARD uint8_t message_type() const { return mMessageType; }
     /// Message subtype
-    uint8_t message_subtype() const { return mMessageSubtype; }
+    NODISCARD uint8_t message_subtype() const { return mMessageSubtype; }
     /// Message data
-    std::vector<uint8_t> const& payload() const { return mPayload; }
+    NODISCARD std::vector<uint8_t> const& payload() const { return mPayload; }
 
     std::vector<uint8_t> build();
 

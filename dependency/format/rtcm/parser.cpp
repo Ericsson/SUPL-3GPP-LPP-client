@@ -76,7 +76,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 
     // check crc
     auto result = crc(message);
-    if (result != CRCResult::OK) {
+    if (result != CRCResult::Ok) {
         skip(1u);
         DEBUGF("checksum failed");
         return nullptr;

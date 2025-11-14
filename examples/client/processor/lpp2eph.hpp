@@ -14,9 +14,9 @@ class Lpp2Eph : public streamline::Inspector<lpp::Message> {
 public:
     Lpp2Eph(Lpp2EphConfig const& config) : mConfig(config) {}
 
-    char const* name() const NOEXCEPT override { return "Lpp2Eph"; }
-    void        inspect(streamline::System& system, DataType const& message,
-                        uint64_t tag) NOEXCEPT override;
+    NODISCARD char const* name() const NOEXCEPT override { return "Lpp2Eph"; }
+    void                  inspect(streamline::System& system, DataType const& message,
+                                  uint64_t tag) NOEXCEPT override;
 
 private:
     void process_gps_navigation_model(streamline::System&         system,

@@ -35,8 +35,8 @@ struct Creg {
     uint32_t ci;
     int      act;
 
-    bool is_gsm() const { return act >= 0 && act < 7; }
-    bool is_lte() const { return act >= 7 && act < 11; }
+    NODISCARD bool is_gsm() const { return act >= 0 && act < 7; }
+    NODISCARD bool is_lte() const { return act >= 7 && act < 11; }
 };
 
 struct Cops {

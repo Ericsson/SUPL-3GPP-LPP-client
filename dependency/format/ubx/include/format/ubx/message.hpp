@@ -29,7 +29,7 @@ public:
     virtual void print() const NOEXCEPT = 0;
 
     /// Clone the message.
-    virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
+    NODISCARD virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
 
 private:
     uint8_t              mClass;
@@ -49,8 +49,8 @@ public:
     UnsupportedMessage& operator=(UnsupportedMessage const&) = delete;
     UnsupportedMessage& operator=(UnsupportedMessage&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 };
 
 }  // namespace ubx

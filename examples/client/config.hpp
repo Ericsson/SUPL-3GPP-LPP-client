@@ -101,20 +101,24 @@ struct OutputInterface {
         };
     }
 
-    inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
-    inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
-    inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
-    inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
-    inline bool lpp_xer_support() const { return (format & OUTPUT_FORMAT_LPP_XER) != 0; }
-    inline bool lpp_uper_support() const { return (format & OUTPUT_FORMAT_LPP_UPER) != 0; }
-    inline bool spartn_support() const { return (format & OUTPUT_FORMAT_SPARTN) != 0; }
-    inline bool lfr_support() const { return (format & OUTPUT_FORMAT_LFR) != 0; }
-    inline bool possib_support() const { return (format & OUTPUT_FORMAT_POSSIB) != 0; }
-    inline bool location_support() const { return (format & OUTPUT_FORMAT_LOCATION) != 0; }
+    NODISCARD inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
+    NODISCARD inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
+    NODISCARD inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
+    NODISCARD inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
+    NODISCARD inline bool lpp_xer_support() const { return (format & OUTPUT_FORMAT_LPP_XER) != 0; }
+    NODISCARD inline bool lpp_uper_support() const {
+        return (format & OUTPUT_FORMAT_LPP_UPER) != 0;
+    }
+    NODISCARD inline bool spartn_support() const { return (format & OUTPUT_FORMAT_SPARTN) != 0; }
+    NODISCARD inline bool lfr_support() const { return (format & OUTPUT_FORMAT_LFR) != 0; }
+    NODISCARD inline bool possib_support() const { return (format & OUTPUT_FORMAT_POSSIB) != 0; }
+    NODISCARD inline bool location_support() const {
+        return (format & OUTPUT_FORMAT_LOCATION) != 0;
+    }
 
-    inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
+    NODISCARD inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
 
-    inline bool accept_tag(uint64_t tag) const {
+    NODISCARD inline bool accept_tag(uint64_t tag) const {
         return tag == 0 ||
                (((include_tag_mask & tag) || include_tag_mask == 0) && !(exclude_tag_mask & tag));
     }
@@ -139,16 +143,16 @@ struct PrintInterface {
         };
     }
 
-    inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
-    inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
-    inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
-    inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
-    inline bool agnss_support() const { return (format & OUTPUT_FORMAT_AGNSS) != 0; }
-    inline bool lpp_support() const {
+    NODISCARD inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
+    NODISCARD inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
+    NODISCARD inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
+    NODISCARD inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
+    NODISCARD inline bool agnss_support() const { return (format & OUTPUT_FORMAT_AGNSS) != 0; }
+    NODISCARD inline bool lpp_support() const {
         return (format & OUTPUT_FORMAT_LPP_XER) != 0 || (format & OUTPUT_FORMAT_LPP_UPER) != 0;
     }
 
-    inline bool accept_tag(uint64_t tag) const {
+    NODISCARD inline bool accept_tag(uint64_t tag) const {
         return tag == 0 ||
                (((include_tag_mask & tag) || include_tag_mask == 0) && !(exclude_tag_mask & tag));
     }

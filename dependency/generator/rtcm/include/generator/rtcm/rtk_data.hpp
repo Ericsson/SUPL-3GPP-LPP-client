@@ -72,7 +72,7 @@ struct Signal {
     Maybe<double> lock_time;
     bool          half_cycle_ambiguity;
 
-    uint32_t lowest_msm_version() const;
+    NODISCARD uint32_t lowest_msm_version() const;
 };
 
 struct Satellite {
@@ -83,7 +83,7 @@ struct Satellite {
 
     Maybe<int32_t> frequency_channel;
 
-    uint32_t lowest_msm_version() const;
+    NODISCARD uint32_t lowest_msm_version() const;
 };
 
 struct Observations {
@@ -91,7 +91,7 @@ struct Observations {
     std::vector<Signal>    signals;
     std::vector<Satellite> satellites;
 
-    uint32_t lowest_msm_version() const;
+    NODISCARD uint32_t lowest_msm_version() const;
 };
 
 struct BiasInformation {

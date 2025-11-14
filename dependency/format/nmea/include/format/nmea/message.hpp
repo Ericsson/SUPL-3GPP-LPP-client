@@ -34,7 +34,7 @@ public:
     virtual void print() const NOEXCEPT = 0;
 
     /// Clone the message.
-    virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
+    NODISCARD virtual std::unique_ptr<Message> clone() const NOEXCEPT = 0;
 
 private:
     std::string mPrefix;
@@ -54,8 +54,8 @@ public:
     UnsupportedMessage& operator=(UnsupportedMessage const&) = delete;
     UnsupportedMessage& operator=(UnsupportedMessage&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 };
 
 /// Error message. This is used to indicate that the message could not be parsed.
@@ -69,8 +69,8 @@ public:
     ErrorMessage& operator=(ErrorMessage const&) = delete;
     ErrorMessage& operator=(ErrorMessage&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 };
 
 }  // namespace nmea

@@ -80,8 +80,8 @@ struct GridData {
         MissingSatelliteData,
     };
 
-    GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
-    GridPoint const* find_with_absolute_index(long absolute_index) const NOEXCEPT;
+    NODISCARD GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
+    NODISCARD GridPoint const* find_with_absolute_index(long absolute_index) const NOEXCEPT;
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
                        GridPoint const*& br) const NOEXCEPT;
 

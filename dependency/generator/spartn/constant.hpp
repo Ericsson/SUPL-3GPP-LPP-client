@@ -11,7 +11,7 @@ struct SystemMapping {
     double const*      freq;
     char const* const* signal_names;
 
-    char const* signal_name(long signal_id) const;
+    NODISCARD char const* signal_name(long signal_id) const;
 };
 
 extern SystemMapping const gGpsSm;

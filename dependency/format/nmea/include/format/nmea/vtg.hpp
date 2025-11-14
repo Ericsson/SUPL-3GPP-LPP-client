@@ -29,8 +29,8 @@ public:
                                      double        magnetic_course_over_ground,
                                      ModeIndicator mode_indicator) NOEXCEPT;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     /// Get the true course over ground in degrees from true north.
     NODISCARD double true_course_over_ground() const NOEXCEPT { return mTrueCourseOverGround; }

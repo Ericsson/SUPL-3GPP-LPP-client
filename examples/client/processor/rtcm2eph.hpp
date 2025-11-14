@@ -15,9 +15,9 @@ class Rtcm2Eph : public streamline::Inspector<RtcmMessage> {
 public:
     Rtcm2Eph(Rtcm2EphConfig const& config) : mConfig(config) {}
 
-    char const* name() const NOEXCEPT override { return "Rtcm2Eph"; }
-    void        inspect(streamline::System& system, DataType const& message,
-                        uint64_t tag) NOEXCEPT override;
+    NODISCARD char const* name() const NOEXCEPT override { return "Rtcm2Eph"; }
+    void                  inspect(streamline::System& system, DataType const& message,
+                                  uint64_t tag) NOEXCEPT override;
 
 private:
     void handle_gps_lnav(streamline::System& system, format::rtcm::Rtcm1019* rtcm) NOEXCEPT;

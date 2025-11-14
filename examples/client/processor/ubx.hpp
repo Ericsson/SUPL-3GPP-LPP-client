@@ -26,7 +26,7 @@ class UbxPrint : public streamline::Inspector<UbxMessage> {
 public:
     UbxPrint(PrintConfig const& config) : mConfig(config) {}
 
-    char const* name() const NOEXCEPT override { return "UbxPrint"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "UbxPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
@@ -37,7 +37,7 @@ class UbxOutput : public streamline::Inspector<UbxMessage> {
 public:
     UbxOutput(OutputConfig const& output) : mOutput(output) {}
 
-    char const* name() const NOEXCEPT override { return "UbxOutput"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "UbxOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
@@ -48,10 +48,10 @@ class UbxLocation : public streamline::Inspector<UbxMessage> {
 public:
     UbxLocation(LocationInformationConfig const& config) : mConfig(config) {}
 
-    char const* name() const NOEXCEPT override { return "UbxLocation"; }
-    void        inspect(streamline::System& system, DataType const& message,
-                        uint64_t tag) NOEXCEPT override;
-    void        nav_pvt(streamline::System& system, format::ubx::UbxNavPvt const& nav_pvt);
+    NODISCARD char const* name() const NOEXCEPT override { return "UbxLocation"; }
+    void                  inspect(streamline::System& system, DataType const& message,
+                                  uint64_t tag) NOEXCEPT override;
+    void nav_pvt(streamline::System& system, format::ubx::UbxNavPvt const& nav_pvt);
 
 private:
     LocationInformationConfig const& mConfig;

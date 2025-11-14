@@ -31,7 +31,7 @@ public:
     void        align(uint8_t bits);
     inline void align_byte() { align(8); }
 
-    std::vector<uint8_t> data() const {
+    NODISCARD std::vector<uint8_t> data() const {
         auto data = std::move(mData);
         data.resize((mBitOffset + 7) / 8);
         return data;
@@ -39,7 +39,7 @@ public:
 
     uint8_t* data_ptr() { return mData.data(); }
 
-    size_t bit_length() const { return mBitOffset; }
+    NODISCARD size_t bit_length() const { return mBitOffset; }
 
 private:
     std::vector<uint8_t> mData;

@@ -29,7 +29,7 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
         auto sin_phi = std::sin(phi);
         auto n       = a / std::sqrt(1.0 - e2 * sin_phi * sin_phi);
         auto phi_n   = std::atan2(z + n * e2 * sin_phi, p);
-        if (std::abs(phi_n - phi) < tolerance) {
+        if (std::fabs(phi_n - phi) < tolerance) {
             phi = phi_n;
 
             auto h = p / std::cos(phi) - n;
@@ -71,7 +71,7 @@ struct ItrfParameter {
     double dry;
     double drz;
 
-    ItrfParameter inverse() const {
+    NODISCARD ItrfParameter inverse() const {
         return ItrfParameter{-tx,  -ty,  -tz,  -d,  -rx,  -ry,  -rz, epoch,
                              -dtx, -dty, -dtz, -dd, -drx, -dry, -drz};
     }

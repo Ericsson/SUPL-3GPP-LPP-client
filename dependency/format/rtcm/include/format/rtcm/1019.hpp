@@ -23,8 +23,8 @@ public:
     Rtcm1019& operator=(Rtcm1019 const&) = delete;
     Rtcm1019& operator=(Rtcm1019&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     NODISCARD static std::unique_ptr<Message> parse(std::vector<uint8_t> data);
 

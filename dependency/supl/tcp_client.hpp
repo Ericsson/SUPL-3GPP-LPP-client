@@ -35,7 +35,7 @@ public:
     int receive(void* buffer, int size);
     int send(void const* buffer, int size);
 
-    int fd() const { return mSocket; }
+    NODISCARD int fd() const { return mSocket; }
 
 protected:
     bool initialize_socket();

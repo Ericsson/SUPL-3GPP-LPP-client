@@ -46,8 +46,8 @@ public:
         return data;
     }
 
-    int      get_fd() const { return mFd; }
-    uint64_t poll_count() {
+    NODISCARD int get_fd() const { return mFd; }
+    uint64_t      poll_count() {
         uint64_t value;
         ssize_t  result = read(mFd, &value, sizeof(value));
         (void)result;

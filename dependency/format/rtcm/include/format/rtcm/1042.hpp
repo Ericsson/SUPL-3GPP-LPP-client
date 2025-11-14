@@ -22,8 +22,8 @@ public:
     Rtcm1042& operator=(Rtcm1042 const&) = delete;
     Rtcm1042& operator=(Rtcm1042&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     NODISCARD static std::unique_ptr<Message> parse(std::vector<uint8_t> data);
 

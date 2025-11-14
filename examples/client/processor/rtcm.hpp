@@ -26,7 +26,7 @@ class RtcmPrint : public streamline::Inspector<RtcmMessage> {
 public:
     RtcmPrint(PrintConfig const& config) : mConfig(config) {}
 
-    char const* name() const NOEXCEPT override { return "RtcmPrint"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "RtcmPrint"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
@@ -37,7 +37,7 @@ class RtcmOutput : public streamline::Inspector<RtcmMessage> {
 public:
     RtcmOutput(OutputConfig const& output) : mOutput(output) {}
 
-    char const* name() const NOEXCEPT override { return "RtcmOutput"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "RtcmOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:

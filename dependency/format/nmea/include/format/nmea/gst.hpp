@@ -21,8 +21,8 @@ public:
     GstMessage& operator=(GstMessage const&) = delete;
     GstMessage& operator=(GstMessage&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     /// Get the horizontal position error.
     NODISCARD double horizontal_position_error() const NOEXCEPT {

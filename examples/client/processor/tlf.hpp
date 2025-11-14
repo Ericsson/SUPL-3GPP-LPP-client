@@ -73,7 +73,7 @@ public:
     TlfParser() NOEXCEPT;
     ~TlfParser() NOEXCEPT override;
 
-    char const* name() const NOEXCEPT override { return "TlfParser"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "TlfParser"; }
 
     NODISCARD bool parse(TlfHeader& header, std::vector<uint8_t>& output) NOEXCEPT;
 

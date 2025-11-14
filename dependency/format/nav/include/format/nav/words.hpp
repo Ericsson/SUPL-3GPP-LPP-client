@@ -12,7 +12,7 @@ struct Words {
     uint32_t bit_count;
 
     Words() NOEXCEPT : data{}, bit_count(0) {}
-    Words(uint32_t bit_count) NOEXCEPT : data{}, bit_count(bit_count) {}
+    Words(uint32_t bit_count_param) NOEXCEPT : data{}, bit_count(bit_count_param) {}
 
     NODISCARD uint32_t size() const NOEXCEPT { return bit_count; }
 
@@ -45,7 +45,7 @@ struct Words {
 
     NODISCARD bool b1(uint32_t index) const NOEXCEPT { return get_bit(index); }
 
-    bool get_bit(uint32_t index) const NOEXCEPT {
+    NODISCARD bool get_bit(uint32_t index) const NOEXCEPT {
         if (index >= bit_count) {
             return false;
         }

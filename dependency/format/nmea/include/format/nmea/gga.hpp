@@ -32,8 +32,8 @@ public:
     GgaMessage& operator=(GgaMessage const&) = delete;
     GgaMessage& operator=(GgaMessage&&)      = delete;
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     /// Get the time of day.
     NODISCARD const ts::Tai& time_of_day() const NOEXCEPT { return mTimeOfDay; }

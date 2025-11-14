@@ -43,8 +43,8 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
 
-    char const* name() const NOEXCEPT override { return "Tokoro"; }
-    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    NODISCARD char const* name() const NOEXCEPT override { return "Tokoro"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
     void vrs_mode_fixed();
     void vrs_mode_grid();
@@ -72,8 +72,8 @@ class TokoroEphemerisGps : public streamline::Inspector<ephemeris::GpsEphemeris>
 public:
     TokoroEphemerisGps(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    char const* name() const NOEXCEPT override { return "TokoroEphemerisGps"; }
-    void        inspect(streamline::System&, DataType const& eph, uint64_t) override {
+    NODISCARD char const* name() const NOEXCEPT override { return "TokoroEphemerisGps"; }
+    void                  inspect(streamline::System&, DataType const& eph, uint64_t) override {
         mTokoro.process_ephemeris(eph);
     }
 
@@ -85,8 +85,8 @@ class TokoroEphemerisGal : public streamline::Inspector<ephemeris::GalEphemeris>
 public:
     TokoroEphemerisGal(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    char const* name() const NOEXCEPT override { return "TokoroEphemerisGal"; }
-    void        inspect(streamline::System&, DataType const& eph, uint64_t) override {
+    NODISCARD char const* name() const NOEXCEPT override { return "TokoroEphemerisGal"; }
+    void                  inspect(streamline::System&, DataType const& eph, uint64_t) override {
         mTokoro.process_ephemeris(eph);
     }
 
@@ -98,8 +98,8 @@ class TokoroEphemerisBds : public streamline::Inspector<ephemeris::BdsEphemeris>
 public:
     TokoroEphemerisBds(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    char const* name() const NOEXCEPT override { return "TokoroEphemerisBds"; }
-    void        inspect(streamline::System&, DataType const& eph, uint64_t) override {
+    NODISCARD char const* name() const NOEXCEPT override { return "TokoroEphemerisBds"; }
+    void                  inspect(streamline::System&, DataType const& eph, uint64_t) override {
         mTokoro.process_ephemeris(eph);
     }
 
@@ -157,8 +157,8 @@ class TokoroLocation : public streamline::Inspector<lpp::LocationInformation> {
 public:
     TokoroLocation(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    char const* name() const NOEXCEPT override { return "TokoroLocation"; }
-    void        inspect(streamline::System&, DataType const& location, uint64_t tag) override;
+    NODISCARD char const* name() const NOEXCEPT override { return "TokoroLocation"; }
+    void inspect(streamline::System&, DataType const& location, uint64_t tag) override;
 
 private:
     Tokoro& mTokoro;

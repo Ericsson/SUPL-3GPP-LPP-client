@@ -30,7 +30,7 @@ public:
         mPreviousField = false;
     }
 
-    char const* c_str() const { return mBuffer.c_str(); }
+    NODISCARD char const* c_str() const { return mBuffer.c_str(); }
 
     void push(char ch) {
         mBuffer.push_back(ch);

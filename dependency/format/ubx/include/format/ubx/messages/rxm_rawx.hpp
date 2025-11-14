@@ -75,8 +75,8 @@ public:
         return mMeasurements;
     }
 
-    void                     print() const NOEXCEPT override;
-    std::unique_ptr<Message> clone() const NOEXCEPT override;
+    void      print() const NOEXCEPT override;
+    NODISCARD std::unique_ptr<Message> clone() const NOEXCEPT override;
 
     NODISCARD static std::unique_ptr<Message> parse(Decoder&             decoder,
                                                     std::vector<uint8_t> data) NOEXCEPT;

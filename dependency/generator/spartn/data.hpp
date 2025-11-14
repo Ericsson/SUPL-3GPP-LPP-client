@@ -92,19 +92,19 @@ struct CorrectionPointSet {
 
     void calculate_grid_points();
 
-    inline bool has_grid_point(long grid_point) const {
+    NODISCARD inline bool has_grid_point(long grid_point) const {
         auto index = 64 - 1 - grid_point;
         return (bitmask & (1ULL << index)) != 0;
     }
 
-    inline double latitude_grid_spacing() const {
+    NODISCARD inline double latitude_grid_spacing() const {
         return latitude_delta * static_cast<double>(number_of_steps_latitude_r16);
     }
-    inline double longitude_grid_spacing() const {
+    NODISCARD inline double longitude_grid_spacing() const {
         return longitude_delta * static_cast<double>(number_of_steps_longitude_r16);
     }
 
-    std::vector<GridPoint> const& grid_points() const;
+    NODISCARD std::vector<GridPoint> const& grid_points() const;
 };
 
 struct OcbSatellite {
@@ -122,7 +122,7 @@ struct OcbSatellite {
     void add_correction(SSR_PhaseBiasSatElement_r16* phase_bias);
     void add_correction(SSR_URA_SatElement_r16* ura);
 
-    uint32_t prn() const;
+    NODISCARD uint32_t prn() const;
 };
 
 struct OcbCorrections {
@@ -142,10 +142,10 @@ struct OcbCorrections {
     // Generate a set of satellite ids for this correction
     // this is the union of all satellite ids that have at least
     // one correction type.
-    std::vector<OcbSatellite> satellites() const;
+    NODISCARD std::vector<OcbSatellite> satellites() const;
 
     // Check if there is _any_ correction for the given satellite.
-    bool has_satellite(long id) const;
+    NODISCARD bool has_satellite(long id) const;
 };
 
 struct OcbData {
@@ -178,10 +178,10 @@ struct HpacCorrections {
     // Generate a set of satellite ids for this correction
     // this is the union of all satellite ids that have at least
     // one correction type.
-    std::vector<HpacSatellite> satellites() const;
+    NODISCARD std::vector<HpacSatellite> satellites() const;
 
     // Find GridElement_r16 for the given grid_id
-    GridElement_r16* find_grid_point(long grid_id) const;
+    NODISCARD GridElement_r16* find_grid_point(long grid_id) const;
 };
 
 struct HpacData {

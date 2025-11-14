@@ -27,7 +27,7 @@ struct ObservationType {
     ObservationKind kind;
     SignalId        signal_id;
 
-    inline char kind_char() const {
+    NODISCARD inline char kind_char() const {
         switch (kind) {
         case ObservationKind::Code: return 'C';
         case ObservationKind::Phase: return 'L';

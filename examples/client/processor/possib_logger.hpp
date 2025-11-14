@@ -64,7 +64,7 @@ class PossibMessage {
 public:
     PossibMessage(std::string json) : mJson(std::move(json)) {}
 
-    std::string const& json() const { return mJson; }
+    NODISCARD std::string const& json() const { return mJson; }
 
 private:
     std::string mJson;
@@ -88,7 +88,7 @@ class PossibOutput : public streamline::Inspector<std::unique_ptr<PossibMessage>
 public:
     PossibOutput(OutputConfig const& output) : mOutput(output) {}
 
-    char const* name() const NOEXCEPT override { return "PossibOutput"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "PossibOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
@@ -100,7 +100,7 @@ public:
     LppPossibBuilder(bool wrap);
     ~LppPossibBuilder() override;
 
-    char const* name() const NOEXCEPT override { return "LppPossibBuilder"; }
+    NODISCARD char const* name() const NOEXCEPT override { return "LppPossibBuilder"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 protected:

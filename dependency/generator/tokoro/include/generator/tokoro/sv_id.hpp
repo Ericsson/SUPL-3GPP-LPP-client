@@ -18,7 +18,7 @@ struct SvId {
         return gnss_id == other.gnss_id && satellite_id == other.satellite_id;
     }
 
-    char const* name() const NOEXCEPT {
+    NODISCARD char const* name() const NOEXCEPT {
         switch (gnss_id) {
         case GnssId::GPS:
             switch (satellite_id) {

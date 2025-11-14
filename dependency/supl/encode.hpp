@@ -32,8 +32,8 @@ public:
         return *this;
     }
 
-    uint8_t const* data() const { return mBuffer; }
-    size_t         size() const { return mSize; }
+    NODISCARD uint8_t const* data() const { return mBuffer; }
+    NODISCARD size_t         size() const { return mSize; }
 
 private:
     uint8_t* mBuffer;

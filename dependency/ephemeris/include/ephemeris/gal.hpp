@@ -4,7 +4,7 @@
 #include <maths/float3.hpp>
 #include <time/gst.hpp>
 
-#include <math.h>
+#include <cmath>
 
 namespace ephemeris {
 
@@ -45,8 +45,8 @@ struct GalEphemeris {
         if (week_number != other.week_number) return false;
         if (iod_nav != other.iod_nav) return false;
         if (lpp_iod != other.lpp_iod) return false;
-        if (std::abs(toe - other.toe) > 1e-3) return false;
-        if (std::abs(toc - other.toc) > 1e-3) return false;
+        if (std::fabs(toe - other.toe) > 1e-3) return false;
+        if (std::fabs(toc - other.toc) > 1e-3) return false;
         return true;
     }
     NODISCARD bool compare(GalEphemeris const& other) const NOEXCEPT {

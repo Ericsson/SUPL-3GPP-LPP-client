@@ -98,7 +98,7 @@ protected:
     bool connecting() NOEXCEPT;
     void disconnect() NOEXCEPT;
 
-    char const* state_to_string(State state) const NOEXCEPT;
+    NODISCARD char const* state_to_string(State state) const NOEXCEPT;
 
 private:
     State                                 mState;

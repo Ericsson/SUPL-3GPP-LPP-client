@@ -71,7 +71,7 @@ public:
         return mLppId < other.mLppId;
     }
 
-    inline bool is_valid() const { return mGnss != Gnss::UNKNOWN && mLppId != -1; }
+    NODISCARD inline bool is_valid() const { return mGnss != Gnss::UNKNOWN && mLppId != -1; }
 
 private:
     explicit SignalId(Gnss gnss, int32_t lpp_id) : mGnss(gnss), mLppId(lpp_id) {}

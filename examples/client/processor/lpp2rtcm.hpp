@@ -14,8 +14,8 @@ public:
     Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config);
     ~Lpp2Rtcm() override;
 
-    char const* name() const NOEXCEPT override { return "Lpp2Rtcm"; }
-    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    NODISCARD char const* name() const NOEXCEPT override { return "Lpp2Rtcm"; }
+    void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
 private:
     std::unique_ptr<generator::rtcm::Generator> mGenerator;

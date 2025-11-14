@@ -27,10 +27,10 @@ struct Optional {
         return *this;
     }
 
-    bool     has_value() const { return valid; }
-    T const& const_value() const { return value; }
+    NODISCARD bool     has_value() const { return valid; }
+    NODISCARD T const& const_value() const { return value; }
 
-    T value_or(T const& default_value) const {
+    NODISCARD T value_or(T const& default_value) const {
         if (valid)
             return value;
         else
@@ -165,7 +165,7 @@ struct LocationShape {
         } haepaue;
     } data;
 
-    double latitude() const {
+    NODISCARD double latitude() const {
         switch (kind) {
         case Kind::HighAccuracyEllipsoidPointWithUncertaintyEllipse: return data.haepue.latitude;
         case Kind::HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid:
@@ -174,7 +174,7 @@ struct LocationShape {
         return 0.0;
     }
 
-    double longitude() const {
+    NODISCARD double longitude() const {
         switch (kind) {
         case Kind::HighAccuracyEllipsoidPointWithUncertaintyEllipse: return data.haepue.longitude;
         case Kind::HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid:
@@ -183,7 +183,7 @@ struct LocationShape {
         return 0.0;
     }
 
-    double altitude() const {
+    NODISCARD double altitude() const {
         switch (kind) {
         case Kind::HighAccuracyEllipsoidPointWithUncertaintyEllipse: return 0.0;
         case Kind::HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid:

@@ -59,7 +59,7 @@ public:
     bool handle_connection();
 
     void           disconnect();
-    bool           is_connected() const;
+    NODISCARD bool is_connected() const;
     NODISCARD bool is_disconnected() const { return mState == State::DISCONNECTED; }
 
     bool      handshake(const START& message);
@@ -76,8 +76,8 @@ public:
     NODISCARD const SET&     set() const { return mSETSession; }
     NODISCARD const SLP&     slp() const { return mSLPSession; }
 
-    int  fd() const;
-    bool fill_receive_buffer();
+    NODISCARD int fd() const;
+    bool          fill_receive_buffer();
 
 protected:
     ULP_PDU* parse_receive_buffer();
