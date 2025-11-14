@@ -154,8 +154,9 @@ InterfaceInputStage::~InterfaceInputStage() NOEXCEPT {
 }
 
 bool InterfaceInputStage::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
-    mInterface->callback = [this](io::Input&, uint8_t const* buffer, size_t length) {
-        FUNCTION_SCOPEF("interface callback, %p, %zu", buffer, length);
+    UNUSED auto function_name = __FUNCTION__;
+    mInterface->callback = [this, function_name](io::Input&, uint8_t const* buffer, size_t length) {
+        FUNCTION_SCOPE_NAMEDF(function_name, "interface callback, %p, %zu", buffer, length);
         if (this->callback) {
             this->callback(mInputFormats, const_cast<uint8_t*>(buffer), length);
         }
@@ -175,8 +176,9 @@ TlfInputStage::TlfInputStage(std::unique_ptr<InputStage> parent) NOEXCEPT
     mLastMessage = std::chrono::steady_clock::now();
 
     mTask.set_event_name("TlfInputStage");
-    mTask.callback = [this]() {
-        FUNCTION_SCOPEN("periodic task");
+    UNUSED auto function_name = __FUNCTION__;
+    mTask.callback            = [this, function_name]() {
+        FUNCTION_SCOPE_OPEN(function_name, "periodic task");
         DEBUGF("queue size = %zu", mQueue.size());
         auto now = std::chrono::steady_clock::now();
         while (mQueue.size() > 0) {
@@ -190,8 +192,10 @@ TlfInputStage::TlfInputStage(std::unique_ptr<InputStage> parent) NOEXCEPT
         }
     };
 
-    mParent->callback = [this](InputFormat format, uint8_t const* buffer, size_t length) {
-        FUNCTION_SCOPEF("callback, %016" PRIx64 ", %p, %zu", format, buffer, length);
+    mParent->callback = [this, function_name](InputFormat format, uint8_t const* buffer,
+                                              size_t length) {
+        FUNCTION_SCOPE_NAMEDF(function_name, "callback, %016" PRIx64 ", %p, %zu", format, buffer,
+                              length);
 
         mParser.append(buffer, length);
 

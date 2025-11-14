@@ -168,6 +168,9 @@
 #ifdef DISABLE_TRACE
 #define FUNCTION_SCOPE()
 #define FUNCTION_SCOPEF(fmt, ...)
+#define FUNCTION_SCOPE_NAMED(name)
+#define FUNCTION_SCOPE_OPEN(name, str)
+#define FUNCTION_SCOPE_NAMEDF(name, fmt, ...)
 #else
 
 #ifdef FUNCTION_PERFORMANCE
@@ -180,6 +183,15 @@
 #define FUNCTION_SCOPEF(fmt, ...)                                                                  \
     NOTICEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, __VA_ARGS__);                                  \
     NOTICE_PERF_SCOPE()
+#define FUNCTION_SCOPE_NAMED(name)                                                                 \
+    NOTICEF("%s()", name);                                                                         \
+    NOTICE_PERF_SCOPE()
+#define FUNCTION_SCOPE_OPEN(name, str)                                                             \
+    NOTICEF("%s(%s)", name, str);                                                                  \
+    NOTICE_PERF_SCOPE()
+#define FUNCTION_SCOPE_NAMEDF(name, fmt, ...)                                                      \
+    NOTICEF("%s(" fmt ")", name, __VA_ARGS__);                                                     \
+    NOTICE_PERF_SCOPE()
 #else
 #define FUNCTION_SCOPE()                                                                           \
     TRACEF("%s()", LOGLET_CURRENT_FUNCTION);                                                       \
@@ -189,6 +201,15 @@
     TRACE_INDENT_SCOPE()
 #define FUNCTION_SCOPEF(fmt, ...)                                                                  \
     TRACEF("%s(" fmt ")", LOGLET_CURRENT_FUNCTION, __VA_ARGS__);                                   \
+    TRACE_INDENT_SCOPE()
+#define FUNCTION_SCOPE_NAMED(name)                                                                 \
+    TRACEF("%s()", name);                                                                          \
+    TRACE_INDENT_SCOPE()
+#define FUNCTION_SCOPE_OPEN(name, str)                                                             \
+    TRACEF("%s(%s)", name, str);                                                                   \
+    TRACE_INDENT_SCOPE()
+#define FUNCTION_SCOPE_NAMEDF(name, fmt, ...)                                                      \
+    TRACEF("%s(" fmt ")", name, __VA_ARGS__);                                                      \
     TRACE_INDENT_SCOPE()
 #endif
 #endif

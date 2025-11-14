@@ -16,8 +16,9 @@ void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, 
     gPeriodicTask = std::unique_ptr<scheduler::PeriodicTask>(
         new scheduler::PeriodicTask(std::chrono::milliseconds(1000)));
     gPeriodicTask->set_event_name("test output");
-    gPeriodicTask->callback = [&output, tag]() {
-        VSCOPE_FUNCTION();
+    UNUSED auto function_name = __FUNCTION__;
+    gPeriodicTask->callback   = [&output, tag, function_name]() {
+        FUNCTION_SCOPE_NAMED(function_name);
 
         uint8_t data[16 + 1] = "TESTTESTTESTTEST";
         DEBUGF("test: \"%s\"", data);

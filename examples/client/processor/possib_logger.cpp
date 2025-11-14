@@ -365,6 +365,7 @@ void LppPossibBuilder::process(long id, GNSS_RTK_FKP_Gradients_r15 const& x) {
 std::vector<size_t> LppPossibBuilder::encode_list_to_sizes_void(asn_TYPE_descriptor_s* descriptor,
                                                                 void const** struct_ptr, int n) {
     std::vector<size_t> result;
+    result.reserve(static_cast<size_t>(n));
     for (int i = 0; i < n; ++i) {
         result.push_back(encode_to_buffer(descriptor, struct_ptr[i]).size());
     }
@@ -619,7 +620,8 @@ void LppPossibBuilder::process(ProvideAssistanceData const& message) {
         switch (message.criticalExtensions.choice.c1.present) {
         case ProvideAssistanceData__criticalExtensions__c1_PR::
             ProvideAssistanceData__criticalExtensions__c1_PR_provideAssistanceData_r9:
-            return process(message.criticalExtensions.choice.c1.choice.provideAssistanceData_r9);
+            process(message.criticalExtensions.choice.c1.choice.provideAssistanceData_r9);
+            break;
         case ProvideAssistanceData__criticalExtensions__c1_PR::
             ProvideAssistanceData__criticalExtensions__c1_PR_NOTHING:
         case ProvideAssistanceData__criticalExtensions__c1_PR::
@@ -633,7 +635,6 @@ void LppPossibBuilder::process(ProvideAssistanceData const& message) {
     } break;
     case ProvideAssistanceData__criticalExtensions_PR::
         ProvideAssistanceData__criticalExtensions_PR_NOTHING:
-        break;
     case ProvideAssistanceData__criticalExtensions_PR::
         ProvideAssistanceData__criticalExtensions_PR_criticalExtensionsFuture:
         break;
@@ -678,7 +679,7 @@ void LppPossibBuilder::inspect(streamline::System& system, DataType const& messa
         case LPP_MessageBody__c1_PR::LPP_MessageBody__c1_PR_spare0: break;
         }
     } break;
-    case LPP_MessageBody_PR::LPP_MessageBody_PR_NOTHING: break;
+    case LPP_MessageBody_PR::LPP_MessageBody_PR_NOTHING:
     case LPP_MessageBody_PR::LPP_MessageBody_PR_messageClassExtension: break;
     }
 
