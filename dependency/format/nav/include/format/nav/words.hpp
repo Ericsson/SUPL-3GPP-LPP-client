@@ -8,25 +8,25 @@ namespace format {
 namespace nav {
 
 struct Words {
-    uint8_t  mData[64];
-    uint32_t mBitCount;
+    uint8_t  data[64];
+    uint32_t bit_count;
 
-    Words() NOEXCEPT : mData{}, mBitCount(0) {}
-    Words(uint32_t bit_count) NOEXCEPT : mData{}, mBitCount(bit_count) {}
+    Words() NOEXCEPT : data{}, bit_count(0) {}
+    Words(uint32_t bit_count) NOEXCEPT : data{}, bit_count(bit_count) {}
 
-    NODISCARD uint32_t size() const NOEXCEPT { return mBitCount; }
+    NODISCARD uint32_t size() const NOEXCEPT { return bit_count; }
 
     NODISCARD uint64_t u64(uint32_t index, uint32_t length) const NOEXCEPT {
         uint64_t value = 0;
         for (auto i = index; i < index + length; i++) {
-            if (i >= mBitCount) {
+            if (i >= bit_count) {
                 break;
             }
             auto byte = i / 8;
             auto bit  = 7 - i % 8;
             auto mask = 1 << bit;
             value <<= 1;
-            value |= (mData[byte] & mask) ? 1 : 0;
+            value |= (data[byte] & mask) ? 1 : 0;
         }
         return value;
     }
@@ -46,26 +46,26 @@ struct Words {
     NODISCARD bool b1(uint32_t index) const NOEXCEPT { return get_bit(index); }
 
     bool get_bit(uint32_t index) const NOEXCEPT {
-        if (index >= mBitCount) {
+        if (index >= bit_count) {
             return false;
         }
         auto byte = index / 8;
         auto bit  = 7 - index % 8;
         auto mask = 1 << bit;
-        return mData[byte] & mask;
+        return data[byte] & mask;
     }
 
     void set_bit(uint32_t index, bool value) NOEXCEPT {
-        if (index >= sizeof(mData) * 8) {
+        if (index >= sizeof(data) * 8) {
             return;
         }
         auto byte = index / 8;
         auto bit  = 7 - index % 8;
         auto mask = 1 << bit;
         if (value) {
-            mData[byte] |= mask;
+            data[byte] |= mask;
         } else {
-            mData[byte] &= ~mask;
+            data[byte] &= ~mask;
         }
     }
 

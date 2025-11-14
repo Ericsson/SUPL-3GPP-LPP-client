@@ -125,11 +125,11 @@ static char const* state_to_string(State state) {
     case State::CONNECT: return "CONNECT";
     case State::CONNECTING: return "CONNECTING";
     case State::CONNECTED: return "CONNECTED";
-    case State::CONNECTION_FAILED: return "CONNECTION_FAILED";
+    case State::ConnectionFailed: return "CONNECTION_FAILED";
     case State::DISCONNECTED: return "DISCONNECTED";
-    case State::SUPL_HANDSHAKE_SEND: return "SUPL_HANDSHAKE_SEND";
-    case State::SUPL_HANDSHAKE_RECV: return "SUPL_HANDSHAKE_RECV";
-    case State::SUPL_POSINIT: return "SUPL_POSINIT";
+    case State::SuplHandshakeSend: return "SUPL_HANDSHAKE_SEND";
+    case State::SuplHandshakeRecv: return "SUPL_HANDSHAKE_RECV";
+    case State::SuplPosinit: return "SUPL_POSINIT";
     case State::ESTABLISHED: return "ESTABLISHED";
     case State::MESSAGE: return "MESSAGE";
     case State::ERROR: return "ERROR";
@@ -171,13 +171,13 @@ void Session::process() {
         case State::UNKNOWN: result = state_unknown(); break;
         case State::CONNECT: result = state_connect(); break;
         case State::CONNECTING: result = state_connecting(); break;
-        case State::CONNECTION_FAILED: result = state_connection_failed(); break;
+        case State::ConnectionFailed: result = state_connection_failed(); break;
         case State::CONNECTED: result = state_connected(); break;
         case State::DISCONNECTED: result = state_disconnected(); break;
         case State::ERROR: result = state_error(); break;
-        case State::SUPL_HANDSHAKE_SEND: result = state_handshake_send(); break;
-        case State::SUPL_HANDSHAKE_RECV: result = state_handshake_recv(); break;
-        case State::SUPL_POSINIT: result = state_posinit(); break;
+        case State::SuplHandshakeSend: result = state_handshake_send(); break;
+        case State::SuplHandshakeRecv: result = state_handshake_recv(); break;
+        case State::SuplPosinit: result = state_posinit(); break;
         case State::ESTABLISHED: result = state_established(); break;
         case State::MESSAGE: result = state_message(); break;
         case State::EXIT: UNREACHABLE();
@@ -257,7 +257,7 @@ NextState Session::state_connecting() {
 
     if (!mSession->handle_connection()) {
         ERRORF("failed to establish connection to %s:%d", mConnectionHost.c_str(), mConnectionPort);
-        return NextState::make().next(State::CONNECTION_FAILED);
+        return NextState::make().next(State::ConnectionFailed);
     }
 
     return NextState::make().next(State::CONNECTED);
@@ -285,7 +285,7 @@ NextState Session::state_error() {
 
 NextState Session::state_connected() {
     VSCOPE_FUNCTION();
-    return NextState::make().next(State::SUPL_HANDSHAKE_SEND);
+    return NextState::make().next(State::SuplHandshakeSend);
 }
 
 NextState Session::state_handshake_send() {
@@ -294,29 +294,29 @@ NextState Session::state_handshake_send() {
 
     // TODO: Create a SETCapabilities object with all the capabilities in the Session
     supl::SETCapabilities capabilities{};
-    capabilities.posTechnology                         = {};
-    capabilities.posTechnology.agpsSETassisted         = true;
-    capabilities.posTechnology.agpsSETBased            = true;
-    capabilities.posTechnology.autonomousGPS           = true;
-    capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
-    capabilities.posProtocol.lpp.enabled               = true;
-    capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;
-    capabilities.posProtocol.lpp.technicalVersionField = mVersion.technical;
-    capabilities.posProtocol.lpp.editorialVersionField = mVersion.editorial;
+    capabilities.pos_technology                           = {};
+    capabilities.pos_technology.agps_set_assisted         = true;
+    capabilities.pos_technology.agps_set_based            = true;
+    capabilities.pos_technology.autonomous_gps            = true;
+    capabilities.pref_method                              = supl::PrefMethod::AgpsSETBasedPreferred;
+    capabilities.pos_protocol.lpp.enabled                 = true;
+    capabilities.pos_protocol.lpp.major_version_field     = mVersion.major;
+    capabilities.pos_protocol.lpp.technical_version_field = mVersion.technical;
+    capabilities.pos_protocol.lpp.editorial_version_field = mVersion.editorial;
 
     supl::START start{};
-    start.sETCapabilities        = capabilities;
-    start.applicationID.name     = "SUPL-3GPP-LPP-Client";
-    start.applicationID.provider = "Ericsson";
-    start.applicationID.version  = CLIENT_VERSION;
-    start.locationID.cell        = mInitialCell;
+    start.set_capabilities        = capabilities;
+    start.application_id.name     = "SUPL-3GPP-LPP-Client";
+    start.application_id.provider = "Ericsson";
+    start.application_id.version  = CLIENT_VERSION;
+    start.location_id.cell        = mInitialCell;
 
     if (!mSession->handshake(start)) {
         ERRORF("failed to establish SUPL handshake");
         return NextState::make().next(State::DISCONNECTED);
     }
 
-    return NextState::make().read(State::SUPL_HANDSHAKE_RECV).error(State::DISCONNECTED);
+    return NextState::make().read(State::SuplHandshakeRecv).error(State::DISCONNECTED);
 }
 
 NextState Session::state_handshake_recv() {
@@ -324,13 +324,13 @@ NextState Session::state_handshake_recv() {
     ASSERT(mSession != nullptr, "session is null");
 
     auto result = mSession->handle_handshake();
-    if (result == supl::Session::Handshake::NO_DATA) {
-        return NextState::make().read(State::SUPL_HANDSHAKE_RECV).error(State::DISCONNECTED);
+    if (result == supl::Session::Handshake::NoData) {
+        return NextState::make().read(State::SuplHandshakeRecv).error(State::DISCONNECTED);
     } else if (result == supl::Session::Handshake::ERROR) {
         return NextState::make().error(State::DISCONNECTED);
     }
 
-    return NextState::make().next(State::SUPL_POSINIT);
+    return NextState::make().next(State::SuplPosinit);
 }
 
 NextState Session::state_posinit() {
@@ -338,19 +338,19 @@ NextState Session::state_posinit() {
     ASSERT(mSession != nullptr, "session is null");
 
     supl::SETCapabilities capabilities{};
-    capabilities.posTechnology                         = {};
-    capabilities.posTechnology.agpsSETassisted         = true;
-    capabilities.posTechnology.agpsSETBased            = true;
-    capabilities.posTechnology.autonomousGPS           = true;
-    capabilities.prefMethod                            = supl::PrefMethod::agpsSETBasedPreferred;
-    capabilities.posProtocol.lpp.enabled               = true;
-    capabilities.posProtocol.lpp.majorVersionField     = mVersion.major;
-    capabilities.posProtocol.lpp.technicalVersionField = mVersion.technical;
-    capabilities.posProtocol.lpp.editorialVersionField = mVersion.editorial;
+    capabilities.pos_technology                           = {};
+    capabilities.pos_technology.agps_set_assisted         = true;
+    capabilities.pos_technology.agps_set_based            = true;
+    capabilities.pos_technology.autonomous_gps            = true;
+    capabilities.pref_method                              = supl::PrefMethod::AgpsSETBasedPreferred;
+    capabilities.pos_protocol.lpp.enabled                 = true;
+    capabilities.pos_protocol.lpp.major_version_field     = mVersion.major;
+    capabilities.pos_protocol.lpp.technical_version_field = mVersion.technical;
+    capabilities.pos_protocol.lpp.editorial_version_field = mVersion.editorial;
 
     supl::POSINIT posinit{};
-    posinit.sETCapabilities = capabilities;
-    posinit.locationID.cell = mInitialCell;
+    posinit.set_capabilities = capabilities;
+    posinit.location_id.cell = mInitialCell;
 
     // TODO: We probably need to make sure that we don't send more payloads than what is allowed
     for (auto& pos : mPosQueue) {
@@ -396,15 +396,15 @@ NextState Session::state_message() {
         supl::END end{};
         supl::POS pos{};
         auto      received = mSession->try_receive(nullptr, &end, &pos);
-        if (received == supl::Session::Received::NO_DATA) {
+        if (received == supl::Session::Received::NoData) {
             return NextState::make().read(State::MESSAGE).error(State::DISCONNECTED);
         } else if (received == supl::Session::Received::END) {
             return NextState::make().next(State::DISCONNECTED);
         } else if (received == supl::Session::Received::POS) {
             process_supl_pos(pos);
             continue;
-        } else if (received == supl::Session::Received::SESSION_TERMINATED ||
-                   received == supl::Session::Received::INVALID_SESSION) {
+        } else if (received == supl::Session::Received::SessionTerminated ||
+                   received == supl::Session::Received::InvalidSession) {
             return NextState::make().next(State::DISCONNECTED);
         } else {
             WARNF("problem receiving SUPL message");

@@ -76,7 +76,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length + line_ending_length);
 
     auto result = checksum(payload);
-    if (result != ChecksumResult::OK) {
+    if (result != ChecksumResult::Ok) {
         DEBUGF("checksum failed: \"%s\"", payload.c_str());
         skip(1u);
         return nullptr;

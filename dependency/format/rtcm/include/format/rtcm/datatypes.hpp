@@ -4,13 +4,13 @@
 enum struct Sign {
     UNSIGNED,
     SIGNED,
-    SIGNED_MAGNITUDE,
+    SignedMagnitude,
 };
 
 template <std::size_t L, Sign S>
 struct DataType {
-    static constexpr std::size_t len{L};
-    static constexpr Sign        sign{S};
+    static constexpr std::size_t K_LEN{L};
+    static constexpr Sign        K_SIGN{S};
 };
 
 template <std::size_t N>
@@ -66,11 +66,11 @@ struct df_uint30 : DataType<30, Sign::UNSIGNED> {};
 struct df_uint32 : DataType<32, Sign::UNSIGNED> {};
 struct df_uint35 : DataType<35, Sign::UNSIGNED> {};
 struct df_uint36 : DataType<36, Sign::UNSIGNED> {};
-struct df_intS5 : DataType<5, Sign::SIGNED_MAGNITUDE> {};
-struct df_intS11 : DataType<11, Sign::SIGNED_MAGNITUDE> {};
-struct df_intS22 : DataType<22, Sign::SIGNED_MAGNITUDE> {};
-struct df_intS24 : DataType<24, Sign::SIGNED_MAGNITUDE> {};
-struct df_intS27 : DataType<27, Sign::SIGNED_MAGNITUDE> {};
-struct df_intS32 : DataType<32, Sign::SIGNED_MAGNITUDE> {};
+struct df_intS5 : DataType<5, Sign::SignedMagnitude> {};
+struct df_intS11 : DataType<11, Sign::SignedMagnitude> {};
+struct df_intS22 : DataType<22, Sign::SignedMagnitude> {};
+struct df_intS24 : DataType<24, Sign::SignedMagnitude> {};
+struct df_intS27 : DataType<27, Sign::SignedMagnitude> {};
+struct df_intS32 : DataType<32, Sign::SignedMagnitude> {};
 // utf8(N) Unicode UTF-8 Code Unit 00h to FFh 8-bit value that contains all or part of a Unicode
 // UTF-8 encoded character

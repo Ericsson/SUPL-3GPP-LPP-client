@@ -42,7 +42,7 @@ std::unique_ptr<Message> UbxRxmRtcm::parse(Decoder& decoder, std::vector<uint8_t
         return nullptr;
     }
 
-    auto version = decoder.U1();
+    auto version = decoder.u1();
     if (decoder.error()) {
         return nullptr;
     }
