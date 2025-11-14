@@ -30,7 +30,7 @@ static CONSTEXPR double MAP_COEF[][5] = {
 };
 
 static double interpolate_coef(double lat_deg, double const coef[5]) {
-    auto lat_abs = std::abs(lat_deg);
+    auto lat_abs = std::fabs(lat_deg);
     auto index   = static_cast<int>(lat_abs / 15.0);
 
     if (index < 0) {

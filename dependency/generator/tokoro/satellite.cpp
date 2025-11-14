@@ -164,7 +164,7 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
         t_e = new_t_e;
 
         // check if the delta has converged
-        if (std::abs(delta_t_e.full_seconds()) < 1.0e-12) {
+        if (std::fabs(delta_t_e.full_seconds()) < 1.0e-12) {
             break;
         }
     }

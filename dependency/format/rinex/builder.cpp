@@ -38,7 +38,7 @@ static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds)
     }
 }
 
-static inline SignalId const gGpsSignals[] = {
+static SignalId const gGpsSignals[4] = {
     SignalId::GPS_L1_CA,
     // SignalId::GPS_L1_P,
     // SignalId::GPS_L1_Z_TRACKING,
@@ -56,7 +56,7 @@ static inline SignalId const gGpsSignals[] = {
     // SignalId::GPS_L1_L1C_D_P,
 };
 
-static inline SignalId const gGloSignals[] = {
+static SignalId const gGloSignals[2] = {
     SignalId::GLONASS_G1_CA, SignalId::GLONASS_G2_CA,
     // SignalId::GLONASS_G1_P,
     // SignalId::GLONASS_G2_P,
@@ -71,7 +71,7 @@ static inline SignalId const gGloSignals[] = {
     // SignalId::GLONASS_G3_I_Q,
 };
 
-static inline SignalId const gGalSignals[] = {
+static SignalId const gGalSignals[4] = {
     // SignalId::GALILEO_E1_C_NO_DATA,
     // SignalId::GALILEO_E1_A,
     // SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL,
@@ -93,7 +93,7 @@ static inline SignalId const gGalSignals[] = {
     SignalId::GALILEO_E5A_I_Q,
 };
 
-static inline SignalId const gBdsSignals[] = {
+static SignalId const gBdsSignals[4] = {
     SignalId::BEIDOU_B1_I,
     // SignalId::BEIDOU_B1_Q,
     // SignalId::BEIDOU_B1_I_Q,

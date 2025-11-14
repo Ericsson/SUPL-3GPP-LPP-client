@@ -22,7 +22,7 @@ Vector3 ecef_to_llh(Vector3 ecef, ReferenceEllipsoid const& ellipsoid) {
         auto sin_phi = std::sin(phi);
         auto N       = a / std::sqrt(1.0 - e2 * sin_phi * sin_phi);
         auto phi_n   = std::atan2(z + N * e2 * sin_phi, p);
-        if (std::abs(phi_n - phi) < tolerance) {
+        if (std::fabs(phi_n - phi) < tolerance) {
             phi = phi_n;
 
             auto h = p / std::cos(phi) - N;

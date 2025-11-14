@@ -280,9 +280,11 @@ set_target_properties(asn1_skeleton PROPERTIES
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
 )
-# Explicitly disable ASAN for ASN.1 code
-target_compile_options(asn1_skeleton PRIVATE -fno-sanitize=all)
-target_link_options(asn1_skeleton PRIVATE -fno-sanitize=all)
+if(COMPILER_SUPPORTS_NO_SANITIZE)
+    # Explicitly disable ASAN for ASN.1 code
+    target_compile_options(asn1_skeleton PRIVATE -fno-sanitize=all)
+    target_link_options(asn1_skeleton PRIVATE -fno-sanitize=all)
+endif()
 
 #
 # SUPL ASN.1
@@ -302,9 +304,11 @@ set_target_properties(asn1_supl_generated PROPERTIES
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
 )
-# Explicitly disable ASAN for ASN.1 code
-target_compile_options(asn1_supl_generated PRIVATE -fno-sanitize=all)
-target_link_options(asn1_supl_generated PRIVATE -fno-sanitize=all)
+if(COMPILER_SUPPORTS_NO_SANITIZE)
+    # Explicitly disable ASAN for ASN.1 code
+    target_compile_options(asn1_supl_generated PRIVATE -fno-sanitize=all)
+    target_link_options(asn1_supl_generated PRIVATE -fno-sanitize=all)
+endif()
 
 #
 # 3GPP LPP ASN.1
@@ -324,9 +328,11 @@ set_target_properties(asn1_lpp_generated PROPERTIES
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
 )
-# Explicitly disable ASAN for ASN.1 code
-target_compile_options(asn1_lpp_generated PRIVATE -fno-sanitize=all)
-target_link_options(asn1_lpp_generated PRIVATE -fno-sanitize=all)
+if(COMPILER_SUPPORTS_NO_SANITIZE)
+    # Explicitly disable ASAN for ASN.1 code
+    target_compile_options(asn1_lpp_generated PRIVATE -fno-sanitize=all)
+    target_link_options(asn1_lpp_generated PRIVATE -fno-sanitize=all)
+endif()
 
 #
 # Helper

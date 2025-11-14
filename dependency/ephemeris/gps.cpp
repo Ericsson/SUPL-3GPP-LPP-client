@@ -92,7 +92,7 @@ double GpsEphemeris::calculate_eccentric_anomaly(double t_k) const NOEXCEPT {
         auto e_k_cos = e * std::cos(e_k);
 
         auto new_e_k   = e_k + (m_k - e_k + e_k_sin) / (1 - e_k_cos);
-        auto delta_e_k = std::abs(new_e_k - e_k);
+        auto delta_e_k = std::fabs(new_e_k - e_k);
         VERBOSEF("%2i: e_k: %f, new_e_k: %f, delta_e_k: %f", i, e_k, new_e_k, delta_e_k);
         if (delta_e_k < 1e-12) {
             break;
