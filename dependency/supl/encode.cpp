@@ -201,7 +201,7 @@ static SLPAddress encode_slp_address(Identity identity) {
         SLPAddress result{};
         result.present     = SLPAddress_PR_fQDN;
         result.choice.fQDN = octet_string_from(
-            reinterpret_cast<uint8_t const*>(identity.data.fQDN.data()), identity.data.fQDN.size());
+            reinterpret_cast<uint8_t const*>(identity.data.fqdn.data()), identity.data.fqdn.size());
         return result;
     }
 
@@ -245,47 +245,47 @@ static MNC encode_mnc(uint64_t mnc_value) {
     return mnc;
 }
 
-static CellGlobalIdEUTRA_t encode_cellGlobalIdEUTRA(uint64_t mcc, uint64_t mnc, uint64_t ci) {
+static CellGlobalIdEUTRA_t encode_cell_global_id_eutra(uint64_t mcc, uint64_t mnc, uint64_t ci) {
     VSCOPE_FUNCTION();
-    CellIdentity_t cellIdentity{};
-    helper::BitStringBuilder{}.integer(0, 28, ci).into_bit_string(28, &cellIdentity);
+    CellIdentity_t cell_identity{};
+    helper::BitStringBuilder{}.integer(0, 28, ci).into_bit_string(28, &cell_identity);
 
     CellGlobalIdEUTRA_t result{};
     result.plmn_Identity.mcc = encode_mcc(mcc);
     result.plmn_Identity.mnc = encode_mnc(mnc);
-    result.cellIdentity      = cellIdentity;
+    result.cellIdentity      = cell_identity;
     return result;
 }
 
-static PhysCellId_t encode_physCellId(uint64_t id) {
+static PhysCellId_t encode_phys_cell_id(uint64_t id) {
     VSCOPE_FUNCTION();
     return static_cast<long>(id);
 }
 
-static TrackingAreaCode_t encode_trackingAreaCode(uint64_t tac) {
+static TrackingAreaCode_t encode_tracking_area_code(uint64_t tac) {
     VSCOPE_FUNCTION();
     TrackingAreaCode_t tracking_area_code{};
     helper::BitStringBuilder{}.integer(0, 16, tac).into_bit_string(16, &tracking_area_code);
     return tracking_area_code;
 }
 
-static CellGlobalIdNR_t encode_cellGlobalIdNR(uint64_t mcc, uint64_t mnc, uint64_t ci) {
+static CellGlobalIdNR_t encode_cell_global_id_nr(uint64_t mcc, uint64_t mnc, uint64_t ci) {
     VSCOPE_FUNCTION();
-    CellIdentityNR_t cellIdentity{};
-    helper::BitStringBuilder{}.integer(0, 36, ci).into_bit_string(36, &cellIdentity);
+    CellIdentityNR_t cell_identity{};
+    helper::BitStringBuilder{}.integer(0, 36, ci).into_bit_string(36, &cell_identity);
 
     CellGlobalIdNR_t result{};
     result.plmn_Identity.mcc = encode_mcc(mcc);
     result.plmn_Identity.mnc = encode_mnc(mnc);
-    result.cellIdentityNR    = cellIdentity;
+    result.cellIdentityNR    = cell_identity;
     return result;
 }
 
-static PhysCellIdNR_t encode_physCellIdNR(uint64_t id) {
+static PhysCellIdNR_t encode_phys_cell_id_nr(uint64_t id) {
     return static_cast<long>(id);
 }
 
-static TrackingAreaCodeNR_t encode_trackingAreaCodeNR(uint64_t tac) {
+static TrackingAreaCodeNR_t encode_tracking_area_code_nr(uint64_t tac) {
     VSCOPE_FUNCTION();
     TrackingAreaCodeNR_t tracking_area_code{};
     helper::BitStringBuilder{}.integer(0, 24, tac).into_bit_string(24, &tracking_area_code);
@@ -317,9 +317,9 @@ static CellInfo encode_cellinfo(Cell cell) {
 
         auto& lte_cell = result.choice.ver2_CellInfo_extension.choice.lteCell;
         lte_cell.cellGlobalIdEUTRA =
-            encode_cellGlobalIdEUTRA(cell.data.lte.mcc, cell.data.lte.mnc, cell.data.lte.ci);
-        lte_cell.physCellId       = encode_physCellId(cell.data.lte.phys_id);
-        lte_cell.trackingAreaCode = encode_trackingAreaCode(cell.data.lte.tac);
+            encode_cell_global_id_eutra(cell.data.lte.mcc, cell.data.lte.mnc, cell.data.lte.ci);
+        lte_cell.physCellId       = encode_phys_cell_id(cell.data.lte.phys_id);
+        lte_cell.trackingAreaCode = encode_tracking_area_code(cell.data.lte.tac);
         return result;
     } else if (cell.type == Cell::Type::NR) {
         result.present                                = CellInfo_PR_ver2_CellInfo_extension;
@@ -330,11 +330,11 @@ static CellInfo encode_cellinfo(Cell cell) {
 
         auto serv_cell = reinterpret_cast<ServCellNR*>(calloc(1, sizeof(ServCellNR)));
         ASSERT(serv_cell, "out of memory");
-        serv_cell->physCellId = encode_physCellIdNR(cell.data.nr.phys_id);
+        serv_cell->physCellId = encode_phys_cell_id_nr(cell.data.nr.phys_id);
         serv_cell->arfcn_NR   = 0;
         serv_cell->cellGlobalId =
-            encode_cellGlobalIdNR(cell.data.nr.mcc, cell.data.nr.mnc, cell.data.nr.ci);
-        serv_cell->trackingAreaCode = encode_trackingAreaCodeNR(cell.data.nr.tac);
+            encode_cell_global_id_nr(cell.data.nr.mcc, cell.data.nr.mnc, cell.data.nr.ci);
+        serv_cell->trackingAreaCode = encode_tracking_area_code_nr(cell.data.nr.tac);
 
         asn_sequence_add(&nr_cell_list, serv_cell);
         return result;
@@ -346,77 +346,77 @@ static CellInfo encode_cellinfo(Cell cell) {
 static void encode_session(ULP_PDU* pdu, Session::SET& set, Session::SLP& slp) {
     VSCOPE_FUNCTION();
     if (set.is_active) {
-        auto setSessionID = reinterpret_cast<SetSessionID*>(calloc(1, sizeof(SetSessionID)));
-        ASSERT(setSessionID, "out of memory");
-        setSessionID->sessionId     = set.id;
-        setSessionID->setId         = encode_setid(set.identity);
-        pdu->sessionID.setSessionID = setSessionID;
+        auto set_session_id = reinterpret_cast<SetSessionID*>(calloc(1, sizeof(SetSessionID)));
+        ASSERT(set_session_id, "out of memory");
+        set_session_id->sessionId   = set.id;
+        set_session_id->setId       = encode_setid(set.identity);
+        pdu->sessionID.setSessionID = set_session_id;
     }
 
     if (slp.is_active) {
-        auto slpSessionID = reinterpret_cast<SlpSessionID*>(calloc(1, sizeof(SlpSessionID)));
-        ASSERT(slpSessionID, "out of memory");
-        slpSessionID->sessionID     = octet_string_from(slp.id, 4);
-        slpSessionID->slpId         = encode_slp_address(slp.identity);
-        pdu->sessionID.slpSessionID = slpSessionID;
+        auto slp_session_id = reinterpret_cast<SlpSessionID*>(calloc(1, sizeof(SlpSessionID)));
+        ASSERT(slp_session_id, "out of memory");
+        slp_session_id->sessionID   = octet_string_from(slp.id, 4);
+        slp_session_id->slpId       = encode_slp_address(slp.identity);
+        pdu->sessionID.slpSessionID = slp_session_id;
     }
 }
 
-static ::SETCapabilities encode_setcapabilities(supl::SETCapabilities const& sETCapabilities) {
+static ::SETCapabilities encode_setcapabilities(supl::SETCapabilities const& set_capabilities) {
     VSCOPE_FUNCTION();
-    ::PosProtocol posProtocol{};
-    posProtocol.ver2_PosProtocol_extension = helper::asn1_allocate<Ver2_PosProtocol_extension>();
+    ::PosProtocol pos_protocol{};
+    pos_protocol.ver2_PosProtocol_extension = helper::asn1_allocate<Ver2_PosProtocol_extension>();
 
-    auto& rrc = sETCapabilities.posProtocol.rrc;
+    auto& rrc = set_capabilities.pos_protocol.rrc;
     if (rrc.enabled) {
         auto version                   = helper::asn1_allocate<PosProtocolVersion3GPP>();
-        version->majorVersionField     = rrc.majorVersionField;
-        version->technicalVersionField = rrc.technicalVersionField;
-        version->editorialVersionField = rrc.editorialVersionField;
+        version->majorVersionField     = rrc.major_version_field;
+        version->technicalVersionField = rrc.technical_version_field;
+        version->editorialVersionField = rrc.editorial_version_field;
 
-        posProtocol.rrc                                               = true;
-        posProtocol.ver2_PosProtocol_extension->posProtocolVersionRRC = version;
+        pos_protocol.rrc                                               = true;
+        pos_protocol.ver2_PosProtocol_extension->posProtocolVersionRRC = version;
     }
 
-    auto& rrlp = sETCapabilities.posProtocol.rrlp;
+    auto& rrlp = set_capabilities.pos_protocol.rrlp;
     if (rrlp.enabled) {
         auto version                   = helper::asn1_allocate<PosProtocolVersion3GPP>();
-        version->majorVersionField     = rrlp.majorVersionField;
-        version->technicalVersionField = rrlp.technicalVersionField;
-        version->editorialVersionField = rrlp.editorialVersionField;
+        version->majorVersionField     = rrlp.major_version_field;
+        version->technicalVersionField = rrlp.technical_version_field;
+        version->editorialVersionField = rrlp.editorial_version_field;
 
-        posProtocol.rrlp                                               = true;
-        posProtocol.ver2_PosProtocol_extension->posProtocolVersionRRLP = version;
+        pos_protocol.rrlp                                               = true;
+        pos_protocol.ver2_PosProtocol_extension->posProtocolVersionRRLP = version;
     }
 
-    auto& lpp = sETCapabilities.posProtocol.lpp;
+    auto& lpp = set_capabilities.pos_protocol.lpp;
     if (lpp.enabled) {
         auto version                   = helper::asn1_allocate<PosProtocolVersion3GPP>();
-        version->majorVersionField     = lpp.majorVersionField;
-        version->technicalVersionField = lpp.technicalVersionField;
-        version->editorialVersionField = lpp.editorialVersionField;
+        version->majorVersionField     = lpp.major_version_field;
+        version->technicalVersionField = lpp.technical_version_field;
+        version->editorialVersionField = lpp.editorial_version_field;
 
-        posProtocol.ver2_PosProtocol_extension->lpp                   = true;
-        posProtocol.ver2_PosProtocol_extension->posProtocolVersionLPP = version;
+        pos_protocol.ver2_PosProtocol_extension->lpp                   = true;
+        pos_protocol.ver2_PosProtocol_extension->posProtocolVersionLPP = version;
     }
 
     ::SETCapabilities result{};
-    result.posTechnology.agpsSETassisted = sETCapabilities.posTechnology.agpsSETassisted;
-    result.posTechnology.agpsSETBased    = sETCapabilities.posTechnology.agpsSETBased;
-    result.posTechnology.autonomousGPS   = sETCapabilities.posTechnology.autonomousGPS;
-    result.posTechnology.aFLT            = sETCapabilities.posTechnology.aFLT;
-    result.posTechnology.eCID            = sETCapabilities.posTechnology.eCID;
-    result.posTechnology.eOTD            = sETCapabilities.posTechnology.eOTD;
-    result.posTechnology.oTDOA           = sETCapabilities.posTechnology.oTDOA;
-    result.prefMethod                    = static_cast<PrefMethod_t>(sETCapabilities.prefMethod);
-    result.posProtocol                   = posProtocol;
+    result.posTechnology.agpsSETassisted = set_capabilities.pos_technology.agps_set_assisted;
+    result.posTechnology.agpsSETBased    = set_capabilities.pos_technology.agps_set_based;
+    result.posTechnology.autonomousGPS   = set_capabilities.pos_technology.autonomous_gps;
+    result.posTechnology.aFLT            = set_capabilities.pos_technology.aflt;
+    result.posTechnology.eCID            = set_capabilities.pos_technology.ecid;
+    result.posTechnology.eOTD            = set_capabilities.pos_technology.eotd;
+    result.posTechnology.oTDOA           = set_capabilities.pos_technology.otdoa;
+    result.prefMethod                    = static_cast<PrefMethod_t>(set_capabilities.pref_method);
+    result.posProtocol                   = pos_protocol;
     return result;
 }
 
-static ::LocationId encode_locationid(supl::LocationID const& locationID) {
+static ::LocationId encode_locationid(supl::LocationID const& location_id) {
     VSCOPE_FUNCTION();
     ::LocationId result{};
-    result.cellInfo = encode_cellinfo(locationID.cell);
+    result.cellInfo = encode_cellinfo(location_id.cell);
     result.status   = Status_current;
     return result;
 }
@@ -467,15 +467,15 @@ static ::ApplicationID* encode_applicationid(ApplicationID const& app_id) {
     OCTET_STRING_fromString(&application_id->appProvider, app_provider);
     OCTET_STRING_fromString(&application_id->appName, app_name);
 
-    auto appVersion = helper::asn1_allocate<IA5String_t>();
-    OCTET_STRING_fromBuf(appVersion, app_version, static_cast<int>(strlen(app_version)));
-    application_id->appVersion = appVersion;
+    auto app_version_ptr = helper::asn1_allocate<IA5String_t>();
+    OCTET_STRING_fromBuf(app_version_ptr, app_version, static_cast<int>(strlen(app_version)));
+    application_id->appVersion = app_version_ptr;
     return application_id;
 }
 
 static ::Ver2_SUPL_START_extension* encode_start_extension(const START& message) {
     VSCOPE_FUNCTION();
-    auto application_id = encode_applicationid(message.applicationID);
+    auto application_id = encode_applicationid(message.application_id);
 
     if (!application_id) {
         helper::asn1_free(application_id);
@@ -498,8 +498,8 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, con
     encode_session(ulp_pdu, set, slp);
 
     auto& pdu_message                     = ulp_pdu->message.choice.msSUPLSTART;
-    pdu_message.sETCapabilities           = encode_setcapabilities(message.sETCapabilities);
-    pdu_message.locationId                = encode_locationid(message.locationID);
+    pdu_message.sETCapabilities           = encode_setcapabilities(message.set_capabilities);
+    pdu_message.locationId                = encode_locationid(message.location_id);
     pdu_message.ver2_SUPL_START_extension = encode_start_extension(message);
 
     print(loglet::Level::Trace, ulp_pdu);
@@ -518,8 +518,8 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp,
     encode_session(ulp_pdu, set, slp);
 
     auto& pdu_message           = ulp_pdu->message.choice.msSUPLPOSINIT;
-    pdu_message.sETCapabilities = encode_setcapabilities(message.sETCapabilities);
-    pdu_message.locationId      = encode_locationid(message.locationID);
+    pdu_message.sETCapabilities = encode_setcapabilities(message.set_capabilities);
+    pdu_message.locationId      = encode_locationid(message.location_id);
 
     if (message.payloads.size() > 0) {
         auto suplpos        = helper::asn1_allocate<SUPLPOS>();

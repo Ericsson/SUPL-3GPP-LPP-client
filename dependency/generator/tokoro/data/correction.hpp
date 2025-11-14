@@ -66,7 +66,7 @@ struct CorrectionData {
         return nullptr;
     }
 
-    CorrectionPointSet const* mCorrectionPointSet;
+    CorrectionPointSet const* correction_point_set;
 
 private:
     ts::Tai mLatestCorrectionTime;

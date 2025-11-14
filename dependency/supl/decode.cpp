@@ -118,9 +118,9 @@ static Identity decode_identity(SLPAddress_t& slp_address) {
     switch (slp_address.present) {
     case SLPAddress_PR_NOTHING:
     case SLPAddress_PR_fQDN: {
-        auto& fQDN = slp_address.choice.fQDN;
-        auto value = std::string{reinterpret_cast<char*>(fQDN.buf), static_cast<size_t>(fQDN.size)};
-        return Identity::fQDN(value);
+        auto& fqdn = slp_address.choice.fQDN;
+        auto value = std::string{reinterpret_cast<char*>(fqdn.buf), static_cast<size_t>(fqdn.size)};
+        return Identity::fqdn(value);
     }
 
     case SLPAddress_PR_iPAddress: {
@@ -180,8 +180,8 @@ bool decode_response(Session::SET& set, Session::SLP& slp, RESPONSE& response, U
     }
 
     print(loglet::Level::Trace, pdu);
-    auto message       = &pdu->message.choice.msSUPLRESPONSE;
-    response.posMethod = static_cast<RESPONSE::PosMethod>(message->posMethod);
+    auto message        = &pdu->message.choice.msSUPLRESPONSE;
+    response.pos_method = static_cast<RESPONSE::PosMethod>(message->posMethod);
     return true;
 }
 

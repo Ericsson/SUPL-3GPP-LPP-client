@@ -17,25 +17,25 @@ uint32_t UbxCfgValset::set(Encoder& encoder, CfgLayer layers, CfgKey key, CfgVal
     payload_size += 4;             // 4 bytes for key
     payload_size += value.size();  // size of value
 
-    encoder.U1(0xB5);
-    encoder.U1(0x62);
+    encoder.u1(0xB5);
+    encoder.u1(0x62);
 
     auto checksum_begin = encoder.ptr();
-    encoder.U1(CLASS_ID);
-    encoder.U1(MESSAGE_ID);
-    encoder.U2(payload_size);
+    encoder.u1(CLASS_ID);
+    encoder.u1(MESSAGE_ID);
+    encoder.u2(payload_size);
 
-    encoder.U1(0);  // version
-    encoder.U1(layers);
-    encoder.U2(0);  // reserved
+    encoder.u1(0);  // version
+    encoder.u1(layers);
+    encoder.u2(0);  // reserved
 
-    encoder.U4(key);
+    encoder.u4(key);
     value.serialize(encoder);
 
     auto checksum_end    = encoder.ptr();
     auto checksum_length = static_cast<uint32_t>(checksum_end - checksum_begin);
     auto checksum        = Parser::checksum(checksum_begin, checksum_length);
-    encoder.U2(checksum);
+    encoder.u2(checksum);
 
     auto end = encoder.ptr();
     return static_cast<uint32_t>(end - begin);

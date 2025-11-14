@@ -8,10 +8,10 @@ namespace format {
 namespace nmea {
 
 enum class ChecksumResult {
-    OK = 0,
-    INVALID_STRING_NOSTAR,
-    INVALID_STRING_LENGTH,
-    INVALID_VALUE,
+    Ok = 0,
+    InvalidStringNostar,
+    InvalidStringLength,
+    InvalidValue,
 };
 
 class Message;

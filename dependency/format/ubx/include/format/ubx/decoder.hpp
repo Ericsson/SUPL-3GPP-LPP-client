@@ -10,30 +10,30 @@ class Decoder {
 public:
     EXPLICIT Decoder(uint8_t* payload, uint32_t payload_length) NOEXCEPT;
 
-    uint8_t  X1() NOEXCEPT;
-    uint16_t X2() NOEXCEPT;
-    uint32_t X4() NOEXCEPT;
-    uint64_t X8() NOEXCEPT;
+    uint8_t  x1() NOEXCEPT;
+    uint16_t x2() NOEXCEPT;
+    uint32_t x4() NOEXCEPT;
+    uint64_t x8() NOEXCEPT;
 
-    uint8_t  E1() NOEXCEPT;
-    uint16_t E2() NOEXCEPT;
-    uint32_t E4() NOEXCEPT;
+    uint8_t  e1() NOEXCEPT;
+    uint16_t e2() NOEXCEPT;
+    uint32_t e4() NOEXCEPT;
 
-    uint8_t  U1() NOEXCEPT;
-    uint16_t U2() NOEXCEPT;
-    uint32_t U4() NOEXCEPT;
-    uint64_t U8() NOEXCEPT;
+    uint8_t  u1() NOEXCEPT;
+    uint16_t u2() NOEXCEPT;
+    uint32_t u4() NOEXCEPT;
+    uint64_t u8() NOEXCEPT;
 
-    int8_t  I1() NOEXCEPT;
-    int16_t I2() NOEXCEPT;
-    int32_t I4() NOEXCEPT;
-    int64_t I8() NOEXCEPT;
+    int8_t  i1() NOEXCEPT;
+    int16_t i2() NOEXCEPT;
+    int32_t i4() NOEXCEPT;
+    int64_t i8() NOEXCEPT;
 
-    float  R4() NOEXCEPT;
-    double R8() NOEXCEPT;
+    float  r4() NOEXCEPT;
+    double r8() NOEXCEPT;
 
-    bool        L() NOEXCEPT;
-    std::string CH(uint32_t length) NOEXCEPT;
+    bool        logical() NOEXCEPT;
+    std::string ch(uint32_t length) NOEXCEPT;
 
     void               skip(uint32_t length) NOEXCEPT;
     NODISCARD uint32_t remaining() const NOEXCEPT;

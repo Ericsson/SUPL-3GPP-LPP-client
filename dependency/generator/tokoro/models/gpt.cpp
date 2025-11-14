@@ -136,46 +136,52 @@ GlobalPressureTempature gpt(double dmjd, double dlat, double dlon, double h_ell)
     int m_max = 9;
 
     // Compute factorial values
-    std::vector<double> dfac(2 * n_max + 2, 1.0);
-    for (int i = 1; i <= 2 * n_max + 1; ++i) {
-        dfac[i + 1] = dfac[i] * i;
+    std::vector<double> dfac(static_cast<size_t>(2 * n_max + 2), 1.0);
+    for (size_t i = 1; i <= static_cast<size_t>(2 * n_max + 1); ++i) {
+        dfac[i + 1] = dfac[i] * static_cast<double>(i);
     }
 
     // Compute Legendre functions
-    std::vector<std::vector<double>> P(n_max + 1, std::vector<double>(m_max + 1, 0.0));
+    std::vector<std::vector<double>> p(static_cast<size_t>(n_max + 1),
+                                       std::vector<double>(static_cast<size_t>(m_max + 1), 0.0));
     for (int n = 0; n <= n_max; ++n) {
         for (int m = 0; m <= std::min(n, m_max); ++m) {
             int    ir  = (n - m) / 2;
             double sum = 0.0;
             for (int k = 0; k <= ir; ++k) {
-                double term = pow(-1.0, k) * dfac[2 * n - 2 * k + 1] /
-                              (dfac[k + 1] * dfac[n - k + 1] * dfac[n - m - 2 * k + 1]) *
-                              pow(t, n - m - 2 * k);
+                double term =
+                    pow(-1.0, k) * dfac[static_cast<size_t>(2 * n - 2 * k + 1)] /
+                    (dfac[static_cast<size_t>(k + 1)] * dfac[static_cast<size_t>(n - k + 1)] *
+                     dfac[static_cast<size_t>(n - m - 2 * k + 1)]) *
+                    pow(t, n - m - 2 * k);
                 sum += term;
             }
-            P[n][m] = 1.0 / pow(2.0, n) * sqrt(pow(1.0 - t * t, m)) * sum;
+            p[static_cast<size_t>(n)][static_cast<size_t>(m)] =
+                1.0 / pow(2.0, n) * sqrt(pow(1.0 - t * t, m)) * sum;
         }
     }
 
     // Compute spherical harmonics
-    std::vector<double> Cnm(55, 0.0);
-    std::vector<double> Snm(55, 0.0);
+    std::vector<double> cnm(55, 0.0);
+    std::vector<double> snm(55, 0.0);
     int                 idx = 0;
     for (int n = 0; n <= n_max; ++n) {
         for (int m = 0; m <= n; ++m) {
             if (idx >= 55) break;
             double cos_m_lon = cos(m * dlon);
             double sin_m_lon = sin(m * dlon);
-            Cnm[idx]         = P[n][m] * cos_m_lon;
-            Snm[idx]         = P[n][m] * sin_m_lon;
+            cnm[static_cast<size_t>(idx)] =
+                p[static_cast<size_t>(n)][static_cast<size_t>(m)] * cos_m_lon;
+            snm[static_cast<size_t>(idx)] =
+                p[static_cast<size_t>(n)][static_cast<size_t>(m)] * sin_m_lon;
             idx++;
         }
     }
 
     // Compute Geoidal height
     double undu = 0.0;
-    for (int i = 0; i < 55; ++i) {
-        undu += (a_geoid[i] * Cnm[i] + b_geoid[i] * Snm[i]);
+    for (size_t i = 0; i < 55; ++i) {
+        undu += (a_geoid[i] * cnm[i] + b_geoid[i] * snm[i]);
     }
 
     // Orthometric height
@@ -184,9 +190,9 @@ GlobalPressureTempature gpt(double dmjd, double dlat, double dlon, double h_ell)
     // Surface pressure on the geoid
     double apm = 0.0;
     double apa = 0.0;
-    for (int i = 0; i < 55; ++i) {
-        apm += (ap_mean[i] * Cnm[i] + bp_mean[i] * Snm[i]);
-        apa += (ap_amp[i] * Cnm[i] + bp_amp[i] * Snm[i]);
+    for (size_t i = 0; i < 55; ++i) {
+        apm += (ap_mean[i] * cnm[i] + bp_mean[i] * snm[i]);
+        apa += (ap_amp[i] * cnm[i] + bp_amp[i] * snm[i]);
     }
     double pres0 = apm + apa * cos(doy / 365.25 * 2.0 * M_PI);
 
@@ -196,9 +202,9 @@ GlobalPressureTempature gpt(double dmjd, double dlat, double dlon, double h_ell)
     // Surface temperature on the geoid
     double atm = 0.0;
     double ata = 0.0;
-    for (int i = 0; i < 55; ++i) {
-        atm += (at_mean[i] * Cnm[i] + bt_mean[i] * Snm[i]);
-        ata += (at_amp[i] * Cnm[i] + bt_amp[i] * Snm[i]);
+    for (size_t i = 0; i < 55; ++i) {
+        atm += (at_mean[i] * cnm[i] + bt_mean[i] * snm[i]);
+        ata += (at_amp[i] * cnm[i] + bt_amp[i] * snm[i]);
     }
     double temp0 = atm + ata * cos(doy / 365.25 * 2.0 * M_PI);
 

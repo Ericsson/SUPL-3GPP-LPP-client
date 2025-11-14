@@ -22,30 +22,30 @@ enum struct Conversion {
 
 template <int NUM, typename T, typename DT, int E = 0, Conversion C = Conversion::NONE>
 struct DataField {
-    DataField() : d{} {}
+    DataField() : mValue{} {}
 
-    DataField(T const& t) : d{t} {}
-    operator T() const { return d; }
+    DataField(T const& t) : mValue{t} {}
+    operator T() const { return mValue; }
 
-    T value() const { return d; }
+    T value() const { return mValue; }
 
     DataField& operator=(T const& t) {
-        d = t;
+        mValue = t;
         return *this;
     }
 
     using InternalType = T;
-    static constexpr std::size_t num{NUM};
-    static constexpr std::size_t len{DT::len};
-    static constexpr Sign        sign{DT::sign};
-    static constexpr int         exponent{E};
+    static constexpr std::size_t K_NUM{NUM};
+    static constexpr std::size_t K_LEN{DT::K_LEN};
+    static constexpr Sign        K_SIGN{DT::K_SIGN};
+    static constexpr int         K_EXPONENT{E};
 
     static T convert(unsigned long long b) {
-        CONSTEXPR_IF(sign == Sign::UNSIGNED)
+        CONSTEXPR_IF(K_SIGN == Sign::UNSIGNED)
         return multiply_by_factor(b);
-        else CONSTEXPR_IF(sign == Sign::SIGNED) return multiply_by_factor(as_signed(b));
-        else CONSTEXPR_IF(sign ==
-                          Sign::SIGNED_MAGNITUDE) return multiply_by_factor(as_signed_magnitude(b));
+        else CONSTEXPR_IF(K_SIGN == Sign::SIGNED) return multiply_by_factor(as_signed(b));
+        else CONSTEXPR_IF(K_SIGN ==
+                          Sign::SignedMagnitude) return multiply_by_factor(as_signed_magnitude(b));
     }
 
     template <typename K>
@@ -55,7 +55,7 @@ struct DataField {
         }
         else CONSTEXPR_IF(C == Conversion::PICO100 || C == Conversion::MINUTE ||
                           C == Conversion::SC2RAD) {
-            auto result = static_cast<double>(value) * static_cast<double>(factor);
+            auto result = static_cast<double>(value) * static_cast<double>(K_FACTOR);
             return static_cast<T>(result);
         }
         else {
@@ -64,17 +64,17 @@ struct DataField {
     }
 
 private:
-    T d;
+    T mValue;
 
     static signed long long as_signed(unsigned long long b) {
-        if (b & (1ull << (len - 1)))
-            return static_cast<signed long long>(b | (~0ull << len));
+        if (b & (1ull << (K_LEN - 1)))
+            return static_cast<signed long long>(b | (~0ull << K_LEN));
         else
             return static_cast<signed long long>(b);
     }
     static signed long long as_signed_magnitude(unsigned long long b) {
-        if (b & (1ull << (len - 1)))
-            return static_cast<signed long long>(-(b & ((1ull << (len - 1)) - 1ull)));
+        if (b & (1ull << (K_LEN - 1)))
+            return static_cast<signed long long>(-(b & ((1ull << (K_LEN - 1)) - 1ull)));
         else
             return static_cast<signed long long>(b);
     }
@@ -82,13 +82,13 @@ private:
     static constexpr double pow2(int n) {
         return (n == 0) ? 1.0 : (n > 0) ? pow2(n - 1) * 2.0 : pow2(n + 1) / 2.0;
     }
-    static double constexpr _factor() {
-        return pow2(exponent) * (C == Conversion::SC2RAD  ? PI_DF :
-                                 C == Conversion::MINUTE  ? 60.0 :
-                                 C == Conversion::PICO100 ? 1e-10 :
-                                                            1);
+    static double constexpr calculate_factor() {
+        return pow2(K_EXPONENT) * (C == Conversion::SC2RAD  ? PI_DF :
+                                   C == Conversion::MINUTE  ? 60.0 :
+                                   C == Conversion::PICO100 ? 1e-10 :
+                                                              1);
     }
-    static constexpr T factor{static_cast<T>(_factor())};
+    static constexpr T K_FACTOR{static_cast<T>(calculate_factor())};
 };
 
 template <std::size_t N>
@@ -99,11 +99,11 @@ unsigned long long getsubbits(std::bitset<N> data, std::size_t i, std::size_t l)
 
 template <std::size_t N, typename DF>
 void getdatafield(std::bitset<N> const& data, std::size_t& i, DF& dest) {
-    auto bits = getsubbits(data, i, DF::len);
-    XTRACEF(&LOGLET_MODULE_REF3(format, rtcm, datafield), "[%4zd-%zd]: df%03zd %llX", i, DF::len,
-            DF::num, bits);
+    auto bits = getsubbits(data, i, DF::K_LEN);
+    XTRACEF(&LOGLET_MODULE_REF3(format, rtcm, datafield), "[%4zd-%zd]: df%03zd %llX", i, DF::K_LEN,
+            DF::K_NUM, bits);
     dest = DF::convert(bits);
-    i += DF::len;
+    i += DF::K_LEN;
 }
 
 // clang-format off

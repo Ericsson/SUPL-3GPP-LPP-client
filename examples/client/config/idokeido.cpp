@@ -92,7 +92,7 @@ static args::ValueFlag<std::string> gWeightModel{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
     gRelativistic.HelpChoices({"none", "brdc", "dotrv"});
     gRelativistic.HelpDefault("brdc");
 

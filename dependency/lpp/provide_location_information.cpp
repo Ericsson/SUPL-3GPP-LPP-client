@@ -47,9 +47,9 @@ static long encode_longitude(double lon) {
 }
 
 static long encode_ha_uncertainity(double r) {
-    auto C     = 0.3;
+    auto c     = 0.3;
     auto x     = 0.02;
-    auto k     = log((r / C) + 1) / log(1 + x);
+    auto k     = log((r / c) + 1) / log(1 + x);
     auto value = static_cast<long>(k);
     if (value <= 0) value = 0;
     if (value >= 255) value = 255;
@@ -136,16 +136,16 @@ static LocationCoordinates_t* location_coordinates(LocationShape const& shape) {
 }
 
 static long encode_velocity(double vel, long max) {
-    long N;
+    long n;
     vel = abs(vel) * 3.6;
     if (vel < 0.5) {
-        N = 0;
+        n = 0;
     } else if (vel >= static_cast<double>(max) + 0.5) {
-        N = max;
+        n = max;
     } else {
-        N = static_cast<long>(round(vel));
+        n = static_cast<long>(round(vel));
     }
-    return N;
+    return n;
 }
 
 static long encode_bearing(double bearing) {
@@ -258,17 +258,17 @@ static HA_GNSS_Metrics_r17* lpp_ha_gnss_metrics_r17(HaGnssMetrics const& metrics
     switch (metrics.fix_quality) {
     case FixQuality::INVALID:
     case FixQuality::STANDALONE:
-    case FixQuality::DGPS_FIX:
-    case FixQuality::PPS_FIX:
-    case FixQuality::DEAD_RECKONING:
-    case FixQuality::MANUAL_INPUT:
+    case FixQuality::DgpsFix:
+    case FixQuality::PpsFix:
+    case FixQuality::DeadReckoning:
+    case FixQuality::ManualInput:
     case FixQuality::SIMULATION:
-    case FixQuality::WAAS_FIX: break;
-    case FixQuality::RTK_FIX: {
+    case FixQuality::WaasFix: break;
+    case FixQuality::RtkFix: {
         element->fixType_r17  = ALLOC_ZERO(long);
         *element->fixType_r17 = HA_GNSS_Metrics_r17__fixType_r17_carrier_phase_fix;
     } break;
-    case FixQuality::RTK_FLOAT: {
+    case FixQuality::RtkFloat: {
         element->fixType_r17  = ALLOC_ZERO(long);
         *element->fixType_r17 = HA_GNSS_Metrics_r17__fixType_r17_carrier_phase_float;
     } break;

@@ -38,7 +38,7 @@ std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder, std::vector<uint8_t>
     payload.hw_version = decoder.CH(10);
     payload.extensions.reserve(extension_count);
     for (uint32_t i = 0; i < extension_count; ++i) {
-        payload.extensions.push_back(decoder.CH(30));
+        payload.extensions.push_back(decoder.ch(30));
     }
 
     if (decoder.error()) {
@@ -49,16 +49,16 @@ std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder, std::vector<uint8_t>
 }
 
 uint32_t UbxMonVer::poll(Encoder& encoder) NOEXCEPT {
-    encoder.U1(0xB5);
-    encoder.U1(0x62);
+    encoder.u1(0xB5);
+    encoder.u1(0x62);
 
     auto checksum_ptr = encoder.ptr();
-    encoder.U1(CLASS_ID);
-    encoder.U1(MESSAGE_ID);
-    encoder.U2(0);
+    encoder.u1(CLASS_ID);
+    encoder.u1(MESSAGE_ID);
+    encoder.u2(0);
 
     auto checksum = Parser::checksum(checksum_ptr, 4);
-    encoder.U2(checksum);
+    encoder.u2(checksum);
 
     return 8;
 }

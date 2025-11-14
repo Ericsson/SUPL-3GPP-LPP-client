@@ -18,8 +18,8 @@ static Timestamp tai_2_utc(Timestamp timestamp) {
 }
 
 Tai::Tai() = default;
-Tai::Tai(Timestamp const& timestamp) : tm{timestamp} {}
-Tai::Tai(Utc const& time) : tm(utc_2_tai(time.timestamp())) {}
+Tai::Tai(Timestamp const& timestamp) : mTm{timestamp} {}
+Tai::Tai(Utc const& time) : mTm(utc_2_tai(time.timestamp())) {}
 Tai::Tai(Gps const& time) : Tai(Utc(time)) {}
 Tai::Tai(Glo const& time) : Tai(Utc(time)) {}
 Tai::Tai(Gst const& time) : Tai(Utc(time)) {}
@@ -30,15 +30,15 @@ std::string Tai::rtklib_time_string(int fraction_digits) const {
 }
 
 Tai Tai::operator+(Timestamp delta) const {
-    return Tai{tm + delta};
+    return Tai{mTm + delta};
 }
 
 Timestamp Tai::difference(Tai const& other) const {
-    return tm - other.tm;
+    return mTm - other.mTm;
 }
 
 double Tai::difference_seconds(Tai const& other) const {
-    return tm.full_seconds() - other.tm.full_seconds();
+    return mTm.full_seconds() - other.mTm.full_seconds();
 }
 
 Tai Tai::now() {
@@ -46,7 +46,7 @@ Tai Tai::now() {
 }
 
 Timestamp Tai::utc_timestamp() const {
-    return tai_2_utc(tm);
+    return tai_2_utc(mTm);
 }
 
 }  // namespace ts

@@ -42,7 +42,7 @@ std::unique_ptr<Message> UbxRxmSpartn::parse(Decoder& decoder, std::vector<uint8
         return nullptr;
     }
 
-    auto version = decoder.U1();
+    auto version = decoder.u1();
     if (decoder.error()) {
         return nullptr;
     }
@@ -51,13 +51,13 @@ std::unique_ptr<Message> UbxRxmSpartn::parse(Decoder& decoder, std::vector<uint8
     if (version == 1) {
         payload.version = version;
 
-        auto flags                       = decoder.U1();
+        auto flags                       = decoder.u1();
         payload.data.v1.flags.crc_failed = (flags >> 0) & 0x01;
         payload.data.v1.flags.msg_used   = (flags >> 1) & 0x03;
 
-        payload.data.v1.sub_type  = decoder.U2();
-        payload.data.v1.padding04 = decoder.U2();
-        payload.data.v1.msg_type  = decoder.U2();
+        payload.data.v1.sub_type  = decoder.u2();
+        payload.data.v1.padding04 = decoder.u2();
+        payload.data.v1.msg_type  = decoder.u2();
     } else {
         payload.version = version;
     }

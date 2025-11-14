@@ -20,7 +20,7 @@ static sockaddr_in resolve(std::string const& hostname, uint16_t port) {
 }
 
 static std::string base64_encode(uint8_t* data, size_t size) {
-    static char const* table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    static char const* sTable = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
     std::string encoded;
     encoded.reserve((size + 2) / 3 * 4);
@@ -31,15 +31,15 @@ static std::string base64_encode(uint8_t* data, size_t size) {
         if (i + 1 < size) temp |= static_cast<uint32_t>(data[i + 1] << 8);
         if (i + 2 < size) temp |= static_cast<uint32_t>(data[i + 2] << 0);
 
-        encoded += table[(temp >> 18) & 0x3f];
-        encoded += table[(temp >> 12) & 0x3f];
+        encoded += sTable[(temp >> 18) & 0x3f];
+        encoded += sTable[(temp >> 12) & 0x3f];
         if (i + 1 < size) {
-            encoded += table[(temp >> 6) & 0x3f];
+            encoded += sTable[(temp >> 6) & 0x3f];
         } else {
             encoded += '=';
         }
         if (i + 2 < size) {
-            encoded += table[(temp >> 0) & 0x3f];
+            encoded += sTable[(temp >> 0) & 0x3f];
         } else {
             encoded += '=';
         }

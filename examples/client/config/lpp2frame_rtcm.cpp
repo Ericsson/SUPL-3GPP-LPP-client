@@ -40,7 +40,7 @@ static args::Flag gOutputInRtcm{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
     gRtcmMessageId.HelpDefault("355");
 }
 

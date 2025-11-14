@@ -10,7 +10,7 @@ LOGLET_MODULE2(idokeido, klobuchar);
 namespace idokeido {
 
 static Scalar cos_sc(Scalar x) {
-    return std::cos(x * constant::sc2r);
+    return std::cos(x * constant::K_SC2R);
 }
 
 Scalar KlobucharModelParameters::evaluate(ts::Tai const& time, Scalar elevation, Scalar azimuth,
@@ -21,9 +21,9 @@ Scalar KlobucharModelParameters::evaluate(ts::Tai const& time, Scalar elevation,
     VERBOSEF("a: %+.14f, %+14f, %+14f, %+14f", a[0], a[1], a[2], a[3]);
     VERBOSEF("b: %+.14f, %+14f, %+14f, %+14f", b[0], b[1], b[2], b[3]);
 
-    auto latitude_sc  = llh.x() * constant::r2sc;
-    auto longitude_sc = llh.y() * constant::r2sc;
-    auto elevation_sc = elevation * constant::r2sc;
+    auto latitude_sc  = llh.x() * constant::K_R2SC;
+    auto longitude_sc = llh.y() * constant::K_R2SC;
+    auto elevation_sc = elevation * constant::K_R2SC;
 
     auto gps_time     = ts::Gps(time);
     auto gps_time_sec = gps_time.timestamp().full_seconds();
@@ -69,7 +69,7 @@ Scalar KlobucharModelParameters::evaluate(ts::Tai const& time, Scalar elevation,
     }
 
     // Compute the phase of the ionospheric delay
-    auto phase = 2 * constant::pi * (ipp_local_time - 50400.0) / period;
+    auto phase = 2 * constant::K_PI * (ipp_local_time - 50400.0) / period;
     VERBOSEF("phase: %+.14f", phase);
 
     // Compute the slant factor
@@ -83,7 +83,7 @@ Scalar KlobucharModelParameters::evaluate(ts::Tai const& time, Scalar elevation,
         result += amplitude * (1.0 + phase_sq * (-0.5 + phase_sq / 24.0));
     }
 
-    auto delay = constant::c * slant_factor * result;
+    auto delay = constant::K_C * slant_factor * result;
     VERBOSEF("delay: %+.14f", delay);
 
     return delay;

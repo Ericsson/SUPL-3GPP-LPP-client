@@ -35,16 +35,15 @@ Generator::Generator()
       mUraDefault(0 /* SF024(0) = unknown */), mContinuityIndicator(-1),
       mUBloxClockCorrection(false), mSf055Override(-1), mSf055Default(0 /* SF055(0) = invalid */),
       mSf042Override(-1), mSf042Default(0 /* SF042(0) = invalid */),
-      mComputeAverageZenithDelay(false), mGroupByEpochTime(false), mIodeShift(true),
-      mIncreasingSiou(false), mSiouIndex(1), mCodeBiasTranslate(true),
-      mCodeBiasCorrectionShift(true), mPhaseBiasTranslate(true), mPhaseBiasCorrectionShift(true),
-      mHydrostaticResidualInZenith(false), mStecMethod(StecMethod::Default), mStecTranform(true),
-      mFlipGridBitmask(false), mFilterByResiduals(false), mFilterByOcb(false), mIgnoreL2L(false),
-      mStecInvalidToZero(false), mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false),
-      mSignFlipC11(false), mSignFlipStecResiduals(false), mFlipOrbitCorrection(false),
-      mDoNotUseSatellite(true), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
-      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
-      mBeidouSupported(false) {}
+      mComputeAverageZenithDelay(false), mIodeShift(true), mIncreasingSiou(false), mSiouIndex(1),
+      mCodeBiasTranslate(true), mCodeBiasCorrectionShift(true), mPhaseBiasTranslate(true),
+      mPhaseBiasCorrectionShift(true), mHydrostaticResidualInZenith(false),
+      mStecMethod(StecMethod::Default), mStecTranform(true), mFlipGridBitmask(false),
+      mFilterByResiduals(false), mFilterByOcb(false), mIgnoreL2L(false), mStecInvalidToZero(false),
+      mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false), mSignFlipC11(false),
+      mSignFlipStecResiduals(false), mFlipOrbitCorrection(false), mDoNotUseSatellite(true),
+      mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
+      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false) {}
 
 Generator::~Generator() = default;
 
@@ -146,21 +145,21 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
             correction_point_set.area_id = next_area_id();
             correction_point_set.grid_point_count =
                 (array.numberOfStepsLatitude_r16 + 1) * (array.numberOfStepsLongitude_r16 + 1);
-            correction_point_set.referencePointLatitude_r16  = array.referencePointLatitude_r16;
-            correction_point_set.referencePointLongitude_r16 = array.referencePointLongitude_r16;
-            correction_point_set.numberOfStepsLatitude_r16   = array.numberOfStepsLatitude_r16;
-            correction_point_set.numberOfStepsLongitude_r16  = array.numberOfStepsLongitude_r16;
-            correction_point_set.stepOfLatitude_r16          = array.stepOfLatitude_r16;
-            correction_point_set.stepOfLongitude_r16         = array.stepOfLongitude_r16;
+            correction_point_set.reference_point_latitude_r16  = array.referencePointLatitude_r16;
+            correction_point_set.reference_point_longitude_r16 = array.referencePointLongitude_r16;
+            correction_point_set.number_of_steps_latitude_r16  = array.numberOfStepsLatitude_r16;
+            correction_point_set.number_of_steps_longitude_r16 = array.numberOfStepsLongitude_r16;
+            correction_point_set.step_of_latitude_r16          = array.stepOfLatitude_r16;
+            correction_point_set.step_of_longitude_r16         = array.stepOfLongitude_r16;
 
-            correction_point_set.reference_point_latitude =
-                decode::referencePointLatitude_r16(correction_point_set.referencePointLatitude_r16);
-            correction_point_set.reference_point_longitude = decode::referencePointLongitude_r16(
-                correction_point_set.referencePointLongitude_r16);
+            correction_point_set.reference_point_latitude = decode::reference_point_latitude_r16(
+                correction_point_set.reference_point_latitude_r16);
+            correction_point_set.reference_point_longitude = decode::reference_point_longitude_r16(
+                correction_point_set.reference_point_longitude_r16);
             correction_point_set.latitude_delta =
-                decode::stepOfLatitude_r16(correction_point_set.stepOfLatitude_r16);
+                decode::step_of_latitude_r16(correction_point_set.step_of_latitude_r16);
             correction_point_set.longitude_delta =
-                decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16);
+                decode::step_of_longitude_r16(correction_point_set.step_of_longitude_r16);
 
             uint64_t bitmask = 0;
             if (array.bitmaskOfGrids_r16) {

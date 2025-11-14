@@ -132,15 +132,15 @@ bool Session::handshake(const START& message) {
         return false;
     }
 
-    mState = State::WAIT_FOR_HANDSHAKE;
+    mState = State::WaitForHandshake;
     return true;
 }
 
 Session::Handshake Session::handle_handshake() {
     VSCOPE_FUNCTION();
 
-    if (mState != State::WAIT_FOR_HANDSHAKE) {
-        WARNF("mState != State::WAIT_FOR_HANDSHAKE");
+    if (mState != State::WaitForHandshake) {
+        WARNF("mState != State::WaitForHandshake");
         return Handshake::ERROR;
     }
 
@@ -151,8 +151,8 @@ Session::Handshake Session::handle_handshake() {
     RESPONSE response{};
     END      end{};
     auto     received = try_receive(&response, &end, nullptr);
-    if (received == Received::NO_DATA) {
-        return Handshake::NO_DATA;
+    if (received == Received::NoData) {
+        return Handshake::NoData;
     } else if (received != Received::RESPONSE) {
         WARNF("expected SUPLRESPONSE");
         return Handshake::ERROR;
@@ -304,52 +304,52 @@ ULP_PDU* Session::wait_for_ulp_pdu() {
     UNREACHABLE();
 }
 
-bool operator==(Identity const& A, Identity const& B) {
-    if (A.type != B.type) return false;
+bool operator==(Identity const& a, Identity const& b) {
+    if (a.type != b.type) return false;
 
-    switch (A.type) {
+    switch (a.type) {
     case Identity::UNKNOWN: return false;
-    case Identity::MSISDN: return A.data.msisdn == B.data.msisdn;
-    case Identity::IMSI: return A.data.imsi == B.data.imsi;
-    case Identity::IPV4: return memcmp(A.data.ipv4, A.data.ipv4, 4) == 0;
-    case Identity::IPV6: return memcmp(A.data.ipv6, A.data.ipv6, 16) == 0;
-    case Identity::FQDN: return A.data.fQDN == B.data.fQDN;
+    case Identity::MSISDN: return a.data.msisdn == b.data.msisdn;
+    case Identity::IMSI: return a.data.imsi == b.data.imsi;
+    case Identity::IPV4: return memcmp(a.data.ipv4, a.data.ipv4, 4) == 0;
+    case Identity::IPV6: return memcmp(a.data.ipv6, a.data.ipv6, 16) == 0;
+    case Identity::FQDN: return a.data.fqdn == b.data.fqdn;
     }
 
     return false;
 }
 
-static bool operator==(Session::SET const& A, Session::SET const& B) {
-    if (A.id != B.id) return false;
-    if (A.is_active != B.is_active) return false;
-    return A.identity == B.identity;
+static bool operator==(Session::SET const& a, Session::SET const& b) {
+    if (a.id != b.id) return false;
+    if (a.is_active != b.is_active) return false;
+    return a.identity == b.identity;
 }
 
-static bool operator==(Session::SLP const& A, Session::SLP const& B) {
-    if (memcmp(A.id, B.id, 4) != 0) return false;
-    if (A.is_active != B.is_active) return false;
-    return A.identity == B.identity;
+static bool operator==(Session::SLP const& a, Session::SLP const& b) {
+    if (memcmp(a.id, b.id, 4) != 0) return false;
+    if (a.is_active != b.is_active) return false;
+    return a.identity == b.identity;
 }
 
-static bool operator!=(Session::SET const& A, Session::SET const& B) {
-    return !(A == B);
+static bool operator!=(Session::SET const& a, Session::SET const& b) {
+    return !(a == b);
 }
 
-static bool operator!=(Session::SLP const& A, Session::SLP const& B) {
-    return !(A == B);
+static bool operator!=(Session::SLP const& a, Session::SLP const& b) {
+    return !(a == b);
 }
 
 Session::Received Session::block_receive(RESPONSE* response, END* end, POS* pos) {
     VSCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
     if (!is_connected()) {
         WARNF("not connected");
-        return Received::SESSION_TERMINATED;
+        return Received::SessionTerminated;
     }
 
     auto ulp_pdu = wait_for_ulp_pdu();
     if (!ulp_pdu) {
         WARNF("unable to find or decode message");
-        return Received::UNABLE_TO_DECODE;
+        return Received::UnableToDecode;
     }
 
     SUPL_DEFER {
@@ -363,12 +363,12 @@ Session::Received Session::try_receive(RESPONSE* response, END* end, POS* pos) {
     VSCOPE_FUNCTIONF("%s,%s,%s", response ? "RESPONSE" : "-", end ? "END" : "-", pos ? "POS" : "-");
     if (!is_connected()) {
         WARNF("not connected");
-        return Received::SESSION_TERMINATED;
+        return Received::SessionTerminated;
     }
 
     auto ulp_pdu = parse_receive_buffer();
     if (!ulp_pdu) {
-        return Received::NO_DATA;
+        return Received::NoData;
     }
 
     SUPL_DEFER {
@@ -398,7 +398,7 @@ Session::Received Session::parse_message(ULP_PDU* ulp_pdu, RESPONSE* response, E
     assert(mSETSession.is_active);
     if (receive_set != mSETSession) {
         WARNF("invalid SET session");
-        return Received::INVALID_SESSION;
+        return Received::InvalidSession;
     }
 
     if (!mSLPSession.is_active) {
@@ -406,7 +406,7 @@ Session::Received Session::parse_message(ULP_PDU* ulp_pdu, RESPONSE* response, E
         assert(mSLPSession.is_active);
     } else if (receive_slp != mSLPSession) {
         WARNF("invalid SLP session");
-        return Received::INVALID_SESSION;
+        return Received::InvalidSession;
     }
 
     return received;

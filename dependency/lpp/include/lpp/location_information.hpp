@@ -349,21 +349,21 @@ enum class FixQuality : unsigned char {
     // 3 (and carrSoln = 0)
     STANDALONE = 1,
     // DGPS fix
-    DGPS_FIX = 2,
+    DgpsFix = 2,
     // PPS fix
-    PPS_FIX = 3,
+    PpsFix = 3,
     // RTK fix. E.g u-blox F9P UBX-NAV-PVT attribute fixType = 3 and carrSoln = 2
-    RTK_FIX = 4,
+    RtkFix = 4,
     // RTK float. E.g u-blox F9P UBX-NAV-PVT attribute fixType = 3 and carrSoln = 1
-    RTK_FLOAT = 5,
+    RtkFloat = 5,
     // Estimated fix (dead reckoning). E.g u-blox F9P UBX-NAV-PVT attribute fixType = 1
-    DEAD_RECKONING = 6,
+    DeadReckoning = 6,
     // Manual input mode
-    MANUAL_INPUT = 7,
+    ManualInput = 7,
     // Simulation mode
     SIMULATION = 8,
     // WAAS fix (not NMEA standard, but NovAtel receivers report this instead of a 2)
-    WAAS_FIX = 9,
+    WaasFix = 9,
 };
 
 struct HaGnssMetrics {

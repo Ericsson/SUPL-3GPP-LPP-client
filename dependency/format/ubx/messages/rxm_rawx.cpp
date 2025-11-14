@@ -34,13 +34,13 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
         return nullptr;
     }
 
-    auto rcv_tow   = decoder.R8();
-    auto week      = decoder.U2();
-    auto leap_s    = decoder.I1();
-    auto num_meas  = decoder.U1();
-    auto rec_stat  = decoder.X1();
-    auto version   = decoder.U1();
-    auto reserved0 = decoder.U2();
+    auto rcv_tow   = decoder.r8();
+    auto week      = decoder.u2();
+    auto leap_s    = decoder.i1();
+    auto num_meas  = decoder.u1();
+    auto rec_stat  = decoder.x1();
+    auto version   = decoder.u1();
+    auto reserved0 = decoder.u2();
     if (decoder.error()) {
         VERBOSEF("failed to decode payload");
         return nullptr;
@@ -65,20 +65,20 @@ std::unique_ptr<Message> UbxRxmRawx::parse(Decoder& decoder, std::vector<uint8_t
 
     std::vector<raw::RxmRawxMeasurement> measurements;
     for (uint8_t i = 0; i < num_meas; i++) {
-        auto pr_mes         = decoder.R8();
-        auto cp_mes         = decoder.R8();
-        auto do_mes         = decoder.R4();
-        auto gnss_id        = decoder.U1();
-        auto sv_id          = decoder.U1();
-        auto sig_id         = decoder.U1();
-        auto freq_id        = decoder.U1();
-        auto locktime       = decoder.U2();
-        auto cno            = decoder.U1();
-        auto pr_stdev       = decoder.X1();
-        auto cp_stdev       = decoder.X1();
-        auto do_stdev       = decoder.X1();
-        auto trk_stat       = decoder.X1();
-        auto meas_reserved0 = decoder.U1();
+        auto pr_mes         = decoder.r8();
+        auto cp_mes         = decoder.r8();
+        auto do_mes         = decoder.r4();
+        auto gnss_id        = decoder.u1();
+        auto sv_id          = decoder.u1();
+        auto sig_id         = decoder.u1();
+        auto freq_id        = decoder.u1();
+        auto locktime       = decoder.u2();
+        auto cno            = decoder.u1();
+        auto pr_stdev       = decoder.x1();
+        auto cp_stdev       = decoder.x1();
+        auto do_stdev       = decoder.x1();
+        auto trk_stat       = decoder.x1();
+        auto meas_reserved0 = decoder.u1();
         if (decoder.error()) {
             VERBOSEF("failed to decode measurement %u", i);
             return nullptr;

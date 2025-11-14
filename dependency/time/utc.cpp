@@ -14,26 +14,25 @@
 namespace ts {
 
 // NOTE: The day each month of the year starts with.
-constexpr static std::array<int64_t, 12> day_of_year = {
+constexpr static std::array<int64_t, 12> DAY_OF_YEAR = {
     1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335,
 };
 
-constexpr static int32_t gmtime_start_year    = 1900;
-constexpr static int64_t utc_start_year       = 1970;
-constexpr static int64_t utc_end_year         = 2099;
-constexpr static int64_t days_per_year        = 365;
-constexpr static double  microseconds2seconds = 1E-6;
+constexpr static int32_t GMTIME_START_YEAR       = 1900;
+constexpr static int64_t UTC_START_YEAR          = 1970;
+constexpr static int64_t UTC_END_YEAR            = 2099;
+constexpr static double  MICROSECONDS_TO_SECONDS = 1E-6;
 
 static Timestamp utc_from_date(int64_t year, int64_t month, int64_t day, int64_t hour,
                                int64_t minutes, double seconds) {
-    assert(year >= utc_start_year && year < utc_end_year);
+    assert(year >= UTC_START_YEAR && year < UTC_END_YEAR);
     assert(month > 0 && month <= 12);
     assert(day > 0 && day <= 31);
 #if 0
-    if (year < utc_start_year) {
-        year = utc_start_year;
-    } else if (year >= utc_end_year) {
-        year = utc_end_year - 1;
+    if (year < UTC_START_YEAR) {
+        year = UTC_START_YEAR;
+    } else if (year >= UTC_END_YEAR) {
+        year = UTC_END_YEAR - 1;
     }
 
     if (month <= 0) {
@@ -45,15 +44,15 @@ static Timestamp utc_from_date(int64_t year, int64_t month, int64_t day, int64_t
 
     auto days = 0LL;
 
-    for (auto i = utc_start_year; i < year; i++) {
+    for (auto i = UTC_START_YEAR; i < year; i++) {
         if (i % 4 == 0) {
-            days += days_per_year + 1;
+            days += DAYS_PER_YEAR + 1;
         } else {
-            days += days_per_year;
+            days += DAYS_PER_YEAR;
         }
     }
 
-    days += day_of_year.at(static_cast<size_t>(month - 1)) - 1;
+    days += DAY_OF_YEAR.at(static_cast<size_t>(month - 1)) - 1;
     days += day;
     days += -1;
     days += (year % 4 == 0 && month >= 3 ? 1 : 0);
@@ -94,7 +93,7 @@ static TimePoint date_from_utc(Timestamp time) {
         day -= MONTH_DAYS[month];
     }
 
-    auto year = utc_start_year;
+    auto year = UTC_START_YEAR;
     year += 4 * (days / DAYS_PER_4YEAR);
     year += month / MONTH_PER_YEAR;
 
@@ -118,15 +117,15 @@ static TimePoint date_from_utc(Timestamp time) {
 }
 
 Utc::Utc() = default;
-Utc::Utc(Timestamp const& timestamp) : tm{timestamp} {}
-Utc::Utc(Tai const& time) : tm(time.utc_timestamp()) {}
-Utc::Utc(Gps const& time) : tm(time.utc_timestamp()) {}
-Utc::Utc(Glo const& time) : tm(time.utc_timestamp()) {}
-Utc::Utc(Gst const& time) : tm(time.utc_timestamp()) {}
-Utc::Utc(Bdt const& time) : tm(time.utc_timestamp()) {}
+Utc::Utc(Timestamp const& timestamp) : mTm{timestamp} {}
+Utc::Utc(Tai const& time) : mTm(time.utc_timestamp()) {}
+Utc::Utc(Gps const& time) : mTm(time.utc_timestamp()) {}
+Utc::Utc(Glo const& time) : mTm(time.utc_timestamp()) {}
+Utc::Utc(Gst const& time) : mTm(time.utc_timestamp()) {}
+Utc::Utc(Bdt const& time) : mTm(time.utc_timestamp()) {}
 
 int64_t Utc::days() const {
-    return tm.seconds() / DAY_IN_SECONDS;
+    return mTm.seconds() / DAY_IN_SECONDS;
 }
 
 double Utc::day_of_year() const {
@@ -137,7 +136,7 @@ double Utc::day_of_year() const {
 }
 
 Timestamp Utc::ut1(double ut1_utc) const {
-    return tm + Timestamp{ut1_utc};
+    return mTm + Timestamp{ut1_utc};
 }
 
 // https://www2.mps.mpg.de/homes/fraenz/systems/systems3art/node10.html
@@ -215,18 +214,18 @@ std::string Utc::rinex_filename() const {
 
 Utc Utc::now() {
     struct timeval tv{};
-    struct tm      tm{};
+    struct tm      time_info{};
 
     gettimeofday(&tv, nullptr);
-    auto tt = gmtime_r(&tv.tv_sec, &tm);
+    auto tt = gmtime_r(&tv.tv_sec, &time_info);
 
-    auto year      = tt->tm_year + gmtime_start_year;
+    auto year      = tt->tm_year + GMTIME_START_YEAR;
     auto month     = tt->tm_mon + 1;
     auto day       = tt->tm_mday;
     auto hour      = tt->tm_hour;
     auto minutes   = tt->tm_min;
     auto seconds   = tt->tm_sec;
-    auto fractions = static_cast<double>(tv.tv_usec) * microseconds2seconds;
+    auto fractions = static_cast<double>(tv.tv_usec) * MICROSECONDS_TO_SECONDS;
 
     auto timestamp = utc_from_date(year, month, day, hour, minutes, seconds);
     timestamp.add(fractions);
@@ -244,7 +243,7 @@ Utc Utc::from_date_time(int64_t year, int64_t month, int64_t day, int64_t hour, 
 }
 
 TimePoint Utc::time_point() const {
-    return date_from_utc(tm);
+    return date_from_utc(mTm);
 }
 
 Utc Utc::from_time_point(TimePoint const& tp) {

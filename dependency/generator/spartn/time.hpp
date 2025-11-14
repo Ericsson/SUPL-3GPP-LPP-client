@@ -9,8 +9,8 @@ struct SpartnTime {
 };
 
 inline bool operator==(SpartnTime const& lhs, SpartnTime const& rhs) {
-    constexpr double tolerance = 1e-6;
-    return std::abs(lhs.seconds - rhs.seconds) < tolerance &&
+    constexpr double K_TOLERANCE = 1e-6;
+    return std::abs(lhs.seconds - rhs.seconds) < K_TOLERANCE &&
            lhs.rounded_seconds == rhs.rounded_seconds;
 }
 

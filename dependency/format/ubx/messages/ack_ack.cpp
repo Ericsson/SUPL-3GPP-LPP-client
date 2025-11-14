@@ -27,8 +27,8 @@ std::unique_ptr<Message> UbxAckAck::parse(Decoder& decoder, std::vector<uint8_t>
     }
 
     auto payload   = raw::AckAck{};
-    payload.cls_id = decoder.U1();
-    payload.msg_id = decoder.U1();
+    payload.cls_id = decoder.u1();
+    payload.msg_id = decoder.u1();
 
     if (decoder.error()) {
         return nullptr;

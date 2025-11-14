@@ -417,9 +417,9 @@ void Printer::value(::Ver2_PosProtocol_extension const& x) {
 
 void Printer::value(::PosProtocolVersion3GPP const& x) {
     push('{');
-    field("majorVersionField", x.majorVersionField);
-    field("technicalVersionField", x.technicalVersionField);
-    field("editorialVersionField", x.editorialVersionField);
+    field("major-version-field", x.majorVersionField);
+    field("technical-version-field", x.technicalVersionField);
+    field("editorial-version-field", x.editorialVersionField);
     pop('}');
 }
 

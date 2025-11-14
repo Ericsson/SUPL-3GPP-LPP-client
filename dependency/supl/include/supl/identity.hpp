@@ -22,7 +22,7 @@ struct Identity {
         uint64_t    imsi;
         uint8_t     ipv4[4];
         uint8_t     ipv6[16];
-        std::string fQDN;
+        std::string fqdn;
     } data;
 
     static Identity unknown() {
@@ -59,10 +59,10 @@ struct Identity {
         return identity;
     }
 
-    static Identity fQDN(std::string data) {
+    static Identity fqdn(std::string data) {
         Identity identity{};
         identity.type      = Identity::FQDN;
-        identity.data.fQDN = std::move(data);
+        identity.data.fqdn = std::move(data);
         return identity;
     }
 };

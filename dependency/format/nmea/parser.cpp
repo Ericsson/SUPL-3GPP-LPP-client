@@ -147,13 +147,13 @@ ChecksumResult Parser::checksum(std::string const& buffer) const {
     auto fmt_end = buffer.find_last_of('*');
     if (fmt_end == std::string::npos) {
         DEBUGF("invalid string: no *");
-        return ChecksumResult::INVALID_STRING_NOSTAR;
+        return ChecksumResult::InvalidStringNostar;
     }
 
     auto expected_length = fmt_end + 3 /* *XY */ + (mLfOnly ? 1 : 2);
     if (expected_length != buffer.size()) {
         DEBUGF("invalid string: length");
-        return ChecksumResult::INVALID_STRING_LENGTH;
+        return ChecksumResult::InvalidStringLength;
     }
 
     auto fmt_string = buffer.substr(1, fmt_end - 1);
@@ -168,14 +168,14 @@ ChecksumResult Parser::checksum(std::string const& buffer) const {
         }
 
         if (expected_checksum == calculated_checksum) {
-            return ChecksumResult::OK;
+            return ChecksumResult::Ok;
         } else {
             DEBUGF("invalid value: %02X != %02X", expected_checksum, calculated_checksum);
-            return ChecksumResult::INVALID_VALUE;
+            return ChecksumResult::InvalidValue;
         }
     } catch (...) {
         DEBUGF("invalid value: %s", fmt_string.c_str());
-        return ChecksumResult::INVALID_VALUE;
+        return ChecksumResult::InvalidValue;
     }
 }
 

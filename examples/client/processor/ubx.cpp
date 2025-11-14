@@ -93,16 +93,16 @@ void UbxLocation::nav_pvt(streamline::System& system, format::ubx::UbxNavPvt con
     metrics.fix_quality = lpp::FixQuality::INVALID;
     if (nav_pvt.fix_type() == 3) {
         if (nav_pvt.carr_soln() == 2) {
-            metrics.fix_quality = lpp::FixQuality::RTK_FIX;
+            metrics.fix_quality = lpp::FixQuality::RtkFix;
         } else if (nav_pvt.carr_soln() == 1) {
-            metrics.fix_quality = lpp::FixQuality::RTK_FLOAT;
+            metrics.fix_quality = lpp::FixQuality::RtkFloat;
         } else {
             metrics.fix_quality = lpp::FixQuality::STANDALONE;
         }
     } else if (nav_pvt.fix_type() == 2) {
         metrics.fix_quality = lpp::FixQuality::STANDALONE;
     } else if (nav_pvt.fix_type() == 1) {
-        metrics.fix_quality = lpp::FixQuality::DEAD_RECKONING;
+        metrics.fix_quality = lpp::FixQuality::DeadReckoning;
     }
 
     auto age_of_correction_data = nav_pvt.age_of_correction_data();

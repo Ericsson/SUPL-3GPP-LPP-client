@@ -42,12 +42,12 @@ void Rtcm1046::print() const NOEXCEPT {
     printf("  crc:                %.6f\n", crc.value());
     printf("  omega:              %.12e\n", omega.value());
     printf("  omega_dot:          %.12e\n", omega_dot.value());
-    printf("  BGD_E5a_E1:         %.12e\n", BGD_E5a_E1.value());
-    printf("  BGD_E5b_E1:         %.12e\n", BGD_E5b_E1.value());
-    printf("  E5b_signal_health:  %u\n", static_cast<unsigned>(E5b_signal_health.value()));
-    printf("  E5b_data_validity:  %s\n", E5b_data_validity.value() ? "true" : "false");
-    printf("  E1_B_signal_health: %u\n", static_cast<unsigned>(E1_B_signal_health.value()));
-    printf("  E1_B_data_validity: %s\n", E1_B_data_validity.value() ? "true" : "false");
+    printf("  BGD_E5a_E1:         %.12e\n", bgd_e5a_e1.value());
+    printf("  BGD_E5b_E1:         %.12e\n", bgd_e5b_e1.value());
+    printf("  E5b_signal_health:  %u\n", static_cast<unsigned>(e5b_signal_health.value()));
+    printf("  E5b_data_validity:  %s\n", e5b_data_validity.value() ? "true" : "false");
+    printf("  E1_B_signal_health: %u\n", static_cast<unsigned>(e1_b_signal_health.value()));
+    printf("  E1_B_data_validity: %s\n", e1_b_data_validity.value() ? "true" : "false");
     printf("  reserved:           %u\n", static_cast<unsigned>(reserved.value()));
 }
 
@@ -109,12 +109,12 @@ std::unique_ptr<Message> Rtcm1046::parse(std::vector<uint8_t> data) {
     getdatafield(bits, i, m->crc);
     getdatafield(bits, i, m->omega);
     getdatafield(bits, i, m->omega_dot);
-    getdatafield(bits, i, m->BGD_E5a_E1);
-    getdatafield(bits, i, m->BGD_E5b_E1);
-    getdatafield(bits, i, m->E5b_signal_health);
-    getdatafield(bits, i, m->E5b_data_validity);
-    getdatafield(bits, i, m->E1_B_signal_health);
-    getdatafield(bits, i, m->E1_B_data_validity);
+    getdatafield(bits, i, m->bgd_e5a_e1);
+    getdatafield(bits, i, m->bgd_e5b_e1);
+    getdatafield(bits, i, m->e5b_signal_health);
+    getdatafield(bits, i, m->e5b_data_validity);
+    getdatafield(bits, i, m->e1_b_signal_health);
+    getdatafield(bits, i, m->e1_b_data_validity);
     getdatafield(bits, i, m->reserved);
 
     return std::unique_ptr<Rtcm1046>(m);

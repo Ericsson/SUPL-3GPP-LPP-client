@@ -62,9 +62,9 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 
     Decoder header_decoder(buffer, 6);
     header_decoder.skip(2);  // skip frame boundary
-    auto message_class = header_decoder.U1();
-    auto message_id    = header_decoder.U1();
-    auto length        = static_cast<uint32_t>(header_decoder.U2());
+    auto message_class = header_decoder.u1();
+    auto message_id    = header_decoder.u1();
+    auto length        = static_cast<uint32_t>(header_decoder.u2());
 
     auto type = (static_cast<uint16_t>(message_class) << 8) | static_cast<uint16_t>(message_id);
     if (length > 8192) {
@@ -134,13 +134,13 @@ uint16_t Parser::checksum_message(uint8_t* message_data, uint32_t message_length
 uint16_t Parser::checksum(uint8_t* payload, uint32_t length) {
     ASSERT(length <= 0xFFFF, "length must be less than 0xFFFF");
 
-    uint8_t CK_A = 0, CK_B = 0;
-    for (uint16_t I = 0; I < static_cast<uint16_t>(length); I++) {
-        CK_A = CK_A + payload[I];
-        CK_B = CK_B + CK_A;
+    uint8_t ck_a = 0, ck_b = 0;
+    for (uint16_t i = 0; i < static_cast<uint16_t>(length); i++) {
+        ck_a = ck_a + payload[i];
+        ck_b = ck_b + ck_a;
     }
 
-    return static_cast<uint16_t>((CK_B << 8U) | CK_A);
+    return static_cast<uint16_t>((ck_b << 8U) | ck_a);
 }
 
 }  // namespace ubx

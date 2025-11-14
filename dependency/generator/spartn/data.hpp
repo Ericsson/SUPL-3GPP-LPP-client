@@ -76,12 +76,12 @@ struct CorrectionPointSet {
     uint16_t set_id;
     uint16_t area_id;
     long     grid_point_count;
-    long     referencePointLatitude_r16;
-    long     referencePointLongitude_r16;
-    long     numberOfStepsLatitude_r16;
-    long     numberOfStepsLongitude_r16;
-    long     stepOfLatitude_r16;
-    long     stepOfLongitude_r16;
+    long     reference_point_latitude_r16;
+    long     reference_point_longitude_r16;
+    long     number_of_steps_latitude_r16;
+    long     number_of_steps_longitude_r16;
+    long     step_of_latitude_r16;
+    long     step_of_longitude_r16;
     uint64_t bitmask;
 
     double                 reference_point_latitude;
@@ -98,10 +98,10 @@ struct CorrectionPointSet {
     }
 
     inline double latitude_grid_spacing() const {
-        return latitude_delta * static_cast<double>(numberOfStepsLatitude_r16);
+        return latitude_delta * static_cast<double>(number_of_steps_latitude_r16);
     }
     inline double longitude_grid_spacing() const {
-        return longitude_delta * static_cast<double>(numberOfStepsLongitude_r16);
+        return longitude_delta * static_cast<double>(number_of_steps_longitude_r16);
     }
 
     std::vector<GridPoint> const& grid_points() const;
@@ -149,7 +149,7 @@ struct OcbCorrections {
 };
 
 struct OcbData {
-    std::unordered_map<OcbKey, OcbCorrections> mKeyedCorrections;
+    std::unordered_map<OcbKey, OcbCorrections> keyed_corrections;
 };
 
 struct HpacSatellite {
@@ -185,7 +185,7 @@ struct HpacCorrections {
 };
 
 struct HpacData {
-    std::unordered_map<HpacKey, HpacCorrections> mKeyedCorrections;
+    std::unordered_map<HpacKey, HpacCorrections> keyed_corrections;
 
     void set_ids(std::vector<uint16_t>& ids) const;
 };
@@ -193,44 +193,45 @@ struct HpacData {
 struct RealTimeIntegrityData {
     struct Satellite {
         long              id;
-        std::vector<long> mBadSignals;
+        std::vector<long> bad_signals;
     };
 
-    std::unordered_map<long, Satellite> mBadSatellites;
+    std::unordered_map<long, Satellite> bad_satellites;
 
     bool can_use_satellite(long id) const {
-        auto it = mBadSatellites.find(id);
-        if (it == mBadSatellites.end()) return true;
+        auto it = bad_satellites.find(id);
+        if (it == bad_satellites.end()) return true;
         return false;
     }
 };
 
 struct CorrectionData {
-    bool                                            mGroupByEpochTime;
-    std::unordered_map<uint16_t, OcbData>           mOcbData;
-    std::unordered_map<uint16_t, HpacData>          mHpacData;
-    std::unordered_map<long, RealTimeIntegrityData> mRealTimeIntegrityData;
+    bool                                            group_by_epoch_time;
+    std::unordered_map<uint16_t, OcbData>           ocb_data;
+    std::unordered_map<uint16_t, HpacData>          hpac_data;
+    std::unordered_map<long, RealTimeIntegrityData> real_time_integrity_data;
 
-    CorrectionData(bool group_by_epoch_time) : mGroupByEpochTime(group_by_epoch_time) {}
+    CorrectionData(bool group_by_epoch_time_param)
+        : group_by_epoch_time(group_by_epoch_time_param) {}
 
     std::vector<uint16_t> iods() const;
     std::vector<uint16_t> set_ids() const;
 
     OcbData* ocb(uint16_t iod) {
-        auto it = mOcbData.find(iod);
-        if (it == mOcbData.end()) return nullptr;
+        auto it = ocb_data.find(iod);
+        if (it == ocb_data.end()) return nullptr;
         return &it->second;
     }
 
     HpacData* hpac(uint16_t iod) {
-        auto it = mHpacData.find(iod);
-        if (it == mHpacData.end()) return nullptr;
+        auto it = hpac_data.find(iod);
+        if (it == hpac_data.end()) return nullptr;
         return &it->second;
     }
 
     RealTimeIntegrityData* real_time_integrity(long gnss_id) {
-        auto it = mRealTimeIntegrityData.find(gnss_id);
-        if (it == mRealTimeIntegrityData.end()) return nullptr;
+        auto it = real_time_integrity_data.find(gnss_id);
+        if (it == real_time_integrity_data.end()) return nullptr;
         return &it->second;
     }
 

@@ -15,7 +15,7 @@ Encoder::Encoder(uint8_t* payload, uint32_t payload_length) NOEXCEPT
       mPayloadLength(payload_length),
       mError(false) {}
 
-void Encoder::X1(uint8_t value) NOEXCEPT {
+void Encoder::x1(uint8_t value) NOEXCEPT {
     if (mPayloadLength < 1) {
         mError = true;
     } else {
@@ -25,7 +25,7 @@ void Encoder::X1(uint8_t value) NOEXCEPT {
     }
 }
 
-void Encoder::X2(uint16_t value) NOEXCEPT {
+void Encoder::x2(uint16_t value) NOEXCEPT {
     if (mPayloadLength < 2) {
         mError = true;
     } else {
@@ -36,7 +36,7 @@ void Encoder::X2(uint16_t value) NOEXCEPT {
     }
 }
 
-void Encoder::X4(uint32_t value) NOEXCEPT {
+void Encoder::x4(uint32_t value) NOEXCEPT {
     if (mPayloadLength < 4) {
         mError = true;
     } else {
@@ -49,7 +49,7 @@ void Encoder::X4(uint32_t value) NOEXCEPT {
     }
 }
 
-void Encoder::X8(uint64_t value) NOEXCEPT {
+void Encoder::x8(uint64_t value) NOEXCEPT {
     if (mPayloadLength < 8) {
         mError = true;
     } else {
@@ -66,73 +66,73 @@ void Encoder::X8(uint64_t value) NOEXCEPT {
     }
 }
 
-void Encoder::E1(uint8_t value) NOEXCEPT {
-    X1(value);
+void Encoder::e1(uint8_t value) NOEXCEPT {
+    x1(value);
 }
 
-void Encoder::E2(uint16_t value) NOEXCEPT {
-    X2(value);
+void Encoder::e2(uint16_t value) NOEXCEPT {
+    x2(value);
 }
 
-void Encoder::E4(uint32_t value) NOEXCEPT {
-    X4(value);
+void Encoder::e4(uint32_t value) NOEXCEPT {
+    x4(value);
 }
 
-void Encoder::U1(uint8_t value) NOEXCEPT {
-    X1(value);
+void Encoder::u1(uint8_t value) NOEXCEPT {
+    x1(value);
 }
 
-void Encoder::U2(uint16_t value) NOEXCEPT {
-    X2(value);
+void Encoder::u2(uint16_t value) NOEXCEPT {
+    x2(value);
 }
 
-void Encoder::U4(uint32_t value) NOEXCEPT {
-    X4(value);
+void Encoder::u4(uint32_t value) NOEXCEPT {
+    x4(value);
 }
 
-void Encoder::U8(uint64_t value) NOEXCEPT {
-    X8(value);
+void Encoder::u8(uint64_t value) NOEXCEPT {
+    x8(value);
 }
 
-void Encoder::I1(int8_t value) NOEXCEPT {
+void Encoder::i1(int8_t value) NOEXCEPT {
     auto unsigned_value = *reinterpret_cast<uint8_t*>(&value);
-    X1(unsigned_value);
+    x1(unsigned_value);
 }
 
-void Encoder::I2(int16_t value) NOEXCEPT {
+void Encoder::i2(int16_t value) NOEXCEPT {
     auto unsigned_value = *reinterpret_cast<uint16_t*>(&value);
-    X2(unsigned_value);
+    x2(unsigned_value);
 }
 
-void Encoder::I4(int32_t value) NOEXCEPT {
+void Encoder::i4(int32_t value) NOEXCEPT {
     auto unsigned_value = *reinterpret_cast<uint32_t*>(&value);
-    X4(unsigned_value);
+    x4(unsigned_value);
 }
 
-void Encoder::I8(int64_t value) NOEXCEPT {
+void Encoder::i8(int64_t value) NOEXCEPT {
     auto unsigned_value = *reinterpret_cast<uint64_t*>(&value);
-    X8(unsigned_value);
+    x8(unsigned_value);
 }
 
-void Encoder::R4(float value) NOEXCEPT {
+void Encoder::r4(float value) NOEXCEPT {
     static_assert(sizeof(float) == sizeof(uint32_t), "float is not 32 bits");
     uint32_t unsigned_value;
     std::memcpy(&unsigned_value, &value, sizeof(float));
-    X4(unsigned_value);
+    x4(unsigned_value);
 }
 
-void Encoder::R8(double value) NOEXCEPT {
+void Encoder::r8(double value) NOEXCEPT {
     static_assert(sizeof(double) == sizeof(uint64_t), "double is not 64 bits");
     uint64_t unsigned_value;
     std::memcpy(&unsigned_value, &value, sizeof(double));
-    X8(unsigned_value);
+    x8(unsigned_value);
 }
 
-void Encoder::L(bool value) NOEXCEPT {
-    X1(value ? 1 : 0);
+void Encoder::logical(bool value) NOEXCEPT {
+    x1(value ? 1 : 0);
 }
 
-void Encoder::CH(std::string const& value, uint32_t length) NOEXCEPT {
+void Encoder::ch(std::string const& value, uint32_t length) NOEXCEPT {
     auto bytes = value.size() + 1;
     if (bytes > length) {
         bytes = length;

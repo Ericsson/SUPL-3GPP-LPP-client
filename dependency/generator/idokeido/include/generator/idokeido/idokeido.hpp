@@ -20,12 +20,12 @@ using Matrix4 = Eigen::Matrix<Scalar, 4, 4>;
 using MatrixX = Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic>;
 
 namespace constant {
-static constexpr Scalar pi   = 3.1415926535897932;
-static constexpr Scalar d2r  = pi / 180.0;
-static constexpr Scalar r2d  = 180.0 / pi;
-static constexpr Scalar r2sc = 1.0 / pi;
-static constexpr Scalar sc2r = pi;
-static constexpr Scalar c    = 299792458.0;
+static constexpr Scalar K_PI   = 3.1415926535897932;
+static constexpr Scalar K_D2R  = K_PI / 180.0;
+static constexpr Scalar K_R2D  = 180.0 / K_PI;
+static constexpr Scalar K_R2SC = 1.0 / K_PI;
+static constexpr Scalar K_SC2R = K_PI;
+static constexpr Scalar K_C    = 299792458.0;
 }  // namespace constant
 
 inline Scalar geometric_distance(Vector3 const& a, Vector3 const& b) {
@@ -34,7 +34,7 @@ inline Scalar geometric_distance(Vector3 const& a, Vector3 const& b) {
 
     // correct for rotation ECEF
     auto dot_omega_e = 7.2921151467e-5;
-    auto correction  = dot_omega_e * (a.x() * b.y() - a.y() * b.x()) / constant::c;
+    auto correction  = dot_omega_e * (a.x() * b.y() - a.y() * b.x()) / constant::K_C;
 
     return distance + correction;
 }

@@ -14,9 +14,9 @@ struct SystemMapping {
     char const* signal_name(long signal_id) const;
 };
 
-extern SystemMapping const GPS_SM;
-extern SystemMapping const GLO_SM;
-extern SystemMapping const GAL_SM;
-extern SystemMapping const BDS_SM;
+extern SystemMapping const gGpsSm;
+extern SystemMapping const gGloSm;
+extern SystemMapping const gGalSm;
+extern SystemMapping const gBdsSm;
 
 char const* bias_type_name(long gnss_id, bool is_phase, uint8_t type);

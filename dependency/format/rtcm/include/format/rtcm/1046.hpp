@@ -49,12 +49,12 @@ public:
     DF309 crc;
     DF310 omega;
     DF311 omega_dot;
-    DF312 BGD_E5a_E1;
-    DF313 BGD_E5b_E1;
-    DF316 E5b_signal_health;
-    DF317 E5b_data_validity;
-    DF287 E1_B_signal_health;
-    DF288 E1_B_data_validity;
+    DF312 bgd_e5a_e1;
+    DF313 bgd_e5b_e1;
+    DF316 e5b_signal_health;
+    DF317 e5b_data_validity;
+    DF287 e1_b_signal_health;
+    DF288 e1_b_data_validity;
     DF001 reserved;
 
 private:

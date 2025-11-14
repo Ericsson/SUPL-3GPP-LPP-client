@@ -95,7 +95,7 @@ static args::ValueFlag<std::string> gLogFile{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
 }
 
 void parse(Config* config) {

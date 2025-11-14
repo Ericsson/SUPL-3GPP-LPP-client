@@ -14,13 +14,13 @@ Scalar IonosphericPolynomial::evaluate(Vector3 const& llh) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     VERBOSEF("ionospheric polynomial:");
-    auto lat = llh.x() * constant::r2d;
-    auto lon = llh.y() * constant::r2d;
+    auto lat = llh.x() * constant::K_R2D;
+    auto lon = llh.y() * constant::K_R2D;
     VERBOSEF("  lat: %.14f", lat);
     VERBOSEF("  lon: %.14f", lon);
 
-    auto ref_lat = reference_point.x() * constant::r2d;
-    auto ref_lon = reference_point.y() * constant::r2d;
+    auto ref_lat = reference_point.x() * constant::K_R2D;
+    auto ref_lon = reference_point.y() * constant::K_R2D;
     VERBOSEF("  ref_lat: %.14f", ref_lat);
     VERBOSEF("  ref_lon: %.14f", ref_lon);
 
@@ -54,7 +54,7 @@ bool CorrectionPointSet::ionospheric_residual(Vector3 const& llh, SatelliteId sv
                                               Scalar& residual) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    auto ref = Vector3{llh.x() * constant::r2d, llh.y() * constant::r2d, 0};
+    auto ref = Vector3{llh.x() * constant::K_R2D, llh.y() * constant::K_R2D, 0};
 
     VERBOSEF("ionosphere grid:");
 
@@ -67,7 +67,7 @@ bool CorrectionPointSet::ionospheric_residual(Vector3 const& llh, SatelliteId sv
         if (it == point.ionospheric_residual.end()) continue;
 
         auto point_position =
-            Vector3{point.position.x() * constant::r2d, point.position.y() * constant::r2d, 0};
+            Vector3{point.position.x() * constant::K_R2D, point.position.y() * constant::K_R2D, 0};
         auto point_residual = it->second;
         residuals.push_back({
             .position = point_position,

@@ -23,11 +23,11 @@ public:
     EXPLICIT Tai(Utc const& time);
     EXPLICIT Tai(Bdt const& time);
 
-    NODISCARD Timestamp timestamp() const { return tm; }
+    NODISCARD Timestamp timestamp() const { return mTm; }
     NODISCARD std::string rtklib_time_string(int fraction_digits = 12) const;
 
     Tai& add_seconds(double seconds) {
-        tm.add(seconds);
+        mTm.add(seconds);
         return *this;
     }
 
@@ -36,8 +36,10 @@ public:
 
     NODISCARD double difference_seconds(Tai const& other) const;
 
-    bool operator<=(Tai const& other) const { return tm.full_seconds() <= other.tm.full_seconds(); }
-    bool operator<(Tai const& other) const { return tm.full_seconds() < other.tm.full_seconds(); }
+    bool operator<=(Tai const& other) const {
+        return mTm.full_seconds() <= other.mTm.full_seconds();
+    }
+    bool operator<(Tai const& other) const { return mTm.full_seconds() < other.mTm.full_seconds(); }
 
     NODISCARD static Tai now();
 
@@ -49,7 +51,7 @@ private:
     // should be equal to the leap seconds since 1972. Which is, as of today
     // (2021-08-13), 37 seconds. Thus, the start date will be the same as UTC (1
     // january 1970).
-    Timestamp tm;
+    Timestamp mTm;
 };
 
 }  // namespace ts

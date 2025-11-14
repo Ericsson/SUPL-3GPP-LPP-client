@@ -94,7 +94,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     }
 }
 
-static uint32_t const CRC24Q[256] = {
+static uint32_t const gCrc24Q[256] = {
     0x00000000, 0x01864CFB, 0x028AD50D, 0x030C99F6, 0x0493E6E1, 0x0515AA1A, 0x061933EC, 0x079F7F17,
     0x08A18139, 0x0927CDC2, 0x0A2B5434, 0x0BAD18CF, 0x0C3267D8, 0x0DB42B23, 0x0EB8B2D5, 0x0F3EFE2E,
     0x10C54E89, 0x11430272, 0x124F9B84, 0x13C9D77F, 0x1456A868, 0x15D0E493, 0x16DC7D65, 0x175A319E,
@@ -132,7 +132,7 @@ static uint32_t const CRC24Q[256] = {
 static uint32_t crc24q_hash(unsigned char const* data, size_t len) {
     uint32_t crc = 0;
     for (size_t i = 0; i < len; i++) {
-        crc = (crc << 8U) ^ CRC24Q[data[i] ^ static_cast<unsigned char>(crc >> 16U)];
+        crc = (crc << 8U) ^ gCrc24Q[data[i] ^ static_cast<unsigned char>(crc >> 16U)];
     }
 
     crc = (crc & 0x00ffffffU);
@@ -146,7 +146,7 @@ CRCResult Parser::crc(std::vector<uint8_t> const& buffer) {
     auto size = buffer.size();
     if (size < 3) {
         VERBOSEF("buffer too small to calculate crc: %d", size);
-        return CRCResult::INVALID_VALUE;
+        return CRCResult::InvalidValue;
     }
 
     auto checksum_index = buffer.size() - 3;
@@ -157,9 +157,9 @@ CRCResult Parser::crc(std::vector<uint8_t> const& buffer) {
 
     if (computed != expected) {
         VERBOSEF("crc mismatch: expected: %06x, computed: %06x", expected, computed);
-        return CRCResult::INVALID_VALUE;
+        return CRCResult::InvalidValue;
     } else {
-        return CRCResult::OK;
+        return CRCResult::Ok;
     }
 }
 

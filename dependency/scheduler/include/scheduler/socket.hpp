@@ -140,11 +140,11 @@ protected:
     void error() NOEXCEPT;
 
     enum State {
-        STATE_UNSCEDULED,
-        STATE_CONNECTING,
-        STATE_CONNECTED,
-        STATE_DISCONNECTED,
-        STATE_ERROR,
+        StateUnscheduled,
+        StateConnecting,
+        StateConnected,
+        StateDisconnected,
+        StateError,
     };
 
     char const* state_to_string(State state) const NOEXCEPT;

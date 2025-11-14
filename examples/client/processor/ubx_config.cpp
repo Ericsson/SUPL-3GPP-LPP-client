@@ -15,8 +15,8 @@ LOGLET_MODULE(ubx_config);
 
 UbxConfigApplicator::UbxConfigApplicator(const UbxConfigConfig& config,
                                          scheduler::Scheduler&  scheduler)
-    : config_(config), scheduler_(scheduler) {
-    collected_values_.reserve(1000);
+    : mConfig(config), mScheduler(scheduler) {
+    mCollectedValues.reserve(1000);
 }
 
 std::vector<uint8_t> UbxConfigApplicator::create_cfg_valset_message(
@@ -127,9 +127,9 @@ std::string UbxConfigApplicator::format_cfg_key_name(format::ubx::CfgKey key) {
 }
 
 bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
-    collected_values_.clear();
-    expected_position_ = 0;
-    has_more_data_     = true;
+    mCollectedValues.clear();
+    mExpectedPosition = 0;
+    mHasMoreData      = true;
 
     printf("\n=== UBX Configuration (All Values) ===\n");
 
@@ -139,29 +139,29 @@ bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
         parser.append(data, size);
         auto message = parser.try_parse();
         if (message && message->message_class() == 0x06 && message->message_id() == 0x8B) {
-            waiting_for_response_ = false;
+            mWaitingForResponse = false;
         }
     };
 
-    while (has_more_data_ && expected_position_ < 1000) {
-        auto message = create_cfg_valget_all_message(expected_position_);
+    while (mHasMoreData && mExpectedPosition < 1000) {
+        auto message = create_cfg_valget_all_message(mExpectedPosition);
         if (message.empty()) break;
 
         interface.output_interface->write(message.data(), message.size());
-        waiting_for_response_ = true;
+        mWaitingForResponse = true;
 
         auto timeout = std::chrono::steady_clock::now() + std::chrono::seconds(2);
 
-        scheduler_.execute_while([&]() {
+        mScheduler.execute_while([&]() {
             if (std::chrono::steady_clock::now() > timeout) {
-                waiting_for_response_ = false;
+                mWaitingForResponse = false;
                 return false;
             }
-            return waiting_for_response_;
+            return mWaitingForResponse;
         });
 
-        if (!waiting_for_response_) {
-            WARNF("timeout waiting for VALGET response at position %u", expected_position_);
+        if (!mWaitingForResponse) {
+            WARNF("timeout waiting for VALGET response at position %u", mExpectedPosition);
             break;
         }
     }
@@ -169,7 +169,7 @@ bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
     printf("%-40s %-12s %s\n", "Key Name", "Hex Key", "Value");
     printf("%-40s %-12s %s\n", "--------", "-------", "-----");
 
-    for (auto const& entry : collected_values_) {
+    for (auto const& entry : mCollectedValues) {
         auto const& key      = entry.first;
         auto const& value    = entry.second;
         std::string key_name = format_cfg_key_name(key);
@@ -187,13 +187,13 @@ bool UbxConfigApplicator::collect_all_config(UbxConfigInterface& interface) {
         printf("%-40s 0x%08X   %s\n", key_name.c_str(), key, value_str.c_str());
     }
 
-    printf("\nTotal configuration items: %zu\n\n", collected_values_.size());
+    printf("\nTotal configuration items: %zu\n\n", mCollectedValues.size());
     return true;
 }
 
 bool UbxConfigApplicator::print_current_config(UbxConfigInterface& interface) {
-    if (!interface.output_interface->schedule(scheduler_) ||
-        !interface.input_interface->schedule(scheduler_)) {
+    if (!interface.output_interface->schedule(mScheduler) ||
+        !interface.input_interface->schedule(mScheduler)) {
         ERRORF("failed to schedule interfaces");
         return false;
     }
@@ -214,7 +214,7 @@ bool UbxConfigApplicator::print_current_config(UbxConfigInterface& interface) {
         printf("%-40s %-12s %s\n", "Key Name", "Hex Key", "Value");
         printf("%-40s %-12s %s\n", "--------", "-------", "-----");
 
-        scheduler_.execute_timeout(std::chrono::milliseconds(500));
+        mScheduler.execute_timeout(std::chrono::milliseconds(500));
         printf("\n");
 
     } else if (interface.print_mode == UbxPrintMode::ALL) {
@@ -242,7 +242,7 @@ bool UbxConfigApplicator::apply_to_interface(UbxConfigInterface& interface) {
         } else {
             INFOF("applying %zu UBX options", interface.options.size());
 
-            if (!interface.output_interface->schedule(scheduler_)) {
+            if (!interface.output_interface->schedule(mScheduler)) {
                 ERRORF("failed to schedule output interface");
                 success = false;
             } else {
@@ -259,13 +259,13 @@ bool UbxConfigApplicator::apply_to_interface(UbxConfigInterface& interface) {
 }
 
 bool UbxConfigApplicator::apply_configurations() {
-    if (config_.interfaces.empty()) {
+    if (mConfig.interfaces.empty()) {
         DEBUGF("no UBX configuration interfaces");
         return true;
     }
 
     bool all_success = true;
-    for (auto& interface : const_cast<UbxConfigConfig&>(config_).interfaces) {
+    for (auto& interface : const_cast<UbxConfigConfig&>(mConfig).interfaces) {
         if (!apply_to_interface(interface)) {
             all_success = false;
         }

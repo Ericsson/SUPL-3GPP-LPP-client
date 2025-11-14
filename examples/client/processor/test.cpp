@@ -7,16 +7,16 @@
 LOGLET_MODULE2(p, test);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, test)
 
-static std::unique_ptr<scheduler::PeriodicTask> periodic_task = nullptr;
+static std::unique_ptr<scheduler::PeriodicTask> gPeriodicTask = nullptr;
 
 void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, uint64_t tag) {
     VSCOPE_FUNCTION();
 
-    ASSERT(periodic_task == nullptr, "periodic task already exists");
-    periodic_task = std::unique_ptr<scheduler::PeriodicTask>(
+    ASSERT(gPeriodicTask == nullptr, "periodic task already exists");
+    gPeriodicTask = std::unique_ptr<scheduler::PeriodicTask>(
         new scheduler::PeriodicTask(std::chrono::milliseconds(1000)));
-    periodic_task->set_event_name("test output");
-    periodic_task->callback = [&output, tag]() {
+    gPeriodicTask->set_event_name("test output");
+    gPeriodicTask->callback = [&output, tag]() {
         VSCOPE_FUNCTION();
 
         uint8_t data[16 + 1] = "TESTTESTTESTTEST";
@@ -35,7 +35,7 @@ void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, 
         }
     };
 
-    if (!periodic_task->schedule(scheduler)) {
+    if (!gPeriodicTask->schedule(scheduler)) {
         ERRORF("failed to schedule periodic task for test output");
     }
 }

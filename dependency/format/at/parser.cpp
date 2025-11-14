@@ -16,8 +16,8 @@ std::string const& Parser::peek_line() const NOEXCEPT {
     if (mLines.empty()) {
         // no lines to peek
         VERBOSEF("no lines to peek");
-        static std::string empty;
-        return empty;
+        static std::string const sEmpty;
+        return sEmpty;
     }
 
     return mLines[0];

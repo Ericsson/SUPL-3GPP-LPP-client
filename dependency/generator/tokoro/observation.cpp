@@ -62,7 +62,7 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mAntennaPhaseVariation = Correction{0.0, false};
 
     mGroundPosition = location;
-    mGroundLlh      = ecef_to_llh(location, ellipsoid::WGS84);
+    mGroundLlh      = ecef_to_llh(location, ellipsoid::gWgs84);
 
     auto mapping = hydrostatic_mapping_function(mCurrent->reception_time, mGroundLlh,
                                                 mCurrent->true_elevation);
@@ -146,7 +146,7 @@ void Observation::compute_tropospheric(CorrectionData const& correction_data) NO
 }
 
 static double compute_vtec_mapping(double altitude, double elevation) {
-    auto r       = ellipsoid::WGS84.semi_major_axis + altitude;
+    auto r       = ellipsoid::gWgs84.semi_major_axis + altitude;
     auto h       = 506.7e3;
     auto alpha   = 0.9782;
     auto sin     = std::sin(alpha * (constant::PI / 2.0 - elevation));

@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
+- Fixed identifier naming
 - Eliminated 1MB global buffer by using direct vfprintf formatting
 - Hardened loglet to preserve errno, report internal errors, and avoid redundant fflush
 - ForwardStreamTask no longer warns on EAGAIN/EWOULDBLOCK (expected when pipe is full)

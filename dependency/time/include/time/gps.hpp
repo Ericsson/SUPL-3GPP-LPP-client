@@ -25,10 +25,10 @@ public:
     NODISCARD Timestamp time_of_day() const;
     NODISCARD int64_t   week() const;
     NODISCARD Timestamp time_of_week() const;
-    NODISCARD Timestamp timestamp() const { return tm; }
+    NODISCARD Timestamp timestamp() const { return mTm; }
     NODISCARD Timestamp mod_timestamp() const;
 
-    NODISCARD Gps       operator+(Timestamp delta) const { return Gps(tm + delta); }
+    NODISCARD Gps       operator+(Timestamp delta) const { return Gps(mTm + delta); }
     NODISCARD Timestamp difference(Gps const& other) const;
 
     NODISCARD TimePoint to_timepoint() const;
@@ -41,16 +41,16 @@ public:
 
     NODISCARD static int64_t days_from_ymd(int64_t year, int64_t month, int64_t day);
 
-    NODISCARD bool operator<(Gps const& other) const { return tm < other.tm; }
-    NODISCARD bool operator<=(Gps const& other) const { return tm <= other.tm; }
-    NODISCARD bool operator>(Gps const& other) const { return tm > other.tm; }
-    NODISCARD bool operator>=(Gps const& other) const { return tm >= other.tm; }
+    NODISCARD bool operator<(Gps const& other) const { return mTm < other.mTm; }
+    NODISCARD bool operator<=(Gps const& other) const { return mTm <= other.mTm; }
+    NODISCARD bool operator>(Gps const& other) const { return mTm > other.mTm; }
+    NODISCARD bool operator>=(Gps const& other) const { return mTm >= other.mTm; }
 
 protected:
     NODISCARD Timestamp utc_timestamp() const;
 
 private:
-    Timestamp tm;
+    Timestamp mTm;
 };
 
 }  // namespace ts

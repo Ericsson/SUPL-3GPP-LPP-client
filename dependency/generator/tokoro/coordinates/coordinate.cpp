@@ -2,7 +2,6 @@
 #include "constant.hpp"
 
 #include <cmath>
-#include <math.h>
 
 #include <loglet/loglet.hpp>
 
@@ -28,12 +27,12 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
     auto tolerance = 1e-12;
     for (;;) {
         auto sin_phi = std::sin(phi);
-        auto N       = a / std::sqrt(1.0 - e2 * sin_phi * sin_phi);
-        auto phi_n   = std::atan2(z + N * e2 * sin_phi, p);
+        auto n       = a / std::sqrt(1.0 - e2 * sin_phi * sin_phi);
+        auto phi_n   = std::atan2(z + n * e2 * sin_phi, p);
         if (std::abs(phi_n - phi) < tolerance) {
             phi = phi_n;
 
-            auto h = p / std::cos(phi) - N;
+            auto h = p / std::cos(phi) - n;
             return Float3{phi, lon, h};
         }
 
@@ -47,11 +46,11 @@ Float3 llh_to_ecef(Float3 llh, ReferenceEllipsoid const& ellipsoid) {
     auto h   = llh.z;
 
     auto d = ellipsoid.eccentricity * std::sin(lat);
-    auto N = ellipsoid.semi_major_axis / std::sqrt(1.0 - d * d);
+    auto n = ellipsoid.semi_major_axis / std::sqrt(1.0 - d * d);
 
-    auto x = (N + h) * std::cos(lat) * std::cos(lon);
-    auto y = (N + h) * std::cos(lat) * std::sin(lon);
-    auto z = (N * (1.0 - ellipsoid.eccentricity_sq) + h) * std::sin(lat);
+    auto x = (n + h) * std::cos(lat) * std::cos(lon);
+    auto y = (n + h) * std::cos(lat) * std::sin(lon);
+    auto z = (n * (1.0 - ellipsoid.eccentricity_sq) + h) * std::sin(lat);
     return Float3{x, y, z};
 }
 
@@ -78,46 +77,46 @@ struct ItrfParameter {
     }
 };
 
-static ItrfParameter ITRF_2020_to_2020_PARAMETER = {
+static ItrfParameter gItrf2020To2020Parameter = {
     0.0, 0.0, 0.0, 0.0, 0.00, 0.00, 0.00, 2015.0, 0.0, 0.0, 0.0, 0.00, 0.00, 0.00, 0.00,
 };
-static ItrfParameter ITRF_2020_to_2014_PARAMETER = {
+static ItrfParameter gItrf2020To2014Parameter = {
     -1.4, -0.9, 1.4, -0.42, 0.00, 0.00, 0.00, 2015.0, 0.0, -0.1, 0.2, 0.00, 0.00, 0.00, 0.00,
 };
-static ItrfParameter ITRF_2020_to_2008_PARAMETER = {
+static ItrfParameter gItrf2020To2008Parameter = {
     0.2, 1.0, 3.3, -0.29, 0.00, 0.00, 0.00, 2015.0, 0.0, -0.1, 0.1, 0.03, 0.00, 0.00, 0.00,
 };
-static ItrfParameter ITRF_2020_to_2005_PARAMETER = {
+static ItrfParameter gItrf2020To2005Parameter = {
     2.7, 0.1, -1.4, 0.65, 0.00, 0.00, 0.00, 2015.0, 0.3, -0.1, 0.1, 0.03, 0.00, 0.00, 0.00,
 };
-static ItrfParameter ITRF_2020_to_2000_PARAMETER = {
+static ItrfParameter gItrf2020To2000Parameter = {
     -0.2, 0.8, -34.2, 2.25, 0.00, 0.00, 0.00, 2015.0, 0.1, 0.0, -1.7, 0.11, 0.00, 0.00, 0.00,
 };
-static ItrfParameter ITRF_2020_to_97_PARAMETER = {
+static ItrfParameter gItrf2020To97Parameter = {
     6.5, -3.9, -77.9, 3.98, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
-static ItrfParameter ITRF_2020_to_96_PARAMETER = {
+static ItrfParameter gItrf2020To96Parameter = {
     6.5, -3.9, -77.9, 3.98, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
-static ItrfParameter ITRF_2020_to_94_PARAMETER = {
+static ItrfParameter gItrf2020To94Parameter = {
     6.5, -3.9, -77.9, 3.98, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
-static ItrfParameter ITRF_2020_to_93_PARAMETER = {
+static ItrfParameter gItrf2020To93Parameter = {
     -65.8, 1.9, -71.3, 4.47, -3.36, -4.33, 0.75, 2015.0, 2.8, -0.2, -2.3, 0.12, -0.11, -0.19, 0.07,
 };
-static ItrfParameter ITRF_2020_to_92_PARAMETER = {
+static ItrfParameter gItrf2020To92Parameter = {
     14.5, -1.9, -85.9, 3.27, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
-static ItrfParameter ITRF_2020_to_91_PARAMETER = {
+static ItrfParameter gItrf2020To91Parameter = {
     26.5, 12.1, -91.9, 4.67, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
-static ItrfParameter ITRF_2020_to_90_PARAMETER = {
+static ItrfParameter gItrf2020To90Parameter = {
     24.5, 8.1, -107.9, 4.97, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
-static ItrfParameter ITRF_2020_to_89_PARAMETER = {
+static ItrfParameter gItrf2020To89Parameter = {
     29.5, 32.1, -145.9, 8.37, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
-static ItrfParameter ITRF_2020_to_88_PARAMETER = {
+static ItrfParameter gItrf2020To88Parameter = {
     24.5, -3.9, -169.9, 11.47, 0.10, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
 
@@ -160,20 +159,20 @@ static Float3 itrf_transform_parameter(ItrfParameter const& parameter, double ep
 
 static ItrfParameter const& itrf2020_to_parameter(Itrf to) {
     switch (to) {
-    case Itrf::ITRF2020: return ITRF_2020_to_2020_PARAMETER;
-    case Itrf::ITRF2014: return ITRF_2020_to_2014_PARAMETER;
-    case Itrf::ITRF2008: return ITRF_2020_to_2008_PARAMETER;
-    case Itrf::ITRF2005: return ITRF_2020_to_2005_PARAMETER;
-    case Itrf::ITRF2000: return ITRF_2020_to_2000_PARAMETER;
-    case Itrf::ITRF1997: return ITRF_2020_to_97_PARAMETER;
-    case Itrf::ITRF1996: return ITRF_2020_to_96_PARAMETER;
-    case Itrf::ITRF1994: return ITRF_2020_to_94_PARAMETER;
-    case Itrf::ITRF1993: return ITRF_2020_to_93_PARAMETER;
-    case Itrf::ITRF1992: return ITRF_2020_to_92_PARAMETER;
-    case Itrf::ITRF1991: return ITRF_2020_to_91_PARAMETER;
-    case Itrf::ITRF1990: return ITRF_2020_to_90_PARAMETER;
-    case Itrf::ITRF1989: return ITRF_2020_to_89_PARAMETER;
-    case Itrf::ITRF1988: return ITRF_2020_to_88_PARAMETER;
+    case Itrf::ITRF2020: return gItrf2020To2020Parameter;
+    case Itrf::ITRF2014: return gItrf2020To2014Parameter;
+    case Itrf::ITRF2008: return gItrf2020To2008Parameter;
+    case Itrf::ITRF2005: return gItrf2020To2005Parameter;
+    case Itrf::ITRF2000: return gItrf2020To2000Parameter;
+    case Itrf::ITRF1997: return gItrf2020To97Parameter;
+    case Itrf::ITRF1996: return gItrf2020To96Parameter;
+    case Itrf::ITRF1994: return gItrf2020To94Parameter;
+    case Itrf::ITRF1993: return gItrf2020To93Parameter;
+    case Itrf::ITRF1992: return gItrf2020To92Parameter;
+    case Itrf::ITRF1991: return gItrf2020To91Parameter;
+    case Itrf::ITRF1990: return gItrf2020To90Parameter;
+    case Itrf::ITRF1989: return gItrf2020To89Parameter;
+    case Itrf::ITRF1988: return gItrf2020To88Parameter;
     }
 
     UNREACHABLE();
@@ -221,15 +220,15 @@ Float3 itrf_transform(Itrf from, Itrf to, double epoch, Float3 position) {
     UNREACHABLE();
 }
 
-static ItrfParameter ITRF89_TO_ETRF89_PARAMETER = {0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  1989.0,
-                                                   0.0, 0.0, 0.0, 0.0, 0.11, 0.57, -0.71};
+static ItrfParameter gItrf89ToEtrf89Parameter = {0.0, 0.0, 0.0, 0.0, 0.0,  0.0,  0.0,  1989.0,
+                                                 0.0, 0.0, 0.0, 0.0, 0.11, 0.57, -0.71};
 
 Float3 itrf89_to_etrf89(double epoch, Float3 position) {
-    return itrf_transform_parameter(ITRF89_TO_ETRF89_PARAMETER, epoch, position);
+    return itrf_transform_parameter(gItrf89ToEtrf89Parameter, epoch, position);
 }
 
 Float3 etrf89_to_itrf89(double epoch, Float3 position) {
-    return itrf_transform_parameter(ITRF89_TO_ETRF89_PARAMETER.inverse(), epoch, position);
+    return itrf_transform_parameter(gItrf89ToEtrf89Parameter.inverse(), epoch, position);
 }
 
 }  // namespace tokoro

@@ -163,7 +163,7 @@ void SppEngine::select_best_observations(ts::Tai const& time) {
             // If the measurement is within the observation window, we need to align the
             // pseudo-range to the epoch time
             measurement.time = time;
-            measurement.pseudo_range += constant::c * time_diff;
+            measurement.pseudo_range += constant::K_C * time_diff;
         }
 
         // Discard measurement that are of unsupported signal
@@ -367,8 +367,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         auto ground_llh      = ecef_to_llh(ground_position, ellipsoid::WGS84);
         DEBUGF("ground ecef: %14.3f %14.3f %14.3f", ground_position.x(), ground_position.y(),
                ground_position.z());
-        DEBUGF("ground llh:  %14.6f %14.6f %14.3f", ground_llh.x() * constant::r2d,
-               ground_llh.y() * constant::r2d, ground_llh.z());
+        DEBUGF("ground llh:  %14.6f %14.6f %14.3f", ground_llh.x() * constant::K_R2D,
+               ground_llh.y() * constant::K_R2D, ground_llh.z());
 
         auto cps = mCorrectionCache.correction_point_set(ground_llh);
 
@@ -398,9 +398,9 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             observation.azimuth   = look_angles.azimuth;
             observation.nadir     = look_angles.nadir;
 
-            if (observation.elevation * constant::r2d < mConfiguration.elevation_cutoff) {
+            if (observation.elevation * constant::K_R2D < mConfiguration.elevation_cutoff) {
                 WARNF("reject: %03ld %s: %.2fdeg < %.2fdeg", observation.satellite_id.absolute_id(),
-                      observation.satellite_id.name(), observation.elevation * constant::r2d,
+                      observation.satellite_id.name(), observation.elevation * constant::K_R2D,
                       mConfiguration.elevation_cutoff);
                 continue;
             }
@@ -452,7 +452,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
             // clock bias
             auto rc_bias = current(3);
-            auto sc_bias = constant::c * observation.true_clock_bias;
+            auto sc_bias = constant::K_C * observation.true_clock_bias;
             auto sc_corr = 0.0;
             if (correction && correction->clock_valid) {
                 // NOTE(ewasjon): The clock correction is evaluated at the transmit time - not the
@@ -481,8 +481,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                    "%s %s",
                    geometric_range, rc_bias, -sc_bias, sc_corr, s_code_bias, i_bias, t_bias,
                    pseudo_range, computed_range, residual, iod,
-                   geometric_range - eph_geometric_range, observation.elevation * constant::r2d,
-                   observation.azimuth * constant::r2d, i_delay, observation.satellite_id.name(),
+                   geometric_range - eph_geometric_range, observation.elevation * constant::K_R2D,
+                   observation.azimuth * constant::K_R2D, i_delay, observation.satellite_id.name(),
                    measurement.signal_id.name());
 #if 0
             printf("sat=%ld v=%.3f P=%.3f r=%.3f dtr=%.6f dts=%.6f dion=%.3f dtrp=%.3f\n",
@@ -490,8 +490,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                    satellite.pseudo_range - group_delay_bias, geometric_range, receiver_clock_bias,
                    satellite.clock_bias, i_bias, 0.0);
             printf("sat=%ld azel=%5.1f %4.1f res=%7.3f sig=%5.3f\n",
-                   satellite.id.lpp_id().value + 1, satellite.azimuth * constant::r2d,
-                   satellite.elevation * constant::r2d, residual, 0.0);
+                   satellite.id.lpp_id().value + 1, satellite.azimuth * constant::K_R2D,
+                   satellite.elevation * constant::K_R2D, residual, 0.0);
 #endif
             design_matrix(j, 0) = -line_of_sight.x();
             design_matrix(j, 1) = -line_of_sight.y();
@@ -554,7 +554,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
     datatrace_report();
 
     auto final_position = current.head<3>();
-    auto final_bias     = current(3) / constant::c;
+    auto final_bias     = current(3) / constant::K_C;
     DEBUGF("final position: %14.4f %14.4f %14.4f", final_position.x(), final_position.y(),
            final_position.z());
     DEBUGF("final bias:     %14.4f", final_bias);
@@ -563,15 +563,15 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         Float3{final_position.x(), final_position.y(), final_position.z()},
         generator::tokoro::ellipsoid::WGS84);
 
-    DEBUGF("llh: %14.8f %14.8f %14.8f", llh.x * constant::r2d, llh.y * constant::r2d, llh.z);
+    DEBUGF("llh: %14.8f %14.8f %14.8f", llh.x * constant::K_R2D, llh.y * constant::K_R2D, llh.z);
     DEBUGF("bias: %14.8f", final_bias);
     DEBUGF("time: %s", time.rtklib_time_string().c_str());
 
     Solution solution{
         .time            = time,
         .status          = Solution::Status::Standard,
-        .latitude        = llh.x * constant::r2d,
-        .longitude       = llh.y * constant::r2d,
+        .latitude        = llh.x * constant::K_R2D,
+        .longitude       = llh.y * constant::K_R2D,
         .altitude        = llh.z,
         .satellite_count = satellite_count,
     };
@@ -593,9 +593,9 @@ void SppEngine::datatrace_report() NOEXCEPT {
         datatrace::Satellite dt_sat{};
         dt_sat.position  = Float3{satellite.true_position.x(), satellite.true_position.y(),
                                  satellite.true_position.z()};
-        dt_sat.elevation = satellite.elevation * constant::r2d;
-        dt_sat.azimuth   = satellite.azimuth * constant::r2d;
-        dt_sat.nadir     = satellite.nadir * constant::r2d;
+        dt_sat.elevation = satellite.elevation * constant::K_R2D;
+        dt_sat.azimuth   = satellite.azimuth * constant::K_R2D;
+        dt_sat.nadir     = satellite.nadir * constant::K_R2D;
         // TODO(ewasjon): Wrong time?
         datatrace::report_satellite(satellite.time, satellite.satellite_id.name(), dt_sat);
     }

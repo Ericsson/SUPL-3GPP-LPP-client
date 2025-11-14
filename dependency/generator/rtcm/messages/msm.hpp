@@ -7,19 +7,19 @@ extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm,
                                              generator::rtcm::CommonObservationInfo const& common,
                                              generator::rtcm::Observations const& observations);
 
-CONSTEXPR static int      mlt_size                  = 22;
-CONSTEXPR static uint64_t mlt_coefficient[mlt_size] = {
+CONSTEXPR static int      K_MLT_SIZE                    = 22;
+CONSTEXPR static uint64_t K_MLT_COEFFICIENT[K_MLT_SIZE] = {
     1,    2,    4,    8,     16,    32,    64,     128,    256,    512,     1024,
     2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288, 1048576, 2097152,
 };
 
-CONSTEXPR static uint64_t mlt_offset[mlt_size] = {
+CONSTEXPR static uint64_t K_MLT_OFFSET[K_MLT_SIZE] = {
     0,        64,       256,       768,       2048,      5120,       12288,   28672,
     65536,    147456,   327680,    720896,    1572864,   3407872,    7340032, 15728640,
     33554432, 71303168, 150994944, 318767104, 671088640, 1409286144,
 };
 
-CONSTEXPR static uint64_t mlt_base[mlt_size] = {
+CONSTEXPR static uint64_t K_MLT_BASE[K_MLT_SIZE] = {
     0,   64,  96,  128, 160, 192, 224, 256, 288, 320, 352,
     384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704,
 };
@@ -28,15 +28,15 @@ CONSTEXPR static uint64_t mlt_base[mlt_size] = {
 // Resolution (DF407)
 inline double from_msm_lock_ex(long input_value) {
     auto value = static_cast<uint64_t>(input_value);
-    if (value >= mlt_base[mlt_size - 1]) {
+    if (value >= K_MLT_BASE[K_MLT_SIZE - 1]) {
         return 67108864 / 1000.0;
     }
 
-    for (auto i = 0; i < mlt_size - 1; i++) {
-        auto start = mlt_base[i];
-        auto end   = mlt_base[i + 1];
+    for (auto i = 0; i < K_MLT_SIZE - 1; i++) {
+        auto start = K_MLT_BASE[i];
+        auto end   = K_MLT_BASE[i + 1];
         if (value >= start && value < end) {
-            auto calculated_value = mlt_coefficient[i] * value - mlt_offset[i];
+            auto calculated_value = K_MLT_COEFFICIENT[i] * value - K_MLT_OFFSET[i];
             return static_cast<double>(calculated_value) / 1000.0;
         }
     }
@@ -44,15 +44,15 @@ inline double from_msm_lock_ex(long input_value) {
     return 0.0;
 }
 
-CONSTEXPR static uint64_t mlt2_table[16] = {
+CONSTEXPR static uint64_t K_MLT2_TABLE[16] = {
     0, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144, 524288,
 };
 
 inline double from_msm_lock(long value) {
     if (value < 0) return 0;
-    if (value > 15) return mlt2_table[15] / 1000.0;
+    if (value > 15) return K_MLT2_TABLE[15] / 1000.0;
     // TODO(ewasjon): We should probably do the cast and divide in the table
-    return static_cast<double>(mlt2_table[value]) / 1000.0;
+    return static_cast<double>(K_MLT2_TABLE[value]) / 1000.0;
 }
 
 inline long to_msm_lock_ex(double lock) {

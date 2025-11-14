@@ -184,10 +184,10 @@ static bool decode_subframe4_page18(Words const& words, Subframe4::Page18& page)
     auto b2 = words.u8(128, 8);
     auto b3 = words.u8(136, 8);
 
-    auto A1     = words.u32(150, 24);
-    auto A0_msb = words.u32(180, 24);
-    auto A0_lsb = words.u32(210, 8);
-    auto A0     = (static_cast<uint32_t>(A0_msb) << 24) | A0_lsb;
+    auto utc_a1_raw = words.u32(150, 24);
+    auto utc_a0_msb = words.u32(180, 24);
+    auto utc_a0_lsb = words.u32(210, 8);
+    auto utc_a0_raw = (static_cast<uint32_t>(utc_a0_msb) << 24) | utc_a0_lsb;
 
     auto t_ot   = words.u32(218, 8);
     auto wn_t   = words.u8(226, 8);
@@ -211,8 +211,8 @@ static bool decode_subframe4_page18(Words const& words, Subframe4::Page18& page)
              page.a[0], a0, page.a[1], a1, page.a[2], a2, page.a[3], a3, page.b[0], b0, page.b[1],
              b1, page.b[2], b2, page.b[3], b3);
 
-    page.A0          = signed_scale(32, A0, -30);
-    page.A1          = signed_scale(24, A1, -50);
+    page.utc_a0      = signed_scale(32, utc_a0_raw, -30);
+    page.utc_a1      = signed_scale(24, utc_a1_raw, -50);
     page.delta_t_ls  = signed_scale(8, dt_ls, 0);
     page.t_ot        = unsigned_scale(t_ot, 12);
     page.wn_t        = unsigned_scale(wn_t, 0);
@@ -222,8 +222,8 @@ static bool decode_subframe4_page18(Words const& words, Subframe4::Page18& page)
 
     VERBOSEF("subframe4_18:  utc: A0: %g (%u), A1: %g (%u), delta_t_ls: %g (%u), t_ot: %g (%u), "
              "wn_t: %g (%u), wn_lsf: %g (%u), dn: %g (%u), delta_t_lsf: %g (%u)",
-             page.A0, A0, page.A1, A1, page.delta_t_ls, dt_ls, page.t_ot, t_ot, page.wn_t, wn_t,
-             page.wn_lsf, wn_lsf, page.dn, dn, page.delta_t_lsf, dt_lsf);
+             page.utc_a0, utc_a0_raw, page.utc_a1, utc_a1_raw, page.delta_t_ls, dt_ls, page.t_ot,
+             t_ot, page.wn_t, wn_t, page.wn_lsf, wn_lsf, page.dn, dn, page.delta_t_lsf, dt_lsf);
     return true;
 }
 

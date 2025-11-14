@@ -123,35 +123,35 @@ void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019* rtcm) {
     ephemeris.prn               = rtcm->prn;
     ephemeris.week_number       = rtcm->week;
     ephemeris.ca_or_p_on_l2     = rtcm->code_on_l2;
-    ephemeris.ura_index         = rtcm->SV_ACCURACY;
-    ephemeris.sv_health         = rtcm->SV_HEALTH;
+    ephemeris.ura_index         = rtcm->sv_accuracy;
+    ephemeris.sv_health         = rtcm->sv_health;
     ephemeris.lpp_iod           = rtcm->iode;
     ephemeris.iodc              = rtcm->iodc;
     ephemeris.iode              = rtcm->iode;
     ephemeris.aodo              = 0;
     ephemeris.toc               = rtcm->t_oc;
     ephemeris.toe               = rtcm->t_oe;
-    ephemeris.tgd               = rtcm->t_GD;
+    ephemeris.tgd               = rtcm->t_gd;
     ephemeris.af2               = rtcm->a_f2;
     ephemeris.af1               = rtcm->a_f1;
     ephemeris.af0               = rtcm->a_f0;
-    ephemeris.crc               = rtcm->C_rc;
-    ephemeris.crs               = rtcm->C_rs;
-    ephemeris.cuc               = rtcm->C_uc;
-    ephemeris.cus               = rtcm->C_us;
-    ephemeris.cic               = rtcm->C_ic;
-    ephemeris.cis               = rtcm->C_is;
+    ephemeris.crc               = rtcm->c_rc;
+    ephemeris.crs               = rtcm->c_rs;
+    ephemeris.cuc               = rtcm->c_uc;
+    ephemeris.cus               = rtcm->c_us;
+    ephemeris.cic               = rtcm->c_ic;
+    ephemeris.cis               = rtcm->c_is;
     ephemeris.e                 = rtcm->e;
-    ephemeris.m0                = rtcm->M_0;
+    ephemeris.m0                = rtcm->m_0;
     ephemeris.delta_n           = rtcm->delta_n;
-    ephemeris.a                 = rtcm->sqrt_A * rtcm->sqrt_A;
+    ephemeris.a                 = rtcm->sqrt_a * rtcm->sqrt_a;
     ephemeris.i0                = rtcm->i_0;
-    ephemeris.omega0            = rtcm->OMEGA_0;
+    ephemeris.omega0            = rtcm->omega_0;
     ephemeris.omega             = rtcm->omega;
-    ephemeris.omega_dot         = rtcm->OMEGADOT;
+    ephemeris.omega_dot         = rtcm->omegadot;
     ephemeris.idot              = rtcm->idot;
     ephemeris.fit_interval_flag = rtcm->fit;
-    ephemeris.l2_p_data_flag    = rtcm->L2_P_data_flag;
+    ephemeris.l2_p_data_flag    = rtcm->l2_p_data_flag;
 
     mTokoro.process_ephemeris(ephemeris);
 }
@@ -429,7 +429,7 @@ void Tokoro::vrs_mode_grid() {
 
         Float3 llh{lat * generator::tokoro::constant::DEG2RAD,
                    lon * generator::tokoro::constant::DEG2RAD, 0.0};
-        Float3 position = generator::tokoro::llh_to_ecef(llh, generator::tokoro::ellipsoid::WGS84);
+        Float3 position = generator::tokoro::llh_to_ecef(llh, generator::tokoro::ellipsoid::gWgs84);
 
         INFOF("VRS grid cell center (%d,%d): lat=%.6f lon=%.6f", east, north, lat, lon);
 
@@ -472,9 +472,9 @@ void Tokoro::vrs_mode_dynamic() {
         auto last_llh    = llh_from_shape(last_shape);
 
         auto current_position =
-            generator::tokoro::llh_to_ecef(current_llh, generator::tokoro::ellipsoid::WGS84);
+            generator::tokoro::llh_to_ecef(current_llh, generator::tokoro::ellipsoid::gWgs84);
         auto last_position =
-            generator::tokoro::llh_to_ecef(last_llh, generator::tokoro::ellipsoid::WGS84);
+            generator::tokoro::llh_to_ecef(last_llh, generator::tokoro::ellipsoid::gWgs84);
 
         auto distance_km = (current_position - last_position).length() / 1000.0;
         DEBUGF("distance to last used location: %.6fkm (%.6fkm threshold)", distance_km,
@@ -493,8 +493,8 @@ void Tokoro::vrs_mode_dynamic() {
         }
 
         // We don't track which coordinate system the location is in, however, that doesn't matter
-        // because (1) we only need a rough location and (2) the it will probably be in WGS84, which
-        // is aligned with ITRF current, and that's what we use for the reference station.
+        // because (1) we only need a rough location and (2) the it will probably be in gWgs84,
+        // which is aligned with ITRF current, and that's what we use for the reference station.
         auto const& last_location_shape = mLastLocation.const_value();
         auto        last_location_llh   = llh_from_shape(last_location_shape);
         INFOF("last location (llh): (%.14f,%.14f,%.6f)",
@@ -502,7 +502,7 @@ void Tokoro::vrs_mode_dynamic() {
               last_location_llh.y * generator::tokoro::constant::RAD2DEG, last_location_llh.z);
 
         auto last_location =
-            generator::tokoro::llh_to_ecef(last_location_llh, generator::tokoro::ellipsoid::WGS84);
+            generator::tokoro::llh_to_ecef(last_location_llh, generator::tokoro::ellipsoid::gWgs84);
         INFOF("last location (ecef): (%.14f,%.14f,%.14f)", last_location.x, last_location.y,
               last_location.z);
 

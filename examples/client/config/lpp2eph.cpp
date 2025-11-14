@@ -45,7 +45,7 @@ static args::Flag gNoBeidou{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
 }
 
 void parse(Config* config) {

@@ -10,7 +10,7 @@ LOGLET_MODULE2(tokoro, nut);
 namespace generator {
 namespace tokoro {
 
-static double const IAU1980_NUTATION_DATA[106][10] = {
+static double const gIau1980NutationDataTable[106][10] = {
     {0, 0, 0, 0, 1, -6798.4, -171996, -174.2, 92025, 8.9},
     {0, 0, 2, -2, 2, 182.6, -13187, -1.6, 5736, -3.1},
     {0, 0, 2, 0, 2, 13.7, -2274, -0.2, 977, -0.5},
@@ -128,16 +128,16 @@ Nutation Nutation::evaluate(double t, AstronomicalArguments const& args) NOEXCEP
 
     for (auto i = 0; i < 106; i++) {
         auto angle = 0.0;
-        angle += IAU1980_NUTATION_DATA[i][0] * args.l;
-        angle += IAU1980_NUTATION_DATA[i][1] * args.lp;
-        angle += IAU1980_NUTATION_DATA[i][2] * args.f;
-        angle += IAU1980_NUTATION_DATA[i][3] * args.d;
-        angle += IAU1980_NUTATION_DATA[i][4] * args.omega;
+        angle += gIau1980NutationDataTable[i][0] * args.l;
+        angle += gIau1980NutationDataTable[i][1] * args.lp;
+        angle += gIau1980NutationDataTable[i][2] * args.f;
+        angle += gIau1980NutationDataTable[i][3] * args.d;
+        angle += gIau1980NutationDataTable[i][4] * args.omega;
 
         result.d_psi +=
-            (IAU1980_NUTATION_DATA[i][6] + IAU1980_NUTATION_DATA[i][7] * t) * sin(angle);
+            (gIau1980NutationDataTable[i][6] + gIau1980NutationDataTable[i][7] * t) * sin(angle);
         result.d_eps +=
-            (IAU1980_NUTATION_DATA[i][8] + IAU1980_NUTATION_DATA[i][9] * t) * cos(angle);
+            (gIau1980NutationDataTable[i][8] + gIau1980NutationDataTable[i][9] * t) * cos(angle);
     }
 
     // 0.1 mas to rad

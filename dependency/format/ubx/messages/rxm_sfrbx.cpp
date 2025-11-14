@@ -92,14 +92,14 @@ std::unique_ptr<Message> RxmSfrbx::parse(Decoder& decoder, std::vector<uint8_t> 
         return nullptr;
     }
 
-    auto gnss_id   = decoder.U1();
-    auto sv_id     = decoder.U1();
-    auto sig_id    = decoder.U1();
-    auto freq_id   = decoder.U1();
-    auto num_words = decoder.U1();
-    auto chn       = decoder.U1();
-    auto version   = decoder.U1();
-    auto reserved0 = decoder.U1();
+    auto gnss_id   = decoder.u1();
+    auto sv_id     = decoder.u1();
+    auto sig_id    = decoder.u1();
+    auto freq_id   = decoder.u1();
+    auto num_words = decoder.u1();
+    auto chn       = decoder.u1();
+    auto version   = decoder.u1();
+    auto reserved0 = decoder.u1();
     if (decoder.error()) {
         return nullptr;
     }
@@ -119,7 +119,7 @@ std::unique_ptr<Message> RxmSfrbx::parse(Decoder& decoder, std::vector<uint8_t> 
 
     std::vector<uint32_t> words;
     for (size_t i = 0; i < num_words; ++i) {
-        words.push_back(decoder.U4());
+        words.push_back(decoder.u4());
     }
 
     if (decoder.error()) {

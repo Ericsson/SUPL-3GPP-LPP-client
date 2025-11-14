@@ -57,7 +57,7 @@ static args::Flag gPossibWrap{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
     gPort.HelpDefault("1883");
 }
 

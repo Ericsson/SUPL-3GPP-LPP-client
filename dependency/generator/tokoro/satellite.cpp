@@ -26,7 +26,7 @@ Satellite::Satellite(SatelliteId id, Float3 ground_position, Generator const& ge
       mGroundPositionEcef(ground_position),
       mEnabled(false),
       mGenerator(generator) {
-    mGroundPositionLlh = ecef_to_llh(mGroundPositionEcef, ellipsoid::WGS84);
+    mGroundPositionLlh = ecef_to_llh(mGroundPositionEcef, ellipsoid::gWgs84);
     mCurrentState      = {};
     mNextState         = {};
 }

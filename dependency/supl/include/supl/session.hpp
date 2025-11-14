@@ -29,10 +29,10 @@ public:
 
     enum class Received {
         UNKNOWN = 0,
-        INVALID_SESSION,
-        UNABLE_TO_DECODE,
-        SESSION_TERMINATED,
-        NO_DATA,
+        InvalidSession,
+        UnableToDecode,
+        SessionTerminated,
+        NoData,
         RESPONSE,
         END,
         POS,
@@ -42,14 +42,14 @@ public:
         UNKNOWN,
         CONNECTING,
         CONNECTED,
-        WAIT_FOR_HANDSHAKE,
+        WaitForHandshake,
         DISCONNECTED,
     };
 
     enum class Handshake {
         OK = 0,
         ERROR,
-        NO_DATA,
+        NoData,
     };
 
     explicit Session(Version version, Identity identity);

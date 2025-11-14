@@ -6,15 +6,15 @@
 #include "utc.hpp"
 
 #include <array>
-#include <stdio.h>
+#include <cstdio>
 
 namespace ts {
 
 static int64_t leap_seconds_utc_gps() {
     // TODO(ewasjon): This will not always be correct. Use LeapSeconds::
     // instead.
-    constexpr int64_t leap_seconds = 18;
-    return leap_seconds;
+    constexpr int64_t LEAP_SECONDS = 18;
+    return LEAP_SECONDS;
 }
 
 // Calculate the current GPS timestamp from UTC timestamp
@@ -29,16 +29,16 @@ static Timestamp utc_2_gps(Timestamp utc_time) {
     seconds_since_gps.add(leap_seconds);
 
     // -5 days because gps time started on the 6th of January 1980
-    constexpr auto day_difference = 5;
-    seconds_since_gps.subtract(day_difference * DAY_IN_SECONDS);
+    constexpr auto DAY_DIFFERENCE = 5;
+    seconds_since_gps.subtract(DAY_DIFFERENCE * DAY_IN_SECONDS);
 
     // -2 days because leap days between 1970 and 1980
-    constexpr auto leap_days = 2;
-    seconds_since_gps.subtract(leap_days * DAY_IN_SECONDS);
+    constexpr auto LEAP_DAYS = 2;
+    seconds_since_gps.subtract(LEAP_DAYS * DAY_IN_SECONDS);
 
     // -10 years because gps time started 1980 (1980 - 1970)
-    constexpr auto year_difference = 10;
-    seconds_since_gps.subtract(year_difference * YEAR_IN_SECONDS);
+    constexpr auto YEAR_DIFFERENCE = 10;
+    seconds_since_gps.subtract(YEAR_DIFFERENCE * YEAR_IN_SECONDS);
     return seconds_since_gps;
 }
 
@@ -50,31 +50,31 @@ static Timestamp gps_2_utc(Timestamp gst) {
 }
 
 Gps::Gps() = default;
-Gps::Gps(Timestamp const& timestamp) : tm{timestamp} {}
-Gps::Gps(Utc const& time) : tm{utc_2_gps(time.timestamp())} {}
+Gps::Gps(Timestamp const& timestamp) : mTm{timestamp} {}
+Gps::Gps(Utc const& time) : mTm{utc_2_gps(time.timestamp())} {}
 Gps::Gps(Tai const& time) : Gps(Utc(time)) {}
 Gps::Gps(Glo const& time) : Gps(Utc(time)) {}
 Gps::Gps(Bdt const& time) : Gps(Utc(time)) {}
 Gps::Gps(Gst const& time) : Gps(Utc(time)) {}
 
 int64_t Gps::days() const {
-    return tm.seconds() / DAY_IN_SECONDS;
+    return mTm.seconds() / DAY_IN_SECONDS;
 }
 
 Timestamp Gps::time_of_day() const {
-    return tm - Timestamp{days() * DAY_IN_SECONDS};
+    return mTm - Timestamp{days() * DAY_IN_SECONDS};
 }
 
 int64_t Gps::week() const {
-    return tm.seconds() / WEEK_IN_SECONDS;
+    return mTm.seconds() / WEEK_IN_SECONDS;
 }
 
 Timestamp Gps::time_of_week() const {
-    return tm - Timestamp{week() * WEEK_IN_SECONDS};
+    return mTm - Timestamp{week() * WEEK_IN_SECONDS};
 }
 
 NODISCARD Timestamp Gps::mod_timestamp() const {
-    auto timestamp = tm;
+    auto timestamp = mTm;
     while (timestamp.seconds() > WEEK_IN_SECONDS * 1024) {
         timestamp.subtract(WEEK_IN_SECONDS * 1024);
     }
@@ -82,7 +82,7 @@ NODISCARD Timestamp Gps::mod_timestamp() const {
 }
 
 Timestamp Gps::difference(Gps const& other) const {
-    return tm - other.tm;
+    return mTm - other.mTm;
 }
 
 constexpr static int64_t MONTH_PER_YEAR = 12;
@@ -135,7 +135,7 @@ static TimePoint timepoint_from_timestamp(Timestamp time) {
 }
 
 TimePoint Gps::to_timepoint() const {
-    return timepoint_from_timestamp(tm);
+    return timepoint_from_timestamp(mTm);
 }
 
 Gps Gps::now() {
@@ -172,16 +172,13 @@ Gps Gps::from_ymdhms(int64_t year, int64_t month, int64_t day, int64_t hour, int
 }
 
 // NOTE: The day each month of the year starts with.
-constexpr static std::array<int64_t, 12> day_of_year = {
+constexpr static std::array<int64_t, 12> DAY_OF_YEAR = {
     1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335,
 };
 
-constexpr static int64_t gps_start_year = 1980;
-constexpr static int64_t days_per_year  = 365;
-
 int64_t Gps::days_from_ymd(int64_t year, int64_t month, int64_t day) {
-    if (year < gps_start_year) {
-        year = gps_start_year;
+    if (year < GPS_START_YEAR) {
+        year = GPS_START_YEAR;
     }
 
     if (month <= 0) {
@@ -192,15 +189,15 @@ int64_t Gps::days_from_ymd(int64_t year, int64_t month, int64_t day) {
 
     auto days = 0LL;
 
-    for (auto i = gps_start_year; i < year; i++) {
+    for (auto i = GPS_START_YEAR; i < year; i++) {
         if (i % 4 == 0) {
-            days += days_per_year + 1;
+            days += DAYS_PER_YEAR + 1;
         } else {
-            days += days_per_year;
+            days += DAYS_PER_YEAR;
         }
     }
 
-    days += day_of_year.at(static_cast<size_t>(month - 1)) - 1;
+    days += DAY_OF_YEAR.at(static_cast<size_t>(month - 1)) - 1;
     days += day;
     days += -1;
     days += (year % 4 == 0 && month >= 3 ? 1 : 0);
@@ -209,7 +206,7 @@ int64_t Gps::days_from_ymd(int64_t year, int64_t month, int64_t day) {
 }
 
 Timestamp Gps::utc_timestamp() const {
-    return gps_2_utc(tm);
+    return gps_2_utc(mTm);
 }
 
 }  // namespace ts

@@ -45,7 +45,7 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
                                   TroposphericCorrection& correction) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    if (mCorrectionPointSet == nullptr) {
+    if (correction_point_set == nullptr) {
         WARNF("tropospheric correction grid not available: no correction point set (missing "
               "assistance data)");
         return false;

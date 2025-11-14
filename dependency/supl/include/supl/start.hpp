@@ -4,9 +4,9 @@
 namespace supl {
 
 struct START {
-    SETCapabilities sETCapabilities;
-    ApplicationID   applicationID;
-    LocationID      locationID;
+    SETCapabilities set_capabilities;
+    ApplicationID   application_id;
+    LocationID      location_id;
 };
 
 }  // namespace supl

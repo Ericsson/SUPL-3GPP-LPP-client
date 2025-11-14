@@ -115,7 +115,7 @@ static std::unique_ptr<RtkData> extract_rtk_data(LPP_Message const& lpp_message)
     return data;
 }
 
-static GenericGnssId MSM_GNSS_MESSAGE_ORDER[] = {
+static GenericGnssId gMsmGnssMessageOrder[] = {
     GenericGnssId::GPS,
     GenericGnssId::GLONASS,
     GenericGnssId::GALILEO,
@@ -285,7 +285,7 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         Observations const* observations[4] = {nullptr, nullptr, nullptr, nullptr};
         auto                count           = 0;
         for (auto i = 0; i < 4; i++) {
-            auto it = rtk_data->observations.find(MSM_GNSS_MESSAGE_ORDER[i]);
+            auto it = rtk_data->observations.find(gMsmGnssMessageOrder[i]);
             if (it == rtk_data->observations.end()) continue;
             gnss[count]         = it->first;
             observations[count] = it->second.get();

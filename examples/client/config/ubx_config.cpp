@@ -52,7 +52,7 @@ static args::Flag gApplyAndExit{
     gGroup, "apply-and-exit", "Apply configuration and exit", {"cfg-apply-and-exit"}};
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
 }
 
 static format::ubx::CfgKey parse_cfg_key(std::string const& key_str) {

@@ -21,9 +21,9 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
     auto t = receive_time;
     VERBOSEF("t_0: %s", t.rtklib_time_string().c_str());
 
-    t.add_seconds(-pseudo_range / constant::c);
+    t.add_seconds(-pseudo_range / constant::K_C);
     VERBOSEF("t_p: %s (%.4fms, %.4fkm)", t.rtklib_time_string().c_str(),
-             1000.0 * (pseudo_range / constant::c), pseudo_range / 1000.0);
+             1000.0 * (pseudo_range / constant::K_C), pseudo_range / 1000.0);
 
     // Estimate satellite clock bias
     Scalar clock_bias = 0.0;
@@ -32,7 +32,7 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
     }
     t.add_seconds(-clock_bias);
     VERBOSEF("t_c: %s (%.4fus, %.4fkm)", t.rtklib_time_string().c_str(), 1000000.0 * clock_bias,
-             clock_bias * constant::c / 1000.0);
+             clock_bias * constant::K_C / 1000.0);
 
     // Compute satellite position and velocity
     EphemerisEngine::Satellite eph{};
@@ -64,15 +64,15 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
     auto t = receive_time;
     VERBOSEF("t_0: %s", t.rtklib_time_string().c_str());
 
-    t.add_seconds(-pseudo_range / constant::c);
+    t.add_seconds(-pseudo_range / constant::K_C);
     VERBOSEF("t_p: %s (%.4fms, %.4fkm)", t.rtklib_time_string().c_str(),
-             1000.0 * (pseudo_range / constant::c), pseudo_range / 1000.0);
+             1000.0 * (pseudo_range / constant::K_C), pseudo_range / 1000.0);
 
     // Estimate satellite clock bias
     auto clock_bias = ephemeris.clock_bias(t);
     t.add_seconds(-clock_bias);
     VERBOSEF("t_c: %s (%.4fus, %.4fkm)", t.rtklib_time_string().c_str(), 1000000.0 * clock_bias,
-             clock_bias * constant::c / 1000.0);
+             clock_bias * constant::K_C / 1000.0);
 
     // Compute satellite position and velocity
     auto eph = ephemeris.compute(t);

@@ -38,7 +38,7 @@ static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds)
     }
 }
 
-static SignalId GPS_SIGNALS[] = {
+static inline SignalId const gGpsSignals[] = {
     SignalId::GPS_L1_CA,
     // SignalId::GPS_L1_P,
     // SignalId::GPS_L1_Z_TRACKING,
@@ -56,7 +56,7 @@ static SignalId GPS_SIGNALS[] = {
     // SignalId::GPS_L1_L1C_D_P,
 };
 
-static SignalId GLO_SIGNALS[] = {
+static inline SignalId const gGloSignals[] = {
     SignalId::GLONASS_G1_CA, SignalId::GLONASS_G2_CA,
     // SignalId::GLONASS_G1_P,
     // SignalId::GLONASS_G2_P,
@@ -71,7 +71,7 @@ static SignalId GLO_SIGNALS[] = {
     // SignalId::GLONASS_G3_I_Q,
 };
 
-static SignalId GAL_SIGNALS[] = {
+static inline SignalId const gGalSignals[] = {
     // SignalId::GALILEO_E1_C_NO_DATA,
     // SignalId::GALILEO_E1_A,
     // SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL,
@@ -93,7 +93,7 @@ static SignalId GAL_SIGNALS[] = {
     SignalId::GALILEO_E5A_I_Q,
 };
 
-static SignalId BDS_SIGNALS[] = {
+static inline SignalId const gBdsSignals[] = {
     SignalId::BEIDOU_B1_I,
     // SignalId::BEIDOU_B1_Q,
     // SignalId::BEIDOU_B1_I_Q,
@@ -144,7 +144,7 @@ void Builder::generate_observation_order() {
     mBdsTypeOrder.clear();
 
     if (mGpsSupport) {
-        for (auto const& signal : GPS_SIGNALS) {
+        for (auto const& signal : gGpsSignals) {
             mGpsTypeOrder.push_back({ObservationKind::Code, signal});
             mGpsTypeOrder.push_back({ObservationKind::Phase, signal});
             // mGpsTypeOrder.push_back({ObservationKind::Doppler, signal});
@@ -153,7 +153,7 @@ void Builder::generate_observation_order() {
     }
 
     if (mGloSupport) {
-        for (auto const& signal : GLO_SIGNALS) {
+        for (auto const& signal : gGloSignals) {
             mGloTypeOrder.push_back({ObservationKind::Code, signal});
             mGloTypeOrder.push_back({ObservationKind::Phase, signal});
             // mGloTypeOrder.push_back({ObservationKind::Doppler, signal});
@@ -162,7 +162,7 @@ void Builder::generate_observation_order() {
     }
 
     if (mGalSupport) {
-        for (auto const& signal : GAL_SIGNALS) {
+        for (auto const& signal : gGalSignals) {
             mGalTypeOrder.push_back({ObservationKind::Code, signal});
             mGalTypeOrder.push_back({ObservationKind::Phase, signal});
             // mGalTypeOrder.push_back({ObservationKind::Doppler, signal});
@@ -171,7 +171,7 @@ void Builder::generate_observation_order() {
     }
 
     if (mBdsSupport) {
-        for (auto const& signal : BDS_SIGNALS) {
+        for (auto const& signal : gBdsSignals) {
             mBdsTypeOrder.push_back({ObservationKind::Code, signal});
             mBdsTypeOrder.push_back({ObservationKind::Phase, signal});
             // mBdsTypeOrder.push_back({ObservationKind::Doppler, signal});

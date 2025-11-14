@@ -10,7 +10,7 @@ LOGLET_MODULE2(tokoro, astarg);
 namespace generator {
 namespace tokoro {
 
-static double const ASTRONOMICAL_ARGUMENTS_DATA[][5] = {
+static double const gAstronomicalArgumentsDataTable[][5] = {
     /* coefficients for iau 1980 nutation */
     {134.96340251, 1717915923.2178, 31.8792, 0.051635, -0.00024470},
     {357.52910918, 129596581.0481, -0.5532, 0.000136, -0.00001149},
@@ -29,18 +29,18 @@ AstronomicalArguments AstronomicalArguments::evaluate(double t) NOEXCEPT {
     time[3] = time[2] * t;
 
     AstronomicalArguments args{};
-    args.l     = ASTRONOMICAL_ARGUMENTS_DATA[0][0] * 3600.0;
-    args.lp    = ASTRONOMICAL_ARGUMENTS_DATA[1][0] * 3600.0;
-    args.f     = ASTRONOMICAL_ARGUMENTS_DATA[2][0] * 3600.0;
-    args.d     = ASTRONOMICAL_ARGUMENTS_DATA[3][0] * 3600.0;
-    args.omega = ASTRONOMICAL_ARGUMENTS_DATA[4][0] * 3600.0;
+    args.l     = gAstronomicalArgumentsDataTable[0][0] * 3600.0;
+    args.lp    = gAstronomicalArgumentsDataTable[1][0] * 3600.0;
+    args.f     = gAstronomicalArgumentsDataTable[2][0] * 3600.0;
+    args.d     = gAstronomicalArgumentsDataTable[3][0] * 3600.0;
+    args.omega = gAstronomicalArgumentsDataTable[4][0] * 3600.0;
 
     for (int i = 0; i < 4; i++) {
-        args.l += ASTRONOMICAL_ARGUMENTS_DATA[0][i + 1] * time[i];
-        args.lp += ASTRONOMICAL_ARGUMENTS_DATA[1][i + 1] * time[i];
-        args.f += ASTRONOMICAL_ARGUMENTS_DATA[2][i + 1] * time[i];
-        args.d += ASTRONOMICAL_ARGUMENTS_DATA[3][i + 1] * time[i];
-        args.omega += ASTRONOMICAL_ARGUMENTS_DATA[4][i + 1] * time[i];
+        args.l += gAstronomicalArgumentsDataTable[0][i + 1] * time[i];
+        args.lp += gAstronomicalArgumentsDataTable[1][i + 1] * time[i];
+        args.f += gAstronomicalArgumentsDataTable[2][i + 1] * time[i];
+        args.d += gAstronomicalArgumentsDataTable[3][i + 1] * time[i];
+        args.omega += gAstronomicalArgumentsDataTable[4][i + 1] * time[i];
     }
 
     args.l     = fmod(args.l * constant::ARCSEC2RAD, 2 * constant::PI);

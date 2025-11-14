@@ -200,7 +200,7 @@ bool TcpClientInput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
 //
 
 TcpClientOutput::TcpClientOutput(std::string host, uint16_t port, bool reconnect) NOEXCEPT
-    : mState(State::STATE_INITIAL),
+    : mState(State::StateInitial),
       mHost(std::move(host)),
       mPort(port),
       mPath(),
@@ -210,7 +210,7 @@ TcpClientOutput::TcpClientOutput(std::string host, uint16_t port, bool reconnect
 }
 
 TcpClientOutput::TcpClientOutput(std::string path, bool reconnect) NOEXCEPT
-    : mState(State::STATE_INITIAL),
+    : mState(State::StateInitial),
       mHost(),
       mPort(0),
       mPath(std::move(path)),
@@ -227,35 +227,35 @@ TcpClientOutput::~TcpClientOutput() NOEXCEPT {
 void TcpClientOutput::write(uint8_t const* buffer, size_t length) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p, %zu) (state=%s", buffer, length, state_to_string(mState));
 
-    if (mState == State::STATE_ERROR) {
+    if (mState == State::StateError) {
         disconnect();
     }
 
-    if (mReconnect && mState == State::STATE_DISCONNECTED) {
+    if (mReconnect && mState == State::StateDisconnected) {
         if (mReconnectTime < std::chrono::steady_clock::now()) {
-            mState = State::STATE_RECONNECT;
+            mState = State::StateReconnect;
         }
     }
 
-    if (mState == State::STATE_INITIAL || mState == State::STATE_RECONNECT) {
+    if (mState == State::StateInitial || mState == State::StateReconnect) {
         connect();
-    } else if (mState == State::STATE_CONNECTING) {
+    } else if (mState == State::StateConnecting) {
         connecting();
     }
 
-    if (mState == State::STATE_CONNECTED) {
+    if (mState == State::StateConnected) {
         auto result = ::send(mFd, buffer, length, MSG_NOSIGNAL);
         VERBOSEF("::send(%d, %p, %zu, MSG_NOSIGNAL) = %d", mFd, buffer, length, result);
         if (result < 0) {
             WARNF("failed to write to socket: " ERRNO_FMT, ERRNO_ARGS(errno));
-            mState = STATE_ERROR;
+            mState = StateError;
         }
     }
 }
 
 bool TcpClientOutput::connect() NOEXCEPT {
     VSCOPE_FUNCTIONF(") (state=%s", state_to_string(mState));
-    ASSERT(mState == State::STATE_INITIAL || mState == State::STATE_RECONNECT, "invalid state");
+    ASSERT(mState == State::StateInitial || mState == State::StateReconnect, "invalid state");
 
     mReconnectTime = std::chrono::steady_clock::now() + std::chrono::seconds(10);
 
@@ -275,7 +275,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
                  result);
         if (result != 0) {
             ERRORF("getaddrinfo failed: %s", gai_strerror(result));
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
 
@@ -323,7 +323,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
 
         if (mAddressLength == 0) {
             ERRORF("failed to resolve address");
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
     } else if (mPath.size() > 0) {
@@ -333,7 +333,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
         auto unix_addr = reinterpret_cast<struct sockaddr_un*>(&mAddress);
         if (mPath.size() + 1 >= sizeof(unix_addr->sun_path)) {
             ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
 
@@ -344,7 +344,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
         VERBOSEF("unix socket path: %s", unix_addr->sun_path);
     } else {
         ERRORF("no host or path specified");
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 
@@ -353,7 +353,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
     VERBOSEF("::socket(%d, SOCK_STREAM, 0) = %d", mAddress.ss_family, mFd);
     if (mFd < 0) {
         ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 
@@ -369,7 +369,7 @@ bool TcpClientOutput::connect() NOEXCEPT {
         if (saved_errno == EINPROGRESS) {
             // connection is in progress
             VERBOSEF("connection in progress");
-            mState = STATE_CONNECTING;
+            mState = StateConnecting;
         } else {
             if (mHost.size() > 0) {
                 WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort,
@@ -379,13 +379,13 @@ bool TcpClientOutput::connect() NOEXCEPT {
             } else {
                 WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
             }
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
     } else {
         // connection is already established
         VERBOSEF("connection established");
-        mState = STATE_CONNECTED;
+        mState = StateConnected;
     }
 
     return true;
@@ -401,7 +401,7 @@ void TcpClientOutput::disconnect() NOEXCEPT {
         mFd = -1;
     }
 
-    mState = STATE_DISCONNECTED;
+    mState = StateDisconnected;
 }
 
 bool TcpClientOutput::connecting() NOEXCEPT {
@@ -417,7 +417,7 @@ bool TcpClientOutput::connecting() NOEXCEPT {
     VERBOSEF("::poll(%p, 1, 0) = %d", &poll_fd, result);
     if (result < 0) {
         WARNF("poll failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 
@@ -440,13 +440,13 @@ bool TcpClientOutput::connecting() NOEXCEPT {
         } else {
             WARNF("connection failed: %s", strerror(error));
         }
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 
     if (poll_fd.revents & POLLOUT) {
         VERBOSEF("connection established");
-        mState = STATE_CONNECTED;
+        mState = StateConnected;
     }
 
     return true;
@@ -454,12 +454,12 @@ bool TcpClientOutput::connecting() NOEXCEPT {
 
 char const* TcpClientOutput::state_to_string(State state) const NOEXCEPT {
     switch (state) {
-    case State::STATE_INITIAL: return "STATE_INITIAL";
-    case State::STATE_CONNECTING: return "STATE_CONNECTING";
-    case State::STATE_CONNECTED: return "STATE_CONNECTED";
-    case State::STATE_DISCONNECTED: return "STATE_DISCONNECTED";
-    case State::STATE_ERROR: return "STATE_ERROR";
-    case State::STATE_RECONNECT: return "STATE_RECONNECT";
+    case State::StateInitial: return "StateInitial";
+    case State::StateConnecting: return "StateConnecting";
+    case State::StateConnected: return "StateConnected";
+    case State::StateDisconnected: return "StateDisconnected";
+    case State::StateError: return "StateError";
+    case State::StateReconnect: return "StateReconnect";
     }
     CORE_UNREACHABLE();
 }

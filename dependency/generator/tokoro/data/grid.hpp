@@ -90,19 +90,19 @@ struct GridData {
     GridStatus tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
-        mCorrectionPointSetId   = correction_point_set.set_id;
-        mDeltaLatitude          = correction_point_set.step_of_latitude;
-        mDeltaLongitude         = correction_point_set.step_of_longitude;
-        mNumberOfStepsLatitude  = correction_point_set.number_of_steps_latitude;
-        mNumberOfStepsLongitude = correction_point_set.number_of_steps_longitude;
-        auto grid_point_count   = (mNumberOfStepsLatitude + 1) * (mNumberOfStepsLongitude + 1);
-        mGridPoints.resize(static_cast<size_t>(grid_point_count));
+        correction_point_set_id   = correction_point_set.set_id;
+        delta_latitude            = correction_point_set.step_of_latitude;
+        delta_longitude           = correction_point_set.step_of_longitude;
+        number_of_steps_latitude  = correction_point_set.number_of_steps_latitude;
+        number_of_steps_longitude = correction_point_set.number_of_steps_longitude;
+        auto grid_point_count = (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
+        grid_points.resize(static_cast<size_t>(grid_point_count));
     }
 
     void add_point(CorrectionPointInfo const& info) NOEXCEPT {
         assert(info.absolute_index >= 0);
-        assert(info.absolute_index < static_cast<long>(mGridPoints.size()));
-        auto& grid_point             = mGridPoints[static_cast<size_t>(info.absolute_index)];
+        assert(info.absolute_index < static_cast<long>(grid_points.size()));
+        auto& grid_point             = grid_points[static_cast<size_t>(info.absolute_index)];
         grid_point.valid             = info.is_valid;
         grid_point.position          = info.position;
         grid_point.array_index       = info.array_index;
@@ -114,7 +114,7 @@ struct GridData {
     }
 
     GridPoint* point_from_array_index(long array_index) {
-        for (auto& grid_point : mGridPoints) {
+        for (auto& grid_point : grid_points) {
             if (grid_point.array_index == array_index) return &grid_point;
         }
         return nullptr;
@@ -122,12 +122,12 @@ struct GridData {
 
     void print_grid();
 
-    uint16_t               mCorrectionPointSetId;
-    double                 mDeltaLatitude;
-    double                 mDeltaLongitude;
-    long                   mNumberOfStepsLatitude;
-    long                   mNumberOfStepsLongitude;
-    std::vector<GridPoint> mGridPoints;
+    uint16_t               correction_point_set_id;
+    double                 delta_latitude;
+    double                 delta_longitude;
+    long                   number_of_steps_latitude;
+    long                   number_of_steps_longitude;
+    std::vector<GridPoint> grid_points;
 };
 
 }  // namespace tokoro

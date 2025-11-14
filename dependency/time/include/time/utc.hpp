@@ -27,7 +27,7 @@ public:
     NODISCARD Timestamp ut1(double ut1_utc) const;
     NODISCARD double    gmst(double ut1_utc) const;
 
-    NODISCARD Timestamp timestamp() const { return tm; }
+    NODISCARD Timestamp timestamp() const { return mTm; }
     NODISCARD std::string rtklib_time_string(int fraction_digits = 12) const;
     NODISCARD std::string rfc3339() const;
     NODISCARD std::string rinex_string() const;
@@ -35,7 +35,7 @@ public:
     NODISCARD TimePoint   time_point() const;
 
     Utc& add(int64_t seconds) {
-        tm.add(seconds);
+        mTm.add(seconds);
         return *this;
     }
 
@@ -49,7 +49,7 @@ public:
     NODISCARD static Utc from_time_point(TimePoint const& tp);
 
 private:
-    Timestamp tm;
+    Timestamp mTm;
 };
 
 }  // namespace ts

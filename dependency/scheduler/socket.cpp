@@ -522,7 +522,7 @@ bool SocketTask::cancel() NOEXCEPT {
 //
 
 TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reconnect) NOEXCEPT
-    : mState(STATE_UNSCEDULED),
+    : mState(StateUnscheduled),
       mScheduler{nullptr},
       mIsScheduled{false},
       mEvent{},
@@ -548,7 +548,7 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
 }
 
 TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
-    : mState(STATE_UNSCEDULED),
+    : mState(StateUnscheduled),
       mScheduler{nullptr},
       mIsScheduled{false},
       mEvent{},
@@ -592,18 +592,18 @@ TcpConnectTask::~TcpConnectTask() NOEXCEPT {
 
 char const* TcpConnectTask::state_to_string(State state) const NOEXCEPT {
     switch (state) {
-    case STATE_UNSCEDULED: return "unscheduled";
-    case STATE_CONNECTING: return "connecting";
-    case STATE_CONNECTED: return "connected";
-    case STATE_DISCONNECTED: return "disconnected";
-    case STATE_ERROR: return "error";
+    case StateUnscheduled: return "unscheduled";
+    case StateConnecting: return "connecting";
+    case StateConnected: return "connected";
+    case StateDisconnected: return "disconnected";
+    case StateError: return "error";
     }
     CORE_UNREACHABLE();
 }
 
 bool TcpConnectTask::connect() NOEXCEPT {
     VSCOPE_FUNCTIONF(") (state=%s", state_to_string(mState));
-    if (mState != STATE_UNSCEDULED && mState != STATE_DISCONNECTED) {
+    if (mState != StateUnscheduled && mState != StateDisconnected) {
         WARNF("unexpected state: %s", state_to_string(mState));
         return false;
     }
@@ -624,7 +624,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
                  result);
         if (result != 0) {
             ERRORF("getaddrinfo failed: %s", gai_strerror(result));
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
 
@@ -672,7 +672,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
 
         if (mAddressLength == 0) {
             ERRORF("failed to resolve address");
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
     } else if (mPath.size() > 0) {
@@ -682,7 +682,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
         auto unix_addr = reinterpret_cast<struct sockaddr_un*>(&mAddress);
         if (mPath.size() + 1 >= sizeof(unix_addr->sun_path)) {
             ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
 
@@ -693,7 +693,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
         VERBOSEF("unix socket path: %s", unix_addr->sun_path);
     } else {
         ERRORF("no host or path specified");
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 
@@ -701,7 +701,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
     VERBOSEF("::socket(%d, SOCK_STREAM, 0) = %d", mAddress.ss_family, mFd);
     if (mFd < 0) {
         ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 
@@ -717,7 +717,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
         if (saved_errno == EINPROGRESS) {
             // connection is in progress
             VERBOSEF("connection in progress");
-            mState = STATE_CONNECTING;
+            mState = StateConnecting;
         } else {
             if (mHost.size() > 0) {
                 WARNF("connect failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort,
@@ -727,13 +727,13 @@ bool TcpConnectTask::connect() NOEXCEPT {
             } else {
                 WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
             }
-            mState = STATE_ERROR;
+            mState = StateError;
             return false;
         }
     } else {
         // connection is already established
         VERBOSEF("connection established");
-        mState = STATE_CONNECTED;
+        mState = StateConnected;
 
         if (on_connected) {
             on_connected(*this);
@@ -745,7 +745,7 @@ bool TcpConnectTask::connect() NOEXCEPT {
 
 void TcpConnectTask::disconnect() NOEXCEPT {
     VSCOPE_FUNCTIONF(") (state=%s", state_to_string(mState));
-    if (mState != STATE_CONNECTING && mState != STATE_CONNECTED) {
+    if (mState != StateConnecting && mState != StateConnected) {
         WARNF("unexpected state: %s", state_to_string(mState));
         return;
     }
@@ -760,13 +760,13 @@ void TcpConnectTask::disconnect() NOEXCEPT {
         mFd = -1;
     }
 
-    if (mState == STATE_CONNECTED) {
+    if (mState == StateConnected) {
         if (on_disconnected) {
             on_disconnected(*this);
         }
     }
 
-    mState = STATE_DISCONNECTED;
+    mState = StateDisconnected;
 }
 
 void TcpConnectTask::event(struct epoll_event* event) NOEXCEPT {
@@ -799,8 +799,8 @@ void TcpConnectTask::read() NOEXCEPT {
 
 void TcpConnectTask::write() NOEXCEPT {
     VSCOPE_FUNCTIONF(") (state=%s", state_to_string(mState));
-    if (mState == STATE_CONNECTING) {
-        mState = STATE_CONNECTED;
+    if (mState == StateConnecting) {
+        mState = StateConnected;
         if (on_connected) {
             on_connected(*this);
         }
@@ -834,7 +834,7 @@ void TcpConnectTask::error() NOEXCEPT {
         VERBOSEF("socket error: %s", strerror(error));
     }
 
-    if (mState == STATE_CONNECTING) {
+    if (mState == StateConnecting) {
         if (mHost.size() > 0) {
             WARNF("connection failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
         } else if (mPath.size() > 0) {
@@ -843,7 +843,7 @@ void TcpConnectTask::error() NOEXCEPT {
             WARNF("connection failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         }
         disconnect();
-    } else if (mState == STATE_CONNECTED) {
+    } else if (mState == StateConnected) {
         if (mHost.size() > 0) {
             WARNF("connection lost: %s:%u", mHost.c_str(), mPort);
         } else if (mPath.size() > 0) {
@@ -886,20 +886,20 @@ bool TcpConnectTask::schedule(Scheduler& scheduler) NOEXCEPT {
         }
     }
 
-    if (mState != STATE_CONNECTING && mState != STATE_CONNECTED) {
+    if (mState != StateConnecting && mState != StateConnected) {
         WARNF("unexpected state: %s", state_to_string(mState));
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     } else if (mFd < 0) {
         ERRORF("invalid file descriptor");
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 
     uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
     if (on_read) events |= EPOLLIN;
     if (on_write) events |= EPOLLIN;
-    if (mState == STATE_CONNECTING) {
+    if (mState == StateConnecting) {
         events |= EPOLLOUT;
     }
     if (scheduler.add_epoll_fd(mFd, events, &mEvent)) {
@@ -908,7 +908,7 @@ bool TcpConnectTask::schedule(Scheduler& scheduler) NOEXCEPT {
         mIsScheduled = true;
         return true;
     } else {
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 }
@@ -924,7 +924,7 @@ bool TcpConnectTask::cancel() NOEXCEPT {
         mIsScheduled = false;
         return true;
     } else {
-        mState = STATE_ERROR;
+        mState = StateError;
         return false;
     }
 }

@@ -12,8 +12,8 @@ void Rtcm2Eph::handle_gps_lnav(streamline::System& system, format::rtcm::Rtcm101
     ephemeris.prn           = rtcm->prn;
     ephemeris.week_number   = rtcm->week;
     ephemeris.ca_or_p_on_l2 = rtcm->code_on_l2;
-    ephemeris.ura_index     = rtcm->SV_ACCURACY;
-    ephemeris.sv_health     = rtcm->SV_HEALTH;
+    ephemeris.ura_index     = rtcm->sv_accuracy;
+    ephemeris.sv_health     = rtcm->sv_health;
     // [3GPP TS 37.355]: In the case of broadcasted GPS NAV ephemeris, the iod contains the IODC
     // as described in [4].
     ephemeris.lpp_iod           = rtcm->iodc;
@@ -22,27 +22,27 @@ void Rtcm2Eph::handle_gps_lnav(streamline::System& system, format::rtcm::Rtcm101
     ephemeris.aodo              = 0;
     ephemeris.toc               = rtcm->t_oc;
     ephemeris.toe               = rtcm->t_oe;
-    ephemeris.tgd               = rtcm->t_GD;
+    ephemeris.tgd               = rtcm->t_gd;
     ephemeris.af2               = rtcm->a_f2;
     ephemeris.af1               = rtcm->a_f1;
     ephemeris.af0               = rtcm->a_f0;
-    ephemeris.crc               = rtcm->C_rc;
-    ephemeris.crs               = rtcm->C_rs;
-    ephemeris.cuc               = rtcm->C_uc;
-    ephemeris.cus               = rtcm->C_us;
-    ephemeris.cic               = rtcm->C_ic;
-    ephemeris.cis               = rtcm->C_is;
+    ephemeris.crc               = rtcm->c_rc;
+    ephemeris.crs               = rtcm->c_rs;
+    ephemeris.cuc               = rtcm->c_uc;
+    ephemeris.cus               = rtcm->c_us;
+    ephemeris.cic               = rtcm->c_ic;
+    ephemeris.cis               = rtcm->c_is;
     ephemeris.e                 = rtcm->e;
-    ephemeris.m0                = rtcm->M_0;
+    ephemeris.m0                = rtcm->m_0;
     ephemeris.delta_n           = rtcm->delta_n;
-    ephemeris.a                 = rtcm->sqrt_A * rtcm->sqrt_A;
+    ephemeris.a                 = rtcm->sqrt_a * rtcm->sqrt_a;
     ephemeris.i0                = rtcm->i_0;
-    ephemeris.omega0            = rtcm->OMEGA_0;
+    ephemeris.omega0            = rtcm->omega_0;
     ephemeris.omega             = rtcm->omega;
-    ephemeris.omega_dot         = rtcm->OMEGADOT;
+    ephemeris.omega_dot         = rtcm->omegadot;
     ephemeris.idot              = rtcm->idot;
     ephemeris.fit_interval_flag = rtcm->fit;
-    ephemeris.l2_p_data_flag    = rtcm->L2_P_data_flag;
+    ephemeris.l2_p_data_flag    = rtcm->l2_p_data_flag;
 
     system.push(std::move(ephemeris));
 }

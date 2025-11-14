@@ -6,61 +6,61 @@ EXTERNAL_WARNINGS_PUSH
 #include <args.hpp>
 EXTERNAL_WARNINGS_POP
 
-static args::Group logging_group{"Logging:"};
-static args::Flag  log_trace{logging_group, "trace", "Set log level to trace", {"trace"}};
-static args::Flag  log_verbose{logging_group, "verbose", "Set log level to verbose", {"verbose"}};
-static args::Flag  log_debug{logging_group, "debug", "Set log level to debug", {"debug"}};
-static args::Flag  log_info{logging_group, "info", "Set log level to info", {"info"}};
-static args::Flag  log_warning{logging_group, "warning", "Set log level to warning", {"warning"}};
-static args::Flag  log_error{logging_group, "error", "Set log level to error", {"error"}};
-static args::Flag  log_no_color{
-    logging_group, "no-color", "Disable colored output", {"log-no-color"}};
-static args::Flag log_flush{logging_group, "flush", "Flush log after each line", {"log-flush"}};
+static args::Group gLoggingGroup{"Logging:"};
+static args::Flag  gLogTrace{gLoggingGroup, "trace", "Set log level to trace", {"trace"}};
+static args::Flag  gLogVerbose{gLoggingGroup, "verbose", "Set log level to verbose", {"verbose"}};
+static args::Flag  gLogDebug{gLoggingGroup, "debug", "Set log level to debug", {"debug"}};
+static args::Flag  gLogInfo{gLoggingGroup, "info", "Set log level to info", {"info"}};
+static args::Flag  gLogWarning{gLoggingGroup, "warning", "Set log level to warning", {"warning"}};
+static args::Flag  gLogError{gLoggingGroup, "error", "Set log level to error", {"error"}};
+static args::Flag  gLogNoColor{
+    gLoggingGroup, "no-color", "Disable colored output", {"log-no-color"}};
+static args::Flag gLogFlush{gLoggingGroup, "flush", "Flush log after each line", {"log-flush"}};
 
-static args::Group control_group{
+static args::Group gControlGroup{
     "Control:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::ValueFlag<uint16_t> port{
-    control_group, "port", "Control TCP port", {"port"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gPort{
+    gControlGroup, "port", "Control TCP port", {"port"}, args::Options::Single};
 
-static args::ValueFlag<int> update_interval{control_group,
+static args::ValueFlag<int> gUpdateInterval{gControlGroup,
                                             "update_interval",
                                             "How often the modem should be queried",
                                             {"update"},
                                             args::Options::Single};
 
-static args::Group modem_group{
+static args::Group gModemGroup{
     "Modem:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::Group serial_group{
-    modem_group,
+static args::Group gSerialGroup{
+    gModemGroup,
     "Serial:",
     args::Group::Validators::DontCare,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> serial_device{
-    serial_group, "device", "Device", {"serial"}, args::Options::Single};
-static args::ValueFlag<std::string> serial_baud_rate{
-    serial_group, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
-static args::ValueFlag<int> serial_data_bits{
-    serial_group, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
-static args::ValueFlag<int> serial_stop_bits{
-    serial_group, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
-static args::ValueFlag<std::string> serial_parity_bits{
-    serial_group, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
+static args::ValueFlag<std::string> gSerialDevice{
+    gSerialGroup, "device", "Device", {"serial"}, args::Options::Single};
+static args::ValueFlag<std::string> gSerialBaudRate{
+    gSerialGroup, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
+static args::ValueFlag<int> gSerialDataBits{
+    gSerialGroup, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
+static args::ValueFlag<int> gSerialStopBits{
+    gSerialGroup, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
+static args::ValueFlag<std::string> gSerialParityBits{
+    gSerialGroup, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
 
 static io::BaudRate parse_baudrate(std::string const& str) {
     long baud_rate = 0;
     try {
         baud_rate = std::stol(str);
     } catch (...) {
-        throw args::ParseError("serial_baud_rate must be an integer, got `" + str + "'");
+        throw args::ParseError("gSerialBaudRate must be an integer, got `" + str + "'");
     }
 
     if (baud_rate == 50) return io::BaudRate::BR50;
@@ -93,22 +93,22 @@ static io::BaudRate parse_baudrate(std::string const& str) {
     if (baud_rate == 3000000) return io::BaudRate::BR3000000;
     if (baud_rate == 3500000) return io::BaudRate::BR3500000;
     if (baud_rate == 4000000) return io::BaudRate::BR4000000;
-    throw args::ParseError("serial_baud_rate must be a valid baud rate, got `" + str + "'");
+    throw args::ParseError("gSerialBaudRate must be a valid baud rate, got `" + str + "'");
 }
 
 static void parse_serial(Config& config) {
-    if (!serial_device) {
+    if (!gSerialDevice) {
         throw args::ValidationError("serial-device is required");
     }
 
     auto baud_rate = io::BaudRate::BR115200;
-    if (serial_baud_rate) {
-        baud_rate = parse_baudrate(serial_baud_rate.Get());
+    if (gSerialBaudRate) {
+        baud_rate = parse_baudrate(gSerialBaudRate.Get());
     }
 
     auto data_bits = io::DataBits::EIGHT;
-    if (serial_data_bits) {
-        switch (serial_data_bits.Get()) {
+    if (gSerialDataBits) {
+        switch (gSerialDataBits.Get()) {
         case 5: data_bits = io::DataBits::FIVE; break;
         case 6: data_bits = io::DataBits::SIX; break;
         case 7: data_bits = io::DataBits::SEVEN; break;
@@ -118,8 +118,8 @@ static void parse_serial(Config& config) {
     }
 
     auto stop_bits = io::StopBits::ONE;
-    if (serial_stop_bits) {
-        switch (serial_stop_bits.Get()) {
+    if (gSerialStopBits) {
+        switch (gSerialStopBits.Get()) {
         case 1: stop_bits = io::StopBits::ONE; break;
         case 2: stop_bits = io::StopBits::TWO; break;
         default: throw args::ValidationError("invalid serial-stop-bits");
@@ -127,19 +127,19 @@ static void parse_serial(Config& config) {
     }
 
     auto parity_bit = io::ParityBit::NONE;
-    if (serial_parity_bits) {
-        if (serial_parity_bits.Get() == "none") {
+    if (gSerialParityBits) {
+        if (gSerialParityBits.Get() == "none") {
             parity_bit = io::ParityBit::NONE;
-        } else if (serial_parity_bits.Get() == "odd") {
+        } else if (gSerialParityBits.Get() == "odd") {
             parity_bit = io::ParityBit::ODD;
-        } else if (serial_parity_bits.Get() == "even") {
+        } else if (gSerialParityBits.Get() == "even") {
             parity_bit = io::ParityBit::EVEN;
         } else {
             throw args::ValidationError("invalid serial-parity-bits");
         }
     }
 
-    auto device  = serial_device.Get();
+    auto device  = gSerialDevice.Get();
     config.input = std::unique_ptr<io::Input>(
         new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
     config.output = std::unique_ptr<io::Output>(
@@ -152,24 +152,24 @@ Config parse_configuration(int argc, char** argv) {
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
 
-    port.HelpDefault("13226");
-    update_interval.HelpDefault("5");
+    gPort.HelpDefault("13226");
+    gUpdateInterval.HelpDefault("5");
 
-    serial_baud_rate.HelpDefault("115200");
-    serial_data_bits.HelpDefault("8");
-    serial_data_bits.HelpChoices({"5", "6", "7", "8"});
-    serial_stop_bits.HelpDefault("1");
-    serial_stop_bits.HelpChoices({"1", "2"});
-    serial_parity_bits.HelpDefault("none");
-    serial_parity_bits.HelpChoices({
+    gSerialBaudRate.HelpDefault("115200");
+    gSerialDataBits.HelpDefault("8");
+    gSerialDataBits.HelpChoices({"5", "6", "7", "8"});
+    gSerialStopBits.HelpDefault("1");
+    gSerialStopBits.HelpChoices({"1", "2"});
+    gSerialParityBits.HelpDefault("none");
+    gSerialParityBits.HelpChoices({
         "none",
         "odd",
         "even",
     });
 
-    parser.Add(logging_group);
-    parser.Add(control_group);
-    parser.Add(modem_group);
+    parser.Add(gLoggingGroup);
+    parser.Add(gControlGroup);
+    parser.Add(gModemGroup);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -185,13 +185,13 @@ Config parse_configuration(int argc, char** argv) {
         }
 
         uint16_t port_value = 13226;
-        if (port) {
-            port_value = port.Get();
+        if (gPort) {
+            port_value = gPort.Get();
         }
 
         auto update_interval_value = 5;
-        if (update_interval) {
-            update_interval_value = update_interval.Get();
+        if (gUpdateInterval) {
+            update_interval_value = gUpdateInterval.Get();
             if (update_interval_value <= 0) {
                 throw args::ValidationError("update-interval must be positive");
             }
@@ -202,20 +202,20 @@ Config parse_configuration(int argc, char** argv) {
         config.update_interval = update_interval_value;
 
         config.logging.log_level = loglet::Level::Info;
-        config.logging.color     = !log_no_color;
-        config.logging.flush     = log_flush;
+        config.logging.color     = !gLogNoColor;
+        config.logging.flush     = gLogFlush;
 
-        if (log_trace) {
+        if (gLogTrace) {
             config.logging.log_level = loglet::Level::Trace;
-        } else if (log_verbose) {
+        } else if (gLogVerbose) {
             config.logging.log_level = loglet::Level::Verbose;
-        } else if (log_debug) {
+        } else if (gLogDebug) {
             config.logging.log_level = loglet::Level::Debug;
-        } else if (log_info) {
+        } else if (gLogInfo) {
             config.logging.log_level = loglet::Level::Info;
-        } else if (log_warning) {
+        } else if (gLogWarning) {
             config.logging.log_level = loglet::Level::Warning;
-        } else if (log_error) {
+        } else if (gLogError) {
             config.logging.log_level = loglet::Level::Error;
         }
 

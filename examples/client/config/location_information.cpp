@@ -111,7 +111,7 @@ static args::ValueFlag<double> gAltitude{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
     gUpdateRate.HelpDefault("1000");
     gLatitude.HelpDefault("69.06");
     gLongitude.HelpDefault("20.55");

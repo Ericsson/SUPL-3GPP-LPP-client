@@ -291,12 +291,12 @@ static CONSTEXPR uint8_t GAL_MAPPING[32] = {
 #define GAL_E1 1575.420
 #define GAL_E6 1278.750
 #define GAL_E5 1191.795
-#define GAL_E5a 1176.450
-#define GAL_E5b 1207.140
+#define GAL_E5A 1176.450
+#define GAL_E5B 1207.140
 static CONSTEXPR double GAL_FREQ[24] = {
     GAL_E1,   // E1
-    GAL_E5a,  // E5A
-    GAL_E5b,  // E5B
+    GAL_E5A,  // E5A
+    GAL_E5B,  // E5B
     GAL_E6,   // E6
     0.0,      // E5A+E5B
     GAL_E1,   // E1 C No data
@@ -309,15 +309,15 @@ static CONSTEXPR double GAL_FREQ[24] = {
     GAL_E6,   // E6 B
     GAL_E6,   // E6 B+C
     GAL_E6,   // E6 A+B+C
-    GAL_E5b,  // E5B I
-    GAL_E5b,  // E5B Q
-    GAL_E5b,  // E5B I+Q
+    GAL_E5B,  // E5B I
+    GAL_E5B,  // E5B Q
+    GAL_E5B,  // E5B I+Q
     GAL_E5,   // E5(A+B) I
     GAL_E5,   // E5(A+B) Q
     GAL_E5,   // E5(A+B) I+Q
-    GAL_E5a,  // E5A I
-    GAL_E5a,  // E5A Q
-    GAL_E5a,  // E5A I+Q
+    GAL_E5A,  // E5A I
+    GAL_E5A,  // E5A Q
+    GAL_E5A,  // E5A I+Q
 };
 
 static CONSTEXPR const char* GAL_SIGNAL_NAMES[24] = {
@@ -383,9 +383,9 @@ static CONSTEXPR uint8_t BDS_MAPPING[24] = {
 
 #define BDS_B1 1561.098
 #define BDS_B1B3 1575.42
-#define BDS_B2a 1176.45
+#define BDS_B2A 1176.45
 // #define BDS_B2b 1207.14
-#define BDS_B2ab 1191.795
+#define BDS_B2AB 1191.795
 #define BDS_B3 1268.52
 static CONSTEXPR double BDS_FREQ[24] = {
     BDS_B1,    //  0 2I B1 I
@@ -400,9 +400,9 @@ static CONSTEXPR double BDS_FREQ[24] = {
     BDS_B1B3,  //  9 1D B1C(D)
     BDS_B1B3,  // 10 1C B1C(P)
     BDS_B1B3,  // 11 1X B1C(D+P)
-    BDS_B2a,   // 12 5D B2a(D)
-    BDS_B2a,   // 13 5P B2a(P)
-    BDS_B2ab,  // 14 5X B2a(D+P)
+    BDS_B2A,   // 12 5D B2a(D)
+    BDS_B2A,   // 13 5P B2a(P)
+    BDS_B2AB,  // 14 5X B2a(D+P)
     0.0,       // 15 Reserved
     0.0,       // 16 Reserved
     0.0,       // 17 Reserved
@@ -425,19 +425,19 @@ char const* SystemMapping::signal_name(long signal_id) const {
     return "Unknown";
 }
 
-SystemMapping const GPS_SM = {
+SystemMapping const gGpsSm = {
     GNSS_ID__gnss_id_gps, 24, GPS_TO_SPARTN, GPS_MAPPING, GPS_FREQ, GPS_SIGNAL_NAMES,
 };
 
-SystemMapping const GLO_SM = {
+SystemMapping const gGloSm = {
     GNSS_ID__gnss_id_glonass, 24, GLO_TO_SPARTN, GLO_MAPPING, GLO_FREQ, GLO_SIGNAL_NAMES,
 };
 
-SystemMapping const GAL_SM = {
+SystemMapping const gGalSm = {
     GNSS_ID__gnss_id_galileo, 24, GAL_TO_SPARTN, GAL_MAPPING, GAL_FREQ, GAL_SIGNAL_NAMES,
 };
 
-SystemMapping const BDS_SM = {
+SystemMapping const gBdsSm = {
     GNSS_ID__gnss_id_bds, 24, BDS_TO_SPARTN, BDS_MAPPING, BDS_FREQ, BDS_SIGNAL_NAMES,
 };
 

@@ -78,13 +78,13 @@ std::unique_ptr<Message> UbxCfgValget::parse(Decoder& decoder, std::vector<uint8
     }
 
     auto payload     = raw::CfgValget{};
-    payload.version  = decoder.U1();
-    payload.layers   = decoder.U1();
-    payload.position = decoder.U2();
+    payload.version  = decoder.u1();
+    payload.layers   = decoder.u1();
+    payload.position = decoder.u2();
     payload.values.reserve(decoder.remaining() / 6);  // Estimate the number of key-value pairs
 
     while (decoder.remaining() > 4 && !decoder.error()) {
-        auto key   = static_cast<CfgKey>(decoder.U4());
+        auto key   = static_cast<CfgKey>(decoder.u4());
         auto value = CfgValue::parse_from_key(key, decoder);
         payload.values.emplace(key, value);
     }
@@ -105,35 +105,35 @@ uint32_t UbxCfgValget::poll(Encoder& encoder, CfgLayer layer, uint16_t position,
     uint16_t payload_size = 4;                               // 4 bytes for header
     payload_size += 4 * static_cast<uint16_t>(keys.size());  // 4 bytes per key
 
-    encoder.U1(0xB5);
-    encoder.U1(0x62);
+    encoder.u1(0xB5);
+    encoder.u1(0x62);
 
     auto checksum_begin = encoder.ptr();
-    encoder.U1(CLASS_ID);
-    encoder.U1(MESSAGE_ID);
-    encoder.U2(payload_size);
+    encoder.u1(CLASS_ID);
+    encoder.u1(MESSAGE_ID);
+    encoder.u2(payload_size);
 
-    encoder.U1(0);  // version
+    encoder.u1(0);  // version
     // you can only poll one layer at a time
     if (layer & CFG_LAYER_RAM) {
-        encoder.U1(0);
+        encoder.u1(0);
     } else if (layer & CFG_LAYER_BBR) {
-        encoder.U1(1);
+        encoder.u1(1);
     } else if (layer & CFG_LAYER_FLASH) {
-        encoder.U1(2);
+        encoder.u1(2);
     } else {
-        encoder.U1(0);
+        encoder.u1(0);
     }
-    encoder.U2(position);
+    encoder.u2(position);
 
     for (auto& key : keys) {
-        encoder.U4(key);
+        encoder.u4(key);
     }
 
     auto checksum_end    = encoder.ptr();
     auto checksum_length = static_cast<uint32_t>(checksum_end - checksum_begin);
     auto checksum        = Parser::checksum(checksum_begin, checksum_length);
-    encoder.U2(checksum);
+    encoder.u2(checksum);
 
     auto end = encoder.ptr();
     return static_cast<uint32_t>(end - begin);

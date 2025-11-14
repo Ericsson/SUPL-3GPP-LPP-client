@@ -9,10 +9,10 @@ namespace format {
 namespace rtcm {
 
 enum class CRCResult {
-    OK = 0,
-    INVALID_STRING_NOSTAR,
-    INVALID_STRING_LENGTH,
-    INVALID_VALUE,
+    Ok = 0,
+    InvalidStringNostar,
+    InvalidStringLength,
+    InvalidValue,
 };
 
 class Message;

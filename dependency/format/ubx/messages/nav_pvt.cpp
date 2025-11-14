@@ -193,60 +193,60 @@ std::unique_ptr<Message> UbxNavPvt::parse(Decoder& decoder, std::vector<uint8_t>
     }
 
     auto payload  = raw::NavPvt{};
-    payload.i_tow = decoder.U4();
-    payload.year  = decoder.U2();
-    payload.month = decoder.U1();
-    payload.day   = decoder.U1();
-    payload.hour  = decoder.U1();
-    payload.min   = decoder.U1();
-    payload.sec   = decoder.U1();
+    payload.i_tow = decoder.u4();
+    payload.year  = decoder.u2();
+    payload.month = decoder.u1();
+    payload.day   = decoder.u1();
+    payload.hour  = decoder.u1();
+    payload.min   = decoder.u1();
+    payload.sec   = decoder.u1();
 
-    auto valid                   = decoder.X1();
+    auto valid                   = decoder.x1();
     payload.valid.valid_date     = (valid >> 0) & 0x01;
     payload.valid.valid_time     = (valid >> 1) & 0x01;
     payload.valid.fully_resolved = (valid >> 2) & 0x01;
     payload.valid.valid_mag      = (valid >> 3) & 0x01;
 
-    payload.t_acc    = decoder.U4();
-    payload.nano     = decoder.I4();
-    payload.fix_type = decoder.U1();
+    payload.t_acc    = decoder.u4();
+    payload.nano     = decoder.i4();
+    payload.fix_type = decoder.u1();
 
-    auto flags                   = decoder.X1();
+    auto flags                   = decoder.x1();
     payload.flags.gnss_fix_ok    = (flags >> 0) & 0x01;
     payload.flags.diff_soln      = (flags >> 1) & 0x01;
     payload.flags.psm_state      = (flags >> 2) & 0x07;
     payload.flags.head_veh_valid = (flags >> 5) & 0x01;
     payload.flags.carr_soln      = (flags >> 6) & 0x03;
 
-    auto flags2                   = decoder.X1();
+    auto flags2                   = decoder.x1();
     payload.flags2.confirmed_avai = (flags2 >> 5) & 0x01;
     payload.flags2.confirmed_date = (flags2 >> 6) & 0x01;
     payload.flags2.confirmed_time = (flags2 >> 7) & 0x01;
 
-    payload.num_sv   = decoder.U1();
-    payload.lon      = decoder.I4();
-    payload.lat      = decoder.I4();
-    payload.height   = decoder.I4();
-    payload.h_msl    = decoder.I4();
-    payload.h_acc    = decoder.U4();
-    payload.v_acc    = decoder.U4();
-    payload.vel_n    = decoder.I4();
-    payload.vel_e    = decoder.I4();
-    payload.vel_d    = decoder.I4();
-    payload.g_speed  = decoder.I4();
-    payload.head_mot = decoder.I4();
-    payload.s_acc    = decoder.U4();
-    payload.head_acc = decoder.U4();
-    payload.p_dop    = decoder.U2();
+    payload.num_sv   = decoder.u1();
+    payload.lon      = decoder.i4();
+    payload.lat      = decoder.i4();
+    payload.height   = decoder.i4();
+    payload.h_msl    = decoder.i4();
+    payload.h_acc    = decoder.u4();
+    payload.v_acc    = decoder.u4();
+    payload.vel_n    = decoder.i4();
+    payload.vel_e    = decoder.i4();
+    payload.vel_d    = decoder.i4();
+    payload.g_speed  = decoder.i4();
+    payload.head_mot = decoder.i4();
+    payload.s_acc    = decoder.u4();
+    payload.head_acc = decoder.u4();
+    payload.p_dop    = decoder.u2();
 
-    auto flags3                        = decoder.X1();
+    auto flags3                        = decoder.x1();
     payload.flags3.invalid_llh         = (flags3 >> 0) & 0x01;
     payload.flags3.last_correction_arg = (flags3 >> 1) & 0x0F;
 
     decoder.skip(4);
-    payload.head_veh = decoder.I4();
-    payload.mag_dec  = decoder.I2();
-    payload.mag_acc  = decoder.U2();
+    payload.head_veh = decoder.i4();
+    payload.mag_dec  = decoder.i2();
+    payload.mag_acc  = decoder.u2();
 
     if (decoder.error()) {
         return nullptr;

@@ -78,13 +78,13 @@ void CorrectionData::add_correction(long                                 gnss_id
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
     auto ssr_iod    = decode::iod_ssr_r16(orbit->iod_ssr_r15);
-    auto epoch_time = decode::epochTime_r15(orbit->epochTime_r15);
+    auto epoch_time = decode::epoch_time_r15(orbit->epochTime_r15);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
     }
 
     auto reference_time  = epoch_time;
-    auto update_interval = decode::ssrUpdateInterval_r15(orbit->ssrUpdateInterval_r15);
+    auto update_interval = decode::ssr_update_interval_r15(orbit->ssrUpdateInterval_r15);
     if (update_interval > 1.0) {
         reference_time.add_seconds(update_interval * 0.5);
     }
@@ -105,12 +105,12 @@ void CorrectionData::add_correction(long                                 gnss_id
         auto iod = static_cast<uint16_t>(helper::BitString::from(&satellite->iod_r15)->as_int64());
 
         auto radial      = decode::delta_radial_r15(satellite->delta_radial_r15);
-        auto along_track = decode::delta_AlongTrack_r15(satellite->delta_AlongTrack_r15);
-        auto cross_track = decode::delta_CrossTrack_r15(satellite->delta_CrossTrack_r15);
+        auto along_track = decode::delta_along_track_r15(satellite->delta_AlongTrack_r15);
+        auto cross_track = decode::delta_cross_track_r15(satellite->delta_CrossTrack_r15);
 
         auto dot_radial = decode::dot_delta_radial_r15(satellite->dot_delta_radial_r15);
-        auto dot_along  = decode::dot_delta_AlongTrack_r15(satellite->dot_delta_AlongTrack_r15);
-        auto dot_cross  = decode::dot_delta_CrossTrack_r15(satellite->dot_delta_CrossTrack_r15);
+        auto dot_along  = decode::dot_delta_along_track_r15(satellite->dot_delta_AlongTrack_r15);
+        auto dot_cross  = decode::dot_delta_cross_track_r15(satellite->dot_delta_CrossTrack_r15);
 
         auto& correction          = mOrbit[satellite_id];
         correction.ssr_iod        = static_cast<uint16_t>(ssr_iod);
@@ -138,13 +138,13 @@ void CorrectionData::add_correction(long                                 gnss_id
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
     auto ssr_iod    = decode::iod_ssr_r16(clock->iod_ssr_r15);
-    auto epoch_time = decode::epochTime_r15(clock->epochTime_r15);
+    auto epoch_time = decode::epoch_time_r15(clock->epochTime_r15);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
     }
 
     auto reference_time  = epoch_time;
-    auto update_interval = decode::ssrUpdateInterval_r15(clock->ssrUpdateInterval_r15);
+    auto update_interval = decode::ssr_update_interval_r15(clock->ssrUpdateInterval_r15);
     if (update_interval > 1.0) {
         reference_time.add_seconds(update_interval * 0.5);
     }
@@ -162,9 +162,9 @@ void CorrectionData::add_correction(long                                 gnss_id
             continue;
         }
 
-        auto c0 = decode::delta_Clock_C0_r15(satellite->delta_Clock_C0_r15);
-        auto c1 = decode::delta_Clock_C1_r15(satellite->delta_Clock_C1_r15);
-        auto c2 = decode::delta_Clock_C2_r15(satellite->delta_Clock_C2_r15);
+        auto c0 = decode::delta_clock_c0_r15(satellite->delta_Clock_C0_r15);
+        auto c1 = decode::delta_clock_c1_r15(satellite->delta_Clock_C1_r15);
+        auto c2 = decode::delta_clock_c2_r15(satellite->delta_Clock_C2_r15);
 
         auto& clock_correction          = mClock[satellite_id];
         clock_correction.reference_time = reference_time;
@@ -191,7 +191,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
 
     auto ssr_iod    = decode::iod_ssr_r16(code_bias->iod_ssr_r15);
-    auto epoch_time = decode::epochTime_r15(code_bias->epochTime_r15);
+    auto epoch_time = decode::epoch_time_r15(code_bias->epochTime_r15);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -222,7 +222,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
 
             CodeBiasCorrection correction{};
             correction.ssr_iod                      = static_cast<uint16_t>(ssr_iod);
-            correction.bias                         = decode::codeBias_r15(signal->codeBias_r15);
+            correction.bias                         = decode::code_bias_r15(signal->codeBias_r15);
             signal_corrections.code_bias[signal_id] = correction;
 
             VERBOSEF("code bias: %3s %-16s %+f", satellite_id.name(), signal_id.name(),
@@ -241,7 +241,7 @@ void CorrectionData::add_correction(long                          gnss_id,
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
 
     auto ssr_iod    = decode::iod_ssr_r16(phase_bias->iod_ssr_r16);
-    auto epoch_time = decode::epochTime_r15(phase_bias->epochTime_r16);
+    auto epoch_time = decode::epoch_time_r15(phase_bias->epochTime_r16);
     if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -271,8 +271,8 @@ void CorrectionData::add_correction(long                          gnss_id,
             mSignals[satellite_id].insert(signal_id);
 
             PhaseBiasCorrection correction{};
-            correction.ssr_iod                       = static_cast<uint16_t>(ssr_iod);
-            correction.bias                          = decode::phaseBias_r16(signal->phaseBias_r16);
+            correction.ssr_iod = static_cast<uint16_t>(ssr_iod);
+            correction.bias    = decode::phase_bias_r16(signal->phaseBias_r16);
             signal_corrections.phase_bias[signal_id] = correction;
 
             VERBOSEF("phase bias: %3s %-16s %+f", satellite_id.name(), signal_id.name(),
@@ -282,21 +282,21 @@ void CorrectionData::add_correction(long                          gnss_id,
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 const* stec,
-                                    CorrectionPointSet const& correction_point_set) NOEXCEPT {
+                                    CorrectionPointSet const& cps) NOEXCEPT {
     if (!stec) return;
 
     FUNCTION_SCOPE();
 
-    if (stec->correctionPointSetID_r16 != correction_point_set.set_id) {
+    if (stec->correctionPointSetID_r16 != cps.set_id) {
         WARNF("correction point set id mismatch");
         return;
     }
 
-    mCorrectionPointSet = &correction_point_set;
+    correction_point_set = &cps;
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
-    auto epoch_time = decode::epochTime_r15(stec->epochTime_r16);
+    auto epoch_time = decode::epoch_time_r15(stec->epochTime_r16);
 #ifdef DATA_TRACING
     auto ssr_iod = decode::iod_ssr_r16(stec->iod_ssr_r16);
 #endif
@@ -318,20 +318,20 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         }
 
         auto stec_quality_indicator =
-            decode::stecQualityIndicator_r16(satellite->stecQualityIndicator_r16);
+            decode::stec_quality_indicator_r16(satellite->stecQualityIndicator_r16);
 
-        auto c00 = decode::stec_C00_r16(satellite->stec_C00_r16);
-        auto c01 = decode::stec_C01_r16(satellite->stec_C01_r16);
-        auto c10 = decode::stec_C10_r16(satellite->stec_C10_r16);
-        auto c11 = decode::stec_C11_r16(satellite->stec_C11_r16);
+        auto c00 = decode::stec_c00_r16(satellite->stec_C00_r16);
+        auto c01 = decode::stec_c01_r16(satellite->stec_C01_r16);
+        auto c10 = decode::stec_c10_r16(satellite->stec_C10_r16);
+        auto c11 = decode::stec_c11_r16(satellite->stec_C11_r16);
 
         auto& poly                     = mIonosphericPolynomial[satellite_id];
         poly.c00                       = c00;
         poly.c01                       = c01;
         poly.c10                       = c10;
         poly.c11                       = c11;
-        poly.reference_point_latitude  = correction_point_set.reference_point_latitude;
-        poly.reference_point_longitude = correction_point_set.reference_point_longitude;
+        poly.reference_point_latitude  = correction_point_set->reference_point_latitude;
+        poly.reference_point_longitude = correction_point_set->reference_point_longitude;
 
         poly.quality_indicator_valid = !stec_quality_indicator.invalid;
         poly.quality_indicator       = stec_quality_indicator.value;
@@ -348,8 +348,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
 
         datatrace::report_ssr_ionospheric_polynomial(
             epoch_time, satellite_id.name(), c00, c01, c10, c11,
-            correction_point_set.reference_point_latitude,
-            correction_point_set.reference_point_longitude, quality_indicator,
+            correction_point_set->reference_point_latitude,
+            correction_point_set->reference_point_longitude, quality_indicator,
             quality_indiciator_class, quality_indicator_value, ssr_iod);
 #endif
 
@@ -358,21 +358,21 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16 const* grid,
-                                    CorrectionPointSet const& correction_point_set) NOEXCEPT {
+                                    CorrectionPointSet const& cps) NOEXCEPT {
     if (!grid) return;
 
     FUNCTION_SCOPE();
 
-    if (grid->correctionPointSetID_r16 != correction_point_set.set_id) {
+    if (grid->correctionPointSetID_r16 != cps.set_id) {
         WARNF("correction point set id mismatch");
         return;
     }
 
-    mCorrectionPointSet = &correction_point_set;
+    this->correction_point_set = &cps;
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
-    auto epoch_time = decode::epochTime_r15(grid->epochTime_r16);
+    auto epoch_time = decode::epoch_time_r15(grid->epochTime_r16);
 #ifdef DATA_TRACING
     auto ssr_iod = decode::iod_ssr_r16(grid->iod_ssr_r16);
 #endif
@@ -386,16 +386,16 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
     auto grid_it = mGrid.find(satellite_gnss);
     if (grid_it == mGrid.end() ||
-        grid_it->second.mCorrectionPointSetId != correction_point_set.set_id) {
+        grid_it->second.correction_point_set_id != correction_point_set->set_id) {
         auto& gnss_grid = mGrid[satellite_gnss];
-        gnss_grid.init(correction_point_set);
+        gnss_grid.init(*correction_point_set);
 
         for (int i = 0; i < list.count; i++) {
             auto element = list.array[i];
             if (!element) continue;
 
             CorrectionPointInfo correction_point;
-            if (!correction_point_set.array_to_index(i, &correction_point)) {
+            if (!correction_point_set->array_to_index(i, &correction_point)) {
                 WARNF("correction point set array to index failed: %d", i);
                 correction_point.is_valid = false;
                 gnss_grid.add_point(correction_point);
@@ -428,10 +428,11 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
         if (element->tropospericDelayCorrection_r16) {
             auto& tropo = *element->tropospericDelayCorrection_r16;
-            auto  dry =
-                decode::tropoHydroStaticVerticalDelay_r16(tropo.tropoHydroStaticVerticalDelay_r16) +
-                2.3;
-            auto wet = decode::tropoWetVerticalDelay_r16(tropo.tropoWetVerticalDelay_r16) + 0.252;
+            auto  dry   = decode::tropo_hydro_static_vertical_delay_r16(
+                           tropo.tropoHydroStaticVerticalDelay_r16) +
+                       2.3;
+            auto wet =
+                decode::tropo_wet_vertical_delay_r16(tropo.tropoWetVerticalDelay_r16) + 0.252;
 
             grid_point->tropspheric_valid = true;
             grid_point->tropospheric_wet  = wet;
@@ -458,8 +459,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                     continue;
                 }
 
-                auto ionospheric =
-                    decode::stecResidualCorrection_r16(&satellite->stecResidualCorrection_r16);
+                auto ionospheric = decode::stec_residual_correction_r16(*satellite);
 
                 grid_point->ionospheric_valid                  = true;
                 grid_point->ionospheric_residual[satellite_id] = ionospheric;

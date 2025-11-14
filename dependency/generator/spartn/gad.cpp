@@ -29,16 +29,16 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
         buffer[correction_point_set.grid_point_count] = '\0';
     }
     VERBOSEF("  bitmask:  %s", buffer);
-    VERBOSEF("  ref-lat:  %9.6f",
-             decode::referencePointLatitude_r16(correction_point_set.referencePointLatitude_r16));
-    VERBOSEF("  ref-lng: %10.6f",
-             decode::referencePointLongitude_r16(correction_point_set.referencePointLongitude_r16));
-    VERBOSEF("  steps-lat: %ld", correction_point_set.numberOfStepsLatitude_r16);
-    VERBOSEF("  steps-lng: %ld", correction_point_set.numberOfStepsLongitude_r16);
+    VERBOSEF("  ref-lat:  %9.6f", decode::reference_point_latitude_r16(
+                                      correction_point_set.reference_point_latitude_r16));
+    VERBOSEF("  ref-lng: %10.6f", decode::reference_point_longitude_r16(
+                                      correction_point_set.reference_point_longitude_r16));
+    VERBOSEF("  steps-lat: %ld", correction_point_set.number_of_steps_latitude_r16);
+    VERBOSEF("  steps-lng: %ld", correction_point_set.number_of_steps_longitude_r16);
     VERBOSEF("  delta-lat:  %9.6f",
-             decode::stepOfLatitude_r16(correction_point_set.stepOfLatitude_r16));
+             decode::step_of_latitude_r16(correction_point_set.step_of_latitude_r16));
     VERBOSEF("  delta-lng: %10.6f",
-             decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16));
+             decode::step_of_longitude_r16(correction_point_set.step_of_longitude_r16));
 
     size_t buffer_count = 0;
     size_t buffer_size  = sizeof(buffer);
@@ -54,7 +54,7 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
                 snprintf(buffer + buffer_count, buffer_size - buffer_count, "%02ld ", gp.id));
         }
 
-        if (++i % (correction_point_set.numberOfStepsLongitude_r16 + 1) == 0) {
+        if (++i % (correction_point_set.number_of_steps_longitude_r16 + 1) == 0) {
             VERBOSEF("%s", buffer);
             buffer_count = 0;
         }
@@ -83,20 +83,20 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
         builder.sf031(static_cast<uint8_t>(correction_point_set.area_id));
 
         auto reference_point_lat =
-            decode::referencePointLatitude_r16(correction_point_set.referencePointLatitude_r16);
-        auto reference_point_lng =
-            decode::referencePointLongitude_r16(correction_point_set.referencePointLongitude_r16);
+            decode::reference_point_latitude_r16(correction_point_set.reference_point_latitude_r16);
+        auto reference_point_lng = decode::reference_point_longitude_r16(
+            correction_point_set.reference_point_longitude_r16);
         builder.sf032(reference_point_lat);
         builder.sf033(reference_point_lng);
 
         // NOTE(ewasjon): 3GPP LPP has the number of steps, not the number of points
-        auto grid_count_lat = correction_point_set.numberOfStepsLatitude_r16 + 1;
-        auto grid_count_lng = correction_point_set.numberOfStepsLongitude_r16 + 1;
+        auto grid_count_lat = correction_point_set.number_of_steps_latitude_r16 + 1;
+        auto grid_count_lng = correction_point_set.number_of_steps_longitude_r16 + 1;
         builder.sf034(static_cast<uint8_t>(grid_count_lat));
         builder.sf035(static_cast<uint8_t>(grid_count_lng));
 
-        auto delta_lat = decode::stepOfLatitude_r16(correction_point_set.stepOfLatitude_r16);
-        auto delta_lng = decode::stepOfLongitude_r16(correction_point_set.stepOfLongitude_r16);
+        auto delta_lat = decode::step_of_latitude_r16(correction_point_set.step_of_latitude_r16);
+        auto delta_lng = decode::step_of_longitude_r16(correction_point_set.step_of_longitude_r16);
         builder.sf036(delta_lat);
         builder.sf037(delta_lng);
     }

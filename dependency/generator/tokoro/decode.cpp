@@ -17,29 +17,29 @@ namespace generator {
 namespace tokoro {
 namespace decode {
 
-double referencePointLatitude_r16(long value) {
+double reference_point_latitude_r16(long value) {
     return (static_cast<double>(value) * REFERENCE_POINT_LATITUDE_DEG) *
            REFERENCE_POINT_LATITUDE_RESOLUTION;
 }
 
-double referencePointLongitude_r16(long value) {
+double reference_point_longitude_r16(long value) {
     return (static_cast<double>(value) * REFERENCE_POINT_LONGITUDE_DEG) *
            REFERENCE_POINT_LONGITUDE_RESOLUTION;
 }
 
-double stepOfLatitude_r16(long value) {
+double step_of_latitude_r16(long value) {
     return static_cast<double>(value) * STEP_OF_LONGITUDE_RESOLUTION;
 }
 
-double stepOfLongitude_r16(long value) {
+double step_of_longitude_r16(long value) {
     return static_cast<double>(value) * STEP_OF_LATITUDE_RESOLUTION;
 }
 
-long numberOfStepsLatitude_r16(long value) {
+long number_of_steps_latitude_r16(long value) {
     return value;
 }
 
-long numberOfStepsLongitude_r16(long value) {
+long number_of_steps_longitude_r16(long value) {
     return value;
 }
 
@@ -59,7 +59,7 @@ double time_of_day_fraction(GNSS_SystemTime const& src_time) {
     }
 }
 
-ts::Tai epochTime_r15(GNSS_SystemTime const& src_time) {
+ts::Tai epoch_time_r15(GNSS_SystemTime const& src_time) {
     auto day_number           = decode::day_number(src_time);
     auto time_of_day_seconds  = decode::time_of_day(src_time);
     auto time_of_day_fraction = decode::time_of_day_fraction(src_time);
@@ -78,19 +78,19 @@ long iod_ssr_r16(long value) {
     return value;
 }
 
-double delta_Clock_C0_r15(long value) {
+double delta_clock_c0_r15(long value) {
     return static_cast<double>(value) * CLOCK_C0_RESOLUTION;
 }
 
-double delta_Clock_C1_r15(long* value) {
+double delta_clock_c1_r15(long* value) {
     return value ? (static_cast<double>(*value) * CLOCK_C1_RESOLUTION) : 0.0;
 }
 
-double delta_Clock_C2_r15(long* value) {
+double delta_clock_c2_r15(long* value) {
     return value ? (static_cast<double>(*value) * CLOCK_C2_RESOLUTION) : 0.0;
 }
 
-double ssrUpdateInterval_r15(long value) {
+double ssr_update_interval_r15(long value) {
     if (value <= 0) return 1.0;
     if (value == 1) return 2.0;
     if (value == 2) return 5.0;
@@ -114,11 +114,11 @@ double delta_radial_r15(long value) {
     return static_cast<double>(value) * ORBIT_RADIAL_RESOLUTION;
 }
 
-double delta_AlongTrack_r15(long value) {
+double delta_along_track_r15(long value) {
     return static_cast<double>(value) * ORBIT_ALONG_RESOLUTION;
 }
 
-double delta_CrossTrack_r15(long value) {
+double delta_cross_track_r15(long value) {
     return static_cast<double>(value) * ORBIT_CROSS_RESOLUTION;
 }
 
@@ -130,7 +130,7 @@ double dot_delta_radial_r15(long* value) {
     }
 }
 
-double dot_delta_AlongTrack_r15(long* value) {
+double dot_delta_along_track_r15(long* value) {
     if (value) {
         return static_cast<double>(*value) * ORBIT_ALONG_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
@@ -138,7 +138,7 @@ double dot_delta_AlongTrack_r15(long* value) {
     }
 }
 
-double dot_delta_CrossTrack_r15(long* value) {
+double dot_delta_cross_track_r15(long* value) {
     if (value) {
         return static_cast<double>(*value) * ORBIT_CROSS_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
@@ -146,43 +146,40 @@ double dot_delta_CrossTrack_r15(long* value) {
     }
 }
 
-double codeBias_r15(long value) {
+double code_bias_r15(long value) {
     return static_cast<double>(value) * CODE_BIAS_RESOLUTION;
 }
 
-double phaseBias_r16(long value) {
+double phase_bias_r16(long value) {
     return static_cast<double>(value) * PHASE_BIAS_RESOLUTION;
 }
 
-double tropoHydroStaticVerticalDelay_r16(long value) {
+double tropo_hydro_static_vertical_delay_r16(long value) {
     return static_cast<double>(value) * TROPOSPHERIC_HYDRO_STATIC_DELAY_RESOLUTION;
 }
 
-double tropoWetVerticalDelay_r16(long value) {
+double tropo_wet_vertical_delay_r16(long value) {
     return static_cast<double>(value) * TROPOSPHERIC_WET_DELAY_RESOLUTION;
 }
 
-double stec_C00_r16(long value) {
+double stec_c00_r16(long value) {
     return static_cast<double>(value) * STEC_C00_RESOLUTION;
 }
 
-double stec_C01_r16(long* value) {
+double stec_c01_r16(long* value) {
     return (value ? static_cast<double>(*value) : 0) * STEC_C01_RESOLUTION;
 }
 
-double stec_C10_r16(long* value) {
+double stec_c10_r16(long* value) {
     return (value ? static_cast<double>(*value) : 0) * STEC_C10_RESOLUTION;
 }
 
-double stec_C11_r16(long* value) {
+double stec_c11_r16(long* value) {
     return (value ? static_cast<double>(*value) : 0) * STEC_C11_RESOLUTION;
 }
 
-double stecResidualCorrection_r16(void const* correction_ptr) {
-    auto& correction =
-        *static_cast<STEC_ResidualSatElement_r16::
-                         STEC_ResidualSatElement_r16__stecResidualCorrection_r16 const*>(
-            correction_ptr);
+double stec_residual_correction_r16(STEC_ResidualSatElement_r16 const& element) {
+    auto& correction = element.stecResidualCorrection_r16;
     switch (correction.present) {
     case STEC_ResidualSatElement_r16__stecResidualCorrection_r16_PR_b7_r16:
         return static_cast<double>(correction.choice.b7_r16) * STEC_RESIDUAL_B7_RESOLUTION;
@@ -193,7 +190,7 @@ double stecResidualCorrection_r16(void const* correction_ptr) {
     CORE_UNREACHABLE();
 }
 
-StecQualityIndicator stecQualityIndicator_r16(BIT_STRING_s& bit_string) {
+StecQualityIndicator stec_quality_indicator_r16(BIT_STRING_s& bit_string) {
     static CONSTEXPR double QUALITY_INDICATOR[64] = {
         33.6664, 30.2992, 26.9319, 23.5647, 20.1974, 16.8301, 13.4629, 12.3405, 11.2180,
         10.0956, 8.9732,  7.8508,  6.7284,  5.6059,  4.4835,  4.1094,  3.7352,  3.3611,

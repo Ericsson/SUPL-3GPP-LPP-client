@@ -86,12 +86,12 @@ public:
 
 protected:
     enum State {
-        STATE_INITIAL,
-        STATE_CONNECTING,
-        STATE_CONNECTED,
-        STATE_DISCONNECTED,
-        STATE_ERROR,
-        STATE_RECONNECT,
+        StateInitial,
+        StateConnecting,
+        StateConnected,
+        StateDisconnected,
+        StateError,
+        StateReconnect,
     };
 
     bool connect() NOEXCEPT;

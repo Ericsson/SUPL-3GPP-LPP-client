@@ -18,10 +18,10 @@ struct ReferenceEllipsoid {
 };
 
 namespace ellipsoid {
-extern ReferenceEllipsoid const WGS84;
-extern ReferenceEllipsoid const GRS80;
-extern ReferenceEllipsoid const PZ90;
-extern ReferenceEllipsoid const PZ90_11;
+extern ReferenceEllipsoid const gWgs84;
+extern ReferenceEllipsoid const gGrs80;
+extern ReferenceEllipsoid const gPz90;
+extern ReferenceEllipsoid const gPz9011;
 }  // namespace ellipsoid
 
 }  // namespace tokoro

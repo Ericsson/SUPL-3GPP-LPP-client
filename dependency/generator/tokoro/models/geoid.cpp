@@ -15,9 +15,9 @@ static double interpb(double const* y, double a, double b) {
 }
 
 namespace embedded {
-static double const range[] = {0.00, 360.00, -90.00, 90.00};
+static double const gRange[] = {0.00, 360.00, -90.00, 90.00};
 
-static float const geoid[361][181] = {
+static float const gGeoid[361][181] = {
     {-29.534f, -27.880f, -24.897f, -21.973f, -18.154f, -15.493f, -14.636f, -12.657f, -10.648f,
      -9.301f,  -7.084f,  -4.850f,  -2.015f,  1.642f,   5.903f,   9.258f,   10.905f,  13.100f,
      12.465f,  13.448f,  14.464f,  10.528f,  10.660f,  10.931f,  12.894f,  13.775f,  13.406f,
@@ -7621,24 +7621,24 @@ static double embedded_geoid_height(double latitude, double longitude) {
     double       a, b, y[4];
     int          i1, i2, j1, j2;
 
-    if (longitude < embedded::range[0] || embedded::range[1] < longitude ||
-        latitude < embedded::range[2] || embedded::range[3] < latitude) {
+    if (longitude < embedded::gRange[0] || embedded::gRange[1] < longitude ||
+        latitude < embedded::gRange[2] || embedded::gRange[3] < latitude) {
         VERBOSEF("out of range: %+.8f, %+.8f", latitude * constant::RAD2DEG,
                  longitude * constant::RAD2DEG);
         return 0.0;
     }
-    a  = (longitude - embedded::range[0]) / dlon;
-    b  = (latitude - embedded::range[2]) / dlat;
+    a  = (longitude - embedded::gRange[0]) / dlon;
+    b  = (latitude - embedded::gRange[2]) / dlat;
     i1 = static_cast<int>(a);
     a -= i1;
     i2 = i1 < 360 ? i1 + 1 : i1;
     j1 = static_cast<int>(b);
     b -= j1;
     j2   = j1 < 180 ? j1 + 1 : j1;
-    y[0] = static_cast<double>(embedded::geoid[i1][j1]);
-    y[1] = static_cast<double>(embedded::geoid[i2][j1]);
-    y[2] = static_cast<double>(embedded::geoid[i1][j2]);
-    y[3] = static_cast<double>(embedded::geoid[i2][j2]);
+    y[0] = static_cast<double>(embedded::gGeoid[i1][j1]);
+    y[1] = static_cast<double>(embedded::gGeoid[i2][j1]);
+    y[2] = static_cast<double>(embedded::gGeoid[i1][j2]);
+    y[3] = static_cast<double>(embedded::gGeoid[i2][j2]);
     return interpb(y, a, b);
 }
 

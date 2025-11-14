@@ -214,45 +214,47 @@ bool OcbCorrections::has_satellite(long id) const {
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15* orbit) {
     if (!orbit) return;
     auto  iod = static_cast<uint16_t>(orbit->iod_ssr_r15);
-    auto& ocb = mOcbData[iod];
+    auto& ocb = ocb_data[iod];
 
     // TODO(ewasjon): [low-priority] Filter based on satellite reference datum.
     auto epoch_time = spartn_time_from(orbit->epochTime_r15);
-    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections                 = ocb.mKeyedCorrections[key];
-    corrections.gnss_id               = gnss_id;
-    corrections.iod                   = iod;
-    corrections.epoch_time            = epoch_time;
-    corrections.orbit                 = orbit;
-    corrections.orbit_update_interval = decode::ssrUpdateInterval_r15(orbit->ssrUpdateInterval_r15);
+    auto& corrections      = ocb.keyed_corrections[key];
+    corrections.gnss_id    = gnss_id;
+    corrections.iod        = iod;
+    corrections.epoch_time = epoch_time;
+    corrections.orbit      = orbit;
+    corrections.orbit_update_interval =
+        decode::ssr_update_interval_r15(orbit->ssrUpdateInterval_r15);
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15* clock) {
     if (!clock) return;
     auto  iod = static_cast<uint16_t>(clock->iod_ssr_r15);
-    auto& ocb = mOcbData[iod];
+    auto& ocb = ocb_data[iod];
 
     auto epoch_time = spartn_time_from(clock->epochTime_r15);
-    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections                 = ocb.mKeyedCorrections[key];
-    corrections.gnss_id               = gnss_id;
-    corrections.iod                   = iod;
-    corrections.epoch_time            = epoch_time;
-    corrections.clock                 = clock;
-    corrections.clock_update_interval = decode::ssrUpdateInterval_r15(clock->ssrUpdateInterval_r15);
+    auto& corrections      = ocb.keyed_corrections[key];
+    corrections.gnss_id    = gnss_id;
+    corrections.iod        = iod;
+    corrections.epoch_time = epoch_time;
+    corrections.clock      = clock;
+    corrections.clock_update_interval =
+        decode::ssr_update_interval_r15(clock->ssrUpdateInterval_r15);
 }
 
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bias) {
     if (!code_bias) return;
     auto  iod = static_cast<uint16_t>(code_bias->iod_ssr_r15);
-    auto& ocb = mOcbData[iod];
+    auto& ocb = ocb_data[iod];
 
     auto epoch_time = spartn_time_from(code_bias->epochTime_r15);
-    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
+    auto& corrections      = ocb.keyed_corrections[key];
     corrections.gnss_id    = gnss_id;
     corrections.iod        = iod;
     corrections.epoch_time = epoch_time;
@@ -262,12 +264,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15* code_bi
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_PhaseBias_r16* phase_bias) {
     if (!phase_bias) return;
     auto  iod = static_cast<uint16_t>(phase_bias->iod_ssr_r16);
-    auto& ocb = mOcbData[iod];
+    auto& ocb = ocb_data[iod];
 
     auto epoch_time = spartn_time_from(phase_bias->epochTime_r16);
-    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = ocb.mKeyedCorrections[key];
+    auto& corrections      = ocb.keyed_corrections[key];
     corrections.gnss_id    = gnss_id;
     corrections.iod        = iod;
     corrections.epoch_time = epoch_time;
@@ -277,18 +279,18 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_PhaseBias_r16* phase_
 void CorrectionData::add_correction(long gnss_id, GNSS_SSR_URA_r16* ura) {
     if (!ura) return;
     auto  iod = static_cast<uint16_t>(ura->iod_ssr_r16);
-    auto& ocb = mOcbData[iod];
+    auto& ocb = ocb_data[iod];
 
     auto epoch_time = spartn_time_from(ura->epochTime_r16);
-    auto key        = OcbKey{gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
+    auto key        = OcbKey{gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections   = ocb.mKeyedCorrections[key];
+    auto& corrections   = ocb.keyed_corrections[key];
     corrections.gnss_id = gnss_id;
     corrections.iod     = iod;
     // URA epoch time may update slower and using it could override the epoch time for the other
     // data in OCB. Therefore, we don't set the epoch time here, except if the corrections are
     // grouped by epoch time.
-    if (mGroupByEpochTime) {
+    if (group_by_epoch_time) {
         corrections.epoch_time = epoch_time;
     }
     corrections.ura = ura;
@@ -382,7 +384,7 @@ phase_biases(SystemMapping const* mapping, SSR_PhaseBiasSatElement_r16 const& sa
         if (!element) continue;
 
         auto signal_id  = decode::signal_id(element->signal_and_tracking_mode_ID_r16);
-        auto correction = decode::phaseBias_r16(element->phaseBias_r16);
+        auto correction = decode::phase_bias_r16(element->phaseBias_r16);
         auto continuity_indicator =
             320.0;  // TODO(ewasjon): [low-priority] Compute the continuity indicator.
         auto fix_flag = phase_bias_fix_flag(*element);
@@ -441,7 +443,7 @@ code_biases(SystemMapping const* mapping, SSR_CodeBiasSatElement_r15 const& sate
         if (!element) continue;
 
         auto signal_id  = decode::signal_id(element->signal_and_tracking_mode_ID_r15);
-        auto correction = decode::codeBias_r15(element->codeBias_r15);
+        auto correction = decode::code_bias_r15(element->codeBias_r15);
 
         auto bias = (*bias_to_signal)(mapping, false, signal_id, correction, 0.0, false, translate,
                                       correction_shift);
@@ -612,7 +614,7 @@ void Generator::generate_ocb(uint16_t iod) {
     if (!ocb_data) return;
 
     std::vector<OcbCorrections*> messages;
-    for (auto& kvp : ocb_data->mKeyedCorrections) {
+    for (auto& kvp : ocb_data->keyed_corrections) {
         if (!mGpsSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_gps) continue;
         if (!mGlonassSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_glonass) continue;
         if (!mGalileoSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_galileo) continue;
@@ -683,8 +685,8 @@ void Generator::generate_ocb(uint16_t iod) {
                 builder.orbit_iode(gnss_id, orbit.iod_r15, mIodeShift);
 
                 auto radial = decode::delta_radial_r15(orbit.delta_radial_r15);
-                auto along  = decode::delta_AlongTrack_r15(orbit.delta_AlongTrack_r15);
-                auto cross  = decode::delta_CrossTrack_r15(orbit.delta_CrossTrack_r15);
+                auto along  = decode::delta_along_track_r15(orbit.delta_AlongTrack_r15);
+                auto cross  = decode::delta_cross_track_r15(orbit.delta_CrossTrack_r15);
 
                 if (mFlipOrbitCorrection) {
                     radial *= -1;
@@ -715,9 +717,9 @@ void Generator::generate_ocb(uint16_t iod) {
                 // LPP has model this as an polynomial around the middle of the ssr update rate.
                 // Thus, the single value at epoch time must be computed.
 
-                auto c0 = decode::delta_Clock_C0_r15(clock.delta_Clock_C0_r15);
-                auto c1 = decode::delta_Clock_C1_r15(clock.delta_Clock_C1_r15);
-                auto c2 = decode::delta_Clock_C2_r15(clock.delta_Clock_C2_r15);
+                auto c0 = decode::delta_clock_c0_r15(clock.delta_Clock_C0_r15);
+                auto c1 = decode::delta_clock_c1_r15(clock.delta_Clock_C1_r15);
+                auto c2 = decode::delta_clock_c2_r15(clock.delta_Clock_C2_r15);
 
                 // t_0 = epochTime + (0.5 * ssrUpdateInterval)
                 // TODO(ewasjon): [low-priority] Include SSR update interval. This is fine not
@@ -748,7 +750,7 @@ void Generator::generate_ocb(uint16_t iod) {
                     VERBOSEF("    sf024: %d (%u) [override]", mUraOverride, ura_value);
                 } else if (satellite.ura) {
                     auto& ura     = *satellite.ura;
-                    auto  quality = decode::ssr_URA_r16(ura.ssr_URA_r16);
+                    auto  quality = decode::ssr_ura_r16(ura.ssr_URA_r16);
                     if (quality.invalid) {
                         uint8_t ura_value =
                             mUraDefault < 0 ?
@@ -772,25 +774,25 @@ void Generator::generate_ocb(uint16_t iod) {
             if (satellite.code_bias || satellite.phase_bias) {
                 switch (gnss_id) {
                 case GNSS_ID__gnss_id_gps:
-                    generate_gps_bias_block(builder, &GPS_SM, satellite.code_bias,
+                    generate_gps_bias_block(builder, &gGpsSm, satellite.code_bias,
                                             satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
                                             mCodeBiasCorrectionShift, mPhaseBiasTranslate,
                                             mPhaseBiasCorrectionShift);
                     break;
                 case GNSS_ID__gnss_id_glonass:
-                    generate_glo_bias_block(builder, &GLO_SM, satellite.code_bias,
+                    generate_glo_bias_block(builder, &gGloSm, satellite.code_bias,
                                             satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
                                             mCodeBiasCorrectionShift, mPhaseBiasTranslate,
                                             mPhaseBiasCorrectionShift);
                     break;
                 case GNSS_ID__gnss_id_galileo:
-                    generate_gal_bias_block(builder, &GAL_SM, satellite.code_bias,
+                    generate_gal_bias_block(builder, &gGalSm, satellite.code_bias,
                                             satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
                                             mCodeBiasCorrectionShift, mPhaseBiasTranslate,
                                             mPhaseBiasCorrectionShift);
                     break;
                 case GNSS_ID__gnss_id_bds:
-                    generate_bds_bias_block(builder, &BDS_SM, satellite.code_bias,
+                    generate_bds_bias_block(builder, &gBdsSm, satellite.code_bias,
                                             satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
                                             mCodeBiasCorrectionShift, mPhaseBiasTranslate,
                                             mPhaseBiasCorrectionShift);

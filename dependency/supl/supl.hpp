@@ -8,18 +8,18 @@
 // https://gist.github.com/win-t/125f9e75c0a0f4a74a951478d27ccb4f
 template <typename F>
 class DeferFinalizer final {
-    F    func;
-    bool moved;
+    F    mFunc;
+    bool mMoved;
 
 public:
-    DeferFinalizer(F&& f) : func(std::forward<F>(f)), moved(false) {}
+    DeferFinalizer(F&& f) : mFunc(std::forward<F>(f)), mMoved(false) {}
 
-    DeferFinalizer(DeferFinalizer&& other) : func(std::move(other.func)), moved(other.moved) {
-        other.moved = true;
+    DeferFinalizer(DeferFinalizer&& other) : mFunc(std::move(other.mFunc)), mMoved(other.mMoved) {
+        other.mMoved = true;
     }
 
     ~DeferFinalizer() {
-        if (!moved) func();
+        if (!mMoved) mFunc();
     }
 
     DeferFinalizer(DeferFinalizer const&)            = delete;

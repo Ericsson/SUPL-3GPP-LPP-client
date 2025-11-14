@@ -12,14 +12,14 @@ public:
     bool apply_configurations();
 
 private:
-    UbxConfigConfig const& config_;
-    scheduler::Scheduler&  scheduler_;
+    UbxConfigConfig const& mConfig;
+    scheduler::Scheduler&  mScheduler;
 
     // Response collection state
-    std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> collected_values_;
-    bool     waiting_for_response_ = false;
-    uint16_t expected_position_    = 0;
-    bool     has_more_data_        = true;
+    std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> mCollectedValues;
+    bool                                                               mWaitingForResponse = false;
+    uint16_t                                                           mExpectedPosition   = 0;
+    bool                                                               mHasMoreData        = true;
 
     std::vector<uint8_t> create_cfg_valset_message(
         std::vector<std::pair<format::ubx::CfgKey, format::ubx::CfgValue>> const& options);

@@ -289,17 +289,17 @@ void NmeaLocation::process(streamline::System& system, format::nmea::GgaMessage 
         metrics.fix_quality = lpp::FixQuality::STANDALONE;
         break;
     case format::nmea::GgaFixQuality::DgpsFix:
-        metrics.fix_quality = lpp::FixQuality::DGPS_FIX;
+        metrics.fix_quality = lpp::FixQuality::DgpsFix;
         break;
-    case format::nmea::GgaFixQuality::PpsFix: metrics.fix_quality = lpp::FixQuality::PPS_FIX; break;
+    case format::nmea::GgaFixQuality::PpsFix: metrics.fix_quality = lpp::FixQuality::PpsFix; break;
     case format::nmea::GgaFixQuality::RtkFixed:
-        metrics.fix_quality = lpp::FixQuality::RTK_FIX;
+        metrics.fix_quality = lpp::FixQuality::RtkFix;
         break;
     case format::nmea::GgaFixQuality::RtkFloat:
-        metrics.fix_quality = lpp::FixQuality::RTK_FLOAT;
+        metrics.fix_quality = lpp::FixQuality::RtkFloat;
         break;
     case format::nmea::GgaFixQuality::DeadReckoning:
-        metrics.fix_quality = lpp::FixQuality::DEAD_RECKONING;
+        metrics.fix_quality = lpp::FixQuality::DeadReckoning;
         break;
     }
     auto hdop_val = metrics.hdop.value_or(0.0);

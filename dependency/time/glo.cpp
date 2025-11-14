@@ -12,12 +12,12 @@ static Timestamp utc_2_glo(Timestamp timestamp) {
 
     // -6 leap days between 1970 and 1996.
     // (1974, 1978, 1982, 1986, 1990, 1994)
-    constexpr auto leap_days = 6;
-    timestamp.subtract(leap_days * DAY_IN_SECONDS);
+    constexpr auto LEAP_DAYS = 6;
+    timestamp.subtract(LEAP_DAYS * DAY_IN_SECONDS);
 
     // -26 years because glonass time started 1996 (1996 - 1970)
-    constexpr auto year_difference = 26;
-    timestamp.subtract(year_difference * YEAR_IN_SECONDS);
+    constexpr auto YEAR_DIFFERENCE = 26;
+    timestamp.subtract(YEAR_DIFFERENCE * YEAR_IN_SECONDS);
     return timestamp;
 }
 
@@ -28,19 +28,19 @@ static Timestamp glo_2_utc(Timestamp timestamp) {
 }
 
 Glo::Glo() = default;
-Glo::Glo(Timestamp const& timestamp) : tm{timestamp} {}
-Glo::Glo(Utc const& time) : tm(utc_2_glo(time.timestamp())) {}
+Glo::Glo(Timestamp const& timestamp) : mTm{timestamp} {}
+Glo::Glo(Utc const& time) : mTm(utc_2_glo(time.timestamp())) {}
 Glo::Glo(Tai const& time) : Glo(Utc(time)) {}
 Glo::Glo(Gps const& time) : Glo(Utc(time)) {}
 Glo::Glo(Gst const& time) : Glo(Utc(time)) {}
 Glo::Glo(Bdt const& time) : Glo(Utc(time)) {}
 
 int64_t Glo::days() const {
-    return tm.seconds() / DAY_IN_SECONDS;
+    return mTm.seconds() / DAY_IN_SECONDS;
 }
 
 Timestamp Glo::time_of_day() const {
-    return tm - Timestamp{days() * DAY_IN_SECONDS};
+    return mTm - Timestamp{days() * DAY_IN_SECONDS};
 }
 
 Glo Glo::now() {
@@ -55,7 +55,7 @@ Glo Glo::from_day_tod(int64_t day, double tod) {
 }
 
 Timestamp Glo::utc_timestamp() const {
-    return glo_2_utc(tm);
+    return glo_2_utc(mTm);
 }
 
 }  // namespace ts

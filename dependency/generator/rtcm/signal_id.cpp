@@ -80,14 +80,14 @@ SignalId const SignalId::BEIDOU_B2A_D_P = SignalId::from_lpp(SignalId::BEIDOU, 1
 // GPS
 //
 
-static std::string GPS_NAMES[24] = {
+static std::string gGpsNames[24] = {
     "L1 C/A",   "L1C",      "L2C",           "L5",        "L1 P",      "L1 Z-tracking",
     "L2 C/A",   "L2 P",     "L2 Z-tracking", "L2 L2C(M)", "L2 L2C(L)", "L2 L2C(M+L)",
     "L5 I",     "L5 Q",     "L5 I+Q",        "L1 L1C(D)", "L1 L1C(P)", "L1 L1C(D+P)",
     "Reserved", "Reserved", "Reserved",      "Reserved",  "Reserved",  "Reserved",
 };
 
-static std::string GPS_RINEX_NAMES[24] = {
+static std::string gGpsRinexNames[24] = {
     "1C",  // L1 C/A
     "??",  // L1C
     "??",  // L2C
@@ -145,7 +145,7 @@ CONSTEXPR static int32_t GPS_LPP_TO_RTCM[24] = {
 #define GPS_L2_FREQ 1227.60e3
 #define GPS_L5_FREQ 1176.45e3
 
-static double GPS_FREQ[24] = {
+static double gGpsFreq[24] = {
     GPS_L1_FREQ,  // L1 C/A
     GPS_L1_FREQ,  // L1C
     GPS_L2_FREQ,  // L2C
@@ -172,7 +172,7 @@ static double GPS_FREQ[24] = {
     0.0,          // Reserved
 };
 
-static FrequencyType GPS_FREQ_TYPE[24] = {
+static FrequencyType gGpsFreqType[24] = {
     FrequencyType::L1,       // L1 C/A
     FrequencyType::L1,       // L1C
     FrequencyType::L2,       // L2C
@@ -202,13 +202,13 @@ static FrequencyType GPS_FREQ_TYPE[24] = {
 //
 // GLONASS
 //
-static std::string GLONASS_NAMES[24] = {
+static std::string gGlonassNames[24] = {
     "G1 C/A",   "G2 C/A",   "G3",       "G1 P",     "G2 P",     "G1a(D)",   "G1a(P)",   "G1a (D+P)",
     "G2a(I)",   "G2a(P)",   "G2a(I+P)", "G3 I",     "G3 Q",     "G3 I+Q",   "Reserved", "Reserved",
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
-static std::string GLONASS_RINEX_NAMES[24] = {
+static std::string gGlonassRinexNames[24] = {
     "1C",  // G1 C/A
     "2C",  // G2 C/A
     "??",  // G3
@@ -266,7 +266,7 @@ CONSTEXPR static int32_t GLONASS_LPP_TO_RTCM[24] = {
 #define GLONASS_G2_FREQ 1246.0e3
 #define GLONASS_G3_FREQ 1202.025e3
 
-static double GLONASS_FREQ[24] = {
+static double gGlonassFreq[24] = {
     GLONASS_G1_FREQ,  // G1 C/A
     GLONASS_G2_FREQ,  // G2 C/A
     GLONASS_G3_FREQ,  // G3
@@ -293,7 +293,7 @@ static double GLONASS_FREQ[24] = {
     0.0,              // Reserved
 };
 
-static FrequencyType GLONASS_FREQ_TYPE[24] = {
+static FrequencyType gGlonassFreqType[24] = {
     FrequencyType::G1,       // G1 C/A
     FrequencyType::G2,       // G2 C/A
     FrequencyType::G3,       // G3
@@ -323,7 +323,7 @@ static FrequencyType GLONASS_FREQ_TYPE[24] = {
 //
 // Galileo
 //
-static std::string GALILEO_NAMES[24] = {
+static std::string gGalileoNames[24] = {
     "E1",          "E5A",          "E5B",       "E6",
     "E5A + E5B",   "E1 C No data", "E1 A",      "E1 B I/NAV OS/CS/SoL",
     "E1 B+C",      "E1 A+B+C",     "E6 C",      "E6 A",
@@ -332,7 +332,7 @@ static std::string GALILEO_NAMES[24] = {
     "E5(A+B) I+Q", "E5A I",        "E5A Q",     "E5A I+Q",
 };
 
-static std::string GALILEO_RINEX_NAMES[24] = {
+static std::string gGalileoRinexNames[24] = {
     "??",  // E1
     "??",  // E5A
     "??",  // E5B
@@ -392,7 +392,7 @@ CONSTEXPR static int32_t GALILEO_LPP_TO_RTCM[24] = {
 #define GALILEO_E6_FREQ 1278.75e3
 #define GALILEO_E5A_E5B_FREQ 1191.795e3
 
-static double GALILEO_FREQ[24] = {
+static double gGalileoFreq[24] = {
     GALILEO_E1_FREQ,       // E1
     GALILEO_E5A_FREQ,      // E5A
     GALILEO_E5B_FREQ,      // E5B
@@ -419,7 +419,7 @@ static double GALILEO_FREQ[24] = {
     GALILEO_E5A_FREQ       // E5A I+Q
 };
 
-static FrequencyType GALILEO_FREQ_TYPE[24] = {
+static FrequencyType gGalileoFreqType[24] = {
     FrequencyType::E1,   // E1
     FrequencyType::E5a,  // E5A
     FrequencyType::E5b,  // E5B
@@ -450,13 +450,13 @@ static FrequencyType GALILEO_FREQ_TYPE[24] = {
 // BDS
 //
 
-static std::string BDS_NAMES[24] = {
+static std::string gBdsNames[24] = {
     "B1 I",     "B1 Q",     "B1 I+Q",   "B3 I",     "B3 Q",     "B3 I+Q",   "B2 I",     "B2 Q",
     "B2 I+Q",   "B1C(D)",   "B1C(P)",   "B1C(D+P)", "B2a(D)",   "B2a(P)",   "B2a(D+P)", "Reserved",
     "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
 };
 
-static std::string BDS_RINEX_NAMES[24] = {
+static std::string gBdsRinexNames[24] = {
     "2I",  // B1 I
     "2Q",  // B1 Q
     "2X",  // B1 I+Q
@@ -513,10 +513,10 @@ CONSTEXPR static int32_t BDS_LPP_TO_RTCM[24] = {
 #define BEIDOU_B1_FREQ 1561.098e3
 #define BEIDOU_B2_FREQ 1207.14e3
 #define BEIDOU_B3_FREQ 1268.52e3
-#define BEIDOU_B2a_FREQ 1176.45e3
+#define BEIDOU_B2A_FREQ 1176.45e3
 #define BEIDOU_B1C_FREQ 1575.42e3
 
-static double BDS_FREQ[24] = {
+static double gBdsFreq[24] = {
     BEIDOU_B1_FREQ,   // B1 I
     BEIDOU_B1_FREQ,   // B1 Q
     BEIDOU_B1_FREQ,   // B1 I+Q
@@ -529,9 +529,9 @@ static double BDS_FREQ[24] = {
     BEIDOU_B1C_FREQ,  // B1C(D)
     BEIDOU_B1C_FREQ,  // B1C(P)
     BEIDOU_B1C_FREQ,  // B1C(D+P)
-    BEIDOU_B2a_FREQ,  // B2a(D)
-    BEIDOU_B2a_FREQ,  // B2a(P)
-    BEIDOU_B2a_FREQ,  // B2a(D+P)
+    BEIDOU_B2A_FREQ,  // B2a(D)
+    BEIDOU_B2A_FREQ,  // B2a(P)
+    BEIDOU_B2A_FREQ,  // B2a(D+P)
     0.0,              // Reserved
     0.0,              // Reserved
     0.0,              // Reserved
@@ -543,7 +543,7 @@ static double BDS_FREQ[24] = {
     0.0               // Reserved
 };
 
-static FrequencyType BDS_FREQ_TYPE[24] = {
+static FrequencyType gBdsFreqType[24] = {
     FrequencyType::B1,       // B1 I
     FrequencyType::B1,       // B1 Q
     FrequencyType::B1,       // B1 I+Q
@@ -595,13 +595,13 @@ std::string SignalId::to_string() const {
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
-        return GPS_NAMES[id];
+        return gGpsNames[id];
     } else if (mGnss == Gnss::GLONASS) {
-        return GLONASS_NAMES[id];
+        return gGlonassNames[id];
     } else if (mGnss == Gnss::GALILEO) {
-        return GALILEO_NAMES[id];
+        return gGalileoNames[id];
     } else if (mGnss == Gnss::BEIDOU) {
-        return BDS_NAMES[id];
+        return gBdsNames[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -614,13 +614,13 @@ std::string SignalId::to_rinex() const {
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
-        return GPS_RINEX_NAMES[id];
+        return gGpsRinexNames[id];
     } else if (mGnss == Gnss::GLONASS) {
-        return GLONASS_RINEX_NAMES[id];
+        return gGlonassRinexNames[id];
     } else if (mGnss == Gnss::GALILEO) {
-        return GALILEO_RINEX_NAMES[id];
+        return gGalileoRinexNames[id];
     } else if (mGnss == Gnss::BEIDOU) {
-        return BDS_RINEX_NAMES[id];
+        return gBdsRinexNames[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -633,13 +633,13 @@ char const* SignalId::name() const {
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
-        return GPS_NAMES[id].c_str();
+        return gGpsNames[id].c_str();
     } else if (mGnss == Gnss::GLONASS) {
-        return GLONASS_NAMES[id].c_str();
+        return gGlonassNames[id].c_str();
     } else if (mGnss == Gnss::GALILEO) {
-        return GALILEO_NAMES[id].c_str();
+        return gGalileoNames[id].c_str();
     } else if (mGnss == Gnss::BEIDOU) {
-        return BDS_NAMES[id].c_str();
+        return gBdsNames[id].c_str();
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -652,13 +652,13 @@ double SignalId::frequency() const {
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
-        return GPS_FREQ[id];
+        return gGpsFreq[id];
     } else if (mGnss == Gnss::GLONASS) {
-        return GLONASS_FREQ[id];
+        return gGlonassFreq[id];
     } else if (mGnss == Gnss::GALILEO) {
-        return GALILEO_FREQ[id];
+        return gGalileoFreq[id];
     } else if (mGnss == Gnss::BEIDOU) {
-        return BDS_FREQ[id];
+        return gBdsFreq[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -671,13 +671,13 @@ FrequencyType SignalId::frequency_type() const {
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
-        return GPS_FREQ_TYPE[id];
+        return gGpsFreqType[id];
     } else if (mGnss == Gnss::GLONASS) {
-        return GLONASS_FREQ_TYPE[id];
+        return gGlonassFreqType[id];
     } else if (mGnss == Gnss::GALILEO) {
-        return GALILEO_FREQ_TYPE[id];
+        return gGalileoFreqType[id];
     } else if (mGnss == Gnss::BEIDOU) {
-        return BDS_FREQ_TYPE[id];
+        return gBdsFreqType[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE

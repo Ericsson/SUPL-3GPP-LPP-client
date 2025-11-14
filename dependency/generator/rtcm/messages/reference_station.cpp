@@ -6,21 +6,21 @@
 
 using namespace generator::rtcm;
 
-static void df02X(Encoder& encoder, double value) {
+static void df02x(Encoder& encoder, double value) {
     auto integer_value = static_cast<int64_t>(ROUND(value / 0.0001));
     encoder.i64(38, integer_value);
 }
 
 static void df025(Encoder& encoder, double value) {
-    df02X(encoder, value);
+    df02x(encoder, value);
 }
 
 static void df026(Encoder& encoder, double value) {
-    df02X(encoder, value);
+    df02x(encoder, value);
 }
 
 static void df027(Encoder& encoder, double value) {
-    df02X(encoder, value);
+    df02x(encoder, value);
 }
 
 static void df028(Encoder& encoder, double value) {

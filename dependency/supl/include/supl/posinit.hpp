@@ -4,8 +4,8 @@
 namespace supl {
 
 struct POSINIT {
-    SETCapabilities      sETCapabilities;
-    LocationID           locationID;
+    SETCapabilities      set_capabilities;
+    LocationID           location_id;
     std::vector<Payload> payloads;
 };
 

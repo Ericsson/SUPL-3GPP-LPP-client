@@ -93,7 +93,7 @@ static args::ValueFlag<int> gShutdownDelay{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
 }
 
 static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,

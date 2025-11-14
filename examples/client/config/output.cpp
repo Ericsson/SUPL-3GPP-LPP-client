@@ -60,7 +60,7 @@ static args::ValueFlagList<std::string> gArgs{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
 }
 
 static OutputFormat parse_format(std::string const& str) {

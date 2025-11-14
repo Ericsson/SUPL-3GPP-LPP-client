@@ -573,7 +573,7 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
     if (!mCorrectionData) {
         mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
     }
-    mCorrectionData->mCorrectionPointSet = mCorrectionPointSet.get();
+    mCorrectionData->correction_point_set = mCorrectionPointSet.get();
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
@@ -596,15 +596,15 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
         auto  correction_point_set_id = static_cast<uint16_t>(ssr.correctionPointSetID_r16);
 
         auto reference_point_latitude =
-            decode::referencePointLatitude_r16(array.referencePointLatitude_r16);
+            decode::reference_point_latitude_r16(array.referencePointLatitude_r16);
         auto reference_point_longitude =
-            decode::referencePointLongitude_r16(array.referencePointLongitude_r16);
+            decode::reference_point_longitude_r16(array.referencePointLongitude_r16);
         auto number_of_steps_latitude =
-            decode::numberOfStepsLatitude_r16(array.numberOfStepsLatitude_r16);
+            decode::number_of_steps_latitude_r16(array.numberOfStepsLatitude_r16);
         auto number_of_steps_longitude =
-            decode::numberOfStepsLongitude_r16(array.numberOfStepsLongitude_r16);
-        auto step_of_latitude  = decode::stepOfLatitude_r16(array.stepOfLatitude_r16);
-        auto step_of_longitude = decode::stepOfLongitude_r16(array.stepOfLongitude_r16);
+            decode::number_of_steps_longitude_r16(array.numberOfStepsLongitude_r16);
+        auto step_of_latitude  = decode::step_of_latitude_r16(array.stepOfLatitude_r16);
+        auto step_of_longitude = decode::step_of_longitude_r16(array.stepOfLongitude_r16);
 
         auto grid_point_count = (number_of_steps_longitude + 1) * (number_of_steps_latitude + 1);
 

@@ -30,7 +30,7 @@ public:
 
     DF009 prn;
     DF076 week;
-    DF077 SV_ACCURACY;
+    DF077 sv_accuracy;
     DF078 code_on_l2;
     DF079 idot;
     DF071 iode;
@@ -39,24 +39,24 @@ public:
     DF083 a_f1;
     DF084 a_f0;
     DF085 iodc;
-    DF086 C_rs;
+    DF086 c_rs;
     DF087 delta_n;
-    DF088 M_0;
-    DF089 C_uc;
+    DF088 m_0;
+    DF089 c_uc;
     DF090 e;
-    DF091 C_us;
-    DF092 sqrt_A;
+    DF091 c_us;
+    DF092 sqrt_a;
     DF093 t_oe;
-    DF094 C_ic;
-    DF095 OMEGA_0;
-    DF096 C_is;
+    DF094 c_ic;
+    DF095 omega_0;
+    DF096 c_is;
     DF097 i_0;
-    DF098 C_rc;
+    DF098 c_rc;
     DF099 omega;
-    DF100 OMEGADOT;
-    DF101 t_GD;
-    DF102 SV_HEALTH;
-    DF103 L2_P_data_flag;
+    DF100 omegadot;
+    DF101 t_gd;
+    DF102 sv_health;
+    DF103 l2_p_data_flag;
     DF137 fit;
 
 private:

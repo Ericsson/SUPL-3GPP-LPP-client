@@ -73,8 +73,8 @@ struct Subframe4 {
         double a[4];
         double b[4];
         // UTC parameters
-        double A0;
-        double A1;
+        double utc_a0;
+        double utc_a1;
         double delta_t_ls;
         double t_ot;
         double wn_t;

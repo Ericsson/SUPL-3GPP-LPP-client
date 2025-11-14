@@ -31,23 +31,23 @@ CfgValue CfgValue::from_u8(uint64_t value) NOEXCEPT {
 }
 
 CfgValue::CfgValue(Type type, bool value) NOEXCEPT : mType(type) {
-    mValue.mL = value;
+    mValue.m_logical = value;
 }
 
 CfgValue::CfgValue(Type type, uint8_t value) NOEXCEPT : mType(type) {
-    mValue.mU1 = value;
+    mValue.m_uint8 = value;
 }
 
 CfgValue::CfgValue(Type type, uint16_t value) NOEXCEPT : mType(type) {
-    mValue.mU2 = value;
+    mValue.m_uint16 = value;
 }
 
 CfgValue::CfgValue(Type type, uint32_t value) NOEXCEPT : mType(type) {
-    mValue.mU4 = value;
+    mValue.m_uint32 = value;
 }
 
 CfgValue::CfgValue(Type type, uint64_t value) NOEXCEPT : mType(type) {
-    mValue.mU8 = value;
+    mValue.m_uint64 = value;
 }
 
 //
@@ -55,23 +55,23 @@ CfgValue::CfgValue(Type type, uint64_t value) NOEXCEPT : mType(type) {
 //
 
 bool CfgValue::l() const NOEXCEPT {
-    return mValue.mL;
+    return mValue.m_logical;
 }
 
 uint8_t CfgValue::u1() const NOEXCEPT {
-    return mValue.mU1;
+    return mValue.m_uint8;
 }
 
 uint16_t CfgValue::u2() const NOEXCEPT {
-    return mValue.mU2;
+    return mValue.m_uint16;
 }
 
 uint32_t CfgValue::u4() const NOEXCEPT {
-    return mValue.mU4;
+    return mValue.m_uint32;
 }
 
 uint64_t CfgValue::u8() const NOEXCEPT {
-    return mValue.mU8;
+    return mValue.m_uint64;
 }
 
 uint32_t CfgValue::size() const NOEXCEPT {
@@ -80,11 +80,11 @@ uint32_t CfgValue::size() const NOEXCEPT {
 
 void CfgValue::serialize(Encoder& encoder) const NOEXCEPT {
     switch (mType) {
-    case Type::L: encoder.L(mValue.mL); break;
-    case Type::U1: encoder.U1(mValue.mU1); break;
-    case Type::U2: encoder.U2(mValue.mU2); break;
-    case Type::U4: encoder.U4(mValue.mU4); break;
-    case Type::U8: encoder.U8(mValue.mU8); break;
+    case Type::L: encoder.logical(mValue.m_logical); break;
+    case Type::U1: encoder.u1(mValue.m_uint8); break;
+    case Type::U2: encoder.u2(mValue.m_uint16); break;
+    case Type::U4: encoder.u4(mValue.m_uint32); break;
+    case Type::U8: encoder.u8(mValue.m_uint64); break;
     case Type::UNKNOWN: UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
         break;
@@ -138,11 +138,11 @@ CfgValue CfgValue::parse_from_key(CfgKey key, Decoder& decoder) NOEXCEPT {
 
 CfgValue CfgValue::parse_from_type(Type type, Decoder& decoder) NOEXCEPT {
     switch (type) {
-    case Type::L: return CfgValue::from_l(decoder.L());
-    case Type::U1: return CfgValue::from_u1(decoder.U1());
-    case Type::U2: return CfgValue::from_u2(decoder.U2());
-    case Type::U4: return CfgValue::from_u4(decoder.U4());
-    case Type::U8: return CfgValue::from_u8(decoder.U8());
+    case Type::L: return CfgValue::from_l(decoder.logical());
+    case Type::U1: return CfgValue::from_u1(decoder.u1());
+    case Type::U2: return CfgValue::from_u2(decoder.u2());
+    case Type::U4: return CfgValue::from_u4(decoder.u4());
+    case Type::U8: return CfgValue::from_u8(decoder.u8());
     case Type::UNKNOWN: UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
         break;

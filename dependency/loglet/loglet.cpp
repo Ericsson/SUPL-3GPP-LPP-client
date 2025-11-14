@@ -40,28 +40,28 @@ struct EqualModuleName {
     bool operator()(char const* a, char const* b) const { return strcmp(a, b) == 0; }
 };
 
-static char const*        sPrefix       = nullptr;
-static Level              sLevel        = Level::Debug;
-static bool               sColorEnabled = false;
-static bool               sAlwaysFlush  = false;
-static bool               sReportErrors = true;
-static bool               sUseStderr    = true;
-static FILE*              sOutputFile   = nullptr;
-static std::vector<Scope> sScopes;
+static char const*        gPrefix       = nullptr;
+static Level              gLevel        = Level::Debug;
+static bool               gColorEnabled = false;
+static bool               gAlwaysFlush  = false;
+static bool               gReportErrors = true;
+static bool               gUseStderr    = true;
+static FILE*              gOutputFile   = nullptr;
+static std::vector<Scope> gScopes;
 
-static std::unordered_map<char const*, Module, HashModuleName, EqualModuleName> sModules;
+static std::unordered_map<char const*, Module, HashModuleName, EqualModuleName> gModules;
 
 Module& get_or_add_module(char const* reference) {
-    auto it = sModules.find(reference);
-    if (it == sModules.end()) {
+    auto it = gModules.find(reference);
+    if (it == gModules.end()) {
         auto constant_name = new char[strlen(reference) + 1];
         strcpy(constant_name, reference);
 
         Module module{};
         module.name             = constant_name;
-        module.level            = sLevel;
-        sModules[constant_name] = std::move(module);
-        return sModules[constant_name];
+        module.level            = gLevel;
+        gModules[constant_name] = std::move(module);
+        return gModules[constant_name];
     } else {
         return it->second;
     }
@@ -73,21 +73,21 @@ struct GlobalData {
     size_t                  max_full_name_length = 0;
 };
 
-static GlobalData* sGlobalData = nullptr;
+static GlobalData* gGlobalData = nullptr;
 
 void preinit() {
-    if (sGlobalData) return;
-    sGlobalData = new GlobalData();
-    sGlobalData->root_modules.reserve(100);
-    sGlobalData->modules.reserve(256);
-    sGlobalData->max_full_name_length = 10;
+    if (gGlobalData) return;
+    gGlobalData = new GlobalData();
+    gGlobalData->root_modules.reserve(100);
+    gGlobalData->modules.reserve(256);
+    gGlobalData->max_full_name_length = 10;
 }
 
 void register_module(LogModule* module) {
-    if (!sGlobalData) return;
-    sGlobalData->modules.push_back(module);
+    if (!gGlobalData) return;
+    gGlobalData->modules.push_back(module);
     if (module->parent == nullptr) {
-        sGlobalData->root_modules.push_back(module);
+        gGlobalData->root_modules.push_back(module);
     }
 }
 
@@ -101,15 +101,15 @@ void iterate_modules_recursive(LogModule* module, int depth,
 }
 
 void iterate_modules(void (*callback)(LogModule const* module, int depth, void* data), void* data) {
-    if (!sGlobalData) return;
-    for (auto module : sGlobalData->root_modules) {
+    if (!gGlobalData) return;
+    for (auto module : gGlobalData->root_modules) {
         iterate_modules_recursive(module, 0, callback, data);
     }
 }
 
 void generate_full_name(LogModule* parent) {
-    if (parent && sGlobalData && sGlobalData->max_full_name_length < parent->full_name.length()) {
-        sGlobalData->max_full_name_length = parent->full_name.length();
+    if (parent && gGlobalData && gGlobalData->max_full_name_length < parent->full_name.length()) {
+        gGlobalData->max_full_name_length = parent->full_name.length();
     }
     for (auto child : parent->children) {
         child->full_name = parent->full_name + "/" + child->name;
@@ -118,20 +118,20 @@ void generate_full_name(LogModule* parent) {
 }
 
 void initialize() {
-    if (!sGlobalData) return;
-    for (auto module : sGlobalData->modules) {
+    if (!gGlobalData) return;
+    for (auto module : gGlobalData->modules) {
         if (module->parent != nullptr) {
             module->parent->children.push_back(module);
         }
     }
 
     // Sort modules by name
-    std::sort(sGlobalData->root_modules.begin(), sGlobalData->root_modules.end(),
+    std::sort(gGlobalData->root_modules.begin(), gGlobalData->root_modules.end(),
               [](LogModule const* a, LogModule const* b) {
                   return strcmp(a->name, b->name) < 0;
               });
 
-    for (auto module : sGlobalData->root_modules) {
+    for (auto module : gGlobalData->root_modules) {
         std::sort(module->children.begin(), module->children.end(),
                   [](LogModule const* a, LogModule const* b) {
                       return strcmp(a->name, b->name) < 0;
@@ -139,14 +139,14 @@ void initialize() {
     }
 
     // Generate full name
-    for (auto module : sGlobalData->root_modules) {
+    for (auto module : gGlobalData->root_modules) {
         module->full_name = module->name;
         generate_full_name(module);
     }
 }
 
 void uninitialize() {
-    sScopes.clear();
+    gScopes.clear();
 }
 
 static std::vector<LogModule*> get_all_children(LogModule* module) {
@@ -202,40 +202,40 @@ std::vector<LogModule*> get_modules(std::string const& name) {
     }
 
     std::vector<LogModule*> result;
-    find_modules(parts, 0, nullptr, sGlobalData->root_modules, result);
+    find_modules(parts, 0, nullptr, gGlobalData->root_modules, result);
     return result;
 }
 
 void set_prefix(char const* prefix) {
-    sPrefix = prefix;
+    gPrefix = prefix;
 }
 
 void set_level(Level level) {
-    sLevel = level;
-    if (!sGlobalData) return;
-    for (auto& module : sGlobalData->modules) {
+    gLevel = level;
+    if (!gGlobalData) return;
+    for (auto& module : gGlobalData->modules) {
         module->level = level;
     }
 }
 
 void set_color_enable(bool enabled) {
-    sColorEnabled = enabled;
+    gColorEnabled = enabled;
 }
 
 void set_always_flush(bool flush) {
-    sAlwaysFlush = flush;
+    gAlwaysFlush = flush;
 }
 
 void set_output_file(FILE* file) {
-    sOutputFile = file;
+    gOutputFile = file;
 }
 
 void set_report_errors(bool enabled) {
-    sReportErrors = enabled;
+    gReportErrors = enabled;
 }
 
 void set_use_stderr(bool enabled) {
-    sUseStderr = enabled;
+    gUseStderr = enabled;
 }
 
 void set_module_level(LogModule* module, Level level) {
@@ -251,15 +251,15 @@ bool is_module_enabled(LogModule const* module) {
 }
 
 bool is_level_enabled(Level level) {
-    return level >= sLevel;
+    return level >= gLevel;
 }
 
 void push_indent() {
-    sScopes.push_back({""});
+    gScopes.push_back({""});
 }
 
 void pop_indent() {
-    sScopes.pop_back();
+    gScopes.pop_back();
 }
 
 static char const* level_to_string(Level level) {
@@ -289,7 +289,7 @@ char const* level_to_full_string(Level level) {
 }
 
 static char const* level_to_color(Level level) {
-    if (!sColorEnabled) return "";
+    if (!gColorEnabled) return "";
     switch (level) {
     case Level::Trace: return COLOR_CYAN;
     case Level::Verbose: return COLOR_BLUE;
@@ -303,16 +303,16 @@ static char const* level_to_color(Level level) {
 }
 
 static inline void report_error(char const* message) {
-    if (!sReportErrors) return;
-    auto error_color = sColorEnabled ? "\033[41;97m" : "";
-    auto reset_color = sColorEnabled ? COLOR_RESET : "";
+    if (!gReportErrors) return;
+    auto error_color = gColorEnabled ? "\033[41;97m" : "";
+    auto reset_color = gColorEnabled ? COLOR_RESET : "";
     fprintf(stderr, "%sloglet: %s%s\n", error_color, message, reset_color);
 }
 
 static inline void report_errorf(char const* format, int error_code) {
-    if (!sReportErrors) return;
-    auto error_color = sColorEnabled ? "\033[41;97m" : "";
-    auto reset_color = sColorEnabled ? COLOR_RESET : "";
+    if (!gReportErrors) return;
+    auto error_color = gColorEnabled ? "\033[41;97m" : "";
+    auto reset_color = gColorEnabled ? COLOR_RESET : "";
     fprintf(stderr, "%sloglet: %s: %s%s\n", error_color, format, strerror(error_code), reset_color);
 }
 
@@ -339,18 +339,18 @@ void vlog(LogModule const* module, Level level, char const* format, va_list args
     }
 
     auto start_color = level_to_color(level);
-    auto stop_color  = sColorEnabled ? COLOR_RESET : "";
+    auto stop_color  = gColorEnabled ? COLOR_RESET : "";
 
-    auto file        = sOutputFile ? sOutputFile : stdout;
-    auto needs_flush = sAlwaysFlush;
-    if (!sOutputFile && sUseStderr && (level == Level::Error || level == Level::Warning)) {
+    auto file        = gOutputFile ? gOutputFile : stdout;
+    auto needs_flush = gAlwaysFlush;
+    if (!gOutputFile && gUseStderr && (level == Level::Error || level == Level::Warning)) {
         file = stderr;
         fflush(stdout);
         needs_flush = true;
     }
 
     char indent_buffer[64 + 1] = "                                                                ";
-    auto indent_length         = static_cast<int>(sScopes.size() * 2);
+    auto indent_length         = static_cast<int>(gScopes.size() * 2);
     if (indent_length > 64) {
         indent_length = 64;
     } else if (indent_length < 0) {
@@ -359,7 +359,7 @@ void vlog(LogModule const* module, Level level, char const* format, va_list args
     indent_buffer[indent_length] = '\0';
 
     if (fprintf(file, "%s%s%s[%-*s] %s", start_color, level_to_string(level), buffer,
-                static_cast<int>(sGlobalData ? sGlobalData->max_full_name_length : 16),
+                static_cast<int>(gGlobalData ? gGlobalData->max_full_name_length : 16),
                 module->full_name.c_str(), indent_buffer) < 0) {
         report_errorf("fprintf failed", errno);
         errno = saved_errno;

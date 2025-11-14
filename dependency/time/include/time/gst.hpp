@@ -25,7 +25,7 @@ public:
     NODISCARD Timestamp time_of_day() const;
     NODISCARD int64_t   week() const;
     NODISCARD Timestamp time_of_week() const;
-    NODISCARD Timestamp timestamp() const { return tm; }
+    NODISCARD Timestamp timestamp() const { return mTm; }
 
     NODISCARD static Gst now();
     NODISCARD static Gst from_day_tod(int64_t day, double tod);
@@ -35,7 +35,7 @@ protected:
     NODISCARD Timestamp utc_timestamp() const;
 
 private:
-    Timestamp tm;
+    Timestamp mTm;
 };
 
 }  // namespace ts

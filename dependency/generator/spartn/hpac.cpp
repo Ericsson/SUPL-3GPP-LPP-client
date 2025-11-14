@@ -37,9 +37,9 @@ void CorrectionPointSet::calculate_grid_points() {
     internal_grid_points.clear();
 
     long relative_id = 0;
-    for (long x = 0; x < numberOfStepsLatitude_r16 + 1; x++) {
-        for (long y = 0; y < numberOfStepsLongitude_r16 + 1; y++) {
-            auto      i = x * (numberOfStepsLongitude_r16 + 1) + y;
+    for (long x = 0; x < number_of_steps_latitude_r16 + 1; x++) {
+        for (long y = 0; y < number_of_steps_longitude_r16 + 1; y++) {
+            auto      i = x * (number_of_steps_longitude_r16 + 1) + y;
             GridPoint grid_point{};
             grid_point.id = relative_id;
             grid_point.latitude =
@@ -151,7 +151,7 @@ GridElement_r16* HpacCorrections::find_grid_point(long grid_id) const {
 }
 
 void HpacData::set_ids(std::vector<uint16_t>& ids) const {
-    for (auto& kvp : mKeyedCorrections) {
+    for (auto& kvp : keyed_corrections) {
         auto set_id = kvp.first.set_id;
         if (std::find(ids.begin(), ids.end(), set_id) == ids.end()) {
             ids.push_back(set_id);
@@ -161,7 +161,7 @@ void HpacData::set_ids(std::vector<uint16_t>& ids) const {
 
 std::vector<uint16_t> CorrectionData::set_ids() const {
     std::vector<uint16_t> set_ids;
-    for (auto& kvp : mHpacData) {
+    for (auto& kvp : hpac_data) {
         kvp.second.set_ids(set_ids);
     }
 
@@ -170,14 +170,14 @@ std::vector<uint16_t> CorrectionData::set_ids() const {
 
 std::vector<uint16_t> CorrectionData::iods() const {
     std::vector<uint16_t> iods;
-    for (auto& kvp : mOcbData) {
+    for (auto& kvp : ocb_data) {
         auto iod = kvp.first;
         if (std::find(iods.begin(), iods.end(), iod) == iods.end()) {
             iods.push_back(iod);
         }
     }
 
-    for (auto& kvp : mHpacData) {
+    for (auto& kvp : hpac_data) {
         auto iod = kvp.first;
         if (std::find(iods.begin(), iods.end(), iod) == iods.end()) {
             iods.push_back(iod);
@@ -193,10 +193,10 @@ bool CorrectionData::find_gad_epoch_time(uint16_t iod, SpartnTime* epoch_time) c
     SpartnTime time{};
     bool       found = false;
 
-    auto hpac = mHpacData.find(iod);
-    if (hpac != mHpacData.end()) {
-        auto& hpac_data = hpac->second;
-        for (auto& kvp : hpac_data.mKeyedCorrections) {
+    auto hpac = hpac_data.find(iod);
+    if (hpac != hpac_data.end()) {
+        auto& hpac_corrections = hpac->second;
+        for (auto& kvp : hpac_corrections.keyed_corrections) {
             auto& corrections = kvp.second;
             // NOTE(ewasjon): The GAD message is constellation-less, thus the epoch time that will
             // be used should be GPS time.
@@ -219,13 +219,13 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
     if (!gridded) return;
     FUNCTION_SCOPE();
     auto  iod  = static_cast<uint16_t>(gridded->iod_ssr_r16);
-    auto& hpac = mHpacData[iod];
+    auto& hpac = hpac_data[iod];
 
     auto epoch_time = spartn_time_from(gridded->epochTime_r16);
     auto set_id     = static_cast<uint16_t>(gridded->correctionPointSetID_r16);
-    auto key        = HpacKey{set_id, gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
+    auto key = HpacKey{set_id, gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = hpac.mKeyedCorrections[key];
+    auto& corrections      = hpac.keyed_corrections[key];
     corrections.gnss_id    = gnss_id;
     corrections.iod        = iod;
     corrections.set_id     = set_id;
@@ -237,13 +237,13 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16* 
     if (!stec) return;
     FUNCTION_SCOPE();
     auto  iod  = static_cast<uint16_t>(stec->iod_ssr_r16);
-    auto& hpac = mHpacData[iod];
+    auto& hpac = hpac_data[iod];
 
     auto epoch_time = spartn_time_from(stec->epochTime_r16);
     auto set_id     = static_cast<uint16_t>(stec->correctionPointSetID_r16);
-    auto key        = HpacKey{set_id, gnss_id, mGroupByEpochTime ? epoch_time.rounded_seconds : 0};
+    auto key = HpacKey{set_id, gnss_id, group_by_epoch_time ? epoch_time.rounded_seconds : 0};
 
-    auto& corrections      = hpac.mKeyedCorrections[key];
+    auto& corrections      = hpac.keyed_corrections[key];
     corrections.gnss_id    = gnss_id;
     corrections.iod        = iod;
     corrections.set_id     = set_id;
@@ -255,8 +255,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_RealTimeIntegrity* rti) {
     if (!rti) return;
 
     FUNCTION_SCOPE();
-    auto& data = mRealTimeIntegrityData[gnss_id];
-    data.mBadSatellites.clear();
+    auto& data = real_time_integrity_data[gnss_id];
+    data.bad_satellites.clear();
 
     auto& list = rti->gnss_BadSignalList.list;
     for (int i = 0; i < list.count; i++) {
@@ -264,11 +264,11 @@ void CorrectionData::add_correction(long gnss_id, GNSS_RealTimeIntegrity* rti) {
         if (!element) continue;
 
         auto  satellite_id = element->badSVID.satellite_id;
-        auto& satellite    = data.mBadSatellites[satellite_id];
+        auto& satellite    = data.bad_satellites[satellite_id];
         satellite.id       = satellite_id;
 
         if (!element->badSignalID) {
-            auto& signal_list = satellite.mBadSignals;
+            auto& signal_list = satellite.bad_signals;
             auto  signal_bs0  = helper::BitStringReader(&element->badSignalID->gnss_SignalIDs);
             for (size_t j = 0; j < signal_bs0.count(); j++) {
                 if (!signal_bs0.get(j)) {
@@ -350,10 +350,10 @@ static StecParameters compute_stec_parameters(CorrectionPointSet const&  correct
                                               int equation_type, bool stec_transform,
                                               bool sign_flip_c00, bool sign_flip_c01,
                                               bool sign_flip_c10, bool sign_flip_c11) {
-    auto c00 = decode::stec_C00_r16(satellite.stec_C00_r16);
-    auto c01 = decode::stec_C01_r16(satellite.stec_C01_r16);
-    auto c10 = decode::stec_C10_r16(satellite.stec_C10_r16);
-    auto c11 = decode::stec_C11_r16(satellite.stec_C11_r16);
+    auto c00 = decode::stec_c00_r16(satellite.stec_C00_r16);
+    auto c01 = decode::stec_c01_r16(satellite.stec_C01_r16);
+    auto c10 = decode::stec_c10_r16(satellite.stec_C10_r16);
+    auto c11 = decode::stec_c11_r16(satellite.stec_C11_r16);
 
     if (sign_flip_c00) c00 = -c00;
     if (sign_flip_c01) c01 = -c01;
@@ -498,7 +498,8 @@ static double compute_average_zentith_delay(CorrectionPointSet& correction_point
         auto element = corrections.find_grid_point(gp.id);
         if (element && element->tropospericDelayCorrection_r16) {
             auto& grid_point = *element->tropospericDelayCorrection_r16;
-            auto residual = decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
+            auto  residual =
+                decode::tropo_wet_vertical_delay_r16(grid_point.tropoWetVerticalDelay_r16);
             total_zenith_delay += residual;
             count++;
         }
@@ -523,7 +524,7 @@ static double compute_average_hydrostatic_delay(CorrectionPointSet& correction_p
         auto element = corrections.find_grid_point(gp.id);
         if (element && element->tropospericDelayCorrection_r16) {
             auto& grid_point        = *element->tropospericDelayCorrection_r16;
-            auto  hydrostatic_delay = decode::tropoHydroStaticVerticalDelay_r16(
+            auto  hydrostatic_delay = decode::tropo_hydro_static_vertical_delay_r16(
                 grid_point.tropoHydroStaticVerticalDelay_r16);
             total_hydrostatic_delay += hydrostatic_delay;
             count++;
@@ -558,11 +559,11 @@ compute_troposphere_residuals(CorrectionPointSet& correction_point_set,
         if (element && element->tropospericDelayCorrection_r16) {
             auto& grid_point = *element->tropospericDelayCorrection_r16;
 
-            auto hydrostatic_delay = decode::tropoHydroStaticVerticalDelay_r16(
+            auto hydrostatic_delay = decode::tropo_hydro_static_vertical_delay_r16(
                 grid_point.tropoHydroStaticVerticalDelay_r16);
             auto hydrostatic_residual = hydrostatic_delay - hydrostatic_delay_avg;
             auto wet_delay =
-                decode::tropoWetVerticalDelay_r16(grid_point.tropoWetVerticalDelay_r16);
+                decode::tropo_wet_vertical_delay_r16(grid_point.tropoWetVerticalDelay_r16);
             auto wet_residual = wet_delay - average_zenith_delay;
 
             double total_residual = 0;
@@ -613,7 +614,7 @@ static void troposphere_data_block(MessageBuilder&     builder,
         VERBOSEF("  sf042: %d [override]", value);
         builder.sf042_raw(value);
     } else if (data.troposphericDelayQualityIndicator_r16) {
-        auto quality = decode::troposphericDelayQualityIndicator_r16(
+        auto quality = decode::tropospheric_delay_quality_indicator_r16(
             *data.troposphericDelayQualityIndicator_r16);
         if (quality.invalid) {
             uint8_t value = sf042_default < 0 ?
@@ -732,7 +733,7 @@ ionosphere_data_block_1(MessageBuilder& builder, CorrectionPointSet& correction_
         builder.sf055_raw(value);
         VERBOSEF("  sf055: %d (%u) [override]", sf055_override, value);
     } else {
-        auto q = decode::stecQualityIndicator_r16(element->stecQualityIndicator_r16);
+        auto q = decode::stec_quality_indicator_r16(element->stecQualityIndicator_r16);
         if (q.invalid) {
             uint8_t value = sf055_default < 0 ?
                                 0 :
@@ -794,8 +795,8 @@ static std::vector<StecResidual> compute_stec_residuals(CorrectionPointSet& corr
         if (it == satellite.residuals.end()) {
             result.push_back({gp.id, remaining_polynomial_residual, true});
         } else {
-            auto& element = *it->second;
-            auto residual = decode::stecResidualCorrection_r16(&element.stecResidualCorrection_r16);
+            auto& element  = *it->second;
+            auto  residual = decode::stec_residual_correction_r16(element);
             if (sign_flip_stec_residuals) residual = -residual;
             result.push_back({gp.id, residual + remaining_polynomial_residual, false});
         }
@@ -911,7 +912,7 @@ void Generator::generate_hpac(uint16_t iod) {
     auto ocb_data = mCorrectionData->ocb(iod);
 
     std::vector<HpacCorrections*> messages;
-    for (auto& kvp : hpac_data->mKeyedCorrections) {
+    for (auto& kvp : hpac_data->keyed_corrections) {
         if (!mGpsSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_gps) continue;
         if (!mGlonassSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_glonass) continue;
         if (!mGalileoSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_galileo) continue;
@@ -941,8 +942,8 @@ void Generator::generate_hpac(uint16_t iod) {
             if (!mGroupByEpochTime) {
                 ocb_key.epoch_time = 0;
             }
-            auto ocb_it = ocb_data->mKeyedCorrections.find(ocb_key);
-            if (ocb_it != ocb_data->mKeyedCorrections.end()) {
+            auto ocb_it = ocb_data->keyed_corrections.find(ocb_key);
+            if (ocb_it != ocb_data->keyed_corrections.end()) {
                 ocb_corrections = &ocb_it->second;
             }
         }

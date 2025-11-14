@@ -51,13 +51,13 @@ std::unique_ptr<Message> UbxRxmRtcm::parse(Decoder& decoder, std::vector<uint8_t
     if (version == 2) {
         payload.version = version;
 
-        auto flags                       = decoder.U1();
+        auto flags                       = decoder.u1();
         payload.data.v2.flags.crc_failed = (flags >> 0) & 0x01;
         payload.data.v2.flags.msg_used   = (flags >> 1) & 0x03;
 
-        payload.data.v2.sub_type    = decoder.U2();
-        payload.data.v2.ref_station = decoder.U2();
-        payload.data.v2.msg_type    = decoder.U2();
+        payload.data.v2.sub_type    = decoder.u2();
+        payload.data.v2.ref_station = decoder.u2();
+        payload.data.v2.msg_type    = decoder.u2();
     } else {
         payload.version = version;
     }

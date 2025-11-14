@@ -25,17 +25,17 @@ static Timestamp utc_2_gst(Timestamp utc_time) {
     seconds_since_gst.add(leap_seconds);
 
     // -233 days because GST time started on the 22nd of August 1999
-    constexpr auto days_difference = 233;
-    seconds_since_gst.subtract(days_difference * DAY_IN_SECONDS);
+    constexpr auto DAYS_DIFFERENCE = 233;
+    seconds_since_gst.subtract(DAYS_DIFFERENCE * DAY_IN_SECONDS);
 
     // -7 leap days between 1970 and 1999.
     // (1974, 1978, 1982, 1986, 1990, 1994, 1998)
-    constexpr auto leap_days = 7;
-    seconds_since_gst.subtract(leap_days * DAY_IN_SECONDS);
+    constexpr auto LEAP_DAYS = 7;
+    seconds_since_gst.subtract(LEAP_DAYS * DAY_IN_SECONDS);
 
     // -29 years because gps time started 1999 (1999 - 1970)
-    constexpr auto year_difference = 29;
-    seconds_since_gst.subtract(year_difference * YEAR_IN_SECONDS);
+    constexpr auto YEAR_DIFFERENCE = 29;
+    seconds_since_gst.subtract(YEAR_DIFFERENCE * YEAR_IN_SECONDS);
     return seconds_since_gst;
 }
 
@@ -46,27 +46,27 @@ static Timestamp gst_2_utc(Timestamp gst) {
 }
 
 Gst::Gst() = default;
-Gst::Gst(Timestamp const& timestamp) : tm{timestamp} {}
-Gst::Gst(Utc const& time) : tm{utc_2_gst(time.timestamp())} {}
+Gst::Gst(Timestamp const& timestamp) : mTm{timestamp} {}
+Gst::Gst(Utc const& time) : mTm{utc_2_gst(time.timestamp())} {}
 Gst::Gst(Tai const& time) : Gst(Utc(time)) {}
 Gst::Gst(Glo const& time) : Gst(Utc(time)) {}
 Gst::Gst(Gps const& time) : Gst(Utc(time)) {}
 Gst::Gst(Bdt const& time) : Gst(Utc(time)) {}
 
 int64_t Gst::days() const {
-    return tm.seconds() / DAY_IN_SECONDS;
+    return mTm.seconds() / DAY_IN_SECONDS;
 }
 
 Timestamp Gst::time_of_day() const {
-    return tm - Timestamp{days() * DAY_IN_SECONDS};
+    return mTm - Timestamp{days() * DAY_IN_SECONDS};
 }
 
 int64_t Gst::week() const {
-    return tm.seconds() / WEEK_IN_SECONDS;
+    return mTm.seconds() / WEEK_IN_SECONDS;
 }
 
 Timestamp Gst::time_of_week() const {
-    return tm - Timestamp{week() * WEEK_IN_SECONDS};
+    return mTm - Timestamp{week() * WEEK_IN_SECONDS};
 }
 
 Gst Gst::now() {
@@ -89,7 +89,7 @@ Gst Gst::from_week_tow(int64_t week, int64_t tow, double fractions) {
 }
 
 Timestamp Gst::utc_timestamp() const {
-    return gst_2_utc(tm);
+    return gst_2_utc(mTm);
 }
 
 }  // namespace ts

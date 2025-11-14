@@ -118,11 +118,11 @@ private:
 
     Type mType;
     union {
-        bool     mL;
-        uint8_t  mU1;
-        uint16_t mU2;
-        uint32_t mU4;
-        uint64_t mU8;
+        bool     m_logical;
+        uint8_t  m_uint8;
+        uint16_t m_uint16;
+        uint32_t m_uint32;
+        uint64_t m_uint64;
     } mValue;
 };
 

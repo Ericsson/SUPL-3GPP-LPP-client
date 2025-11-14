@@ -327,7 +327,7 @@ void CorrectionCache::add_correction(long                                gnss_id
 
         datatrace::report_ssr_ionospheric_polynomial(
             epoch_time, satellite_id.name(), c00, c01, c10, c11,
-            cps->reference_point.x() * constant::r2d, cps->reference_point.y() * constant::r2d,
+            cps->reference_point.x() * constant::K_R2D, cps->reference_point.y() * constant::K_R2D,
             quality_indicator, quality_indiciator_class, quality_indicator_value, ssr_iod);
 #endif
 
@@ -372,7 +372,7 @@ void CorrectionCache::add_correction(long                                  gnss_
         auto element = grid_elements[static_cast<size_t>(point.array_index)];
 
         VERBOSEF("grid: %ld/%ld %+3.14f %+3.14f", point.array_index, point.absolute_index,
-                 point.position.x() * constant::r2d, point.position.y() * constant::r2d);
+                 point.position.x() * constant::K_R2D, point.position.y() * constant::K_R2D);
 
         if (element->tropospericDelayCorrection_r16) {
             auto& tropo = *element->tropospericDelayCorrection_r16;
@@ -387,8 +387,8 @@ void CorrectionCache::add_correction(long                                  gnss_
 
 #ifdef DATA_TRACING
             datatrace::report_ssr_tropospheric_grid(epoch_time, point.absolute_index,
-                                                    Float3{point.position.x() * constant::r2d,
-                                                           point.position.y() * constant::r2d,
+                                                    Float3{point.position.x() * constant::K_R2D,
+                                                           point.position.y() * constant::K_R2D,
                                                            point.position.z()},
                                                     wet, dry, ssr_iod);
 #endif
@@ -417,8 +417,8 @@ void CorrectionCache::add_correction(long                                  gnss_
 
 #ifdef DATA_TRACING
                 datatrace::report_ssr_ionospheric_grid(epoch_time, point.absolute_index,
-                                                       Float3{point.position.x() * constant::r2d,
-                                                              point.position.y() * constant::r2d,
+                                                       Float3{point.position.x() * constant::K_R2D,
+                                                              point.position.y() * constant::K_R2D,
                                                               point.position.z()},
                                                        satellite_id.name(), ionospheric, ssr_iod);
 #endif

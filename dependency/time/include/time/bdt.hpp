@@ -25,7 +25,7 @@ public:
     NODISCARD int64_t   week() const;
     NODISCARD Timestamp time_of_day() const;
     NODISCARD Timestamp time_of_week() const;
-    NODISCARD Timestamp timestamp() const { return tm; }
+    NODISCARD Timestamp timestamp() const { return mTm; }
 
     NODISCARD static Bdt now();
     NODISCARD static Bdt from_day_tod(int64_t day, double tod);
@@ -37,7 +37,7 @@ protected:
 private:
     // NOTE: Seconds since the begining of BDT (00:00:00 on January 1st, 2006). BDT is -33 seconds
     // away from TAI as of (2022-09-22) and changes with added or subtracted leap-seconds.
-    Timestamp tm;
+    Timestamp mTm;
 };
 
 }  // namespace ts

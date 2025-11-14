@@ -16,7 +16,7 @@ Decoder::Decoder(uint8_t* payload, uint32_t payload_length) NOEXCEPT
       mPayloadLength(payload_length),
       mError(false) {}
 
-uint8_t Decoder::X1() NOEXCEPT {
+uint8_t Decoder::x1() NOEXCEPT {
     if (mPayloadLength < 1) {
         mError = true;
         return 0;
@@ -28,7 +28,7 @@ uint8_t Decoder::X1() NOEXCEPT {
     }
 }
 
-uint16_t Decoder::X2() NOEXCEPT {
+uint16_t Decoder::x2() NOEXCEPT {
     if (mPayloadLength < 2) {
         mError = true;
         return 0;
@@ -40,7 +40,7 @@ uint16_t Decoder::X2() NOEXCEPT {
     }
 }
 
-uint32_t Decoder::X4() NOEXCEPT {
+uint32_t Decoder::x4() NOEXCEPT {
     if (mPayloadLength < 4) {
         mError = true;
         return 0;
@@ -54,7 +54,7 @@ uint32_t Decoder::X4() NOEXCEPT {
     }
 }
 
-uint64_t Decoder::X8() NOEXCEPT {
+uint64_t Decoder::x8() NOEXCEPT {
     if (mPayloadLength < 8) {
         mError = true;
         return 0;
@@ -72,75 +72,75 @@ uint64_t Decoder::X8() NOEXCEPT {
     }
 }
 
-uint8_t Decoder::E1() NOEXCEPT {
-    return X1();
+uint8_t Decoder::e1() NOEXCEPT {
+    return x1();
 }
 
-uint16_t Decoder::E2() NOEXCEPT {
-    return X2();
+uint16_t Decoder::e2() NOEXCEPT {
+    return x2();
 }
 
-uint32_t Decoder::E4() NOEXCEPT {
-    return X4();
+uint32_t Decoder::e4() NOEXCEPT {
+    return x4();
 }
 
-uint8_t Decoder::U1() NOEXCEPT {
-    return X1();
+uint8_t Decoder::u1() NOEXCEPT {
+    return x1();
 }
 
-uint16_t Decoder::U2() NOEXCEPT {
-    return X2();
+uint16_t Decoder::u2() NOEXCEPT {
+    return x2();
 }
 
-uint32_t Decoder::U4() NOEXCEPT {
-    return X4();
+uint32_t Decoder::u4() NOEXCEPT {
+    return x4();
 }
 
-uint64_t Decoder::U8() NOEXCEPT {
-    return X8();
+uint64_t Decoder::u8() NOEXCEPT {
+    return x8();
 }
 
-int8_t Decoder::I1() NOEXCEPT {
-    auto value = X1();
+int8_t Decoder::i1() NOEXCEPT {
+    auto value = x1();
     return *reinterpret_cast<int8_t*>(&value);
 }
 
-int16_t Decoder::I2() NOEXCEPT {
-    auto value = X2();
+int16_t Decoder::i2() NOEXCEPT {
+    auto value = x2();
     return *reinterpret_cast<int16_t*>(&value);
 }
 
-int32_t Decoder::I4() NOEXCEPT {
-    auto value = X4();
+int32_t Decoder::i4() NOEXCEPT {
+    auto value = x4();
     return *reinterpret_cast<int32_t*>(&value);
 }
 
-int64_t Decoder::I8() NOEXCEPT {
-    auto value = X8();
+int64_t Decoder::i8() NOEXCEPT {
+    auto value = x8();
     return *reinterpret_cast<int64_t*>(&value);
 }
 
-float Decoder::R4() NOEXCEPT {
-    auto  value = X4();
+float Decoder::r4() NOEXCEPT {
+    auto  value = x4();
     float result;
     static_assert(sizeof(float) == sizeof(uint32_t), "float is not 32 bits");
     std::memcpy(&result, &value, sizeof(float));
     return result;
 }
 
-double Decoder::R8() NOEXCEPT {
-    auto   value = X8();
+double Decoder::r8() NOEXCEPT {
+    auto   value = x8();
     double result;
     static_assert(sizeof(double) == sizeof(uint64_t), "double is not 64 bits");
     std::memcpy(&result, &value, sizeof(double));
     return result;
 }
 
-bool Decoder::L() NOEXCEPT {
-    return X1() != 0;
+bool Decoder::logical() NOEXCEPT {
+    return x1() != 0;
 }
 
-std::string Decoder::CH(uint32_t length) NOEXCEPT {
+std::string Decoder::ch(uint32_t length) NOEXCEPT {
     if (mPayloadLength < length) {
         mError = true;
         return "";

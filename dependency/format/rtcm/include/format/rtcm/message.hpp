@@ -37,7 +37,7 @@ protected:
 /// Unsupported or unknown message.
 class UnsupportedMessage final : public Message {
 public:
-    EXPLICIT UnsupportedMessage(DF002 type, std::vector<uint8_t> mData) NOEXCEPT;
+    EXPLICIT UnsupportedMessage(DF002 type, std::vector<uint8_t> data) NOEXCEPT;
     ~UnsupportedMessage() override = default;
 
     UnsupportedMessage(UnsupportedMessage const& other) : Message(other) {}
@@ -52,7 +52,7 @@ public:
 /// Error message. This is used to indicate that the message could not be parsed.
 class ErrorMessage final : public Message {
 public:
-    EXPLICIT ErrorMessage(DF002 type, std::vector<uint8_t> mData) NOEXCEPT;
+    EXPLICIT ErrorMessage(DF002 type, std::vector<uint8_t> data) NOEXCEPT;
     ~ErrorMessage() override = default;
 
     ErrorMessage(ErrorMessage const& other) : Message(other) {}

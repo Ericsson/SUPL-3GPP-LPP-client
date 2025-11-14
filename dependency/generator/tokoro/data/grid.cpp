@@ -52,15 +52,15 @@ static double interpolate(double a, double b, double t) {
 GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    for (auto& grid_point : mGridPoints) {
+    for (auto& grid_point : grid_points) {
         if (!grid_point.valid) {
             continue;
         }
 
         auto x0 = grid_point.position.x;
         auto y0 = grid_point.position.y;
-        auto x1 = x0 - mDeltaLatitude;
-        auto y1 = y0 + mDeltaLongitude;
+        auto x1 = x0 - delta_latitude;
+        auto y1 = y0 + delta_longitude;
         VERBOSEF("latitude:  %+18.14f >= %+18.14f >= %+18.14f", x0, llh.x * constant::RAD2DEG, x1);
         VERBOSEF("longitude: %+18.14f <= %+18.14f <= %+18.14f", y0, llh.y * constant::RAD2DEG, y1);
         if (llh.x * constant::RAD2DEG <= x0 && llh.x * constant::RAD2DEG >= x1 &&
@@ -77,7 +77,7 @@ GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
 GridPoint const* GridData::find_with_absolute_index(long absolute_index) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    for (auto& grid_point : mGridPoints) {
+    for (auto& grid_point : grid_points) {
         if (!grid_point.valid) {
             continue;
         }
@@ -103,9 +103,9 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
 
     auto top_right = find_with_absolute_index(top_left->absolute_index + 1);
     auto bottom_left =
-        find_with_absolute_index(top_left->absolute_index + (mNumberOfStepsLongitude + 1));
+        find_with_absolute_index(top_left->absolute_index + (number_of_steps_longitude + 1));
     auto bottom_right =
-        find_with_absolute_index(top_left->absolute_index + (mNumberOfStepsLongitude + 1) + 1);
+        find_with_absolute_index(top_left->absolute_index + (number_of_steps_longitude + 1) + 1);
     if (top_right == nullptr || bottom_left == nullptr || bottom_right == nullptr) {
         VERBOSEF("4 points not found");
         return false;
@@ -220,38 +220,38 @@ GridData::GridStatus GridData::tropospheric(Float3                  llh,
 
 void GridData::print_grid() {
     // Calculate the maximum length of the indices and data values
-    int maxIndexLength = 1;
-    int maxDataLength  = 1;
+    int max_index_length = 1;
+    int max_data_length  = 1;
 
     // Print the header
     std::stringstream ss;
     ss << "  ";
-    for (long x = 0; x <= mNumberOfStepsLongitude; x++) {
-        ss << std::setw(maxIndexLength) << std::hex << x << std::dec;
+    for (long x = 0; x <= number_of_steps_longitude; x++) {
+        ss << std::setw(max_index_length) << std::hex << x << std::dec;
     }
     VERBOSEF("%s", ss.str().c_str());
 
     // Print the grid
-    for (long y = 0; y <= mNumberOfStepsLatitude; y++) {
+    for (long y = 0; y <= number_of_steps_latitude; y++) {
         ss.str("");
         ss.clear();
-        ss << std::setw(maxIndexLength) << y << "|";
-        for (long x = 0; x <= mNumberOfStepsLongitude; x++) {
-            auto i          = y * (mNumberOfStepsLongitude + 1) + x;
-            auto grid_point = mGridPoints[static_cast<size_t>(i)];
+        ss << std::setw(max_index_length) << y << "|";
+        for (long x = 0; x <= number_of_steps_longitude; x++) {
+            auto i          = y * (number_of_steps_longitude + 1) + x;
+            auto grid_point = grid_points[static_cast<size_t>(i)];
 
             if (grid_point.valid) {
                 if (grid_point.tropspheric_valid) {
                     if (grid_point.tropospheric_dry > 0.0) {
-                        ss << std::setw(maxDataLength) << "+";
+                        ss << std::setw(max_data_length) << "+";
                     } else {
-                        ss << std::setw(maxDataLength) << "-";
+                        ss << std::setw(max_data_length) << "-";
                     }
                 } else {
-                    ss << std::setw(maxDataLength) << ".";
+                    ss << std::setw(max_data_length) << ".";
                 }
             } else {
-                ss << std::setw(maxDataLength) << "*";
+                ss << std::setw(max_data_length) << "*";
             }
         }
         VERBOSEF("%s", ss.str().c_str());

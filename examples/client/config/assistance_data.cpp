@@ -149,7 +149,7 @@ static args::Flag gNoAntennaHeight{
 };
 
 void setup(args::ArgumentParser& parser) {
-    static args::GlobalOptions globals{parser, gGroup};
+    static args::GlobalOptions sGlobals{parser, gGroup};
     gType.HelpChoices({"osr", "ssr"});
 
     gOsrObservations.HelpDefault("1");

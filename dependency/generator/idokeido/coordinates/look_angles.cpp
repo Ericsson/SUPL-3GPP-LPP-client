@@ -25,7 +25,7 @@ bool compute_look_angles(Vector3 const& ground_ecef, Vector3 const& enu,
         }
 
         if (look_angles.azimuth < 0) {
-            look_angles.azimuth += 2 * constant::pi;
+            look_angles.azimuth += 2 * constant::K_PI;
         }
 
         look_angles.elevation = std::asin(enu.z());
@@ -38,12 +38,12 @@ bool compute_look_angles(Vector3 const& ground_ecef, Vector3 const& enu,
         look_angles.nadir = std::acos(satellite_to_earth.dot(satellite_to_receiver));
     } else {
         look_angles.azimuth   = 0.0;
-        look_angles.elevation = constant::pi / 2.0;
+        look_angles.elevation = constant::K_PI / 2.0;
         look_angles.nadir     = 0.0;
     }
 
-    VERBOSEF("azimuth=%+.4f, elevation=%+.4f, nadir=%+.4f", look_angles.azimuth * constant::r2d,
-             look_angles.elevation * constant::r2d, look_angles.nadir * constant::r2d);
+    VERBOSEF("azimuth=%+.4f, elevation=%+.4f, nadir=%+.4f", look_angles.azimuth * constant::K_R2D,
+             look_angles.elevation * constant::K_R2D, look_angles.nadir * constant::K_R2D);
     return true;
 }
 

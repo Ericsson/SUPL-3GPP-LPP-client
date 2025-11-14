@@ -23,7 +23,7 @@ public:
 
     NODISCARD int64_t   days() const;
     NODISCARD Timestamp time_of_day() const;
-    NODISCARD Timestamp timestamp() const { return tm; }
+    NODISCARD Timestamp timestamp() const { return mTm; }
 
     // Returns the day of the week, where 0 is Sunday and 6 is Saturday.
     NODISCARD int64_t day_of_week() const { return (days() + 1) % DAYS_PER_WEEK; }
@@ -35,7 +35,7 @@ protected:
     NODISCARD Timestamp utc_timestamp() const;
 
 private:
-    Timestamp tm;
+    Timestamp mTm;
 };
 
 }  // namespace ts

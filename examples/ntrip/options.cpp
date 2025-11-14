@@ -6,156 +6,156 @@ EXTERNAL_WARNINGS_PUSH
 #include <args.hpp>
 EXTERNAL_WARNINGS_POP
 
-static args::Group arguments{"Arguments:"};
+static args::Group gArguments{"Arguments:"};
 
 //
-// NTRIP
+// gNtrip
 //
 
-static args::Group ntrip{
-    arguments,
-    "NTRIP:",
+static args::Group gNtrip{
+    gArguments,
+    "gNtrip:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::ValueFlag<std::string> ntrip_hostname{
-    ntrip, "hostname", "Hostname", {"host"}, args::Options::Single};
-static args::ValueFlag<int> ntrip_port{ntrip, "port", "Port", {"port"}, args::Options::Single};
-static args::ValueFlag<std::string> ntrip_mountpoint{
-    ntrip, "mountpoint", "Mountpoint", {"mountpoint"}, args::Options::Single};
-static args::ValueFlag<std::string> ntrip_username{
-    ntrip, "username", "Username", {"username"}, args::Options::Single};
-static args::ValueFlag<std::string> ntrip_password{
-    ntrip, "password", "Password", {"password"}, args::Options::Single};
+static args::ValueFlag<std::string> gNtripHostname{
+    gNtrip, "hostname", "Hostname", {"host"}, args::Options::Single};
+static args::ValueFlag<int> gNtripPort{gNtrip, "port", "Port", {"port"}, args::Options::Single};
+static args::ValueFlag<std::string> gNtripMountpoint{
+    gNtrip, "mountpoint", "Mountpoint", {"mountpoint"}, args::Options::Single};
+static args::ValueFlag<std::string> gNtripUsername{
+    gNtrip, "username", "Username", {"username"}, args::Options::Single};
+static args::ValueFlag<std::string> gNtripPassword{
+    gNtrip, "password", "Password", {"password"}, args::Options::Single};
 
-static args::ValueFlag<std::string> nmea_string{
-    ntrip, "nmea_string", "NMEA String", {"nmea"}, args::Options::Single};
-static args::Flag hexdump_flag{ntrip, "hexdump", "Hexdump", {"hexdump"}, args::Options::Single};
+static args::ValueFlag<std::string> gNmeaString{
+    gNtrip, "gNmeaString", "NMEA String", {"nmea"}, args::Options::Single};
+static args::Flag gHexdumpFlag{gNtrip, "hexdump", "Hexdump", {"hexdump"}, args::Options::Single};
 
 static HostOptions parse_host_options() {
-    if (!ntrip_hostname) {
-        throw args::RequiredError("ntrip_hostname");
+    if (!gNtripHostname) {
+        throw args::RequiredError("gNtripHostname");
     }
 
     std::unique_ptr<std::string> mountpoint;
-    if (ntrip_mountpoint) {
-        mountpoint = std::unique_ptr<std::string>(new std::string(ntrip_mountpoint.Get()));
+    if (gNtripMountpoint) {
+        mountpoint = std::unique_ptr<std::string>(new std::string(gNtripMountpoint.Get()));
     }
 
     uint16_t port = 2101;
-    if (ntrip_port) {
-        if (ntrip_port.Get() < 0) {
-            throw args::ValidationError("ntrip_port must be positive");
+    if (gNtripPort) {
+        if (gNtripPort.Get() < 0) {
+            throw args::ValidationError("gNtripPort must be positive");
         }
 
-        port = static_cast<uint16_t>(ntrip_port.Get());
+        port = static_cast<uint16_t>(gNtripPort.Get());
     }
 
     std::string username;
-    if (ntrip_username) {
-        username = ntrip_username.Get();
+    if (gNtripUsername) {
+        username = gNtripUsername.Get();
     }
 
     std::string password;
-    if (ntrip_password) {
-        password = ntrip_password.Get();
+    if (gNtripPassword) {
+        password = gNtripPassword.Get();
     }
 
     std::string nmea;
-    if (nmea_string) {
-        nmea = nmea_string.Get();
+    if (gNmeaString) {
+        nmea = gNmeaString.Get();
     }
 
     bool hexdump = false;
-    if (hexdump_flag) {
+    if (gHexdumpFlag) {
         hexdump = true;
     }
 
-    HostOptions hostOptions;
-    hostOptions.hostname   = ntrip_hostname.Get();
-    hostOptions.port       = port;
-    hostOptions.mountpoint = std::move(mountpoint);
-    hostOptions.username   = username;
-    hostOptions.password   = password;
-    hostOptions.nmea       = nmea;
-    hostOptions.hexdump    = hexdump;
-    return hostOptions;
+    HostOptions host_options;
+    host_options.hostname   = gNtripHostname.Get();
+    host_options.port       = port;
+    host_options.mountpoint = std::move(mountpoint);
+    host_options.username   = username;
+    host_options.password   = password;
+    host_options.nmea       = nmea;
+    host_options.hexdump    = hexdump;
+    return host_options;
 }
 
 //
 // Output
 //
 
-static args::Group output{
+static args::Group gOutput{
     "Output:",
     args::Group::Validators::AllChildGroups,
     args::Options::Global,
 };
 
-static args::Group file_output{
-    output,
+static args::Group gFileOutput{
+    gOutput,
     "File:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> file_path{
-    file_output, "file_path", "Path", {"file"}, args::Options::Single};
+static args::ValueFlag<std::string> gFilePath{
+    gFileOutput, "gFilePath", "Path", {"file"}, args::Options::Single};
 
-static args::Group serial_output{
-    output,
+static args::Group gSerialOutput{
+    gOutput,
     "Serial:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> serial_device{
-    serial_output, "device", "Device", {"serial"}, args::Options::Single};
-static args::ValueFlag<std::string> serial_baud_rate{
-    serial_output, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
-static args::ValueFlag<int> serial_data_bits{
-    serial_output, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
-static args::ValueFlag<int> serial_stop_bits{
-    serial_output, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
-static args::ValueFlag<std::string> serial_parity_bits{
-    serial_output, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
+static args::ValueFlag<std::string> gSerialDevice{
+    gSerialOutput, "device", "Device", {"serial"}, args::Options::Single};
+static args::ValueFlag<std::string> gSerialBaudRate{
+    gSerialOutput, "baud_rate", "Baud Rate", {"serial-baud"}, args::Options::Single};
+static args::ValueFlag<int> gSerialDataBits{
+    gSerialOutput, "data_bits", "Data Bits", {"serial-data"}, args::Options::Single};
+static args::ValueFlag<int> gSerialStopBits{
+    gSerialOutput, "stop_bits", "Stop Bits", {"serial-stop"}, args::Options::Single};
+static args::ValueFlag<std::string> gSerialParityBits{
+    gSerialOutput, "parity_bits", "Parity Bits", {"serial-parity"}, args::Options::Single};
 
-static args::Group tcp_output{
-    output,
+static args::Group gTcpOutput{
+    gOutput,
     "TCP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> tcp_ip_address{
-    tcp_output, "ip_address", "Host or IP Address", {"tcp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> tcp_port{
-    tcp_output, "port", "Port", {"tcp-port"}, args::Options::Single};
+static args::ValueFlag<std::string> gTcpIpAddress{
+    gTcpOutput, "ip_address", "Host or IP Address", {"tcp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gTcpPort{
+    gTcpOutput, "port", "Port", {"tcp-port"}, args::Options::Single};
 
-static args::Group udp_output{
-    output,
+static args::Group gUdpOutput{
+    gOutput,
     "UDP:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::ValueFlag<std::string> udp_ip_address{
-    udp_output, "ip_address", "Host or IP Address", {"udp"}, args::Options::Single};
-static args::ValueFlag<uint16_t> udp_port{
-    udp_output, "port", "Port", {"udp-port"}, args::Options::Single};
+static args::ValueFlag<std::string> gUdpIpAddress{
+    gUdpOutput, "ip_address", "Host or IP Address", {"udp"}, args::Options::Single};
+static args::ValueFlag<uint16_t> gUdpPort{
+    gUdpOutput, "port", "Port", {"udp-port"}, args::Options::Single};
 
-static args::Group stdout_output{
-    output,
+static args::Group gStdoutOutput{
+    gOutput,
     "Stdout:",
     args::Group::Validators::AllOrNone,
     args::Options::Global,
 };
-static args::Flag stdout_output_flag{
-    stdout_output, "stdout", "Stdout", {"stdout"}, args::Options::Single};
+static args::Flag gStdoutOutputFlag{
+    gStdoutOutput, "stdout", "Stdout", {"stdout"}, args::Options::Single};
 
 static io::BaudRate parse_baudrate(std::string const& str) {
     long baud_rate = 0;
     try {
         baud_rate = std::stol(str);
     } catch (...) {
-        throw args::ParseError("serial_baud_rate must be an integer, got `" + str + "'");
+        throw args::ParseError("gSerialBaudRate must be an integer, got `" + str + "'");
     }
 
     if (baud_rate == 50) return io::BaudRate::BR50;
@@ -188,30 +188,30 @@ static io::BaudRate parse_baudrate(std::string const& str) {
     if (baud_rate == 3000000) return io::BaudRate::BR3000000;
     if (baud_rate == 3500000) return io::BaudRate::BR3500000;
     if (baud_rate == 4000000) return io::BaudRate::BR4000000;
-    throw args::ParseError("serial_baud_rate must be a valid baud rate, got `" + str + "'");
+    throw args::ParseError("gSerialBaudRate must be a valid baud rate, got `" + str + "'");
 }
 
 static OutputOptions parse_output_options() {
     OutputOptions output_options{};
 
-    if (file_path) {
-        auto iout = new io::FileOutput(file_path.Get(), true, false, true);
+    if (gFilePath) {
+        auto iout = new io::FileOutput(gFilePath.Get(), true, false, true);
         output_options.outputs.emplace_back(iout);
     }
 
-    if (serial_device || serial_baud_rate) {
-        if (!serial_device) {
-            throw args::RequiredError("serial_device");
+    if (gSerialDevice || gSerialBaudRate) {
+        if (!gSerialDevice) {
+            throw args::RequiredError("gSerialDevice");
         }
 
         auto baud_rate = io::BaudRate::BR115200;
-        if (serial_baud_rate) {
-            baud_rate = parse_baudrate(serial_baud_rate.Get());
+        if (gSerialBaudRate) {
+            baud_rate = parse_baudrate(gSerialBaudRate.Get());
         }
 
         auto data_bits = io::DataBits::EIGHT;
-        if (serial_data_bits) {
-            switch (serial_data_bits.Get()) {
+        if (gSerialDataBits) {
+            switch (gSerialDataBits.Get()) {
             case 5: data_bits = io::DataBits::FIVE; break;
             case 6: data_bits = io::DataBits::SIX; break;
             case 7: data_bits = io::DataBits::SEVEN; break;
@@ -221,8 +221,8 @@ static OutputOptions parse_output_options() {
         }
 
         auto stop_bits = io::StopBits::ONE;
-        if (serial_stop_bits) {
-            switch (serial_stop_bits.Get()) {
+        if (gSerialStopBits) {
+            switch (gSerialStopBits.Get()) {
             case 1: stop_bits = io::StopBits::ONE; break;
             case 2: stop_bits = io::StopBits::TWO; break;
             default: throw args::ValidationError("Invalid stop bits");
@@ -230,12 +230,12 @@ static OutputOptions parse_output_options() {
         }
 
         auto parity_bit = io::ParityBit::NONE;
-        if (serial_parity_bits) {
-            if (serial_parity_bits.Get() == "none") {
+        if (gSerialParityBits) {
+            if (gSerialParityBits.Get() == "none") {
                 parity_bit = io::ParityBit::NONE;
-            } else if (serial_parity_bits.Get() == "odd") {
+            } else if (gSerialParityBits.Get() == "odd") {
                 parity_bit = io::ParityBit::ODD;
-            } else if (serial_parity_bits.Get() == "even") {
+            } else if (gSerialParityBits.Get() == "even") {
                 parity_bit = io::ParityBit::EVEN;
             } else {
                 throw args::ValidationError("Invalid parity bits");
@@ -243,39 +243,39 @@ static OutputOptions parse_output_options() {
         }
 
         auto iout =
-            new io::SerialOutput(serial_device.Get(), baud_rate, data_bits, stop_bits, parity_bit);
+            new io::SerialOutput(gSerialDevice.Get(), baud_rate, data_bits, stop_bits, parity_bit);
         output_options.outputs.emplace_back(iout);
     }
 
-    if (tcp_ip_address || tcp_port) {
-        if (!tcp_ip_address) {
-            throw args::RequiredError("tcp_ip_address");
+    if (gTcpIpAddress || gTcpPort) {
+        if (!gTcpIpAddress) {
+            throw args::RequiredError("gTcpIpAddress");
         }
 
-        if (!tcp_port) {
-            throw args::RequiredError("tcp_port");
+        if (!gTcpPort) {
+            throw args::RequiredError("gTcpPort");
         }
 
-        auto iout = new io::TcpClientOutput(tcp_ip_address.Get(),
-                                            static_cast<uint16_t>(tcp_port.Get()), true);
+        auto iout = new io::TcpClientOutput(gTcpIpAddress.Get(),
+                                            static_cast<uint16_t>(gTcpPort.Get()), true);
         output_options.outputs.emplace_back(iout);
     }
 
-    if (udp_ip_address || udp_port) {
-        if (!udp_ip_address) {
-            throw args::RequiredError("udp_ip_address");
+    if (gUdpIpAddress || gUdpPort) {
+        if (!gUdpIpAddress) {
+            throw args::RequiredError("gUdpIpAddress");
         }
 
-        if (!udp_port) {
-            throw args::RequiredError("udp_port");
+        if (!gUdpPort) {
+            throw args::RequiredError("gUdpPort");
         }
 
         auto iout =
-            new io::UdpClientOutput(udp_ip_address.Get(), static_cast<uint16_t>(udp_port.Get()));
+            new io::UdpClientOutput(gUdpIpAddress.Get(), static_cast<uint16_t>(gUdpPort.Get()));
         output_options.outputs.emplace_back(iout);
     }
 
-    if (stdout_output_flag) {
+    if (gStdoutOutputFlag) {
         auto iout = new io::StdoutOutput();
         output_options.outputs.emplace_back(iout);
     }
@@ -284,40 +284,40 @@ static OutputOptions parse_output_options() {
 }
 
 Options parse_configuration(int argc, char** argv) {
-    args::ArgumentParser parser("NTRIP Example (" CLIENT_VERSION
+    args::ArgumentParser parser("gNtrip Example (" CLIENT_VERSION
                                 ") - This sample code illustrates the process of utilizing the "
-                                "NTRIP client to establish a communication link with a caster and "
+                                "gNtrip client to establish a communication link with a caster and "
                                 "transmit the data to a serial port, file, or stdout.");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
 
-    ntrip_port.HelpDefault("2101");
+    gNtripPort.HelpDefault("2101");
 
-    serial_baud_rate.HelpDefault("115200");
+    gSerialBaudRate.HelpDefault("115200");
 
-    serial_data_bits.HelpDefault("8");
-    serial_data_bits.HelpChoices({"5", "6", "7", "8"});
+    gSerialDataBits.HelpDefault("8");
+    gSerialDataBits.HelpChoices({"5", "6", "7", "8"});
 
-    serial_stop_bits.HelpDefault("1");
-    serial_stop_bits.HelpChoices({"1", "2"});
+    gSerialStopBits.HelpDefault("1");
+    gSerialStopBits.HelpChoices({"1", "2"});
 
-    serial_parity_bits.HelpDefault("none");
-    serial_parity_bits.HelpChoices({
+    gSerialParityBits.HelpDefault("none");
+    gSerialParityBits.HelpChoices({
         "none",
         "odd",
         "even",
     });
 
     // Globals
-    args::GlobalOptions ntrip_globals{parser, ntrip};
-    args::GlobalOptions output_globals{parser, output};
+    args::GlobalOptions ntrip_globals{parser, gNtrip};
+    args::GlobalOptions output_globals{parser, gOutput};
 
     try {
         parser.ParseCLI(argc, argv);
 
         if (version) {
-            std::cout << "NTRIP Example " << CLIENT_VERSION << std::endl;
+            std::cout << "gNtrip Example " << CLIENT_VERSION << std::endl;
             std::cout << "  Commit: " << GIT_COMMIT_HASH << (GIT_DIRTY ? "-dirty" : "") << " ("
                       << GIT_BRANCH << ")" << std::endl;
             std::cout << "  Built: " << BUILD_DATE << " [" << BUILD_TYPE << "]" << std::endl;
