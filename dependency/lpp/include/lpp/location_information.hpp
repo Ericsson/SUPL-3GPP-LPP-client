@@ -15,13 +15,13 @@ struct Optional {
     Optional(T new_value) : value(new_value), valid{true} {}
 
     Optional(Optional const& other) : value(other.value), valid{other.valid} {}
-    Optional(Optional&& other) : value(std::move(other.value)), valid{other.valid} {}
+    Optional(Optional&& other) NOEXCEPT : value(std::move(other.value)), valid{other.valid} {}
     Optional& operator=(Optional const& other) {
         value = other.value;
         valid = other.valid;
         return *this;
     }
-    Optional& operator=(Optional&& other) {
+    Optional& operator=(Optional&& other) NOEXCEPT {
         value = std::move(other.value);
         valid = other.valid;
         return *this;
@@ -31,10 +31,8 @@ struct Optional {
     NODISCARD T const& const_value() const { return value; }
 
     NODISCARD T value_or(T const& default_value) const {
-        if (valid)
-            return value;
-        else
-            return default_value;
+        if (valid) return value;
+        return default_value;
     }
 
     static Optional<T> invalid() { return Optional<T>{T{}, false}; }

@@ -21,8 +21,11 @@ Checks: >
   -readability-function-cognitive-complexity,
   -bugprone-easily-swappable-parameters,
   -bugprone-unhandled-exception-at-new,
+  -bugprone-forward-declaration-namespace,
   -readability-implicit-bool-conversion,
-  -readability-braces-around-statements
+  -readability-uppercase-literal-suffix,
+  -readability-braces-around-statements,
+  -readability-avoid-return-with-void-value
 
 WarningsAsErrors: ''
 HeaderFilterRegex: '^.*/dependency/.*|^.*/examples/.*'

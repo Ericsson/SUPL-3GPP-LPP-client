@@ -30,6 +30,7 @@ public:
           mGenerationId(other.mGenerationId), mInitiator(other.mInitiator) {}
 
     TransactionHandle& operator=(TransactionHandle const& other) {
+        if (this == &other) return *this;
         mSession       = other.mSession;
         mTransactionId = other.mTransactionId;
         mGenerationId  = other.mGenerationId;
@@ -37,14 +38,14 @@ public:
         return *this;
     }
 
-    TransactionHandle(TransactionHandle&& other) {
+    TransactionHandle(TransactionHandle&& other) NOEXCEPT {
         std::swap(mSession, other.mSession);
         std::swap(mTransactionId, other.mTransactionId);
         std::swap(mGenerationId, other.mGenerationId);
         std::swap(mInitiator, other.mInitiator);
     }
 
-    TransactionHandle& operator=(TransactionHandle&& other) {
+    TransactionHandle& operator=(TransactionHandle&& other) NOEXCEPT {
         std::swap(mSession, other.mSession);
         std::swap(mTransactionId, other.mTransactionId);
         std::swap(mGenerationId, other.mGenerationId);

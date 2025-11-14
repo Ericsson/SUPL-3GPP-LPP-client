@@ -39,8 +39,6 @@ inline void create_directories_compat(const ::std::string& path) {
 #ifndef HAS_CREATE_DIRECTORIES
 #include <errno.h>
 #include <string.h>
-#include <string>
-#include <sys/stat.h>
 #include <unistd.h>
 #define HAS_CREATE_DIRECTORIES 1
 inline void create_directories_compat(const ::std::string& path) {

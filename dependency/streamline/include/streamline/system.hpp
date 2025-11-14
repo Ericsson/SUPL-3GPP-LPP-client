@@ -27,7 +27,7 @@ public:
     System(System&&)                 = delete;
     System& operator=(System const&) = delete;
 
-    System& operator=(System&& other) {
+    System& operator=(System&& other) NOEXCEPT {
         if (this != &other) {
             cancel();
             mScheduler       = other.mScheduler;
@@ -71,9 +71,8 @@ public:
             auto inspector = new Inspector(std::forward<Args>(args)...);
             queue->add_inspector(std::unique_ptr<Inspector>(inspector));
             return inspector;
-        } else {
-            return nullptr;
         }
+        return nullptr;
     }
 
     template <typename DataType>
@@ -87,7 +86,7 @@ public:
 
         auto queue = get_queue<DataType>();
         if (queue) {
-            queue->push(std::move(data), tag);
+            queue->push(std::forward<DataType>(data), tag);
         }
     }
 

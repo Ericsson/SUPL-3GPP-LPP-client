@@ -33,7 +33,6 @@ protected:
 
     virtual void on_event_name_changed() NOEXCEPT {}
 
-protected:
     std::string mEventName;
 
 private:

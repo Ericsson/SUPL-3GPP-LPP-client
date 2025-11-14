@@ -133,7 +133,6 @@ private:
         return id;
     }
 
-private:
     uint32_t mGenerationIndex;
     uint16_t mNextAreaId;
 
