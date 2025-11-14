@@ -59,7 +59,7 @@ std::unique_ptr<Message> Rtcm1046::parse(std::vector<uint8_t> data) {
     if (data.size() * 8 < 8 + 16 + 504 + 24) {
         ERRORF("RTCM 1046 message without enough data (requires %d bits, received %d bits)",
                8 + 16 + 504 + 24, data.size() * 8);
-        return std::make_unique<ErrorMessage>(1046, std::move(data));
+        return std::make_unique<ErrorMessage>(DF002(1046), std::move(data));
     }
 
     if (data.size() * 8 > 8 + 16 + 504 + 24) {
@@ -80,7 +80,7 @@ std::unique_ptr<Message> Rtcm1046::parse(std::vector<uint8_t> data) {
     if (type != 1046) {
         ERRORF("RTCM 1046 message missmatched message number. should be '1046', was '%4d'",
                type.value());
-        return std::make_unique<ErrorMessage>(1046, std::move(data));
+        return std::make_unique<ErrorMessage>(DF002(1046), std::move(data));
     }
 
     auto m   = new Rtcm1046(1046, data);

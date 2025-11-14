@@ -107,7 +107,7 @@ Arguments parse_arguments(int argc, char** argv) {
 }
 #endif
 
-int main(int argc, char** argv) {
+int main(int /*argc*/, char** /*argv*/) {
     loglet::set_level(loglet::Level::Verbose);
 
     double epoch = 2024.0;
