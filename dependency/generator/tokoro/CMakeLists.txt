@@ -16,6 +16,7 @@ add_library(dependency_generator_tokoro STATIC
     "models/astronomical_arguments.cpp"
     "models/nutation.cpp"
     "models/sun_moon.cpp"
+    "models/gpt.cpp"
     
     "coordinates/coordinate.cpp"
     "coordinates/reference_ellipsoid.cpp"

@@ -1,7 +1,10 @@
 #include "supl/message.hpp"
+#include <external_warnings.hpp>
 
+EXTERNAL_WARNINGS_PUSH
 #include <OCTET_STRING.h>
 #include <ULP-PDU.h>
+EXTERNAL_WARNINGS_POP
 
 namespace supl {
 

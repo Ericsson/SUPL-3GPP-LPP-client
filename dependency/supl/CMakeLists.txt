@@ -6,6 +6,7 @@ add_library(dependency_supl
     "encode.cpp"
     "decode.cpp"
     "print.cpp"
+    "message.cpp"
 )
 add_library(dependency::supl ALIAS dependency_supl)
 target_include_directories(dependency_supl PUBLIC "include/")
