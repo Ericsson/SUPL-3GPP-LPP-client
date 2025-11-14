@@ -55,3 +55,13 @@ public:
 
 }  // namespace ubx
 }  // namespace format
+
+namespace streamline {
+template <typename T>
+struct TypeName;
+
+template <>
+struct TypeName<std::unique_ptr<format::ubx::Message>> {
+    static char const* name() { return "ubx::Message"; }
+};
+}  // namespace streamline

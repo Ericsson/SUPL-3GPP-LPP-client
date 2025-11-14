@@ -77,6 +77,11 @@ struct Clone<std::unique_ptr<PossibMessage>> {
         __builtin_unreachable();
     }
 };
+
+template <>
+struct TypeName<std::unique_ptr<PossibMessage>> {
+    static char const* name() { return "PossibMessage"; }
+};
 }  // namespace streamline
 
 class PossibOutput : public streamline::Inspector<std::unique_ptr<PossibMessage>> {

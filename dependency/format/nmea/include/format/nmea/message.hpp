@@ -75,3 +75,13 @@ public:
 
 }  // namespace nmea
 }  // namespace format
+
+namespace streamline {
+template <typename T>
+struct TypeName;
+
+template <>
+struct TypeName<std::unique_ptr<format::nmea::Message>> {
+    static char const* name() { return "nmea::Message"; }
+};
+}  // namespace streamline

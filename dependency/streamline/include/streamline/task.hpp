@@ -16,6 +16,11 @@ LOGLET_MODULE_FORWARD_REF(streamline);
 namespace streamline {
 
 template <typename T>
+struct TypeName {
+    static char const* name() { return typeid(T).name(); }
+};
+
+template <typename T>
 struct Clone {
     T operator()(T& data) { return data; }
 };
@@ -40,7 +45,7 @@ public:
     };
 
     QueueTask(System& system) : mSystem(system), mQueue() {
-        mQueueName   = std::string{"streamline-queue/"} + typeid(T).name();
+        mQueueName   = std::string{"streamline/"} + TypeName<T>::name();
         mEvent.name  = mQueueName.c_str();
         mEvent.event = [this](struct epoll_event* event) {
             this->event(event);

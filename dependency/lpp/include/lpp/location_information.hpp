@@ -413,3 +413,18 @@ struct PeriodicLocationInformationDeliveryDescription {
 };
 
 }  // namespace lpp
+
+namespace streamline {
+template <typename T>
+struct TypeName;
+
+template <>
+struct TypeName<lpp::LocationInformation> {
+    static char const* name() { return "lpp::LocationInformation"; }
+};
+
+template <>
+struct TypeName<lpp::HaGnssMetrics> {
+    static char const* name() { return "lpp::HaGnssMetrics"; }
+};
+}  // namespace streamline

@@ -31,3 +31,13 @@ private:
 };
 }  // namespace ctrl
 }  // namespace format
+
+namespace streamline {
+template <typename T>
+struct TypeName;
+
+template <>
+struct TypeName<std::unique_ptr<format::ctrl::Message>> {
+    static char const* name() { return "ctrl::Message"; }
+};
+}  // namespace streamline

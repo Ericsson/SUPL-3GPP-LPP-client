@@ -66,3 +66,13 @@ public:
 
 }  // namespace rtcm
 }  // namespace format
+
+namespace streamline {
+template <typename T>
+struct TypeName;
+
+template <>
+struct TypeName<std::unique_ptr<format::rtcm::Message>> {
+    static char const* name() { return "rtcm::Message"; }
+};
+}  // namespace streamline

@@ -12,6 +12,11 @@ template <>
 struct Clone<lpp::Message> {
     lpp::Message operator()(lpp::Message const&) { __builtin_unreachable(); }
 };
+
+template <>
+struct TypeName<lpp::Message> {
+    static char const* name() { return "lpp::Message"; }
+};
 }  // namespace streamline
 
 class LppXerOutput : public streamline::Inspector<lpp::Message> {
