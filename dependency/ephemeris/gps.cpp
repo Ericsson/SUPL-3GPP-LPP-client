@@ -11,9 +11,9 @@ LOGLET_MODULE(eph);
 
 namespace ephemeris {
 
-CONSTEXPR static double CONSTANT_MU              = 3.986005e14;
-CONSTEXPR static double CONSTANT_OMEGA_EARTH_DOT = 7.2921151467e-5;
-CONSTEXPR static double CONSTANT_C               = 2.99792458e8;
+CONSTEXPR static double GPS_CONSTANT_MU              = 3.986005e14;
+CONSTEXPR static double GPS_CONSTANT_OMEGA_EARTH_DOT = 7.2921151467e-5;
+CONSTEXPR static double GPS_CONSTANT_C               = 2.99792458e8;
 
 bool GpsEphemeris::is_valid(ts::Gps const& time) const NOEXCEPT {
     if ((time.week() % 1024) != (week_number % 1024)) {
@@ -76,7 +76,7 @@ double GpsEphemeris::calculate_eccentric_anomaly(double t_k) const NOEXCEPT {
     VSCOPE_FUNCTIONF("%f", t_k);
 
     // calculate the mean anomaly
-    auto n0  = std::sqrt(CONSTANT_MU / std::pow(a, 3));
+    auto n0  = std::sqrt(GPS_CONSTANT_MU / std::pow(a, 3));
     auto n   = n0 + delta_n;
     auto m_k = m0 + n * t_k;
     VERBOSEF("a: %f", a);
@@ -106,7 +106,7 @@ double GpsEphemeris::calculate_eccentric_anomaly(double t_k) const NOEXCEPT {
 }
 
 double GpsEphemeris::calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT {
-    auto n0 = std::sqrt(CONSTANT_MU / (a * a * a));
+    auto n0 = std::sqrt(GPS_CONSTANT_MU / (a * a * a));
     auto n  = n0 + delta_n;
     return n / (1 - e * std::cos(e_k));
 }
@@ -150,16 +150,17 @@ double GpsEphemeris::calculate_relativistic_correction(Float3 const& position,
     auto r_v = dot_product(position, velocity);
     VERBOSEF("r_v: %+.14f", r_v);
 
-    auto t_r = -2.0 * r_v / (CONSTANT_C * CONSTANT_C);
-    VERBOSEF("t_r: %+.14f (%+.14fm)", t_r, t_r * CONSTANT_C);
+    auto t_r = -2.0 * r_v / (GPS_CONSTANT_C * GPS_CONSTANT_C);
+    VERBOSEF("t_r: %+.14f (%+.14fm)", t_r, t_r * GPS_CONSTANT_C);
     return t_r;
 }
 
 double GpsEphemeris::calculate_relativistic_correction_idc(double e_k) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    auto e_sin   = std::sin(e_k);
-    auto delta_t = -2.0 * e_sin * e * std::sqrt(a * CONSTANT_MU) / (CONSTANT_C * CONSTANT_C);
+    auto e_sin = std::sin(e_k);
+    auto delta_t =
+        -2.0 * e_sin * e * std::sqrt(a * GPS_CONSTANT_MU) / (GPS_CONSTANT_C * GPS_CONSTANT_C);
     VERBOSEF("delta_t: %+.14f", delta_t);
 
     return delta_t;
@@ -240,9 +241,9 @@ EphemerisResult GpsEphemeris::compute(ts::Gps const& time) const NOEXCEPT {
     VERBOSEF("dot_y_k_prime: %f", dot_y_k_prime);
 
     // calculate corrected longitude of ascending node
-    auto omega_k =
-        omega0 + (omega_dot - CONSTANT_OMEGA_EARTH_DOT) * t_k - CONSTANT_OMEGA_EARTH_DOT * toe;
-    auto dot_omega_k = omega_dot - CONSTANT_OMEGA_EARTH_DOT;
+    auto omega_k = omega0 + (omega_dot - GPS_CONSTANT_OMEGA_EARTH_DOT) * t_k -
+                   GPS_CONSTANT_OMEGA_EARTH_DOT * toe;
+    auto dot_omega_k = omega_dot - GPS_CONSTANT_OMEGA_EARTH_DOT;
     VERBOSEF("omega_k: %f", omega_k);
     VERBOSEF("dot_omega_k: %f", dot_omega_k);
 

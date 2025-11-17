@@ -11,9 +11,9 @@ LOGLET_MODULE2(eph, bds);
 
 namespace ephemeris {
 
-CONSTEXPR static double CONSTANT_MU              = 3.986004418e14;
-CONSTEXPR static double CONSTANT_OMEGA_EARTH_DOT = 7.2921150e-5;
-CONSTEXPR static double CONSTANT_C               = 2.99792458e8;
+CONSTEXPR static double BDS_CONSTANT_MU              = 3.986004418e14;
+CONSTEXPR static double BDS_CONSTANT_OMEGA_EARTH_DOT = 7.2921150e-5;
+CONSTEXPR static double BDS_CONSTANT_C               = 2.99792458e8;
 
 bool BdsEphemeris::is_valid(ts::Bdt const& time) const NOEXCEPT {
     if ((time.week() % 8192) != (week_number % 8192)) {
@@ -77,7 +77,7 @@ double BdsEphemeris::calculate_eccentric_anomaly(double t_k) const NOEXCEPT {
     VSCOPE_FUNCTIONF("%f", t_k);
 
     // calculate the mean anomaly
-    auto n0  = std::sqrt(CONSTANT_MU / std::pow(a, 3));
+    auto n0  = std::sqrt(BDS_CONSTANT_MU / std::pow(a, 3));
     auto n   = n0 + delta_n;
     auto m_k = m0 + n * t_k;
     VERBOSEF("a: %f", a);
@@ -107,7 +107,7 @@ double BdsEphemeris::calculate_eccentric_anomaly(double t_k) const NOEXCEPT {
 }
 
 double BdsEphemeris::calculate_eccentric_anomaly_rate(double e_k) const NOEXCEPT {
-    auto n0 = std::sqrt(CONSTANT_MU / (a * a * a));
+    auto n0 = std::sqrt(BDS_CONSTANT_MU / (a * a * a));
     auto n  = n0 + delta_n;
     return n / (1 - e * std::cos(e_k));
 }
@@ -148,16 +148,17 @@ double BdsEphemeris::calculate_relativistic_correction(Float3 const& position,
     auto r_v = dot_product(position, velocity);
     VERBOSEF("r_v: %+.14f", r_v);
 
-    auto t_r = -2.0 * r_v / (CONSTANT_C * CONSTANT_C);
-    VERBOSEF("t_r: %+.14f (%+.14fm)", t_r, t_r * CONSTANT_C);
+    auto t_r = -2.0 * r_v / (BDS_CONSTANT_C * BDS_CONSTANT_C);
+    VERBOSEF("t_r: %+.14f (%+.14fm)", t_r, t_r * BDS_CONSTANT_C);
     return t_r;
 }
 
 double BdsEphemeris::calculate_relativistic_correction_idc(double e_k) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    auto e_sin   = std::sin(e_k);
-    auto delta_t = -2.0 * e_sin * e * std::sqrt(a * CONSTANT_MU) / (CONSTANT_C * CONSTANT_C);
+    auto e_sin = std::sin(e_k);
+    auto delta_t =
+        -2.0 * e_sin * e * std::sqrt(a * BDS_CONSTANT_MU) / (BDS_CONSTANT_C * BDS_CONSTANT_C);
     VERBOSEF("delta_t: %+.14f", delta_t);
 
     return delta_t;
@@ -235,9 +236,9 @@ EphemerisResult BdsEphemeris::compute(ts::Bdt const& time) const NOEXCEPT {
     VERBOSEF("dot_y_k_prime: %f", dot_y_k_prime);
 
     // calculate corrected longitude of ascending node
-    auto omega_k =
-        omega0 + (omega_dot - CONSTANT_OMEGA_EARTH_DOT) * t_k - CONSTANT_OMEGA_EARTH_DOT * toe;
-    auto dot_omega_k = omega_dot - CONSTANT_OMEGA_EARTH_DOT;
+    auto omega_k = omega0 + (omega_dot - BDS_CONSTANT_OMEGA_EARTH_DOT) * t_k -
+                   BDS_CONSTANT_OMEGA_EARTH_DOT * toe;
+    auto dot_omega_k = omega_dot - BDS_CONSTANT_OMEGA_EARTH_DOT;
     VERBOSEF("omega_k: %f", omega_k);
     VERBOSEF("dot_omega_k: %f", dot_omega_k);
 

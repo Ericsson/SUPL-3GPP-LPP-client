@@ -85,9 +85,9 @@ Timestamp Gps::difference(Gps const& other) const {
     return mTm - other.mTm;
 }
 
-constexpr static int64_t MONTH_PER_YEAR = 12;
-constexpr static int64_t DAYS_PER_4YEAR = DAYS_PER_YEAR * 4 + 1 /* leap day */;
-constexpr static std::array<int64_t, 4 * MONTH_PER_YEAR> MONTH_DAYS = {
+constexpr static int64_t GPS_MONTH_PER_YEAR = 12;
+constexpr static int64_t GPS_DAYS_PER_4YEAR = DAYS_PER_YEAR * 4 + 1 /* leap day */;
+constexpr static std::array<int64_t, 4 * GPS_MONTH_PER_YEAR> GPS_MONTH_DAYS = {
     31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,  //
     31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,  //
     31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31,  //
@@ -102,20 +102,20 @@ static TimePoint timepoint_from_timestamp(Timestamp time) {
     auto days = time.seconds() / DAY_IN_SECONDS;
 
     auto month = 0u;
-    auto day   = days % DAYS_PER_4YEAR;
-    for (; month < MONTH_DAYS.size(); month++) {
-        if (day < MONTH_DAYS[month]) {
+    auto day   = days % GPS_DAYS_PER_4YEAR;
+    for (; month < GPS_MONTH_DAYS.size(); month++) {
+        if (day < GPS_MONTH_DAYS[month]) {
             break;
         }
 
-        day -= MONTH_DAYS[month];
+        day -= GPS_MONTH_DAYS[month];
     }
 
     auto year = GPS_START_YEAR;
-    year += 4 * (days / DAYS_PER_4YEAR);
-    year += month / MONTH_PER_YEAR;
+    year += 4 * (days / GPS_DAYS_PER_4YEAR);
+    year += month / GPS_MONTH_PER_YEAR;
 
-    month %= MONTH_PER_YEAR;
+    month %= GPS_MONTH_PER_YEAR;
 
     auto tod     = time.seconds() - days * DAY_IN_SECONDS;
     auto hour    = tod / HOUR_IN_SECONDS;
@@ -172,7 +172,7 @@ Gps Gps::from_ymdhms(int64_t year, int64_t month, int64_t day, int64_t hour, int
 }
 
 // NOTE: The day each month of the year starts with.
-constexpr static std::array<int64_t, 12> DAY_OF_YEAR = {
+constexpr static std::array<int64_t, 12> GPS_DAY_OF_YEAR = {
     1, 32, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335,
 };
 
@@ -197,7 +197,7 @@ int64_t Gps::days_from_ymd(int64_t year, int64_t month, int64_t day) {
         }
     }
 
-    days += DAY_OF_YEAR.at(static_cast<size_t>(month - 1)) - 1;
+    days += GPS_DAY_OF_YEAR.at(static_cast<size_t>(month - 1)) - 1;
     days += day;
     days += -1;
     days += (year % 4 == 0 && month >= 3 ? 1 : 0);
