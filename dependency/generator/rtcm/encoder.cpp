@@ -1,7 +1,11 @@
 #include "encoder.hpp"
+
 #include <cinttypes>
 #include <cstdio>
 #include "crc_24q.hpp"
+
+namespace generator {
+namespace rtcm {
 
 void Encoder::append_bit(uint8_t bit) {
     if (mBitIndex == 0) {
@@ -80,3 +84,6 @@ void Encoder::checksum() {
 std::vector<uint8_t> Encoder::buffer() {
     return std::move(mBuffer);
 }
+
+}  // namespace rtcm
+}  // namespace generator

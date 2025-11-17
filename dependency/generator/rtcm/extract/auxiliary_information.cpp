@@ -8,9 +8,9 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-ID-GLONASS.h>
 EXTERNAL_WARNINGS_POP
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
-namespace decode {
 static SatelliteId satellite_id(GenericGnssId                     gnss_id,
                                 GNSS_ID_GLONASS_SatElement const& src_satellite) {
     auto gnss = SatelliteId::Gnss::UNKNOWN;
@@ -25,14 +25,14 @@ static SatelliteId satellite_id(GenericGnssId                     gnss_id,
     return SatelliteId::from_lpp(gnss, id);
 }
 
-static Maybe<int32_t> frequency_channel(GNSS_ID_GLONASS_SatElement const& src_satellite) {
+static Maybe<int32_t>
+frequency_channel_from_satellite(GNSS_ID_GLONASS_SatElement const& src_satellite) {
     if (src_satellite.channelNumber) {
         return static_cast<int32_t>(*src_satellite.channelNumber);
     } else {
         return Maybe<int32_t>();
     }
 }
-}  // namespace decode
 
 static std::unique_ptr<AuxiliaryInformation>
 extract_glonass_auxiliary_information(const GNSS_ID_GLONASS& src_glonass) {
@@ -44,8 +44,8 @@ extract_glonass_auxiliary_information(const GNSS_ID_GLONASS& src_glonass) {
         if (!list.array[i]) continue;
         auto& element = *list.array[i];
 
-        auto id                = decode::satellite_id(GenericGnssId::GLONASS, element);
-        auto frequency_channel = decode::frequency_channel(element);
+        auto id                = satellite_id(GenericGnssId::GLONASS, element);
+        auto frequency_channel = frequency_channel_from_satellite(element);
 
         AuxiliaryInformation::Satellite satellite{};
         satellite.id                 = id;
@@ -67,3 +67,6 @@ extern void extract_auxiliary_information(RtkData& data, GNSS_AuxiliaryInformati
     case GNSS_AuxiliaryInformation_PR_NOTHING: break;
     }
 }
+
+}  // namespace rtcm
+}  // namespace generator

@@ -4,7 +4,8 @@
 
 #include <cstdio>
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
 static void df02x(Encoder& encoder, double value) {
     auto integer_value = static_cast<int64_t>(ROUND(value / 0.0001));
@@ -28,8 +29,6 @@ static void df028(Encoder& encoder, double value) {
     encoder.u16(16, static_cast<uint16_t>(integer_value));
 }
 
-namespace generator {
-namespace rtcm {
 Message generate_1005(ReferenceStation const& reference_station, bool gps_indicator,
                       bool glonass_indicator, bool galileo_indicator) {
     uint16_t message_id = 1005U;

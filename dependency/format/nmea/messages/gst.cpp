@@ -10,31 +10,6 @@ LOGLET_MODULE3(format, nmea, gst);
 namespace format {
 namespace nmea {
 
-static bool parse_double(std::string const& token, double& value) {
-    FUNCTION_SCOPEF("'%s'", token.c_str());
-    try {
-        value = std::stod(token);
-        VERBOSEF("parsed: %.6f", value);
-        return true;
-    } catch (...) {
-        VERBOSEF("exception parsing double: '%s'", token.c_str());
-        return false;
-    }
-}
-
-static bool parse_double_opt(std::string const& token, double& value) {
-    FUNCTION_SCOPEF("'%s'", token.c_str());
-    try {
-        value = std::stod(token);
-        VERBOSEF("parsed: %.6f", value);
-        return true;
-    } catch (...) {
-        VERBOSEF("failed to parse, using default: '%s'", token.c_str());
-        value = 0;
-        return true;
-    }
-}
-
 GstMessage::GstMessage(std::string prefix, std::string payload, std::string checksum) NOEXCEPT
     : Message{prefix, payload, checksum},
       mRmsValue{0.0},

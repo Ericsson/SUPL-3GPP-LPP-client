@@ -8,9 +8,9 @@ EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
-namespace decode {
 static uint32_t reference_station_id(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     return static_cast<uint32_t>(src_bias_info.referenceStationID_r15.referenceStationID_r15);
 }
@@ -62,19 +62,21 @@ static bool indicator(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     auto indicator = helper::BitString::from(&src_bias_info.cpbIndicator_r15);
     return indicator->get_bit(0) != 0;
 }
-}  // namespace decode
 
 extern void extract_bias_information(RtkData&                           data,
                                      GLO_RTK_BiasInformation_r15 const& src_bias_info) {
     auto  dst_bias_info            = std::unique_ptr<BiasInformation>(new BiasInformation());
     auto& bias_info                = *dst_bias_info.get();
-    bias_info.reference_station_id = decode::reference_station_id(src_bias_info);
-    bias_info.mask                 = decode::mask(src_bias_info);
-    bias_info.l1_ca                = decode::l1_ca(src_bias_info);
-    bias_info.l1_p                 = decode::l1_p(src_bias_info);
-    bias_info.l2_ca                = decode::l2_ca(src_bias_info);
-    bias_info.l2_p                 = decode::l2_p(src_bias_info);
-    bias_info.indicator            = decode::indicator(src_bias_info);
+    bias_info.reference_station_id = reference_station_id(src_bias_info);
+    bias_info.mask                 = mask(src_bias_info);
+    bias_info.l1_ca                = l1_ca(src_bias_info);
+    bias_info.l1_p                 = l1_p(src_bias_info);
+    bias_info.l2_ca                = l2_ca(src_bias_info);
+    bias_info.l2_p                 = l2_p(src_bias_info);
+    bias_info.indicator            = indicator(src_bias_info);
 
     data.bias_information = std::move(dst_bias_info);
 }
+
+}  // namespace rtcm
+}  // namespace generator

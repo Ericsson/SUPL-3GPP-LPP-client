@@ -3,6 +3,9 @@
 
 #include <vector>
 
+namespace generator {
+namespace rtcm {
+
 class Encoder {
 public:
     EXPLICIT Encoder() : mBitIndex(0) {}
@@ -32,3 +35,6 @@ private:
     std::vector<uint8_t> mBuffer;
     size_t               mBitIndex;
 };
+
+}  // namespace rtcm
+}  // namespace generator

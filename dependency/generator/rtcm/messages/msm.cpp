@@ -15,7 +15,8 @@
 #include <time/tai.hpp>
 #include <time/utc.hpp>
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
 static void epoch_time(Encoder& encoder, ts::Tai const& time, GenericGnssId gnss) {
     switch (gnss) {
@@ -294,8 +295,6 @@ static void generate_msm_signals(uint32_t msm, Encoder& encoder,
 // Header
 //
 
-namespace generator {
-namespace rtcm {
 generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
                                       CommonObservationInfo const& common,
                                       Observations const&          observations) {
@@ -421,5 +420,6 @@ generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId
 
     return generator::rtcm::Message(message_id, frame_encoder.buffer());
 }
+
 }  // namespace rtcm
 }  // namespace generator

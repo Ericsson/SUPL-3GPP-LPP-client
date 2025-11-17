@@ -1,4 +1,5 @@
 #include "file_descriptor.hpp"
+#include "epoll_constants.hpp"
 
 #include <cerrno>
 #include <cstring>
@@ -15,11 +16,6 @@ LOGLET_MODULE2(sched, task);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, task)
 
 namespace scheduler {
-
-static CONSTEXPR uint32_t EPOLL_IN  = EPOLLIN;
-static CONSTEXPR uint32_t EPOLL_OUT = EPOLLOUT;
-static CONSTEXPR uint32_t EPOLL_ERR = EPOLLERR;
-static CONSTEXPR uint32_t EPOLL_HUP = EPOLLHUP;
 
 FileDescriptorTask::FileDescriptorTask() NOEXCEPT : on_read{},
                                                     on_error{},

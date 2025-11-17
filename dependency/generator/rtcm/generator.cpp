@@ -24,7 +24,8 @@ EXTERNAL_WARNINGS_PUSH
 #include <LPP-MessageBody.h>
 EXTERNAL_WARNINGS_POP
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
 static void extract_common_assist_data(RtkData& data, GNSS_CommonAssistData const& src_common) {
     if (src_common.ext1) {
@@ -121,9 +122,6 @@ static GenericGnssId gMsmGnssMessageOrder[] = {
     GenericGnssId::GALILEO,
     GenericGnssId::BEIDOU,
 };
-
-namespace generator {
-namespace rtcm {
 
 Generator::Generator()
     : mGenerationIndex(0), mReferenceStation(nullptr), mPhysicalReferenceStation(nullptr) {}

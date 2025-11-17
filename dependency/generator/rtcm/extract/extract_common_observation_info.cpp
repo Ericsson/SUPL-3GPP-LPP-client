@@ -8,9 +8,9 @@ EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
-namespace decode {
 static uint32_t reference_station_id(GNSS_RTK_CommonObservationInfo_r15 const& src_common) {
     // TODO(ewasjon): Support parsing the reference station provider name.
     return static_cast<uint32_t>(src_common.referenceStationID_r15.referenceStationID_r15);
@@ -34,17 +34,18 @@ static long smooth_interval(GNSS_RTK_CommonObservationInfo_r15 const& src_common
     return static_cast<long>(bit_string->as_int64());
 }
 
-}  // namespace decode
-
 extern void extract_common_observation_info(RtkData&                                  data,
                                             GNSS_RTK_CommonObservationInfo_r15 const& src_common) {
     auto  dst_common = std::unique_ptr<CommonObservationInfo>(new CommonObservationInfo());
     auto& common     = *dst_common.get();
-    common.reference_station_id = decode::reference_station_id(src_common);
-    common.clock_steering       = decode::clock_steering(src_common);
-    common.external_clock       = decode::external_clock(src_common);
-    common.smooth_indicator     = decode::smooth_indicator(src_common);
-    common.smooth_interval      = decode::smooth_interval(src_common);
+    common.reference_station_id = reference_station_id(src_common);
+    common.clock_steering       = clock_steering(src_common);
+    common.external_clock       = external_clock(src_common);
+    common.smooth_indicator     = smooth_indicator(src_common);
+    common.smooth_interval      = smooth_interval(src_common);
 
     data.common_observation_info = std::move(dst_common);
 }
+
+}  // namespace rtcm
+}  // namespace generator

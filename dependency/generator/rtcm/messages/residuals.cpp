@@ -4,9 +4,10 @@
 #include <time/glo.hpp>
 #include <time/gps.hpp>
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
-extern generator::rtcm::Message generate_1030(Residuals const& residuals) {
+Message generate_1030(Residuals const& residuals) {
     uint16_t message_id = 1030U;
     auto     time       = ts::Gps(residuals.time).time_of_week().seconds();
 
@@ -49,7 +50,7 @@ extern generator::rtcm::Message generate_1030(Residuals const& residuals) {
     return generator::rtcm::Message(message_id, frame_encoder.buffer());
 }
 
-extern generator::rtcm::Message generate_1031(Residuals const& residuals) {
+Message generate_1031(Residuals const& residuals) {
     uint16_t message_id = 1031U;
     auto     time       = ts::Glo(residuals.time).time_of_day().seconds();
 
@@ -91,3 +92,6 @@ extern generator::rtcm::Message generate_1031(Residuals const& residuals) {
 
     return generator::rtcm::Message(message_id, frame_encoder.buffer());
 }
+
+}  // namespace rtcm
+}  // namespace generator

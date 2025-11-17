@@ -18,17 +18,18 @@ LOGLET_MODULE2(rtcm, extract);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(rtcm, extract)
 
-namespace decode {
+namespace generator {
+namespace rtcm {
 
-long day_number(GNSS_SystemTime const& src_time) {
+long st_day_number(GNSS_SystemTime const& src_time) {
     return src_time.gnss_DayNumber;
 }
 
-double time_of_day(GNSS_SystemTime const& src_time) {
+double st_time_of_day(GNSS_SystemTime const& src_time) {
     return static_cast<double>(src_time.gnss_TimeOfDay);
 }
 
-Maybe<double> time_of_day_fraction(GNSS_SystemTime const& src_time) {
+Maybe<double> st_time_of_day_fraction(GNSS_SystemTime const& src_time) {
     if (src_time.gnss_TimeOfDayFrac_msec) {
         return static_cast<double>(*src_time.gnss_TimeOfDayFrac_msec) / 1000.0;
     } else {
@@ -51,15 +52,15 @@ generator::rtcm::GenericGnssId gnss_id(GNSS_SystemTime const& src_time) {
 }
 
 ts::Tai epoch_time(GNSS_SystemTime const& src_time) {
-    auto day_number           = decode::day_number(src_time);
-    auto time_of_day_seconds  = decode::time_of_day(src_time);
-    auto time_of_day_fraction = decode::time_of_day_fraction(src_time);
+    auto day_number           = st_day_number(src_time);
+    auto time_of_day_seconds  = st_time_of_day(src_time);
+    auto time_of_day_fraction = st_time_of_day_fraction(src_time);
     auto time_of_day          = time_of_day_seconds;
     if (time_of_day_fraction.valid) {
         time_of_day += time_of_day_fraction.value;
     }
 
-    auto gnss = decode::gnss_id(src_time);
+    auto gnss = gnss_id(src_time);
     switch (gnss) {
     case generator::rtcm::GenericGnssId::GPS:
         return ts::Tai(ts::Gps::from_day_tod(day_number, time_of_day));
@@ -74,4 +75,5 @@ ts::Tai epoch_time(GNSS_SystemTime const& src_time) {
     return ts::Tai::now();
 }
 
-}  // namespace decode
+}  // namespace rtcm
+}  // namespace generator

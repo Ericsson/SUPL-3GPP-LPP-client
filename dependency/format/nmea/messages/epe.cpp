@@ -23,19 +23,6 @@ double EpeMessage::vertical_position_error() const NOEXCEPT {
     return sqrt((m3D * m3D) - (m2D * m2D));
 }
 
-static bool parse_double_opt(std::string const& token, double& value) {
-    FUNCTION_SCOPEF("'%s'", token.c_str());
-    try {
-        value = std::stod(token);
-        VERBOSEF("parsed: %.6f", value);
-        return true;
-    } catch (...) {
-        VERBOSEF("failed to parse, using default: '%s'", token.c_str());
-        value = 0;
-        return true;
-    }
-}
-
 EpeMessage::EpeMessage(std::string prefix, std::string payload, std::string checksum) NOEXCEPT
     : Message{prefix, payload, checksum},
       mMsgVer{0.0},

@@ -1,7 +1,8 @@
 #include "1230.hpp"
 #include "encoder.hpp"
 
-using namespace generator::rtcm;
+namespace generator {
+namespace rtcm {
 
 static void df42x(Encoder& encoder, uint8_t bit, uint8_t mask, Maybe<double> value) {
     if ((bit & mask) == 0) return;
@@ -48,5 +49,8 @@ extern generator::rtcm::Message generate_1230(BiasInformation const& bias_inform
     frame_encoder.copy(encoder.buffer());
     frame_encoder.checksum();
 
-    return generator::rtcm::Message(message_id, frame_encoder.buffer());
+    return Message(message_id, frame_encoder.buffer());
 }
+
+}  // namespace rtcm
+}  // namespace generator

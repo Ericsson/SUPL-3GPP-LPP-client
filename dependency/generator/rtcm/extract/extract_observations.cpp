@@ -7,13 +7,13 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-RTK-Observations-r15.h>
 #include <GNSS-RTK-SatelliteDataElement-r15.h>
 #include <GNSS-RTK-SatelliteSignalDataElement-r15.h>
+#include <GNSS-SystemTime.h>
 EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
 
-using namespace generator::rtcm;
-
-namespace decode {
+namespace generator {
+namespace rtcm {
 
 static Maybe<double> fine_phase_range(GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     return static_cast<double>(src_signal.fine_PhaseRange_r15) * RTCM_N2_31;
@@ -134,20 +134,19 @@ static SignalId signal_id(GenericGnssId                                  gnss_id
 
     return SignalId::from_lpp(gnss, id);
 }
-}  // namespace decode
 
 static void extract_signal(Observations& observations, GenericGnssId gnss_id,
                            SatelliteId                                    satellite_id,
                            GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     Signal dst_signal{};
-    dst_signal.id                     = decode::signal_id(gnss_id, src_signal);
+    dst_signal.id                     = signal_id(gnss_id, src_signal);
     dst_signal.satellite              = satellite_id;
-    dst_signal.fine_phase_range       = decode::fine_phase_range(src_signal);
-    dst_signal.fine_pseudo_range      = decode::fine_pseudo_range(src_signal);
-    dst_signal.fine_phase_range_rate  = decode::fine_phase_range_rate(src_signal);
-    dst_signal.carrier_to_noise_ratio = decode::carrier_to_noise_ratio(src_signal);
-    dst_signal.lock_time              = decode::lock_time(src_signal);
-    dst_signal.half_cycle_ambiguity   = decode::half_cycle_ambiguity(src_signal);
+    dst_signal.fine_phase_range       = fine_phase_range(src_signal);
+    dst_signal.fine_pseudo_range      = fine_pseudo_range(src_signal);
+    dst_signal.fine_phase_range_rate  = fine_phase_range_rate(src_signal);
+    dst_signal.carrier_to_noise_ratio = carrier_to_noise_ratio(src_signal);
+    dst_signal.lock_time              = lock_time(src_signal);
+    dst_signal.half_cycle_ambiguity   = half_cycle_ambiguity(src_signal);
 
     observations.signals.emplace_back(dst_signal);
 }
@@ -155,10 +154,10 @@ static void extract_signal(Observations& observations, GenericGnssId gnss_id,
 static void extract_satellite(Observations& observations, GenericGnssId gnss_id,
                               GNSS_RTK_SatelliteDataElement_r15 const& src_satellite) {
     Satellite dst_satellite{};
-    dst_satellite.id                     = decode::satellite_id(gnss_id, src_satellite);
-    dst_satellite.rough_range            = decode::rough_range(src_satellite);
-    dst_satellite.integer_ms             = decode::integer_ms(src_satellite);
-    dst_satellite.rough_phase_range_rate = decode::rough_phase_range_rate(src_satellite);
+    dst_satellite.id                     = satellite_id(gnss_id, src_satellite);
+    dst_satellite.rough_range            = rough_range(src_satellite);
+    dst_satellite.integer_ms             = integer_ms(src_satellite);
+    dst_satellite.rough_phase_range_rate = rough_phase_range_rate(src_satellite);
 
     auto& list = src_satellite.gnss_rtk_SatelliteSignalDataList_r15.list;
     for (auto i = 0; i < list.count; i++) {
@@ -173,7 +172,7 @@ extern void extract_observations(RtkData& data, GenericGnssId gnss_id,
                                  GNSS_RTK_Observations_r15 const& src_observation) {
     auto  dst_observation = std::unique_ptr<Observations>(new Observations());
     auto& observation     = *dst_observation.get();
-    observation.time      = decode::epoch_time(src_observation.epochTime_r15);
+    observation.time      = epoch_time(src_observation.epochTime_r15);
 
     auto& list = src_observation.gnss_ObservationList_r15.list;
     for (auto i = 0; i < list.count; i++) {
@@ -183,3 +182,6 @@ extern void extract_observations(RtkData& data, GenericGnssId gnss_id,
 
     data.observations[gnss_id] = std::move(dst_observation);
 }
+
+}  // namespace rtcm
+}  // namespace generator

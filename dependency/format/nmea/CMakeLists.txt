@@ -1,5 +1,6 @@
 
 add_library(dependency_format_nmea STATIC 
+    "helper.cpp"
     "message.cpp"
     "parser.cpp"
     "messages/gga.cpp"

@@ -1,4 +1,5 @@
 #include "socket.hpp"
+#include "epoll_constants.hpp"
 
 #include <arpa/inet.h>
 #include <cerrno>
@@ -18,12 +19,6 @@ LOGLET_MODULE2(sched, socket);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(sched, socket)
 
 namespace scheduler {
-
-static CONSTEXPR uint32_t EPOLL_IN    = EPOLLIN;
-static CONSTEXPR uint32_t EPOLL_OUT   = EPOLLOUT;
-static CONSTEXPR uint32_t EPOLL_ERR   = EPOLLERR;
-static CONSTEXPR uint32_t EPOLL_HUP   = EPOLLHUP;
-static CONSTEXPR uint32_t EPOLL_RDHUP = EPOLLRDHUP;
 
 ListenerTask::ListenerTask(int listener_fd) NOEXCEPT : mScheduler{nullptr},
                                                        mEvent{},

@@ -7,9 +7,8 @@ EXTERNAL_WARNINGS_PUSH
 #include <PhysicalReferenceStationInfo-r15.h>
 EXTERNAL_WARNINGS_POP
 
-using namespace generator::rtcm;
-
-namespace decode {
+namespace generator {
+namespace rtcm {
 
 static uint32_t reference_station_id(GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     return static_cast<uint32_t>(src_reference.referenceStationID_r15.referenceStationID_r15);
@@ -62,17 +61,16 @@ static double reference_point_y(PhysicalReferenceStationInfo_r15 const& src_refe
 static double reference_point_z(PhysicalReferenceStationInfo_r15 const& src_reference) {
     return reference_point(src_reference.physical_ARP_ECEF_Z_r15);
 }
-}  // namespace decode
 
 static void
 extract_physical_reference_station_info(RtkData&                                data,
                                         PhysicalReferenceStationInfo_r15 const& src_physical) {
     auto  dst_physical = std::unique_ptr<PhysicalReferenceStation>(new PhysicalReferenceStation());
     auto& physical     = *dst_physical.get();
-    physical.reference_station_id = decode::reference_station_id(src_physical);
-    physical.x                    = decode::reference_point_x(src_physical);
-    physical.y                    = decode::reference_point_y(src_physical);
-    physical.z                    = decode::reference_point_z(src_physical);
+    physical.reference_station_id = reference_station_id(src_physical);
+    physical.x                    = reference_point_x(src_physical);
+    physical.y                    = reference_point_y(src_physical);
+    physical.z                    = reference_point_z(src_physical);
 
     data.physical_reference_station = std::move(dst_physical);
 }
@@ -81,12 +79,12 @@ extern void extract_reference_station_info(RtkData&                             
                                            GNSS_RTK_ReferenceStationInfo_r15 const& src_reference) {
     auto  dst_reference            = std::unique_ptr<ReferenceStation>(new ReferenceStation());
     auto& reference                = *dst_reference.get();
-    reference.reference_station_id = decode::reference_station_id(src_reference);
-    reference.x                    = decode::reference_point_x(src_reference);
-    reference.y                    = decode::reference_point_y(src_reference);
-    reference.z                    = decode::reference_point_z(src_reference);
-    reference.antenna_height       = decode::antenna_height(src_reference);
-    reference.is_physical_reference_station = decode::is_physical_reference_station(src_reference);
+    reference.reference_station_id = reference_station_id(src_reference);
+    reference.x                    = reference_point_x(src_reference);
+    reference.y                    = reference_point_y(src_reference);
+    reference.z                    = reference_point_z(src_reference);
+    reference.antenna_height       = antenna_height(src_reference);
+    reference.is_physical_reference_station = is_physical_reference_station(src_reference);
 
     data.reference_station = std::move(dst_reference);
 
@@ -95,3 +93,6 @@ extern void extract_reference_station_info(RtkData&                             
                                                 *src_reference.physical_reference_station_info_r15);
     }
 }
+
+}  // namespace rtcm
+}  // namespace generator
