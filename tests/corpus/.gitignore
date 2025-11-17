@@ -1,0 +1,6 @@
+# Track seed inputs but ignore fuzzer-generated files
+*
+!.gitignore
+!nmea/
+nmea/*
+!nmea/*.txt
