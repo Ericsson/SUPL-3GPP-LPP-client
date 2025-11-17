@@ -11,8 +11,9 @@ target_link_libraries(time_tests PRIVATE dependency::time dependency::core docte
 add_executable(format_tests
     format/main.cpp
     format/nmea/parser.cpp
+    format/ubx/parser.cpp
 )
-target_link_libraries(format_tests PRIVATE dependency::format::nmea dependency::core doctest::doctest)
+target_link_libraries(format_tests PRIVATE dependency::format::nmea dependency::format::ubx dependency::core doctest::doctest)
 
 add_test(NAME time_tests COMMAND time_tests --no-skip)
 set_tests_properties(time_tests PROPERTIES LABELS "time")
@@ -25,4 +26,9 @@ if(ENABLE_FUZZING)
     target_link_libraries(fuzz_nmea PRIVATE dependency::format::nmea dependency::core)
     target_compile_options(fuzz_nmea PRIVATE -fsanitize=fuzzer,address -g)
     target_link_options(fuzz_nmea PRIVATE -fsanitize=fuzzer,address)
+    
+    add_executable(fuzz_ubx format/ubx/fuzz_target.cpp)
+    target_link_libraries(fuzz_ubx PRIVATE dependency::format::ubx dependency::core)
+    target_compile_options(fuzz_ubx PRIVATE -fsanitize=fuzzer,address -g)
+    target_link_options(fuzz_ubx PRIVATE -fsanitize=fuzzer,address)
 endif()
