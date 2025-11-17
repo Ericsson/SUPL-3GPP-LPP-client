@@ -58,6 +58,8 @@ All notable changes to this project will be documented in this file.
 - Scheduler stream splice() support with conditional compilation via HAVE_SPLICE
 
 ### Fixed
+- Fixed Modem::enable_echo() and disable_echo() to properly wait for and consume OK responses
+- Fixed Modem::set_cops() to remove trailing comma from AT+COPS command
 - Fixed errno race conditions where logging calls clobbered errno before checking EINPROGRESS/EAGAIN/EWOULDBLOCK
 - Example-client lpp2eph ephemeris scale factors for all GNSS (APowerHalf: 2⁻¹⁹, Crc/Crs: 2⁻⁵ for GPS/Galileo and 2⁻⁶ for BeiDou, keplerToe: 60s)
 - Tokoro generator get_grid_position now correctly handles north-west reference point (latitude decreases going south)

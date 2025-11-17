@@ -102,22 +102,76 @@ bool Modem::cancel() {
     return mInput->cancel();
 }
 
-void Modem::enable_echo() {
+bool Modem::enable_echo(scheduler::Scheduler& scheduler) {
     FUNCTION_SCOPE();
-    DEBUGF("sending: ATE1");
-#if !defined(DISABLE_VERBOSE)
-    hexdump(reinterpret_cast<uint8_t const*>("ATE1\r\n"), 6);
-#endif
-    mOutput->write(reinterpret_cast<uint8_t const*>("ATE1\r\n"), 6);
+    auto result = ResponseResult::Failure;
+    auto called = false;
+
+    // ATE1 behavior depends on current echo state:
+    // - Echo OFF: "OK"
+    // - Echo ON: "ATE1" then "OK"
+    request("ATE1", [&result, &called](format::at::Parser& parser) {
+        if (parser.count() < 1) {
+            return ResponseResult::MissingLines;
+        }
+
+        auto first = parser.peek_line();
+        if (first == "ATE1") {
+            // Echo was already on, skip echoed command
+            if (parser.count() < 2) {
+                return ResponseResult::MissingLines;
+            }
+            parser.skip_line();
+        }
+
+        auto ok = parser.skip_line();
+        if (ok == "OK") {
+            result = ResponseResult::Success;
+        }
+        called = true;
+        return result;
+    });
+
+    scheduler.execute_while([&]() {
+        return !called;
+    });
+    return result == ResponseResult::Success;
 }
 
-void Modem::disable_echo() {
+bool Modem::disable_echo(scheduler::Scheduler& scheduler) {
     FUNCTION_SCOPE();
-    DEBUGF("sending: ATE0");
-#if !defined(DISABLE_VERBOSE)
-    hexdump(reinterpret_cast<uint8_t const*>("ATE0\r\n"), 6);
-#endif
-    mOutput->write(reinterpret_cast<uint8_t const*>("ATE0\r\n"), 6);
+    auto result = ResponseResult::Failure;
+    auto called = false;
+
+    // ATE0 behavior depends on current echo state:
+    // - Echo OFF: "OK"
+    // - Echo ON: "ATE0" then "OK"
+    request("ATE0", [&result, &called](format::at::Parser& parser) {
+        if (parser.count() < 1) {
+            return ResponseResult::MissingLines;
+        }
+
+        auto first = parser.peek_line();
+        if (first == "ATE0") {
+            // Echo was on, skip echoed command
+            if (parser.count() < 2) {
+                return ResponseResult::MissingLines;
+            }
+            parser.skip_line();
+        }
+
+        auto ok = parser.skip_line();
+        if (ok == "OK") {
+            result = ResponseResult::Success;
+        }
+        called = true;
+        return result;
+    });
+
+    scheduler.execute_while([&]() {
+        return !called;
+    });
+    return result == ResponseResult::Success;
 }
 
 void Modem::request(std::string const& command, ResponseCallback callback) {
@@ -347,7 +401,7 @@ bool Modem::get_creg(scheduler::Scheduler& scheduler, Creg& reg) {
 void Modem::set_cops(int format) {
     FUNCTION_SCOPE();
     char buffer[1024];
-    snprintf(buffer, sizeof(buffer), "AT+COPS=3,%d,", format);
+    snprintf(buffer, sizeof(buffer), "AT+COPS=3,%d", format);
     DEBUGF("setting COPS format to %d", format);
     request_no_response(buffer);
 }

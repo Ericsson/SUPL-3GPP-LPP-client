@@ -57,8 +57,8 @@ public:
     bool           cancel();
 
     /// Enable echo-ing of commands.
-    void enable_echo();
-    void disable_echo();
+    bool enable_echo(scheduler::Scheduler& scheduler);
+    bool disable_echo(scheduler::Scheduler& scheduler);
 
     /// Request CIMI (International Mobile Subscriber Identity) of the SIM card.
     bool get_cimi(scheduler::Scheduler& scheduler, Cimi& cimi);

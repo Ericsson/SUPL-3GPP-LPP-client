@@ -65,7 +65,7 @@ static int start_server(uint16_t port) {
     (void)device.schedule(scheduler);
     VERBOSEF("modem scheduled");
 
-    device.enable_echo();
+    device.enable_echo(scheduler);
     DEBUGF("echo enabled");
 
     modem::SupportedCregModes creg_modes{};
