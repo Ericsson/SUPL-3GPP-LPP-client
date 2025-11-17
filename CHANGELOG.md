@@ -26,6 +26,7 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added doctest testing framework with comprehensive time module tests (timestamp, GPS, UTC, TAI, BDT, GST, GLO conversions)
 - Added verbose logging to UBX encoder/decoder for buffer overflow detection
 - Added TypeName trait specializations for ephemeris types (GPS, Galileo, BeiDou)
 - Added build version information including git commit, branch, build date, compiler, and platform

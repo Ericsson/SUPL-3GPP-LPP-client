@@ -43,6 +43,11 @@ if(INCLUDE_GENERATOR_IDOKEIDO)
     set(USE_CPM ON)
 endif()
 
+if(BUILD_TESTING)
+    message(STATUS "BUILD_TESTING is enabled, will enable CPM")
+    set(USE_CPM ON)
+endif()
+
 if(USE_CPM)
     include(cmake/CPM.cmake)
 endif()
@@ -87,4 +92,9 @@ add_subdirectory("external")
 
 if(BUILD_EXAMPLES)
     add_subdirectory("examples")
+endif()
+
+if(BUILD_TESTING)
+    enable_testing()
+    add_subdirectory("tests")
 endif()

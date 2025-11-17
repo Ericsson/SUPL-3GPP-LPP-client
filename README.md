@@ -48,6 +48,14 @@ Build the project:
 ninja
 ```
 
+### Testing
+Enable and run tests:
+```bash
+cmake .. -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON
+ninja
+ctest --output-on-failure
+```
+
 ### Static Analysis (Optional)
 Enable static analyzers during build:
 ```bash
