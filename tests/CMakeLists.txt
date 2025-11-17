@@ -13,11 +13,13 @@ add_executable(format_tests
     format/nmea/parser.cpp
     format/ubx/parser.cpp
     format/rtcm/parser.cpp
+    format/at/parser.cpp
 )
 target_link_libraries(format_tests PRIVATE 
     dependency::format::nmea 
     dependency::format::ubx 
     dependency::format::rtcm
+    dependency::format::at
     dependency::core 
     doctest::doctest
 )
@@ -43,4 +45,9 @@ if(ENABLE_FUZZING)
     target_link_libraries(fuzz_rtcm PRIVATE dependency::format::rtcm dependency::core)
     target_compile_options(fuzz_rtcm PRIVATE -fsanitize=fuzzer,address -g)
     target_link_options(fuzz_rtcm PRIVATE -fsanitize=fuzzer,address)
+    
+    add_executable(fuzz_at format/at/fuzz_target.cpp)
+    target_link_libraries(fuzz_at PRIVATE dependency::format::at dependency::core)
+    target_compile_options(fuzz_at PRIVATE -fsanitize=fuzzer,address -g)
+    target_link_options(fuzz_at PRIVATE -fsanitize=fuzzer,address)
 endif()
