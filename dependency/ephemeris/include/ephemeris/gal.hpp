@@ -76,3 +76,13 @@ struct GalEphemeris {
 };
 
 }  // namespace ephemeris
+
+namespace streamline {
+template <typename T>
+struct TypeName;
+
+template <>
+struct TypeName<ephemeris::GalEphemeris> {
+    static char const* name() { return "ephemeris::GalEphemeris"; }
+};
+}  // namespace streamline

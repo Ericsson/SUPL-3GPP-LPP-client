@@ -1,6 +1,7 @@
 #include "message.hpp"
 
 #include <cstdio>
+#include <loglet/loglet.hpp>
 
 namespace format {
 namespace ubx {

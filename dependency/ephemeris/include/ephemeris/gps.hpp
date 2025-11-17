@@ -97,3 +97,13 @@ struct GpsEphemeris {
 };
 
 }  // namespace ephemeris
+
+namespace streamline {
+template <typename T>
+struct TypeName;
+
+template <>
+struct TypeName<ephemeris::GpsEphemeris> {
+    static char const* name() { return "ephemeris::GpsEphemeris"; }
+};
+}  // namespace streamline

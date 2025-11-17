@@ -4,6 +4,12 @@
 
 #include <cstdio>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE3(ubx, msg, ack_ack);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, ack_ack)
+
 namespace format {
 namespace ubx {
 
@@ -23,6 +29,7 @@ std::unique_ptr<Message> UbxAckAck::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> UbxAckAck::parse(Decoder& decoder, std::vector<uint8_t> data) NOEXCEPT {
     if (decoder.remaining() < 2) {
+        VERBOSEF("parse failed: insufficient data (need 2, have %u)", decoder.remaining());
         return nullptr;
     }
 
@@ -31,6 +38,7 @@ std::unique_ptr<Message> UbxAckAck::parse(Decoder& decoder, std::vector<uint8_t>
     payload.msg_id = decoder.u1();
 
     if (decoder.error()) {
+        VERBOSEF("parse failed: decoder error");
         return nullptr;
     } else {
         return std::unique_ptr<Message>{new UbxAckAck(std::move(payload), std::move(data))};

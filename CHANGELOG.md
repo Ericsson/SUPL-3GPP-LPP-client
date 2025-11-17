@@ -26,6 +26,8 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added verbose logging to UBX encoder/decoder for buffer overflow detection
+- Added TypeName trait specializations for ephemeris types (GPS, Galileo, BeiDou)
 - Added build version information including git commit, branch, build date, compiler, and platform
 - Exposed new loglet options in example-client via `--log-no-report-errors` and `--log-no-stderr` flags
 - Added loglet options: `set_report_errors()` and `set_use_stderr()`
@@ -41,9 +43,9 @@ All notable changes to this project will be documented in this file.
 - Example-client tokoro now uses ephemeris inspector pattern instead of direct ephemeris processing
 - SatelliteId prn() method to convert LPP ID to PRN
 - Tokoro generator get_grid_cell_center_position() to get center of grid cell
-- Example-client `--lpp2eph` option to enable LPP to ephemeris conversion
-- Example-client `--ubx2eph` option to enable UBX to ephemeris conversion
-- Example-client `--rtcm2eph` option to enable RTCM to ephemeris conversion
+- Example-client `--disable-lpp2eph` option to disable LPP to ephemeris conversion (enabled by default)
+- Example-client `--disable-ubx2eph` option to disable UBX to ephemeris conversion (enabled by default)
+- Example-client `--disable-rtcm2eph` option to disable RTCM to ephemeris conversion (enabled by default)
 - Example-client `--l2e-no-gps`, `--l2e-no-gal`, `--l2e-no-bds` options for lpp2eph
 - Example-client `--u2e-no-gps`, `--u2e-no-gal`, `--u2e-no-bds` options for ubx2eph
 - Example-client `--r2e-no-gps`, `--r2e-no-gal`, `--r2e-no-bds` options for rtcm2eph

@@ -19,11 +19,11 @@
 namespace ubx2eph {
 
 static args::Group gGroup{"UBX to Ephemeris:"};
-static args::Flag  gEnable{
+static args::Flag  gDisable{
     gGroup,
-    "enable",
-    "Enable UBX to Ephemeris conversion",
-     {"ubx2eph"},
+    "disable",
+    "Disable UBX to Ephemeris conversion",
+     {"disable-ubx2eph"},
 };
 
 static args::Flag gNoGps{
@@ -51,12 +51,12 @@ void setup(args::ArgumentParser& parser) {
 
 void parse(Config* config) {
     auto& ubx2eph   = config->ubx2eph;
-    ubx2eph.enabled = false;
+    ubx2eph.enabled = true;
     ubx2eph.gps     = true;
     ubx2eph.galileo = true;
     ubx2eph.beidou  = true;
 
-    if (gEnable) ubx2eph.enabled = true;
+    if (gDisable) ubx2eph.enabled = false;
     if (gNoGps) ubx2eph.gps = false;
     if (gNoGalileo) ubx2eph.galileo = false;
     if (gNoBeidou) ubx2eph.beidou = false;

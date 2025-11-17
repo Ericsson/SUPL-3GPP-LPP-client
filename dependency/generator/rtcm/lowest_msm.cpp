@@ -60,6 +60,7 @@ static bool can_be_encoded_as_msm(Signal const& signal, uint32_t msm_version) {
             return false;
         }
     }
+#undef ROUND
 
     return true;
 }

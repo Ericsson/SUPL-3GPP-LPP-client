@@ -3,6 +3,12 @@
 #include <cstring>
 #include <endian.h>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE2(ubx, decoder);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(ubx, decoder)
+
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #else
 #error "Big endian is not supported"
@@ -19,6 +25,7 @@ Decoder::Decoder(uint8_t* payload, uint32_t payload_length) NOEXCEPT
 uint8_t Decoder::x1() NOEXCEPT {
     if (mPayloadLength < 1) {
         mError = true;
+        VERBOSEF("x1 failed: insufficient data (need 1, have %u)", mPayloadLength);
         return 0;
     } else {
         uint8_t value = mPayload[0];
@@ -31,6 +38,7 @@ uint8_t Decoder::x1() NOEXCEPT {
 uint16_t Decoder::x2() NOEXCEPT {
     if (mPayloadLength < 2) {
         mError = true;
+        VERBOSEF("x2 failed: insufficient data (need 2, have %u)", mPayloadLength);
         return 0;
     } else {
         auto value = static_cast<uint16_t>((mPayload[1] << 8) | mPayload[0]);
@@ -43,6 +51,7 @@ uint16_t Decoder::x2() NOEXCEPT {
 uint32_t Decoder::x4() NOEXCEPT {
     if (mPayloadLength < 4) {
         mError = true;
+        VERBOSEF("x4 failed: insufficient data (need 4, have %u)", mPayloadLength);
         return 0;
     } else {
         auto value = (static_cast<uint32_t>(mPayload[3]) << 24) |
@@ -57,6 +66,7 @@ uint32_t Decoder::x4() NOEXCEPT {
 uint64_t Decoder::x8() NOEXCEPT {
     if (mPayloadLength < 8) {
         mError = true;
+        VERBOSEF("x8 failed: insufficient data (need 8, have %u)", mPayloadLength);
         return 0;
     } else {
         auto value = (static_cast<uint64_t>(mPayload[7]) << 56) |
@@ -143,6 +153,7 @@ bool Decoder::logical() NOEXCEPT {
 std::string Decoder::ch(uint32_t length) NOEXCEPT {
     if (mPayloadLength < length) {
         mError = true;
+        VERBOSEF("ch failed: insufficient data (need %u, have %u)", length, mPayloadLength);
         return "";
     } else {
         // NOTE: this should be null terminated according to the spec

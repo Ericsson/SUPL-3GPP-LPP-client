@@ -7,9 +7,9 @@
 
 #include <loglet/loglet.hpp>
 
-LOGLET_MODULE_FORWARD_REF(ubx);
+LOGLET_MODULE3(ubx, msg, cfg_valget);
 #undef LOGLET_CURRENT_MODULE
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ubx)
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, cfg_valget)
 
 namespace format {
 namespace ubx {

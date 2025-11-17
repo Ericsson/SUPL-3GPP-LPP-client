@@ -67,7 +67,7 @@ static void df397(Encoder& encoder, Satellite const& satellite) {
 }
 
 static void df398(Encoder& encoder, Satellite const& satellite) {
-    auto value = ROUND(satellite.rough_range.value * RTCM_P2_10);
+    auto value = rtcm_round(satellite.rough_range.value * RTCM_P2_10);
     if (satellite.rough_range.valid && value >= 0 && value <= 1023) {
         encoder.u16(10, static_cast<uint16_t>(value));
     } else {
@@ -77,7 +77,7 @@ static void df398(Encoder& encoder, Satellite const& satellite) {
 }
 
 static void df399(Encoder& encoder, Satellite const& satellite) {
-    auto value = static_cast<int64_t>(ROUND(satellite.rough_phase_range_rate.value));
+    auto value = static_cast<int64_t>(rtcm_round(satellite.rough_phase_range_rate.value));
     if (satellite.rough_phase_range_rate.valid && value >= -8191 && value <= 8191) {
         encoder.i16(14, static_cast<int16_t>(value));
     } else {
@@ -103,7 +103,7 @@ static void df_ext(Encoder& encoder, Satellite const& satellite) {
 }
 
 static void df400(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(ROUND(signal.fine_pseudo_range.value * RTCM_P2_24));
+    auto value = static_cast<int64_t>(rtcm_round(signal.fine_pseudo_range.value * RTCM_P2_24));
     if (signal.fine_phase_range.valid) {
         encoder.i16(15, static_cast<int16_t>(value));
     } else {
@@ -112,7 +112,7 @@ static void df400(Encoder& encoder, Signal const& signal) {
 }
 
 static void df401(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range.value * RTCM_P2_29));
+    auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range.value * RTCM_P2_29));
     if (signal.fine_pseudo_range.valid) {
         encoder.i32(22, static_cast<int32_t>(value));
     } else {
@@ -130,7 +130,7 @@ static void df402(Encoder& encoder, Signal const& signal) {
 }
 
 static void df403(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(ROUND(signal.carrier_to_noise_ratio.value));
+    auto value = static_cast<int64_t>(rtcm_round(signal.carrier_to_noise_ratio.value));
     if (signal.carrier_to_noise_ratio.valid && value >= 1 && value <= 63) {
         encoder.u8(6, static_cast<uint8_t>(value));
     } else {
@@ -139,7 +139,7 @@ static void df403(Encoder& encoder, Signal const& signal) {
 }
 
 static void df404(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range_rate.value / 0.0001));
+    auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range_rate.value / 0.0001));
     if (signal.fine_phase_range_rate.valid && value > -16384 && value <= 16383) {
         encoder.i16(15, static_cast<int16_t>(value));
     } else {
@@ -148,7 +148,7 @@ static void df404(Encoder& encoder, Signal const& signal) {
 }
 
 static void df405(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(ROUND(signal.fine_pseudo_range.value * RTCM_P2_29));
+    auto value = static_cast<int64_t>(rtcm_round(signal.fine_pseudo_range.value * RTCM_P2_29));
     if (signal.fine_phase_range.valid) {
         encoder.i32(20, static_cast<int32_t>(value));
     } else {
@@ -157,7 +157,7 @@ static void df405(Encoder& encoder, Signal const& signal) {
 }
 
 static void df406(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(ROUND(signal.fine_phase_range.value * RTCM_P2_31));
+    auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range.value * RTCM_P2_31));
     if (signal.fine_pseudo_range.valid) {
         encoder.i32(24, static_cast<int32_t>(value));
     } else {
@@ -175,7 +175,7 @@ static void df407(Encoder& encoder, Signal const& signal) {
 }
 
 static void df408(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(ROUND(signal.carrier_to_noise_ratio.value / 0.0625));
+    auto value = static_cast<int64_t>(rtcm_round(signal.carrier_to_noise_ratio.value / 0.0625));
     if (signal.carrier_to_noise_ratio.valid && value >= 1 && value <= 1023) {
         encoder.u16(10, static_cast<uint16_t>(value));
     } else {

@@ -780,6 +780,11 @@ static void setup_lpp2spartn(Program& program) {
 static void setup_tokoro(Program& program) {
 #if defined(INCLUDE_GENERATOR_TOKORO)
     if (program.config.tokoro.enabled) {
+        if (!program.config.ubx2eph.enabled && !program.config.rtcm2eph.enabled &&
+            !program.config.lpp2eph.enabled) {
+            WARNF("tokoro enabled but ubx2eph, rtcm2eph, and lpp2eph are all disabled - no "
+                  "ephemeris will be available");
+        }
         auto tokoro = program.stream.add_inspector<Tokoro>(
             program.config.output, program.config.tokoro, program.scheduler);
         program.stream.add_inspector<TokoroEphemerisGps>(*tokoro);

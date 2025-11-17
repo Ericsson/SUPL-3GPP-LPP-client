@@ -5,6 +5,12 @@
 
 #include <cstdio>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE3(ubx, msg, mon_ver);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, mon_ver)
+
 namespace format {
 namespace ubx {
 
@@ -28,6 +34,7 @@ std::unique_ptr<Message> UbxMonVer::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder, std::vector<uint8_t> data) NOEXCEPT {
     if (decoder.remaining() < 40) {
+        VERBOSEF("parse failed: insufficient data (need 40, have %u)", decoder.remaining());
         return nullptr;
     }
 
@@ -42,6 +49,7 @@ std::unique_ptr<Message> UbxMonVer::parse(Decoder& decoder, std::vector<uint8_t>
     }
 
     if (decoder.error()) {
+        VERBOSEF("parse failed: decoder error");
         return nullptr;
     } else {
         return std::unique_ptr<Message>{new UbxMonVer(std::move(payload), std::move(data))};

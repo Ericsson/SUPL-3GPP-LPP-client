@@ -41,7 +41,7 @@ public:
     void add_consumer(Args&&... args) {
         FUNCTION_SCOPE();
         using DataType = typename Consumer::DataType;
-        VERBOSEF("add consumer %s (%s)", typeid(Consumer).name(), typeid(DataType).name());
+        VERBOSEF("add consumer %s (%s)", typeid(Consumer).name(), TypeName<DataType>::name());
 
         if (!mScheduler) {
             WARNF("invalid system state");
@@ -59,7 +59,7 @@ public:
     Inspector* add_inspector(Args&&... args) {
         FUNCTION_SCOPE();
         using DataType = typename Inspector::DataType;
-        VERBOSEF("add inspector %s (%s)", typeid(Inspector).name(), typeid(DataType).name());
+        VERBOSEF("add inspector %s (%s)", typeid(Inspector).name(), TypeName<DataType>::name());
 
         if (!mScheduler) {
             WARNF("invalid system state");
@@ -78,7 +78,7 @@ public:
     template <typename DataType>
     void push(DataType&& data, uint64_t tag = 0) {
         FUNCTION_SCOPE();
-        VERBOSEF("push %s", typeid(DataType).name());
+        VERBOSEF("push %s", TypeName<typename std::decay<DataType>::type>::name());
         if (!mScheduler) {
             WARNF("invalid system state");
             return;
@@ -105,7 +105,7 @@ protected:
         FUNCTION_SCOPE();
         auto it = mQueues.find(std::type_index(typeid(DataType)));
         if (it == mQueues.end()) {
-            VERBOSEF("created queue for %s", typeid(DataType).name());
+            VERBOSEF("created queue for %s", TypeName<DataType>::name());
             auto queue = std::shared_ptr<QueueTask<DataType>>(new QueueTask<DataType>(*this));
             queue->schedule(mScheduler);
             mQueues[std::type_index(typeid(DataType))] = std::move(queue);

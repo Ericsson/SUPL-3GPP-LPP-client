@@ -5,6 +5,12 @@
 
 #include <time/utc.hpp>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE3(ubx, msg, nav_pvt);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, nav_pvt)
+
 namespace format {
 namespace ubx {
 
@@ -189,6 +195,7 @@ std::unique_ptr<Message> UbxNavPvt::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> UbxNavPvt::parse(Decoder& decoder, std::vector<uint8_t> data) NOEXCEPT {
     if (decoder.remaining() < 92) {
+        VERBOSEF("parse failed: insufficient data (need 92, have %u)", decoder.remaining());
         return nullptr;
     }
 
@@ -249,6 +256,7 @@ std::unique_ptr<Message> UbxNavPvt::parse(Decoder& decoder, std::vector<uint8_t>
     payload.mag_acc  = decoder.u2();
 
     if (decoder.error()) {
+        VERBOSEF("parse failed: decoder error");
         return nullptr;
     } else {
         return std::unique_ptr<Message>{new UbxNavPvt(std::move(payload), std::move(data))};

@@ -5,6 +5,12 @@
 
 #include <cstdio>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE3(ubx, msg, rxm_spartn);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, rxm_spartn)
+
 namespace format {
 namespace ubx {
 
@@ -12,7 +18,7 @@ UbxRxmSpartn::UbxRxmSpartn(raw::RxmSpartn payload, std::vector<uint8_t> data) NO
     : Message(CLASS_ID, MESSAGE_ID, std::move(data)),
       mPayload(std::move(payload)) {}
 
-static char const* msg_used_str(uint8_t msg_used) NOEXCEPT {
+static char const* spartn_msg_used_str(uint8_t msg_used) NOEXCEPT {
     switch (msg_used) {
     case 0: return "DO NOT KNOW";
     case 1: return "NOT USED";
@@ -24,7 +30,7 @@ static char const* msg_used_str(uint8_t msg_used) NOEXCEPT {
 void UbxRxmSpartn::print() const NOEXCEPT {
     if (mPayload.version == 1) {
         printf("[%02X %02X] UBX-RXM-SPARTN: %4u %s%s\n", message_class(), message_id(),
-               mPayload.data.v1.msg_type, msg_used_str(mPayload.data.v1.flags.msg_used),
+               mPayload.data.v1.msg_type, spartn_msg_used_str(mPayload.data.v1.flags.msg_used),
                mPayload.data.v1.flags.crc_failed ? " [CRC-FAILED]" : "");
     } else {
         printf("[%02X %02X] UBX-RXM-SPARTN:\n", message_class(), message_id());
@@ -39,11 +45,13 @@ std::unique_ptr<Message> UbxRxmSpartn::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> UbxRxmSpartn::parse(Decoder& decoder, std::vector<uint8_t> data) NOEXCEPT {
     if (decoder.remaining() < 2) {
+        VERBOSEF("parse failed: insufficient data (need 2, have %u)", decoder.remaining());
         return nullptr;
     }
 
     auto version = decoder.u1();
     if (decoder.error()) {
+        VERBOSEF("parse failed: decoder error reading version");
         return nullptr;
     }
 
@@ -60,9 +68,11 @@ std::unique_ptr<Message> UbxRxmSpartn::parse(Decoder& decoder, std::vector<uint8
         payload.data.v1.msg_type  = decoder.u2();
     } else {
         payload.version = version;
+        VERBOSEF("unsupported version: %u", version);
     }
 
     if (decoder.error()) {
+        VERBOSEF("parse failed: decoder error");
         return nullptr;
     } else {
         return std::unique_ptr<Message>{new UbxRxmSpartn(std::move(payload), std::move(data))};

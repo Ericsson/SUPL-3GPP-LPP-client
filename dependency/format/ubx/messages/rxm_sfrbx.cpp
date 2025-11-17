@@ -5,6 +5,12 @@
 
 #include <cstdio>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE3(ubx, msg, rxm_sfrbx);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, rxm_sfrbx)
+
 namespace format {
 namespace ubx {
 
@@ -89,6 +95,7 @@ std::unique_ptr<Message> RxmSfrbx::clone() const NOEXCEPT {
 
 std::unique_ptr<Message> RxmSfrbx::parse(Decoder& decoder, std::vector<uint8_t> data) NOEXCEPT {
     if (decoder.remaining() < 8) {
+        VERBOSEF("parse failed: insufficient data (need 8, have %u)", decoder.remaining());
         return nullptr;
     }
 
@@ -101,6 +108,7 @@ std::unique_ptr<Message> RxmSfrbx::parse(Decoder& decoder, std::vector<uint8_t> 
     auto version   = decoder.u1();
     auto reserved0 = decoder.u1();
     if (decoder.error()) {
+        VERBOSEF("parse failed: decoder error reading header");
         return nullptr;
     }
 
@@ -114,6 +122,7 @@ std::unique_ptr<Message> RxmSfrbx::parse(Decoder& decoder, std::vector<uint8_t> 
     payload.version   = version;
     payload.reserved0 = reserved0;
     if (version != 0x02) {
+        VERBOSEF("parse failed: unsupported version %u", version);
         return nullptr;
     }
 
@@ -123,6 +132,7 @@ std::unique_ptr<Message> RxmSfrbx::parse(Decoder& decoder, std::vector<uint8_t> 
     }
 
     if (decoder.error()) {
+        VERBOSEF("parse failed: decoder error reading words");
         return nullptr;
     } else {
         return std::unique_ptr<Message>{

@@ -6,9 +6,9 @@
 #include <cstdio>
 #include <loglet/loglet.hpp>
 
-LOGLET_MODULE2(ubx, rawx);
+LOGLET_MODULE3(ubx, msg, rxm_rawx);
 #undef LOGLET_CURRENT_MODULE
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(ubx, rawx)
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, rxm_rawx)
 
 namespace format {
 namespace ubx {

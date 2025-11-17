@@ -15,6 +15,7 @@
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE(ubx);
+LOGLET_MODULE2(ubx, msg);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ubx)
 
@@ -97,22 +98,27 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     // parse payload
     Decoder              decoder(buffer + 6, length);
     std::vector<uint8_t> data(buffer, buffer + length + 8);
-    DEBUGF("ubx: %02X-%02X, length: %u", message_class, message_id, length);
 
+    std::unique_ptr<Message> result;
     switch (type) {
-    case 0x0107: return UbxNavPvt::parse(decoder, std::move(data));
-    case 0x0A04: return UbxMonVer::parse(decoder, std::move(data));
-    case 0x068B: return UbxCfgValget::parse(decoder, std::move(data));
-    case 0x0501: return UbxAckAck::parse(decoder, std::move(data));
-    case 0x0500: return UbxAckNak::parse(decoder, std::move(data));
-    case 0x0213: return RxmSfrbx::parse(decoder, std::move(data));
-    case 0x0215: return UbxRxmRawx::parse(decoder, std::move(data));
-    case 0x0232: return UbxRxmRtcm::parse(decoder, std::move(data));
-    case 0x0233: return UbxRxmSpartn::parse(decoder, std::move(data));
+    case 0x0107: result = UbxNavPvt::parse(decoder, std::move(data)); break;
+    case 0x0A04: result = UbxMonVer::parse(decoder, std::move(data)); break;
+    case 0x068B: result = UbxCfgValget::parse(decoder, std::move(data)); break;
+    case 0x0501: result = UbxAckAck::parse(decoder, std::move(data)); break;
+    case 0x0500: result = UbxAckNak::parse(decoder, std::move(data)); break;
+    case 0x0213: result = RxmSfrbx::parse(decoder, std::move(data)); break;
+    case 0x0215: result = UbxRxmRawx::parse(decoder, std::move(data)); break;
+    case 0x0232: result = UbxRxmRtcm::parse(decoder, std::move(data)); break;
+    case 0x0233: result = UbxRxmSpartn::parse(decoder, std::move(data)); break;
     default:
-        return std::unique_ptr<Message>{
+        result = std::unique_ptr<Message>{
             new UnsupportedMessage(message_class, message_id, std::move(data))};
+        break;
     }
+
+    DEBUGF("ubx: %02X-%02X, length: %u, %s", message_class, message_id, length,
+           result ? "success" : "error");
+    return result;
 }
 
 bool Parser::is_frame_boundary() const NOEXCEPT {

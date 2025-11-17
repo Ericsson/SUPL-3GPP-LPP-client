@@ -2,6 +2,12 @@
 #include <cstring>
 #include <endian.h>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE2(ubx, encoder);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(ubx, encoder)
+
 #if __BYTE_ORDER == __LITTLE_ENDIAN
 #else
 #error "Big endian is not supported"
@@ -18,6 +24,7 @@ Encoder::Encoder(uint8_t* payload, uint32_t payload_length) NOEXCEPT
 void Encoder::x1(uint8_t value) NOEXCEPT {
     if (mPayloadLength < 1) {
         mError = true;
+        VERBOSEF("x1 failed: insufficient space (need 1, have %u)", mPayloadLength);
     } else {
         mPayload[0] = value;
         mPayload++;
@@ -28,6 +35,7 @@ void Encoder::x1(uint8_t value) NOEXCEPT {
 void Encoder::x2(uint16_t value) NOEXCEPT {
     if (mPayloadLength < 2) {
         mError = true;
+        VERBOSEF("x2 failed: insufficient space (need 2, have %u)", mPayloadLength);
     } else {
         mPayload[0] = static_cast<uint8_t>(value & 0xFFU);
         mPayload[1] = static_cast<uint8_t>((value & 0xFF00U) >> 8U);
@@ -39,6 +47,7 @@ void Encoder::x2(uint16_t value) NOEXCEPT {
 void Encoder::x4(uint32_t value) NOEXCEPT {
     if (mPayloadLength < 4) {
         mError = true;
+        VERBOSEF("x4 failed: insufficient space (need 4, have %u)", mPayloadLength);
     } else {
         mPayload[0] = static_cast<uint8_t>(value & 0xFFU);
         mPayload[1] = static_cast<uint8_t>((value >> 8U) & 0xFFU);
@@ -52,6 +61,7 @@ void Encoder::x4(uint32_t value) NOEXCEPT {
 void Encoder::x8(uint64_t value) NOEXCEPT {
     if (mPayloadLength < 8) {
         mError = true;
+        VERBOSEF("x8 failed: insufficient space (need 8, have %u)", mPayloadLength);
     } else {
         mPayload[0] = static_cast<uint8_t>(value & 0xFFU);
         mPayload[1] = static_cast<uint8_t>((value >> 8U) & 0xFFU);
@@ -140,6 +150,7 @@ void Encoder::ch(std::string const& value, uint32_t length) NOEXCEPT {
 
     if (mPayloadLength < bytes) {
         mError = true;
+        VERBOSEF("ch failed: insufficient space (need %u, have %u)", bytes, mPayloadLength);
     } else {
         memcpy(mPayload, value.c_str(), bytes - 1);
         mPayload[bytes - 1] = 0;
@@ -151,6 +162,7 @@ void Encoder::ch(std::string const& value, uint32_t length) NOEXCEPT {
 void Encoder::pad(uint32_t length) NOEXCEPT {
     if (mPayloadLength < length) {
         mError = true;
+        VERBOSEF("pad failed: insufficient space (need %u, have %u)", length, mPayloadLength);
     } else {
         memset(mPayload, 0, length);
         mPayload += length;

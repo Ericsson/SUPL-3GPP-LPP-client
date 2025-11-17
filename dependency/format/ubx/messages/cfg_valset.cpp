@@ -2,12 +2,19 @@
 #include "encoder.hpp"
 #include "parser.hpp"
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE3(ubx, msg, cfg_valset);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF3(ubx, msg, cfg_valset)
+
 namespace format {
 namespace ubx {
 
 uint32_t UbxCfgValset::set(Encoder& encoder, CfgLayer layers, CfgKey key, CfgValue value) NOEXCEPT {
     auto expected_type = CfgValue::type_from_key(key);
     if (value.type() != expected_type || value.type() == CfgValue::UNKNOWN) {
+        VERBOSEF("set failed: type mismatch (expected %d, got %d)", expected_type, value.type());
         return 0;
     }
 

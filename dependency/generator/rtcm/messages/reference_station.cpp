@@ -8,7 +8,7 @@ namespace generator {
 namespace rtcm {
 
 static void df02x(Encoder& encoder, double value) {
-    auto integer_value = static_cast<int64_t>(ROUND(value / 0.0001));
+    auto integer_value = static_cast<int64_t>(rtcm_round(value / 0.0001));
     encoder.i64(38, integer_value);
 }
 
@@ -25,7 +25,7 @@ static void df027(Encoder& encoder, double value) {
 }
 
 static void df028(Encoder& encoder, double value) {
-    auto integer_value = static_cast<int64_t>(ROUND(value / 0.0001));
+    auto integer_value = static_cast<int64_t>(rtcm_round(value / 0.0001));
     encoder.u16(16, static_cast<uint16_t>(integer_value));
 }
 

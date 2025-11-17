@@ -136,24 +136,24 @@ std::string SatelliteId::to_string() const {
     return std::string(buffer);
 }
 
-static char const* gGpsNames[32] = {
+static char const* gGpsSatelliteNames[32] = {
     "G01", "G02", "G03", "G04", "G05", "G06", "G07", "G08", "G09", "G10", "G11",
     "G12", "G13", "G14", "G15", "G16", "G17", "G18", "G19", "G20", "G21", "G22",
     "G23", "G24", "G25", "G26", "G27", "G28", "G29", "G30", "G31", "G32",
 };
 
-static char const* gGloNames[24] = {
+static char const* gGloSatelliteNames[24] = {
     "R01", "R02", "R03", "R04", "R05", "R06", "R07", "R08", "R09", "R10", "R11", "R12",
     "R13", "R14", "R15", "R16", "R17", "R18", "R19", "R20", "R21", "R22", "R23", "R24",
 };
 
-static char const* gGalNames[36] = {
+static char const* gGalSatelliteNames[36] = {
     "E01", "E02", "E03", "E04", "E05", "E06", "E07", "E08", "E09", "E10", "E11", "E12",
     "E13", "E14", "E15", "E16", "E17", "E18", "E19", "E20", "E21", "E22", "E23", "E24",
     "E25", "E26", "E27", "E28", "E29", "E30", "E31", "E32", "E33", "E34", "E35", "E36",
 };
 
-static char const* gBdsNames[63] = {
+static char const* gBdsSatelliteNames[63] = {
     "C01", "C02", "C03", "C04", "C05", "C06", "C07", "C08", "C09", "C10", "C11", "C12", "C13",
     "C14", "C15", "C16", "C17", "C18", "C19", "C20", "C21", "C22", "C23", "C24", "C25", "C26",
     "C27", "C28", "C29", "C30", "C31", "C32", "C33", "C34", "C35", "C36", "C37", "C38", "C39",
@@ -164,10 +164,10 @@ static char const* gBdsNames[63] = {
 char const* SatelliteId::name() const {
     if (!is_valid()) return "X--";
     switch (mGnss) {
-    case Gnss::GPS: return (mLppId >= 0 && mLppId < 32) ? gGpsNames[mLppId] : "G--";
-    case Gnss::GLONASS: return (mLppId >= 0 && mLppId < 24) ? gGloNames[mLppId] : "R--";
-    case Gnss::GALILEO: return (mLppId >= 0 && mLppId < 36) ? gGalNames[mLppId] : "E--";
-    case Gnss::BEIDOU: return (mLppId >= 0 && mLppId < 63) ? gBdsNames[mLppId] : "C--";
+    case Gnss::GPS: return (mLppId >= 0 && mLppId < 32) ? gGpsSatelliteNames[mLppId] : "G--";
+    case Gnss::GLONASS: return (mLppId >= 0 && mLppId < 24) ? gGloSatelliteNames[mLppId] : "R--";
+    case Gnss::GALILEO: return (mLppId >= 0 && mLppId < 36) ? gGalSatelliteNames[mLppId] : "E--";
+    case Gnss::BEIDOU: return (mLppId >= 0 && mLppId < 63) ? gBdsSatelliteNames[mLppId] : "C--";
     case Gnss::UNKNOWN: return "U--";
     }
     CORE_UNREACHABLE();

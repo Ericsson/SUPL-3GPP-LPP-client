@@ -19,11 +19,11 @@
 namespace rtcm2eph {
 
 static args::Group gGroup{"RTCM to Ephemeris:"};
-static args::Flag  gEnable{
+static args::Flag  gDisable{
     gGroup,
-    "enable",
-    "Enable RTCM to Ephemeris conversion",
-     {"rtcm2eph"},
+    "disable",
+    "Disable RTCM to Ephemeris conversion",
+     {"disable-rtcm2eph"},
 };
 
 static args::Flag gNoGps{
@@ -51,12 +51,12 @@ void setup(args::ArgumentParser& parser) {
 
 void parse(Config* config) {
     auto& rtcm2eph   = config->rtcm2eph;
-    rtcm2eph.enabled = false;
+    rtcm2eph.enabled = true;
     rtcm2eph.gps     = true;
     rtcm2eph.galileo = true;
     rtcm2eph.beidou  = true;
 
-    if (gEnable) rtcm2eph.enabled = true;
+    if (gDisable) rtcm2eph.enabled = false;
     if (gNoGps) rtcm2eph.gps = false;
     if (gNoGalileo) rtcm2eph.galileo = false;
     if (gNoBeidou) rtcm2eph.beidou = false;

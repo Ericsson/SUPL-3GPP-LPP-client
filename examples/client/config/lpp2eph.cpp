@@ -19,11 +19,11 @@
 namespace lpp2eph {
 
 static args::Group gGroup{"LPP to Ephemeris:"};
-static args::Flag  gEnable{
+static args::Flag  gDisable{
     gGroup,
-    "enable",
-    "Enable LPP to Ephemeris conversion",
-     {"lpp2eph"},
+    "disable",
+    "Disable LPP to Ephemeris conversion",
+     {"disable-lpp2eph"},
 };
 
 static args::Flag gNoGps{
@@ -51,12 +51,12 @@ void setup(args::ArgumentParser& parser) {
 
 void parse(Config* config) {
     auto& lpp2eph   = config->lpp2eph;
-    lpp2eph.enabled = false;
+    lpp2eph.enabled = true;
     lpp2eph.gps     = true;
     lpp2eph.galileo = true;
     lpp2eph.beidou  = true;
 
-    if (gEnable) lpp2eph.enabled = true;
+    if (gDisable) lpp2eph.enabled = false;
     if (gNoGps) lpp2eph.gps = false;
     if (gNoGalileo) lpp2eph.galileo = false;
     if (gNoBeidou) lpp2eph.beidou = false;
