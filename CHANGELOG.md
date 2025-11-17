@@ -27,7 +27,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Added doctest testing framework with comprehensive time module tests (timestamp, GPS, UTC, TAI, BDT, GST, GLO conversions)
-- Added NMEA and UBX parser tests with libFuzzer-based fuzzing support
+- Added NMEA, UBX, and RTCM parser tests with libFuzzer-based fuzzing support
 - Added verbose logging to UBX encoder/decoder for buffer overflow detection
 - Added TypeName trait specializations for ephemeris types (GPS, Galileo, BeiDou)
 - Added build version information including git commit, branch, build date, compiler, and platform

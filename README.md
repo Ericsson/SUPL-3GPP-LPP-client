@@ -60,9 +60,10 @@ ctest --output-on-failure
 Enable and run fuzzing (requires Clang with libFuzzer):
 ```bash
 cmake .. -GNinja -DCMAKE_BUILD_TYPE=Debug -DBUILD_TESTING=ON -DENABLE_FUZZING=ON
-ninja fuzz_nmea fuzz_ubx
+ninja fuzz_nmea fuzz_ubx fuzz_rtcm
 ./tests/fuzz_nmea ../tests/corpus/nmea -max_total_time=60
 ./tests/fuzz_ubx ../tests/corpus/ubx -max_total_time=60
+./tests/fuzz_rtcm ../tests/corpus/rtcm -max_total_time=60
 ```
 
 The corpus directory contains seed inputs for better fuzzing coverage. New interesting inputs discovered during fuzzing are automatically added to the corpus.
