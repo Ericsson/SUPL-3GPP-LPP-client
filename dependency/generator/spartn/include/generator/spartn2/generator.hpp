@@ -98,6 +98,8 @@ public:
     void set_glonass_supported(bool glonass_supported) { mGlonassSupported = glonass_supported; }
     void set_galileo_supported(bool galileo_supported) { mGalileoSupported = galileo_supported; }
     void set_beidou_supported(bool beidou_supported) { mBeidouSupported = beidou_supported; }
+    void set_qzss_supported(bool qzss_supported) { mQzssSupported = qzss_supported; }
+    void set_navic_supported(bool navic_supported) { mNavicSupported = navic_supported; }
 
     void set_code_bias_translate(bool value) { mCodeBiasTranslate = value; }
     void set_code_bias_correction_shift(bool value) { mCodeBiasCorrectionShift = value; }
@@ -183,6 +185,8 @@ private:
     bool mGlonassSupported;
     bool mGalileoSupported;
     bool mBeidouSupported;
+    bool mQzssSupported;
+    bool mNavicSupported;
 };
 
 }  // namespace spartn

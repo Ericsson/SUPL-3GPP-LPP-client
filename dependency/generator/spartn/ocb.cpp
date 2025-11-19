@@ -620,6 +620,8 @@ void Generator::generate_ocb(uint16_t iod) {
         if (!mGlonassSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_glonass) continue;
         if (!mGalileoSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_galileo) continue;
         if (!mBeidouSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_bds) continue;
+        if (!mQzssSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_qzss) continue;
+        if (!mNavicSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_navic_v1610) continue;
 
         messages.push_back(&kvp.second);
     }

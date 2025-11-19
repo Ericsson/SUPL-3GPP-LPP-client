@@ -44,7 +44,8 @@ Generator::Generator()
       mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false), mSignFlipC11(false),
       mSignFlipStecResiduals(false), mFlipOrbitCorrection(false), mDoNotUseSatellite(true),
       mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
-      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false) {}
+      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false),
+      mQzssSupported(false), mNavicSupported(false) {}
 
 Generator::~Generator() = default;
 
