@@ -3,6 +3,7 @@ add_library(dependency_io STATIC
     "io.cpp"
     "input.cpp"
     "output.cpp"
+    "buffer.cpp"
     "file.cpp"
     "stdin.cpp"
     "stdout.cpp"

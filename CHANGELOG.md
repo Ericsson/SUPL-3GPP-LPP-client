@@ -26,6 +26,9 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added BufferInput and BufferOutput classes for in-memory I/O operations
+- Added ephemeris tests for GPS, Galileo, and BeiDou
+- Added QZSS and NavIC support flags to SPARTN generator
 - Added doctest testing framework with comprehensive time module tests (timestamp, GPS, UTC, TAI, BDT, GST, GLO conversions)
 - Added NMEA, UBX, RTCM, and AT parser tests with libFuzzer-based fuzzing support
 - Added verbose logging to UBX encoder/decoder for buffer overflow detection
@@ -58,6 +61,9 @@ All notable changes to this project will be documented in this file.
 - Scheduler stream splice() support with conditional compilation via HAVE_SPLICE
 
 ### Fixed
+- Fixed GPS week/TOW wrapping for negative and overflow values
+- Fixed missing includes in cxx11_compat.hpp (string, sys/stat.h)
+- Fixed scheduler stream to call on_complete callback when splice returns 0 (EOF)
 - Fixed Modem::enable_echo() and disable_echo() to properly wait for and consume OK responses
 - Fixed Modem::set_cops() to remove trailing comma from AT+COPS command
 - Fixed errno race conditions where logging calls clobbered errno before checking EINPROGRESS/EAGAIN/EWOULDBLOCK
