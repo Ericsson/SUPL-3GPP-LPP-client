@@ -157,6 +157,7 @@ void ForwardStreamTask::forward(int dest_fd, size_t block_size) {
 
         if (spliced == 0) {
             cancel();
+            if (on_complete) on_complete();
             break;
         }
 
