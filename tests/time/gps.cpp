@@ -49,6 +49,27 @@ TEST_CASE("GPS from date - leap year Feb 29, 2020") {
     CHECK(gps.timestamp().fraction() == doctest::Approx(0.5));
 }
 
+TEST_CASE("GPS time with negative TOW - should wrap to previous week") {
+    // TOW -1074 in week 2393 should be week 2392, TOW 603726
+    auto gps = ts::Gps::from_week_tow(2393, -1074, 0.0);
+    CHECK(gps.week() == 2392);
+    CHECK(gps.time_of_week().seconds() == 603726);
+}
+
+TEST_CASE("GPS time with negative TOW - multiple weeks back") {
+    // TOW -604800 (one full week) in week 10 should be week 9, TOW 0
+    auto gps = ts::Gps::from_week_tow(10, -604800, 0.0);
+    CHECK(gps.week() == 9);
+    CHECK(gps.time_of_week().seconds() == 0);
+}
+
+TEST_CASE("GPS time with TOW exceeding week - should wrap to next week") {
+    // TOW 604800 (one full week) in week 5 should be week 6, TOW 0
+    auto gps = ts::Gps::from_week_tow(5, 604800, 0.0);
+    CHECK(gps.week() == 6);
+    CHECK(gps.time_of_week().seconds() == 0);
+}
+
 TEST_CASE("GPS time difference") {
     auto gps1 = ts::Gps::from_week_tow(2000, 0, 0.0);
     auto gps2 = ts::Gps::from_week_tow(2001, 0, 0.0);
