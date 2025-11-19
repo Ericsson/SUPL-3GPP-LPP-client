@@ -31,7 +31,7 @@ template <typename T, typename... Args>
 #include <filesystem>
 #define HAS_CREATE_DIRECTORIES 1
 inline void create_directories_compat(const ::std::string& path) {
-    ::std::filesystem::create_directories(path);
+    std::filesystem::create_directories(path);
 }
 #endif
 #endif
@@ -39,12 +39,14 @@ inline void create_directories_compat(const ::std::string& path) {
 #ifndef HAS_CREATE_DIRECTORIES
 #include <errno.h>
 #include <string.h>
+#include <string>
+#include <sys/stat.h>
 #include <unistd.h>
 #define HAS_CREATE_DIRECTORIES 1
 inline void create_directories_compat(const ::std::string& path) {
-    ::std::string::size_type pos = 0;
+    std::string::size_type pos = 0;
     while ((pos = path.find('/', pos)) != ::std::string::npos) {
-        ::std::string dir = path.substr(0, pos++);
+        std::string dir = path.substr(0, pos++);
         if (!dir.empty()) mkdir(dir.c_str(), 0755);
     }
     mkdir(path.c_str(), 0755);
