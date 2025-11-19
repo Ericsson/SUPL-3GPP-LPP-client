@@ -1,0 +1,9 @@
+brdc_nav.rnx
+brdc_nav_multi.rnx
+venv
+igs_sp3.*
+igs.sp3
+*.crx
+*.rnx
+*.gz
+rtklib_trace.txt

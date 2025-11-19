@@ -25,6 +25,8 @@ bool GpsEphemeris::is_valid(ts::Gps const& time) const NOEXCEPT {
     auto toe_tow  = static_cast<uint32_t>(toe);
     auto toe_frac = toe - toe_tow;
 
+    // TODO: Verify GPS validity window is correctly symmetric ±2/4 hours
+    // GPS ephemeris validity should be symmetric around TOE
     auto fit_interval = fit_interval_flag ? (2 * 3600) : (4 * 3600);
     auto toe_ts       = ts::Gps::from_week_tow(time.week(), toe_tow, toe_frac).timestamp();
     auto current_ts   = time.timestamp();
@@ -40,8 +42,8 @@ bool GpsEphemeris::is_valid(ts::Gps const& time) const NOEXCEPT {
 double GpsEphemeris::calculate_elapsed_time(ts::Gps const& time, double reference) const NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %g", ts::Utc(time).rtklib_time_string().c_str(), reference);
 
-    auto reference_tow  = static_cast<uint32_t>(reference);
-    auto reference_frac = reference - reference_tow;
+    auto reference_tow  = static_cast<int64_t>(reference);
+    auto reference_frac = reference - static_cast<double>(reference_tow);
 
     auto reference_ts =
         ts::Gps::from_week_tow(time.week(), reference_tow, reference_frac).timestamp();

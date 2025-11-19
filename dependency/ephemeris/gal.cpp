@@ -25,6 +25,10 @@ bool GalEphemeris::is_valid(ts::Gst const& time) const NOEXCEPT {
     auto toe_tow  = static_cast<uint32_t>(toe);
     auto toe_frac = toe - toe_tow;
 
+    // TODO: Fix validity window - should be asymmetric for I/NAV and F/NAV
+    // I/NAV (E1-B, E5b): Valid from TOE to TOE+7200s (2 hours forward)
+    // F/NAV (E5a): Valid from TOE-10800s to TOE+10800s (±3 hours)
+    // Current implementation uses symmetric ±4 hours which is incorrect
     auto fit_interval = 4 * 3600;
     auto toe_ts       = ts::Gst::from_week_tow(time.week(), toe_tow, toe_frac).timestamp();
     auto current_ts   = time.timestamp();

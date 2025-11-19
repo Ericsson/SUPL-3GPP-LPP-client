@@ -26,6 +26,8 @@ bool BdsEphemeris::is_valid(ts::Bdt const& time) const NOEXCEPT {
     auto toe_tow  = static_cast<uint32_t>(toe);
     auto toe_frac = toe - toe_tow;
 
+    // TODO: Verify BDS validity window - may need to be asymmetric
+    // BeiDou ephemeris validity should be checked against specification
     auto fit_interval = (4 * 3600);
     auto toe_ts       = ts::Bdt::from_week_tow(time.week(), toe_tow, toe_frac).timestamp();
     auto current_ts   = time.timestamp();
@@ -247,6 +249,71 @@ EphemerisResult BdsEphemeris::compute(ts::Bdt const& time) const NOEXCEPT {
     auto omega_k_cos = std::cos(omega_k);
     auto i_k_sin     = std::sin(i_k);
     auto i_k_cos     = std::cos(i_k);
+
+    // GEO satellites (PRN 1-5, 59-63) require special handling
+    if ((prn >= 1 && prn <= 5) || (prn >= 59 && prn <= 63)) {
+        // For GEO, omega_k uses different calculation
+        auto omega_k_geo     = omega0 + omega_dot * t_k - BDS_CONSTANT_OMEGA_EARTH_DOT * toe;
+        auto omega_k_geo_sin = std::sin(omega_k_geo);
+        auto omega_k_geo_cos = std::cos(omega_k_geo);
+
+        auto xg = x_k_prime * omega_k_geo_cos - y_k_prime * i_k_cos * omega_k_geo_sin;
+        auto yg = x_k_prime * omega_k_geo_sin + y_k_prime * i_k_cos * omega_k_geo_cos;
+        auto zg = y_k_prime * i_k_sin;
+
+        auto omega_e_t     = BDS_CONSTANT_OMEGA_EARTH_DOT * t_k;
+        auto sin_omega_e_t = std::sin(omega_e_t);
+        auto cos_omega_e_t = std::cos(omega_e_t);
+
+        constexpr double COS_5 = 0.99619469809174553229;   // cos(-5°)
+        constexpr double SIN_5 = -0.08715574274765817355;  // sin(-5°)
+
+        auto x_k = xg * cos_omega_e_t + yg * sin_omega_e_t * COS_5 + zg * sin_omega_e_t * SIN_5;
+        auto y_k = -xg * sin_omega_e_t + yg * cos_omega_e_t * COS_5 + zg * cos_omega_e_t * SIN_5;
+        auto z_k = -yg * SIN_5 + zg * COS_5;
+
+        // Velocity for GEO
+        auto dot_omega_k_geo = omega_dot;
+        auto dot_xg          = dot_x_k_prime * omega_k_geo_cos -
+                      x_k_prime * dot_omega_k_geo * omega_k_geo_sin -
+                      dot_y_k_prime * i_k_cos * omega_k_geo_sin -
+                      y_k_prime * dot_i_k * i_k_sin * omega_k_geo_sin -
+                      y_k_prime * i_k_cos * dot_omega_k_geo * omega_k_geo_cos;
+        auto dot_yg = dot_x_k_prime * omega_k_geo_sin +
+                      x_k_prime * dot_omega_k_geo * omega_k_geo_cos +
+                      dot_y_k_prime * i_k_cos * omega_k_geo_cos -
+                      y_k_prime * dot_i_k * i_k_sin * omega_k_geo_cos -
+                      y_k_prime * i_k_cos * dot_omega_k_geo * omega_k_geo_sin;
+        auto dot_zg = dot_y_k_prime * i_k_sin + y_k_prime * dot_i_k * i_k_cos;
+
+        auto dot_x_k = dot_xg * cos_omega_e_t - xg * BDS_CONSTANT_OMEGA_EARTH_DOT * sin_omega_e_t +
+                       dot_yg * sin_omega_e_t * COS_5 +
+                       yg * BDS_CONSTANT_OMEGA_EARTH_DOT * cos_omega_e_t * COS_5 +
+                       dot_zg * sin_omega_e_t * SIN_5 +
+                       zg * BDS_CONSTANT_OMEGA_EARTH_DOT * cos_omega_e_t * SIN_5;
+        auto dot_y_k = -dot_xg * sin_omega_e_t - xg * BDS_CONSTANT_OMEGA_EARTH_DOT * cos_omega_e_t +
+                       dot_yg * cos_omega_e_t * COS_5 -
+                       yg * BDS_CONSTANT_OMEGA_EARTH_DOT * sin_omega_e_t * COS_5 +
+                       dot_zg * cos_omega_e_t * SIN_5 -
+                       zg * BDS_CONSTANT_OMEGA_EARTH_DOT * sin_omega_e_t * SIN_5;
+        auto dot_z_k = -dot_yg * SIN_5 + dot_zg * COS_5;
+
+        VERBOSEF("GEO x_k: %f, y_k: %f, z_k: %f", x_k, y_k, z_k);
+
+        // calculate the clock bias
+        auto clock = calculate_clock_bias(time);
+
+        EphemerisResult result{};
+        result.position = Float3{x_k, y_k, z_k};
+        result.velocity = Float3{dot_x_k, dot_y_k, dot_z_k};
+        result.clock    = clock;
+
+        auto rc_brdc  = calculate_relativistic_correction_idc(e_k);
+        auto rc_dotrv = calculate_relativistic_correction(result.position, result.velocity);
+        result.relativistic_correction_brdc  = rc_brdc;
+        result.relativistic_correction_dotrv = rc_dotrv;
+        return result;
+    }
 
     auto x_k = x_k_prime * omega_k_cos - y_k_prime * omega_k_sin * i_k_cos;
     auto y_k = x_k_prime * omega_k_sin + y_k_prime * omega_k_cos * i_k_cos;
