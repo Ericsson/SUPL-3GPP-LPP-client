@@ -8,6 +8,7 @@
 #define GLO_ABS_COUNT 24
 #define GAL_ABS_COUNT 36
 #define BDS_ABS_COUNT 63
+#define QZS_ABS_COUNT 10
 
 #define GPS_ABS_MIN 0
 #define GPS_ABS_MAX (GPS_ABS_MIN + GPS_ABS_COUNT - 1)
@@ -17,8 +18,10 @@
 #define GAL_ABS_MAX (GAL_ABS_MIN + GAL_ABS_COUNT - 1)
 #define BDS_ABS_MIN (GAL_ABS_MAX + 1)
 #define BDS_ABS_MAX (BDS_ABS_MIN + BDS_ABS_COUNT - 1)
+#define QZS_ABS_MIN (BDS_ABS_MAX + 1)
+#define QZS_ABS_MAX (QZS_ABS_MIN + QZS_ABS_COUNT - 1)
 
-#define SATELLITE_ID_MAX (BDS_ABS_MAX + 1)
+#define SATELLITE_ID_MAX (QZS_ABS_MAX + 1)
 
 class SatelliteId {
 public:
@@ -30,6 +33,7 @@ public:
         GLONASS,
         GALILEO,
         BEIDOU,
+        QZSS,
     };
 
     NODISCARD static SatelliteId invalid();
@@ -37,6 +41,7 @@ public:
     NODISCARD static SatelliteId from_gps_prn(uint8_t prn);
     NODISCARD static SatelliteId from_gal_prn(uint8_t prn);
     NODISCARD static SatelliteId from_bds_prn(uint8_t prn);
+    NODISCARD static SatelliteId from_qzs_prn(uint8_t prn);
     NODISCARD static SatelliteId from_string(std::string const& str);
 
     //
@@ -56,6 +61,7 @@ public:
     NODISCARD bool is_galileo() const { return mGnss == Gnss::GALILEO; }
     NODISCARD bool is_beidou() const { return mGnss == Gnss::BEIDOU; }
     NODISCARD bool is_glonass() const { return mGnss == Gnss::GLONASS; }
+    NODISCARD bool is_qzss() const { return mGnss == Gnss::QZSS; }
 
     NODISCARD Gnss gnss() const;
     NODISCARD std::string to_string() const;

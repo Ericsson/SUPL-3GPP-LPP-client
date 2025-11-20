@@ -52,6 +52,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mGenerateGlo(config.generate_glo),
       mGenerateGal(config.generate_gal),
       mGenerateBds(config.generate_bds),
+      mGenerateQzs(config.generate_qzs),
       mShapiroCorrection(true),
       mEarthSolidTidesCorrection(false),
       mPhaseWindupCorrection(false),
@@ -113,6 +114,15 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
     if (mGenerateBds) {
         for (uint8_t i = 1; i <= 63; i++) {
             auto id = SatelliteId::from_bds_prn(i);
+            ASSERT(id.is_valid(), "invalid satellite id");
+            mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+        }
+    }
+
+    // QZSS
+    if (mGenerateQzs) {
+        for (uint8_t i = 193; i <= 202; i++) {
+            auto id = SatelliteId::from_qzs_prn(i);
             ASSERT(id.is_valid(), "invalid satellite id");
             mSatellites.emplace_back(id, mGroundPosition, mGenerator);
         }
@@ -788,6 +798,32 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
 
         mMissingEphemeris.push_back({sv_id, iod});
         return false;
+    } else if (sv_id.gnss() == SatelliteId::Gnss::QZSS) {
+        auto it = mQzsEphemeris.find(sv_id);
+        if (it == mQzsEphemeris.end()) {
+            mMissingEphemeris.push_back({sv_id, iod});
+            return false;
+        }
+        auto& list = it->second;
+
+        auto qzs_time = ts::Gps(time);
+        VERBOSEF("searching: %s %u", sv_id.name(), iod);
+        for (auto& ephemeris : list) {
+            VERBOSEF("  %4u %8.0f %8.0f | %4u %4u %4u |%s%s", ephemeris.week_number, ephemeris.toe,
+                     ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
+                     ephemeris.is_valid(qzs_time) ? " [time]" : "",
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
+            if (!ephemeris.is_valid(qzs_time)) continue;
+            auto eph_iode    = ephemeris.lpp_iod & 0xFF;
+            auto wanted_iode = iod & 0xFF;
+            if (eph_iode != wanted_iode && mIodConsistencyCheck) continue;
+            eph = ephemeris::Ephemeris(ephemeris);
+            VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
+            return true;
+        }
+
+        mMissingEphemeris.push_back({sv_id, iod});
+        return false;
     }
 
     UNREACHABLE();
@@ -887,6 +923,37 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
     list.push_back(ephemeris);
     std::sort(list.begin(), list.end(),
               [](ephemeris::BdsEphemeris const& a, ephemeris::BdsEphemeris const& b) {
+                  return a.compare(b);
+              });
+
+    DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
+}
+
+void Generator::process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
+    auto satellite_id = SatelliteId::from_qzs_prn(ephemeris.prn);
+    if (!satellite_id.is_valid()) {
+        VERBOSEF("invalid satellite id: QZS %d", ephemeris.prn);
+        return;
+    }
+
+    auto& list = mQzsEphemeris[satellite_id];
+
+    for (auto& eph : list) {
+        if (eph.match(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
+            return;
+        }
+    }
+
+    if (list.size() >= 10) {
+        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
+        list.erase(list.begin());
+    }
+
+    list.push_back(ephemeris);
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::QzsEphemeris const& a, ephemeris::QzsEphemeris const& b) {
                   return a.compare(b);
               });
 

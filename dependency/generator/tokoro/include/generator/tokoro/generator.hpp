@@ -10,6 +10,7 @@
 #include <ephemeris/ephemeris.hpp>
 #include <ephemeris/gal.hpp>
 #include <ephemeris/gps.hpp>
+#include <ephemeris/qzs.hpp>
 #include <format/antex/antex.hpp>
 #include <format/rinex/builder.hpp>
 #include <generator/rtcm/satellite_id.hpp>
@@ -35,6 +36,7 @@ struct ReferenceStationConfig {
     bool   generate_glo;
     bool   generate_gal;
     bool   generate_bds;
+    bool   generate_qzs;
 };
 
 struct CorrectionData;
@@ -101,6 +103,7 @@ private:
     bool     mGenerateGlo;
     bool     mGenerateGal;
     bool     mGenerateBds;
+    bool     mGenerateQzs;
     bool     mShapiroCorrection;
     bool     mEarthSolidTidesCorrection;
     bool     mPhaseWindupCorrection;
@@ -142,6 +145,7 @@ public:
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
+    void process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
 
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
@@ -181,6 +185,7 @@ private:
     std::unordered_map<SatelliteId, std::vector<ephemeris::GpsEphemeris>> mGpsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
+    std::unordered_map<SatelliteId, std::vector<ephemeris::QzsEphemeris>> mQzsEphemeris;
 
     ts::Tai                               mLastCorrectionDataTime;
     std::unique_ptr<CorrectionData>       mCorrectionData;

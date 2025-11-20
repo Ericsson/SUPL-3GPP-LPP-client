@@ -29,6 +29,9 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added QZSS ephemeris computation support
+- Added QZSS satellite and signal ID mapping for RTCM
+- Added comprehensive QZSS ephemeris tests with reference data
 - Added MessagePack encoder/decoder library with support for all basic types, arrays, maps, and extensions
 - Added BufferInput and BufferOutput classes for in-memory I/O operations
 - Added ephemeris tests for GPS, Galileo, and BeiDou

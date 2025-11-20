@@ -411,6 +411,7 @@ void Tokoro::vrs_mode_fixed() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
+                false,
             });
     }
 }
@@ -442,6 +443,7 @@ void Tokoro::vrs_mode_grid() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
+                false,
             });
     }
 }
@@ -515,6 +517,7 @@ void Tokoro::vrs_mode_dynamic() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
+                false,
             });
 
         mLastUsedLocation = mLastLocation;

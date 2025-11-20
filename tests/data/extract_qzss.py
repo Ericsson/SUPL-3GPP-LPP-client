@@ -1,43 +1,106 @@
 #!/usr/bin/env python3
-"""Extract QZSS ephemeris test data from RINEX navigation file."""
+"""
+Extract QZSS ephemeris test data from RINEX navigation file.
+
+QZSS uses GPS-compatible ephemeris format and GPS time system.
+PRN range: 193-202
+"""
 import georinex as gr
 import numpy as np
-from pyrtklib import readrnx, satpos, gpst2utc, time2str, satid2no, gtime_t, nav_t, Arr1Ddouble, Arr1Dint, Arr1Dchar
+from pyrtklib import eph2pos, gpst2time, gpst2utc, time2str, eph_t, gtime_t, Arr1Ddouble, Arr1Dchar, tracelevel, traceopen
+import warnings
+import sys
+warnings.filterwarnings('ignore')
+
+traceopen('rtklib_trace.txt')
+tracelevel(5)
 
 GPS_TO_UNIX_OFFSET = 315964800
 VALIDITY_PERIOD = 4 * 3600
-AOD_OFFSET = 600
+AOD_OFFSET = 0
 NUM_TESTS = 10
 
 def get_gps_time(dt):
     gps_epoch = np.datetime64('1980-01-06T00:00:00')
     return int((dt - gps_epoch) / np.timedelta64(1, 's'))
 
-def compute_position(rtklib_nav, gps_sec, prn):
+def build_qzss_eph(eph_data, prn):
+    """Build RTKLIB eph_t from georinex data - QZSS uses GPS format"""
+    eph = eph_t()
+    
+    week = int(eph_data['GPSWeek'].values)
+    toe_sow = float(eph_data['Toe'].values)
+    toc_gps = get_gps_time(np.datetime64(eph_data.time.values, 'ns'))
+    toc_sow = toc_gps % 604800
+    
+    eph.sat = prn
+    eph.week = week
+    eph.toes = toe_sow
+    eph.toe = gpst2time(week, toe_sow)
+    eph.toc = gpst2time(week, toc_sow)
+    eph.iode = int(eph_data['IODE'].values)
+    eph.iodc = int(eph_data['IODC'].values)
+    eph.sva = int(eph_data['SVacc'].values)
+    eph.svh = int(eph_data['health'].values)
+    eph.code = int(eph_data['CodesL2'].values)
+    eph.flag = int(eph_data['L2Pflag'].values)
+    eph.fit = int(eph_data['FitIntvl'].values)
+    eph.tgd[0] = float(eph_data['TGD'].values)
+    eph.f2 = float(eph_data['SVclockDriftRate'].values)
+    eph.f1 = float(eph_data['SVclockDrift'].values)
+    eph.f0 = float(eph_data['SVclockBias'].values)
+    eph.A = float(eph_data['sqrtA'].values) ** 2
+    eph.e = float(eph_data['Eccentricity'].values)
+    eph.i0 = float(eph_data['Io'].values)
+    eph.OMG0 = float(eph_data['Omega0'].values)
+    eph.omg = float(eph_data['omega'].values)
+    eph.M0 = float(eph_data['M0'].values)
+    eph.deln = float(eph_data['DeltaN'].values)
+    eph.OMGd = float(eph_data['OmegaDot'].values)
+    eph.idot = float(eph_data['IDOT'].values)
+    eph.crc = float(eph_data['Crc'].values)
+    eph.crs = float(eph_data['Crs'].values)
+    eph.cuc = float(eph_data['Cuc'].values)
+    eph.cus = float(eph_data['Cus'].values)
+    eph.cic = float(eph_data['Cic'].values)
+    eph.cis = float(eph_data['Cis'].values)
+    
+    return eph
+
+def compute_position(eph, gps_sec):
     time = gtime_t()
     time.time = GPS_TO_UNIX_OFFSET + gps_sec
     time.sec = 0.0
     
-    satno = satid2no(f"J{prn:02d}")
-    rs = Arr1Ddouble(6)
-    dts = Arr1Ddouble(2)
+    rs = Arr1Ddouble(3)
+    dts = Arr1Ddouble(1)
     var = Arr1Ddouble(1)
-    svh = Arr1Dint(1)
     
-    ret = satpos(time, time, satno, 0, rtklib_nav, rs, dts, var, svh)
-    if ret == 0 or rs[0] == 0:
+    eph2pos(time, eph, rs, dts, var)
+    if rs[0] == 0.0:
         return None
+    
+    dt = 1E-3
+    time2 = gtime_t()
+    time2.time = GPS_TO_UNIX_OFFSET + gps_sec
+    time2.sec = dt
+    rs2 = Arr1Ddouble(3)
+    dts2 = Arr1Ddouble(1)
+    var2 = Arr1Ddouble(1)
+    eph2pos(time2, eph, rs2, dts2, var2)
     
     return {
         'x': rs[0], 'y': rs[1], 'z': rs[2],
-        'vx': rs[3], 'vy': rs[4], 'vz': rs[5],
-        'clock_bias': dts[0], 'clock_drift': dts[1]
+        'vx': (rs2[0] - rs[0]) / dt,
+        'vy': (rs2[1] - rs[1]) / dt,
+        'vz': (rs2[2] - rs[2]) / dt,
+        'clock_bias': dts[0], 'clock_drift': (dts2[0] - dts[0]) / dt
     }
 
-def generate_tests(rtklib_nav, toe_gps_sec, prn):
+def generate_tests(eph, toe_gps_sec):
     tests = []
     for i in range(NUM_TESTS):
-        offset = AOD_OFFSET + int(i * (VALIDITY_PERIOD - AOD_OFFSET) / (NUM_TESTS - 1))
+        offset = int(-VALIDITY_PERIOD/2) + AOD_OFFSET + int(i * (VALIDITY_PERIOD - AOD_OFFSET * 2) / (NUM_TESTS - 1))
         test_gps_sec = toe_gps_sec + offset
         
         time = gtime_t()
@@ -48,15 +111,13 @@ def generate_tests(rtklib_nav, toe_gps_sec, prn):
         time2str(utc_time, time_str_arr, 3)
         time_str = ''.join([c for c in list(time_str_arr) if ord(c) != 0])
         
-        pos = compute_position(rtklib_nav, test_gps_sec, prn)
+        pos = compute_position(eph, test_gps_sec)
         if pos:
-            tests.append({'gps_sec': test_gps_sec, 'time_str': time_str, **pos})
+            tests.append({'gps_sec': test_gps_sec, 'offset': offset, 'time_str': time_str, **pos})
     
     return tests
 
 nav = gr.load('brdc_nav.rnx', use='J')
-rtklib_nav = nav_t()
-readrnx('brdc_nav.rnx', 1, '', None, rtklib_nav, None)
 
 test_id = 0
 for time in nav.time.values:
@@ -74,16 +135,18 @@ for time in nav.time.values:
             
             prn = int(str(sv)[1:].split('_')[0])
             toe_sow = float(eph_data['Toe'].values)
+            
             week = int(eph_data['GPSWeek'].values)
             toe_gps_sec = week * 604800 + int(toe_sow)
             
-            tests = generate_tests(rtklib_nav, toe_gps_sec, prn)
+            eph = build_qzss_eph(eph_data, prn)
+            tests = generate_tests(eph, toe_gps_sec)
             if not tests:
                 continue
             
             toc_gps = get_gps_time(np.datetime64(eph_data.time.values, 'ns'))
             
-            eph = {
+            eph_dict = {
                 'prn': prn, 'week': week, 'toe': toe_sow, 'toc': float(toc_gps % 604800),
                 'iode': int(eph_data['IODE'].values), 'iodc': int(eph_data['IODC'].values),
                 'tgd': float(eph_data['TGD'].values),
@@ -102,31 +165,36 @@ for time in nav.time.values:
                 'idot': float(eph_data['IDOT'].values),
                 'health': int(eph_data['health'].values), 'ura': int(eph_data['SVacc'].values),
                 'fit_flag': int(eph_data['FitIntvl'].values),
+                'l2p_flag': int(eph_data['L2Pflag'].values),
+                'l2_code': int(eph_data['CodesL2'].values),
                 'tests': tests
             }
-            ephemerides.append(eph)
+            ephemerides.append(eph_dict)
         except Exception as e:
+            print(f"Error processing {sv}: {e}", file=sys.stderr)
             continue
     
     if ephemerides:
         with open(f'qzss/{gps_sec}.txt', 'w') as f:
             f.write("# QZSS Ephemeris Test Data\n")
-            f.write("# Format: EPH prn week toe toc iode iodc tgd af2 af1 af0 crc crs cuc cus cic cis e m0 delta_n a i0 omega0 omega omega_dot idot health ura fit_flag\n")
-            f.write("# Format: TEST test_id gps_sec time_str x y z vx vy vz clock_bias clock_drift\n\n")
+            f.write("# QZSS uses GPS-compatible ephemeris format and GPS time system\n")
+            f.write("# Format: EPH prn week toe toc iode iodc tgd af2 af1 af0 crc crs cuc cus cic cis e m0 delta_n a i0 omega0 omega omega_dot idot health ura fit_flag l2p_flag l2_code\n")
+            f.write("# Format: TEST test_id gps_sec offset time_str x y z vx vy vz clock_bias clock_drift\n\n")
             
             for eph in ephemerides:
                 f.write(f"EPH {eph['prn']} {eph['week']} {eph['toe']} {eph['toc']} ")
                 f.write(f"{eph['iode']} {eph['iodc']} {eph['tgd']} {eph['af2']} {eph['af1']} {eph['af0']} ")
                 f.write(f"{eph['crc']} {eph['crs']} {eph['cuc']} {eph['cus']} {eph['cic']} {eph['cis']} ")
                 f.write(f"{eph['e']} {eph['m0']} {eph['delta_n']} {eph['a']} {eph['i0']} {eph['omega0']} ")
-                f.write(f"{eph['omega']} {eph['omega_dot']} {eph['idot']} {eph['health']} {eph['ura']} {eph['fit_flag']}\n")
+                f.write(f"{eph['omega']} {eph['omega_dot']} {eph['idot']} {eph['health']} {eph['ura']} ")
+                f.write(f"{eph['fit_flag']} {eph['l2p_flag']} {eph['l2_code']}\n")
                 
                 for test in eph['tests']:
-                    f.write(f"TEST {test_id} {test['gps_sec']} \"{test['time_str']}\" ")
+                    f.write(f"TEST {test_id} {test['gps_sec']} {test['offset']} \"{test['time_str']}\" ")
                     f.write(f"{test['x']} {test['y']} {test['z']} ")
                     f.write(f"{test['vx']} {test['vy']} {test['vz']} ")
                     f.write(f"{test['clock_bias']} {test['clock_drift']}\n")
                     test_id += 1
                 f.write("\n")
-        
-        print(f"{gps_sec}: {len(ephemerides)} satellites")
+
+            print(f"{gps_sec}: {len(ephemerides)} satellites") 

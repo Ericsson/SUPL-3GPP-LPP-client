@@ -12,6 +12,7 @@ enum class FrequencyType {
     L1,
     L2,
     L5,
+    L6,
     E1,
     E5a,
     E5b,
@@ -38,6 +39,7 @@ public:
         GLONASS,
         GALILEO,
         BEIDOU,
+        QZSS,
     };
 
     NODISCARD static SignalId from_lpp(Gnss gnss, long id);
@@ -148,6 +150,19 @@ public:
     static SignalId const BEIDOU_B2_I;
     static SignalId const BEIDOU_B2_Q;
     static SignalId const BEIDOU_B2_I_Q;
+
+    static SignalId const QZSS_L1_CA;
+    static SignalId const QZSS_L1C_D;
+    static SignalId const QZSS_L1C_P;
+    static SignalId const QZSS_L1C_D_P;
+    static SignalId const QZSS_L2C_M;
+    static SignalId const QZSS_L2C_L;
+    static SignalId const QZSS_L2C_M_L;
+    static SignalId const QZSS_L5_I;
+    static SignalId const QZSS_L5_Q;
+    static SignalId const QZSS_L5_I_Q;
+    static SignalId const QZSS_L6_D;
+    static SignalId const QZSS_L6_E;
     static SignalId const BEIDOU_B1C_D;
     static SignalId const BEIDOU_B1C_P;
     static SignalId const BEIDOU_B1C_D_P;

@@ -76,6 +76,19 @@ SignalId const SignalId::BEIDOU_B2A_D   = SignalId::from_lpp(SignalId::BEIDOU, 1
 SignalId const SignalId::BEIDOU_B2A_P   = SignalId::from_lpp(SignalId::BEIDOU, 13);
 SignalId const SignalId::BEIDOU_B2A_D_P = SignalId::from_lpp(SignalId::BEIDOU, 14);
 
+SignalId const SignalId::QZSS_L1_CA   = SignalId::from_lpp(SignalId::QZSS, 0);
+SignalId const SignalId::QZSS_L1C_D   = SignalId::from_lpp(SignalId::QZSS, 1);
+SignalId const SignalId::QZSS_L1C_P   = SignalId::from_lpp(SignalId::QZSS, 2);
+SignalId const SignalId::QZSS_L1C_D_P = SignalId::from_lpp(SignalId::QZSS, 3);
+SignalId const SignalId::QZSS_L2C_M   = SignalId::from_lpp(SignalId::QZSS, 4);
+SignalId const SignalId::QZSS_L2C_L   = SignalId::from_lpp(SignalId::QZSS, 5);
+SignalId const SignalId::QZSS_L2C_M_L = SignalId::from_lpp(SignalId::QZSS, 6);
+SignalId const SignalId::QZSS_L5_I    = SignalId::from_lpp(SignalId::QZSS, 7);
+SignalId const SignalId::QZSS_L5_Q    = SignalId::from_lpp(SignalId::QZSS, 8);
+SignalId const SignalId::QZSS_L5_I_Q  = SignalId::from_lpp(SignalId::QZSS, 9);
+SignalId const SignalId::QZSS_L6_D    = SignalId::from_lpp(SignalId::QZSS, 10);
+SignalId const SignalId::QZSS_L6_E    = SignalId::from_lpp(SignalId::QZSS, 11);
+
 //
 // GPS
 //
@@ -570,6 +583,65 @@ static FrequencyType gBdsFreqType[24] = {
     FrequencyType::UNKNOWN   // Reserved
 };
 
+#define QZSS_L1_FREQ 1575.42e3
+#define QZSS_L2_FREQ 1227.60e3
+#define QZSS_L5_FREQ 1176.45e3
+#define QZSS_L6_FREQ 1278.75e3
+
+static double gQzssFreq[24] = {
+    QZSS_L1_FREQ,  // L1 C/A
+    QZSS_L1_FREQ,  // L1C(D)
+    QZSS_L1_FREQ,  // L1C(P)
+    QZSS_L1_FREQ,  // L1C(D+P)
+    QZSS_L2_FREQ,  // L2C(M)
+    QZSS_L2_FREQ,  // L2C(L)
+    QZSS_L2_FREQ,  // L2C(M+L)
+    QZSS_L5_FREQ,  // L5 I
+    QZSS_L5_FREQ,  // L5 Q
+    QZSS_L5_FREQ,  // L5 I+Q
+    QZSS_L6_FREQ,  // L6 D
+    QZSS_L6_FREQ,  // L6 E
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+    0.0,           // Reserved
+};
+
+static FrequencyType gQzssFreqType[24] = {
+    FrequencyType::L1,       // L1 C/A
+    FrequencyType::L1,       // L1C(D)
+    FrequencyType::L1,       // L1C(P)
+    FrequencyType::L1,       // L1C(D+P)
+    FrequencyType::L2,       // L2C(M)
+    FrequencyType::L2,       // L2C(L)
+    FrequencyType::L2,       // L2C(M+L)
+    FrequencyType::L5,       // L5 I
+    FrequencyType::L5,       // L5 Q
+    FrequencyType::L5,       // L5 I+Q
+    FrequencyType::L6,       // L6 D
+    FrequencyType::L6,       // L6 E
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN,  // Reserved
+    FrequencyType::UNKNOWN   // Reserved
+};
+
 SignalId SignalId::from_lpp(Gnss gnss, long id) {
     if (id >= 24) {
         return {};
@@ -582,6 +654,8 @@ SignalId SignalId::from_lpp(Gnss gnss, long id) {
     } else if (gnss == Gnss::GALILEO) {
         return SignalId(gnss, static_cast<int32_t>(id));
     } else if (gnss == Gnss::BEIDOU) {
+        return SignalId(gnss, static_cast<int32_t>(id));
+    } else if (gnss == Gnss::QZSS) {
         return SignalId(gnss, static_cast<int32_t>(id));
     } else {
         CORE_UNREACHABLE();
@@ -659,6 +733,8 @@ double SignalId::frequency() const {
         return gGalileoFreq[id];
     } else if (mGnss == Gnss::BEIDOU) {
         return gBdsFreq[id];
+    } else if (mGnss == Gnss::QZSS) {
+        return gQzssFreq[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -678,6 +754,8 @@ FrequencyType SignalId::frequency_type() const {
         return gGalileoFreqType[id];
     } else if (mGnss == Gnss::BEIDOU) {
         return gBdsFreqType[id];
+    } else if (mGnss == Gnss::QZSS) {
+        return gQzssFreqType[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
