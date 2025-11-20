@@ -82,7 +82,8 @@ TEST_CASE("TcpConnectTask read/write") {
     ::unlink("/tmp/test_scheduler_rw.sock");
 
     int server_fd      = -1;
-    listener.on_accept = [&](auto&, int fd, auto*, auto) {
+    listener.on_accept = [&](scheduler::TcpListenerTask&, int fd, struct sockaddr_storage*,
+                             socklen_t) {
         server_fd = fd;
         // Echo server
         char buf[256];

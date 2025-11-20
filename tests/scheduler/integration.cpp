@@ -1,4 +1,5 @@
 #include <cstring>
+#include <cxx11_compat.hpp>
 #include <doctest/doctest.h>
 #include <scheduler/scheduler.hpp>
 #include <scheduler/socket.hpp>
@@ -15,7 +16,8 @@ TEST_CASE("Echo server integration") {
 
     std::unique_ptr<scheduler::SocketTask> server_conn;
 
-    server.on_accept = [&](auto&, int fd, auto*, auto) {
+    server.on_accept = [&](scheduler::TcpListenerTask&, int fd, struct sockaddr_storage*,
+                           socklen_t) {
         server_conn = std::make_unique<scheduler::SocketTask>(fd);
 
         server_conn->on_read = [](scheduler::SocketTask& task) {
@@ -69,7 +71,8 @@ TEST_CASE("Multiple clients to one server") {
 
     std::vector<std::unique_ptr<scheduler::SocketTask>> connections;
 
-    server.on_accept = [&](auto&, int fd, auto*, auto) {
+    server.on_accept = [&](scheduler::TcpListenerTask&, int fd, struct sockaddr_storage*,
+                           socklen_t) {
         auto conn = std::make_unique<scheduler::SocketTask>(fd);
 
         conn->on_read = [](scheduler::SocketTask& task) {
@@ -170,7 +173,8 @@ TEST_CASE("Reconnection after disconnect") {
     int                                                 accept_count = 0;
     std::vector<std::unique_ptr<scheduler::SocketTask>> connections;
 
-    server.on_accept = [&](auto&, int fd, auto*, auto) {
+    server.on_accept = [&](scheduler::TcpListenerTask&, int fd, struct sockaddr_storage*,
+                           socklen_t) {
         accept_count++;
         auto conn = std::make_unique<scheduler::SocketTask>(fd);
 

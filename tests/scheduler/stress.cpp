@@ -1,3 +1,4 @@
+#include <cxx11_compat.hpp>
 #include <doctest/doctest.h>
 #include <memory>
 #include <scheduler/scheduler.hpp>
@@ -84,7 +85,8 @@ TEST_CASE("Rapid timer creation and cancellation") {
     std::vector<std::unique_ptr<scheduler::TimeoutTask>> timers;
 
     for (int i = 0; i < 100; i++) {
-        auto timeout      = std::make_unique<scheduler::TimeoutTask>(std::chrono::milliseconds(10));
+        auto timeout = std::unique_ptr<scheduler::TimeoutTask>(
+            new scheduler::TimeoutTask(std::chrono::milliseconds(10)));
         timeout->callback = [&fired_count]() {
             fired_count++;
         };
