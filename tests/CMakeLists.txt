@@ -71,6 +71,27 @@ target_link_options(eph_tests PRIVATE -fsanitize=address)
 add_test(NAME eph_tests COMMAND eph_tests --no-skip)
 set_tests_properties(eph_tests PROPERTIES LABELS "eph")
 
+add_executable(scheduler_tests
+    scheduler/main.cpp
+    scheduler/basic.cpp
+    scheduler/socket.cpp
+    scheduler/stream.cpp
+    scheduler/stress.cpp
+    scheduler/integration.cpp
+    # scheduler/write_buffer.cpp  # Enable when FileDescriptorTask has write buffering
+)
+target_link_libraries(scheduler_tests PRIVATE 
+    dependency::scheduler
+    dependency::core
+    dependency::loglet
+    doctest::doctest
+)
+target_compile_options(scheduler_tests PRIVATE -fsanitize=address -g)
+target_link_options(scheduler_tests PRIVATE -fsanitize=address)
+
+add_test(NAME scheduler_tests COMMAND scheduler_tests --no-skip)
+set_tests_properties(scheduler_tests PROPERTIES LABELS "scheduler")
+
 if(ENABLE_FUZZING)
     add_executable(fuzz_nmea format/nmea/fuzz_target.cpp)
     target_link_libraries(fuzz_nmea PRIVATE dependency::format::nmea dependency::core)
