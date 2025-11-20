@@ -92,6 +92,22 @@ target_link_options(scheduler_tests PRIVATE -fsanitize=address)
 add_test(NAME scheduler_tests COMMAND scheduler_tests --no-skip)
 set_tests_properties(scheduler_tests PROPERTIES LABELS "scheduler")
 
+add_executable(msgpack_tests
+    msgpack/main.cpp
+    msgpack/basic.cpp
+    msgpack/advanced.cpp
+)
+target_link_libraries(msgpack_tests PRIVATE 
+    dependency::msgpack
+    dependency::core
+    doctest::doctest
+)
+target_compile_options(msgpack_tests PRIVATE -fsanitize=address -g)
+target_link_options(msgpack_tests PRIVATE -fsanitize=address)
+
+add_test(NAME msgpack_tests COMMAND msgpack_tests --no-skip)
+set_tests_properties(msgpack_tests PROPERTIES LABELS "msgpack")
+
 if(ENABLE_FUZZING)
     add_executable(fuzz_nmea format/nmea/fuzz_target.cpp)
     target_link_libraries(fuzz_nmea PRIVATE dependency::format::nmea dependency::core)

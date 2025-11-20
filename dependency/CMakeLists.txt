@@ -11,6 +11,7 @@ add_subdirectory("generator")
 add_subdirectory("time")
 add_subdirectory("maths")
 add_subdirectory("ephemeris")
+add_subdirectory("msgpack")
 
 if(DATA_TRACING)
     add_subdirectory("datatrace")

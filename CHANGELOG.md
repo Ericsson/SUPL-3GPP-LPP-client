@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- MessagePack serialization library with C++11 support
+
 ### Changed
 - Fixed identifier naming
 - Eliminated 1MB global buffer by using direct vfprintf formatting
@@ -26,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added MessagePack encoder/decoder library with support for all basic types, arrays, maps, and extensions
 - Added BufferInput and BufferOutput classes for in-memory I/O operations
 - Added ephemeris tests for GPS, Galileo, and BeiDou
 - Added QZSS and NavIC support flags to SPARTN generator
