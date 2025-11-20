@@ -1,4 +1,5 @@
 #pragma once
+#include <msgpack/msgpack.hpp>
 #include <time/timestamp.hpp>
 
 namespace ts {
@@ -29,7 +30,15 @@ public:
     NODISCARD int64_t day_of_week() const { return (days() + 1) % DAYS_PER_WEEK; }
 
     NODISCARD static Glo now();
-    NODISCARD static Glo from_day_tod(int64_t day, double tod);
+    NODISCARD static Glo from_absolute_day_tod(int64_t day, double tod);
+    NODISCARD static Glo from_period_day_tod(int64_t day, double tod, Glo const& reference);
+
+    // Deprecated: use from_absolute_day_tod
+    NODISCARD static Glo from_day_tod(int64_t day, double tod) {
+        return from_absolute_day_tod(day, tod);
+    }
+
+    MSGPACK_DEFINE(mTm)
 
 protected:
     NODISCARD Timestamp utc_timestamp() const;

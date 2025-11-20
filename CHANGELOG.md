@@ -30,10 +30,13 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added GLONASS ephemeris support
+- Added GLONASS time system support with UTC offset handling
+- Added comprehensive GLONASS ephemeris tests with reference data
 - Added Tokoro coordinate transformation tests (ECEF, ENU, WGS84)
 - Added error handling framework with Error type, Result<T> wrapper
 - Added ANTEX parser tests and libFuzzer-based fuzzing support
-- Added QZSS ephemeris computation support
+- Added QZSS ephemeris support
 - Added QZSS satellite and signal ID mapping for RTCM
 - Added comprehensive QZSS ephemeris tests with reference data
 - Added MessagePack encoder/decoder library with support for all basic types, arrays, maps, and extensions

@@ -4,6 +4,7 @@ add_executable(time_tests
     time/main.cpp
     time/timestamp.cpp
     time/gps.cpp
+    time/glo.cpp
     time/conversions.cpp
 )
 target_link_libraries(time_tests PRIVATE dependency::time dependency::core doctest::doctest)

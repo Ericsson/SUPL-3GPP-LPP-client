@@ -1,5 +1,6 @@
 #pragma once
 #include <core/core.hpp>
+#include <msgpack/msgpack.hpp>
 
 namespace ts {
 
@@ -39,6 +40,8 @@ public:
         return Timestamp{seconds() - other.seconds(), fraction() - other.fraction()};
     }
 
+    NODISCARD Timestamp difference(Timestamp const& other) const { return *this - other; }
+
     void normalize() {
         while (mFraction < 0.0) {
             auto underflow = static_cast<int64_t>(-mFraction) + 1;
@@ -72,6 +75,8 @@ public:
     }
     NODISCARD bool operator>(Timestamp const& other) const { return !(*this <= other); }
     NODISCARD bool operator>=(Timestamp const& other) const { return !(*this < other); }
+
+    MSGPACK_DEFINE(mSeconds, mFraction)
 
 private:
     int64_t mSeconds;

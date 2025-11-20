@@ -1,5 +1,6 @@
 #pragma once
 #include <core/core.hpp>
+#include <msgpack/msgpack.hpp>
 
 struct Float3 {
     double x;
@@ -9,6 +10,8 @@ struct Float3 {
     NODISCARD double length_squared() const NOEXCEPT;
     NODISCARD double length() const NOEXCEPT;
     NODISCARD bool   normalize() NOEXCEPT;
+
+    MSGPACK_DEFINE(x, y, z)
 };
 
 NODISCARD Float3 operator+(Float3 a, Float3 b) NOEXCEPT;

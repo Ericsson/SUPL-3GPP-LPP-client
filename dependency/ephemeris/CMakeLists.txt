@@ -4,6 +4,7 @@ add_library(dependency_ephemeris STATIC
     "gal.cpp"
     "bds.cpp"
     "qzs.cpp"
+    "glo.cpp"
 )
 add_library(dependency::ephemeris ALIAS dependency_ephemeris)
 target_include_directories(dependency_ephemeris PRIVATE "./" "include/ephemeris/")

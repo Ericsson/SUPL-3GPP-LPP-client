@@ -47,9 +47,35 @@ Glo Glo::now() {
     return Glo{Utc::now()};
 }
 
-Glo Glo::from_day_tod(int64_t day, double tod) {
+Glo Glo::from_absolute_day_tod(int64_t day, double tod) {
     Timestamp timestamp{};
     timestamp.add(DAY_IN_SECONDS * day);
+    timestamp.add(tod);
+    return Glo{timestamp};
+}
+
+Glo Glo::from_period_day_tod(int64_t day, double tod, Glo const& reference) {
+    // GLONASS n_t is day within 4-year period (1461 days)
+    // Normalize day to [0, 1460]
+    CONSTEXPR static int64_t FOUR_YEAR_PERIOD = 1461;
+
+    while (day < 0) {
+        day += FOUR_YEAR_PERIOD;
+    }
+    while (day >= FOUR_YEAR_PERIOD) {
+        day -= FOUR_YEAR_PERIOD;
+    }
+
+    // Find which 4-year period contains the reference time
+    auto ref_days          = reference.days();
+    auto ref_day_in_period = ref_days % FOUR_YEAR_PERIOD;
+    auto period_start      = ref_days - ref_day_in_period;
+
+    // Construct time in reference's period
+    auto absolute_days = period_start + day;
+
+    Timestamp timestamp{};
+    timestamp.add(DAY_IN_SECONDS * absolute_days);
     timestamp.add(tod);
     return Glo{timestamp};
 }

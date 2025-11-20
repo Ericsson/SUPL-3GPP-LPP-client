@@ -12,7 +12,7 @@ add_library(dependency_time STATIC
 add_library(dependency::time ALIAS dependency_time)
 target_include_directories(dependency_time PRIVATE "./" "include/time/")
 target_include_directories(dependency_time PUBLIC "include/")
-target_link_libraries(dependency_time PUBLIC dependency::core)
+target_link_libraries(dependency_time PUBLIC dependency::core dependency::msgpack)
 target_link_libraries(dependency_time PRIVATE dependency::loglet)
 
 setup_target(dependency_time)
