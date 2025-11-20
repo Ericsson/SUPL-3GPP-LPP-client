@@ -74,6 +74,24 @@ target_link_options(eph_tests PRIVATE -fsanitize=address)
 add_test(NAME eph_tests COMMAND eph_tests --no-skip)
 set_tests_properties(eph_tests PROPERTIES LABELS "eph")
 
+add_executable(error_tests
+    error/main.cpp
+    error/basic.cpp
+    error/usage.cpp
+    error/result.cpp
+    error/registration.cpp
+)
+target_link_libraries(error_tests PRIVATE 
+    dependency::core
+    dependency::core
+    doctest::doctest
+)
+target_compile_options(error_tests PRIVATE -fsanitize=address -g)
+target_link_options(error_tests PRIVATE -fsanitize=address)
+
+add_test(NAME error_tests COMMAND error_tests --no-skip)
+set_tests_properties(error_tests PROPERTIES LABELS "error")
+
 add_executable(scheduler_tests
     scheduler/main.cpp
     scheduler/basic.cpp
@@ -126,6 +144,23 @@ target_link_options(generator_rtcm_tests PRIVATE -fsanitize=address)
 
 add_test(NAME generator_rtcm_tests COMMAND generator_rtcm_tests --no-skip)
 set_tests_properties(generator_rtcm_tests PROPERTIES LABELS "generator_rtcm")
+endif()
+
+if(INCLUDE_GENERATOR_TOKORO)
+add_executable(generator_tokoro_tests
+    generator/tokoro/main.cpp
+    generator/tokoro/coordinates.cpp
+)
+target_link_libraries(generator_tokoro_tests PRIVATE 
+    dependency::generator::tokoro
+    dependency::core
+    doctest::doctest
+)
+target_compile_options(generator_tokoro_tests PRIVATE -fsanitize=address -g)
+target_link_options(generator_tokoro_tests PRIVATE -fsanitize=address)
+
+add_test(NAME generator_tokoro_tests COMMAND generator_tokoro_tests --no-skip)
+set_tests_properties(generator_tokoro_tests PROPERTIES LABELS "generator_tokoro")
 endif()
 
 if(ENABLE_FUZZING)
