@@ -30,6 +30,8 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added Tokoro coordinate transformation tests (ECEF, ENU, WGS84)
+- Added error handling framework with Error type, Result<T> wrapper
 - Added ANTEX parser tests and libFuzzer-based fuzzing support
 - Added QZSS ephemeris computation support
 - Added QZSS satellite and signal ID mapping for RTCM
