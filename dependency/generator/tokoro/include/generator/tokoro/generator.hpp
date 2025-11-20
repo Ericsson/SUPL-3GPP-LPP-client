@@ -12,7 +12,9 @@
 #include <ephemeris/gps.hpp>
 #include <ephemeris/qzs.hpp>
 #include <format/antex/antex.hpp>
+#ifdef INCLUDE_FORMAT_RINEX
 #include <format/rinex/builder.hpp>
+#endif
 #include <generator/rtcm/satellite_id.hpp>
 #include <generator/rtcm/signal_id.hpp>
 #include <generator/tokoro/sv_id.hpp>
@@ -74,7 +76,9 @@ public:
     void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
+#ifdef INCLUDE_FORMAT_RINEX
     void set_generate_rinex(bool enabled) { mGenerateRinex = enabled; }
+#endif
     void set_require_code_bias(bool enabled) { mRequireCodeBias = enabled; }
     void set_require_phase_bias(bool enabled) { mRequirePhaseBias = enabled; }
     void set_require_tropo(bool enabled) { mRequireTropo = enabled; }
@@ -114,7 +118,9 @@ private:
     uint32_t mRtcmReferenceStationId;
     uint32_t mRtcmMsmType;
     bool     mNegativePhaseWindup;
-    bool     mGenerateRinex;
+#ifdef INCLUDE_FORMAT_RINEX
+    bool mGenerateRinex;
+#endif
 
     bool mRequireCodeBias;
     bool mRequirePhaseBias;
@@ -130,10 +136,12 @@ private:
     std::unordered_map<SatelliteSignalId, ts::Tai> mLockTime;
 
     ts::Tai mGenerationTime;
+#ifdef INCLUDE_FORMAT_RINEX
     ts::Tai mLastRinexEpoch;
 
     format::rinex::Builder mRinexBuilder;
-    Generator&             mGenerator;
+#endif
+    Generator& mGenerator;
 };
 
 class Generator {

@@ -1113,6 +1113,7 @@ int main(int argc, char** argv) {
     }
 
     if (program.config.agnss.enabled) {
+#if defined(INCLUDE_GENERATOR_TOKORO)
         if (!setup_agnss(program)) {
             return 1;
         }
@@ -1124,6 +1125,9 @@ int main(int argc, char** argv) {
             program.stream.add_inspector<AGnssProcessor>(
                 program.config.agnss, identity, *program.cell, program.scheduler, program.stream);
         }
+#else
+        WARNF("A-GNSS enabled but Tokoro generator not included in build");
+#endif
     }
 
     program.scheduler.execute();

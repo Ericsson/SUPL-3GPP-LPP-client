@@ -197,12 +197,14 @@ static args::Flag gNegativePhaseWindup{
     {"tkr-npw"},
 };
 
+#ifdef INCLUDE_RINEX_FORMAT
 static args::Flag gGenerateRinex{
     gGroup,
     "generate-rinex",
     "Generate RINEX files",
     {"tkr-generate-rinex"},
 };
+#endif
 
 static args::Flag gCodeBiasOptional{
     gGroup,
@@ -290,7 +292,9 @@ void parse(Config* config) {
     tokoro.rtoc                               = false;
     tokoro.ocit                               = false;
     tokoro.negative_phase_windup              = false;
-    tokoro.generate_rinex                     = false;
+#ifdef INCLUDE_RINEX_FORMAT
+    tokoro.generate_rinex = false;
+#endif
 
     tokoro.require_code_bias                 = true;
     tokoro.require_phase_bias                = true;
@@ -409,7 +413,10 @@ void parse(Config* config) {
     if (gRtOC) tokoro.rtoc = true;
     if (gOcit) tokoro.ocit = true;
     if (gNegativePhaseWindup) tokoro.negative_phase_windup = true;
+
+#ifdef INCLUDE_RINEX_FORMAT
     if (gGenerateRinex) tokoro.generate_rinex = true;
+#endif
 
     if (gCodeBiasOptional) tokoro.require_code_bias = false;
     if (gPhaseBiasOptional) tokoro.require_phase_bias = false;
@@ -471,7 +478,9 @@ void dump(TokoroConfig const& config) {
     DEBUGF("rtoc:                    %s", config.rtoc ? "true" : "false");
     DEBUGF("ocit:                    %s", config.ocit ? "true" : "false");
     DEBUGF("negative phase windup:   %s", config.negative_phase_windup ? "true" : "false");
+#ifdef INCLUDE_RINEX_FORMAT
     DEBUGF("generate rinex:          %s", config.generate_rinex ? "true" : "false");
+#endif
     DEBUGF("code bias required:      %s", config.require_code_bias ? "true" : "false");
     DEBUGF("phase bias required:     %s", config.require_phase_bias ? "true" : "false");
     DEBUGF("tropospheric required:   %s", config.require_tropo ? "true" : "false");

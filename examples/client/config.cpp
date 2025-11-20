@@ -32,11 +32,13 @@ void dump(Config* config) {
         ::ls::dump(config->location_server);
     }
 
+#ifdef INCLUDE_GENERATOR_TOKORO
     {
         DEBUGF("agnss:");
         DEBUG_INDENT_SCOPE();
         ::agnss::dump(config->agnss);
     }
+#endif
 
     {
         DEBUGF("identity:");
@@ -160,7 +162,9 @@ bool parse(int argc, char** argv, Config* config) {
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
 
     ::ls::setup(parser);
+#ifdef INCLUDE_GENERATOR_TOKORO
     ::agnss::setup(parser);
+#endif
     ::identity::setup(parser);
     ::ad::setup(parser);
     ::li::setup(parser);
@@ -206,7 +210,9 @@ bool parse(int argc, char** argv, Config* config) {
         }
 
         ::ls::parse(config);
+#ifdef INCLUDE_GENERATOR_TOKORO
         ::agnss::parse(config);
+#endif
         ::identity::parse(config);
         ::ad::parse(config);
         ::li::parse(config);
@@ -241,10 +247,12 @@ bool parse(int argc, char** argv, Config* config) {
         config->assistance_data.galileo &= config->gnss.galileo;
         config->assistance_data.beidou &= config->gnss.beidou;
 
+#ifdef INCLUDE_GENERATOR_TOKORO
         config->agnss.gps &= config->gnss.gps;
         config->agnss.glonass &= config->gnss.glonass;
         config->agnss.galileo &= config->gnss.galileo;
         config->agnss.beidou &= config->gnss.beidou;
+#endif
 
 #ifdef INCLUDE_GENERATOR_RTCM
         config->lpp2rtcm.generate_gps &= config->gnss.gps;

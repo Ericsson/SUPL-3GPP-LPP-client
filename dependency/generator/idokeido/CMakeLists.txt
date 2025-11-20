@@ -23,7 +23,9 @@ target_link_libraries(dependency_generator_idokeido PRIVATE asn1::generated::lpp
 target_link_libraries(dependency_generator_idokeido PUBLIC dependency::loglet)
 target_link_libraries(dependency_generator_idokeido PUBLIC dependency::core)
 target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::nav)
-target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::rinex)
+if(INCLUDE_FORMAT_RINEX)
+    target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::rinex)
+endif()
 target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::antex)
 
 CPMAddPackage(
@@ -40,15 +42,11 @@ target_link_libraries(dependency_generator_idokeido PUBLIC Eigen3::Eigen)
 if(INCLUDE_GENERATOR_RTCM)
     target_compile_definitions(dependency_generator_idokeido PRIVATE "INCLUDE_GENERATOR_RTCM=1")
     target_link_libraries(dependency_generator_idokeido PUBLIC dependency::generator::rtcm)
-else()
-    message(FATAL_ERROR "dependency_generator_idokeido requires INCLUDE_GENERATOR_RTCM=ON")
 endif()
 
 if(INCLUDE_GENERATOR_TOKORO)
     target_compile_definitions(dependency_generator_idokeido PRIVATE "INCLUDE_GENERATOR_TOKORO=1")
     target_link_libraries(dependency_generator_idokeido PRIVATE dependency::generator::tokoro)
-else()
-    message(FATAL_ERROR "dependency_generator_idokeido requires INCLUDE_GENERATOR_TOKORO=ON")
 endif()
 
 if(DATA_TRACING)

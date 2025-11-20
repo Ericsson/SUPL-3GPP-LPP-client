@@ -63,14 +63,18 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmReferenceStationId(1902),
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
+#ifdef INCLUDE_FORMAT_RINEX
       mGenerateRinex(false),
+#endif
       mRequireCodeBias(true),
       mRequirePhaseBias(true),
       mRequireTropo(true),
       mRequireIono(true),
       mUseTroposphericModel(false),
       mUseIonosphericHeightCorrection(false),
+#ifdef INCLUDE_FORMAT_RINEX
       mRinexBuilder(ts::Utc::now().rinex_filename() + ".rnx", 3.04),
+#endif
       mGenerator(generator) {
     // Initialize the satellite vector to the maximum number of satellites
     // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
@@ -80,7 +84,9 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
     initialize_satellites();
 
     mGenerationTime = ts::Tai::now();
+#ifdef INCLUDE_FORMAT_RINEX
     mLastRinexEpoch = mGenerationTime;
+#endif
 }
 
 ReferenceStation::~ReferenceStation() = default;
@@ -399,6 +405,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     msm_gal.time = mGenerationTime;
     msm_bds.time = mGenerationTime;
 
+#ifdef INCLUDE_FORMAT_RINEX
     if (mGenerateRinex) {
         if (mLastRinexEpoch < mGenerationTime) {
             mRinexBuilder.set_antenna_position(mRtcmGroundPosition);
@@ -453,6 +460,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
             mLastRinexEpoch = mGenerationTime;
         }
     }
+#endif
 
     if (mGenerateGps) {
         for (auto& satellite : mSatellites) {

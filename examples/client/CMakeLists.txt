@@ -2,25 +2,16 @@
 add_executable(example_client 
     "main.cpp" 
     "config.cpp"
-    "config/agnss.cpp"
     "config/assistance_data.cpp"
     "config/data_tracing.cpp"
     "config/gnss.cpp"
     "config/identity.cpp"
-    "config/idokeido.cpp"
     "config/input.cpp"
     "config/location_information.cpp"
     "config/location_server.cpp"
     "config/logging.cpp"
-    "config/lpp2frame_rtcm.cpp"
-    "config/lpp2rtcm.cpp"
-    "config/lpp2eph.cpp"
-    "config/ubx2eph.cpp"
-    "config/rtcm2eph.cpp"
-    "config/lpp2spartn.cpp"
     "config/output.cpp"
     "config/print.cpp"
-    "config/tokoro.cpp"
     "config/ubx_config.cpp"
     "processor/lpp.cpp"
     "processor/control.cpp"
@@ -29,17 +20,8 @@ add_executable(example_client
     "processor/ubx_config.cpp"
     "processor/nmea.cpp"
     "processor/rtcm.cpp"
-    "processor/lpp2rtcm.cpp"
-    "processor/lpp2frame_rtcm.cpp"
-    "processor/lpp2eph.cpp"
-    "processor/ubx2eph.cpp"
-    "processor/rtcm2eph.cpp"
-    "processor/lpp2spartn.cpp"
-    "processor/tokoro.cpp"
-    "processor/agnss.cpp"
     "processor/test.cpp"
     "processor/possib_logger.cpp"
-    "processor/idokeido.cpp"
     "processor/tlf.cpp"
     "processor/chunked_log.cpp"
 )
@@ -63,16 +45,40 @@ target_link_libraries(example_client PRIVATE dependency::time)
 target_link_libraries(example_client PRIVATE asn1::generated::lpp asn1::helper)
 
 if(INCLUDE_GENERATOR_RTCM)
+    target_sources(example_client PRIVATE
+        "config/lpp2frame_rtcm.cpp"
+        "config/lpp2rtcm.cpp"
+        "config/lpp2eph.cpp"
+        "config/ubx2eph.cpp"
+        "config/rtcm2eph.cpp"
+        "processor/lpp2rtcm.cpp"
+        "processor/lpp2frame_rtcm.cpp"
+        "processor/lpp2eph.cpp"
+        "processor/ubx2eph.cpp"
+        "processor/rtcm2eph.cpp"
+    )
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_RTCM=1")
     target_link_libraries(example_client PRIVATE dependency::generator::rtcm)
+    target_link_libraries(example_client PRIVATE dependency::ephemeris)
+    target_link_libraries(example_client PRIVATE dependency::format::nav)
 endif()
 
 if(INCLUDE_GENERATOR_SPARTN)
+    target_sources(example_client PRIVATE
+        "config/lpp2spartn.cpp"
+        "processor/lpp2spartn.cpp"
+    )
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_SPARTN=1")
     target_link_libraries(example_client PRIVATE dependency::generator::spartn2)
 endif()
 
 if(INCLUDE_GENERATOR_TOKORO)
+    target_sources(example_client PRIVATE
+        "config/agnss.cpp"
+        "config/tokoro.cpp"
+        "processor/agnss.cpp"
+        "processor/tokoro.cpp"
+    )
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_TOKORO=1")
     target_link_libraries(example_client PRIVATE dependency::format::nav)
     target_link_libraries(example_client PRIVATE dependency::format::antex)
@@ -80,6 +86,10 @@ if(INCLUDE_GENERATOR_TOKORO)
 endif()
 
 if(INCLUDE_GENERATOR_IDOKEIDO)
+    target_sources(example_client PRIVATE
+        "config/idokeido.cpp"
+        "processor/idokeido.cpp"
+    )
     target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_IDOKEIDO=1")
     target_link_libraries(example_client PRIVATE dependency::format::nav)
     target_link_libraries(example_client PRIVATE dependency::format::antex)
