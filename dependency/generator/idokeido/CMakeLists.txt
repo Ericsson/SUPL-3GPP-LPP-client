@@ -39,7 +39,7 @@ target_link_libraries(dependency_generator_idokeido PUBLIC Eigen3::Eigen)
 
 if(INCLUDE_GENERATOR_RTCM)
     target_compile_definitions(dependency_generator_idokeido PRIVATE "INCLUDE_GENERATOR_RTCM=1")
-    target_link_libraries(dependency_generator_idokeido PRIVATE dependency::generator::rtcm)
+    target_link_libraries(dependency_generator_idokeido PUBLIC dependency::generator::rtcm)
 else()
     message(FATAL_ERROR "dependency_generator_idokeido requires INCLUDE_GENERATOR_RTCM=ON")
 endif()

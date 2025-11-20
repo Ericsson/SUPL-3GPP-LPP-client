@@ -14,7 +14,7 @@ target_link_libraries(dependency_format_rinex PUBLIC dependency::maths)
 
 if(INCLUDE_GENERATOR_RTCM)
     target_compile_definitions(dependency_format_rinex PRIVATE "INCLUDE_GENERATOR_RTCM=1")
-    target_link_libraries(dependency_format_rinex PRIVATE dependency::generator::rtcm)
+    target_link_libraries(dependency_format_rinex PUBLIC dependency::generator::rtcm)
 else()
     message(FATAL_ERROR "dependency_format_rinex requires INCLUDE_GENERATOR_RTCM=ON")
 endif()

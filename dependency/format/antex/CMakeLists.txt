@@ -14,7 +14,7 @@ target_link_libraries(dependency_format_antex PUBLIC dependency::maths)
 
 if(INCLUDE_GENERATOR_RTCM)
     target_compile_definitions(dependency_format_antex PRIVATE "INCLUDE_GENERATOR_RTCM=1")
-    target_link_libraries(dependency_format_antex PRIVATE dependency::generator::rtcm)
+    target_link_libraries(dependency_format_antex PUBLIC dependency::generator::rtcm)
 else()
     message(FATAL_ERROR "dependency_format_antex requires INCLUDE_GENERATOR_RTCM=ON")
 endif()

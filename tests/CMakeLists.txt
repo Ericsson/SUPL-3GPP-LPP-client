@@ -109,6 +109,7 @@ target_link_options(msgpack_tests PRIVATE -fsanitize=address)
 add_test(NAME msgpack_tests COMMAND msgpack_tests --no-skip)
 set_tests_properties(msgpack_tests PROPERTIES LABELS "msgpack")
 
+if(INCLUDE_GENERATOR_RTCM)
 add_executable(generator_rtcm_tests
     generator/rtcm/main.cpp
     generator/rtcm/qzss.cpp
@@ -123,6 +124,7 @@ target_link_options(generator_rtcm_tests PRIVATE -fsanitize=address)
 
 add_test(NAME generator_rtcm_tests COMMAND generator_rtcm_tests --no-skip)
 set_tests_properties(generator_rtcm_tests PROPERTIES LABELS "generator_rtcm")
+endif()
 
 if(ENABLE_FUZZING)
     add_executable(fuzz_nmea format/nmea/fuzz_target.cpp)
