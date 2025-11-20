@@ -84,19 +84,24 @@ COMPILERS = {
         'image': 's3lc-base:24.04',
         'package': 'clang-19',
         'setup': 'RUN update-alternatives --install /usr/bin/cc cc /usr/bin/clang-19 60 --slave /usr/bin/c++ c++ /usr/bin/clang++-19',
-        'cxx_standards': ['11', '14', '17', '20'],
+        'cxx_standards': ['11', '14', '17', '20', '23'],
     }
 }
 
 MATRIX = {
     'build_types': ['Debug', 'Release'],
-    'cxx_standards': ['11', '17', '20'],
+    'cxx_standards': ['11', '14', '17', '20', '23'],
     'cmake_options': [
         [],
         ['-DUSE_OPENSSL=ON'],
         ['-DUSE_ASAN=ON'],
         ['-DDISABLE_LOGGING=ON'],
         ['-DDATA_TRACING=ON'],
+        ['-DBUILD_TESTING=ON'],
+        ['-DLOG_FUNCTION_PERFORMANCE=ON'],
+        ['-DINCLUDE_GENERATOR_RTCM=OFF'],
+        ['-DINCLUDE_GENERATOR_SPARTN=OFF'],
+        ['-DINCLUDE_GENERATOR_TOKORO=OFF'],
         ['-DINCLUDE_GENERATOR_IDOKEIDO=ON'],
     ],
     'incompatible': {

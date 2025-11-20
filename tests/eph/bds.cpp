@@ -3,11 +3,24 @@
 #include <doctest/doctest.h>
 #include <ephemeris/bds.hpp>
 #include <fstream>
-#include <iomanip>
-#include <sstream>
+#include <msgpack/msgpack.hpp>
+#include <msgpack/vector.hpp>
 #include <time/gps.hpp>
 #include <time/utc.hpp>
 #include <vector>
+
+struct Test {
+    int64_t     gps_sec;
+    int64_t     offset;
+    std::string time_str;
+    double      x, y, z;
+    double      x2, y2, z2;
+    double      vx, vy, vz;
+    double      clock_bias, clock_drift;
+
+    MSGPACK_DEFINE(gps_sec, offset, time_str, x, y, z, x2, y2, z2, vx, vy, vz, clock_bias,
+                   clock_drift)
+};
 
 static std::vector<std::string> find_bds_files() {
     std::vector<std::string> files;
@@ -19,7 +32,7 @@ static std::vector<std::string> find_bds_files() {
 
         struct dirent* entry;
         while ((entry = readdir(dir)) != nullptr) {
-            if (strstr(entry->d_name, ".txt") != nullptr) {
+            if (strstr(entry->d_name, ".msgpack") != nullptr) {
                 files.push_back(std::string(path) + "/" + entry->d_name);
             }
         }
@@ -36,100 +49,84 @@ TEST_CASE("BeiDou ephemeris computation") {
     REQUIRE(!files.empty());
 
     for (auto const& filename : files) {
-        std::ifstream f(filename);
+        std::ifstream f(filename, std::ios::binary);
         REQUIRE(f.is_open());
         CAPTURE(filename);
 
-        std::string             line;
-        int                     count = 0;
-        ephemeris::BdsEphemeris current_eph{};
-        bool                    has_eph = false;
+        std::vector<uint8_t> buffer((std::istreambuf_iterator<char>(f)),
+                                    std::istreambuf_iterator<char>());
+        msgpack::Unpacker    unpacker(buffer.data(), buffer.size());
 
-        while (std::getline(f, line)) {
-            if (line.empty() || line[0] == '#') continue;
+        uint32_t num_ephemerides = 0;
+        REQUIRE(unpacker.unpack_array_header(num_ephemerides));
 
-            std::istringstream iss(line);
-            std::string        type;
-            iss >> type;
+        int count = 0;
+        for (uint32_t i = 0; i < num_ephemerides; i++) {
+            uint32_t eph_size = 0;
+            REQUIRE(unpacker.unpack_array_header(eph_size));
+            REQUIRE(eph_size == 2);
 
-            if (type == "EPH") {
-                int    prn, week, aode, aodc, iode, iodc, sv_health, ura;
-                double toe, toc, tgd1, tgd2, af2, af1, af0;
-                double crc, crs, cuc, cus, cic, cis;
-                double e, m0, delta_n, a, i0, omega0, omega, omega_dot, idot;
-                double expected_x, expected_y, expected_z;
+            ephemeris::BdsEphemeris eph;
+            REQUIRE(msgpack::unpack(unpacker, eph));
 
-                iss >> prn >> week >> toe >> toc >> aode >> aodc >> iode >> iodc >> tgd1 >> tgd2 >>
-                    af2 >> af1 >> af0 >> crc >> crs >> cuc >> cus >> cic >> cis >> e >> m0 >>
-                    delta_n >> a >> i0 >> omega0 >> omega >> omega_dot >> idot >> sv_health >>
-                    ura >> expected_x >> expected_y >> expected_z;
+            std::vector<Test> tests;
+            REQUIRE(msgpack::unpack(unpacker, tests));
 
-                current_eph.prn         = prn;
-                current_eph.week_number = week;
-                current_eph.toe         = toe;
-                current_eph.toc         = toc;
-                current_eph.aode        = aode;
-                current_eph.aodc        = aodc;
-                current_eph.iode        = iode;
-                current_eph.iodc        = iodc;
-                current_eph.af2         = af2;
-                current_eph.af1         = af1;
-                current_eph.af0         = af0;
-                current_eph.crc         = crc;
-                current_eph.crs         = crs;
-                current_eph.cuc         = cuc;
-                current_eph.cus         = cus;
-                current_eph.cic         = cic;
-                current_eph.cis         = cis;
-                current_eph.e           = e;
-                current_eph.m0          = m0;
-                current_eph.delta_n     = delta_n;
-                current_eph.a           = a;
-                current_eph.i0          = i0;
-                current_eph.omega0      = omega0;
-                current_eph.omega       = omega;
-                current_eph.omega_dot   = omega_dot;
-                current_eph.idot        = idot;
-                current_eph.sv_health   = sv_health;
-                current_eph.lpp_iod     = 0;
-                has_eph                 = true;
-            } else if (type == "TEST" && has_eph) {
-                long        test_id;
-                long        gps_sec;
-                long        offset;
-                std::string time_str;
-                double      ref_x, ref_y, ref_z;
-                double      ref_vx, ref_vy, ref_vz;
-                double      ref_clock_bias, ref_clock_drift;
-
-                iss >> test_id >> gps_sec >> offset >> std::quoted(time_str) >> ref_x >> ref_y >>
-                    ref_z >> ref_vx >> ref_vy >> ref_vz >> ref_clock_bias >> ref_clock_drift;
-
-                auto gps_time = ts::Gps{ts::Timestamp{gps_sec}};
+            for (auto const& test : tests) {
+                auto gps_time = ts::Gps{ts::Timestamp{test.gps_sec}};
                 auto time     = ts::Bdt{gps_time};
 
-                CAPTURE(current_eph.prn);
-                CAPTURE(current_eph.toe);
-                CAPTURE(current_eph.toc);
-                CAPTURE(current_eph.week_number);
-                CAPTURE(test_id);
-                CAPTURE(offset);
+                CAPTURE(eph.prn);
+                CAPTURE(eph.toe);
+                CAPTURE(eph.toc);
+                CAPTURE(eph.iode);
+                CAPTURE(eph.iodc);
+                CAPTURE(eph.week_number);
+                CAPTURE(test.offset);
 
-                CHECK(ts::Utc{time}.rtklib_time_string(3) == time_str);
-                CHECK(ts::Utc{time}.rtklib_time_string(3) == time_str);
+                CHECK(ts::Utc{gps_time}.rtklib_time_string(3) == test.time_str);
+                CHECK(ts::Utc{time}.rtklib_time_string(3) == test.time_str);
 
-                auto result = current_eph.compute(time);
+                auto result = eph.compute(time);
 
-                CHECK(doctest::Approx(result.position.x) == ref_x);
-                CHECK(doctest::Approx(result.position.y) == ref_y);
-                CHECK(doctest::Approx(result.position.z) == ref_z);
+                CHECK(doctest::Approx(result.position.x) == test.x);
+                CHECK(doctest::Approx(result.position.y) == test.y);
+                CHECK(doctest::Approx(result.position.z) == test.z);
 
-                CHECK(doctest::Approx(result.velocity.x).epsilon(0.005) == ref_vx);
-                CHECK(doctest::Approx(result.velocity.y).epsilon(0.005) == ref_vy);
-                CHECK(doctest::Approx(result.velocity.z).epsilon(0.005) == ref_vz);
+                // NOTE(ewasjon): Geostationary satellites (PRN 1-5, 59-63) have much lower
+                // velocities than MEO satellites. The instantaneous velocity from the orbit model
+                // differs slightly from the numerical derivative used in test data. For GEO
+                // satellites, this absolute error represents a larger relative error due to their
+                // lower velocities, requiring a relaxed epsilon (0.5% vs 0.1%).
+                if ((eph.prn >= 1 && eph.prn <= 5) || (eph.prn >= 59 && eph.prn <= 63)) {
+                    CHECK(doctest::Approx(result.velocity.x).epsilon(0.005) == test.vx);
+                    CHECK(doctest::Approx(result.velocity.y).epsilon(0.005) == test.vy);
+                    CHECK(doctest::Approx(result.velocity.z).epsilon(0.005) == test.vz);
+                } else {
+                    CHECK(doctest::Approx(result.velocity.x).epsilon(0.001) == test.vx);
+                    CHECK(doctest::Approx(result.velocity.y).epsilon(0.001) == test.vy);
+                    CHECK(doctest::Approx(result.velocity.z).epsilon(0.001) == test.vz);
+                }
+
+                auto delta_time = 1e-3;
+                auto time2 =
+                    ts::Bdt{ts::Gps{ts::Timestamp{gps_time.timestamp().seconds(), delta_time}}};
+                auto result2 = eph.compute(time2);
+
+                CHECK(doctest::Approx(result2.position.x) == test.x2);
+                CHECK(doctest::Approx(result2.position.y) == test.y2);
+                CHECK(doctest::Approx(result2.position.z) == test.z2);
+
+                auto diff_vx = (result2.position.x - result.position.x) / delta_time;
+                auto diff_vy = (result2.position.y - result.position.y) / delta_time;
+                auto diff_vz = (result2.position.z - result.position.z) / delta_time;
+
+                CHECK(doctest::Approx(diff_vx).epsilon(0.001) == test.vx);
+                CHECK(doctest::Approx(diff_vy).epsilon(0.001) == test.vy);
+                CHECK(doctest::Approx(diff_vz).epsilon(0.001) == test.vz);
 
                 auto clock_bias = result.clock + result.relativistic_correction_brdc;
-                CHECK(doctest::Approx(clock_bias) == ref_clock_bias);
+                CHECK(doctest::Approx(clock_bias) == test.clock_bias);
 
                 count++;
             }

@@ -2,6 +2,7 @@
 #include <core/core.hpp>
 #include <ephemeris/result.hpp>
 #include <maths/float3.hpp>
+#include <msgpack/msgpack.hpp>
 #include <time/gps.hpp>
 
 #include <cmath>
@@ -94,6 +95,10 @@ struct GpsEphemeris {
                                                        Float3 const& velocity) const NOEXCEPT;
     NODISCARD double calculate_relativistic_correction_idc(double e_k) const NOEXCEPT;
     NODISCARD double calculate_group_delay() const NOEXCEPT;
+
+    MSGPACK_DEFINE(prn, week_number, ca_or_p_on_l2, ura_index, sv_health, lpp_iod, iodc, iode, aodo,
+                   toc, toe, tgd, af2, af1, af0, crc, crs, cuc, cus, cic, cis, e, m0, delta_n, a,
+                   i0, omega0, omega, omega_dot, idot, fit_interval_flag, l2_p_data_flag)
 };
 
 }  // namespace ephemeris

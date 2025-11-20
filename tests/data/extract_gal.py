@@ -1,24 +1,19 @@
 #!/usr/bin/env python3
-"""
-Extract Galileo ephemeris test data from RINEX navigation file.
-
-Uses eph2pos with manually built ephemeris to avoid RTKLIB's seleph() issues.
-"""
 import georinex as gr
 import numpy as np
 from pyrtklib import eph2pos, gpst2time, gpst2utc, time2str, eph_t, gtime_t, Arr1Ddouble, Arr1Dchar, tracelevel, traceopen, satid2no
+import msgpack
 import sys
 import warnings
 warnings.filterwarnings('ignore')
 
-# Enable RTKLIB tracing
 traceopen('rtklib_trace.txt')
 tracelevel(4)
 
 GPS_TO_UNIX_OFFSET = 315964800
-VALIDITY_PERIOD = 4 * 3600  # 4 hours
-ASYMMETRICAL = True # RTKLIB will not allow older TOEs to be used
-AOD_OFFSET = 10 # RTKLIB will not allow on TOE usage of ephemeris
+VALIDITY_PERIOD = 4 * 3600
+ASYMMETRICAL = True
+AOD_OFFSET = 10
 NUM_TESTS = 10
 
 def get_gps_time(dt):
@@ -26,10 +21,9 @@ def get_gps_time(dt):
     return int((dt - gps_epoch) / np.timedelta64(1, 's'))
 
 def build_gal_eph(eph_data, prn):
-    """Build RTKLIB eph_t from georinex data"""
     eph = eph_t()
     
-    week = int(eph_data['GALWeek'].values)  # Already GPS week in this RINEX
+    week = int(eph_data['GALWeek'].values)
     toe_sow = float(eph_data['Toe'].values)
     toc_gps = get_gps_time(np.datetime64(eph_data.time.values, 'ns'))
     toc_sow = toc_gps % 604800
@@ -44,7 +38,7 @@ def build_gal_eph(eph_data, prn):
     eph.iode = int(eph_data['IODnav'].values)
     eph.sva = int(eph_data['SISA'].values)
     eph.svh = int(eph_data['health'].values)
-    eph.code = 0  # Will be set by RTKLIB based on data source
+    eph.code = 0
     eph.tgd[0] = float(eph_data['BGDe5a'].values)
     eph.tgd[1] = float(eph_data['BGDe5b'].values)
     eph.f2 = float(eph_data['SVclockDriftRate'].values)
@@ -82,7 +76,6 @@ def compute_position(eph, gps_sec):
     if rs[0] == 0:
         return None
     
-    # Compute velocity by finite difference
     dt = 1E-3
     time2 = gtime_t()
     time2.time = GPS_TO_UNIX_OFFSET + gps_sec
@@ -94,6 +87,7 @@ def compute_position(eph, gps_sec):
     
     return {
         'x': rs[0], 'y': rs[1], 'z': rs[2],
+        'x2': rs2[0], 'y2': rs2[1], 'z2': rs2[2],
         'vx': (rs2[0] - rs[0]) / dt,
         'vy': (rs2[1] - rs[1]) / dt,
         'vz': (rs2[2] - rs[2]) / dt,
@@ -119,13 +113,14 @@ def generate_tests(eph, toe_gps_sec):
         
         pos = compute_position(eph, test_gps_sec)
         if pos:
-            tests.append({'gps_sec': test_gps_sec, 'offset': offset, 'time_str': time_str, **pos})
+            tests.append([test_gps_sec, offset, time_str, pos['x'], pos['y'], pos['z'],
+                         pos['x2'], pos['y2'], pos['z2'], pos['vx'], pos['vy'], pos['vz'],
+                         pos['clock_bias'], pos['clock_drift']])
     
     return tests
 
 nav = gr.load('brdc_nav.rnx', use='E')
 
-test_id = 0
 for time in nav.time.values:
     gps_sec = get_gps_time(time)
     ephemerides = []
@@ -141,7 +136,7 @@ for time in nav.time.values:
             
             prn = int(str(sv)[1:].split('_')[0])
             toe_sow = float(eph_data['Toe'].values)
-            week = int(eph_data['GALWeek'].values)  # Already GPS week
+            week = int(eph_data['GALWeek'].values)
             toe_gps_sec = week * 604800 + int(toe_sow)
             
             eph = build_gal_eph(eph_data, prn)
@@ -151,52 +146,29 @@ for time in nav.time.values:
             
             toc_gps = get_gps_time(np.datetime64(eph_data.time.values, 'ns'))
             
-            eph_dict = {
-                'prn': prn, 'week': week, 'toe': toe_sow, 'toc': float(toc_gps % 604800),
-                'iode': int(eph_data['IODnav'].values),
-                'bgd_e5a': float(eph_data['BGDe5a'].values),
-                'bgd_e5b': float(eph_data['BGDe5b'].values),
-                'af2': float(eph_data['SVclockDriftRate'].values),
-                'af1': float(eph_data['SVclockDrift'].values),
-                'af0': float(eph_data['SVclockBias'].values),
-                'crc': float(eph_data['Crc'].values), 'crs': float(eph_data['Crs'].values),
-                'cuc': float(eph_data['Cuc'].values), 'cus': float(eph_data['Cus'].values),
-                'cic': float(eph_data['Cic'].values), 'cis': float(eph_data['Cis'].values),
-                'e': float(eph_data['Eccentricity'].values), 'm0': float(eph_data['M0'].values),
-                'delta_n': float(eph_data['DeltaN'].values),
-                'a': float(eph_data['sqrtA'].values) ** 2,
-                'i0': float(eph_data['Io'].values), 'omega0': float(eph_data['Omega0'].values),
-                'omega': float(eph_data['omega'].values),
-                'omega_dot': float(eph_data['OmegaDot'].values),
-                'idot': float(eph_data['IDOT'].values),
-                'health': int(eph_data['health'].values), 'sisa': int(eph_data['SISA'].values),
-                'tests': tests
-            }
-            ephemerides.append(eph_dict)
+            eph_array = [
+                prn, week, 0, int(eph_data['IODnav'].values),
+                float(toc_gps % 604800), toe_sow,
+                float(eph_data['SVclockDriftRate'].values),
+                float(eph_data['SVclockDrift'].values),
+                float(eph_data['SVclockBias'].values),
+                float(eph_data['Crc'].values), float(eph_data['Crs'].values),
+                float(eph_data['Cuc'].values), float(eph_data['Cus'].values),
+                float(eph_data['Cic'].values), float(eph_data['Cis'].values),
+                float(eph_data['Eccentricity'].values), float(eph_data['M0'].values),
+                float(eph_data['DeltaN'].values), float(eph_data['sqrtA'].values) ** 2,
+                float(eph_data['Io'].values), float(eph_data['Omega0'].values),
+                float(eph_data['omega'].values), float(eph_data['OmegaDot'].values),
+                float(eph_data['IDOT'].values)
+            ]
+            
+            ephemerides.append([eph_array, tests])
         except Exception as e:
             print(f"Error processing {sv}: {e}", file=sys.stderr)
             continue
     
     if ephemerides:
-        with open(f'gal/{gps_sec}.txt', 'w') as f:
-            f.write("# Galileo Ephemeris Test Data\n")
-            f.write("# Format: EPH prn week toe toc iode bgd_e5a bgd_e5b af2 af1 af0 crc crs cuc cus cic cis e m0 delta_n a i0 omega0 omega omega_dot idot health sisa\n")
-            f.write("# Format: TEST test_id gps_sec offset time_str x y z vx vy vz clock_bias clock_drift\n\n")
-            
-            for eph in ephemerides:
-                f.write(f"EPH {eph['prn']} {eph['week']} {eph['toe']} {eph['toc']} ")
-                f.write(f"{eph['iode']} {eph['bgd_e5a']} {eph['bgd_e5b']} ")
-                f.write(f"{eph['af2']} {eph['af1']} {eph['af0']} ")
-                f.write(f"{eph['crc']} {eph['crs']} {eph['cuc']} {eph['cus']} {eph['cic']} {eph['cis']} ")
-                f.write(f"{eph['e']} {eph['m0']} {eph['delta_n']} {eph['a']} {eph['i0']} {eph['omega0']} ")
-                f.write(f"{eph['omega']} {eph['omega_dot']} {eph['idot']} {eph['health']} {eph['sisa']}\n")
-                
-                for test in eph['tests']:
-                    f.write(f"TEST {test_id} {test['gps_sec']} {test['offset']} \"{test['time_str']}\" ")
-                    f.write(f"{test['x']} {test['y']} {test['z']} ")
-                    f.write(f"{test['vx']} {test['vy']} {test['vz']} ")
-                    f.write(f"{test['clock_bias']} {test['clock_drift']}\n")
-                    test_id += 1
-                f.write("\n")
+        with open(f'gal/{gps_sec}.msgpack', 'wb') as f:
+            f.write(msgpack.packb(ephemerides))
         
         print(f"{gps_sec}: {len(ephemerides)} satellites")

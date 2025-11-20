@@ -8,6 +8,7 @@ All notable changes to this project will be documented in this file.
 - MessagePack serialization library with C++11 support
 
 ### Changed
+- Converted ephemeris test data from text to MessagePack format for faster test execution
 - Fixed identifier naming
 - Eliminated 1MB global buffer by using direct vfprintf formatting
 - Hardened loglet to preserve errno, report internal errors, and avoid redundant fflush

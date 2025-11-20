@@ -60,6 +60,7 @@ add_executable(eph_tests
 )
 target_link_libraries(eph_tests PRIVATE 
     dependency::ephemeris
+    dependency::msgpack
     dependency::time
     dependency::core
     dependency::loglet

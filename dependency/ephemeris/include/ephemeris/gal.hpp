@@ -2,6 +2,7 @@
 #include <core/core.hpp>
 #include <ephemeris/result.hpp>
 #include <maths/float3.hpp>
+#include <msgpack/msgpack.hpp>
 #include <time/gst.hpp>
 
 #include <cmath>
@@ -73,6 +74,9 @@ struct GalEphemeris {
     NODISCARD double calculate_relativistic_correction(Float3 const& position,
                                                        Float3 const& velocity) const NOEXCEPT;
     NODISCARD double calculate_relativistic_correction_idc(double e_k) const NOEXCEPT;
+
+    MSGPACK_DEFINE(prn, week_number, lpp_iod, iod_nav, toc, toe, af2, af1, af0, crc, crs, cuc, cus,
+                   cic, cis, e, m0, delta_n, a, i0, omega0, omega, omega_dot, idot)
 };
 
 }  // namespace ephemeris
