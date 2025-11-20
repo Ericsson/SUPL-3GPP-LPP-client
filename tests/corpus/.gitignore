@@ -4,3 +4,9 @@
 !nmea/
 nmea/*
 !nmea/*.txt
+!antex/
+antex/*
+!antex/download.sh
+!antex/*.atx
+antex/igs14.atx
+antex/igs20.atx

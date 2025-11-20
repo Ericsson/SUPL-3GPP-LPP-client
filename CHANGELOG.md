@@ -30,6 +30,7 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Added ANTEX parser tests and libFuzzer-based fuzzing support
 - Added QZSS ephemeris computation support
 - Added QZSS satellite and signal ID mapping for RTCM
 - Added comprehensive QZSS ephemeris tests with reference data

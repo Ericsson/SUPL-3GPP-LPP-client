@@ -16,12 +16,14 @@ add_executable(format_tests
     format/ubx/parser.cpp
     format/rtcm/parser.cpp
     format/at/parser.cpp
+    format/antex/parser.cpp
 )
 target_link_libraries(format_tests PRIVATE 
     dependency::format::nmea 
     dependency::format::ubx 
     dependency::format::rtcm
     dependency::format::at
+    dependency::format::antex
     dependency::core 
     doctest::doctest
 )
@@ -146,4 +148,9 @@ if(ENABLE_FUZZING)
     target_link_libraries(fuzz_at PRIVATE dependency::format::at dependency::core)
     target_compile_options(fuzz_at PRIVATE -fsanitize=fuzzer,address -g)
     target_link_options(fuzz_at PRIVATE -fsanitize=fuzzer,address)
+    
+    add_executable(fuzz_antex format/antex/fuzz_target.cpp)
+    target_link_libraries(fuzz_antex PRIVATE dependency::format::antex dependency::core)
+    target_compile_options(fuzz_antex PRIVATE -fsanitize=fuzzer,address -g)
+    target_link_options(fuzz_antex PRIVATE -fsanitize=fuzzer,address)
 endif()
