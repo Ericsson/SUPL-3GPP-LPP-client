@@ -8,6 +8,9 @@ add_subdirectory("spartn")
 endif()
 
 if(INCLUDE_GENERATOR_TOKORO)
+if(NOT INCLUDE_GENERATOR_RTCM)
+    message(FATAL_ERROR "INCLUDE_GENERATOR_TOKORO requires INCLUDE_GENERATOR_RTCM")
+endif()
 add_subdirectory("tokoro")
 endif()
 
