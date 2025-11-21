@@ -8,8 +8,6 @@ import re
 import signal
 import time
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import threading
 
 # Configuration paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -99,9 +97,8 @@ MATRIX = {
         ['-DDATA_TRACING=ON'],
         ['-DBUILD_TESTING=ON'],
         ['-DLOG_FUNCTION_PERFORMANCE=ON'],
-        ['-DINCLUDE_GENERATOR_RTCM=OFF'],
-        ['-DINCLUDE_GENERATOR_SPARTN=OFF'],
-        ['-DINCLUDE_GENERATOR_TOKORO=OFF'],
+        ['-DDISABLE_TRACE=ON'],
+        ['-DINCLUDE_GENERATOR_RTCM=OFF', '-DINCLUDE_GENERATOR_SPARTN=OFF', '-DINCLUDE_GENERATOR_TOKORO=OFF'],
         ['-DINCLUDE_GENERATOR_IDOKEIDO=ON'],
     ],
     'incompatible': {
@@ -126,11 +123,11 @@ def colorize(text, color):
 
 def format_time(seconds):
     if seconds < 60:
-        return f"{seconds:.1f}s"
+        return f"{seconds:5.1f}s"
     elif seconds < 3600:
-        return f"{int(seconds // 60)}m {int(seconds % 60)}s"
+        return f"{int(seconds // 60):2}m {int(seconds % 60):2}s"
     else:
-        return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60)}m"
+        return f"{int(seconds // 3600)}h {int((seconds % 3600) // 60):2}m"
 
 def load_cached_result(test_dir):
     result_file = os.path.join(test_dir, 'result.json')
@@ -153,16 +150,22 @@ def image_name_to_path(image_name):
 def build_base_images(results):
     project_root = os.path.dirname(SCRIPT_DIR)
     for image_name, dockerfile in IMAGES.items():
-        print(f"Building base image {image_name}...")
         image_dir = os.path.join(IMAGE_DIR, image_name_to_path(image_name))
         os.makedirs(image_dir, exist_ok=True)
+        
+        print(f"[....] {format_time(0)} {image_name}", end='', flush=True)
+        start_time = time.time()
         try:
             with open(os.path.join(image_dir, 'build.log'), 'w') as log:
                 log.write(f"Building base image {image_name}...\n")
                 subprocess.run(['docker', 'build', '-f', os.path.join(DOCKER_DIR, dockerfile), '-t', image_name, project_root, '--network=host'], 
                              stdout=log, stderr=subprocess.STDOUT, check=True)
+            duration = time.time() - start_time
+            print(f"\r[{colorize('PASS', Colors.GREEN)}] {format_time(duration)} {image_name}")
             results['images'][image_name] = True
         except Exception as e:
+            duration = time.time() - start_time
+            print(f"\r[{colorize('FAIL', Colors.RED)}] {format_time(duration)} {image_name}")
             results['images'][image_name] = False
             with open(os.path.join(image_dir, 'build.log'), 'w') as log:
                 log.write(f"Base build failed: {e}\n")
@@ -199,23 +202,40 @@ def build_compiler_image(compiler, results):
     
     if compiler_config.get('cross'):
         platform = compiler_config['platform']
+        print(f"[....] {format_time(0)} {compiler}", end='', flush=True)
+        start_time = time.time()
         if not build_cross_toolchain(platform):
+            duration = time.time() - start_time
+            print(f"\r[{colorize('FAIL', Colors.RED)}] {format_time(duration)} {compiler}")
             results['compilers'][compiler] = False
             return False
+        duration = time.time() - start_time
+        print(f"\r[{colorize('PASS', Colors.GREEN)}] {format_time(duration)} {compiler}")
         results['compilers'][compiler] = True
         return True
     
-    print(f"Building {compiler}...")
     compiler_dir = os.path.join(COMPILER_DIR, compiler)
     os.makedirs(compiler_dir, exist_ok=True)
+    
+    print(f"[....] {format_time(0)} {compiler}", end='', flush=True)
+    start_time = time.time()
     try:
         with open(os.path.join(compiler_dir, 'build.log'), 'w') as log:
             log.write(f"Building {compiler}...\n")
             result = subprocess.run(['docker', 'build', '-f', os.path.join(COMPILER_DIR, f'Dockerfile.{compiler}'), '-t', f's3lc-test:{compiler}', project_root, '--network=host'], 
                                   stdout=log, stderr=subprocess.STDOUT)
-        results['compilers'][compiler] = result.returncode == 0
-        return result.returncode == 0
+        duration = time.time() - start_time
+        if result.returncode == 0:
+            print(f"\r[{colorize('PASS', Colors.GREEN)}] {format_time(duration)} {compiler}")
+            results['compilers'][compiler] = True
+            return True
+        else:
+            print(f"\r[{colorize('FAIL', Colors.RED)}] {format_time(duration)} {compiler}")
+            results['compilers'][compiler] = False
+            return False
     except Exception as e:
+        duration = time.time() - start_time
+        print(f"\r[{colorize('FAIL', Colors.RED)}] {format_time(duration)} {compiler}")
         results['compilers'][compiler] = False
         with open(os.path.join(compiler_dir, 'build.log'), 'w') as log:
             log.write(f"Build failed with exception: {e}\n")
@@ -228,7 +248,7 @@ def is_compatible(compiler, options):
 def test_name_from_config(compiler, build_type, cxx_std, options):
     return f"{compiler}-{build_type}-cxx{cxx_std}-{'-'.join(opt.replace('=', '-').replace('-D', '') for opt in options) if options else 'default'}"
 
-def test_configuration(compiler, build_type, cxx_std, options, results, force_rebuild, print_lock=None):
+def test_configuration(compiler, build_type, cxx_std, options, results, force_rebuild, jobs=1):
     project_root = os.path.dirname(SCRIPT_DIR)
     config = test_name_from_config(compiler, build_type, cxx_std, options)
     compiler_config = COMPILERS[compiler]
@@ -242,24 +262,14 @@ def test_configuration(compiler, build_type, cxx_std, options, results, force_re
         'duration': 0
     }
 
-    def print_status(msg):
-        if print_lock:
-            with print_lock:
-                print(msg)
-        else:
-            print(msg)
-
-    prefix = f"Testing {config}..."
-    print_status(f"{prefix:<80} ")
-
     if cxx_std not in COMPILERS[compiler]['cxx_standards']:
-        print_status(f"{prefix:<80} {colorize('SKIP', Colors.YELLOW)}")
+        print(f"[{colorize('SKIP', Colors.YELLOW)}] {format_time(0)} {config}")
         test_data['result'] = 'SKIP'
         results['tests'][config] = test_data
         return
         
     if not is_compatible(compiler, options):
-        print_status(f"{prefix:<80} {colorize('SKIP', Colors.YELLOW)}")
+        print(f"[{colorize('SKIP', Colors.YELLOW)}] {format_time(0)} {config}")
         test_data['result'] = 'SKIP'
         results['tests'][config] = test_data
         return
@@ -272,10 +282,11 @@ def test_configuration(compiler, build_type, cxx_std, options, results, force_re
         platform = compiler_config['platform']
         toolchain_arg = f'-DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-{platform}.cmake'
     
-    cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} {toolchain_arg} {' '.join(options)} && ninja"
+    cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} {toolchain_arg} {' '.join(options)} && ninja -j{jobs}"
     
     image_name = compiler_config['image'] if compiler_config.get('cross') else f's3lc-test:{compiler}'
     
+    print(f"[....] {format_time(0)} {config}", end='', flush=True)
     start_time = time.time()
     try:
         with open(os.path.join(build_dir, 'build.log'), 'w') as log:
@@ -291,23 +302,40 @@ def test_configuration(compiler, build_type, cxx_std, options, results, force_re
         test_data['duration'] = duration
         
         if result.returncode == 0:
-            print_status(f"{prefix:<80} {colorize(f'PASS ({format_time(duration)})', Colors.GREEN)}")
+            print(f"\r[{colorize('PASS', Colors.GREEN)}] {format_time(duration)} {config}")
             test_data['result'] = True
         else:
-            print_status(f"{prefix:<80} {colorize(f'FAIL ({format_time(duration)})', Colors.RED)}")
+            print(f"\r[{colorize('FAIL', Colors.RED)}] {format_time(duration)} {config}")
             test_data['result'] = False
         
         save_result(build_dir, test_data['result'], duration)
     except Exception as e:
         duration = time.time() - start_time
         test_data['duration'] = duration
-        print_status(f"{prefix:<80} {colorize(f'FAIL ({format_time(duration)})', Colors.RED)}")
+        print(f"\r[{colorize('FAIL', Colors.RED)}] {format_time(duration)} {config}")
         test_data['result'] = False
         with open(os.path.join(build_dir, 'build.log'), 'a') as log:
             log.write(f"\nTest failed with exception: {e}\n")
         save_result(build_dir, False, duration)
     
     results['tests'][config] = test_data
+
+def shorten_option(opt):
+    short_names = {
+        'BUILD_TESTING': 'Testing',
+        'DATA_TRACING': 'Tracing',
+        'DISABLE_LOGGING': 'NoLog',
+        'INCLUDE_GENERATOR_IDOKEIDO': 'Idokeido',
+        'INCLUDE_GENERATOR_RTCM=OFF': 'NoRTCM',
+        'INCLUDE_GENERATOR_SPARTN=OFF': 'NoSPARTN',
+        'INCLUDE_GENERATOR_TOKORO=OFF': 'NoTokoro',
+        'LOG_FUNCTION_PERFORMANCE': 'LogPerf',
+        'USE_ASAN': 'ASAN',
+        'USE_OPENSSL': 'OpenSSL',
+        'DISABLE_TRACE': 'NoTrace',
+    }
+    opt_clean = opt.replace('-D', '').replace('=ON', '')
+    return short_names.get(opt_clean, opt_clean)
 
 def print_results_matrix(results):
     print("\n" + colorize("="*80, Colors.BOLD))
@@ -359,7 +387,7 @@ def print_results_matrix(results):
             if not options:
                 cxx_options.add(f"C++{cxx_std}")
             else:
-                opt_str = ' '.join(opt.replace('-D', '').replace('=ON', '') for opt in options)
+                opt_str = ' '.join(shorten_option(opt) for opt in options)
                 cxx_options.add(f"C++{cxx_std} {opt_str}")
         
         compiler_builds = sorted(compiler_builds)
@@ -367,12 +395,12 @@ def print_results_matrix(results):
         
         if compiler_builds and cxx_options:
             # Print header
-            header = f"\n  {'':<40}"
+            header = f"\n  {'':<50}"
             for cb in compiler_builds:
                 top = ' '.join(cb.split(' ')[:-1])
                 header += f"{top:<12}"
             print(header)
-            header = f"  {'C++/Options':<40}"
+            header = f"  {'C++/Options':<50}"
             for cb in compiler_builds:
                 bottom = cb.split(' ')[-1]
                 header += f"{bottom:<12}"
@@ -381,7 +409,7 @@ def print_results_matrix(results):
             
             # Print rows
             for cxx_opt in cxx_options:
-                row = f"  {cxx_opt:<40}"
+                row = f"  {cxx_opt:<50}"
                 
                 for comp_build in compiler_builds:
                     # Find matching test result
@@ -404,7 +432,7 @@ def print_results_matrix(results):
                         if not options:
                             config_cxx_opt = f"C++{cxx_std}"
                         else:
-                            opt_str = ' '.join(opt.replace('-D', '').replace('=ON', '') for opt in options)
+                            opt_str = ' '.join(shorten_option(opt) for opt in options)
                             config_cxx_opt = f"C++{cxx_std} {opt_str}"
                         
                         if config_comp_build == comp_build and config_cxx_opt == cxx_opt:
@@ -512,16 +540,8 @@ def main():
             if matches_filter(config, args.filter):
                 test_configs.append((compiler, build_type, cxx_std, options))
     
-    if args.jobs > 1:
-        print_lock = threading.Lock()
-        with ThreadPoolExecutor(max_workers=args.jobs) as executor:
-            futures = [executor.submit(test_configuration, compiler, build_type, cxx_std, options, results, args.force, print_lock) 
-                      for compiler, build_type, cxx_std, options in test_configs]
-            for future in as_completed(futures):
-                future.result()
-    else:
-        for compiler, build_type, cxx_std, options in test_configs:
-            test_configuration(compiler, build_type, cxx_std, options, results, args.force)
+    for compiler, build_type, cxx_std, options in test_configs:
+        test_configuration(compiler, build_type, cxx_std, options, results, args.force, args.jobs)
     
     total_time = time.time() - start_time
     print(f"\n{colorize('TOTAL ELAPSED TIME:', Colors.BOLD)} {format_time(total_time)}")
