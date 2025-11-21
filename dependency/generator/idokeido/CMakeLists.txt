@@ -26,7 +26,9 @@ target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::n
 if(INCLUDE_FORMAT_RINEX)
     target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::rinex)
 endif()
-target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::antex)
+if(INCLUDE_FORMAT_ANTEX)
+    target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::antex)
+endif()
 
 CPMAddPackage(
     GITLAB_REPOSITORY libeigen/eigen
@@ -54,3 +56,4 @@ if(DATA_TRACING)
 endif()
 
 setup_target(dependency_generator_idokeido)
+target_compile_options(dependency_generator_idokeido PRIVATE -Wno-c++20-designator)

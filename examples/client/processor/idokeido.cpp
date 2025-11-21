@@ -26,12 +26,16 @@ void IdokeidoEphemerisUbx<T>::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
     // Extract ionospheric parameters
     if (subframe.how.subframe_id == 4) {
         if (subframe.subframe4.sv_id == 56) {
-            idokeido::KlobucharModelParameters params{
-                .a = {subframe.subframe4.page18.a[0], subframe.subframe4.page18.a[1],
-                      subframe.subframe4.page18.a[2], subframe.subframe4.page18.a[3]},
-                .b = {subframe.subframe4.page18.b[0], subframe.subframe4.page18.b[1],
-                      subframe.subframe4.page18.b[2], subframe.subframe4.page18.b[3]},
-            };
+            idokeido::KlobucharModelParameters params{};
+            params.a[0] = subframe.subframe4.page18.a[0];
+            params.a[1] = subframe.subframe4.page18.a[1];
+            params.a[2] = subframe.subframe4.page18.a[2];
+            params.a[3] = subframe.subframe4.page18.a[3];
+            params.b[0] = subframe.subframe4.page18.b[0];
+            params.b[1] = subframe.subframe4.page18.b[1];
+            params.b[2] = subframe.subframe4.page18.b[2];
+            params.b[3] = subframe.subframe4.page18.b[3];
+
             // TODO(ewaison): Change to a better system
             {
                 std::ofstream f("klobuchar_params.txt");
@@ -272,16 +276,15 @@ void IdokeidoMeasurmentUbx<T>::handle(format::ubx::UbxRxmRawx* rawx) {
         auto tow_fraction = tow - static_cast<double>(tow_integer);
         auto time         = ts::Gps::from_week_tow(week, tow_integer, tow_fraction);
 
-        idokeido::RawMeasurement observation{
-            .time          = ts::Tai{time},
-            .satellite_id  = satellite_id,
-            .signal_id     = signal_id,
-            .pseudo_range  = m.pr_mes,
-            .carrier_phase = m.cp_mes,
-            .doppler       = static_cast<double>(m.do_mes),
-            .snr           = static_cast<double>(m.cno),
-            .lock_time     = static_cast<double>(m.locktime) * 1e-3,
-        };
+        idokeido::RawMeasurement observation{};
+        observation.time          = ts::Tai{time};
+        observation.satellite_id  = satellite_id;
+        observation.signal_id     = signal_id;
+        observation.pseudo_range  = m.pr_mes;
+        observation.carrier_phase = m.cp_mes;
+        observation.doppler       = static_cast<double>(m.do_mes);
+        observation.snr           = static_cast<double>(m.cno);
+        observation.lock_time     = static_cast<double>(m.locktime) * 1e-3;
 
         measurement(observation);
     }
@@ -316,23 +319,19 @@ IdokeidoSpp::IdokeidoSpp(OutputConfig const&, IdokeidoConfig const& config,
     VSCOPE_FUNCTION();
     mComputeTask = nullptr;
 
-    idokeido::SppConfiguration configuration{
-        .relativistic_model    = config.relativistic_model,
-        .ionospheric_mode      = config.ionospheric_mode,
-        .weight_function       = config.weight_function,
-        .epoch_selection       = config.epoch_selection,
-        .gnss                  = {.gps = config.gps,
-                                  .glo = config.glonass,
-                                  .gal = config.galileo,
-                                  .bds = config.beidou},
-        .observation_window    = config.observation_window,
-        .elevation_cutoff      = 15,
-        .snr_cutoff            = 30,
-        .outlier_cutoff        = 10,
-        .reject_cycle_slip     = true,
-        .reject_halfcycle_slip = true,
-        .reject_outliers       = true,
-    };
+    idokeido::SppConfiguration configuration{};
+    configuration.relativistic_model = config.relativistic_model;
+    configuration.ionospheric_mode   = config.ionospheric_mode;
+    configuration.weight_function    = config.weight_function;
+    configuration.epoch_selection    = config.epoch_selection;
+    configuration.gnss.gps           = config.gps;
+    configuration.gnss.glo           = config.glonass;
+    configuration.gnss.gal           = config.galileo;
+    configuration.gnss.bds           = config.beidou;
+    configuration.observation_window = config.observation_window;
+    configuration.elevation_cutoff   = 15;
+    configuration.snr_cutoff         = 30;
+    configuration.outlier_cutoff     = 10;
 
     mEphemerisEngine = std::unique_ptr<idokeido::EphemerisEngine>(new idokeido::EphemerisEngine{});
     if (!mConfig.ephemeris_cache.empty()) {

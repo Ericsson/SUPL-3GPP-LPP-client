@@ -10,6 +10,7 @@ option(INCLUDE_GENERATOR_SPARTN "Include SPARTN generator" ON)
 option(INCLUDE_GENERATOR_TOKORO "Include Tokoro generator" ON)
 option(INCLUDE_GENERATOR_IDOKEIDO "Include idokeido engine" OFF)
 option(INCLUDE_FORMAT_RINEX "Include RINEX format support" ON)
+option(INCLUDE_FORMAT_ANTEX "Include ANTEX format support" ON)
 
 option(BUILD_WITH_ALL_WARNINGS "BUILD_WITH_ALL_WARNINGS" OFF)
 option(WARNINGS_AS_ERRORS "WARNINGS_AS_ERRORS" OFF)

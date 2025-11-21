@@ -562,7 +562,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
     auto llh = generator::tokoro::ecef_to_llh(
         Float3{final_position.x(), final_position.y(), final_position.z()},
-        generator::tokoro::ellipsoid::WGS84);
+        generator::tokoro::ellipsoid::gWgs84);
 
     DEBUGF("llh: %14.8f %14.8f %14.8f", llh.x * constant::K_R2D, llh.y * constant::K_R2D, llh.z);
     DEBUGF("bias: %14.8f", final_bias);

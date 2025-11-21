@@ -167,6 +167,7 @@
 
 #ifdef DISABLE_TRACE
 #define FUNCTION_SCOPE()
+#define FUNCTION_SCOPEN(name)
 #define FUNCTION_SCOPEF(fmt, ...)
 #define FUNCTION_SCOPE_NAMED(name)
 #define FUNCTION_SCOPE_OPEN(name, str)

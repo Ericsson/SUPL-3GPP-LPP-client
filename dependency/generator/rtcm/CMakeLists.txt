@@ -31,4 +31,6 @@ if(DATA_TRACING)
     target_link_libraries(dependency_generator_rtcm PRIVATE dependency::datatrace)
 endif()
 
+target_compile_definitions(dependency_generator_rtcm PUBLIC "INCLUDE_GENERATOR_RTCM=1")
+
 setup_target(dependency_generator_rtcm)

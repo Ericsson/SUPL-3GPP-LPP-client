@@ -28,7 +28,7 @@ include(cmake/compiler.cmake)
 include(cmake/target.cmake)
 include(cmake/git-version.cmake)
 
-add_definitions(-D_POSIX_C_SOURCE=200809L)
+#add_definitions(-D_POSIX_C_SOURCE=200809L)
 include_directories(${CMAKE_BINARY_DIR}/generated)
 
 find_package(Threads REQUIRED)
@@ -86,6 +86,19 @@ if(USE_TIMETRACE)
         endif()
     endif()
 endif()
+
+
+if(NOT INCLUDE_GENERATOR_RTCM)
+    if(INCLUDE_FORMAT_RINEX)
+        message(WARNING "RINEX format requires RTCM generator to be enabled")
+        set(INCLUDE_FORMAT_RINEX OFF)
+    endif()
+    if(INCLUDE_FORMAT_ANTEX)
+        message(WARNING "ANTEX format requires RTCM generator to be enabled")
+        set(INCLUDE_FORMAT_ANTEX OFF)
+    endif()
+endif()
+
 
 add_subdirectory("dependency")
 add_subdirectory("external")

@@ -605,11 +605,13 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
 static void setup_print_inspectors(Program& program) {
     VSCOPE_FUNCTION();
 
-    bool nmea_print  = false;
-    bool ubx_print   = false;
-    bool rtcm_print  = false;
-    bool ctrl_print  = false;
+    bool nmea_print = false;
+    bool ubx_print  = false;
+    bool rtcm_print = false;
+    bool ctrl_print = false;
+#if defined(INCLUDE_GENERATOR_TOKORO)
     bool agnss_print = false;
+#endif
 
     for (auto& print : program.config.print.prints) {
         print.include_tag_mask = program.config.get_tag(print.include_tags);
@@ -619,7 +621,9 @@ static void setup_print_inspectors(Program& program) {
         if (print.ubx_support()) ubx_print = true;
         if (print.rtcm_support()) rtcm_print = true;
         if (print.ctrl_support()) ctrl_print = true;
+#if defined(INCLUDE_GENERATOR_TOKORO)
         if (print.agnss_support()) agnss_print = true;
+#endif
     }
 
     if (nmea_print) program.stream.add_inspector<NmeaPrint>(program.config.print);
@@ -744,7 +748,7 @@ static void setup_fake_location(Program& program) {
     }
 }
 
-static void setup_lpp2osr(Program& program) {
+static void setup_lpp2osr(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_RTCM)
     if (program.config.lpp2rtcm.enabled) {
         program.stream.add_inspector<Lpp2Rtcm>(program.config.output, program.config.lpp2rtcm);
@@ -769,7 +773,7 @@ static void setup_lpp2osr(Program& program) {
 #endif
 }
 
-static void setup_lpp2spartn(Program& program) {
+static void setup_lpp2spartn(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_SPARTN)
     if (program.config.lpp2spartn.enabled) {
         program.stream.add_inspector<Lpp2Spartn>(program.config.output, program.config.lpp2spartn);
@@ -777,7 +781,7 @@ static void setup_lpp2spartn(Program& program) {
 #endif
 }
 
-static void setup_tokoro(Program& program) {
+static void setup_tokoro(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_TOKORO)
     if (program.config.tokoro.enabled) {
         if (!program.config.ubx2eph.enabled && !program.config.rtcm2eph.enabled &&
@@ -795,7 +799,7 @@ static void setup_tokoro(Program& program) {
 #endif
 }
 
-static void setup_idokeido(Program& program) {
+static void setup_idokeido(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_IDOKEIDO)
     if (program.config.idokeido.enabled) {
         auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
@@ -826,6 +830,7 @@ static void apply_ubx_config(Program& program) {
     }
 }
 
+#if defined(INCLUDE_GENERATOR_TOKORO)
 static bool setup_agnss(Program& program) {
     if (program.config.agnss.imsi) {
         program.agnss_identity = std::unique_ptr<supl::Identity>(
@@ -853,6 +858,7 @@ static bool setup_agnss(Program& program) {
     }
     return true;
 }
+#endif
 
 int main(int argc, char** argv) {
     loglet::initialize();

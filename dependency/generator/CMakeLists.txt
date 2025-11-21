@@ -4,6 +4,9 @@ add_subdirectory("rtcm")
 endif()
 
 if(INCLUDE_GENERATOR_SPARTN)
+if(NOT INCLUDE_GENERATOR_RTCM)
+    message(FATAL_ERROR "INCLUDE_GENERATOR_SPARTN requires INCLUDE_GENERATOR_RTCM")
+endif()
 add_subdirectory("spartn")
 endif()
 
@@ -15,5 +18,8 @@ add_subdirectory("tokoro")
 endif()
 
 if(INCLUDE_GENERATOR_IDOKEIDO)
+if(NOT INCLUDE_GENERATOR_RTCM)
+    message(FATAL_ERROR "INCLUDE_GENERATOR_IDOKEIDO requires INCLUDE_GENERATOR_RTCM")
+endif()
 add_subdirectory("idokeido")
 endif()

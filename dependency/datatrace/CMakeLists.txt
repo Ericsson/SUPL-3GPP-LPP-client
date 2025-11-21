@@ -27,6 +27,8 @@ CPMAddPackage(
         "WITH_SOCKS OFF"
         "WITH_STATIC_LIBRARIES ON"
         "WITH_PIC ON"
+        "WITH_CJSON OFF"
+        "WITH_ASAN OFF"
 )
 
 target_link_libraries(dependency_datatrace PUBLIC libmosquitto_static)
