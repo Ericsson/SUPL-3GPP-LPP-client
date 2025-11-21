@@ -48,7 +48,7 @@ if(INCLUDE_FORMAT_ANTEX)
     target_link_libraries(dependency_generator_tokoro PUBLIC dependency::format::antex)
 endif()
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::maths)
-target_link_libraries(dependency_generator_tokoro PUBLIC dependency::generator::rtcm)
+target_link_libraries(dependency_generator_tokoro PRIVATE dependency::generator::rtcm)
 
 if(DATA_TRACING)
     target_link_libraries(dependency_generator_tokoro PRIVATE dependency::datatrace)
