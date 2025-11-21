@@ -9,7 +9,7 @@
 #include "sv_id.hpp"
 
 #include <ephemeris/ephemeris.hpp>
-#include <generator/rtcm/satellite_id.hpp>
+#include <gnss/satellite_id.hpp>
 #include <maths/float3.hpp>
 #include <time/gps.hpp>
 #include <time/tai.hpp>

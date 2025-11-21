@@ -7,8 +7,8 @@
 #include <unordered_map>
 #include <vector>
 
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
+#include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 #include <maths/float3.hpp>
 #include <time/gps.hpp>
 #include <time/tai.hpp>

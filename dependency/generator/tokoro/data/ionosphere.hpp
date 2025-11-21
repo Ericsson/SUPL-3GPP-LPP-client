@@ -12,8 +12,8 @@
 #include "grid.hpp"
 #include "sv_id.hpp"
 
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
+#include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 
 struct GNSS_SSR_OrbitCorrections_r15;
 struct GNSS_SSR_ClockCorrections_r15;

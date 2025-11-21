@@ -4,10 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added
-- MessagePack serialization library with C++11 support
 
 ### Changed
+- Extracted SignalId and SatelliteId to new dependency/gnss library for better modularity
 - Converted ephemeris test data from text to MessagePack format for faster test execution
 - Fixed identifier naming
 - Eliminated 1MB global buffer by using direct vfprintf formatting
@@ -30,6 +29,7 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- MessagePack serialization library with C++11 support
 - Added GLONASS ephemeris support
 - Added GLONASS time system support with UTC offset handling
 - Added comprehensive GLONASS ephemeris tests with reference data

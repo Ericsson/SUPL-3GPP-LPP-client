@@ -2,7 +2,7 @@
 
 #include <asn.1/bit_string.hpp>
 #include <external_warnings.hpp>
-#include <generator/rtcm/satellite_id.hpp>
+#include <gnss/satellite_id.hpp>
 #include <loglet/loglet.hpp>
 #include <lpp/assistance_data.hpp>
 #include <time/bdt.hpp>

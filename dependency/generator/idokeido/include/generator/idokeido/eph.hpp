@@ -9,8 +9,8 @@
 #include <vector>
 
 #include <ephemeris/ephemeris.hpp>
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
+#include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 #include <time/tai.hpp>
 
 namespace idokeido {

@@ -1,13 +1,13 @@
 #include "generator.hpp"
+#include <gnss/maybe.hpp>
+#include <gnss/satellite_id.hpp>
 #include "encoder.hpp"
 #include "extract/extract.hpp"
-#include "maybe.hpp"
 #include "messages/1230.hpp"
 #include "messages/msm.hpp"
 #include "messages/reference_station.hpp"
 #include "messages/residuals.hpp"
 #include "rtk_data.hpp"
-#include "satellite_id.hpp"
 
 #ifdef DATA_TRACING
 #include <datatrace/datatrace.hpp>

@@ -11,7 +11,7 @@ target_link_libraries(dependency_format_antex PUBLIC dependency::loglet)
 target_link_libraries(dependency_format_antex PUBLIC dependency::time)
 target_link_libraries(dependency_format_antex PUBLIC dependency::core)
 target_link_libraries(dependency_format_antex PUBLIC dependency::maths)
-target_link_libraries(dependency_format_antex PUBLIC dependency::generator::rtcm)
+target_link_libraries(dependency_format_antex PUBLIC dependency::gnss)
 
 target_compile_definitions(dependency_format_antex PUBLIC "INCLUDE_FORMAT_ANTEX=1")
 

@@ -1,6 +1,6 @@
 #pragma once
-#include <generator/rtcm/maybe.hpp>
-#include <generator/rtcm/satellite_id.hpp>
+#include <gnss/maybe.hpp>
+#include <gnss/satellite_id.hpp>
 
 #include <string>
 

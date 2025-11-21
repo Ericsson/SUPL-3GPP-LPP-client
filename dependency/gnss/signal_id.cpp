@@ -1,5 +1,5 @@
-#include "signal_id.hpp"
 #include <cassert>
+#include <gnss/signal_id.hpp>
 
 SignalId const SignalId::GPS_L1_CA         = SignalId::from_lpp(SignalId::GPS, 0);
 SignalId const SignalId::GPS_L1C           = SignalId::from_lpp(SignalId::GPS, 1);

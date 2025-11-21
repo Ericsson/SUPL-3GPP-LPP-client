@@ -25,8 +25,8 @@ EXTERNAL_WARNINGS_PUSH
 EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
+#include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 

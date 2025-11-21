@@ -1,5 +1,5 @@
-#include "satellite_id.hpp"
 #include <cinttypes>
+#include <gnss/satellite_id.hpp>
 
 CONSTEXPR static long LPP_SATELLITE_ID_LIMIT = 64;
 

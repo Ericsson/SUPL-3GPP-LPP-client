@@ -2,8 +2,6 @@
 add_library(dependency_generator_rtcm STATIC 
     "rtcm.cpp"
     "generator.cpp"
-    "satellite_id.cpp"
-    "signal_id.cpp"
     "extract/extract_common_observation_info.cpp"
     "extract/extract_reference_station_info.cpp"
     "extract/extract_observations.cpp"
@@ -26,6 +24,7 @@ target_link_libraries(dependency_generator_rtcm PRIVATE asn1::generated::lpp asn
 target_link_libraries(dependency_generator_rtcm PUBLIC dependency::loglet)
 target_link_libraries(dependency_generator_rtcm PUBLIC dependency::time)
 target_link_libraries(dependency_generator_rtcm PUBLIC dependency::core)
+target_link_libraries(dependency_generator_rtcm PUBLIC dependency::gnss)
 
 if(DATA_TRACING)
     target_link_libraries(dependency_generator_rtcm PRIVATE dependency::datatrace)

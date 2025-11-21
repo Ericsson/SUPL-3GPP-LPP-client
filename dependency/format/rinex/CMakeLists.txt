@@ -11,7 +11,7 @@ target_link_libraries(dependency_format_rinex PUBLIC dependency::loglet)
 target_link_libraries(dependency_format_rinex PUBLIC dependency::time)
 target_link_libraries(dependency_format_rinex PUBLIC dependency::core)
 target_link_libraries(dependency_format_rinex PUBLIC dependency::maths)
-target_link_libraries(dependency_format_rinex PUBLIC dependency::generator::rtcm)
+target_link_libraries(dependency_format_rinex PUBLIC dependency::gnss)
 
 target_compile_definitions(dependency_format_rinex PUBLIC "INCLUDE_FORMAT_RINEX=1")
 

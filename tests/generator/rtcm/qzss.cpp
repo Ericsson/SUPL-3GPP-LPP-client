@@ -1,6 +1,6 @@
 #include <doctest/doctest.h>
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
+#include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 
 TEST_CASE("QZSS SatelliteId PRN range") {
     SUBCASE("Valid PRN range 193-202") {

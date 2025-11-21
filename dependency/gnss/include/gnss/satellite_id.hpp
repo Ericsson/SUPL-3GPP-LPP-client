@@ -1,5 +1,5 @@
 #pragma once
-#include <generator/rtcm/maybe.hpp>
+#include <gnss/maybe.hpp>
 
 #include <functional>
 #include <string>

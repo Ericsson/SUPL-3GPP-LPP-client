@@ -1,5 +1,5 @@
 #pragma once
-#include <generator/rtcm/satellite_id.hpp>
+#include <gnss/satellite_id.hpp>
 #include <lpp/client.hpp>
 #include <scheduler/periodic.hpp>
 #include <scheduler/timeout.hpp>

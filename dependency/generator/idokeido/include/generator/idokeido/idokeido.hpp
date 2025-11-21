@@ -1,8 +1,8 @@
 #pragma once
 #include <core/core.hpp>
 
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
+#include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 #include <time/tai.hpp>
 
 #include <Eigen/Eigen>

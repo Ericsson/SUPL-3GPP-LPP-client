@@ -1,6 +1,6 @@
 #pragma once
-#include <generator/rtcm/satellite_id.hpp>
-#include <generator/rtcm/signal_id.hpp>
+#include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 #include "models/earth_solid_tides.hpp"
 #include "models/phase_windup.hpp"
 #include "models/shapiro.hpp"

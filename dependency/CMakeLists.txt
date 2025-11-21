@@ -1,4 +1,5 @@
 add_subdirectory("core")
+add_subdirectory("gnss")
 add_subdirectory("format")
 add_subdirectory("io")
 add_subdirectory("loglet")
