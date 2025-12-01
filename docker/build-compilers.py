@@ -12,10 +12,10 @@ import json
 # Configuration paths
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DOCKER_DIR = SCRIPT_DIR
-BUILD_DIR = os.path.join(SCRIPT_DIR, 'build')
-IMAGE_DIR = os.path.join(BUILD_DIR, 'images')
-COMPILER_DIR = os.path.join(BUILD_DIR, 'compilers')
-TEST_DIR = os.path.join(BUILD_DIR, 'tests')
+CACHE_DIR = os.path.expanduser('~/.cache/SUPL-3GPP-LPP-client')
+IMAGE_DIR = os.path.join(CACHE_DIR, 'images')
+COMPILER_DIR = os.path.join(CACHE_DIR, 'compilers')
+TEST_DIR = os.path.join(CACHE_DIR, 'tests')
 
 IMAGES = {
     's3lc-base:18.04': 'Dockerfile.base-18.04',
@@ -282,7 +282,7 @@ def test_configuration(compiler, build_type, cxx_std, options, results, force_re
         platform = compiler_config['platform']
         toolchain_arg = f'-DCMAKE_TOOLCHAIN_FILE=/src/cmake/toolchain-{platform}.cmake'
     
-    cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} {toolchain_arg} {' '.join(options)} && ninja -j{jobs}"
+    cmake_cmd = f"mkdir -p /build && cd /build && cmake /src -GNinja -DCMAKE_BUILD_TYPE={build_type} -DCMAKE_CXX_STANDARD={cxx_std} -DUNITY_BUILD=ON {toolchain_arg} {' '.join(options)} && ninja -j{jobs}"
     
     image_name = compiler_config['image'] if compiler_config.get('cross') else f's3lc-test:{compiler}'
     
@@ -292,6 +292,7 @@ def test_configuration(compiler, build_type, cxx_std, options, results, force_re
         with open(os.path.join(build_dir, 'build.log'), 'w') as log:
             log.write(f"Running: {cmake_cmd}\n")
             result = subprocess.run(['docker', 'run', '--rm', 
+                                   '--user', f'{os.getuid()}:{os.getgid()}',
                                    '-v', f'{project_root}:/src:ro',
                                    '-v', f'{os.path.abspath(build_dir)}:/build',
                                    '-w', '/build', 
@@ -390,7 +391,18 @@ def print_results_matrix(results):
                 opt_str = ' '.join(shorten_option(opt) for opt in options)
                 cxx_options.add(f"C++{cxx_std} {opt_str}")
         
-        compiler_builds = sorted(compiler_builds)
+        def compiler_sort_key(cb):
+            parts = cb.split()
+            compiler_name = parts[0]
+            version = parts[1] if len(parts) > 1 else ''
+            build_type = parts[2] if len(parts) > 2 else ''
+            try:
+                version_num = float(version)
+            except ValueError:
+                version_num = 0
+            return (compiler_name, version_num, build_type)
+        
+        compiler_builds = sorted(compiler_builds, key=compiler_sort_key)
         cxx_options = sorted(cxx_options)
         
         if compiler_builds and cxx_options:

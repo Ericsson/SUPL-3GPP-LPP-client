@@ -279,6 +279,7 @@ set_target_properties(asn1_skeleton PROPERTIES
     C_CLANG_TIDY ""
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
+    UNITY_BUILD OFF
 )
 if(COMPILER_SUPPORTS_NO_SANITIZE)
     # Explicitly disable ASAN for ASN.1 code
@@ -303,6 +304,7 @@ set_target_properties(asn1_supl_generated PROPERTIES
     C_CLANG_TIDY ""
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
+    UNITY_BUILD OFF
 )
 if(COMPILER_SUPPORTS_NO_SANITIZE)
     # Explicitly disable ASAN for ASN.1 code
@@ -327,6 +329,7 @@ set_target_properties(asn1_lpp_generated PROPERTIES
     C_CLANG_TIDY ""
     C_CPPCHECK ""
     C_INCLUDE_WHAT_YOU_USE ""
+    UNITY_BUILD OFF
 )
 if(COMPILER_SUPPORTS_NO_SANITIZE)
     # Explicitly disable ASAN for ASN.1 code

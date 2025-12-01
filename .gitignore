@@ -2,9 +2,6 @@ asn/src
 asn1c
 bin
 build
-build-armv7
-build-arm64
-build-*
 logs
 output.txt
 generated_files
@@ -16,3 +13,6 @@ scripts
 *.swp
 .amazonq/
 docker/__pycache__/
+docker/venv/
+plans
+AGENTS.md
