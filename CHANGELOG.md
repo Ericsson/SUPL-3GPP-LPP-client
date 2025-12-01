@@ -4,6 +4,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Coordinate representation library in dependency/coordinates with Eigen-based types (ECEF, LLH, ENU, NED, AER) and transformations using matrix operations
+- Regression tests for coordinates library against tokoro and idokeido implementations
 
 ### Changed
 - Extracted SignalId and SatelliteId to new dependency/gnss library for better modularity

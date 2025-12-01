@@ -1,5 +1,25 @@
 CPMAddPackage("gh:doctest/doctest@2.4.11")
 
+add_executable(coordinates_tests
+    coordinates/main.cpp
+    coordinates/test_ecef_llh.cpp
+    coordinates/test_ecef_enu_ned_aer.cpp
+    coordinates/test_edge_cases.cpp
+    coordinates/test_regression.cpp
+)
+target_link_libraries(coordinates_tests PRIVATE 
+    coordinates 
+    dependency::maths
+    dependency::generator::tokoro
+    dependency::generator::idokeido
+    doctest::doctest
+)
+target_compile_options(coordinates_tests PRIVATE -fsanitize=address -g)
+target_link_options(coordinates_tests PRIVATE -fsanitize=address)
+
+add_test(NAME coordinates_tests COMMAND coordinates_tests --no-skip)
+set_tests_properties(coordinates_tests PROPERTIES LABELS "coordinates")
+
 add_executable(time_tests 
     time/main.cpp
     time/timestamp.cpp
