@@ -15,4 +15,10 @@ struct Ellipsoid {
     }
 };
 
+namespace ellipsoids {
+static constexpr Ellipsoid Wgs84 = Ellipsoid::from_a_f(6378137.0, 1.0 / 298.257223563);
+static constexpr Ellipsoid Grs80 = Ellipsoid::from_a_f(6378137.0, 1.0 / 298.257222101);
+static constexpr Ellipsoid Pz90  = Ellipsoid::from_a_f(6378136.0, 1.0 / 298.25784);
+}  // namespace ellipsoids
+
 }  // namespace coordinates

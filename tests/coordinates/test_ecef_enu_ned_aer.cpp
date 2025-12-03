@@ -4,12 +4,15 @@
 
 using namespace coordinates;
 
-struct WGS84 {
+struct TestFrame {};
+
+template <>
+struct coordinates::FrameTrait<TestFrame> {
     static constexpr Ellipsoid ellipsoid = Ellipsoid::from_a_f(6378137.0, 1.0 / 298.257223563);
 };
 
 TEST_CASE("ENU basis orthonormal") {
-    auto llh = Llh<WGS84>::from_degrees(45.0, 10.0, 0);
+    auto llh = Llh<TestFrame>::from_degrees(45.0, 10.0, 0);
     auto R   = enu_rotation_matrix(llh.latitude(), llh.longitude());
 
     auto east  = R.row(0);
@@ -31,8 +34,8 @@ TEST_CASE("ENU basis orthonormal") {
 }
 
 TEST_CASE("Round trip ECEF -> ENU -> ECEF") {
-    Llh<WGS84>  origin = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    Ecef<WGS84> ecef_orig{Vector3d(4000000, 3000000, 5000000)};
+    Llh<TestFrame>  origin = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    Ecef<TestFrame> ecef_orig{Vector3d(4000000, 3000000, 5000000)};
 
     auto enu       = ecef_to_enu(ecef_orig, origin);
     auto ecef_back = enu_to_ecef(enu, origin);
@@ -43,8 +46,8 @@ TEST_CASE("Round trip ECEF -> ENU -> ECEF") {
 }
 
 TEST_CASE("Round trip ENU -> ECEF -> ENU") {
-    Llh<WGS84> origin = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    Enu<WGS84> enu_orig{Vector3d(100, 200, 50)};
+    Llh<TestFrame> origin = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    Enu<TestFrame> enu_orig{Vector3d(100, 200, 50)};
 
     auto ecef     = enu_to_ecef(enu_orig, origin);
     auto enu_back = ecef_to_enu(ecef, origin);
@@ -55,8 +58,8 @@ TEST_CASE("Round trip ENU -> ECEF -> ENU") {
 }
 
 TEST_CASE("Round trip ECEF -> NED -> ECEF") {
-    Llh<WGS84>  origin = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    Ecef<WGS84> ecef_orig{Vector3d(4000000, 3000000, 5000000)};
+    Llh<TestFrame>  origin = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    Ecef<TestFrame> ecef_orig{Vector3d(4000000, 3000000, 5000000)};
 
     auto ned       = ecef_to_ned(ecef_orig, origin);
     auto ecef_back = ned_to_ecef(ned, origin);
@@ -67,8 +70,8 @@ TEST_CASE("Round trip ECEF -> NED -> ECEF") {
 }
 
 TEST_CASE("ENU to NED conversion") {
-    Llh<WGS84>  origin = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    Ecef<WGS84> ecef{Vector3d(4000000, 3000000, 5000000)};
+    Llh<TestFrame>  origin = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    Ecef<TestFrame> ecef{Vector3d(4000000, 3000000, 5000000)};
 
     auto enu = ecef_to_enu(ecef, origin);
     auto ned = ecef_to_ned(ecef, origin);
@@ -79,8 +82,8 @@ TEST_CASE("ENU to NED conversion") {
 }
 
 TEST_CASE("Round trip ECEF -> AER -> ECEF") {
-    Llh<WGS84>  origin = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    Ecef<WGS84> ecef_orig{Vector3d(4000000, 3000000, 5000000)};
+    Llh<TestFrame>  origin = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    Ecef<TestFrame> ecef_orig{Vector3d(4000000, 3000000, 5000000)};
 
     auto aer       = ecef_to_aer(ecef_orig, origin);
     auto ecef_back = aer_to_ecef(aer, origin);
@@ -99,25 +102,25 @@ TEST_CASE("AER degree helpers") {
 }
 
 TEST_CASE("AER zenith") {
-    Llh<WGS84> origin      = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    auto       origin_ecef = llh_to_ecef(origin);
-    auto       R           = enu_rotation_matrix(origin.latitude(), origin.longitude());
-    auto       up          = R.row(2);
+    Llh<TestFrame> origin      = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    auto           origin_ecef = llh_to_ecef(origin);
+    auto           R           = enu_rotation_matrix(origin.latitude(), origin.longitude());
+    auto           up          = R.row(2);
 
-    Ecef<WGS84> sat_zenith{origin_ecef.value + 20000000.0 * up.transpose()};
-    auto        aer = ecef_to_aer(sat_zenith, origin);
+    Ecef<TestFrame> sat_zenith{origin_ecef.value + 20000000.0 * up.transpose()};
+    auto            aer = ecef_to_aer(sat_zenith, origin);
 
     CHECK(aer.elevation() == doctest::Approx(M_PI / 2).epsilon(1e-6));
 }
 
 TEST_CASE("AER azimuth north") {
-    Llh<WGS84> origin      = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    auto       origin_ecef = llh_to_ecef(origin);
-    auto       R           = enu_rotation_matrix(origin.latitude(), origin.longitude());
-    auto       north       = R.row(1);
+    Llh<TestFrame> origin      = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    auto           origin_ecef = llh_to_ecef(origin);
+    auto           R           = enu_rotation_matrix(origin.latitude(), origin.longitude());
+    auto           north       = R.row(1);
 
-    Ecef<WGS84> sat_north{origin_ecef.value + 1000000.0 * north.transpose()};
-    auto        aer = ecef_to_aer(sat_north, origin);
+    Ecef<TestFrame> sat_north{origin_ecef.value + 1000000.0 * north.transpose()};
+    auto            aer = ecef_to_aer(sat_north, origin);
 
     CHECK(aer.azimuth() == doctest::Approx(0.0).epsilon(1e-3));
 }

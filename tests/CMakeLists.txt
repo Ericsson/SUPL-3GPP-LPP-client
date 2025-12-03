@@ -6,14 +6,20 @@ add_executable(coordinates_tests
     coordinates/test_ecef_enu_ned_aer.cpp
     coordinates/test_edge_cases.cpp
     coordinates/test_regression.cpp
+    coordinates/test_transform.cpp
+    coordinates/test_sweref99.cpp
 )
 target_link_libraries(coordinates_tests PRIVATE 
-    coordinates 
+    dependency::coordinates
     dependency::maths
-    dependency::generator::tokoro
-    dependency::generator::idokeido
     doctest::doctest
 )
+if(INCLUDE_GENERATOR_TOKORO)
+    target_link_libraries(coordinates_tests PRIVATE dependency::generator::tokoro)
+endif()
+if(INCLUDE_GENERATOR_IDOKEIDO)
+    target_link_libraries(coordinates_tests PRIVATE dependency::generator::idokeido)
+endif()
 target_compile_options(coordinates_tests PRIVATE -fsanitize=address -g)
 target_link_options(coordinates_tests PRIVATE -fsanitize=address)
 

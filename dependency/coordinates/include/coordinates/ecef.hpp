@@ -17,6 +17,10 @@ struct Ecef {
     double& x() { return value.x(); }
     double& y() { return value.y(); }
     double& z() { return value.z(); }
+
+    Ecef<NullReferenceFrame> to_any() const { return Ecef<NullReferenceFrame>{value}; }
+
+    static Ecef from_any(Ecef<NullReferenceFrame> const& other) { return Ecef{other.value}; }
 };
 
 template <typename Frame>

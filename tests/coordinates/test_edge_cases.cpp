@@ -4,30 +4,33 @@
 
 using namespace coordinates;
 
-struct WGS84 {
+struct TestFrame {};
+
+template <>
+struct coordinates::FrameTrait<TestFrame> {
     static constexpr Ellipsoid ellipsoid = Ellipsoid::from_a_f(6378137.0, 1.0 / 298.257223563);
 };
 
 TEST_CASE("Date line crossing - positive longitude") {
-    Llh<WGS84> llh      = Llh<WGS84>::from_degrees(0.0, 179.9, 0.0);
-    auto       ecef     = llh_to_ecef(llh);
-    auto       llh_back = ecef_to_llh(ecef);
+    Llh<TestFrame> llh      = Llh<TestFrame>::from_degrees(0.0, 179.9, 0.0);
+    auto           ecef     = llh_to_ecef(llh);
+    auto           llh_back = ecef_to_llh(ecef);
 
     CHECK(llh_back.longitude_deg() == doctest::Approx(179.9).epsilon(1e-9));
 }
 
 TEST_CASE("Date line crossing - negative longitude") {
-    Llh<WGS84> llh      = Llh<WGS84>::from_degrees(0.0, -179.9, 0.0);
-    auto       ecef     = llh_to_ecef(llh);
-    auto       llh_back = ecef_to_llh(ecef);
+    Llh<TestFrame> llh      = Llh<TestFrame>::from_degrees(0.0, -179.9, 0.0);
+    auto           ecef     = llh_to_ecef(llh);
+    auto           llh_back = ecef_to_llh(ecef);
 
     CHECK(llh_back.longitude_deg() == doctest::Approx(-179.9).epsilon(1e-9));
 }
 
 TEST_CASE("High altitude") {
-    Llh<WGS84> llh      = Llh<WGS84>::from_degrees(45.0, 10.0, 100000.0);
-    auto       ecef     = llh_to_ecef(llh);
-    auto       llh_back = ecef_to_llh(ecef);
+    Llh<TestFrame> llh      = Llh<TestFrame>::from_degrees(45.0, 10.0, 100000.0);
+    auto           ecef     = llh_to_ecef(llh);
+    auto           llh_back = ecef_to_llh(ecef);
 
     CHECK(llh_back.latitude_deg() == doctest::Approx(45.0).epsilon(1e-9));
     CHECK(llh_back.longitude_deg() == doctest::Approx(10.0).epsilon(1e-9));
@@ -35,9 +38,9 @@ TEST_CASE("High altitude") {
 }
 
 TEST_CASE("Negative altitude") {
-    Llh<WGS84> llh      = Llh<WGS84>::from_degrees(45.0, 10.0, -100.0);
-    auto       ecef     = llh_to_ecef(llh);
-    auto       llh_back = ecef_to_llh(ecef);
+    Llh<TestFrame> llh      = Llh<TestFrame>::from_degrees(45.0, 10.0, -100.0);
+    auto           ecef     = llh_to_ecef(llh);
+    auto           llh_back = ecef_to_llh(ecef);
 
     CHECK(llh_back.latitude_deg() == doctest::Approx(45.0).epsilon(1e-9));
     CHECK(llh_back.longitude_deg() == doctest::Approx(10.0).epsilon(1e-9));
@@ -45,8 +48,8 @@ TEST_CASE("Negative altitude") {
 }
 
 TEST_CASE("ECEF operators") {
-    Ecef<WGS84> a{Vector3d(1000, 2000, 3000)};
-    Ecef<WGS84> b{Vector3d(100, 200, 300)};
+    Ecef<TestFrame> a{Vector3d(1000, 2000, 3000)};
+    Ecef<TestFrame> b{Vector3d(100, 200, 300)};
 
     auto sum = a + b;
     CHECK(sum.x() == doctest::Approx(1100).epsilon(1e-12));
@@ -68,13 +71,13 @@ TEST_CASE("ECEF operators") {
 }
 
 TEST_CASE("AER azimuth wrapping") {
-    Llh<WGS84> origin      = Llh<WGS84>::from_degrees(45.0, 10.0, 100.0);
-    auto       origin_ecef = llh_to_ecef(origin);
-    auto       R           = enu_rotation_matrix(origin.latitude(), origin.longitude());
-    auto       east        = R.row(0);
+    Llh<TestFrame> origin      = Llh<TestFrame>::from_degrees(45.0, 10.0, 100.0);
+    auto           origin_ecef = llh_to_ecef(origin);
+    auto           R           = enu_rotation_matrix(origin.latitude(), origin.longitude());
+    auto           east        = R.row(0);
 
-    Ecef<WGS84> sat_east{origin_ecef.value + 1000000.0 * east.transpose()};
-    auto        aer = ecef_to_aer(sat_east, origin);
+    Ecef<TestFrame> sat_east{origin_ecef.value + 1000000.0 * east.transpose()};
+    auto            aer = ecef_to_aer(sat_east, origin);
 
     CHECK(aer.azimuth() >= 0.0);
     CHECK(aer.azimuth() < 2 * M_PI);

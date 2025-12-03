@@ -6,9 +6,12 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Coordinate representation library in dependency/coordinates with Eigen-based types (ECEF, LLH, ENU, NED, AER) and transformations using matrix operations
+- Multi-reference frame coordinate transformations with template-based and graph-based APIs supporting WGS84, PZ-90, ITRF (88-2020), and CGCS2000
+- ITRF transformation parameters from IERS Technical Note 36 for ITRF88 through ITRF2020
 - Regression tests for coordinates library against tokoro and idokeido implementations
 
 ### Changed
+- Refactored coordinate frames to use FrameTrait pattern with modular file structure and temporal model classification
 - Extracted SignalId and SatelliteId to new dependency/gnss library for better modularity
 - Converted ephemeris test data from text to MessagePack format for faster test execution
 - Fixed identifier naming

@@ -22,6 +22,10 @@ struct Llh {
     static Llh from_degrees(double lat_deg, double lon_deg, double height) {
         return Llh{Vector3d(lat_deg * M_PI / 180.0, lon_deg * M_PI / 180.0, height)};
     }
+
+    Llh<NullReferenceFrame> to_any() const { return Llh<NullReferenceFrame>{value}; }
+
+    static Llh from_any(Llh<NullReferenceFrame> const& llh) { return Llh{llh.value}; }
 };
 
 }  // namespace coordinates
