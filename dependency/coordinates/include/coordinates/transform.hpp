@@ -25,8 +25,9 @@ struct TimeDependentHelmertTransform {
 };
 
 template <typename FromFrame, typename ToFrame>
-struct Transform<FromFrame, ToFrame,
-                 std::enable_if_t<TimeDependentHelmertTransform<FromFrame, ToFrame>::is_defined>> {
+struct Transform<
+    FromFrame, ToFrame,
+    typename std::enable_if<TimeDependentHelmertTransform<FromFrame, ToFrame>::is_defined>::type> {
     static double apply_epoch(double current_epoch, double) { return current_epoch; }
 
     static State apply(State const& state, double) {

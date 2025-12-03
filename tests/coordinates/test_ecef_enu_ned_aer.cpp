@@ -3,13 +3,7 @@
 #include <doctest/doctest.h>
 
 using namespace coordinates;
-
-struct TestFrame {};
-
-template <>
-struct coordinates::FrameTrait<TestFrame> {
-    static constexpr Ellipsoid ellipsoid = Ellipsoid::from_a_f(6378137.0, 1.0 / 298.257223563);
-};
+using TestFrame = WGS84_G1762;
 
 TEST_CASE("ENU basis orthonormal") {
     auto llh = Llh<TestFrame>::from_degrees(45.0, 10.0, 0);

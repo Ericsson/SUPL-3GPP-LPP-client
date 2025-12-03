@@ -29,6 +29,7 @@ add_library(dependency_coordinates STATIC
     src/ecef_enu.cpp
     src/ecef_ned.cpp
     src/ecef_aer.cpp
+    src/frame.cpp
     src/frame_id.cpp
     src/transform.cpp
     src/transform_graph.cpp

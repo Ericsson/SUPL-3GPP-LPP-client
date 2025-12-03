@@ -17,14 +17,14 @@ Vector3d enu_to_ecef_impl(Vector3d const& enu, Vector3d const& origin_llh,
 
 template <typename Frame>
 Enu<Frame> ecef_to_enu(Ecef<Frame> const& ecef, Llh<Frame> const& origin_llh) {
-    static_assert(!std::is_same_v<Frame, NullReferenceFrame>,
+    static_assert(!std::is_same<Frame, NullReferenceFrame>::value,
                   "ecef_to_enu requires a reference frame with ellipsoid data");
     return Enu<Frame>{ecef_to_enu_impl(ecef.value, origin_llh.value, FrameTrait<Frame>::ellipsoid)};
 }
 
 template <typename Frame>
 Ecef<Frame> enu_to_ecef(Enu<Frame> const& enu, Llh<Frame> const& origin_llh) {
-    static_assert(!std::is_same_v<Frame, NullReferenceFrame>,
+    static_assert(!std::is_same<Frame, NullReferenceFrame>::value,
                   "enu_to_ecef requires a reference frame with ellipsoid data");
     return Ecef<Frame>{enu_to_ecef_impl(enu.value, origin_llh.value, FrameTrait<Frame>::ellipsoid)};
 }

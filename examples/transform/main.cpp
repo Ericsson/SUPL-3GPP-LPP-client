@@ -228,7 +228,7 @@ Options parse_arguments(int argc, char** argv) {
     return opts;
 }
 
-CoordInput parse_coord_line(std::string const& line, Options const& opts) {
+CoordInput parse_coord_line(std::string const& line, UNUSED Options const& opts) {
     std::istringstream iss(line);
     std::string        type_str;
     iss >> type_str;
