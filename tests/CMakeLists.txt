@@ -164,11 +164,13 @@ if(INCLUDE_GENERATOR_RTCM)
 add_executable(generator_rtcm_tests
     generator/rtcm/main.cpp
     generator/rtcm/qzss.cpp
+    generator/rtcm/generator.cpp
 )
 target_link_libraries(generator_rtcm_tests PRIVATE 
     dependency::generator::rtcm
     dependency::core
     doctest::doctest
+    asn1::generated::lpp asn1::helper
 )
 target_compile_options(generator_rtcm_tests PRIVATE -fsanitize=address -g)
 target_link_options(generator_rtcm_tests PRIVATE -fsanitize=address)
