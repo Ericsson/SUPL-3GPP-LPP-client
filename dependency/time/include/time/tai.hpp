@@ -43,6 +43,8 @@ public:
 
     NODISCARD static Tai now();
 
+    MSGPACK_DEFINE(mTm)
+
 protected:
     NODISCARD Timestamp utc_timestamp() const;
 
