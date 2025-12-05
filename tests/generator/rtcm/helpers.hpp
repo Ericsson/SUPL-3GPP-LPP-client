@@ -1,9 +1,10 @@
 #pragma once
 #include <algorithm>
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <vector>
+
+#include <test_utils.hpp>
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH
@@ -85,8 +86,7 @@ inline std::vector<TestCase> find_test_cases(std::string const& pattern) {
 
     char const* base_paths[] = {"../../tests/data/rtcm/captured", "../tests/data/rtcm/captured"};
 
-    auto pattern_path     = std::filesystem::path(pattern);
-    auto filename_pattern = pattern_path.filename().string();
+    auto filename_pattern = test_utils::filename(pattern);
 
     size_t wildcard_pos = filename_pattern.find('*');
     if (wildcard_pos == std::string::npos) {
@@ -97,20 +97,18 @@ inline std::vector<TestCase> find_test_cases(std::string const& pattern) {
     std::string suffix_part = filename_pattern.substr(wildcard_pos + 1);
 
     for (auto base_path : base_paths) {
-        if (!std::filesystem::exists(base_path)) continue;
+        if (!test_utils::file_exists(base_path)) continue;
 
-        for (auto const& entry : std::filesystem::directory_iterator(base_path)) {
-            if (!entry.is_regular_file()) continue;
-
-            auto filename = entry.path().filename().string();
-            if (!filename.starts_with(prefix_part)) continue;
-            if (!filename.ends_with(suffix_part)) continue;
+        auto files = test_utils::list_directory(base_path);
+        for (auto const& filename : files) {
+            if (!test_utils::starts_with(filename, prefix_part)) continue;
+            if (!test_utils::ends_with(filename, suffix_part)) continue;
 
             auto base      = filename.substr(0, filename.size() - suffix_part.size());
-            auto uper_path = (std::filesystem::path(base_path) / (base + ".uper")).string();
-            auto rtcm_path = (std::filesystem::path(base_path) / (base + ".rtcm")).string();
+            auto uper_path = test_utils::path_join(base_path, base + ".uper");
+            auto rtcm_path = test_utils::path_join(base_path, base + ".rtcm");
 
-            if (std::filesystem::exists(uper_path) && std::filesystem::exists(rtcm_path)) {
+            if (test_utils::file_exists(uper_path) && test_utils::file_exists(rtcm_path)) {
                 cases.push_back({uper_path, rtcm_path, base});
             }
         }

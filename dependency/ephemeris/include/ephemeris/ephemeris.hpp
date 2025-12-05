@@ -114,9 +114,6 @@ public:
         CORE_UNREACHABLE();
     }
 
-    friend void msgpack::pack(msgpack::Packer&, ephemeris::Ephemeris const&) NOEXCEPT;
-    friend bool msgpack::unpack(msgpack::Unpacker&, ephemeris::Ephemeris&) NOEXCEPT;
-
     void msgpack_pack(msgpack::Packer& packer) const NOEXCEPT;
     bool msgpack_unpack(msgpack::Unpacker& unpacker) NOEXCEPT;
 
@@ -130,3 +127,8 @@ public:
 };
 
 }  // namespace ephemeris
+
+namespace msgpack {
+void pack(msgpack::Packer&, ephemeris::Ephemeris const&) NOEXCEPT;
+bool unpack(msgpack::Unpacker&, ephemeris::Ephemeris&) NOEXCEPT;
+}  // namespace msgpack

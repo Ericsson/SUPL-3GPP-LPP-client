@@ -442,6 +442,12 @@ struct TokoroConfig {
 
     std::string antex_file;
     bool        ignore_bitmask;
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    bool        record_snapshot;
+    std::string record_snapshot_dir;
+    double      record_snapshot_rate;
+#endif
 };
 #endif
 

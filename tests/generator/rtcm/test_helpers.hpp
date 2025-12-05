@@ -1,9 +1,10 @@
 #pragma once
 #include <algorithm>
 #include <cstdint>
-#include <filesystem>
 #include <fstream>
 #include <vector>
+
+#include <test_utils.hpp>
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH
@@ -83,8 +84,8 @@ struct TestCase {
 inline std::vector<TestCase> find_test_cases(std::string const& pattern) {
     std::vector<TestCase> cases;
 
-    auto dir    = std::filesystem::path(pattern).parent_path();
-    auto prefix = std::filesystem::path(pattern).filename().string();
+    auto dir    = test_utils::parent_path(pattern);
+    auto prefix = test_utils::filename(pattern);
 
     size_t wildcard_pos = prefix.find('*');
     if (wildcard_pos == std::string::npos) {
@@ -93,22 +94,20 @@ inline std::vector<TestCase> find_test_cases(std::string const& pattern) {
 
     std::string prefix_part = prefix.substr(0, wildcard_pos);
     std::string suffix_part = prefix.substr(wildcard_pos + 1);
-    if (!std::filesystem::exists(dir)) {
+    if (!test_utils::file_exists(dir)) {
         return cases;
     }
 
-    for (auto const& entry : std::filesystem::directory_iterator(dir)) {
-        if (!entry.is_regular_file()) continue;
-
-        auto filename = entry.path().filename().string();
-        if (!filename.starts_with(prefix_part)) continue;
-        if (!filename.ends_with(suffix_part)) continue;
+    auto files = test_utils::list_directory(dir);
+    for (auto const& filename : files) {
+        if (!test_utils::starts_with(filename, prefix_part)) continue;
+        if (!test_utils::ends_with(filename, suffix_part)) continue;
 
         auto base      = filename.substr(0, filename.size() - suffix_part.size());
-        auto uper_path = (dir / (base + ".uper")).string();
-        auto rtcm_path = (dir / (base + ".rtcm")).string();
+        auto uper_path = test_utils::path_join(dir, base + ".uper");
+        auto rtcm_path = test_utils::path_join(dir, base + ".rtcm");
 
-        if (std::filesystem::exists(uper_path) && std::filesystem::exists(rtcm_path)) {
+        if (test_utils::file_exists(uper_path) && test_utils::file_exists(rtcm_path)) {
             cases.push_back({uper_path, rtcm_path, base});
         }
     }

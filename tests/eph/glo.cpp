@@ -1,11 +1,11 @@
 #include <cstring>
-#include <dirent.h>
 #include <doctest/doctest.h>
 #include <ephemeris/glo.hpp>
 #include <fstream>
 #include <loglet/loglet.hpp>
 #include <msgpack/msgpack.hpp>
 #include <msgpack/vector.hpp>
+#include <test_utils.hpp>
 #include <time/gps.hpp>
 #include <time/utc.hpp>
 #include <vector>
@@ -24,25 +24,8 @@ struct Test {
 };
 
 static std::vector<std::string> find_glo_files() {
-    std::vector<std::string> files;
-    char const*              paths[] = {"../../tests/data/glo", "../tests/data/glo"};
-
-    for (auto path : paths) {
-        DIR* dir = opendir(path);
-        if (!dir) continue;
-
-        struct dirent* entry;
-        while ((entry = readdir(dir)) != nullptr) {
-            if (strstr(entry->d_name, ".msgpack") != nullptr) {
-                files.push_back(std::string(path) + "/" + entry->d_name);
-            }
-        }
-        closedir(dir);
-
-        if (!files.empty()) break;
-    }
-
-    return files;
+    char const* paths[] = {"../../tests/data/glo", "../tests/data/glo"};
+    return test_utils::find_files_with_suffix(paths, 2, ".msgpack");
 }
 
 TEST_CASE("GLONASS ephemeris computation") {

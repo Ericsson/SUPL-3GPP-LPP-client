@@ -32,6 +32,10 @@ struct CorrectionPointSet;
 #include "rtcm.hpp"
 #include "ubx.hpp"
 
+#ifdef ENABLE_TOKORO_SNAPSHOT
+#include "snapshot/tokoro_snapshot.hpp"
+#endif
+
 class Tokoro : public streamline::Inspector<lpp::Message> {
 public:
     Tokoro(OutputConfig const& output, TokoroConfig const& config, scheduler::Scheduler& scheduler);
@@ -55,6 +59,10 @@ public:
     bool is_gal_enabled();
     bool is_bds_enabled();
 
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    void set_recorder(std::shared_ptr<TokoroSnapshot> recorder) { mRecorder = recorder; }
+#endif
+
 private:
     OutputConfig const&                                  mOutput;
     TokoroConfig const&                                  mConfig;
@@ -66,6 +74,9 @@ private:
     std::shared_ptr<generator::tokoro::ReferenceStation> mReferenceStation;
     std::unique_ptr<scheduler::PeriodicTask>             mPeriodicTask;
     uint64_t                                             mOutputTag;
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    std::shared_ptr<TokoroSnapshot> mRecorder;
+#endif
 };
 
 class TokoroEphemerisGps : public streamline::Inspector<ephemeris::GpsEphemeris> {

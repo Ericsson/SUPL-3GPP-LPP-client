@@ -83,6 +83,13 @@ if(INCLUDE_GENERATOR_TOKORO)
     target_link_libraries(example_client PRIVATE dependency::format::nav)
     target_link_libraries(example_client PRIVATE dependency::format::antex)
     target_link_libraries(example_client PRIVATE dependency::generator::tokoro)
+    
+    if(ENABLE_TOKORO_BASELINE_RECORDING)
+        target_sources(example_client PRIVATE
+            "snapshot/tokoro_snapshot.cpp"
+        )
+        target_link_libraries(example_client PRIVATE dependency::msgpack)
+    endif()
 endif()
 
 if(INCLUDE_GENERATOR_IDOKEIDO)

@@ -7,6 +7,11 @@
 #include "observation.hpp"
 #include "satellite.hpp"
 
+#ifdef ENABLE_TOKORO_SNAPSHOT
+#include <generator/tokoro/snapshot.hpp>
+#endif
+#include <msgpack/msgpack.hpp>
+
 #include <external_warnings.hpp>
 
 EXTERNAL_WARNINGS_PUSH
@@ -206,7 +211,10 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     for (auto& satellite : mSatellites) {
         satellite.reset_observations();
 
-        if (!satellite.enabled()) continue;
+        if (!satellite.enabled()) {
+            TRACEF("discarded: %s - disabled", satellite.id().name());
+            continue;
+        }
 
         satellite.compute_sun_position();
         if (mShapiroCorrection) satellite.compute_shapiro();
@@ -229,7 +237,11 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         }
 
         auto signals = mGenerator.mCorrectionData->signals(satellite.id());
-        if (!signals) continue;
+        if (!signals) {
+            WARNF("discarded: %s - no signals", satellite.id().name());
+            satellite.disable();
+            continue;
+        }
 
         for (auto& signal : *signals) {
             if (mSignalIncludeSet.size() > 0 &&
@@ -987,6 +999,166 @@ bool Generator::get_grid_cell_center_position(int east, int north, double* lat,
     *lon += mCorrectionPointSet->step_of_longitude * 0.5;
     return true;
 }
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+SnapshotInput ReferenceStation::snapshot(ts::Tai const& time) const NOEXCEPT {
+    SnapshotInput input = mGenerator.snapshot();
+
+    input.time                                      = time;
+    input.position                                  = mGroundPosition;
+    input.config.itrf_position                      = mGroundPosition;
+    input.config.rtcm_position                      = mRtcmGroundPosition;
+    input.config.gps                                = mGenerateGps;
+    input.config.glo                                = mGenerateGlo;
+    input.config.gal                                = mGenerateGal;
+    input.config.bds                                = mGenerateBds;
+    input.config.qzs                                = mGenerateQzs;
+    input.config.shapiro_correction                 = mShapiroCorrection;
+    input.config.earth_solid_tides_correction       = mEarthSolidTidesCorrection;
+    input.config.phase_windup_correction            = mPhaseWindupCorrection;
+    input.config.antenna_phase_variation_correction = mAntennaPhaseVariation;
+    input.config.tropospheric_height_correction     = mTropoHeightCorrection;
+    input.config.elevation_mask                     = mElevationMask;
+    input.config.phase_range_rate                   = mPhaseRangeRate;
+    input.config.negative_phase_windup              = mNegativePhaseWindup;
+    input.config.require_code_bias                  = mRequireCodeBias;
+    input.config.require_phase_bias                 = mRequirePhaseBias;
+    input.config.require_tropo                      = mRequireTropo;
+    input.config.require_iono                       = mRequireIono;
+    input.config.use_tropospheric_model             = mUseTroposphericModel;
+    input.config.use_ionospheric_height_correction  = mUseIonosphericHeightCorrection;
+
+    return input;
+}
+
+SnapshotInput Generator::snapshot() const NOEXCEPT {
+    SnapshotInput input;
+
+    for (auto const& pair : mGpsEphemeris) {
+        for (auto const& eph : pair.second) {
+            SnapshotEphemeris snapshot_eph;
+            msgpack::Packer   packer(snapshot_eph.data);
+            ephemeris::Ephemeris(eph).msgpack_pack(packer);
+            input.ephemeris.push_back(snapshot_eph);
+        }
+    }
+    for (auto const& pair : mGalEphemeris) {
+        for (auto const& eph : pair.second) {
+            SnapshotEphemeris snapshot_eph;
+            msgpack::Packer   packer(snapshot_eph.data);
+            ephemeris::Ephemeris(eph).msgpack_pack(packer);
+            input.ephemeris.push_back(snapshot_eph);
+        }
+    }
+    for (auto const& pair : mBdsEphemeris) {
+        for (auto const& eph : pair.second) {
+            SnapshotEphemeris snapshot_eph;
+            msgpack::Packer   packer(snapshot_eph.data);
+            ephemeris::Ephemeris(eph).msgpack_pack(packer);
+            input.ephemeris.push_back(snapshot_eph);
+        }
+    }
+    for (auto const& pair : mQzsEphemeris) {
+        for (auto const& eph : pair.second) {
+            SnapshotEphemeris snapshot_eph;
+            msgpack::Packer   packer(snapshot_eph.data);
+            ephemeris::Ephemeris(eph).msgpack_pack(packer);
+            input.ephemeris.push_back(snapshot_eph);
+        }
+    }
+
+    if (mCorrectionData) {
+        mCorrectionData->snapshot(input.orbit_corrections, input.clock_corrections,
+                                  input.code_biases, input.phase_biases,
+                                  input.ionospheric_polynomials, input.grid_data);
+    }
+
+    if (mCorrectionPointSet) {
+        input.correction_point_set.set_id           = mCorrectionPointSet->set_id;
+        input.correction_point_set.grid_point_count = mCorrectionPointSet->grid_point_count;
+        input.correction_point_set.reference_point_latitude =
+            mCorrectionPointSet->reference_point_latitude;
+        input.correction_point_set.reference_point_longitude =
+            mCorrectionPointSet->reference_point_longitude;
+        input.correction_point_set.step_of_latitude  = mCorrectionPointSet->step_of_latitude;
+        input.correction_point_set.step_of_longitude = mCorrectionPointSet->step_of_longitude;
+        input.correction_point_set.number_of_steps_latitude =
+            mCorrectionPointSet->number_of_steps_latitude;
+        input.correction_point_set.number_of_steps_longitude =
+            mCorrectionPointSet->number_of_steps_longitude;
+        input.correction_point_set.bitmask = mCorrectionPointSet->bitmask;
+    }
+
+    return input;
+}
+
+void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
+    FUNCTION_SCOPE();
+    TRACEF("clear ephemeris");
+    mGpsEphemeris.clear();
+    mGalEphemeris.clear();
+    mBdsEphemeris.clear();
+    mQzsEphemeris.clear();
+
+    TRACEF("load ephemeris");
+    for (auto const& snapshot_eph : input.ephemeris) {
+        msgpack::Unpacker    unpacker(snapshot_eph.data.data(), snapshot_eph.data.size());
+        ephemeris::Ephemeris eph;
+        if (!eph.msgpack_unpack(unpacker)) {
+            WARNF("failed to unpack ephemeris");
+            continue;
+        }
+
+        if (eph.mType == ephemeris::Ephemeris::Type::GPS) {
+            auto id = SatelliteId::from_gps_prn(eph.gps_ephemeris.prn);
+            DEBUGF("loaded ephemeris: %s", id.name());
+            mGpsEphemeris[id].push_back(eph.gps_ephemeris);
+        } else if (eph.mType == ephemeris::Ephemeris::Type::GAL) {
+            auto id = SatelliteId::from_gal_prn(eph.gal_ephemeris.prn);
+            DEBUGF("loaded ephemeris: %s", id.name());
+            mGalEphemeris[id].push_back(eph.gal_ephemeris);
+        } else if (eph.mType == ephemeris::Ephemeris::Type::BDS) {
+            auto id = SatelliteId::from_bds_prn(eph.bds_ephemeris.prn);
+            DEBUGF("loaded ephemeris: %s", id.name());
+            mBdsEphemeris[id].push_back(eph.bds_ephemeris);
+        } else if (eph.mType == ephemeris::Ephemeris::Type::QZS) {
+            auto id = SatelliteId::from_qzs_prn(eph.qzs_ephemeris.prn);
+            DEBUGF("loaded ephemeris: %s", id.name());
+            mQzsEphemeris[id].push_back(eph.qzs_ephemeris);
+        } else {
+            WARNF("unknown ephemeris type: %d", eph.mType);
+        }
+    }
+
+    TRACEF("clear correction data");
+    mCorrectionData.reset();
+    mCorrectionData = std::make_unique<CorrectionData>();
+
+    TRACEF("load correction point set");
+    if (input.correction_point_set.grid_point_count > 0) {
+        mCorrectionPointSet                   = std::make_unique<CorrectionPointSet>();
+        mCorrectionPointSet->set_id           = input.correction_point_set.set_id;
+        mCorrectionPointSet->grid_point_count = input.correction_point_set.grid_point_count;
+        mCorrectionPointSet->reference_point_latitude =
+            input.correction_point_set.reference_point_latitude;
+        mCorrectionPointSet->reference_point_longitude =
+            input.correction_point_set.reference_point_longitude;
+        mCorrectionPointSet->step_of_latitude  = input.correction_point_set.step_of_latitude;
+        mCorrectionPointSet->step_of_longitude = input.correction_point_set.step_of_longitude;
+        mCorrectionPointSet->number_of_steps_latitude =
+            input.correction_point_set.number_of_steps_latitude;
+        mCorrectionPointSet->number_of_steps_longitude =
+            input.correction_point_set.number_of_steps_longitude;
+        mCorrectionPointSet->bitmask          = input.correction_point_set.bitmask;
+        mCorrectionData->correction_point_set = mCorrectionPointSet.get();
+    }
+
+    TRACEF("load correction data");
+    mCorrectionData->load_snapshot(input.orbit_corrections, input.clock_corrections,
+                                   input.code_biases, input.phase_biases,
+                                   input.ionospheric_polynomials, input.grid_data);
+}
+#endif
 
 }  // namespace tokoro
 }  // namespace generator

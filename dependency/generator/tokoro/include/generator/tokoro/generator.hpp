@@ -46,6 +46,10 @@ struct CorrectionPointSet;
 struct Satellite;
 struct Observation;
 struct RangeTimeDivision;
+struct TokoroOutput;
+#ifdef ENABLE_TOKORO_SNAPSHOT
+struct SnapshotInput;
+#endif
 class Generator;
 class ReferenceStation {
 public:
@@ -58,6 +62,11 @@ public:
     // Produce RTCM messages based on latest observations.
     std::vector<rtcm::Message> produce() NOEXCEPT;
 
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    // Create a snapshot of current state for regression testing.
+    SnapshotInput snapshot(ts::Tai const& time) const NOEXCEPT;
+#endif
+
     void include_satellite(SatelliteId sv_id) NOEXCEPT { mSatelliteIncludeSet.insert(sv_id); }
     void include_signal(SignalId signal_id) NOEXCEPT { mSignalIncludeSet.insert(signal_id); }
 
@@ -66,7 +75,7 @@ public:
         mRtcmPhysicalGroundPositionSet = true;
     }
 
-    void set_shaprio_correction(bool enabled) { mShapiroCorrection = enabled; }
+    void set_shapiro_correction(bool enabled) { mShapiroCorrection = enabled; }
     void set_earth_solid_tides_correction(bool enabled) { mEarthSolidTidesCorrection = enabled; }
     void set_phase_windup_correction(bool enabled) { mPhaseWindupCorrection = enabled; }
     void set_antenna_phase_variation_correction(bool enabled) { mAntennaPhaseVariation = enabled; }
@@ -87,6 +96,15 @@ public:
     void set_use_ionospheric_height_correction(bool enabled) {
         mUseIonosphericHeightCorrection = enabled;
     }
+
+    NODISCARD Float3 const& ground_position() const NOEXCEPT { return mGroundPosition; }
+    NODISCARD Float3 const& rtcm_ground_position() const NOEXCEPT { return mRtcmGroundPosition; }
+    NODISCARD bool          generate_gps() const NOEXCEPT { return mGenerateGps; }
+    NODISCARD bool          generate_glo() const NOEXCEPT { return mGenerateGlo; }
+    NODISCARD bool          generate_gal() const NOEXCEPT { return mGenerateGal; }
+    NODISCARD bool          generate_bds() const NOEXCEPT { return mGenerateBds; }
+    NODISCARD bool          generate_qzs() const NOEXCEPT { return mGenerateQzs; }
+    NODISCARD std::vector<Satellite> const& satellites() const NOEXCEPT { return mSatellites; }
 
 protected:
     void initialize_satellites() NOEXCEPT;
@@ -142,6 +160,8 @@ private:
     format::rinex::Builder mRinexBuilder;
 #endif
     Generator& mGenerator;
+
+    friend void extract_observations(std::shared_ptr<ReferenceStation> const&, TokoroOutput&);
 };
 
 class Generator {
@@ -181,6 +201,31 @@ public:
     bool get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT;
     bool get_grid_cell_center_position(int east, int north, double* lat,
                                        double* lon) const NOEXCEPT;
+
+    NODISCARD std::unordered_map<SatelliteId, std::vector<ephemeris::GpsEphemeris>> const&
+              gps_ephemeris() const NOEXCEPT {
+        return mGpsEphemeris;
+    }
+    NODISCARD std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> const&
+              gal_ephemeris() const NOEXCEPT {
+        return mGalEphemeris;
+    }
+    NODISCARD std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> const&
+              bds_ephemeris() const NOEXCEPT {
+        return mBdsEphemeris;
+    }
+    NODISCARD std::unordered_map<SatelliteId, std::vector<ephemeris::QzsEphemeris>> const&
+              qzs_ephemeris() const NOEXCEPT {
+        return mQzsEphemeris;
+    }
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    // Create a snapshot of ephemeris data for regression testing.
+    SnapshotInput snapshot() const NOEXCEPT;
+
+    // Load a snapshot and populate internal state.
+    void load_snapshot(SnapshotInput const& input) NOEXCEPT;
+#endif
 
 private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;

@@ -48,3 +48,4 @@ option(UNITY_BUILD "Enable unity build" OFF)
 option(SHUFFLE_UNITY_SOURCES "Shuffle source files for unity build" OFF)
 option(BUILD_TESTING "BUILD_TESTING" OFF)
 
+option(ENABLE_TOKORO_SNAPSHOT "Enable Tokoro snapshots" OFF)

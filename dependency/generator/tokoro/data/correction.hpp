@@ -25,6 +25,15 @@
 namespace generator {
 namespace tokoro {
 
+#ifdef ENABLE_TOKORO_SNAPSHOT
+struct SnapshotOrbitCorrection;
+struct SnapshotClockCorrection;
+struct SnapshotCodeBias;
+struct SnapshotPhaseBias;
+struct SnapshotGridData;
+struct SnapshotIonosphericPolynomial;
+#endif
+
 struct CorrectionData {
     ts::Tai const& latest_correction_time() const { return mLatestCorrectionTime; }
 
@@ -65,6 +74,22 @@ struct CorrectionData {
         if (it != mSignals.end()) return &it->second;
         return nullptr;
     }
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    void snapshot(std::vector<SnapshotOrbitCorrection>&       orbit_corrections,
+                  std::vector<SnapshotClockCorrection>&       clock_corrections,
+                  std::vector<SnapshotCodeBias>&              code_biases,
+                  std::vector<SnapshotPhaseBias>&             phase_biases,
+                  std::vector<SnapshotIonosphericPolynomial>& ionospheric_polynomials,
+                  std::vector<SnapshotGridData>&              grid_data) const NOEXCEPT;
+
+    void load_snapshot(std::vector<SnapshotOrbitCorrection> const&       orbit_corrections,
+                       std::vector<SnapshotClockCorrection> const&       clock_corrections,
+                       std::vector<SnapshotCodeBias> const&              code_biases,
+                       std::vector<SnapshotPhaseBias> const&             phase_biases,
+                       std::vector<SnapshotIonosphericPolynomial> const& ionospheric_polynomials,
+                       std::vector<SnapshotGridData> const&              grid_data) NOEXCEPT;
+#endif
 
     CorrectionPointSet const* correction_point_set;
 

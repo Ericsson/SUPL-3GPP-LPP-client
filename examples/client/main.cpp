@@ -751,7 +751,8 @@ static void setup_fake_location(Program& program) {
 static void setup_lpp2osr(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_RTCM)
     if (program.config.lpp2rtcm.enabled) {
-        program.stream.add_inspector<Lpp2Rtcm>(program.config.output, program.config.lpp2rtcm);
+        program.stream.add_inspector<Lpp2Rtcm>(program.config.output, program.config.lpp2rtcm,
+                                               program.scheduler);
     }
 
     if (program.config.lpp2frame_rtcm.enabled) {
@@ -795,6 +796,15 @@ static void setup_tokoro(UNUSED Program& program) {
         program.stream.add_inspector<TokoroEphemerisGal>(*tokoro);
         program.stream.add_inspector<TokoroEphemerisBds>(*tokoro);
         program.stream.add_inspector<TokoroLocation>(*tokoro);
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+        if (program.config.tokoro.record_snapshot) {
+            auto recorder =
+                std::make_shared<TokoroSnapshot>(program.config.tokoro.record_snapshot_dir,
+                                                 program.config.tokoro.record_snapshot_rate);
+            tokoro->set_recorder(recorder);
+        }
+#endif
     }
 #endif
 }

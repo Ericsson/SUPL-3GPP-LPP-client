@@ -53,5 +53,8 @@ target_link_libraries(dependency_generator_tokoro PRIVATE dependency::generator:
 if(DATA_TRACING)
     target_link_libraries(dependency_generator_tokoro PRIVATE dependency::datatrace)
 endif()
-
+if(ENABLE_TOKORO_SNAPSHOT)
+    target_sources(dependency_generator_tokoro PRIVATE "snapshot.cpp")
+    target_compile_definitions(dependency_generator_tokoro PUBLIC "ENABLE_TOKORO_SNAPSHOT=1")
+endif()
 setup_target(dependency_generator_tokoro)

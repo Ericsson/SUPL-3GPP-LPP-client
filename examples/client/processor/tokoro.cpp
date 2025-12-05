@@ -549,7 +549,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
         return;
     }
 
-    mReferenceStation->set_shaprio_correction(mConfig.shapiro_correction);
+    mReferenceStation->set_shapiro_correction(mConfig.shapiro_correction);
     mReferenceStation->set_antenna_phase_variation_correction(
         mConfig.antenna_phase_variation_correction);
     mReferenceStation->set_earth_solid_tides_correction(mConfig.earth_solid_tides_correction);
@@ -566,6 +566,13 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_use_tropospheric_model(mConfig.use_tropospheric_model);
     mReferenceStation->set_use_ionospheric_height_correction(
         mConfig.use_ionospheric_height_correction);
+
+#if defined(ENABLE_TOKORO_SNAPSHOT)
+    if (mRecorder && mRecorder->should_record()) {
+        auto snapshot = mReferenceStation->snapshot(generation_time);
+        mRecorder->record(snapshot);
+    }
+#endif
 
     auto gen_start = std::chrono::steady_clock::now();
     mReferenceStation->generate(generation_time);

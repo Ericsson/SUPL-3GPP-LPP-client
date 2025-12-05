@@ -263,6 +263,29 @@ static args::Flag gIgnoreBitmask{
     {"tkr-ignore-bitmask"},
 };
 
+#ifdef ENABLE_TOKORO_SNAPSHOT
+static args::Flag gRecordSnapshot{
+    gGroup,
+    "record-snapshot",
+    "Enable Tokoro snapshot recording",
+    {"tkr-record-snapshot"},
+};
+
+static args::ValueFlag<std::string> gRecordSnapshotDir{
+    gGroup,
+    "directory",
+    "Directory for snapshot recordings",
+    {"tkr-record-snapshot-dir"},
+};
+
+static args::ValueFlag<double> gRecordSnapshotRate{
+    gGroup,
+    "rate",
+    "Sample rate for snapshot recording (0.0-1.0)",
+    {"tkr-record-snapshot-rate"},
+};
+#endif
+
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
@@ -317,6 +340,12 @@ void parse(Config* config) {
 
     tokoro.antex_file     = "";
     tokoro.ignore_bitmask = false;
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    tokoro.record_snapshot      = false;
+    tokoro.record_snapshot_dir  = "tokoro_recordings";
+    tokoro.record_snapshot_rate = 0.01;
+#endif
 
     if (gEnable) tokoro.enabled = true;
     if (gNoGPS) tokoro.generate_gps = false;
@@ -426,6 +455,12 @@ void parse(Config* config) {
     if (gUseIonosphericHeightCorrection) tokoro.use_ionospheric_height_correction = true;
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+    if (gRecordSnapshot) tokoro.record_snapshot = true;
+    if (gRecordSnapshotDir) tokoro.record_snapshot_dir = gRecordSnapshotDir.Get();
+    if (gRecordSnapshotRate) tokoro.record_snapshot_rate = gRecordSnapshotRate.Get();
+#endif
 }
 
 void dump(TokoroConfig const& config) {

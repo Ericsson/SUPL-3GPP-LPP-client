@@ -1,5 +1,8 @@
 CPMAddPackage("gh:doctest/doctest@2.4.11")
 
+add_library(test_utils INTERFACE)
+target_include_directories(test_utils INTERFACE test_utils)
+
 add_executable(coordinates_tests
     coordinates/main.cpp
     coordinates/test_ecef_llh.cpp
@@ -97,6 +100,7 @@ target_link_libraries(eph_tests PRIVATE
     dependency::time
     dependency::core
     dependency::loglet
+    test_utils
     doctest::doctest
 )
 target_compile_options(eph_tests PRIVATE -fsanitize=address -g)
@@ -169,6 +173,7 @@ add_executable(generator_rtcm_tests
 target_link_libraries(generator_rtcm_tests PRIVATE 
     dependency::generator::rtcm
     dependency::core
+    test_utils
     doctest::doctest
     asn1::generated::lpp asn1::helper
 )
@@ -194,6 +199,24 @@ target_link_options(generator_tokoro_tests PRIVATE -fsanitize=address)
 
 add_test(NAME generator_tokoro_tests COMMAND generator_tokoro_tests --no-skip)
 set_tests_properties(generator_tokoro_tests PROPERTIES LABELS "generator_tokoro")
+
+add_executable(generator_tokoro_snapshot_tests
+    generator/tokoro/main.cpp
+    generator/tokoro/snapshot.cpp
+)
+target_link_libraries(generator_tokoro_snapshot_tests PRIVATE 
+    dependency::generator::tokoro
+    dependency::ephemeris
+    dependency::msgpack
+    dependency::core
+    test_utils
+    doctest::doctest
+)
+target_compile_options(generator_tokoro_snapshot_tests PRIVATE -fsanitize=address -g)
+target_link_options(generator_tokoro_snapshot_tests PRIVATE -fsanitize=address)
+
+add_test(NAME generator_tokoro_snapshot_tests COMMAND generator_tokoro_snapshot_tests --no-skip)
+set_tests_properties(generator_tokoro_snapshot_tests PROPERTIES LABELS "generator_tokoro")
 endif()
 
 if(ENABLE_FUZZING)
@@ -223,4 +246,19 @@ if(ENABLE_FUZZING)
     target_compile_options(fuzz_antex PRIVATE -fsanitize=fuzzer,address -g)
     target_link_options(fuzz_antex PRIVATE -fsanitize=fuzzer,address)
     endif()
+endif()
+
+
+
+
+# HELPER UTILS
+if(INCLUDE_GENERATOR_TOKORO)
+    add_executable(generate_tokoro_snapshot generate_tokoro_snapshot.cpp)
+    target_link_libraries(generate_tokoro_snapshot PRIVATE
+        dependency::generator::tokoro
+        dependency::loglet
+        dependency::msgpack
+        args
+    )
+    setup_target(generate_tokoro_snapshot)
 endif()

@@ -2,6 +2,10 @@
 #include "correction.hpp"
 #include "decode.hpp"
 
+#ifdef ENABLE_TOKORO_SNAPSHOT
+#include <generator/tokoro/snapshot.hpp>
+#endif
+
 #include <external_warnings.hpp>
 
 EXTERNAL_WARNINGS_PUSH
@@ -478,6 +482,271 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
     grid_data.print_grid();
 }
+
+#ifdef ENABLE_TOKORO_SNAPSHOT
+void CorrectionData::snapshot(std::vector<SnapshotOrbitCorrection>&       orbit_corrections,
+                              std::vector<SnapshotClockCorrection>&       clock_corrections,
+                              std::vector<SnapshotCodeBias>&              code_biases,
+                              std::vector<SnapshotPhaseBias>&             phase_biases,
+                              std::vector<SnapshotIonosphericPolynomial>& ionospheric_polynomials,
+                              std::vector<SnapshotGridData>& grid_data) const NOEXCEPT {
+    orbit_corrections.clear();
+    clock_corrections.clear();
+    code_biases.clear();
+    phase_biases.clear();
+    ionospheric_polynomials.clear();
+    grid_data.clear();
+
+    for (auto const& pair : mOrbit) {
+        SnapshotOrbitCorrection oc;
+        oc.gnss            = static_cast<int32_t>(pair.first.gnss());
+        oc.prn             = static_cast<int32_t>(pair.first.prn().value);
+        oc.radial          = pair.second.delta.x;
+        oc.along_track     = pair.second.delta.y;
+        oc.cross_track     = pair.second.delta.z;
+        oc.dot_radial      = pair.second.dot_delta.x;
+        oc.dot_along_track = pair.second.dot_delta.y;
+        oc.dot_cross_track = pair.second.dot_delta.z;
+        oc.iod             = pair.second.iod;
+        orbit_corrections.push_back(oc);
+    }
+
+    for (auto const& pair : mClock) {
+        SnapshotClockCorrection cc;
+        cc.gnss = static_cast<int32_t>(pair.first.gnss());
+        cc.prn  = static_cast<int32_t>(pair.first.prn().value);
+        cc.c0   = pair.second.c0;
+        cc.c1   = pair.second.c1;
+        cc.c2   = pair.second.c2;
+        clock_corrections.push_back(cc);
+    }
+
+    for (auto const& pair : mSignal) {
+        for (auto const& code_bias : pair.second.code_bias) {
+            SnapshotCodeBias cb;
+            cb.gnss   = static_cast<int32_t>(pair.first.gnss());
+            cb.prn    = static_cast<int32_t>(pair.first.prn().value);
+            cb.signal = static_cast<int32_t>(code_bias.first.lpp_id());
+            cb.bias   = code_bias.second.bias;
+            code_biases.push_back(cb);
+        }
+
+        for (auto const& phase_bias : pair.second.phase_bias) {
+            SnapshotPhaseBias pb;
+            pb.gnss   = static_cast<int32_t>(pair.first.gnss());
+            pb.prn    = static_cast<int32_t>(pair.first.prn().value);
+            pb.signal = static_cast<int32_t>(phase_bias.first.lpp_id());
+            pb.bias   = phase_bias.second.bias;
+            phase_biases.push_back(pb);
+        }
+    }
+
+    for (auto const& pair : mIonosphericPolynomial) {
+        SnapshotIonosphericPolynomial sip;
+        sip.gnss                      = static_cast<int32_t>(pair.first.gnss());
+        sip.prn                       = static_cast<int32_t>(pair.first.prn().value);
+        sip.c00                       = pair.second.c00;
+        sip.c01                       = pair.second.c01;
+        sip.c10                       = pair.second.c10;
+        sip.c11                       = pair.second.c11;
+        sip.reference_point_latitude  = pair.second.reference_point_latitude;
+        sip.reference_point_longitude = pair.second.reference_point_longitude;
+        sip.quality_indicator         = pair.second.quality_indicator;
+        sip.quality_indicator_valid   = pair.second.quality_indicator_valid;
+        ionospheric_polynomials.push_back(sip);
+    }
+
+    for (auto const& grid_pair : mGrid) {
+        SnapshotGridData sgd;
+        sgd.gnss = static_cast<int32_t>(grid_pair.first);
+
+        for (auto const& point : grid_pair.second.grid_points) {
+            if (!point.valid) continue;
+
+            SnapshotGridPoint sgp;
+            sgp.latitude_index  = point.latitude_index;
+            sgp.longitude_index = point.longitude_index;
+            sgp.latitude        = point.position.x;
+            sgp.longitude       = point.position.y;
+            sgp.height          = point.position.z;
+            sgp.has_troposphere = point.tropspheric_valid;
+            sgp.troposphere_wet = point.tropospheric_wet;
+            sgp.troposphere_dry = point.tropospheric_dry;
+
+            for (auto const& iono : point.ionospheric_residual) {
+                SnapshotIonosphereResidual sir;
+                sir.gnss     = static_cast<int32_t>(iono.first.gnss());
+                sir.prn      = static_cast<int32_t>(iono.first.prn().value);
+                sir.residual = iono.second;
+                sgp.ionosphere_residuals.push_back(sir);
+            }
+
+            sgd.grid_points.push_back(sgp);
+        }
+
+        if (!sgd.grid_points.empty()) {
+            grid_data.push_back(sgd);
+        }
+    }
+}
+
+void CorrectionData::load_snapshot(
+    std::vector<SnapshotOrbitCorrection> const&       orbit_corrections,
+    std::vector<SnapshotClockCorrection> const&       clock_corrections,
+    std::vector<SnapshotCodeBias> const&              code_biases,
+    std::vector<SnapshotPhaseBias> const&             phase_biases,
+    std::vector<SnapshotIonosphericPolynomial> const& ionospheric_polynomials,
+    std::vector<SnapshotGridData> const&              grid_data) NOEXCEPT {
+    FUNCTION_SCOPE();
+    mOrbit.clear();
+    mClock.clear();
+    mSignal.clear();
+    mIonosphericPolynomial.clear();
+    mGrid.clear();
+
+    {
+        VERBOSEF("loading %ld orbit corrections:", orbit_corrections.size());
+        VERBOSE_INDENT_SCOPE();
+        for (auto const& oc : orbit_corrections) {
+            auto sat_id = SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(oc.gnss), oc.prn);
+            OrbitCorrection orbit;
+            orbit.delta.x     = oc.radial;
+            orbit.delta.y     = oc.along_track;
+            orbit.delta.z     = oc.cross_track;
+            orbit.dot_delta.x = oc.dot_radial;
+            orbit.dot_delta.y = oc.dot_along_track;
+            orbit.dot_delta.z = oc.dot_cross_track;
+            orbit.iod         = oc.iod;
+            VERBOSEF("%3s %+f %+f %+f %+f %+f %+f %+f", sat_id.name(), orbit.delta.x, orbit.delta.y,
+                     orbit.delta.z, orbit.dot_delta.x, orbit.dot_delta.y, orbit.dot_delta.z,
+                     orbit.iod);
+            mOrbit[sat_id] = orbit;
+        }
+    }
+
+    {
+        VERBOSEF("loading %ld clock corrections:", clock_corrections.size());
+        VERBOSE_INDENT_SCOPE();
+        for (auto const& cc : clock_corrections) {
+            auto sat_id = SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(cc.gnss), cc.prn);
+            ClockCorrection clock;
+            clock.c0 = cc.c0;
+            clock.c1 = cc.c1;
+            clock.c2 = cc.c2;
+            VERBOSEF("%3s %+f %+f %+f", sat_id.name(), clock.c0, clock.c1, clock.c2);
+            mClock[sat_id] = clock;
+        }
+    }
+
+    {
+        VERBOSEF("loading %ld code biases:", code_biases.size());
+        VERBOSE_INDENT_SCOPE();
+        for (auto const& cb : code_biases) {
+            auto sat_id    = SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(cb.gnss), cb.prn);
+            auto signal_id = SignalId::from_lpp(static_cast<SignalId::Gnss>(cb.gnss), cb.signal);
+            if (!signal_id.is_valid()) continue;
+
+            CodeBiasCorrection code_bias;
+            code_bias.bias = cb.bias;
+            VERBOSEF("%3s %s %+f", sat_id.name(), signal_id.name(), code_bias.bias);
+            mSignal[sat_id].code_bias[signal_id] = code_bias;
+            mSignals[sat_id].insert(signal_id);
+        }
+    }
+
+    {
+        VERBOSEF("loading %ld phase biases:", phase_biases.size());
+        VERBOSE_INDENT_SCOPE();
+        for (auto const& pb : phase_biases) {
+            auto sat_id    = SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(pb.gnss), pb.prn);
+            auto signal_id = SignalId::from_lpp(static_cast<SignalId::Gnss>(pb.gnss), pb.signal);
+            if (!signal_id.is_valid()) continue;
+
+            PhaseBiasCorrection phase_bias;
+            phase_bias.bias = pb.bias;
+            VERBOSEF("%3s %s %+f", sat_id.name(), signal_id.name(), phase_bias.bias);
+            mSignal[sat_id].phase_bias[signal_id] = phase_bias;
+            mSignals[sat_id].insert(signal_id);
+        }
+    }
+
+    {
+        VERBOSEF("loading %ld ionospheric polynomials:", ionospheric_polynomials.size());
+        VERBOSE_INDENT_SCOPE();
+        for (auto const& sip : ionospheric_polynomials) {
+            auto sat_id = SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(sip.gnss), sip.prn);
+
+            IonosphericPolynomial poly;
+            poly.c00                       = sip.c00;
+            poly.c01                       = sip.c01;
+            poly.c10                       = sip.c10;
+            poly.c11                       = sip.c11;
+            poly.reference_point_latitude  = sip.reference_point_latitude;
+            poly.reference_point_longitude = sip.reference_point_longitude;
+            poly.quality_indicator         = sip.quality_indicator;
+            poly.quality_indicator_valid   = sip.quality_indicator_valid;
+
+            VERBOSEF("%3s c00=%+f c01=%+f c10=%+f c11=%+f ref=(%.6f,%.6f)", sat_id.name(), poly.c00,
+                     poly.c01, poly.c10, poly.c11, poly.reference_point_latitude,
+                     poly.reference_point_longitude);
+
+            mIonosphericPolynomial[sat_id] = poly;
+        }
+    }
+
+    {
+        VERBOSEF("loading %ld grid data:", grid_data.size());
+        VERBOSE_INDENT_SCOPE();
+
+        for (auto const& sgd : grid_data) {
+            auto      gnss = static_cast<SatelliteId::Gnss>(sgd.gnss);
+            GridData& grid = mGrid[gnss];
+
+            if (correction_point_set) {
+                grid.init(*correction_point_set);
+            }
+
+            VERBOSEF("GNSS %d: %ld points", sgd.gnss, sgd.grid_points.size());
+            for (auto const& sgp : sgd.grid_points) {
+                GridPoint point;
+                point.valid             = true;
+                point.latitude_index    = sgp.latitude_index;
+                point.longitude_index   = sgp.longitude_index;
+                point.position.x        = sgp.latitude;
+                point.position.y        = sgp.longitude;
+                point.position.z        = sgp.height;
+                point.tropspheric_valid = sgp.has_troposphere;
+                point.tropospheric_wet  = sgp.troposphere_wet;
+                point.tropospheric_dry  = sgp.troposphere_dry;
+                point.ionospheric_valid = !sgp.ionosphere_residuals.empty();
+
+                // Calculate absolute index: row * width + col
+                point.absolute_index =
+                    sgp.latitude_index * (grid.number_of_steps_longitude + 1) + sgp.longitude_index;
+                point.array_index = point.absolute_index;
+
+                VERBOSEF("  %3d %3d %+f %+f %+f (%d %+f %+f) %zu abs=%ld", sgp.latitude_index,
+                         sgp.longitude_index, sgp.latitude, sgp.longitude, sgp.height,
+                         sgp.has_troposphere, sgp.troposphere_wet, sgp.troposphere_dry,
+                         sgp.ionosphere_residuals.size(), point.absolute_index);
+
+                for (auto const& sir : sgp.ionosphere_residuals) {
+                    auto sat_id =
+                        SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(sir.gnss), sir.prn);
+                    VERBOSEF("    %3s %+f", sat_id.name(), sir.residual);
+                    point.ionospheric_residual[sat_id] = sir.residual;
+                }
+
+                // Place at correct index instead of push_back
+                if (point.absolute_index >= 0 &&
+                    point.absolute_index < static_cast<long>(grid.grid_points.size())) {
+                    grid.grid_points[static_cast<size_t>(point.absolute_index)] = point;
+                }
+            }
+        }
+    }
+}
+#endif
 
 }  // namespace tokoro
 }  // namespace generator
