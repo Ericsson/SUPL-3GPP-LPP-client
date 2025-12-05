@@ -8,6 +8,11 @@
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
 
+namespace msgpack {
+class Packer;
+class Unpacker;
+}  // namespace msgpack
+
 namespace ephemeris {
 
 struct Ephemeris {
@@ -109,7 +114,12 @@ public:
         CORE_UNREACHABLE();
     }
 
-private:
+    friend void msgpack::pack(msgpack::Packer&, ephemeris::Ephemeris const&) NOEXCEPT;
+    friend bool msgpack::unpack(msgpack::Unpacker&, ephemeris::Ephemeris&) NOEXCEPT;
+
+    void msgpack_pack(msgpack::Packer& packer) const NOEXCEPT;
+    bool msgpack_unpack(msgpack::Unpacker& unpacker) NOEXCEPT;
+
     Type mType;
     union {
         GpsEphemeris gps_ephemeris;
