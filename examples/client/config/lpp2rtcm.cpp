@@ -58,10 +58,18 @@ static args::ValueFlag<std::string> gMsmType{
     {"l2r-msm"},
 };
 
+static args::ValueFlag<size_t> gMaxConversions{
+    gGroup,
+    "max-conversions",
+    "Shutdown after N LPP to RTCM conversions (0 = unlimited)",
+    {"l2r-shutdown-after", "l2r-max-conversions"},
+};
+
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gMsmType.HelpDefault("any");
     gMsmType.HelpChoices({"any", "4", "5", "6", "7"});
+    gMaxConversions.HelpDefault("0");
 }
 
 void parse(Config* config) {
@@ -72,6 +80,7 @@ void parse(Config* config) {
     lpp2rtcm.generate_galileo = true;
     lpp2rtcm.generate_beidou  = true;
     lpp2rtcm.msm_type         = Lpp2RtcmConfig::MsmType::ANY;
+    lpp2rtcm.max_conversions  = 0;
 
     if (gEnable) lpp2rtcm.enabled = true;
     if (gNoGps) lpp2rtcm.generate_gps = false;
@@ -94,6 +103,10 @@ void parse(Config* config) {
         else
             throw args::ParseError("--lpp2rtcm-msm not recognized: `" + type + "`");
     }
+
+    if (gMaxConversions) {
+        lpp2rtcm.max_conversions = gMaxConversions.Get();
+    }
 }
 
 void dump(Lpp2RtcmConfig const& config) {
@@ -115,6 +128,10 @@ void dump(Lpp2RtcmConfig const& config) {
         }
         return "unknown";
     }());
+
+    if (config.max_conversions > 0) {
+        DEBUGF("max conversions: %zu", config.max_conversions);
+    }
 }
 
 }  // namespace lpp2rtcm

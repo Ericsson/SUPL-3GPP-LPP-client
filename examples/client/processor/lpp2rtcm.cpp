@@ -7,8 +7,9 @@ LOGLET_MODULE2(p, l2r);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2r)
 
-Lpp2Rtcm::Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config)
-    : mOutput(output), mConfig(config) {
+Lpp2Rtcm::Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config,
+                   scheduler::Scheduler& scheduler)
+    : mOutput(output), mConfig(config), mScheduler(scheduler), mConversionCount(0) {
     VSCOPE_FUNCTION();
     mGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator{});
     mFilter    = generator::rtcm::MessageFilter{};
@@ -54,6 +55,14 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t ta
 
             ASSERT(output.stage, "stage is null");
             output.stage->write(OUTPUT_FORMAT_RTCM, buffer, size);
+        }
+    }
+
+    if (mConfig.max_conversions > 0) {
+        mConversionCount++;
+        if (mConversionCount >= mConfig.max_conversions) {
+            INFOF("max conversions reached (%zu), scheduling shutdown", mConversionCount);
+            mScheduler.interrupt();
         }
     }
 }

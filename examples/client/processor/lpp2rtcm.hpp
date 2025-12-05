@@ -5,13 +5,15 @@
 #endif
 
 #include <generator/rtcm/generator.hpp>
+#include <scheduler/scheduler.hpp>
 
 #include "config.hpp"
 #include "lpp.hpp"
 
 class Lpp2Rtcm : public streamline::Inspector<lpp::Message> {
 public:
-    Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config);
+    Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config,
+             scheduler::Scheduler& scheduler);
     ~Lpp2Rtcm() override;
 
     NODISCARD char const* name() const NOEXCEPT override { return "Lpp2Rtcm"; }
@@ -23,4 +25,6 @@ private:
 
     OutputConfig const&   mOutput;
     Lpp2RtcmConfig const& mConfig;
+    scheduler::Scheduler& mScheduler;
+    size_t                mConversionCount;
 };

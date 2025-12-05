@@ -884,6 +884,10 @@ int main(int argc, char** argv) {
     INFOF("  Built: %s [%s]", BUILD_DATE, BUILD_TYPE);
     INFOF("  Compiler: %s", BUILD_COMPILER);
     INFOF("  Platform: %s (%s)", BUILD_SYSTEM, BUILD_ARCH);
+    INFOF("  Arguments:");
+    for (int i = 0; i < argc; i++) {
+        INFOF("    [%d]: %s", i, argv[i]);
+    }
 
     Config config{};
     if (!config::parse(argc, argv, &config)) {
