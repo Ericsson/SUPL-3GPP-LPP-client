@@ -1,6 +1,7 @@
 #include "location_information.hpp"
 #include "client.hpp"
 
+#include <iomanip>
 #include <sstream>
 
 #include <loglet/loglet.hpp>
@@ -22,16 +23,20 @@ void MetricsCollector::inspect(streamline::System&, DataType const& metrics, uin
 
 static void horizontal_accuracy_json(std::stringstream&             result,
                                      lpp::HorizontalAccuracy const& horizontal_accuracy) {
-    result << "\"semi-major\": " << horizontal_accuracy.semi_major;
-    result << ",\"semi-minor\": " << horizontal_accuracy.semi_minor;
-    result << ",\"orientation\": " << horizontal_accuracy.orientation;
-    result << ",\"confidence\": " << horizontal_accuracy.confidence;
+    result << "{";
+    result << "\"semi-major\": " << std::setprecision(15) << horizontal_accuracy.semi_major;
+    result << ",\"semi-minor\": " << std::setprecision(15) << horizontal_accuracy.semi_minor;
+    result << ",\"orientation\": " << std::setprecision(15) << horizontal_accuracy.orientation;
+    result << ",\"confidence\": " << std::setprecision(15) << horizontal_accuracy.confidence;
+    result << "}";
 }
 
 static void vertical_accuracy_json(std::stringstream&           result,
                                    lpp::VerticalAccuracy const& vertical_accuracy) {
-    result << "\"uncertainty\": " << vertical_accuracy.uncertainty;
-    result << ",\"confidence\": " << vertical_accuracy.confidence;
+    result << "{";
+    result << "\"uncertainty\": " << std::setprecision(15) << vertical_accuracy.uncertainty;
+    result << ",\"confidence\": " << std::setprecision(15) << vertical_accuracy.confidence;
+    result << "}";
 }
 
 void LocationOutput::inspect(streamline::System&, DataType const& location, uint64_t tag) NOEXCEPT {
@@ -39,7 +44,7 @@ void LocationOutput::inspect(streamline::System&, DataType const& location, uint
 
     std::stringstream result;
     result << "{";
-    result << "\"type\": \"location\",";
+    result << "\"type\": \"location\"";
     result << ",\"time\": \"" << ts::Utc{location.time}.rfc3339() << "\"";
     if (location.location.has_value()) {
         auto const& shape = location.location.const_value();
@@ -47,8 +52,8 @@ void LocationOutput::inspect(streamline::System&, DataType const& location, uint
         switch (shape.kind) {
         case lpp::LocationShape::Kind::HighAccuracyEllipsoidPointWithUncertaintyEllipse:
             result << "\"type\": \"high-accuracy-ellipsoid-point-with-uncertainty-ellipse\"";
-            result << ",\"latitude\": " << shape.data.haepue.latitude;
-            result << ",\"longitude\": " << shape.data.haepue.longitude;
+            result << ",\"latitude\": " << std::setprecision(15) << shape.data.haepue.latitude;
+            result << ",\"longitude\": " << std::setprecision(15) << shape.data.haepue.longitude;
             result << ",\"horizontal-accuracy\": ";
             horizontal_accuracy_json(result, shape.data.haepue.horizontal_accuracy);
             break;
@@ -56,9 +61,9 @@ void LocationOutput::inspect(streamline::System&, DataType const& location, uint
             HighAccuracyEllipsoidPointWithAltitudeAndUncertaintyEllipsoid:
             result << "\"type\": "
                       "\"high-accuracy-ellipsoid-point-with-altitude-and-uncertainty-ellipsoid\"";
-            result << ",\"latitude\": " << shape.data.haepaue.latitude;
-            result << ",\"longitude\": " << shape.data.haepaue.longitude;
-            result << ",\"altitude\": " << shape.data.haepaue.altitude;
+            result << ",\"latitude\": " << std::setprecision(15) << shape.data.haepaue.latitude;
+            result << ",\"longitude\": " << std::setprecision(15) << shape.data.haepaue.longitude;
+            result << ",\"altitude\": " << std::setprecision(15) << shape.data.haepaue.altitude;
             result << ",\"horizontal-accuracy\": ";
             horizontal_accuracy_json(result, shape.data.haepaue.horizontal_accuracy);
             result << ",\"vertical-accuracy\": ";

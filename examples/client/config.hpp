@@ -306,6 +306,7 @@ struct Lpp2RtcmConfig {
     bool    generate_galileo;
     bool    generate_beidou;
     MsmType msm_type;
+    size_t  max_conversions;
 };
 
 struct Lpp2FrameRtcmConfig {
