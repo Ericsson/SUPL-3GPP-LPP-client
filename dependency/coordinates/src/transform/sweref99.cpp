@@ -42,7 +42,8 @@ State Transform<ETRF2014, Sweref99>::apply(State const& state, double) {
     TRACEF("vel_enu: %+.4f %+.4f %+.4f [mm/year]", vel_enu.e() * 1000.0, vel_enu.n() * 1000.0,
            vel_enu.u() * 1000.0);
 
-    auto vel_xyz = enu_rotation_matrix(llh.latitude(), llh.longitude()).transpose() * vel_enu.value;
+    auto R       = enu_rotation_matrix(llh.latitude(), llh.longitude());
+    auto vel_xyz = R.transpose() * vel_enu.value;
     TRACEF("vel_xyz: %+.4f %+.4f %+.4f [mm/year]", vel_xyz.x() * 1000.0, vel_xyz.y() * 1000.0,
            vel_xyz.z() * 1000.0);
 
@@ -75,7 +76,8 @@ State Transform<Sweref99, ETRF2014>::apply(State const& state, double target_epo
 
     auto llh     = ecef_to_llh(Ecef<Sweref99>{xyz_sweref99});
     auto vel_enu = Enu<Sweref99>::from_any(nkgrf17vel::lookup(llh.to_any()));
-    auto vel_xyz = enu_rotation_matrix(llh.latitude(), llh.longitude()).transpose() * vel_enu.value;
+    auto R       = enu_rotation_matrix(llh.latitude(), llh.longitude());
+    auto vel_xyz = R.transpose() * vel_enu.value;
 
     auto dt1               = 2000.0 - tc;
     auto xyz_2000_sweref99 = xyz_sweref99 + dt1 * vel_xyz;
