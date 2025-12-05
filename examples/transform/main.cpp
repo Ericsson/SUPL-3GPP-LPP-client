@@ -6,7 +6,7 @@
 #pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #pragma GCC diagnostic ignored "-Wshadow-field"
-#include <args.hpp>
+#include <args.hxx>
 #pragma GCC diagnostic pop
 
 #include <coordinates/coordinates.hpp>

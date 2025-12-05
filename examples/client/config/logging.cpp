@@ -7,7 +7,7 @@
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
 EXTERNAL_WARNINGS_PUSH
-#include <args.hpp>
+#include <args.hxx>
 EXTERNAL_WARNINGS_POP
 
 namespace logging {

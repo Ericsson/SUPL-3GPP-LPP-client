@@ -15,7 +15,7 @@
 #pragma GCC diagnostic ignored "-Wsuggest-override"
 #pragma GCC diagnostic ignored "-Wshadow-field"
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
-#include <args.hpp>
+#include <args.hxx>
 #pragma GCC diagnostic pop
 
 namespace data_tracing {

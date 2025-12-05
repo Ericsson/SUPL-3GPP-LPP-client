@@ -13,7 +13,7 @@
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH
-#include <args.hpp>
+#include <args.hxx>
 EXTERNAL_WARNINGS_POP
 
 namespace output {

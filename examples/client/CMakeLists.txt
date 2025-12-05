@@ -84,7 +84,7 @@ if(INCLUDE_GENERATOR_TOKORO)
     target_link_libraries(example_client PRIVATE dependency::format::antex)
     target_link_libraries(example_client PRIVATE dependency::generator::tokoro)
     
-    if(ENABLE_TOKORO_BASELINE_RECORDING)
+    if(ENABLE_TOKORO_SNAPSHOT)
         target_sources(example_client PRIVATE
             "snapshot/tokoro_snapshot.cpp"
         )

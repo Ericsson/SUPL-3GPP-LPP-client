@@ -1,4 +1,4 @@
-#include <args.hpp>
+#include <args.hxx>
 #include <generator/tokoro/generator.hpp>
 #include <generator/tokoro/snapshot.hpp>
 #include <loglet/loglet.hpp>

@@ -30,15 +30,6 @@ if(INCLUDE_FORMAT_ANTEX)
     target_link_libraries(dependency_generator_idokeido PUBLIC dependency::format::antex)
 endif()
 
-CPMAddPackage(
-    GITLAB_REPOSITORY libeigen/eigen
-    GIT_TAG 3.4
-    OPTIONS "EIGEN_BUILD_DOC OFF"
-    "EIGEN_BUILD_PKGCONFIG OF"
-    "EIGEN_BUILD_DOC OFF"
-    SYSTEM YES
-)
-
 target_link_libraries(dependency_generator_idokeido PUBLIC Eigen3::Eigen)
 
 if(INCLUDE_GENERATOR_TOKORO)
