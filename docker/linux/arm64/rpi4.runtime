@@ -1,4 +1,5 @@
-FROM ubuntu:24.04
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libssl3 libstdc++6 \
-    && rm -rf /var/lib/apt/lists/* /var/cache/apt/archives/*
+FROM alpine:latest
+ARG TUPLE
+COPY libs/${TUPLE}/ /lib/aarch64-linux-gnu/
+COPY libs/${TUPLE}/ld-linux-aarch64.so.1 /lib/ld-linux-aarch64.so.1
+ENV LD_LIBRARY_PATH=/lib/aarch64-linux-gnu

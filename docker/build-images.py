@@ -16,32 +16,32 @@ PLATFORMS = {
     'aarch64-unknown-linux-gnu': {
         'platform': 'linux/arm64',
         'cross': 'linux/arm64/aarch64-unknown-linux-gnu.config',
-        'toolchain': '/src/cmake/toolchain-aarch64.cmake',
+        'toolchain': '/src/docker/linux/arm64/aarch64-unknown-linux-gnu.toolchain.cmake',
         'runtime': 'linux/arm64/unknown.runtime',
     },
     'aarch64-rpi4-linux-gnu': {
         'platform': 'linux/arm64',
         'cross': 'linux/arm64/aarch64-rpi4-linux-gnu.config',
-        'toolchain': '/src/cmake/toolchain-aarch64.cmake',
+        'toolchain': '/src/docker/linux/arm64/aarch64-rpi4-linux-gnu.toolchain.cmake',
         'runtime': 'linux/arm64/rpi4.runtime',
     },
     'arm-cortex_a8-linux-gnueabi': {
         'platform': 'linux/arm/v7',
         'cross': 'linux/arm-v7/arm-cortex_a8-linux-gnueabi.config',
-        'toolchain': '/src/cmake/toolchain-aarch64.cmake',
+        'toolchain': '/src/docker/linux/arm-v7/arm-cortex_a8-linux-gnueabi.toolchain.cmake',
         'runtime': 'linux/arm-v7/cortex_a8.runtime',
     },
     'armv8-rpi3-linux-gnueabihf': {
         'platform': 'linux/arm/v7',
         'cross': 'linux/arm-v7/armv8-rpi3-linux-gnueabihf.config',
-        'toolchain': '/src/cmake/toolchain-arm.cmake',
+        'toolchain': '/src/docker/linux/arm-v7/armv8-rpi3-linux-gnueabihf.toolchain.cmake',
         'runtime': 'linux/arm-v7/rpi3.runtime',
-        'cmake_args': '-DUSE_ASAN=OFF',
+        'cmake_args': '-DUSE_ASAN=OFF -DENABLE_TOKORO_BASELINE_RECORDING=ON',
     },
     'armv6-unknown-linux-gnueabihf': {
         'platform': 'linux/arm/v6',
         'cross': 'linux/arm-v6/armv6-unknown-linux-gnueabihf.config',
-        'toolchain': '/src/cmake/toolchain-arm.cmake',
+        'toolchain': '/src/docker/linux/arm-v6/armv6-unknown-linux-gnueabihf.toolchain.cmake',
         'runtime': 'linux/arm-v6/unknown.runtime',
     },
 }
@@ -186,6 +186,21 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
     lib_size = 0
     
     if artifact_image not in built_artifacts:
+        git_commit = subprocess.run(
+            ['git', 'rev-parse', '--short', 'HEAD'],
+            capture_output=True, text=True, cwd=PROJECT_ROOT
+        ).stdout.strip() or 'unknown'
+        
+        git_branch = subprocess.run(
+            ['git', 'rev-parse', '--abbrev-ref', 'HEAD'],
+            capture_output=True, text=True, cwd=PROJECT_ROOT
+        ).stdout.strip() or 'unknown'
+        
+        git_dirty = '1' if subprocess.run(
+            ['git', 'status', '--porcelain'],
+            capture_output=True, text=True, cwd=PROJECT_ROOT
+        ).stdout.strip() else '0'
+        
         build_dockerfile = f'Dockerfile.build.{build_mode.lower()}'
         cmd_artifact = ['docker', 'build']
         if NETWORK_HOST:
@@ -195,6 +210,9 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
         cmd_artifact.extend([
             '--build-arg', f'BUILDER_IMAGE={builder_base}',
             '--build-arg', f'BUILD_CACHE_ID=s3lc-cache-{build_mode}-{platform}',
+            '--build-arg', f'GIT_COMMIT_HASH={git_commit}',
+            '--build-arg', f'GIT_BRANCH={git_branch}',
+            '--build-arg', f'GIT_DIRTY={git_dirty}',
         ])
         if 'toolchain' in platform_config:
             cmd_artifact.extend(['--build-arg', f'TOOLCHAIN_FILE={platform_config["toolchain"]}'])
@@ -270,10 +288,17 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
                         )
             
             # Always copy the dynamic linker
-            subprocess.run(
-                ['docker', 'cp', f'{container_id}:{sysroot_lib}/ld-linux-armhf.so.3', libs_dir],
-                check=True
+            result = subprocess.run(
+                ['docker', 'run', '--rm', artifact_image, 'find', sysroot_lib, '-name', 'ld-linux*.so*'],
+                capture_output=True, text=True, check=True
             )
+            for ld_path in result.stdout.strip().split('\n'):
+                if ld_path:
+                    ld_name = os.path.basename(ld_path)
+                    subprocess.run(
+                        ['docker', 'cp', f'{container_id}:{ld_path}', os.path.join(libs_dir, ld_name)],
+                        check=True
+                    )
             
             # Remove non-runtime files
             for root, dirs, files in os.walk(libs_dir):
@@ -526,6 +551,7 @@ def main():
     parser.add_argument('--force', action='store_true', help='Force push even if dirty check fails')
     parser.add_argument('--multiarch', action='store_true', help='Build multi-arch images using buildx')
     parser.add_argument('--network-host', action='store_true', help='Use --network=host for all docker commands')
+    parser.add_argument('--clean', action='store_true', help='Clean build (remove build cache)')
     args = parser.parse_args()
     
     NETWORK_HOST = args.network_host
@@ -575,6 +601,27 @@ def main():
     
     built_images = []
     built_artifacts = set()
+    
+    # Clean build cache if requested (but keep crosstool builders)
+    if args.clean:
+        print(f"\n{colorize('===', Colors.CYAN)} {colorize('Cleaning build cache (keeping crosstool)', Colors.BOLD)} {colorize('===', Colors.CYAN)}")
+        for build_mode in build_modes:
+            for platform in platforms:
+                # Remove artifact cache images
+                cache_id = f's3lc-cache-{build_mode}-{platform}'
+                result = subprocess.run(['docker', 'images', '-q', cache_id], capture_output=True, text=True)
+                if result.stdout.strip():
+                    print(f"  Removing: {cache_id}")
+                    subprocess.run(['docker', 'rmi', '-f', cache_id], check=False)
+                
+                # Remove artifact images
+                for app in apps:
+                    artifact_pattern = f's3lc-artifact:*-{platform}'
+                    result = subprocess.run(['docker', 'images', '-q', artifact_pattern], capture_output=True, text=True)
+                    for img_id in result.stdout.strip().split('\n'):
+                        if img_id:
+                            subprocess.run(['docker', 'rmi', '-f', img_id], check=False)
+        print(f"  {colorize('✓', Colors.GREEN)} Build cache cleaned (crosstool builders preserved)")
     
     for platform in platforms:
         if not build_builder_image(platform):

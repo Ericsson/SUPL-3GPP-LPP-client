@@ -9,6 +9,7 @@ __pycache__
 *.rpm
 *.dmg
 docker/
+!docker/linux/
 asn/src
 asn1c
 bin

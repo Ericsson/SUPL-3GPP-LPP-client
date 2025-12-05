@@ -50,4 +50,6 @@ RUN --mount=type=cache,target=/home/builder/src,uid=1000,gid=1000,id=crosstool-t
     --mount=type=cache,target=/home/builder/.build,uid=1000,gid=1000,id=crosstool-build-${PLATFORM}-${CROSSTOOL_VERSION} \
     ct-ng build || (echo "Build failed, but cache preserved for next attempt" && exit 1)
 
-ENV PATH="/home/builder/x-tools/$(ct-ng show-tuple 2>/dev/null || echo aarch64-rpi-linux-gnu)/bin:${PATH}"
+USER root
+RUN ln -sf /home/builder/x-tools/*/bin/* /usr/local/bin/
+USER builder
