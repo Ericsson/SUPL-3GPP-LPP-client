@@ -264,8 +264,8 @@ ULP_PDU* Session::parse_receive_buffer() {
         rb_consume(result.consumed);
         return nullptr;
     } else if (result.code == RC_WMORE) {
-        DEBUGF("more data is needed to decode the fully message (%zd of %ld)", size,
-               ulp_pdu->length);
+        VERBOSEF("more data is needed to decode the fully message (%zd of %ld)", size,
+                 ulp_pdu->length);
         ASN_STRUCT_FREE(asn_DEF_ULP_PDU, ulp_pdu);
         return nullptr;
     } else {

@@ -79,11 +79,22 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
 }
 
 Client::~Client() {
-    for (auto& pair : mSingleSessions) {
+    auto sessions            = std::move(mSessions);
+    auto single_sessions     = std::move(mSingleSessions);
+    auto location_deliveries = std::move(mLocationInformationDeliveries);
+
+    mRequestTransactions.clear();
+    mPeriodicTransactions.clear();
+
+    for (auto& pair : single_sessions) {
         if (pair.second) {
             pair.second->clear_client();
         }
     }
+
+    sessions.clear();
+    single_sessions.clear();
+    location_deliveries.clear();
 
     if (mScheduler) {
         mScheduler->unregister_tick(this);
