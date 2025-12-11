@@ -73,6 +73,7 @@ static format::ubx::CfgKey parse_cfg_key(std::string const& key_str) {
     if (key_str == "CFG_KEY_UART1OUTPROT_NMEA") return format::ubx::CFG_KEY_UART1OUTPROT_NMEA;
     if (key_str == "CFG_KEY_UART1OUTPROT_RTCM3X") return format::ubx::CFG_KEY_UART1OUTPROT_RTCM3X;
     if (key_str == "CFG_KEY_MSGOUT_NAV_PVT_UART1") return format::ubx::CFG_KEY_MSGOUT_NAV_PVT_UART1;
+    if (key_str == "CFG_KEY_MSGOUT_NAV_PVT_USB") return format::ubx::CFG_KEY_MSGOUT_NAV_PVT_USB;
     if (key_str == "CFG_KEY_INFMSG_UART1") return format::ubx::CFG_KEY_INFMSG_UART1;
 
     // Try parsing as hex number
@@ -173,11 +174,13 @@ static std::unordered_map<std::string, std::string> parse_arguments(std::string 
     auto                                         parts = core::split(str, ',');
     std::unordered_map<std::string, std::string> arguments;
     for (auto const& part : parts) {
-        auto kv = core::split(part, '=');
-        if (kv.size() != 2) {
+        auto eq_pos = part.find('=');
+        if (eq_pos == std::string::npos) {
             throw args::ValidationError("--cfg-ubx: invalid argument, got `" + part + "`");
         }
-        arguments[kv[0]] = kv[1];
+        auto key       = part.substr(0, eq_pos);
+        auto value     = part.substr(eq_pos + 1);
+        arguments[key] = value;
     }
     return arguments;
 }
