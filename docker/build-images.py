@@ -36,7 +36,7 @@ PLATFORMS = {
         'cross': 'linux/arm-v7/armv8-rpi3-linux-gnueabihf.config',
         'toolchain': '/src/docker/linux/arm-v7/armv8-rpi3-linux-gnueabihf.toolchain.cmake',
         'runtime': 'linux/arm-v7/rpi3.runtime',
-        'cmake_args': '-DUSE_ASAN=OFF -DENABLE_TOKORO_BASELINE_RECORDING=ON',
+        'cmake_args': '-DUSE_ASAN=OFF -DENABLE_TOKORO_SNAPSHOT=ON',
     },
     'armv6-unknown-linux-gnueabihf': {
         'platform': 'linux/arm/v6',
@@ -209,7 +209,7 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
             cmd_artifact.extend(['--platform', platform_config['platform']])
         cmd_artifact.extend([
             '--build-arg', f'BUILDER_IMAGE={builder_base}',
-            '--build-arg', f'BUILD_CACHE_ID=s3lc-cache-{build_mode}-{platform}',
+            '--build-arg', f'BUILD_CACHE_ID=s3lc-cache-{build_mode}-{platform}-{git_branch}-{git_commit}',
             '--build-arg', f'GIT_COMMIT_HASH={git_commit}',
             '--build-arg', f'GIT_BRANCH={git_branch}',
             '--build-arg', f'GIT_DIRTY={git_dirty}',
@@ -312,10 +312,15 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
             total_size = 0
             for f in sorted(os.listdir(libs_dir)):
                 fpath = os.path.join(libs_dir, f)
-                if os.path.isfile(fpath):
-                    size = os.path.getsize(fpath)
-                    total_size += size
-                    print(f"  {f:40s} {size:>10,} bytes")
+                if os.path.isfile(fpath) or os.path.islink(fpath):
+                    if os.path.islink(fpath):
+                        target = os.readlink(fpath)
+                        size = os.path.getsize(fpath) if not os.path.isabs(target) else 0
+                        print(f"  {f:40s} -> {target}")
+                    else:
+                        size = os.path.getsize(fpath)
+                        total_size += size
+                        print(f"  {f:40s} {size:>10,} bytes")
             print(f"\nTotal library size: {total_size:,} bytes ({total_size / 1024 / 1024:.2f} MB)")
             lib_size = total_size
         
