@@ -429,7 +429,7 @@ void IdokeidoSpp::compute() NOEXCEPT {
     auto semi_minor = 1.0;
 
     auto velocity   = lpp::VelocityShape::horizontal(0.0, 0.0);
-    auto horizontal = lpp::HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, 0.0);
+    auto horizontal = lpp::HorizontalAccuracy::from_1sigma(semi_major, semi_minor, 0.0);
     auto vertical   = lpp::VerticalAccuracy::from_1sigma(1.0);
 
     lpp::LocationInformation location{};

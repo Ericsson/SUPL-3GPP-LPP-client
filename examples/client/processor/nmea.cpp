@@ -67,10 +67,9 @@ lpp::HorizontalAccuracy NmeaLocation::horizontal_accuracy(double semi_major, dou
     }
 
     auto horizontal_accuracy =
-        lpp::HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, orientation);
+        lpp::HorizontalAccuracy::from_1sigma(semi_major, semi_minor, orientation);
     if (mConfig.output_ellipse_68) {
-        horizontal_accuracy =
-            lpp::HorizontalAccuracy::to_ellipse_68(semi_major, semi_minor, orientation);
+        horizontal_accuracy = horizontal_accuracy.to_68();
     }
     if (mConfig.override_horizontal_confidence >= 0.0 &&
         mConfig.override_horizontal_confidence <= 1.0) {
@@ -218,7 +217,7 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
     }
 
     auto velocity   = lpp::VelocityShape::horizontal(0.0, 0.0);
-    auto horizontal = lpp::HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, 0.0);
+    auto horizontal = lpp::HorizontalAccuracy::from_1sigma(semi_major, semi_minor, 0.0);
     auto vertical   = lpp::VerticalAccuracy::from_1sigma(1.0);
 
     if (mGst) {

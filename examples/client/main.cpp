@@ -738,7 +738,7 @@ static void setup_fake_location(Program& program) {
             program.config.location_information.fake.latitude,
             program.config.location_information.fake.longitude,
             program.config.location_information.fake.altitude,
-            lpp::HorizontalAccuracy::to_ellipse_68(1, 1, 0), lpp::VerticalAccuracy::from_1sigma(1));
+            lpp::HorizontalAccuracy::from_1sigma(1, 1, 0), lpp::VerticalAccuracy::from_1sigma(1));
         program.stream.push(std::move(info));
     };
 

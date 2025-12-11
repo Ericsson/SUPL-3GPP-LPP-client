@@ -66,9 +66,9 @@ void UbxLocation::nav_pvt(streamline::System& system, format::ubx::UbxNavPvt con
         semi_minor = semi_minor / 2.4477;
     }
 
-    auto horizontal_accuracy = lpp::HorizontalAccuracy::to_ellipse_39(semi_major, semi_minor, 0);
+    auto horizontal_accuracy = lpp::HorizontalAccuracy::from_1sigma(semi_major, semi_minor, 0);
     if (mConfig.output_ellipse_68) {
-        horizontal_accuracy = lpp::HorizontalAccuracy::to_ellipse_68(semi_major, semi_minor, 0);
+        horizontal_accuracy = horizontal_accuracy.to_68();
     }
     if (mConfig.override_horizontal_confidence >= 0.0 &&
         mConfig.override_horizontal_confidence <= 1.0) {

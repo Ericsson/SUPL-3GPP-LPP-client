@@ -86,6 +86,21 @@ target_link_options(io_tests PRIVATE -fsanitize=address)
 add_test(NAME io_tests COMMAND io_tests --no-skip)
 set_tests_properties(io_tests PROPERTIES LABELS "io")
 
+add_executable(lpp_tests
+    lpp/main.cpp
+    lpp/horizontal_accuracy.cpp
+)
+target_link_libraries(lpp_tests PRIVATE 
+    dependency::lpp
+    dependency::core
+    doctest::doctest
+)
+target_compile_options(lpp_tests PRIVATE -fsanitize=address -g)
+target_link_options(lpp_tests PRIVATE -fsanitize=address)
+
+add_test(NAME lpp_tests COMMAND lpp_tests --no-skip)
+set_tests_properties(lpp_tests PROPERTIES LABELS "lpp")
+
 add_executable(eph_tests
     eph/main.cpp
     eph/gps.cpp

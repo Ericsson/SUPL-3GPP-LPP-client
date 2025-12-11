@@ -2,6 +2,7 @@
 #include <time/tai.hpp>
 
 #include <chrono>
+#include <cmath>
 
 namespace lpp {
 
@@ -52,43 +53,74 @@ struct HorizontalAccuracy {
     double confidence;
 
     // Create a HorizontalAccuracy object from 1-sigma semi-major and semi-minor axes in meters
-    // and the orientation in degrees from true north. This calculates the correct confidence level
-    // for two degrees of freedom.
-    static HorizontalAccuracy to_ellipse_39(double semi_major, double semi_minor,
-                                            double orientation) {
-        // Using chi-squared cumulative distribution function and finding a scaling factor of 1 (we
-        // don't want to rescale the axis) the confidence is 39.3469%.
-        auto confidence = 0.393469;
-
-        // Normalize the orientation to the range [0, 180).
-        while (orientation < 0)
-            orientation += 180;
-        while (orientation >= 180)
-            orientation -= 180;
-
-        return HorizontalAccuracy{semi_major, semi_minor, orientation, confidence};
+    // and the orientation in degrees from true north. This stores the axes without rescaling and
+    // sets the confidence level to 39.3469%, which corresponds to the probability that the true
+    // position lies within an error ellipse defined by 1-sigma axes in two dimensions.
+    static HorizontalAccuracy from_1sigma(double semi_major, double semi_minor,
+                                          double orientation) {
+        return HorizontalAccuracy{semi_major, semi_minor, normalize_orientation(orientation),
+                                  0.393469};
     }
 
-    // Create a HorizontalAccuracy with a confidence level of 68.27%. This takes 1-sigma semi-major
-    // and semi-minor axes in meters and the orientation in degrees from true north. It will rescale
-    // the axes to meet the 68.27% confidence level.
-    static HorizontalAccuracy to_ellipse_68(double semi_major, double semi_minor,
-                                            double orientation) {
-        // Using chi-squared cumulative distribution function we can find the scaling factor for the
-        // confidence level of 68.27%, which is s = 2.4477. We divide the semi-major and semi-minor
-        // by the square root of s to rescale the axes.
-        auto confidence          = 0.6827;
-        auto semi_major_rescaled = semi_major * 1.5152;
-        auto semi_minor_rescaled = semi_minor * 1.5152;
+    // Create a HorizontalAccuracy from UBX h_acc field at 95% confidence, assuming h_acc
+    // represents the root-sum-square (RSS) of the semi-major and semi-minor axes. For a circular
+    // error ellipse, h_acc = sqrt(semi_95^2 + semi_95^2), so semi_95 = h_acc / sqrt(2). To
+    // convert to 1-sigma, we divide by the 95% confidence multiplier (2.4477), giving
+    // sigma = h_acc / (sqrt(2) * 2.4477) = h_acc / 3.4616.
+    static HorizontalAccuracy from_h_acc_95_rss(double h_acc, double orientation) {
+        constexpr double factor = 1.4142135623730951 * 2.4477;  // sqrt(2) * MULT_95 = 3.4616
+        auto             sigma  = h_acc / factor;
+        return from_1sigma(sigma, sigma, orientation);
+    }
 
+    // Create a HorizontalAccuracy from UBX h_acc field at 95% confidence, assuming h_acc
+    // represents the radius of a circular error ellipse at 95% confidence. To convert to 1-sigma,
+    // we divide by the 95% confidence multiplier (2.4477), giving sigma = h_acc / 2.4477.
+    static HorizontalAccuracy from_h_acc_95_radius(double h_acc, double orientation) {
+        constexpr double mult_95 = 2.4477;
+        auto             sigma   = h_acc / mult_95;
+        return from_1sigma(sigma, sigma, orientation);
+    }
+
+    // Convert this HorizontalAccuracy to a different confidence level by rescaling the semi-major
+    // and semi-minor axes. The orientation remains unchanged. This uses the chi-squared
+    // distribution with 2 degrees of freedom to calculate the appropriate scaling factor between
+    // the current confidence level and the target confidence level.
+    HorizontalAccuracy to_confidence(double target_confidence) const {
+        auto mult_current = confidence_to_multiplier(confidence);
+        auto mult_target  = confidence_to_multiplier(target_confidence);
+        auto scale        = mult_target / mult_current;
+
+        return HorizontalAccuracy{semi_major * scale, semi_minor * scale, orientation,
+                                  target_confidence};
+    }
+
+    // Convert this HorizontalAccuracy to 39.3469% confidence (1-sigma).
+    HorizontalAccuracy to_39() const { return to_confidence(0.393469); }
+
+    // Convert this HorizontalAccuracy to 68.27% confidence.
+    HorizontalAccuracy to_68() const { return to_confidence(0.6827); }
+
+    // Convert this HorizontalAccuracy to 95% confidence.
+    HorizontalAccuracy to_95() const { return to_confidence(0.95); }
+
+private:
+    static double normalize_orientation(double orientation) {
         // Normalize the orientation to the range [0, 180).
         while (orientation < 0)
             orientation += 180;
         while (orientation >= 180)
             orientation -= 180;
+        return orientation;
+    }
 
-        return HorizontalAccuracy{semi_major_rescaled, semi_minor_rescaled, orientation,
-                                  confidence};
+    // Chi-squared inverse CDF for df=2
+    // For df=2: chi2(p) = -2 * ln(1 - p)
+    static constexpr double chi2_ppf(double p) { return -2.0 * std::log(1.0 - p); }
+
+    // Calculate multiplier from confidence level
+    static constexpr double confidence_to_multiplier(double conf) {
+        return std::sqrt(chi2_ppf(conf));
     }
 };
 
