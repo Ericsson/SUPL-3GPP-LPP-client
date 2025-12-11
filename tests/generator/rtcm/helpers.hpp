@@ -116,7 +116,7 @@ inline std::vector<TestCase> find_test_cases(std::string const& pattern) {
         if (!cases.empty()) break;
     }
 
-    std::sort(cases.begin(), cases.end(), [](auto const& a, auto const& b) {
+    std::sort(cases.begin(), cases.end(), [](TestCase const& a, TestCase const& b) {
         return a.name < b.name;
     });
 

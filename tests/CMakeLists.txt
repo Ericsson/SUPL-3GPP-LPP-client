@@ -200,6 +200,7 @@ target_link_options(generator_tokoro_tests PRIVATE -fsanitize=address)
 add_test(NAME generator_tokoro_tests COMMAND generator_tokoro_tests --no-skip)
 set_tests_properties(generator_tokoro_tests PROPERTIES LABELS "generator_tokoro")
 
+if(ENABLE_TOKORO_SNAPSHOT)
 add_executable(generator_tokoro_snapshot_tests
     generator/tokoro/main.cpp
     generator/tokoro/snapshot.cpp
@@ -217,6 +218,7 @@ target_link_options(generator_tokoro_snapshot_tests PRIVATE -fsanitize=address)
 
 add_test(NAME generator_tokoro_snapshot_tests COMMAND generator_tokoro_snapshot_tests --no-skip)
 set_tests_properties(generator_tokoro_snapshot_tests PROPERTIES LABELS "generator_tokoro")
+endif()
 endif()
 
 if(ENABLE_FUZZING)
@@ -252,7 +254,7 @@ endif()
 
 
 # HELPER UTILS
-if(INCLUDE_GENERATOR_TOKORO)
+if(INCLUDE_GENERATOR_TOKORO AND ENABLE_TOKORO_SNAPSHOT)
     add_executable(generate_tokoro_snapshot generate_tokoro_snapshot.cpp)
     target_link_libraries(generate_tokoro_snapshot PRIVATE
         dependency::generator::tokoro
