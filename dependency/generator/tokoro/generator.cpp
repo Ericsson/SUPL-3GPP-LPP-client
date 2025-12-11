@@ -157,7 +157,9 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     }
 
     auto correction_data = *mGenerator.mCorrectionData;
-    auto antex           = mGenerator.mAntex.get();
+#ifdef INCLUDE_FORMAT_ANTEX
+    auto antex = mGenerator.mAntex.get();
+#endif
 
     auto& observation = satellite.initialize_observation(signal_id);
     observation.update_lock_time(lock_time);
@@ -166,7 +168,9 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     observation.compute_tropospheric(correction_data);
     observation.compute_ionospheric(correction_data);
 
+#ifdef INCLUDE_FORMAT_ANTEX
     if (mAntennaPhaseVariation && antex) observation.compute_antenna_phase_variation(*antex);
+#endif
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
     observation.set_negative_phase_windup(mNegativePhaseWindup);

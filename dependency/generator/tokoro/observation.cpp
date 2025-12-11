@@ -179,6 +179,7 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
     mIonospheric.height_correction = vtec_mf_0 / vtec_mf_alt;
 }
 
+#ifdef INCLUDE_FORMAT_ANTEX
 void Observation::compute_antenna_phase_variation(format::antex::Antex const& antex) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
     mAntennaPhaseVariation.valid = false;
@@ -193,6 +194,7 @@ void Observation::compute_antenna_phase_variation(format::antex::Antex const& an
     mAntennaPhaseVariation.correction = phase_variation.value;
     mAntennaPhaseVariation.valid      = true;
 }
+#endif
 
 void Observation::compute_ranges() NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());

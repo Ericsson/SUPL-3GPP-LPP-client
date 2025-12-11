@@ -7,7 +7,9 @@
 #include "agnss.hpp"
 #include "tokoro.hpp"
 
+#ifdef INCLUDE_FORMAT_ANTEX
 #include <format/antex/antex.hpp>
+#endif
 #include <format/rtcm/datafields.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
@@ -304,6 +306,7 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
 
+#ifdef INCLUDE_FORMAT_ANTEX
     if (!config.antex_file.empty()) {
         auto result = format::antex::Antex::from_file(config.antex_file);
         if (!result) {
@@ -312,6 +315,7 @@ Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
             mGenerator->set_antex(std::move(result));
         }
     }
+#endif
 
     if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
         // Nothing to do, the generator will generate when assistance data is received

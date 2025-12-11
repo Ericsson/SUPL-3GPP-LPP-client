@@ -11,7 +11,9 @@
 #include <ephemeris/gal.hpp>
 #include <ephemeris/gps.hpp>
 #include <ephemeris/qzs.hpp>
+#ifdef INCLUDE_FORMAT_ANTEX
 #include <format/antex/antex.hpp>
+#endif
 #ifdef INCLUDE_FORMAT_RINEX
 #include <format/rinex/builder.hpp>
 #endif
@@ -179,9 +181,11 @@ public:
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
     void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
+#ifdef INCLUDE_FORMAT_ANTEX
     void set_antex(std::unique_ptr<format::antex::Antex> antex) NOEXCEPT {
         mAntex = std::move(antex);
     }
+#endif
 
     std::shared_ptr<ReferenceStation>
     define_reference_station(ReferenceStationConfig const& config) NOEXCEPT;
@@ -240,10 +244,12 @@ private:
     std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::QzsEphemeris>> mQzsEphemeris;
 
-    ts::Tai                               mLastCorrectionDataTime;
-    std::unique_ptr<CorrectionData>       mCorrectionData;
-    std::unique_ptr<CorrectionPointSet>   mCorrectionPointSet;
+    ts::Tai                             mLastCorrectionDataTime;
+    std::unique_ptr<CorrectionData>     mCorrectionData;
+    std::unique_ptr<CorrectionPointSet> mCorrectionPointSet;
+#ifdef INCLUDE_FORMAT_ANTEX
     std::unique_ptr<format::antex::Antex> mAntex;
+#endif
 
     bool mIodConsistencyCheck;
     bool mUseReceptionTimeForOrbitAndClockCorrections;

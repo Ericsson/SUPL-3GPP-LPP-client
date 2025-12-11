@@ -2,7 +2,9 @@
 #include "eph.hpp"
 
 #include <cmath>
+#ifdef INCLUDE_GENERATOR_TOKORO
 #include <generator/tokoro/coordinate.hpp>
+#endif
 #include <loglet/loglet.hpp>
 
 #include "coordinates/ecef.hpp"
@@ -560,11 +562,13 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
            final_position.z());
     DEBUGF("final bias:     %14.4f", final_bias);
 
+#ifdef INCLUDE_GENERATOR_TOKORO
     auto llh = generator::tokoro::ecef_to_llh(
         Float3{final_position.x(), final_position.y(), final_position.z()},
         generator::tokoro::ellipsoid::gWgs84);
 
     DEBUGF("llh: %14.8f %14.8f %14.8f", llh.x * constant::K_R2D, llh.y * constant::K_R2D, llh.z);
+#endif
     DEBUGF("bias: %14.8f", final_bias);
     DEBUGF("time: %s", time.rtklib_time_string().c_str());
 

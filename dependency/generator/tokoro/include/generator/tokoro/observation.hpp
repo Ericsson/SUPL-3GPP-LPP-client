@@ -5,7 +5,9 @@
 #include "models/phase_windup.hpp"
 #include "models/shapiro.hpp"
 
+#ifdef INCLUDE_FORMAT_ANTEX
 #include <format/antex/antex.hpp>
+#endif
 #include <maths/float3.hpp>
 #include <time/tai.hpp>
 
@@ -64,7 +66,9 @@ public:
 
     void compute_tropospheric_height() NOEXCEPT;
 
+#ifdef INCLUDE_FORMAT_ANTEX
     void compute_antenna_phase_variation(format::antex::Antex const& antex) NOEXCEPT;
+#endif
 
     void compute_ranges() NOEXCEPT;
 
