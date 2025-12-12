@@ -178,6 +178,10 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     ::cfmakeraw(&tty);
     VERBOSEF("::cfmakeraw(%p)", &tty);
 
+    // configure vtime and vmin as non-blocking
+    tty.c_cc[VTIME] = 0;
+    tty.c_cc[VMIN]  = 0;
+
     auto cflag = static_cast<int>(tty.c_cflag);
     cflag |= (CLOCAL | CREAD);    // ignore modem controls,
                                   // enable receiver
@@ -355,6 +359,10 @@ void SerialOutput::open() {
     // set raw mode
     ::cfmakeraw(&tty);
     VERBOSEF("::cfmakeraw(%p)", &tty);
+
+    // configure vtime and vmin as non-blocking
+    tty.c_cc[VTIME] = 0;
+    tty.c_cc[VMIN]  = 0;
 
     auto cflag = static_cast<int>(tty.c_cflag);
     cflag |= (CLOCAL | CREAD);    // ignore modem controls,

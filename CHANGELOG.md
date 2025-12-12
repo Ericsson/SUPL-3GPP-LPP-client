@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - Tokoro snapshot testing system, offline generation tool, and regression tests
 
 ### Changed
+- Serial port is now configured with `VMIN=0` and `VTIME=0`
 - CPM is now required to build
 - Refactored coordinate frames to use FrameTrait pattern with modular file structure and temporal model classification
 - Extracted SignalId and SatelliteId to new dependency/gnss library for better modularity
