@@ -45,5 +45,9 @@ private:
 
     std::unordered_map<void*, std::function<void()>> mTickCallbacks;
     std::vector<std::function<void()>>               mDeferredCallbacks;
+
+#ifndef NDEBUG
+    std::unordered_map<EpollEvent*, int> mActiveEvents;
+#endif
 };
 }  // namespace scheduler

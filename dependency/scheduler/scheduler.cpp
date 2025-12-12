@@ -82,6 +82,10 @@ bool Scheduler::add_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEXCEP
     }
 
     mEpollCount++;
+#ifndef NDEBUG
+    mActiveEvents[event] = fd;
+    DEBUGF("tracking EpollEvent %p for fd %d (total: %zu)", event, fd, mActiveEvents.size());
+#endif
     return true;
 }
 
@@ -91,6 +95,19 @@ bool Scheduler::remove_epoll_fd(int fd) NOEXCEPT {
         ERRORF("epoll_fd or interrupt_fd is not initialized");
         return false;
     }
+
+#ifndef NDEBUG
+    EpollEvent* removed_event = nullptr;
+    for (auto it = mActiveEvents.begin(); it != mActiveEvents.end(); ++it) {
+        if (it->second == fd) {
+            removed_event = it->first;
+            mActiveEvents.erase(it);
+            DEBUGF("untracking EpollEvent %p for fd %d (remaining: %zu)", removed_event, fd,
+                   mActiveEvents.size());
+            break;
+        }
+    }
+#endif
 
     auto result = ::epoll_ctl(mEpollFd, EPOLL_CTL_DEL, fd, nullptr);
     VERBOSEF("::epoll_ctl(%d, EPOLL_CTL_DEL, %d, nullptr) = %d", mEpollFd, fd, result);
@@ -313,6 +330,24 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
     }
 
     auto epoll_event = reinterpret_cast<EpollEvent*>(event.data.ptr);
+#ifndef NDEBUG
+    if (epoll_event && mActiveEvents.find(epoll_event) == mActiveEvents.end()) {
+        ERRORF("========================================");
+        ERRORF("CRITICAL: Use-after-free detected - attempting to process deleted event!");
+        ERRORF("EpollEvent %p is not in active events map", epoll_event);
+        ERRORF("This event was removed during a previous callback in this batch");
+        ERRORF("Skipping event processing to prevent crash");
+        ERRORF("========================================");
+        return;
+    }
+#endif
+
+#ifndef NDEBUG
+    auto it = mActiveEvents.find(epoll_event);
+    VERBOSEF("processing event for EpollEvent %p (fd %d)", epoll_event, it->second);
+    auto snapshot = mActiveEvents;
+#endif
+
     if (epoll_event) {
         auto before_event = std::chrono::steady_clock::now();
         epoll_event->event(&event);
@@ -325,6 +360,19 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
                std::chrono::duration_cast<std::chrono::milliseconds>(after_event - before_event)
                    .count());
     }
+
+#ifndef NDEBUG
+    for (auto const& snap : snapshot) {
+        if (mActiveEvents.find(snap.first) == mActiveEvents.end()) {
+            ERRORF("========================================");
+            ERRORF("CRITICAL: Event removed during callback processing!");
+            ERRORF("EpollEvent %p (fd %d) was removed by the callback", snap.first, snap.second);
+            ERRORF("This can cause use-after-free with EVENT_COUNT > 1");
+            ERRORF("Use scheduler.defer() for deletions instead of calling cancel() directly");
+            ERRORF("========================================");
+        }
+    }
+#endif
 }
 
 void Scheduler::register_tick(void* unique_ptr, std::function<void()> callback) NOEXCEPT {
