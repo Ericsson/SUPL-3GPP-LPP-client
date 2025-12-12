@@ -53,13 +53,9 @@ struct DataField {
         CONSTEXPR_IF(std::is_same<T, bool>::value) {
             return static_cast<T>(value != 0);
         }
-        else CONSTEXPR_IF(C == Conversion::PICO100 || C == Conversion::MINUTE ||
-                          C == Conversion::SC2RAD) {
+        else {
             auto result = static_cast<double>(value) * static_cast<double>(K_FACTOR);
             return static_cast<T>(result);
-        }
-        else {
-            return static_cast<T>(value);
         }
     }
 
