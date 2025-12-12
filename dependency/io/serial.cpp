@@ -19,6 +19,27 @@ LOGLET_MODULE2(io, serial);
 
 namespace io {
 
+static void print_termios_config(int fd, struct termios const& tty) {
+    DEBUGF("termios configuration for fd %d:", fd);
+    DEBUGF("  c_iflag: 0x%08x", tty.c_iflag);
+    DEBUGF("    IGNBRK=%d BRKINT=%d PARMRK=%d ISTRIP=%d", !!(tty.c_iflag & IGNBRK),
+           !!(tty.c_iflag & BRKINT), !!(tty.c_iflag & PARMRK), !!(tty.c_iflag & ISTRIP));
+    DEBUGF("    INLCR=%d IGNCR=%d ICRNL=%d IXON=%d", !!(tty.c_iflag & INLCR),
+           !!(tty.c_iflag & IGNCR), !!(tty.c_iflag & ICRNL), !!(tty.c_iflag & IXON));
+    DEBUGF("  c_oflag: 0x%08x", tty.c_oflag);
+    DEBUGF("    OPOST=%d", !!(tty.c_oflag & OPOST));
+    DEBUGF("  c_cflag: 0x%08x", tty.c_cflag);
+    DEBUGF("    CLOCAL=%d CREAD=%d CRTSCTS=%d", !!(tty.c_cflag & CLOCAL), !!(tty.c_cflag & CREAD),
+           !!(tty.c_cflag & CRTSCTS));
+    DEBUGF("    PARENB=%d PARODD=%d CSTOPB=%d", !!(tty.c_cflag & PARENB), !!(tty.c_cflag & PARODD),
+           !!(tty.c_cflag & CSTOPB));
+    DEBUGF("  c_lflag: 0x%08x", tty.c_lflag);
+    DEBUGF("    ECHO=%d ECHONL=%d ICANON=%d ISIG=%d IEXTEN=%d", !!(tty.c_lflag & ECHO),
+           !!(tty.c_lflag & ECHONL), !!(tty.c_lflag & ICANON), !!(tty.c_lflag & ISIG),
+           !!(tty.c_lflag & IEXTEN));
+    DEBUGF("  c_cc: VMIN=%d VTIME=%d", tty.c_cc[VMIN], tty.c_cc[VTIME]);
+}
+
 char const* baud_rate_to_str(BaudRate baud_rate) {
     switch (baud_rate) {
     case BaudRate::BR50: return "50";
@@ -144,8 +165,8 @@ static speed_t baud_rate_to_constant(BaudRate baud_rate) {
 bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
-    mFd = ::open(mDevice.c_str(), O_RDONLY | O_NOCTTY | O_SYNC);
-    VERBOSEF("::open(\"%s\", O_RDONLY | O_NOCTTY | O_SYNC) = %d", mDevice.c_str(), mFd);
+    mFd = ::open(mDevice.c_str(), O_RDONLY | O_NOCTTY | O_NONBLOCK);
+    VERBOSEF("::open(\"%s\", O_RDONLY | O_NOCTTY | O_NONBLOCK) = %d", mDevice.c_str(), mFd);
     if (mFd < 0) {
         ERRORF("failed to open serial device \"%s\": " ERRNO_FMT, mDevice.c_str(),
                ERRNO_ARGS(errno));
@@ -179,8 +200,32 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VERBOSEF("::cfmakeraw(%p)", &tty);
 
     // configure vtime and vmin as non-blocking
-    tty.c_cc[VTIME] = 0;
-    tty.c_cc[VMIN]  = 0;
+    tty.c_cc[VTIME] = 0;  // no timeout - return immediately
+    tty.c_cc[VMIN]  = 0;  // return even if no data available
+
+    // disable all input processing to ensure immediate data delivery
+    auto iflag = static_cast<int>(tty.c_iflag);
+    iflag &= ~IGNBRK;  // don't ignore break condition
+    iflag &= ~BRKINT;  // don't signal on break
+    iflag &= ~PARMRK;  // don't mark parity errors
+    iflag &= ~ISTRIP;  // don't strip 8th bit
+    iflag &= ~INLCR;   // don't translate NL to CR
+    iflag &= ~IGNCR;   // don't ignore CR
+    iflag &= ~ICRNL;   // don't translate CR to NL
+    iflag &= ~IXON;    // disable XON/XOFF flow control
+    tty.c_iflag = static_cast<tcflag_t>(iflag);
+
+    auto oflag = static_cast<int>(tty.c_oflag);
+    oflag &= ~OPOST;  // disable output processing
+    tty.c_oflag = static_cast<tcflag_t>(oflag);
+
+    auto lflag = static_cast<int>(tty.c_lflag);
+    lflag &= ~ECHO;    // don't echo input
+    lflag &= ~ECHONL;  // don't echo NL
+    lflag &= ~ICANON;  // disable canonical mode (line buffering)
+    lflag &= ~ISIG;    // don't generate signals
+    lflag &= ~IEXTEN;  // disable extended input processing
+    tty.c_lflag = static_cast<tcflag_t>(lflag);
 
     auto cflag = static_cast<int>(tty.c_cflag);
     cflag |= (CLOCAL | CREAD);    // ignore modem controls,
@@ -249,6 +294,8 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         mFd = -1;
         return false;
     }
+
+    print_termios_config(mFd, tty);
 
     mFdTask.reset(new scheduler::FileDescriptorTask());
     // Return value indicates rescheduling need, not failure - safe to ignore for new task
@@ -373,8 +420,32 @@ void SerialOutput::open() {
     VERBOSEF("::cfmakeraw(%p)", &tty);
 
     // configure vtime and vmin as non-blocking
-    tty.c_cc[VTIME] = 0;
-    tty.c_cc[VMIN]  = 0;
+    tty.c_cc[VTIME] = 0;  // no timeout - return immediately
+    tty.c_cc[VMIN]  = 0;  // return even if no data available
+
+    // disable all input processing to ensure immediate data delivery
+    auto iflag = static_cast<int>(tty.c_iflag);
+    iflag &= ~IGNBRK;  // don't ignore break condition
+    iflag &= ~BRKINT;  // don't signal on break
+    iflag &= ~PARMRK;  // don't mark parity errors
+    iflag &= ~ISTRIP;  // don't strip 8th bit
+    iflag &= ~INLCR;   // don't translate NL to CR
+    iflag &= ~IGNCR;   // don't ignore CR
+    iflag &= ~ICRNL;   // don't translate CR to NL
+    iflag &= ~IXON;    // disable XON/XOFF flow control
+    tty.c_iflag = static_cast<tcflag_t>(iflag);
+
+    auto oflag = static_cast<int>(tty.c_oflag);
+    oflag &= ~OPOST;  // disable output processing
+    tty.c_oflag = static_cast<tcflag_t>(oflag);
+
+    auto lflag = static_cast<int>(tty.c_lflag);
+    lflag &= ~ECHO;    // don't echo input
+    lflag &= ~ECHONL;  // don't echo NL
+    lflag &= ~ICANON;  // disable canonical mode (line buffering)
+    lflag &= ~ISIG;    // don't generate signals
+    lflag &= ~IEXTEN;  // disable extended input processing
+    tty.c_lflag = static_cast<tcflag_t>(lflag);
 
     auto cflag = static_cast<int>(tty.c_cflag);
     cflag |= (CLOCAL | CREAD);    // ignore modem controls,
@@ -443,6 +514,8 @@ void SerialOutput::open() {
         mFd = -1;
         return;
     }
+
+    print_termios_config(mFd, tty);
 }
 
 void SerialOutput::close() {
