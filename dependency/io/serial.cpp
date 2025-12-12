@@ -256,11 +256,23 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
 
     mFdTask->set_event_name("fd/" + mEventName);
     mFdTask->on_read = [this](int) {
-        auto read_result = ::read(mFd, mBuffer, sizeof(mBuffer));
-        VERBOSEF("::read(%d, %p, %zu) = %d", mFd, mBuffer, sizeof(mBuffer), read_result);
-        if (read_result > 0) {
-            if (callback) {
-                callback(*this, mBuffer, static_cast<size_t>(read_result));
+        while (true) {
+            auto read_result = ::read(mFd, mBuffer, sizeof(mBuffer));
+            VERBOSEF("::read(%d, %p, %zu) = %d", mFd, mBuffer, sizeof(mBuffer), read_result);
+            if (read_result > 0) {
+                if (callback) {
+                    callback(*this, mBuffer, static_cast<size_t>(read_result));
+                }
+            } else if (read_result == 0) {
+                TRACEF("read EOF");
+                break;
+            } else {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    TRACEF("read would block");
+                    break;
+                }
+                ERRORF("read error: " ERRNO_FMT, ERRNO_ARGS(errno));
+                break;
             }
         }
     };
