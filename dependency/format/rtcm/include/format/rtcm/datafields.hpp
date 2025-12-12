@@ -54,7 +54,7 @@ struct DataField {
             return static_cast<T>(value != 0);
         }
         else {
-            auto result = static_cast<double>(value) * static_cast<double>(K_FACTOR);
+            auto result = static_cast<double>(value) * K_FACTOR;
             return static_cast<T>(result);
         }
     }
@@ -84,7 +84,7 @@ private:
                                    C == Conversion::PICO100 ? 1e-10 :
                                                               1);
     }
-    static constexpr T K_FACTOR{static_cast<T>(calculate_factor())};
+    static constexpr double K_FACTOR{calculate_factor()};
 };
 
 template <std::size_t N>
