@@ -428,6 +428,7 @@ struct TokoroConfig {
     bool rtoc;
     bool ocit;
     bool negative_phase_windup;
+    bool phase_alignment;
 #ifdef INCLUDE_FORMAT_RINEX
     bool generate_rinex;
 #endif

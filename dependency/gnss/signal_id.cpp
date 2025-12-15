@@ -810,3 +810,63 @@ long SignalId::absolute_id() const {
 
     return mLppId;
 }
+
+double SignalId::phase_alignment_shift() const {
+    auto gnss      = this->gnss();
+    auto freq_type = this->frequency_type();
+
+    if (gnss == Gnss::GPS && freq_type == FrequencyType::L2) {
+        if (*this == SignalId::GPS_L2_L2C_M || *this == SignalId::GPS_L2_L2C_L ||
+            *this == SignalId::GPS_L2_L2C_M_L || *this == SignalId::GPS_L2C) {
+            return 0.25;
+        }
+        return 0.0;
+    }
+
+    if (gnss == Gnss::QZSS && freq_type == FrequencyType::L2) {
+        if (*this == SignalId::QZSS_L2C_M || *this == SignalId::QZSS_L2C_L ||
+            *this == SignalId::QZSS_L2C_M_L) {
+            return 0.25;
+        }
+        return 0.0;
+    }
+
+    return 0.0;
+}
+
+SignalId SignalId::reference_signal(SignalId signal_id) {
+    auto freq = signal_id.frequency_type();
+    auto gnss = signal_id.gnss();
+
+    if (gnss == SignalId::Gnss::GPS) {
+        if (freq == FrequencyType::L1) return SignalId::GPS_L1C;
+        if (freq == FrequencyType::L2) return SignalId::GPS_L2_P;
+        if (freq == FrequencyType::L5) return SignalId::GPS_L5_I;
+    } else if (gnss == SignalId::Gnss::GLONASS) {
+        if (freq == FrequencyType::G1) return SignalId::GLONASS_G1_CA;
+        if (freq == FrequencyType::G2) return SignalId::GLONASS_G2_CA;
+    } else if (gnss == SignalId::Gnss::GALILEO) {
+        if (freq == FrequencyType::E1) return SignalId::GALILEO_E1_B_I_NAV_OS_CS_SOL;
+        if (freq == FrequencyType::E5a) return SignalId::GALILEO_E5A_I;
+        if (freq == FrequencyType::E5b) return SignalId::GALILEO_E5B_I;
+        if (freq == FrequencyType::E5) return SignalId::GALILEO_E5_A_B_I;
+        if (freq == FrequencyType::E6) return SignalId::GALILEO_E6_B;
+    } else if (gnss == SignalId::Gnss::QZSS) {
+        if (freq == FrequencyType::L1) return SignalId::QZSS_L1C_D;
+        if (freq == FrequencyType::L2) return SignalId::QZSS_L2C_M;
+        if (freq == FrequencyType::L5) return SignalId::QZSS_L5_I;
+    } else if (gnss == SignalId::Gnss::BEIDOU) {
+        if (freq == FrequencyType::B1) {
+            if (signal_id == SignalId::BEIDOU_B1C_D || signal_id == SignalId::BEIDOU_B1C_P ||
+                signal_id == SignalId::BEIDOU_B1C_D_P) {
+                return SignalId::BEIDOU_B1C_D;
+            }
+            return SignalId::BEIDOU_B1_I;
+        }
+        if (freq == FrequencyType::B2) return SignalId::BEIDOU_B2_I;
+        if (freq == FrequencyType::B3) return SignalId::BEIDOU_B3_I;
+        if (freq == FrequencyType::B2a) return SignalId::BEIDOU_B2A_D;
+    }
+
+    return signal_id;
+}

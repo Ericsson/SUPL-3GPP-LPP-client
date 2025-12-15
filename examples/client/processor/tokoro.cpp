@@ -560,6 +560,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_phase_windup_correction(mConfig.phase_windup_correction);
     mReferenceStation->set_tropospheric_height_correction(mConfig.tropospheric_height_correction);
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
+    mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
 #ifdef INCLUDE_FORMAT_RINEX
     mReferenceStation->set_generate_rinex(mConfig.generate_rinex);
 #endif

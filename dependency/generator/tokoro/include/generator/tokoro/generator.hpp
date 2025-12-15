@@ -87,6 +87,7 @@ public:
     void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
+    void set_phase_alignment(bool enabled) { mPhaseAlignment = enabled; }
 #ifdef INCLUDE_FORMAT_RINEX
     void set_generate_rinex(bool enabled) { mGenerateRinex = enabled; }
 #endif
@@ -138,6 +139,7 @@ private:
     uint32_t mRtcmReferenceStationId;
     uint32_t mRtcmMsmType;
     bool     mNegativePhaseWindup;
+    bool     mPhaseAlignment;
 #ifdef INCLUDE_FORMAT_RINEX
     bool mGenerateRinex;
 #endif

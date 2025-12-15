@@ -268,6 +268,15 @@ endif()
 
 
 
+# GNSS TESTS
+add_executable(gnss_tests
+    gnss/main.cpp
+    gnss/phase_alignment.cpp
+)
+target_link_libraries(gnss_tests PRIVATE dependency::gnss doctest::doctest)
+setup_target(gnss_tests)
+add_test(NAME gnss_tests COMMAND gnss_tests)
+
 # HELPER UTILS
 if(INCLUDE_GENERATOR_TOKORO AND ENABLE_TOKORO_SNAPSHOT)
     add_executable(generate_tokoro_snapshot generate_tokoro_snapshot.cpp)

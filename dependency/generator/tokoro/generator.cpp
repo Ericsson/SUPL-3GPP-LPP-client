@@ -68,6 +68,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmReferenceStationId(1902),
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
+      mPhaseAlignment(false),
 #ifdef INCLUDE_FORMAT_RINEX
       mGenerateRinex(false),
 #endif
@@ -320,18 +321,26 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
     auto delta_code_range_ms  = code_range_ms - rtd.used_range;
     auto delta_phase_range_ms = phase_range_ms - rtd.used_range;
 
+    if (mPhaseAlignment) {
+        auto shift_cycles = observation.signal_id().phase_alignment_shift();
+        auto shift_meters = shift_cycles * observation.signal_id().wavelength();
+        auto shift_ms     = shift_meters * meter_to_cms;
+        delta_phase_range_ms += shift_ms;
+    }
+
     VERBOSEF("%-15s code:  %+.14f (%+.14f)", observation.signal_id().name(), code_range_ms,
              delta_code_range_ms);
     VERBOSEF("%-15s phase: %+.14f (%+.14f)", observation.signal_id().name(), phase_range_ms,
              delta_phase_range_ms);
 
     rtcm::Signal signal{};
-    signal.id                     = observation.signal_id();
-    signal.satellite              = satellite.id();
-    signal.fine_pseudo_range      = delta_code_range_ms;
-    signal.fine_phase_range       = delta_phase_range_ms;
-    signal.carrier_to_noise_ratio = observation.carrier_to_noise_ratio();
-    signal.lock_time              = observation.lock_time().seconds;
+    signal.id                      = observation.signal_id();
+    signal.satellite               = satellite.id();
+    signal.fine_pseudo_range       = delta_code_range_ms;
+    signal.fine_phase_range        = delta_phase_range_ms;
+    signal.carrier_to_noise_ratio  = observation.carrier_to_noise_ratio();
+    signal.lock_time               = observation.lock_time().seconds;
+    signal.require_phase_alignment = mPhaseAlignment;
 
     if (mPhaseRangeRate) {
         auto phase_range_rate       = observation.phase_range_rate();

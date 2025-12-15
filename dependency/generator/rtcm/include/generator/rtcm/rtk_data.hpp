@@ -71,6 +71,7 @@ struct Signal {
     Maybe<double> carrier_to_noise_ratio;
     Maybe<double> lock_time;
     bool          half_cycle_ambiguity;
+    bool          require_phase_alignment;
 
     NODISCARD uint32_t lowest_msm_version() const;
 };

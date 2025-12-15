@@ -139,14 +139,15 @@ static void extract_signal(Observations& observations, GenericGnssId gnss_id,
                            SatelliteId                                    satellite_id,
                            GNSS_RTK_SatelliteSignalDataElement_r15 const& src_signal) {
     Signal dst_signal{};
-    dst_signal.id                     = signal_id(gnss_id, src_signal);
-    dst_signal.satellite              = satellite_id;
-    dst_signal.fine_phase_range       = fine_phase_range(src_signal);
-    dst_signal.fine_pseudo_range      = fine_pseudo_range(src_signal);
-    dst_signal.fine_phase_range_rate  = fine_phase_range_rate(src_signal);
-    dst_signal.carrier_to_noise_ratio = carrier_to_noise_ratio(src_signal);
-    dst_signal.lock_time              = lock_time(src_signal);
-    dst_signal.half_cycle_ambiguity   = half_cycle_ambiguity(src_signal);
+    dst_signal.id                      = signal_id(gnss_id, src_signal);
+    dst_signal.satellite               = satellite_id;
+    dst_signal.fine_phase_range        = fine_phase_range(src_signal);
+    dst_signal.fine_pseudo_range       = fine_pseudo_range(src_signal);
+    dst_signal.fine_phase_range_rate   = fine_phase_range_rate(src_signal);
+    dst_signal.carrier_to_noise_ratio  = carrier_to_noise_ratio(src_signal);
+    dst_signal.lock_time               = lock_time(src_signal);
+    dst_signal.half_cycle_ambiguity    = half_cycle_ambiguity(src_signal);
+    dst_signal.require_phase_alignment = false;
 
     observations.signals.emplace_back(dst_signal);
 }

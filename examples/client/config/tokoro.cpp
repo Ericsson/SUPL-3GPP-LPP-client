@@ -197,6 +197,13 @@ static args::Flag gNegativePhaseWindup{
     {"tkr-npw"},
 };
 
+static args::Flag gPhaseAlignment{
+    gGroup,
+    "phase-alignment",
+    "Enable phase alignment",
+    {"tkr-phase-alignment"},
+};
+
 #ifdef INCLUDE_RINEX_FORMAT
 static args::Flag gGenerateRinex{
     gGroup,
@@ -315,6 +322,7 @@ void parse(Config* config) {
     tokoro.rtoc                               = false;
     tokoro.ocit                               = false;
     tokoro.negative_phase_windup              = false;
+    tokoro.phase_alignment                    = false;
 #ifdef INCLUDE_RINEX_FORMAT
     tokoro.generate_rinex = false;
 #endif
@@ -442,6 +450,7 @@ void parse(Config* config) {
     if (gRtOC) tokoro.rtoc = true;
     if (gOcit) tokoro.ocit = true;
     if (gNegativePhaseWindup) tokoro.negative_phase_windup = true;
+    if (gPhaseAlignment) tokoro.phase_alignment = true;
 
 #ifdef INCLUDE_RINEX_FORMAT
     if (gGenerateRinex) tokoro.generate_rinex = true;

@@ -59,7 +59,9 @@ public:
 
     NODISCARD long absolute_id() const;
 
-    NODISCARD std::string to_rinex() const;
+    NODISCARD std::string     to_rinex() const;
+    NODISCARD double          phase_alignment_shift() const;
+    NODISCARD static SignalId reference_signal(SignalId signal_id);
 
     inline bool operator==(SignalId const& other) const {
         return mGnss == other.mGnss && mLppId == other.mLppId;
@@ -150,6 +152,12 @@ public:
     static SignalId const BEIDOU_B2_I;
     static SignalId const BEIDOU_B2_Q;
     static SignalId const BEIDOU_B2_I_Q;
+    static SignalId const BEIDOU_B1C_D;
+    static SignalId const BEIDOU_B1C_P;
+    static SignalId const BEIDOU_B1C_D_P;
+    static SignalId const BEIDOU_B2A_D;
+    static SignalId const BEIDOU_B2A_P;
+    static SignalId const BEIDOU_B2A_D_P;
 
     static SignalId const QZSS_L1_CA;
     static SignalId const QZSS_L1C_D;
@@ -163,12 +171,6 @@ public:
     static SignalId const QZSS_L5_I_Q;
     static SignalId const QZSS_L6_D;
     static SignalId const QZSS_L6_E;
-    static SignalId const BEIDOU_B1C_D;
-    static SignalId const BEIDOU_B1C_P;
-    static SignalId const BEIDOU_B1C_D_P;
-    static SignalId const BEIDOU_B2A_D;
-    static SignalId const BEIDOU_B2A_P;
-    static SignalId const BEIDOU_B2A_D_P;
 };
 
 namespace std {

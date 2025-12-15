@@ -4,13 +4,6 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Added
-- Coordinate representation library in dependency/coordinates with Eigen-based types (ECEF, LLH, ENU, NED, AER) and transformations using matrix operations
-- Multi-reference frame coordinate transformations with template-based and graph-based APIs supporting WGS84, PZ-90, ITRF (88-2020), and CGCS2000
-- ITRF transformation parameters from IERS Technical Note 36 for ITRF88 through ITRF2020
-- Regression tests for coordinates library against tokoro and idokeido implementations
-- Tokoro snapshot testing system, offline generation tool, and regression tests
-
 ### Changed
 - Serial port is now configured with `VMIN=0` and `VTIME=0`
 - CPM is now required to build
@@ -38,6 +31,12 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Coordinate representation library in dependency/coordinates with Eigen-based types (ECEF, LLH, ENU, NED, AER) and transformations using matrix operations
+- Multi-reference frame coordinate transformations with template-based and graph-based APIs supporting WGS84, PZ-90, ITRF (88-2020), and CGCS2000
+- ITRF transformation parameters from IERS Technical Note 36 for ITRF88 through ITRF2020
+- Regression tests for coordinates library against tokoro and idokeido implementations
+- Tokoro snapshot testing system, offline generation tool, and regression tests
+- Phase alignment support for tokoro (enable with `--tkr-phase-alignment`)
 - MessagePack serialization library with C++11 support
 - Added GLONASS ephemeris support
 - Added GLONASS time system support with UTC offset handling

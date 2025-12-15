@@ -158,7 +158,7 @@ static void df405(Encoder& encoder, Signal const& signal) {
 
 static void df406(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range.value * RTCM_P2_31));
-    if (signal.fine_pseudo_range.valid) {
+    if (signal.fine_phase_range.valid) {
         encoder.i32(24, static_cast<int32_t>(value));
     } else {
         encoder.u32(24, 0x800000);
