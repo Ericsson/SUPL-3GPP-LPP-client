@@ -54,7 +54,7 @@ bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     }
 
     ASSERT(mListenerTask, "failed to create listener task");
-    mListenerTask->on_read = [this](scheduler::UdpListenerTask& task) {
+    mListenerTask->on_read = [this, &scheduler](scheduler::UdpListenerTask& task) {
         struct sockaddr_storage addr;
         socklen_t               addr_len = sizeof(addr);
         auto result = ::recvfrom(mListenerTask->fd(), mBuffer, sizeof(mBuffer), 0,
@@ -63,7 +63,9 @@ bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
                  sizeof(mBuffer), &addr, &addr_len, result);
         if (result < 0) {
             ERRORF("failed to read from socket: " ERRNO_FMT, ERRNO_ARGS(errno));
-            task.cancel();
+            scheduler.defer([&task]() {
+                task.cancel();
+            });
             return;
         }
 
@@ -71,9 +73,10 @@ bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             callback(*this, mBuffer, static_cast<size_t>(result));
         }
     };
-    mListenerTask->on_error = [this](scheduler::UdpListenerTask&) {
-        // NOTE: I am not sure what to do here.
-        cancel();
+    mListenerTask->on_error = [this, &scheduler](scheduler::UdpListenerTask&) {
+        scheduler.defer([this]() {
+            cancel();
+        });
     };
 
     if (!mListenerTask->schedule(scheduler)) {

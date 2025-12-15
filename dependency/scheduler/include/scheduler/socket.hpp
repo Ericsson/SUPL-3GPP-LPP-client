@@ -153,6 +153,7 @@ protected:
     Scheduler*              mScheduler;
     bool                    mIsScheduled;
     EpollEvent              mEvent;
+    std::string             mEventName;
     int                     mFd;
     std::string             mPath;
     std::string             mHost;

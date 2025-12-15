@@ -42,7 +42,9 @@ TimeoutTask::TimeoutTask(std::chrono::steady_clock::duration duration) NOEXCEPT
             this->callback();
         }
 
-        cancel();
+        mScheduler->defer([this]() {
+            cancel();
+        });
     };
 }
 

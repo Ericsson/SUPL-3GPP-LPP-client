@@ -242,6 +242,17 @@
         }                                                                                          \
     } while (0)
 
+#define SOFT_ASSERT(cond, reason)                                                                  \
+    do {                                                                                           \
+        if (!(cond)) {                                                                             \
+            ERRORF("!!! assertion failed !!!");                                                    \
+            ERRORF("condition: %s", #cond);                                                        \
+            ERRORF("reason: %s", reason);                                                          \
+            ERRORF("file: %s", __FILE__);                                                          \
+            ERRORF("line: %d", __LINE__);                                                          \
+        }                                                                                          \
+    } while (0)
+
 #define UNIMPLEMENTED(reason)                                                                      \
     do {                                                                                           \
         ERRORF("!!! unimplemented code reached !!!");                                              \

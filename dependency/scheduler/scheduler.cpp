@@ -84,7 +84,9 @@ bool Scheduler::add_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEXCEP
     mEpollCount++;
 #ifndef NDEBUG
     mActiveEvents[event] = fd;
-    DEBUGF("tracking EpollEvent %p for fd %d (total: %zu)", event, fd, mActiveEvents.size());
+    SOFT_ASSERT(event->name != nullptr, "event name is nullptr");
+    DEBUGF("tracking EpollEvent %p \"%s\" for fd %d (total: %zu)", event, event->name, fd,
+           mActiveEvents.size());
 #endif
     return true;
 }
@@ -102,10 +104,15 @@ bool Scheduler::remove_epoll_fd(int fd) NOEXCEPT {
         if (it->second == fd) {
             removed_event = it->first;
             mActiveEvents.erase(it);
-            DEBUGF("untracking EpollEvent %p for fd %d (remaining: %zu)", removed_event, fd,
-                   mActiveEvents.size());
+            SOFT_ASSERT(removed_event->name != nullptr, "event name is nullptr");
+            DEBUGF("untracking EpollEvent %p \"%s\" for fd %d (remaining: %zu)", removed_event,
+                   removed_event->name, fd, mActiveEvents.size());
             break;
         }
+    }
+
+    if (!removed_event) {
+        ERRORF("failed to find EpollEvent for fd %d", fd);
     }
 #endif
 

@@ -61,21 +61,25 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     // Return value indicates rescheduling need, not failure - safe to ignore for new task
     (void)mFdTask->set_fd(mForwardFd);
     mFdTask->set_event_name("fd/" + mEventName);
-    mFdTask->on_read = [this](int) {
+    mFdTask->on_read = [this, &scheduler](int) {
         auto result = ::read(mForwardFd, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", mForwardFd, mBuffer, sizeof(mBuffer), result);
         if (result < 0) {
             ERRORF("failed to read from file: " ERRNO_FMT, ERRNO_ARGS(errno));
-            cancel();
-            VERBOSEF("calling on_complete (error)");
-            if (on_complete) on_complete();
+            scheduler.defer([this]() {
+                cancel();
+                VERBOSEF("calling on_complete (error)");
+                if (on_complete) on_complete();
+            });
             return;
         }
 
         if (result == 0) {
-            cancel();
-            VERBOSEF("calling on_complete (EOF)");
-            if (on_complete) on_complete();
+            scheduler.defer([this]() {
+                cancel();
+                VERBOSEF("calling on_complete (EOF)");
+                if (on_complete) on_complete();
+            });
             return;
         }
 
@@ -83,10 +87,12 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             callback(*this, mBuffer, static_cast<size_t>(result));
         }
     };
-    mFdTask->on_error = [this](int) {
-        cancel();
-        VERBOSEF("calling on_complete (on_error)");
-        if (on_complete) on_complete();
+    mFdTask->on_error = [this, &scheduler](int) {
+        scheduler.defer([this]() {
+            cancel();
+            VERBOSEF("calling on_complete (on_error)");
+            if (on_complete) on_complete();
+        });
     };
 
     auto stream_scheduled  = mStreamTask->schedule(scheduler);

@@ -323,9 +323,11 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             }
         }
     };
-    mFdTask->on_error = [this](int) {
-        cancel();
-        if (on_complete) on_complete();
+    mFdTask->on_error = [this, &scheduler](int) {
+        scheduler.defer([this]() {
+            cancel();
+            if (on_complete) on_complete();
+        });
     };
 
     if (!mFdTask->schedule(scheduler)) {

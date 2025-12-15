@@ -530,16 +530,22 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
     mConnected       = false;
     mShouldReconnect = should_reconnect;
 
+    char name[256];
+    snprintf(name, sizeof(name), "tcp:%s:%u", mHost.c_str(), mPort);
+    mEventName   = name;
+    mEvent.name  = mEventName.c_str();
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
     };
 
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
-        mReconnectTimeout.cancel();
-        if (!schedule(*scheduler)) {
-            ERRORF("failed to schedule reconnect timeout");
-        }
+        scheduler->defer([this, scheduler]() {
+            mReconnectTimeout.cancel();
+            if (!schedule(*scheduler)) {
+                ERRORF("failed to schedule reconnect timeout");
+            }
+        });
     };
 }
 
@@ -556,17 +562,20 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     mConnected       = false;
     mShouldReconnect = should_reconnect;
 
-    mEvent.name  = "socket";
+    mEventName   = "tcp:" + mPath;
+    mEvent.name  = mEventName.c_str();
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
     };
 
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
-        mReconnectTimeout.cancel();
-        if (!schedule(*scheduler)) {
-            ERRORF("failed to schedule reconnect timeout");
-        }
+        scheduler->defer([this, scheduler]() {
+            mReconnectTimeout.cancel();
+            if (!schedule(*scheduler)) {
+                ERRORF("failed to schedule reconnect timeout");
+            }
+        });
     };
 }
 
@@ -832,13 +841,15 @@ void TcpConnectTask::error() NOEXCEPT {
 
     if (mState == StateConnecting) {
         if (mHost.size() > 0) {
-            WARNF("connection failed: %s:%u, " ERRNO_FMT, mHost.c_str(), mPort, ERRNO_ARGS(errno));
+            WARNF("connection failed: %s:%u, %d %s", mHost.c_str(), mPort, error, strerror(error));
         } else if (mPath.size() > 0) {
-            WARNF("connection failed: \"%s\", " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(errno));
+            WARNF("connection failed: \"%s\", %d %s", mPath.c_str(), error, strerror(error));
         } else {
-            WARNF("connection failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            WARNF("connection failed: %d %s", error, strerror(error));
         }
-        disconnect();
+        mScheduler->defer([this]() {
+            disconnect();
+        });
     } else if (mState == StateConnected) {
         if (mHost.size() > 0) {
             WARNF("connection lost: %s:%u", mHost.c_str(), mPort);
@@ -847,18 +858,24 @@ void TcpConnectTask::error() NOEXCEPT {
         } else {
             WARNF("connection lost");
         }
-        disconnect();
+        mScheduler->defer([this]() {
+            disconnect();
+        });
     } else {
         WARNF("unexpected state: %s", state_to_string(mState));
-        disconnect();
+        mScheduler->defer([this]() {
+            disconnect();
+        });
     }
 
     if (mShouldReconnect && mScheduler) {
         if (!mReconnectTimeout.is_scheduled()) {
             VERBOSEF("schedule reconnect");
-            if (!mReconnectTimeout.schedule(*mScheduler)) {
-                ERRORF("failed to schedule reconnect timeout");
-            }
+            mScheduler->defer([this]() {
+                if (!mReconnectTimeout.schedule(*mScheduler)) {
+                    ERRORF("failed to schedule reconnect timeout");
+                }
+            });
         }
     }
 }

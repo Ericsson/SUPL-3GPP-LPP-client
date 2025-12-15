@@ -31,19 +31,23 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     mFdTask.reset(new scheduler::FileDescriptorTask());
     // Return value indicates rescheduling need, not failure - safe to ignore for new task
     (void)mFdTask->set_fd(STDIN_FILENO);
-    mFdTask->on_read = [this](int) {
+    mFdTask->on_read = [this, &scheduler](int) {
         auto result = ::read(STDIN_FILENO, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", STDIN_FILENO, mBuffer, sizeof(mBuffer), result);
         if (result < 0) {
             ERRORF("failed to read from stdin: " ERRNO_FMT, ERRNO_ARGS(errno));
-            cancel();
-            if (on_complete) on_complete();
+            scheduler.defer([this]() {
+                cancel();
+                if (on_complete) on_complete();
+            });
             return;
         }
 
         if (result == 0) {
-            cancel();
-            if (on_complete) on_complete();
+            scheduler.defer([this]() {
+                cancel();
+                if (on_complete) on_complete();
+            });
             return;
         }
 
@@ -51,9 +55,11 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             callback(*this, mBuffer, static_cast<size_t>(result));
         }
     };
-    mFdTask->on_error = [this](int) {
-        cancel();
-        if (on_complete) on_complete();
+    mFdTask->on_error = [this, &scheduler](int) {
+        scheduler.defer([this]() {
+            cancel();
+            if (on_complete) on_complete();
+        });
     };
 
     return mFdTask->schedule(scheduler);

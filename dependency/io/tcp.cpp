@@ -68,12 +68,14 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
 
         auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
-        client->on_read = [this](scheduler::SocketTask& task) {
+        client->on_read = [this, &scheduler](scheduler::SocketTask& task) {
             auto result = ::read(task.fd(), mBuffer, sizeof(mBuffer));
             VERBOSEF("::read(%d, %p, %zu) = %d", task.fd(), mBuffer, sizeof(mBuffer), result);
             if (result < 0) {
                 ERRORF("failed to read from socket: " ERRNO_FMT, ERRNO_ARGS(errno));
-                task.cancel();
+                scheduler.defer([&task]() {
+                    task.cancel();
+                });
                 return;
             }
 
@@ -81,9 +83,10 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
                 callback(*this, mBuffer, static_cast<size_t>(result));
             }
         };
-        client->on_error = [](scheduler::SocketTask& task) {
-            // NOTE: I am not sure what to do here.
-            task.cancel();
+        client->on_error = [&scheduler](scheduler::SocketTask& task) {
+            scheduler.defer([&task]() {
+                task.cancel();
+            });
         };
 
         if (!client->schedule(scheduler)) {
@@ -94,9 +97,10 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             mClientTasks.push_back(std::move(client));
         }
     };
-    mListenerTask->on_error = [this](scheduler::TcpListenerTask&) {
-        // NOTE: I am not sure what to do here.
-        cancel();
+    mListenerTask->on_error = [this, &scheduler](scheduler::TcpListenerTask&) {
+        scheduler.defer([this]() {
+            cancel();
+        });
     };
 
     if (!mListenerTask->schedule(scheduler)) {
@@ -156,19 +160,23 @@ bool TcpClientInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     }
 
     ASSERT(mConnectTask, "failed to create connect task");
-    mConnectTask->on_read = [this](scheduler::TcpConnectTask& task) {
+    mConnectTask->on_read = [this, &scheduler](scheduler::TcpConnectTask& task) {
         auto result = ::read(task.fd(), mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", task.fd(), mBuffer, sizeof(mBuffer), result);
         if (result < 0) {
             ERRORF("failed to read from socket: " ERRNO_FMT, ERRNO_ARGS(errno));
-            mConnectTask->cancel();
-            if (!mReconnect && on_complete) on_complete();
+            scheduler.defer([this]() {
+                if (mConnectTask) mConnectTask->cancel();
+                if (!mReconnect && on_complete) on_complete();
+            });
             return;
         }
 
         if (result == 0) {
-            mConnectTask->cancel();
-            if (!mReconnect && on_complete) on_complete();
+            scheduler.defer([this]() {
+                if (mConnectTask) mConnectTask->cancel();
+                if (!mReconnect && on_complete) on_complete();
+            });
             return;
         }
 
@@ -511,9 +519,12 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
 
         // Add new client
         auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
-        client->on_error = [this](scheduler::SocketTask& task) {
-            task.cancel();
-            remove_client(task.fd());
+        client->on_error = [this, &scheduler](scheduler::SocketTask& task) {
+            auto fd = task.fd();
+            scheduler.defer([this, fd, &task]() {
+                task.cancel();
+                remove_client(fd);
+            });
         };
 
         if (!client->schedule(scheduler)) {
@@ -525,8 +536,10 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
 
-    mListenerTask->on_error = [this](scheduler::TcpListenerTask&) {
-        cancel();
+    mListenerTask->on_error = [this, &scheduler](scheduler::TcpListenerTask&) {
+        scheduler.defer([this]() {
+            cancel();
+        });
     };
 
     if (!mListenerTask->schedule(scheduler)) {
