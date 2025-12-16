@@ -45,11 +45,15 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
 
     mSession.on_disconnected = [this](Session&) {
         DEBUGF("disconnected");
-        cancel();
+        ASSERT(mScheduler, "scheduler is null");
 
-        if (on_disconnected) {
-            on_disconnected(*this);
-        }
+        mScheduler->defer([this](scheduler::Scheduler&) {
+            cancel();
+
+            if (on_disconnected) {
+                on_disconnected(*this);
+            }
+        });
     };
 
     mSession.on_established = [this](lpp::Session&) {

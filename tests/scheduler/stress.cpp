@@ -113,7 +113,7 @@ TEST_CASE("Deferred callback accumulation") {
     scheduler::TimeoutTask timeout(std::chrono::milliseconds(10));
     timeout.callback = [&]() {
         for (int i = 0; i < 100; i++) {
-            sched.defer([&deferred_count]() {
+            sched.defer([&deferred_count](scheduler::Scheduler&) {
                 deferred_count++;
             });
         }
@@ -124,6 +124,20 @@ TEST_CASE("Deferred callback accumulation") {
     sched.execute();
 
     CHECK(deferred_count == 100);
+}
+
+TEST_CASE("Deferred callback before execute") {
+    scheduler::Scheduler sched;
+
+    int deferred_count = 0;
+
+    sched.defer([&deferred_count](scheduler::Scheduler&) {
+        deferred_count++;
+    });
+
+    sched.execute();
+
+    CHECK(deferred_count == 1);
 }
 
 TEST_CASE("Tick callback overhead") {

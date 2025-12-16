@@ -160,6 +160,9 @@ void Scheduler::execute() NOEXCEPT {
         return;
     }
 
+    // We must process the deferred events directly if they were added before the event loop started
+    process_deferred();
+
     struct epoll_event events[EVENT_COUNT];
     for (;;) {
         if (mEpollCount == 0) {
@@ -203,6 +206,7 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
         return;
     }
 
+    process_deferred();
     tick_callbacks();
 
     auto now = std::chrono::steady_clock::now();
@@ -267,6 +271,7 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
         return;
     }
 
+    process_deferred();
     tick_callbacks();
 
     struct epoll_event events[EVENT_COUNT];
@@ -398,7 +403,8 @@ void Scheduler::tick_callbacks() {
     }
 }
 
-void Scheduler::defer(std::function<void()> callback) NOEXCEPT {
+void Scheduler::defer(std::function<void(scheduler::Scheduler&)> callback) NOEXCEPT {
+    VERBOSEF("queue deferred callback %p", &callback);
     mDeferredCallbacks.push_back(std::move(callback));
 }
 
@@ -413,7 +419,7 @@ void Scheduler::process_deferred() {
     DEBUGF("processing %zu deferred callbacks", callbacks.size());
     for (auto& callback : callbacks) {
         if (callback) {
-            callback();
+            callback(*this);
         }
     }
 }

@@ -63,7 +63,7 @@ bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
                  sizeof(mBuffer), &addr, &addr_len, result);
         if (result < 0) {
             ERRORF("failed to read from socket: " ERRNO_FMT, ERRNO_ARGS(errno));
-            scheduler.defer([&task]() {
+            scheduler.defer([&task](scheduler::Scheduler&) {
                 task.cancel();
             });
             return;
@@ -74,7 +74,7 @@ bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
     mListenerTask->on_error = [this, &scheduler](scheduler::UdpListenerTask&) {
-        scheduler.defer([this]() {
+        scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
         });
     };

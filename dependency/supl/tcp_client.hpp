@@ -39,6 +39,7 @@ public:
 
 protected:
     bool initialize_socket();
+    void unitialize_socket();
 
 private:
     std::string mHost;

@@ -95,7 +95,7 @@ TEST_CASE("Deferred callbacks execute after events") {
     scheduler::TimeoutTask timeout(std::chrono::milliseconds(10));
     timeout.callback = [&]() {
         event_order = ++order;
-        sched.defer([&]() {
+        sched.defer([&](scheduler::Scheduler&) {
             deferred_order = ++order;
         });
         sched.interrupt();

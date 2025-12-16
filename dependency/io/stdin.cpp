@@ -36,7 +36,7 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         VERBOSEF("::read(%d, %p, %zu) = %d", STDIN_FILENO, mBuffer, sizeof(mBuffer), result);
         if (result < 0) {
             ERRORF("failed to read from stdin: " ERRNO_FMT, ERRNO_ARGS(errno));
-            scheduler.defer([this]() {
+            scheduler.defer([this](scheduler::Scheduler&) {
                 cancel();
                 if (on_complete) on_complete();
             });
@@ -44,7 +44,7 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
 
         if (result == 0) {
-            scheduler.defer([this]() {
+            scheduler.defer([this](scheduler::Scheduler&) {
                 cancel();
                 if (on_complete) on_complete();
             });
@@ -56,7 +56,7 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
     mFdTask->on_error = [this, &scheduler](int) {
-        scheduler.defer([this]() {
+        scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
             if (on_complete) on_complete();
         });

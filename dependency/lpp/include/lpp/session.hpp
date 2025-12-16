@@ -93,9 +93,10 @@ public:
 
     bool schedule(scheduler::Scheduler& scheduler);
     bool cancel();
+    bool is_scheduled() const { return mScheduler != nullptr; }
 
     void event(struct epoll_event* event);
-    void update(int fd, bool read, bool write, bool error);
+    bool update(scheduler::Scheduler& scheduler, int fd, bool read, bool write, bool error);
 
 protected:
     int                   mFd;

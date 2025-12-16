@@ -64,9 +64,11 @@ bool SessionTask::cancel() {
         return false;
     }
 
-    if (mScheduler->remove_epoll_fd(mFd)) {
+    auto result = mScheduler->remove_epoll_fd(mFd);
+    mScheduler  = nullptr;
+
+    if (result) {
         VERBOSEF("session task: cancelled");
-        mScheduler = nullptr;
         return true;
     } else {
         WARNF("session task: failed to remove file descriptor from epoll");
@@ -74,20 +76,51 @@ bool SessionTask::cancel() {
     }
 }
 
-void SessionTask::update(int fd, bool read, bool write, bool error) {
-    mFd = fd;
+bool SessionTask::update(scheduler::Scheduler& scheduler, int fd, bool read, bool write,
+                         bool error) {
+    auto require_scheduling = false;
+    if (mFd != fd) {
+        VERBOSEF("session task: fd changed from %d to %d", mFd, fd);
+        if (mFd != -1 && is_scheduled()) {
+            VERBOSEF("session task: cancelling previous");
+            if (!cancel()) {
+                WARNF("session task: failed to cancel");
+            }
+        }
+
+        mFd                = fd;
+        require_scheduling = true;
+    }
+
     if (mReadEnabled != read || mWriteEnabled != write || mErrorEnabled != error) {
+        VERBOSEF("session task: read=%d, write=%d, error=%d", read, write, error);
         mReadEnabled  = read;
         mWriteEnabled = write;
         mErrorEnabled = error;
+
+        if (mFd != -1 && is_scheduled()) {
+            VERBOSEF("session task: cancelling previous");
+            if (!cancel()) {
+                WARNF("session task: failed to cancel");
+            }
+        }
+        require_scheduling = true;
+    }
+
+    if (mFd != -1 && require_scheduling) {
+        VERBOSEF("session task: rescheduling");
+        if (!schedule(scheduler)) {
+            WARNF("session task: failed to schedule");
+            return false;
+        }
+        return true;
+    } else {
+        VERBOSEF("session task: nothing to schedule");
+        return true;
     }
 }
 
 void SessionTask::event(struct epoll_event* event) {
-    if (mScheduler) {
-        cancel();
-    }
-
     if (mSession) {
         // NOTE: There are cases when we would get all three events at the same time. In that case,
         // it is not possible right now to handle them all, and doing them one by one will not work
@@ -163,6 +196,10 @@ void Session::process() {
         VSCOPE_FUNCTIONF("%s", state_to_string(mState));
 
         if (mState == State::EXIT) {
+            ASSERT(mScheduler, "scheduler not set");
+            mScheduler->defer([this](scheduler::Scheduler& scheduler) {
+                mTask.update(scheduler, -1, false, false, false);
+            });
             return;
         }
 
@@ -203,10 +240,15 @@ void Session::process() {
             mNextReadState  = result.read_state;
             mNextWriteState = result.write_state;
             mNextErrorState = result.error_state;
-            mTask.update(mSession->fd(), result.read_state != State::UNKNOWN,
-                         result.write_state != State::UNKNOWN,
-                         result.error_state != State::UNKNOWN);
-            mTask.schedule(*mScheduler);
+
+            auto fd             = mSession->fd();
+            auto wait_for_read  = result.read_state != State::UNKNOWN;
+            auto wait_for_write = result.write_state != State::UNKNOWN;
+            auto wait_for_error = result.error_state != State::UNKNOWN;
+            mScheduler->defer([this, fd, wait_for_read, wait_for_write,
+                               wait_for_error](scheduler::Scheduler& scheduler) {
+                mTask.update(scheduler, fd, wait_for_read, wait_for_write, wait_for_error);
+            });
             return;
         }
     }
@@ -427,13 +469,17 @@ void Session::cancel() {
     ASSERT(mScheduler != nullptr, "scheduler is null");
 
     switch_state(State::EXIT);
-    if (mScheduler) {
+
+    if (mTask.is_scheduled()) {
         mTask.cancel();
     }
+
     if (mSession) {
         delete mSession;
         mSession = nullptr;
     }
+
+    mScheduler = nullptr;
 }
 
 TransactionHandle Session::create_transaction(bool single_side_endable) {

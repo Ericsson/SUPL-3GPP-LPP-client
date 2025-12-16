@@ -64,6 +64,11 @@ bool Session::connect(std::string const& ip, uint16_t port, std::string const& i
         return false;
     }
 
+    if (mTcpClient) {
+        WARNF("mTcpClient is not null");
+        delete mTcpClient;
+    }
+
     mTcpClient = new TcpClient();
     if (!mTcpClient) {
         WARNF("failed to create TcpClient");
@@ -101,8 +106,6 @@ bool Session::handle_connection() {
         mState                = State::DISCONNECTED;
         mSETSession.is_active = false;
         mSLPSession.is_active = false;
-        delete mTcpClient;
-        mTcpClient = nullptr;
         return false;
     }
 }

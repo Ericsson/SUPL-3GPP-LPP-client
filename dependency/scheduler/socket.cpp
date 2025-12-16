@@ -540,9 +540,9 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
 
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
-        scheduler->defer([this, scheduler]() {
+        scheduler->defer([this](scheduler::Scheduler& sched) {
             mReconnectTimeout.cancel();
-            if (!schedule(*scheduler)) {
+            if (!schedule(sched)) {
                 ERRORF("failed to schedule reconnect timeout");
             }
         });
@@ -570,9 +570,9 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
 
     mReconnectTimeout.callback = [this]() {
         auto scheduler = &mReconnectTimeout.scheduler();
-        scheduler->defer([this, scheduler]() {
+        scheduler->defer([this](scheduler::Scheduler& sched) {
             mReconnectTimeout.cancel();
-            if (!schedule(*scheduler)) {
+            if (!schedule(sched)) {
                 ERRORF("failed to schedule reconnect timeout");
             }
         });
@@ -847,7 +847,7 @@ void TcpConnectTask::error() NOEXCEPT {
         } else {
             WARNF("connection failed: %d %s", error, strerror(error));
         }
-        mScheduler->defer([this]() {
+        mScheduler->defer([this](scheduler::Scheduler&) {
             disconnect();
         });
     } else if (mState == StateConnected) {
@@ -858,12 +858,12 @@ void TcpConnectTask::error() NOEXCEPT {
         } else {
             WARNF("connection lost");
         }
-        mScheduler->defer([this]() {
+        mScheduler->defer([this](scheduler::Scheduler&) {
             disconnect();
         });
     } else {
         WARNF("unexpected state: %s", state_to_string(mState));
-        mScheduler->defer([this]() {
+        mScheduler->defer([this](scheduler::Scheduler&) {
             disconnect();
         });
     }
@@ -871,7 +871,7 @@ void TcpConnectTask::error() NOEXCEPT {
     if (mShouldReconnect && mScheduler) {
         if (!mReconnectTimeout.is_scheduled()) {
             VERBOSEF("schedule reconnect");
-            mScheduler->defer([this]() {
+            mScheduler->defer([this](scheduler::Scheduler&) {
                 if (!mReconnectTimeout.schedule(*mScheduler)) {
                     ERRORF("failed to schedule reconnect timeout");
                 }

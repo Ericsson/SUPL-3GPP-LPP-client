@@ -73,7 +73,7 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             VERBOSEF("::read(%d, %p, %zu) = %d", task.fd(), mBuffer, sizeof(mBuffer), result);
             if (result < 0) {
                 ERRORF("failed to read from socket: " ERRNO_FMT, ERRNO_ARGS(errno));
-                scheduler.defer([&task]() {
+                scheduler.defer([&task](scheduler::Scheduler&) {
                     task.cancel();
                 });
                 return;
@@ -84,7 +84,7 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             }
         };
         client->on_error = [&scheduler](scheduler::SocketTask& task) {
-            scheduler.defer([&task]() {
+            scheduler.defer([&task](scheduler::Scheduler&) {
                 task.cancel();
             });
         };
@@ -98,7 +98,7 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
     mListenerTask->on_error = [this, &scheduler](scheduler::TcpListenerTask&) {
-        scheduler.defer([this]() {
+        scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
         });
     };
@@ -165,7 +165,7 @@ bool TcpClientInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         VERBOSEF("::read(%d, %p, %zu) = %d", task.fd(), mBuffer, sizeof(mBuffer), result);
         if (result < 0) {
             ERRORF("failed to read from socket: " ERRNO_FMT, ERRNO_ARGS(errno));
-            scheduler.defer([this]() {
+            scheduler.defer([this](scheduler::Scheduler&) {
                 if (mConnectTask) mConnectTask->cancel();
                 if (!mReconnect && on_complete) on_complete();
             });
@@ -173,7 +173,7 @@ bool TcpClientInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
 
         if (result == 0) {
-            scheduler.defer([this]() {
+            scheduler.defer([this](scheduler::Scheduler&) {
                 if (mConnectTask) mConnectTask->cancel();
                 if (!mReconnect && on_complete) on_complete();
             });
@@ -521,7 +521,7 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
         client->on_error = [this, &scheduler](scheduler::SocketTask& task) {
             auto fd = task.fd();
-            scheduler.defer([this, fd, &task]() {
+            scheduler.defer([this, fd, &task](scheduler::Scheduler&) {
                 task.cancel();
                 remove_client(fd);
             });
@@ -537,7 +537,7 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     };
 
     mListenerTask->on_error = [this, &scheduler](scheduler::TcpListenerTask&) {
-        scheduler.defer([this]() {
+        scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
         });
     };

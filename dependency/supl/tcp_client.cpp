@@ -63,6 +63,36 @@ TcpClient::TcpClient() : mSocket(-1) {
 TcpClient::~TcpClient() {
     VSCOPE_FUNCTION();
     disconnect();
+    unitialize_socket();
+}
+
+void TcpClient::unitialize_socket() {
+    VSCOPE_FUNCTION();
+
+#if defined(USE_OPENSSL)
+    if (mUseSSL && mSSL) {
+        SSL_shutdown(mSSL);
+        SSL_free(mSSL);
+        mSSL = nullptr;
+    }
+
+    if (mSSLContext) {
+        SSL_CTX_free(mSSLContext);
+        mSSLContext = nullptr;
+    }
+
+    mSSLMethod = nullptr;
+#endif
+
+    if (mSocket >= 0) {
+        auto result = shutdown(mSocket, SHUT_RDWR);
+        VERBOSEF("::shutdown(%d, SHUT_RDWR) = %d", mSocket, result);
+
+        VERBOSEF("closing socket %d", mSocket);
+        close(mSocket);
+        VERBOSEF("::close(%d)", mSocket);
+        mSocket = -1;
+    }
 }
 
 static std::string addr_to_string(const struct sockaddr* addr, socklen_t addrlen) {
@@ -85,6 +115,8 @@ static std::string addr_to_string(const struct sockaddr* addr, socklen_t addrlen
 
 bool TcpClient::initialize_socket() {
     VSCOPE_FUNCTION();
+
+    unitialize_socket();
 
     char port_as_string[8];
     snprintf(port_as_string, sizeof(port_as_string), "%i", mPort);
@@ -289,31 +321,6 @@ bool TcpClient::disconnect() {
     VSCOPE_FUNCTION();
     if (is_disconnected()) {
         return true;
-    }
-
-#if defined(USE_OPENSSL)
-    if (mUseSSL && mSSL) {
-        SSL_shutdown(mSSL);
-        SSL_free(mSSL);
-        mSSL = nullptr;
-    }
-
-    if (mSSLContext) {
-        SSL_CTX_free(mSSLContext);
-        mSSLContext = nullptr;
-    }
-
-    mSSLMethod = nullptr;
-#endif
-
-    if (mSocket >= 0) {
-        auto result = shutdown(mSocket, SHUT_RDWR);
-        VERBOSEF("::shutdown(%d, SHUT_RDWR) = %d", mSocket, result);
-
-        VERBOSEF("closing socket %d", mSocket);
-        close(mSocket);
-        VERBOSEF("::close(%d)", mSocket);
-        mSocket = -1;
     }
 
     mState = State::DISCONNECTED;

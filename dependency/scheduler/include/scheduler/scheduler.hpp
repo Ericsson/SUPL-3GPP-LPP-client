@@ -26,7 +26,7 @@ public:
     void register_tick(void* unique_ptr, std::function<void()> callback) NOEXCEPT;
     void unregister_tick(void* unique_ptr) NOEXCEPT;
 
-    void defer(std::function<void()> callback) NOEXCEPT;
+    void defer(std::function<void(Scheduler&)> callback) NOEXCEPT;
 
     // Add, remove, and update file descriptors in the epoll instance.
     NODISCARD bool add_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEXCEPT;
@@ -43,8 +43,8 @@ private:
     int  mEpollCount;
     bool mInterrupted;
 
-    std::unordered_map<void*, std::function<void()>> mTickCallbacks;
-    std::vector<std::function<void()>>               mDeferredCallbacks;
+    std::unordered_map<void*, std::function<void()>>        mTickCallbacks;
+    std::vector<std::function<void(scheduler::Scheduler&)>> mDeferredCallbacks;
 
 #ifndef NDEBUG
     std::unordered_map<EpollEvent*, int> mActiveEvents;
