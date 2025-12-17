@@ -382,10 +382,10 @@ Vector3d convert_from_ecef(Vector3d const& ecef, CoordType output_type, Options 
 void print_coord(CoordType type, Vector3d const& values) {
     std::cout << coord_type_name(type);
     if (type == CoordType::LLH) {
-        std::cout << " " << std::fixed << std::setprecision(9) << values.x() * 180.0 / M_PI << " "
-                  << values.y() * 180.0 / M_PI << " " << std::setprecision(4) << values.z();
+        std::cout << " " << std::fixed << std::setprecision(15) << values.x() * 180.0 / M_PI << " "
+                  << values.y() * 180.0 / M_PI << " " << values.z();
     } else {
-        std::cout << " " << std::fixed << std::setprecision(4) << values.x() << " " << values.y()
+        std::cout << " " << std::fixed << std::setprecision(15) << values.x() << " " << values.y()
                   << " " << values.z();
     }
     std::cout << std::endl;
