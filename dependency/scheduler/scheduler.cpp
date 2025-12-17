@@ -392,7 +392,18 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
     }
 
     if (epoll_event) {
+        auto before_event = std::chrono::steady_clock::now();
         epoll_event->event(&event);
+        auto after_event = std::chrono::steady_clock::now();
+        auto event_name  = "unknown";
+        if (mActiveEvents.find(epoll_event) == mActiveEvents.end()) {
+            event_name = "deleted";
+        } else if (epoll_event->name) {
+            event_name = epoll_event->name;
+        }
+        DEBUGF("event \"%s\" took %lld ms", event_name,
+               std::chrono::duration_cast<std::chrono::milliseconds>(after_event - before_event)
+                   .count());
     }
 }
 
