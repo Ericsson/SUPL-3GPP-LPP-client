@@ -82,6 +82,12 @@ void dump(Config* config) {
         ::gnss::dump(config->gnss);
     }
 
+    {
+        DEBUGF("scheduler:");
+        DEBUG_INDENT_SCOPE();
+        ::scheduler::dump(config->scheduler);
+    }
+
 #ifdef INCLUDE_GENERATOR_RTCM
     {
         DEBUGF("lpp2rtcm:");
@@ -172,6 +178,7 @@ bool parse(int argc, char** argv, Config* config) {
     ::output::setup(parser);
     ::print::setup(parser);
     ::gnss::setup(parser);
+    ::scheduler::setup(parser);
 #ifdef INCLUDE_GENERATOR_RTCM
     ::lpp2rtcm::setup(parser);
     ::lpp2frame_rtcm::setup(parser);
@@ -222,6 +229,7 @@ bool parse(int argc, char** argv, Config* config) {
         ::output::parse(config);
         ::print::parse(config);
         ::gnss::parse(config);
+        ::scheduler::parse(config);
 #ifdef INCLUDE_GENERATOR_RTCM
         ::lpp2rtcm::parse(config);
         ::lpp2frame_rtcm::parse(config);

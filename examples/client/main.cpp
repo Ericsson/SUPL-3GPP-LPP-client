@@ -984,6 +984,8 @@ int main(int argc, char** argv) {
     program.stream          = streamline::System{program.scheduler};
     program.is_disconnected = false;
 
+    program.scheduler.set_max_events_per_wait(program.config.scheduler.max_events_per_wait);
+
     program.config.register_tag("input");
 
     initialize_inputs(program, program.config.input);

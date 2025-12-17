@@ -292,6 +292,10 @@ struct GnssConfig {
     bool beidou;
 };
 
+struct SchedulerConfig {
+    int max_events_per_wait;
+};
+
 #ifdef INCLUDE_GENERATOR_RTCM
 struct Lpp2RtcmConfig {
     enum class MsmType {
@@ -484,6 +488,7 @@ struct Config {
     InputConfig               input;
     PrintConfig               print;
     GnssConfig                gnss;
+    SchedulerConfig           scheduler;
     io::StreamRegistry        stream_registry;
 #ifdef INCLUDE_GENERATOR_RTCM
     Lpp2RtcmConfig      lpp2rtcm;
@@ -558,6 +563,12 @@ void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(GnssConfig const& config);
 }  // namespace gnss
+
+namespace scheduler {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+void dump(SchedulerConfig const& config);
+}  // namespace scheduler
 
 namespace identity {
 void setup(args::ArgumentParser& parser);

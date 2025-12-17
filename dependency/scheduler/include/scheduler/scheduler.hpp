@@ -35,6 +35,9 @@ public:
     NODISCARD bool update_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEXCEPT;
     NODISCARD bool remove_epoll_fd(int fd) NOEXCEPT;
 
+    void set_max_events_per_wait(int max_events) NOEXCEPT { mMaxEventsPerWait = max_events; }
+    int  max_events_per_wait() const NOEXCEPT { return mMaxEventsPerWait; }
+
 private:
     void process_event(struct epoll_event& event) NOEXCEPT;
     void tick_callbacks();
@@ -43,14 +46,14 @@ private:
     int  mEpollFd;
     int  mInterruptFd;
     int  mEpollCount;
+    int  mMaxEventsPerWait;
     bool mInterrupted;
+
+    struct epoll_event mEvents[32];
 
     std::unordered_map<void*, std::function<void()>>        mTickCallbacks;
     std::vector<std::function<void(scheduler::Scheduler&)>> mDeferredCallbacks;
     std::unordered_map<int, EpollEvent*>                    mFdToEvent;
-
-#ifndef NDEBUG
-    std::unordered_map<EpollEvent*, int> mActiveEvents;
-#endif
+    std::unordered_map<EpollEvent*, int>                    mActiveEvents;
 };
 }  // namespace scheduler

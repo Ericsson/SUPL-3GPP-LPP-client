@@ -12,6 +12,7 @@ add_executable(example_client
     "config/logging.cpp"
     "config/output.cpp"
     "config/print.cpp"
+    "config/scheduler.cpp"
     "config/stream.cpp"
     "config/ubx_config.cpp"
     "processor/lpp.cpp"
