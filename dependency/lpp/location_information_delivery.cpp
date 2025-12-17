@@ -59,7 +59,7 @@ void LocationInformationDelivery::deliver() {
         }
     }
 
-    WARNF("location information not handled");
+    DEBUGF("location information not handled");
     messages::ProvideLocationInformation empty{};
     auto message = messages::create_provide_location_information(empty);
     mTransaction.send(message);
