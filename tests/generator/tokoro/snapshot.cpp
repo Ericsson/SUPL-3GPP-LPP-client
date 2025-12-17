@@ -29,16 +29,13 @@ static bool load_msgpack(std::string const& filename, generator::tokoro::Snapsho
 }
 
 static std::vector<std::string> find_input_files() {
-    char const* paths[] = {"../../tests/data/tokoro", "../tests/data/tokoro", "tests/data/tokoro"};
-    return test_utils::find_files_with_prefix_and_suffix(paths, 3, "tokoro_snapshot_", ".msgpack");
+    return test_utils::find_files_with_prefix_and_suffix(TEST_DATA_DIR "/tokoro",
+                                                         "tokoro_snapshot_", ".msgpack");
 }
 
 TEST_CASE("Tokoro Snapshot") {
     auto input_files = find_input_files();
-    if (input_files.empty()) {
-        WARN("No snapshot input files found, skipping test");
-        return;
-    }
+    REQUIRE(input_files.size() > 0);
 
     for (auto const& input_file : input_files) {
         CAPTURE(input_file);
@@ -50,11 +47,7 @@ TEST_CASE("Tokoro Snapshot") {
             input_file;  // convert tokoro_snapshot_XXXX.msgpack to tokoro_output_XXXX.msgpack
         output_file.replace(output_file.find("tokoro_snapshot_"), 16, "tokoro_output_");
         CAPTURE(output_file);
-
-        if (!test_utils::file_exists(output_file)) {
-            WARN("No output file found, skipping test");
-            continue;
-        }
+        REQUIRE(test_utils::file_exists(output_file));
 
         generator::tokoro::Generator gen;
         gen.load_snapshot(input);

@@ -42,6 +42,21 @@ private:
     uint32_t                              mSequence = 0;
 };
 
+class HexdumpOutputStage : public OutputStage {
+public:
+    EXPLICIT HexdumpOutputStage(std::unique_ptr<OutputStage> next) NOEXCEPT;
+    ~HexdumpOutputStage() NOEXCEPT override;
+
+    void write(OutputFormat format, uint8_t const* buffer, size_t length) NOEXCEPT override;
+
+protected:
+    NODISCARD bool do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT override;
+    NODISCARD bool do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT override;
+
+private:
+    std::unique_ptr<OutputStage> mNext;
+};
+
 class InterfaceInputStage : public InputStage {
 public:
     EXPLICIT InterfaceInputStage(std::unique_ptr<io::Input> interface,

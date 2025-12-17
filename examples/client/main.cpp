@@ -27,6 +27,7 @@ EXTERNAL_WARNINGS_POP
 #include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
 #include "processor/nmea.hpp"
+#include "processor/raw.hpp"
 #include "processor/rtcm.hpp"
 #include "processor/test.hpp"
 #include "processor/ubx.hpp"
@@ -59,6 +60,7 @@ EXTERNAL_WARNINGS_POP
 
 #include "client.hpp"
 #include "processor/tlf.hpp"
+#include "raw_message.hpp"
 
 LOGLET_MODULE(client);
 LOGLET_MODULE(output);
@@ -221,7 +223,7 @@ static void client_initialize(Program& program, lpp::Client&) {
 
             if (program.latest_location_information.has_value()) {
                 if (program.latest_location_information_submitted) {
-                    DEBUGF("location information already submitted");
+                    WARNF("location information already submitted, cannot provide again");
                     return false;
                 }
 
@@ -231,7 +233,7 @@ static void client_initialize(Program& program, lpp::Client&) {
                 return true;
             }
 
-            DEBUGF("no location information available");
+            WARNF("no location information available from GNSS receiver");
             return false;
         };
 
@@ -373,6 +375,10 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
             lpp::destroy(message);
         }
     }
+
+    if (p.raw) {
+        program.stream.push(RawMessage{buffer, count}, tag);
+    }
 }
 
 static void initialize_inputs(Program& program, InputConfig& config) {
@@ -410,17 +416,20 @@ static void initialize_inputs(Program& program, InputConfig& config) {
 
         auto stage_str = stage_stream.str();
 
-        DEBUGF("input  %p: %s%s%s%s%s%s %s[%" PRIu64 "] | stages=%s", input.interface.get(),
+        bool raw = (input.format & INPUT_FORMAT_RAW) != 0;
+
+        DEBUGF("input  %p: %s%s%s%s%s%s%s %s[%" PRIu64 "] | stages=%s", input.interface.get(),
                (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
                (input.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", tag_str.c_str(),
-               tag, stage_str.c_str());
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", raw ? "raw " : "",
+               tag_str.c_str(), tag, stage_str.c_str());
 
-        if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad) {
-            WARNF("-- skipping input %p, no format specified", input.interface.get());
+        if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad && !raw) {
+            WARNF("skipping input '%s', no format specified",
+                  input.interface->event_name().c_str());
             continue;
         }
 
@@ -431,6 +440,7 @@ static void initialize_inputs(Program& program, InputConfig& config) {
         if (ctrl) event_name += "+ctrl";
         if (lpp_uper) event_name += "+lpp-uper";
         if (lpp_uper_pad) event_name += "+lpp-uper-pad";
+        if (raw) event_name += "+raw";
 
         input.interface->set_event_name(event_name);
 
@@ -462,6 +472,7 @@ static void initialize_inputs(Program& program, InputConfig& config) {
         auto context   = std::make_unique<InputContext>();
         context->name  = std::move(event_name);
         context->input = &input;
+        context->raw   = raw;
         if (nmea) context->nmea = std::unique_ptr<format::nmea::Parser>(nmea);
         if (rtcm) context->rtcm = std::unique_ptr<format::rtcm::Parser>(rtcm);
         if (ubx) context->ubx = std::unique_ptr<format::ubx::Parser>(ubx);
@@ -504,6 +515,7 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     bool ctrl_output     = false;
     // TODO(ewasjon): bool spartn_output   = false;
     bool rtcm_output = false;
+    bool raw_output  = false;
 #ifdef DATA_TRACING
     bool possib_output = false;
 #endif
@@ -563,6 +575,7 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
         if (output.ctrl_support()) ctrl_output = true;
         // TODO(ewasjon): if (output.spartn_support()) spartn_output = true;
         if (output.rtcm_support()) rtcm_output = true;
+        if (output.raw_support()) raw_output = true;
 #ifdef DATA_TRACING
         if (output.possib_support()) possib_output = true;
 #endif
@@ -576,6 +589,8 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
                 auto& stage_name = output.stages[i - 1];
                 if (stage_name == "tlf") {
                     last_stage = std::make_unique<TlfOutputStage>(std::move(last_stage));
+                } else if (stage_name == "hexdump") {
+                    last_stage = std::make_unique<HexdumpOutputStage>(std::move(last_stage));
                 } else {
                     ERRORF("unsupported stage: %s", stage_name.c_str());
                 }
@@ -594,6 +609,7 @@ static void initialize_outputs(Program& program, OutputConfig& config) {
     if (nmea_output) program.stream.add_inspector<NmeaOutput>(config);
     if (ubx_output) program.stream.add_inspector<UbxOutput>(config);
     if (rtcm_output) program.stream.add_inspector<RtcmOutput>(config);
+    if (raw_output) program.stream.add_inspector<RawOutput>(config);
     if (ctrl_output) program.stream.add_inspector<CtrlOutput>(config);
 #ifdef DATA_TRACING
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
@@ -1148,6 +1164,11 @@ int main(int argc, char** argv) {
 #else
         WARNF("A-GNSS enabled but Tokoro generator not included in build");
 #endif
+    }
+
+    if (!program.config.stream_registry.schedule_all(program.scheduler)) {
+        ERRORF("failed to schedule streams");
+        return 1;
     }
 
     program.scheduler.execute();

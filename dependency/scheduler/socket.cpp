@@ -221,7 +221,22 @@ bool TcpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
         return false;
     }
 
+    if (mPort == 0 && !mAddress.empty()) {
+        struct sockaddr_in bound_addr{};
+        socklen_t          bound_len = sizeof(bound_addr);
+        if (::getsockname(listener_fd, reinterpret_cast<struct sockaddr*>(&bound_addr),
+                          &bound_len) == 0) {
+            mPort = ntohs(bound_addr.sin_port);
+            INFOF("bound to port %u", mPort);
+        }
+    }
+
     mListenerTask.reset(new ListenerTask(listener_fd));
+    if (!mPath.empty()) {
+        mListenerTask->set_event_name("tcp-listener:" + mPath);
+    } else {
+        mListenerTask->set_event_name("tcp-listener:" + mAddress + ":" + std::to_string(mPort));
+    }
     mListenerTask->on_accept = [this](ListenerTask&, int client_fd,
                                       struct sockaddr_storage* client_addr,
                                       socklen_t                client_addr_len) {
@@ -258,6 +273,10 @@ bool TcpListenerTask::cancel() NOEXCEPT {
     }
 }
 
+uint16_t TcpListenerTask::port() const NOEXCEPT {
+    return mPort;
+}
+
 //
 //
 //
@@ -270,6 +289,8 @@ UdpListenerTask::UdpListenerTask(std::string address, uint16_t port) NOEXCEPT
       mListenerFd{-1} {
     VSCOPE_FUNCTIONF("\"%s\", %u", mAddress.c_str(), mPort);
 
+    mEventName   = "udp-listener:" + mAddress + ":" + std::to_string(mPort);
+    mEvent.name  = mEventName.c_str();
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
     };
@@ -282,6 +303,8 @@ UdpListenerTask::UdpListenerTask(std::string path) NOEXCEPT : mPath{std::move(pa
                                                               mListenerFd{-1} {
     VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
 
+    mEventName   = "udp-listener:" + mPath;
+    mEvent.name  = mEventName.c_str();
     mEvent.event = [this](struct epoll_event* event) {
         this->event(event);
     };
@@ -380,6 +403,16 @@ bool UdpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
         ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         ::close(listener_fd);
         return false;
+    }
+
+    if (mPort == 0 && !mAddress.empty()) {
+        struct sockaddr_in bound_addr{};
+        socklen_t          bound_len = sizeof(bound_addr);
+        if (::getsockname(listener_fd, reinterpret_cast<struct sockaddr*>(&bound_addr),
+                          &bound_len) == 0) {
+            mPort = ntohs(bound_addr.sin_port);
+            INFOF("bound to port %u", mPort);
+        }
     }
 
     uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
@@ -489,7 +522,6 @@ bool SocketTask::schedule(Scheduler& scheduler) NOEXCEPT {
 
     uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
     if (on_read) events |= EPOLLIN;
-    if (on_write) events |= EPOLLOUT;
     if (scheduler.add_epoll_fd(mFd, events, &mEvent)) {
         mScheduler = &scheduler;
         return true;
@@ -593,6 +625,10 @@ TcpConnectTask::~TcpConnectTask() NOEXCEPT {
         VERBOSEF("::close(%d) = %d", mFd, result);
         mFd = -1;
     }
+}
+
+void TcpConnectTask::set_reconnect_delay(std::chrono::milliseconds delay) NOEXCEPT {
+    mReconnectTimeout.set_timeout(delay);
 }
 
 char const* TcpConnectTask::state_to_string(State state) const NOEXCEPT {
@@ -810,15 +846,13 @@ void TcpConnectTask::write() NOEXCEPT {
             on_connected(*this);
         }
 
-        if (!on_write) {
-            // when we're connected and there's no write callback we don't need to
-            // monitor for write events
-            uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
-            if (on_read) events |= EPOLLIN;
-            if (!mScheduler->update_epoll_fd(mFd, events, &mEvent)) {
-                WARNF("failed to update epoll: write is not disabled");
-            }
+        // Remove EPOLLOUT after connection - streams will add it when they have data to write
+        uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
+        if (on_read) events |= EPOLLIN;
+        if (!mScheduler->update_epoll_fd(mFd, events, &mEvent)) {
+            WARNF("failed to update epoll: write is not disabled");
         }
+        return;
     }
 
     if (on_write) {

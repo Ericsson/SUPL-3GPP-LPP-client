@@ -1,6 +1,7 @@
 #include "scheduler/scheduler.hpp"
 
 #include <cstring>
+#include <sched.h>
 #include <stdexcept>
 #include <sys/eventfd.h>
 #include <unistd.h>
@@ -82,6 +83,7 @@ bool Scheduler::add_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEXCEP
     }
 
     mEpollCount++;
+    mFdToEvent[fd] = event;
 #ifndef NDEBUG
     mActiveEvents[event] = fd;
     SOFT_ASSERT(event->name != nullptr, "event name is nullptr");
@@ -125,6 +127,7 @@ bool Scheduler::remove_epoll_fd(int fd) NOEXCEPT {
     }
 
     mEpollCount--;
+    mFdToEvent.erase(fd);
     return true;
 }
 
@@ -133,6 +136,14 @@ bool Scheduler::update_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEX
     if (mEpollFd == -1 || mInterruptFd == -1) {
         ERRORF("epoll_fd or interrupt_fd is not initialized");
         return false;
+    }
+
+    // If event is null, use the existing event for this fd
+    if (!event) {
+        auto it = mFdToEvent.find(fd);
+        if (it != mFdToEvent.end()) {
+            event = it->second;
+        }
     }
 
     struct epoll_event epoll_event;
@@ -227,8 +238,8 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
         }
 
         auto timeout = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
-        if (timeout <= 10) {
-            VERBOSEF("timeout expired (less than 10 ms)");
+        if (timeout <= 1) {
+            VERBOSEF("timeout expired (less than 1 ms)");
             return;
         }
 
@@ -238,8 +249,8 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
         // to wait for the timeout to expire.
         VERBOSEF("waiting for events (%d file descriptors, %d ms)", mEpollCount, timeout_ms);
         auto nfds = ::epoll_pwait(mEpollFd, events, EVENT_COUNT, timeout_ms, nullptr);
-        VERBOSEF("::epoll_pwait(%d, %p, %s, -1, nullptr) = %d", mEpollFd, events, EVENT_COUNT,
-                 nfds);
+        VERBOSEF("::epoll_pwait(%d, %p, %d, %d, nullptr) = %d", mEpollFd, events, EVENT_COUNT,
+                 timeout_ms, nfds);
         if (nfds == -1) {
             if (errno == EINTR) {
                 VERBOSEF("timeout expired");
@@ -300,15 +311,58 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
 
         VERBOSEF("%d file descriptors are ready", nfds);
         for (int i = 0; i < nfds; i++) {
-            if (!condition()) {
-                return;
-            }
-
             process_event(events[i]);
         }
 
         process_deferred();
     }
+}
+
+void Scheduler::execute_once() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    if (mEpollFd == -1 || mInterruptFd == -1) {
+        ERRORF("epoll_fd or interrupt_fd is not initialized");
+        return;
+    }
+
+    process_deferred();
+    tick_callbacks();
+
+    struct epoll_event events[EVENT_COUNT];
+    for (;;) {
+        if (mInterrupted) {
+            DEBUGF("interrupted");
+            return;
+        }
+
+        // Wait for a file descriptor to become ready.
+        VERBOSEF("waiting for events (%d file descriptors, while)", mEpollCount);
+        auto nfds = ::epoll_pwait(mEpollFd, events, EVENT_COUNT, 0, nullptr);
+        VERBOSEF("::epoll_pwait(%d, %p, %d, 0, nullptr) = %d", mEpollFd, events, EVENT_COUNT,
+                 nfds);
+        if (nfds == -1) {
+            if (errno == EINTR) {
+                continue;
+            }
+            ERRORF("failed to wait for events: " ERRNO_FMT, ERRNO_ARGS(errno));
+            return;
+        }
+
+        VERBOSEF("%d file descriptors are ready", nfds);
+        for (int i = 0; i < nfds; i++) {
+            process_event(events[i]);
+        }
+
+        process_deferred();
+        return;
+    }
+}
+
+void Scheduler::yield() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    VERBOSEF("yielding");
+    auto result = ::sched_yield();
+    VERBOSEF("::sched_yield() = %d", result);
 }
 
 void Scheduler::interrupt() NOEXCEPT {

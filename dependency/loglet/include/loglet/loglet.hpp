@@ -16,7 +16,7 @@
 #define LOGLET_NAMEPASTE_SEP2(a, b) a##_##b
 #define LOGLET_NAMEPASTE_SEP(a, b) LOGLET_NAMEPASTE_SEP2(a, b)
 
-#define LOGLET_DEFAULT_LEVEL loglet::Level::Info
+#define LOGLET_DEFAULT_LEVEL loglet::Level::Disabled
 
 #if !defined(DISABLE_STRERRORNAME_NP)
 #if defined(_GNU_SOURCE) && defined(__GLIBC__) && defined(__GLIBC_MINOR__)
@@ -289,7 +289,7 @@ struct LogModule {
     std::vector<LogModule*> children;
 
     explicit LogModule(LogModule* p, char const* n)
-        : parent(p), name(n), level(Level::Info), initialized(false) {
+        : parent(p), name(n), level(LOGLET_DEFAULT_LEVEL), initialized(false) {
         preinit();
         register_module(this);
     }

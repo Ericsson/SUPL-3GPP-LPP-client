@@ -195,6 +195,7 @@ TEST_CASE("Reconnection after disconnect") {
     server.schedule(sched);
 
     scheduler::TcpConnectTask client("/tmp/reconnect_server.sock", true);
+    client.set_reconnect_delay(std::chrono::milliseconds(100));
 
     int connect_count   = 0;
     client.on_connected = [&](scheduler::TcpConnectTask& c) {
@@ -205,7 +206,7 @@ TEST_CASE("Reconnection after disconnect") {
     };
 
     client.schedule(sched);
-    sched.execute_timeout(std::chrono::seconds(15));
+    sched.execute_timeout(std::chrono::seconds(5));
 
     CHECK(accept_count >= 2);
     CHECK(connect_count >= 2);

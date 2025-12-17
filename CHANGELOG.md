@@ -31,6 +31,10 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- New Stream abstraction for bidirectional I/O with write buffering, read buffering, and epoll integration
+- `--stream` CLI option for explicit stream declaration with `--input stream:id=...` and `--output stream:id=...` references
+- Stream types: serial, tcp-client, tcp-server, udp-client, udp-server, fd, pty, stdio, file
+- Serial `raw=true` option to skip termios configuration for virtual/pre-configured devices
 - Coordinate representation library in dependency/coordinates with Eigen-based types (ECEF, LLH, ENU, NED, AER) and transformations using matrix operations
 - Multi-reference frame coordinate transformations with template-based and graph-based APIs supporting WGS84, PZ-90, ITRF (88-2020), and CGCS2000
 - ITRF transformation parameters from IERS Technical Note 36 for ITRF88 through ITRF2020

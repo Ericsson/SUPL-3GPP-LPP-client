@@ -193,6 +193,7 @@ bool parse(int argc, char** argv, Config* config) {
     ::data_tracing::setup(parser);
 #endif
     ::ubx_config::setup(parser);
+    ::stream::setup(parser);
 
     config->next_tag_bit_mask = 1;
     config->tag_to_bit_mask.clear();
@@ -216,6 +217,7 @@ bool parse(int argc, char** argv, Config* config) {
         ::identity::parse(config);
         ::ad::parse(config);
         ::li::parse(config);
+        ::stream::parse(config);
         ::input::parse(config);
         ::output::parse(config);
         ::print::parse(config);

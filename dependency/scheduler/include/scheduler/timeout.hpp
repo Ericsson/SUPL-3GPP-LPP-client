@@ -15,6 +15,10 @@ public:
     NODISCARD bool       is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
     NODISCARD Scheduler& scheduler() const NOEXCEPT { return *mScheduler; }
 
+    void set_timeout(std::chrono::steady_clock::duration duration) NOEXCEPT {
+        mDuration = duration;
+    }
+
     std::function<void()> callback;
 
 private:

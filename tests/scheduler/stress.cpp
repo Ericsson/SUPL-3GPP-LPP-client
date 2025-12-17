@@ -68,7 +68,7 @@ TEST_CASE("Many socket pairs") {
         ::write(pair[1], "x", 1);
     }
 
-    sched.execute_timeout(std::chrono::seconds(2));
+    sched.execute_timeout(std::chrono::seconds(1));
 
     for (int i = 0; i < N; i++) {
         CHECK(received[i]);

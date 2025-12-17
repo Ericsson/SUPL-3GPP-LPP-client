@@ -84,7 +84,7 @@ struct TestCase {
 inline std::vector<TestCase> find_test_cases(std::string const& pattern) {
     std::vector<TestCase> cases;
 
-    char const* base_paths[] = {"../../tests/data/rtcm/captured", "../tests/data/rtcm/captured"};
+    char const* base_path = TEST_DATA_DIR "/rtcm/captured";
 
     auto filename_pattern = test_utils::filename(pattern);
 
@@ -96,24 +96,20 @@ inline std::vector<TestCase> find_test_cases(std::string const& pattern) {
     std::string prefix_part = filename_pattern.substr(0, wildcard_pos);
     std::string suffix_part = filename_pattern.substr(wildcard_pos + 1);
 
-    for (auto base_path : base_paths) {
-        if (!test_utils::file_exists(base_path)) continue;
+    if (!test_utils::file_exists(base_path)) return cases;
 
-        auto files = test_utils::list_directory(base_path);
-        for (auto const& filename : files) {
-            if (!test_utils::starts_with(filename, prefix_part)) continue;
-            if (!test_utils::ends_with(filename, suffix_part)) continue;
+    auto files = test_utils::list_directory(base_path);
+    for (auto const& filename : files) {
+        if (!test_utils::starts_with(filename, prefix_part)) continue;
+        if (!test_utils::ends_with(filename, suffix_part)) continue;
 
-            auto base      = filename.substr(0, filename.size() - suffix_part.size());
-            auto uper_path = test_utils::path_join(base_path, base + ".uper");
-            auto rtcm_path = test_utils::path_join(base_path, base + ".rtcm");
+        auto base      = filename.substr(0, filename.size() - suffix_part.size());
+        auto uper_path = test_utils::path_join(base_path, base + ".uper");
+        auto rtcm_path = test_utils::path_join(base_path, base + ".rtcm");
 
-            if (test_utils::file_exists(uper_path) && test_utils::file_exists(rtcm_path)) {
-                cases.push_back({uper_path, rtcm_path, base});
-            }
+        if (test_utils::file_exists(uper_path) && test_utils::file_exists(rtcm_path)) {
+            cases.push_back({uper_path, rtcm_path, base});
         }
-
-        if (!cases.empty()) break;
     }
 
     std::sort(cases.begin(), cases.end(), [](TestCase const& a, TestCase const& b) {

@@ -1,6 +1,7 @@
 #pragma once
 #include <io/input.hpp>
 #include <io/output.hpp>
+#include <io/registry.hpp>
 #include <loglet/loglet.hpp>
 #include <lpp/assistance_data.hpp>
 #include <supl/cell.hpp>
@@ -115,6 +116,7 @@ struct OutputInterface {
     NODISCARD inline bool location_support() const {
         return (format & OUTPUT_FORMAT_LOCATION) != 0;
     }
+    NODISCARD inline bool raw_support() const { return (format & OUTPUT_FORMAT_RAW) != 0; }
 
     NODISCARD inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
 
@@ -482,6 +484,7 @@ struct Config {
     InputConfig               input;
     PrintConfig               print;
     GnssConfig                gnss;
+    io::StreamRegistry        stream_registry;
 #ifdef INCLUDE_GENERATOR_RTCM
     Lpp2RtcmConfig      lpp2rtcm;
     Lpp2FrameRtcmConfig lpp2frame_rtcm;
@@ -667,6 +670,11 @@ void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(UbxConfigConfig const& config);
 }  // namespace ubx_config
+
+namespace stream {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+}  // namespace stream
 
 namespace config {
 bool parse(int argc, char** argv, Config* config);

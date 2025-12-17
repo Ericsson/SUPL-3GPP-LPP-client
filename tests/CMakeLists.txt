@@ -2,6 +2,7 @@ CPMAddPackage("gh:doctest/doctest@2.4.11")
 
 add_library(test_utils INTERFACE)
 target_include_directories(test_utils INTERFACE test_utils)
+target_compile_definitions(test_utils INTERFACE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data")
 
 add_subdirectory(coordinates)
 add_subdirectory(time)

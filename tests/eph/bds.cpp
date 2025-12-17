@@ -23,8 +23,7 @@ struct Test {
 };
 
 static std::vector<std::string> find_bds_files() {
-    char const* paths[] = {"../../tests/data/bds", "../tests/data/bds"};
-    return test_utils::find_files_with_suffix(paths, 2, ".msgpack");
+    return test_utils::find_files_with_suffix(TEST_DATA_DIR "/bds", ".msgpack");
 }
 
 TEST_CASE("BeiDou ephemeris computation") {

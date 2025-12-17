@@ -41,7 +41,7 @@ struct EqualModuleName {
 };
 
 static char const*        gPrefix       = nullptr;
-static Level              gLevel        = Level::Debug;
+static Level              gLevel        = LOGLET_DEFAULT_LEVEL;
 static bool               gColorEnabled = false;
 static bool               gAlwaysFlush  = false;
 static bool               gReportErrors = true;

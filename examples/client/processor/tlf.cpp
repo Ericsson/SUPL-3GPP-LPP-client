@@ -116,6 +116,49 @@ void TlfOutputStage::write(OutputFormat format, uint8_t const* buffer, size_t le
 //
 //
 
+HexdumpOutputStage::HexdumpOutputStage(std::unique_ptr<OutputStage> next) NOEXCEPT
+    : mNext(std::move(next)) {}
+
+HexdumpOutputStage::~HexdumpOutputStage() NOEXCEPT = default;
+
+bool HexdumpOutputStage::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
+    return mNext->schedule(scheduler);
+}
+
+bool HexdumpOutputStage::do_cancel(scheduler::Scheduler&) NOEXCEPT {
+    return mNext->cancel();
+}
+
+void HexdumpOutputStage::write(OutputFormat format, uint8_t const* buffer, size_t length) NOEXCEPT {
+    if (!mNext || length == 0) return;
+
+    char line[80];
+    for (size_t i = 0; i < length; i += 16) {
+        int pos = snprintf(line, sizeof(line), "%08zx  ", i);
+        for (size_t j = 0; j < 16; j++) {
+            if (i + j < length) {
+                pos += snprintf(line + pos, sizeof(line) - pos, "%02x ", buffer[i + j]);
+            } else {
+                pos += snprintf(line + pos, sizeof(line) - pos, "   ");
+            }
+            if (j == 7) line[pos++] = ' ';
+        }
+        line[pos++] = ' ';
+        line[pos++] = '|';
+        for (size_t j = 0; j < 16 && i + j < length; j++) {
+            char c      = static_cast<char>(buffer[i + j]);
+            line[pos++] = (c >= 32 && c < 127) ? c : '.';
+        }
+        line[pos++] = '|';
+        line[pos++] = '\n';
+        mNext->write(format, reinterpret_cast<uint8_t const*>(line), pos);
+    }
+}
+
+//
+//
+//
+
 InputStage::InputStage() NOEXCEPT : mScheduler(nullptr) {}
 InputStage::~InputStage() = default;
 

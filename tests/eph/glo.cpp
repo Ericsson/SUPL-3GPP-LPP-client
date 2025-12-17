@@ -24,8 +24,7 @@ struct Test {
 };
 
 static std::vector<std::string> find_glo_files() {
-    char const* paths[] = {"../../tests/data/glo", "../tests/data/glo"};
-    return test_utils::find_files_with_suffix(paths, 2, ".msgpack");
+    return test_utils::find_files_with_suffix(TEST_DATA_DIR "/glo", ".msgpack");
 }
 
 TEST_CASE("GLONASS ephemeris computation") {

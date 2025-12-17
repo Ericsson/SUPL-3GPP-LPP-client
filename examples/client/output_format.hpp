@@ -15,9 +15,10 @@ constexpr static OutputFormat OUTPUT_FORMAT_SPARTN   = 128;
 constexpr static OutputFormat OUTPUT_FORMAT_LFR      = 256;
 constexpr static OutputFormat OUTPUT_FORMAT_POSSIB   = 512;
 constexpr static OutputFormat OUTPUT_FORMAT_LOCATION = 1024;
+constexpr static OutputFormat OUTPUT_FORMAT_RAW      = 2048;
 constexpr static OutputFormat OUTPUT_FORMAT_TLF      = 1llu << 62;
 constexpr static OutputFormat OUTPUT_FORMAT_TEST     = 1llu << 63;
 constexpr static OutputFormat OUTPUT_FORMAT_ALL =
     OUTPUT_FORMAT_UBX | OUTPUT_FORMAT_NMEA | OUTPUT_FORMAT_RTCM | OUTPUT_FORMAT_CTRL |
     OUTPUT_FORMAT_LPP_XER | OUTPUT_FORMAT_LPP_UPER | OUTPUT_FORMAT_SPARTN | OUTPUT_FORMAT_LFR |
-    OUTPUT_FORMAT_POSSIB;
+    OUTPUT_FORMAT_POSSIB | OUTPUT_FORMAT_RAW;

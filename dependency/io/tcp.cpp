@@ -68,6 +68,7 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
 
         auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
+        client->set_event_name("tcp-client:" + std::to_string(data_fd));
         client->on_read = [this, &scheduler](scheduler::SocketTask& task) {
             auto result = ::read(task.fd(), mBuffer, sizeof(mBuffer));
             VERBOSEF("::read(%d, %p, %zu) = %d", task.fd(), mBuffer, sizeof(mBuffer), result);
@@ -519,6 +520,7 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
 
         // Add new client
         auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
+        client->set_event_name("tcp-client:" + std::to_string(data_fd));
         client->on_error = [this, &scheduler](scheduler::SocketTask& task) {
             auto fd = task.fd();
             scheduler.defer([this, fd, &task](scheduler::Scheduler&) {

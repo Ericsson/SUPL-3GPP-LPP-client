@@ -78,6 +78,21 @@ inline std::vector<std::string> find_files_with_suffix(char const** search_paths
     return files;
 }
 
+inline std::vector<std::string> find_files_with_suffix(char const* path, char const* suffix) {
+    std::vector<std::string> files;
+    DIR*                     dir = opendir(path);
+    if (!dir) return files;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (strstr(entry->d_name, suffix) != nullptr) {
+            files.push_back(path_join(path, entry->d_name));
+        }
+    }
+    closedir(dir);
+    return files;
+}
+
 inline std::vector<std::string> find_files_with_prefix_and_suffix(char const** search_paths,
                                                                   size_t       num_paths,
                                                                   char const*  prefix,
@@ -99,6 +114,22 @@ inline std::vector<std::string> find_files_with_prefix_and_suffix(char const** s
         if (!files.empty()) break;
     }
 
+    return files;
+}
+
+inline std::vector<std::string>
+find_files_with_prefix_and_suffix(char const* path, char const* prefix, char const* suffix) {
+    std::vector<std::string> files;
+    DIR*                     dir = opendir(path);
+    if (!dir) return files;
+
+    struct dirent* entry;
+    while ((entry = readdir(dir)) != nullptr) {
+        if (starts_with(entry->d_name, prefix) && ends_with(entry->d_name, suffix)) {
+            files.push_back(path_join(path, entry->d_name));
+        }
+    }
+    closedir(dir);
     return files;
 }
 

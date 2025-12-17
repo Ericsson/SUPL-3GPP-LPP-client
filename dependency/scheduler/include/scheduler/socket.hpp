@@ -22,6 +22,11 @@ public:
 
     NODISCARD int fd() const NOEXCEPT { return mListenerFd; }
 
+    void set_event_name(std::string name) NOEXCEPT {
+        mEventName  = std::move(name);
+        mEvent.name = mEventName.c_str();
+    }
+
     std::function<void(ListenerTask&, int, struct sockaddr_storage*, socklen_t)> on_accept;
     std::function<void(ListenerTask&)>                                           on_error;
 
@@ -30,9 +35,10 @@ protected:
     void accept() NOEXCEPT;
 
 private:
-    Scheduler* mScheduler;
-    EpollEvent mEvent;
-    int        mListenerFd;
+    Scheduler*  mScheduler;
+    EpollEvent  mEvent;
+    std::string mEventName;
+    int         mListenerFd;
 };
 
 /// Task for listening for incoming TCP connections.
@@ -47,6 +53,8 @@ public:
     NODISCARD bool is_scheduled() const NOEXCEPT {
         return mListenerTask && mListenerTask->is_scheduled();
     }
+
+    NODISCARD uint16_t port() const NOEXCEPT;
 
     std::function<void(TcpListenerTask&, int, struct sockaddr_storage*, socklen_t)> on_accept;
     std::function<void(TcpListenerTask&)>                                           on_error;
@@ -69,7 +77,8 @@ public:
     bool           cancel() NOEXCEPT;
     NODISCARD bool is_scheduled() const NOEXCEPT { return mScheduler != nullptr; }
 
-    NODISCARD int fd() const NOEXCEPT { return mListenerFd; }
+    NODISCARD int      fd() const NOEXCEPT { return mListenerFd; }
+    NODISCARD uint16_t port() const NOEXCEPT { return mPort; }
 
     std::function<void(UdpListenerTask&)> on_read;
     std::function<void(UdpListenerTask&)> on_error;
@@ -79,6 +88,7 @@ private:
 
     std::string mPath;
     std::string mAddress;
+    std::string mEventName;
     uint16_t    mPort;
     Scheduler*  mScheduler;
     EpollEvent  mEvent;
@@ -97,6 +107,11 @@ public:
 
     NODISCARD int fd() const NOEXCEPT { return mFd; }
 
+    void set_event_name(std::string const& name) NOEXCEPT {
+        mEventName  = name;
+        mEvent.name = mEventName.c_str();
+    }
+
     std::function<void(SocketTask&)> on_read;
     std::function<void(SocketTask&)> on_write;
     std::function<void(SocketTask&)> on_error;
@@ -108,9 +123,10 @@ protected:
     void error() NOEXCEPT;
 
 private:
-    Scheduler* mScheduler;
-    EpollEvent mEvent;
-    int        mFd;
+    Scheduler*  mScheduler;
+    EpollEvent  mEvent;
+    int         mFd;
+    std::string mEventName;
 };
 
 class TcpConnectTask {
@@ -124,6 +140,8 @@ public:
     NODISCARD bool is_scheduled() const NOEXCEPT { return mIsScheduled; }
 
     NODISCARD int fd() const NOEXCEPT { return mFd; }
+
+    void set_reconnect_delay(std::chrono::milliseconds delay) NOEXCEPT;
 
     std::function<void(TcpConnectTask&)> on_connected;
     std::function<void(TcpConnectTask&)> on_disconnected;

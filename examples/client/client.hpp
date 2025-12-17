@@ -33,6 +33,7 @@ struct InputContext {
     std::unique_ptr<format::ctrl::Parser>    ctrl{};
     std::unique_ptr<format::lpp::UperParser> lpp_uper{};
     std::unique_ptr<format::lpp::UperParser> lpp_uper_pad{};
+    bool                                     raw{};
 };
 
 struct Program {

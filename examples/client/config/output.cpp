@@ -1,7 +1,11 @@
 #include <core/string.hpp>
+#include <io/adapters.hpp>
 #include <io/file.hpp>
 #include <io/serial.hpp>
 #include <io/stdout.hpp>
+#include <io/stream/serial.hpp>
+#include <io/stream/tcp_client.hpp>
+#include <io/stream/udp_client.hpp>
 #include <io/tcp.hpp>
 #include <io/udp.hpp>
 #include <loglet/loglet.hpp>
@@ -50,11 +54,16 @@ static args::ValueFlagList<std::string> gArgs{
     "    path=<path>\n"
     "  chunked-log:\n"
     "    path=<base_path>\n"
+    "  stream:\n"
+    "    id=<stream_id>  (reference to --stream)\n"
+    "\n"
+    "Options:\n"
+    "  unique=<bool> (default=false, create separate stream)\n"
     "\n"
     "Formats:\n"
-    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper, lrf, possib, location, test\n"
+    "  all, ubx, nmea, rtcm, ctrl, spartn, lpp-xer, lpp-uper, lrf, possib, location, raw, test\n"
     "Stages:\n"
-    "  tlf\n"
+    "  tlf, hexdump\n"
     "Examples:\n"
     "  --output file:path=/tmp/output,format=ubx+nmea",
     {"output"},
@@ -76,6 +85,7 @@ static OutputFormat parse_format(std::string const& str) {
     if (str == "lfr") return OUTPUT_FORMAT_LFR;
     if (str == "possib") return OUTPUT_FORMAT_POSSIB;
     if (str == "location") return OUTPUT_FORMAT_LOCATION;
+    if (str == "raw") return OUTPUT_FORMAT_RAW;
     if (str == "test") return OUTPUT_FORMAT_TEST;
     throw args::ValidationError("--output format: invalid format, got `" + str + "`");
 }
@@ -99,6 +109,7 @@ parse_format_list_from_options(std::unordered_map<std::string, std::string> cons
 
 static std::string parse_stage(std::string const& str) {
     if (str == "tlf") return "tlf";
+    if (str == "hexdump") return "hexdump";
     throw args::ValidationError("--output stage: invalid stage, got `" + str + "`");
 }
 
@@ -432,7 +443,115 @@ parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
     }
 }
 
-static OutputInterface parse_interface(std::string const& source) {
+static std::string generate_stream_id(std::string const&                                  type,
+                                      std::unordered_map<std::string, std::string> const& options) {
+    if (type == "serial") {
+        return "serial:" + options.at("device");
+    } else if (type == "tcp-client") {
+        if (options.find("path") != options.end()) {
+            return "tcp-client:" + options.at("path");
+        }
+        return "tcp-client:" + options.at("host") + ":" + options.at("port");
+    } else if (type == "udp-client") {
+        if (options.find("path") != options.end()) {
+            return "udp-client:" + options.at("path");
+        }
+        return "udp-client:" + options.at("host") + ":" + options.at("port");
+    }
+    return "";
+}
+
+static io::BaudRate parse_baudrate_stream(std::string const& str) {
+    long baud_rate = std::stol(str);
+    if (baud_rate == 9600) return io::BaudRate::BR9600;
+    if (baud_rate == 19200) return io::BaudRate::BR19200;
+    if (baud_rate == 38400) return io::BaudRate::BR38400;
+    if (baud_rate == 57600) return io::BaudRate::BR57600;
+    if (baud_rate == 115200) return io::BaudRate::BR115200;
+    if (baud_rate == 230400) return io::BaudRate::BR230400;
+    if (baud_rate == 460800) return io::BaudRate::BR460800;
+    if (baud_rate == 921600) return io::BaudRate::BR921600;
+    throw args::ValidationError("--output serial: unsupported baudrate `" + str + "`");
+}
+
+static std::shared_ptr<io::Stream>
+create_stream_serial(std::string const&                                  id,
+                     std::unordered_map<std::string, std::string> const& options) {
+    io::SerialConfig config;
+    config.device = options.at("device");
+    if (options.find("baudrate") != options.end()) {
+        config.baud_rate = parse_baudrate_stream(options.at("baudrate"));
+    }
+    return std::make_shared<io::SerialStream>(id, config);
+}
+
+static std::shared_ptr<io::Stream>
+create_stream_tcp_client(std::string const&                                  id,
+                         std::unordered_map<std::string, std::string> const& options) {
+    io::TcpClientConfig config;
+    if (options.find("path") != options.end()) {
+        config.path = options.at("path");
+    } else {
+        config.host = options.at("host");
+        config.port = static_cast<uint16_t>(std::stoul(options.at("port")));
+    }
+    return std::make_shared<io::TcpClientStream>(id, config);
+}
+
+static std::shared_ptr<io::Stream>
+create_stream_udp_client(std::string const&                                  id,
+                         std::unordered_map<std::string, std::string> const& options) {
+    io::UdpClientConfig config;
+    if (options.find("path") != options.end()) {
+        config.path = options.at("path");
+    } else {
+        config.host = options.at("host");
+        config.port = static_cast<uint16_t>(std::stoul(options.at("port")));
+    }
+    return std::make_shared<io::UdpClientStream>(id, config);
+}
+
+static bool parse_bool_opt(std::unordered_map<std::string, std::string> const& options,
+                           std::string const& key, bool default_value) {
+    if (options.find(key) == options.end()) return default_value;
+    auto value = options.at(key);
+    if (value.empty()) return true;
+    if (value == "true") return true;
+    if (value == "false") return false;
+    return default_value;
+}
+
+static std::unique_ptr<io::Output>
+get_or_create_stream_output(std::string const&                                  type,
+                            std::unordered_map<std::string, std::string> const& options,
+                            Config*                                             config) {
+    auto unique = parse_bool_opt(options, "unique", false);
+    auto id     = generate_stream_id(type, options);
+    if (id.empty()) return nullptr;
+
+    std::shared_ptr<io::Stream> stream;
+    if (!unique && config->stream_registry.has(id)) {
+        stream = config->stream_registry.get(id);
+    } else {
+        if (unique) {
+            static int unique_counter = 0;
+            id += "#" + std::to_string(++unique_counter);
+        }
+        if (type == "serial")
+            stream = create_stream_serial(id, options);
+        else if (type == "tcp-client")
+            stream = create_stream_tcp_client(id, options);
+        else if (type == "udp-client")
+            stream = create_stream_udp_client(id, options);
+
+        if (stream) config->stream_registry.add(id, stream);
+    }
+
+    if (stream) return std::make_unique<io::StreamOutputAdapter>(stream);
+    return nullptr;
+}
+
+static OutputInterface parse_interface(std::string const& source, Config* config) {
     std::unordered_map<std::string, std::string> options;
 
     auto parts = core::split(source, ':');
@@ -452,11 +571,22 @@ static OutputInterface parse_interface(std::string const& source) {
     std::unique_ptr<io::Output> output{};
     if (parts[0] == "stdout") output = parse_stdout(options);
     if (parts[0] == "file") output = parse_file(options);
-    if (parts[0] == "serial") output = parse_serial(options);
-    if (parts[0] == "tcp-client") output = parse_tcp_client(options);
-    if (parts[0] == "udp-client") output = parse_udp_client(options);
+    if (parts[0] == "serial") output = get_or_create_stream_output(parts[0], options, config);
+    if (parts[0] == "tcp-client") output = get_or_create_stream_output(parts[0], options, config);
+    if (parts[0] == "udp-client") output = get_or_create_stream_output(parts[0], options, config);
     if (parts[0] == "tcp-server") output = parse_tcp_server(options);
     if (parts[0] == "chunked-log") output = parse_chunked_log(options);
+    if (parts[0] == "stream") {
+        if (options.find("id") == options.end()) {
+            throw args::ValidationError("--output stream: missing `id` option");
+        }
+        auto stream = config->stream_registry.get(options.at("id"));
+        if (!stream) {
+            throw args::ValidationError("--output stream: unknown stream id `" + options.at("id") +
+                                        "`");
+        }
+        output = std::make_unique<io::StreamOutputAdapter>(stream);
+    }
 
     if (output) {
         return OutputInterface::create(format, std::move(output), std::move(itags),
@@ -468,7 +598,7 @@ static OutputInterface parse_interface(std::string const& source) {
 
 void parse(Config* config) {
     for (auto const& output : gArgs.Get()) {
-        config->output.outputs.push_back(parse_interface(output));
+        config->output.outputs.push_back(parse_interface(output, config));
     }
 
     for (auto& output : config->output.outputs) {

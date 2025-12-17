@@ -21,6 +21,8 @@ public:
     void execute() NOEXCEPT;
     void execute_timeout(std::chrono::steady_clock::duration duration) NOEXCEPT;
     void execute_while(std::function<bool()> condition) NOEXCEPT;
+    void execute_once() NOEXCEPT;
+    void yield() NOEXCEPT;
     void interrupt() NOEXCEPT;
 
     void register_tick(void* unique_ptr, std::function<void()> callback) NOEXCEPT;
@@ -45,6 +47,7 @@ private:
 
     std::unordered_map<void*, std::function<void()>>        mTickCallbacks;
     std::vector<std::function<void(scheduler::Scheduler&)>> mDeferredCallbacks;
+    std::unordered_map<int, EpollEvent*>                    mFdToEvent;
 
 #ifndef NDEBUG
     std::unordered_map<EpollEvent*, int> mActiveEvents;
