@@ -72,8 +72,10 @@ bool StdioStream::schedule(scheduler::Scheduler& scheduler) {
     mWriteTask->set_event_name("stdio-write:" + mId);
     mWriteTask->on_write = [this, write_fd](scheduler::SocketTask&) {
         while (!mWriteBuffer.empty()) {
-            auto [data, len] = mWriteBuffer.peek();
-            auto result      = ::write(write_fd, data, len);
+            auto  peek   = mWriteBuffer.peek();
+            auto& data   = peek.first;
+            auto& len    = peek.second;
+            auto  result = ::write(write_fd, data, len);
             VERBOSEF("::write(%d, %p, %zu) = %zd", write_fd, data, len, result);
             if (result < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) break;

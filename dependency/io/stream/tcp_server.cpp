@@ -1,6 +1,6 @@
+#include <cxx11_compat.hpp>
 #include <io/stream/tcp_server.hpp>
 #include <scheduler/socket.hpp>
-#include <cxx11_compat.hpp>
 
 #include <algorithm>
 #include <cerrno>
@@ -68,8 +68,10 @@ bool TcpServerStream::schedule(scheduler::Scheduler& scheduler) {
 
         client->task->on_write = [this, client_ptr](scheduler::SocketTask&) {
             while (!client_ptr->write_buffer.empty()) {
-                auto [data, len] = client_ptr->write_buffer.peek();
-                auto result      = ::write(client_ptr->fd, data, len);
+                auto  peek   = client_ptr->write_buffer.peek();
+                auto& data   = peek.first;
+                auto& len    = peek.second;
+                auto  result = ::write(client_ptr->fd, data, len);
                 VERBOSEF("::write(%d, %p, %zu) = %zd", client_ptr->fd, data, len, result);
                 if (result < 0) {
                     if (errno == EAGAIN || errno == EWOULDBLOCK) break;

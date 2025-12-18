@@ -114,8 +114,10 @@ bool UdpClientStream::schedule(scheduler::Scheduler& scheduler) {
     };
     mSocketTask->on_write = [this](scheduler::SocketTask&) {
         while (!mWriteBuffer.empty()) {
-            auto [data, len] = mWriteBuffer.peek();
-            auto result      = ::send(mFd, data, len, MSG_NOSIGNAL);
+            auto  peek   = mWriteBuffer.peek();
+            auto& data   = peek.first;
+            auto& len    = peek.second;
+            auto  result = ::send(mFd, data, len, MSG_NOSIGNAL);
             VERBOSEF("::send(%d, %p, %zu, MSG_NOSIGNAL) = %zd", mFd, data, len, result);
             if (result < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) break;
