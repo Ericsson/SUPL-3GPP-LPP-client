@@ -70,8 +70,10 @@ bool TcpClientStream::schedule(scheduler::Scheduler& scheduler) {
 
     mConnectTask->on_write = [this](scheduler::TcpConnectTask& task) {
         while (!mWriteBuffer.empty()) {
-            auto [data, len] = mWriteBuffer.peek();
-            auto result      = ::write(task.fd(), data, len);
+            auto  peek   = mWriteBuffer.peek();
+            auto& data   = peek.first;
+            auto& len    = peek.second;
+            auto  result = ::write(task.fd(), data, len);
             VERBOSEF("::write(%d, %p, %zu) = %zd", task.fd(), data, len, result);
             if (result < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) break;
