@@ -33,7 +33,7 @@ Stream::ReadCallbackHandle Stream::on_read(ReadCallback cb) NOEXCEPT {
 void Stream::remove_on_read(ReadCallbackHandle handle) NOEXCEPT {
     VERBOSEF("removing read callback, handle=%zu", handle);
     mReadCallbacks.erase(std::remove_if(mReadCallbacks.begin(), mReadCallbacks.end(),
-                                        [handle](auto& entry) {
+                                        [handle](CallbackEntry& entry) {
                                             return entry.handle == handle;
                                         }),
                          mReadCallbacks.end());

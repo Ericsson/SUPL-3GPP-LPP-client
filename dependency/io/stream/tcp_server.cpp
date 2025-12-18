@@ -1,5 +1,6 @@
 #include <io/stream/tcp_server.hpp>
 #include <scheduler/socket.hpp>
+#include <cxx11_compat.hpp>
 
 #include <algorithm>
 #include <cerrno>
@@ -181,7 +182,7 @@ void TcpServerStream::remove_client(Client* client) NOEXCEPT {
     auto result = ::close(client->fd);
     VERBOSEF("::close(%d) = %d", client->fd, result);
     mClients.erase(std::remove_if(mClients.begin(), mClients.end(),
-                                  [client](auto& c) {
+                                  [client](std::unique_ptr<Client>& c) {
                                       return c.get() == client;
                                   }),
                    mClients.end());

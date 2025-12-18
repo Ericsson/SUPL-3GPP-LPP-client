@@ -11,6 +11,7 @@
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 #include "../processor/chunked_log.hpp"
+#include <cxx11_compat.hpp>
 
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
