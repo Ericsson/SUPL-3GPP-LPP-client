@@ -99,8 +99,10 @@ bool SerialStream::schedule(scheduler::Scheduler& scheduler) {
     };
     mSocketTask->on_write = [this](scheduler::SocketTask&) {
         while (!mWriteBuffer.empty()) {
-            auto [data, len] = mWriteBuffer.peek();
-            auto result      = ::write(mFd, data, len);
+            auto  peek   = mWriteBuffer.peek();
+            auto& data   = peek.first;
+            auto& len    = peek.second;
+            auto  result = ::write(mFd, data, len);
             VERBOSEF("::write(%d, %p, %zu) = %zd", mFd, data, len, result);
             if (result < 0) {
                 if (errno == EAGAIN || errno == EWOULDBLOCK) break;
