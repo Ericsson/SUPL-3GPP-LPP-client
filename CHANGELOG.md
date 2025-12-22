@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Removed SocketTask class (use OwnedFileDescriptorTask instead)
 
 ### Changed
+- Time lirary is now more ergonomic
 - `TimeoutTask` now auto-schedules on construction (takes duration + callback)
 - Scheduler now owns event registrations via ScheduledEvent handles with generation counters for safe event lifecycle management
 - Task classes (TimeoutTask, PeriodicTask, FileDescriptorTask, ListenerTask, UdpListenerTask, TcpConnectTask) migrated to new abstracted EventInterest API

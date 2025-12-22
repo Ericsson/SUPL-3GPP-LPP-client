@@ -157,6 +157,12 @@ Gps Gps::from_week_tow(int64_t week, int64_t tow, double fractions) {
     return Gps{timestamp};
 }
 
+Gps Gps::from_week_tow(int64_t week, double tow) {
+    auto tow_int  = static_cast<int64_t>(tow);
+    auto tow_frac = tow - static_cast<double>(tow_int);
+    return from_week_tow(week, tow_int, tow_frac);
+}
+
 Gps Gps::from_ymdhms(int64_t year, int64_t month, int64_t day, int64_t hour, int64_t min,
                      double seconds) {
     auto int_seconds = static_cast<int64_t>(seconds);

@@ -28,7 +28,19 @@ public:
     NODISCARD Timestamp timestamp() const { return mTm; }
     NODISCARD Timestamp mod_timestamp() const;
 
-    NODISCARD Gps       operator+(Timestamp delta) const { return Gps(mTm + delta); }
+    NODISCARD Gps operator+(Timestamp delta) const { return Gps(mTm + delta); }
+    NODISCARD Gps operator+(double seconds) const { return Gps(mTm + seconds); }
+    NODISCARD Gps operator-(double seconds) const { return Gps(mTm - seconds); }
+    Gps&          operator+=(double seconds) {
+        mTm += seconds;
+        return *this;
+    }
+    Gps& operator-=(double seconds) {
+        mTm -= seconds;
+        return *this;
+    }
+    NODISCARD double operator-(Gps const& other) const { return (mTm - other.mTm).as_double(); }
+
     NODISCARD Timestamp difference(Gps const& other) const;
 
     NODISCARD TimePoint to_timepoint() const;
@@ -36,6 +48,7 @@ public:
     NODISCARD static Gps now();
     NODISCARD static Gps from_day_tod(int64_t day, double tod);
     NODISCARD static Gps from_week_tow(int64_t week, int64_t tow, double fractions);
+    NODISCARD static Gps from_week_tow(int64_t week, double tow);
     NODISCARD static Gps from_ymdhms(int64_t year, int64_t month, int64_t day, int64_t hour,
                                      int64_t min, double seconds);
 
@@ -45,6 +58,8 @@ public:
     NODISCARD bool operator<=(Gps const& other) const { return mTm <= other.mTm; }
     NODISCARD bool operator>(Gps const& other) const { return mTm > other.mTm; }
     NODISCARD bool operator>=(Gps const& other) const { return mTm >= other.mTm; }
+    NODISCARD bool operator==(Gps const& other) const { return mTm == other.mTm; }
+    NODISCARD bool operator!=(Gps const& other) const { return mTm != other.mTm; }
 
 protected:
     NODISCARD Timestamp utc_timestamp() const;

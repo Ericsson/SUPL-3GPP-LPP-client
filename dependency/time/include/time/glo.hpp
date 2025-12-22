@@ -29,6 +29,25 @@ public:
     // Returns the day of the week, where 0 is Sunday and 6 is Saturday.
     NODISCARD int64_t day_of_week() const { return (days() + 1) % DAYS_PER_WEEK; }
 
+    NODISCARD Glo operator+(double seconds) const { return Glo(mTm + seconds); }
+    NODISCARD Glo operator-(double seconds) const { return Glo(mTm - seconds); }
+    Glo&          operator+=(double seconds) {
+        mTm += seconds;
+        return *this;
+    }
+    Glo& operator-=(double seconds) {
+        mTm -= seconds;
+        return *this;
+    }
+    NODISCARD double operator-(Glo const& other) const { return (mTm - other.mTm).as_double(); }
+
+    NODISCARD bool operator<(Glo const& other) const { return mTm < other.mTm; }
+    NODISCARD bool operator<=(Glo const& other) const { return mTm <= other.mTm; }
+    NODISCARD bool operator>(Glo const& other) const { return mTm > other.mTm; }
+    NODISCARD bool operator>=(Glo const& other) const { return mTm >= other.mTm; }
+    NODISCARD bool operator==(Glo const& other) const { return mTm == other.mTm; }
+    NODISCARD bool operator!=(Glo const& other) const { return mTm != other.mTm; }
+
     NODISCARD static Glo now();
     NODISCARD static Glo from_absolute_day_tod(int64_t day, double tod);
     NODISCARD static Glo from_period_day_tod(int64_t day, double tod, Glo const& reference);

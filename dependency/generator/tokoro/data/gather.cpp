@@ -84,7 +84,7 @@ void CorrectionData::add_correction(long                                 gnss_id
 
     auto ssr_iod    = decode::iod_ssr_r16(orbit->iod_ssr_r15);
     auto epoch_time = decode::epoch_time_r15(orbit->epochTime_r15);
-    if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
+    if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
 
@@ -144,7 +144,7 @@ void CorrectionData::add_correction(long                                 gnss_id
 
     auto ssr_iod    = decode::iod_ssr_r16(clock->iod_ssr_r15);
     auto epoch_time = decode::epoch_time_r15(clock->epochTime_r15);
-    if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
+    if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
 
@@ -197,7 +197,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
 
     auto ssr_iod    = decode::iod_ssr_r16(code_bias->iod_ssr_r15);
     auto epoch_time = decode::epoch_time_r15(code_bias->epochTime_r15);
-    if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
+    if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
 
@@ -247,7 +247,7 @@ void CorrectionData::add_correction(long                          gnss_id,
 
     auto ssr_iod    = decode::iod_ssr_r16(phase_bias->iod_ssr_r16);
     auto epoch_time = decode::epoch_time_r15(phase_bias->epochTime_r16);
-    if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
+    if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
 
@@ -305,7 +305,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
 #ifdef DATA_TRACING
     auto ssr_iod = decode::iod_ssr_r16(stec->iod_ssr_r16);
 #endif
-    if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
+    if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
 
@@ -381,7 +381,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 #ifdef DATA_TRACING
     auto ssr_iod = decode::iod_ssr_r16(grid->iod_ssr_r16);
 #endif
-    if (epoch_time.timestamp().full_seconds() > mLatestCorrectionTime.timestamp().full_seconds()) {
+    if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
 

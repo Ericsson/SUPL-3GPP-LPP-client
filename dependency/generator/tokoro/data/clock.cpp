@@ -50,7 +50,10 @@ double ClockCorrection::correction(ts::Tai time) const NOEXCEPT {
     VERBOSEF("t:   %s", ts::Utc{time}.rtklib_time_string().c_str());
     VERBOSEF("t0:  %s", ts::Utc{reference_time}.rtklib_time_string().c_str());
 
-    auto t_k = ts::Gps{time}.difference(ts::Gps{reference_time}).full_seconds();
+    // TODO(ewasjon): There is no scaling differences between times. The difference between A and B
+    // in reference X would be the same as in reference Y, thus, there is no need to convert to GPS
+    // time first.
+    auto t_k = ts::Gps{time} - ts::Gps{reference_time};
     VERBOSEF("t_k: %+.14f", t_k);
 
     VERBOSEF("c:      %+24.14f, %+24.14f, %+24.14f", c0, c1, c2);

@@ -31,15 +31,28 @@ public:
         return *this;
     }
 
-    NODISCARD Tai       operator+(Timestamp delta) const;
-    NODISCARD Timestamp difference(Tai const& other) const;
-
-    NODISCARD double difference_seconds(Tai const& other) const;
-
-    bool operator<=(Tai const& other) const {
-        return mTm.full_seconds() <= other.mTm.full_seconds();
+    NODISCARD Tai operator+(Timestamp delta) const;
+    NODISCARD Tai operator+(double seconds) const { return Tai(mTm + seconds); }
+    NODISCARD Tai operator-(double seconds) const { return Tai(mTm - seconds); }
+    Tai&          operator+=(double seconds) {
+        mTm += seconds;
+        return *this;
     }
-    bool operator<(Tai const& other) const { return mTm.full_seconds() < other.mTm.full_seconds(); }
+    Tai& operator-=(double seconds) {
+        mTm -= seconds;
+        return *this;
+    }
+    NODISCARD double operator-(Tai const& other) const { return (mTm - other.mTm).as_double(); }
+
+    NODISCARD Timestamp difference(Tai const& other) const;
+    NODISCARD double    difference_seconds(Tai const& other) const;
+
+    NODISCARD bool operator<(Tai const& other) const { return mTm < other.mTm; }
+    NODISCARD bool operator<=(Tai const& other) const { return mTm <= other.mTm; }
+    NODISCARD bool operator>(Tai const& other) const { return mTm > other.mTm; }
+    NODISCARD bool operator>=(Tai const& other) const { return mTm >= other.mTm; }
+    NODISCARD bool operator==(Tai const& other) const { return mTm == other.mTm; }
+    NODISCARD bool operator!=(Tai const& other) const { return mTm != other.mTm; }
 
     NODISCARD static Tai now();
 

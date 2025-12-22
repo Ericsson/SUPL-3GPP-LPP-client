@@ -27,6 +27,25 @@ public:
     NODISCARD Timestamp time_of_week() const;
     NODISCARD Timestamp timestamp() const { return mTm; }
 
+    NODISCARD Gst operator+(double seconds) const { return Gst(mTm + seconds); }
+    NODISCARD Gst operator-(double seconds) const { return Gst(mTm - seconds); }
+    Gst&          operator+=(double seconds) {
+        mTm += seconds;
+        return *this;
+    }
+    Gst& operator-=(double seconds) {
+        mTm -= seconds;
+        return *this;
+    }
+    NODISCARD double operator-(Gst const& other) const { return (mTm - other.mTm).as_double(); }
+
+    NODISCARD bool operator<(Gst const& other) const { return mTm < other.mTm; }
+    NODISCARD bool operator<=(Gst const& other) const { return mTm <= other.mTm; }
+    NODISCARD bool operator>(Gst const& other) const { return mTm > other.mTm; }
+    NODISCARD bool operator>=(Gst const& other) const { return mTm >= other.mTm; }
+    NODISCARD bool operator==(Gst const& other) const { return mTm == other.mTm; }
+    NODISCARD bool operator!=(Gst const& other) const { return mTm != other.mTm; }
+
     NODISCARD static Gst now();
     NODISCARD static Gst from_day_tod(int64_t day, double tod);
     NODISCARD static Gst from_week_tow(int64_t week, int64_t tow, double fractions);

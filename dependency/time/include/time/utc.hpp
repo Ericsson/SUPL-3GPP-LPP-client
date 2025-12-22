@@ -39,6 +39,25 @@ public:
         return *this;
     }
 
+    NODISCARD Utc operator+(double seconds) const { return Utc(mTm + seconds); }
+    NODISCARD Utc operator-(double seconds) const { return Utc(mTm - seconds); }
+    Utc&          operator+=(double seconds) {
+        mTm += seconds;
+        return *this;
+    }
+    Utc& operator-=(double seconds) {
+        mTm -= seconds;
+        return *this;
+    }
+    NODISCARD double operator-(Utc const& other) const { return (mTm - other.mTm).as_double(); }
+
+    NODISCARD bool operator<(Utc const& other) const { return mTm < other.mTm; }
+    NODISCARD bool operator<=(Utc const& other) const { return mTm <= other.mTm; }
+    NODISCARD bool operator>(Utc const& other) const { return mTm > other.mTm; }
+    NODISCARD bool operator>=(Utc const& other) const { return mTm >= other.mTm; }
+    NODISCARD bool operator==(Utc const& other) const { return mTm == other.mTm; }
+    NODISCARD bool operator!=(Utc const& other) const { return mTm != other.mTm; }
+
     NODISCARD double julian_date(double ut1_utc) const;
     NODISCARD double j2000_century(double ut1_utc) const;
 

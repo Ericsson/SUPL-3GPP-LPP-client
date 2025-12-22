@@ -30,6 +30,7 @@ public:
     NODISCARD int64_t seconds() const { return mSeconds; }
     NODISCARD double  fraction() const { return mFraction; }
     NODISCARD double  full_seconds() const { return static_cast<double>(mSeconds) + mFraction; }
+    NODISCARD double  as_double() const { return static_cast<double>(mSeconds) + mFraction; }
 
     NODISCARD int64_t days() const { return mSeconds / DAY_IN_SECONDS; }
 
@@ -38,6 +39,33 @@ public:
     }
     Timestamp operator-(Timestamp const& other) const {
         return Timestamp{seconds() - other.seconds(), fraction() - other.fraction()};
+    }
+    Timestamp operator+(double sec) const {
+        auto sec_int  = static_cast<int64_t>(sec);
+        auto sec_frac = sec - static_cast<double>(sec_int);
+        return Timestamp{mSeconds + sec_int, mFraction + sec_frac};
+    }
+    Timestamp operator-(double sec) const { return *this + (-sec); }
+
+    Timestamp& operator+=(Timestamp const& other) {
+        mSeconds += other.mSeconds;
+        mFraction += other.mFraction;
+        normalize();
+        return *this;
+    }
+    Timestamp& operator-=(Timestamp const& other) {
+        mSeconds -= other.mSeconds;
+        mFraction -= other.mFraction;
+        normalize();
+        return *this;
+    }
+    Timestamp& operator+=(double sec) {
+        add(sec);
+        return *this;
+    }
+    Timestamp& operator-=(double sec) {
+        subtract(sec);
+        return *this;
     }
 
     NODISCARD Timestamp difference(Timestamp const& other) const { return *this - other; }
@@ -65,6 +93,7 @@ public:
     void subtract(double sec);
 
     NODISCARD bool operator==(Timestamp const& other) const;
+    NODISCARD bool operator!=(Timestamp const& other) const { return !(*this == other); }
 
     NODISCARD bool operator<(Timestamp const& other) const {
         return seconds() < other.seconds() ||

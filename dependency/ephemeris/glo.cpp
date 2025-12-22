@@ -25,7 +25,7 @@ CONSTEXPR static int    GLO_MAX_ITER  = 100;
 
 bool GloEphemeris::is_valid(ts::Glo const& time) const NOEXCEPT {
     if (health != 0) return false;
-    auto dt = time.timestamp().difference(reference_time.timestamp()).full_seconds();
+    auto dt = time - reference_time;
     return std::abs(dt) <= 1800.0;
 }
 
@@ -82,7 +82,7 @@ EphemerisResult GloEphemeris::compute(ts::Glo const& time) const NOEXCEPT {
 
     // integrate from reference time to target time
     VERBOSEF("reference time: %s", ts::Utc(reference_time).rtklib_time_string().c_str());
-    auto dt = time.timestamp().difference(reference_time.timestamp()).full_seconds();
+    auto dt = time - reference_time;
     VERBOSEF("dt: %f", dt);
 
     // initial state (km, km/s)

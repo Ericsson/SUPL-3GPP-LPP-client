@@ -81,3 +81,72 @@ TEST_CASE("GPS sub-second precision") {
     auto gps = ts::Gps::from_week_tow(2000, 100, 0.123456789);
     CHECK(gps.timestamp().fraction() == doctest::Approx(0.123456789));
 }
+
+TEST_CASE("GPS scalar addition") {
+    auto gps    = ts::Gps::from_week_tow(2000, 0, 0.0);
+    auto result = gps + 3600.5;
+    CHECK(result.time_of_week().seconds() == 3600);
+    CHECK(result.time_of_week().fraction() == doctest::Approx(0.5));
+}
+
+TEST_CASE("GPS scalar subtraction") {
+    auto gps    = ts::Gps::from_week_tow(2000, 3600, 0.5);
+    auto result = gps - 3600.5;
+    CHECK(result.time_of_week().seconds() == 0);
+    CHECK(result.time_of_week().fraction() == doctest::Approx(0.0));
+}
+
+TEST_CASE("GPS += operator") {
+    auto gps = ts::Gps::from_week_tow(2000, 0, 0.0);
+    gps += 3600.5;
+    CHECK(gps.time_of_week().seconds() == 3600);
+    CHECK(gps.time_of_week().fraction() == doctest::Approx(0.5));
+}
+
+TEST_CASE("GPS -= operator") {
+    auto gps = ts::Gps::from_week_tow(2000, 3600, 0.5);
+    gps -= 3600.5;
+    CHECK(gps.time_of_week().seconds() == 0);
+    CHECK(gps.time_of_week().fraction() == doctest::Approx(0.0));
+}
+
+TEST_CASE("GPS operator- returns double") {
+    auto gps1  = ts::Gps::from_week_tow(2000, 0, 0.0);
+    auto gps2  = ts::Gps::from_week_tow(2000, 3600, 0.5);
+    auto delta = gps2 - gps1;
+    CHECK(delta == doctest::Approx(3600.5));
+}
+
+TEST_CASE("GPS == operator") {
+    auto gps1 = ts::Gps::from_week_tow(2000, 100, 0.5);
+    auto gps2 = ts::Gps::from_week_tow(2000, 100, 0.5);
+    auto gps3 = ts::Gps::from_week_tow(2000, 100, 0.6);
+    CHECK(gps1 == gps2);
+    CHECK_FALSE(gps1 == gps3);
+}
+
+TEST_CASE("GPS != operator") {
+    auto gps1 = ts::Gps::from_week_tow(2000, 100, 0.5);
+    auto gps2 = ts::Gps::from_week_tow(2000, 100, 0.6);
+    CHECK(gps1 != gps2);
+}
+
+TEST_CASE("GPS simplified from_week_tow") {
+    auto gps1 = ts::Gps::from_week_tow(2000, 100, 0.5);
+    auto gps2 = ts::Gps::from_week_tow(2000, 100.5);
+    CHECK(gps1 == gps2);
+}
+
+TEST_CASE("GPS comparison precision") {
+    auto gps1 = ts::Gps::from_week_tow(2100, 100000.0);
+    auto gps2 = ts::Gps::from_week_tow(2100, 100000.0 + 1e-8);
+    CHECK(gps2 > gps1);
+    CHECK_FALSE(gps1 == gps2);
+}
+
+TEST_CASE("GPS delta arithmetic") {
+    auto gps1  = ts::Gps::from_week_tow(2100, 100000.0);
+    auto gps2  = gps1 + 3600.5;
+    auto delta = gps2 - gps1;
+    CHECK(delta == doctest::Approx(3600.5));
+}
