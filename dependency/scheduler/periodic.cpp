@@ -2,10 +2,6 @@
 
 #include <cerrno>
 #include <cstring>
-#include <fcntl.h>
-#include <functional>
-#include <sys/eventfd.h>
-#include <sys/timerfd.h>
 #include <unistd.h>
 
 #include <loglet/loglet.hpp>
@@ -17,103 +13,65 @@ LOGLET_MODULE2(sched, periodic);
 namespace scheduler {
 PeriodicTask::PeriodicTask(std::chrono::steady_clock::duration duration) NOEXCEPT
     : callback{},
-      mScheduler{nullptr},
-      mEvent{},
-      mDuration{duration},
-      mTimerFd{-1} {
+      mEvent{ScheduledEvent::invalid()},
+      mTimer{duration},
+      mEventName{"periodic"} {
     VSCOPE_FUNCTION();
-    mEvent.name  = "periodic";
-    mEvent.event = [this](struct epoll_event* event) {
-        if ((event->events & EPOLLIN) == 0) return;
-
-        VERBOSEF("periodic task: event");
-        TRACE_INDENT_SCOPE();
-
-        uint64_t expirations = 0;
-        auto     result      = ::read(mTimerFd, &expirations, sizeof(expirations));
-        VERBOSEF("::read(%d, %p, %zu) = %d", mTimerFd, &expirations, sizeof(expirations), result);
-        if (result < 0) {
-            ERRORF("failed to read timerfd: " ERRNO_FMT, ERRNO_ARGS(errno));
-            return;
-        }
-
-        // TODO(ewasjon): Should callback be called for each expiration?
-        if (this->callback) {
-            this->callback();
-        }
-    };
 }
 
 PeriodicTask::~PeriodicTask() NOEXCEPT {
     VSCOPE_FUNCTION();
-    if (mScheduler) {
-        cancel();
-    }
-
-    if (mTimerFd >= 0) {
-        auto result = ::close(mTimerFd);
-        VERBOSEF("::close(%d) = %d", mTimerFd, result);
-        mTimerFd = -1;
-    }
+    cancel();
 }
 
 bool PeriodicTask::schedule(Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
-    if (mScheduler) {
+    if (mEvent.valid()) {
         WARNF("already scheduled");
         return false;
     }
 
-    mTimerFd = ::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK);
-    VERBOSEF("::timerfd_create(CLOCK_MONOTONIC, TFD_NONBLOCK) = %d", mTimerFd);
-    if (mTimerFd < 0) {
-        ERRORF("failed to create timerfd: " ERRNO_FMT, ERRNO_ARGS(errno));
+    if (mTimer.fd() < 0) {
+        ERRORF("invalid timer fd");
         return false;
     }
 
-    auto seconds = std::chrono::duration_cast<std::chrono::seconds>(mDuration).count();
-    auto nanoseconds =
-        std::chrono::duration_cast<std::chrono::nanoseconds>(mDuration).count() % 1000000000;
+    mTimer.arm(true);
+    mEvent = scheduler.register_fd(
+        mTimer.fd(), EventInterest::Read,
+        [this](EventInterest triggered) {
+            if (!(triggered & EventInterest::Read)) return;
 
-    struct itimerspec its{};
-    its.it_value.tv_sec     = seconds;
-    its.it_value.tv_nsec    = nanoseconds;
-    its.it_interval.tv_sec  = seconds;
-    its.it_interval.tv_nsec = nanoseconds;
-    auto result             = ::timerfd_settime(mTimerFd, 0, &its, nullptr);
-    VERBOSEF("::timerfd_settime(%d, 0, %p, %p) = %d", mTimerFd, &its, nullptr, result);
-    if (result < 0) {
-        ERRORF("failed to set timerfd: " ERRNO_FMT, ERRNO_ARGS(errno));
-        return false;
-    }
+            VERBOSEF("periodic task: event");
+            TRACE_INDENT_SCOPE();
 
-    if (scheduler.add_epoll_fd(mTimerFd, EPOLLIN, &mEvent)) {
+            uint64_t expirations = 0;
+            auto     result      = ::read(mTimer.fd(), &expirations, sizeof(expirations));
+            VERBOSEF("::read(%d, %p, %zu) = %zd", mTimer.fd(), &expirations, sizeof(expirations),
+                     result);
+
+            if (this->callback) {
+                this->callback();
+            }
+        },
+        mEventName);
+
+    if (mEvent.valid()) {
         DEBUGF("periodic timeout in %lu ms",
-               std::chrono::duration_cast<std::chrono::milliseconds>(mDuration).count());
-        mScheduler = &scheduler;
+               std::chrono::duration_cast<std::chrono::milliseconds>(mTimer.duration()).count());
         return true;
     } else {
+        mTimer.disarm();
         return false;
     }
 }
 
 bool PeriodicTask::cancel() NOEXCEPT {
     VSCOPE_FUNCTION();
-    if (!mScheduler) {
-        WARNF("not scheduled");
-        return false;
-    }
+    if (!mEvent.valid()) return false;
 
-    if (mScheduler->remove_epoll_fd(mTimerFd)) {
-        mScheduler = nullptr;
-
-        auto result = ::close(mTimerFd);
-        VERBOSEF("::close(%d) = %d", mTimerFd, result);
-        mTimerFd = -1;
-
-        return true;
-    } else {
-        return false;
-    }
+    mEvent.unregister();
+    mTimer.disarm();
+    return true;
 }
 }  // namespace scheduler

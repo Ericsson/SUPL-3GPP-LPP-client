@@ -28,13 +28,14 @@ struct Clone {
 
 class QueueTaskBase {
 public:
-    QueueTaskBase() : mScheduler(nullptr) {}
+    QueueTaskBase() : mScheduler(nullptr), mEvent{scheduler::ScheduledEvent::invalid()} {}
     virtual ~QueueTaskBase()                               = default;
     virtual void schedule(scheduler::Scheduler* scheduler) = 0;
     virtual void cancel()                                  = 0;
 
 protected:
-    scheduler::Scheduler* mScheduler;
+    scheduler::Scheduler*     mScheduler;
+    scheduler::ScheduledEvent mEvent;
 };
 
 template <typename T>
@@ -46,16 +47,19 @@ public:
     };
 
     QueueTask(System& system) : mSystem(system), mQueue() {
-        mQueueName   = std::string{"streamline/"} + TypeName<T>::name();
-        mEvent.name  = mQueueName.c_str();
-        mEvent.event = [this](struct epoll_event* event) {
-            this->event(event);
-        };
+        mQueueName = std::string{"streamline/"} + TypeName<T>::name();
     }
     ~QueueTask() override { cancel(); }
 
     void schedule(scheduler::Scheduler* scheduler) override {
-        if (scheduler->add_epoll_fd(mQueue.get_fd(), EPOLLIN, &mEvent)) {
+        mEvent = scheduler->register_fd(
+            mQueue.get_fd(), scheduler::EventInterest::Read,
+            [this](scheduler::EventInterest triggered) {
+                this->event(triggered);
+            },
+            mQueueName);
+
+        if (mEvent.valid()) {
             VERBOSEF("queue task (%d) scheduled", mQueue.get_fd());
             mScheduler = scheduler;
         } else {
@@ -66,18 +70,16 @@ public:
 
     void cancel() override {
         if (mScheduler) {
-            if (mScheduler->remove_epoll_fd(mQueue.get_fd())) {
-                VERBOSEF("queue task (%d) cancelled", mQueue.get_fd());
-            } else {
-                WARNF("queue task (%d) failed to cancel", mQueue.get_fd());
-            }
+            mScheduler->unregister(mEvent);
+            VERBOSEF("queue task (%d) cancelled", mQueue.get_fd());
             mScheduler = nullptr;
+            mEvent     = scheduler::ScheduledEvent::invalid();
         }
     }
 
-    void event(struct epoll_event* event) {
+    void event(scheduler::EventInterest triggered) {
         if (!mScheduler) return;
-        if ((event->events & EPOLLIN) == 0) return;
+        if (!(triggered & scheduler::EventInterest::Read)) return;
 
         auto count = mQueue.poll_count();
         VERBOSEF("queue task (%d): event count %lu (%zu inspectors, %zu consumers)",
@@ -108,8 +110,6 @@ public:
 
                 auto before_event = std::chrono::steady_clock::now();
 
-                // TODO(ewasjon): This is a bit weird, if the item is consumed why clone it? What is
-                // the reason for multiple consumers, instead of just using inspectors?
                 auto data = std::move(item.data);
                 if (std::next(it) != mConsumers.end()) {
                     auto clone = streamline::Clone<T>{}(data);
@@ -144,7 +144,6 @@ public:
 
 protected:
     System&                                    mSystem;
-    scheduler::EpollEvent                      mEvent;
     EventQueue<Item>                           mQueue;
     std::vector<std::unique_ptr<Consumer<T>>>  mConsumers;
     std::vector<std::unique_ptr<Inspector<T>>> mInspectors;

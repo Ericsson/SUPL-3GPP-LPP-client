@@ -1,6 +1,6 @@
 #include <io/stream/fd.hpp>
+#include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
-#include <scheduler/socket.hpp>
 
 #include <cerrno>
 #include <cstring>
@@ -37,9 +37,9 @@ bool FdStream::schedule(scheduler::Scheduler& scheduler) {
         VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", mConfig.fd, flags | O_NONBLOCK, result);
     }
 
-    mSocketTask.reset(new scheduler::SocketTask(mConfig.fd));
+    mSocketTask.reset(new scheduler::OwnedFileDescriptorTask(mConfig.fd));
     mSocketTask->set_event_name("fd:" + mId);
-    mSocketTask->on_read = [this](scheduler::SocketTask&) {
+    mSocketTask->on_read = [this](scheduler::OwnedFileDescriptorTask&) {
         auto result = ::read(mConfig.fd, mReadBuf, sizeof(mReadBuf));
         VERBOSEF("::read(%d, %p, %zu) = %zd", mConfig.fd, mReadBuf, sizeof(mReadBuf), result);
         if (result > 0) {
@@ -52,7 +52,7 @@ bool FdStream::schedule(scheduler::Scheduler& scheduler) {
             set_error(errno, strerror(errno));
         }
     };
-    mSocketTask->on_write = [this](scheduler::SocketTask&) {
+    mSocketTask->on_write = [this](scheduler::OwnedFileDescriptorTask&) {
         while (!mWriteBuffer.empty()) {
             auto  peek   = mWriteBuffer.peek();
             auto& data   = peek.first;
@@ -67,11 +67,13 @@ bool FdStream::schedule(scheduler::Scheduler& scheduler) {
             mWriteBuffer.consume(result);
         }
         if (mWriteBuffer.empty() && mWriteRegistered) {
-            mScheduler->update_epoll_fd(mConfig.fd, EPOLLIN, nullptr);
+            mSocketTask->update_interests(scheduler::EventInterest::Read |
+                                          scheduler::EventInterest::Error |
+                                          scheduler::EventInterest::Hangup);
             mWriteRegistered = false;
         }
     };
-    mSocketTask->on_error = [this](scheduler::SocketTask&) {
+    mSocketTask->on_error = [this](scheduler::OwnedFileDescriptorTask&) {
         ERRORF("fd %d error: " ERRNO_FMT, mConfig.fd, ERRNO_ARGS(errno));
         set_error(errno, strerror(errno));
     };
@@ -95,14 +97,15 @@ bool FdStream::cancel() {
     VSCOPE_FUNCTION();
     cancel_read_timeout();
     if (mSocketTask) {
-        mSocketTask->cancel();
+        if (mConfig.owns_fd) {
+            mSocketTask->cancel();
+        } else {
+            mSocketTask->release();
+            mSocketTask->cancel();
+        }
         mSocketTask.reset();
     }
-    if (mConfig.owns_fd && mConfig.fd >= 0) {
-        auto result = ::close(mConfig.fd);
-        VERBOSEF("::close(%d) = %d", mConfig.fd, result);
-        mConfig.fd = -1;
-    }
+    mConfig.fd = -1;
     return true;
 }
 
@@ -126,8 +129,10 @@ void FdStream::write(uint8_t const* data, size_t length) NOEXCEPT {
     }
 
     mWriteBuffer.enqueue(data, length);
-    if (!mWriteRegistered && mScheduler) {
-        mScheduler->update_epoll_fd(mConfig.fd, EPOLLIN | EPOLLOUT, nullptr);
+    if (!mWriteRegistered && mSocketTask) {
+        mSocketTask->update_interests(
+            scheduler::EventInterest::Read | scheduler::EventInterest::Write |
+            scheduler::EventInterest::Error | scheduler::EventInterest::Hangup);
         mWriteRegistered = true;
     }
 }

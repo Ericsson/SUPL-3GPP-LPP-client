@@ -1,4 +1,5 @@
 #pragma once
+#include "../program_io.hpp"
 
 #if !defined(INCLUDE_GENERATOR_TOKORO)
 #error "INCLUDE_GENERATOR_TOKORO must be defined"
@@ -38,7 +39,8 @@ struct CorrectionPointSet;
 
 class Tokoro : public streamline::Inspector<lpp::Message> {
 public:
-    Tokoro(OutputConfig const& output, TokoroConfig const& config, scheduler::Scheduler& scheduler);
+    Tokoro(ProgramOutput const& output, TokoroConfig const& config,
+           scheduler::Scheduler& scheduler);
     ~Tokoro() override;
 
     void update_location_information(lpp::LocationInformation location_information) NOEXCEPT;
@@ -64,7 +66,7 @@ public:
 #endif
 
 private:
-    OutputConfig const&                                  mOutput;
+    ProgramOutput const&                                 mOutput;
     TokoroConfig const&                                  mConfig;
     scheduler::Scheduler&                                mScheduler;
     streamline::System*                                  mSystem;

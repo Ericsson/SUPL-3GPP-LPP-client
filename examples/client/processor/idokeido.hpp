@@ -19,7 +19,7 @@
 
 class IdokeidoSpp : public streamline::Inspector<lpp::Message> {
 public:
-    IdokeidoSpp(OutputConfig const& output, IdokeidoConfig const& config,
+    IdokeidoSpp(ProgramOutput const& output, IdokeidoConfig const& config,
                 scheduler::Scheduler& scheduler, streamline::System& system);
     ~IdokeidoSpp() override;
 

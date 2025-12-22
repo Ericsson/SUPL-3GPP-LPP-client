@@ -99,10 +99,6 @@ Client::~Client() {
     sessions.clear();
     single_sessions.clear();
     location_deliveries.clear();
-
-    if (mScheduler) {
-        mScheduler->unregister_tick(this);
-    }
 }
 
 PeriodicSessionHandle
@@ -215,20 +211,6 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
     mScheduler = scheduler;
     mSession.connect(mHost, mPort, mInterface);
     mSession.schedule(scheduler);
-    scheduler->register_tick(this, [this]() {
-        TRACEF("tick: %zu sessions, %zu single sessions", mSessions.size(), mSingleSessions.size());
-        for (auto handle : mSessionsToDestroy) {
-            deallocate_periodic_session_handle(handle);
-        }
-
-        mSessionsToDestroy.clear();
-
-        for (auto transaction : mSingleSessionsToDestroy) {
-            remove_single_session(transaction);
-        }
-
-        mSingleSessionsToDestroy.clear();
-    });
 }
 
 void Client::cancel() {
@@ -243,7 +225,6 @@ void Client::cancel() {
     }
 
     mSession.cancel();
-    mScheduler->unregister_tick(this);
     mScheduler = nullptr;
 
     while (!mSessions.empty()) {
@@ -298,12 +279,20 @@ bool Client::remove_single_session(TransactionHandle const& handle) {
 
 void Client::want_to_be_destroyed(PeriodicSessionHandle const& handle) {
     VSCOPE_FUNCTION();
-    mSessionsToDestroy.push_back(handle);
+    if (mScheduler) {
+        mScheduler->defer([this, handle](scheduler::Scheduler&) {
+            deallocate_periodic_session_handle(handle);
+        });
+    }
 }
 
 void Client::single_session_want_to_be_destroyed(TransactionHandle const& handle) {
     VSCOPE_FUNCTION();
-    mSingleSessionsToDestroy.push_back(handle);
+    if (mScheduler) {
+        mScheduler->defer([this, handle](scheduler::Scheduler&) {
+            remove_single_session(handle);
+        });
+    }
 }
 
 void Client::process_message(lpp::TransactionHandle const& transaction, lpp::Message message) {

@@ -13,6 +13,22 @@ LOGLET_MODULE(sched);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(sched)
 
 namespace scheduler {
+
+void ScheduledEvent::interests(EventInterest interests) {
+    if (valid()) current().update_interests(*this, interests);
+}
+
+void ScheduledEvent::callback(std::function<void(EventInterest)> cb) {
+    if (valid()) current().update_callback(*this, std::move(cb));
+}
+
+void ScheduledEvent::unregister() {
+    if (valid()) {
+        current().unregister(*this);
+        invalidate();
+    }
+}
+
 Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1),
                                   mInterruptFd(-1),
                                   mEpollCount(0),
@@ -65,100 +81,13 @@ Scheduler::~Scheduler() NOEXCEPT {
     }
 }
 
-bool Scheduler::add_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%d, %d, %p", fd, events, event);
-    if (mEpollFd == -1 || mInterruptFd == -1) {
-        ERRORF("epoll_fd or interrupt_fd is not initialized");
-        return false;
-    }
-
-    if (events & EPOLLET) {
-        ERRORF("edge-triggered events (EPOLLET) are not supported");
-        return false;
-    }
-
-    struct epoll_event epoll_event;
-    epoll_event.events   = events;
-    epoll_event.data.ptr = event;
-    auto result          = ::epoll_ctl(mEpollFd, EPOLL_CTL_ADD, fd, &epoll_event);
-    VERBOSEF("::epoll_ctl(%d, EPOLL_CTL_ADD, %d, %p) = %d", mEpollFd, fd, &epoll_event, result);
-    if (result == -1) {
-        ERRORF("failed to add file descriptor to epoll instance: " ERRNO_FMT, ERRNO_ARGS(errno));
-        ERRORF("  fd: %d, events: %d", fd, events);
-        return false;
-    }
-
-    mEpollCount++;
-    mFdToEvent[fd]       = event;
-    mActiveEvents[event] = fd;
-    return true;
-}
-
-bool Scheduler::remove_epoll_fd(int fd) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%d", fd);
-    if (mEpollFd == -1 || mInterruptFd == -1) {
-        ERRORF("epoll_fd or interrupt_fd is not initialized");
-        return false;
-    }
-
-    auto it = mFdToEvent.find(fd);
-    if (it != mFdToEvent.end()) {
-        mActiveEvents.erase(it->second);
-    }
-
-    auto result = ::epoll_ctl(mEpollFd, EPOLL_CTL_DEL, fd, nullptr);
-    VERBOSEF("::epoll_ctl(%d, EPOLL_CTL_DEL, %d, nullptr) = %d", mEpollFd, fd, result);
-    if (result == -1) {
-        ERRORF("failed to remove file descriptor from epoll instance: " ERRNO_FMT,
-               ERRNO_ARGS(errno));
-        return false;
-    }
-
-    mEpollCount--;
-    mFdToEvent.erase(fd);
-    return true;
-}
-
-bool Scheduler::update_epoll_fd(int fd, uint32_t events, EpollEvent* event) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%d, %d, %p", fd, events, event);
-    if (mEpollFd == -1 || mInterruptFd == -1) {
-        ERRORF("epoll_fd or interrupt_fd is not initialized");
-        return false;
-    }
-
-    if (events & EPOLLET) {
-        ERRORF("edge-triggered events (EPOLLET) are not supported");
-        return false;
-    }
-
-    // If event is null, use the existing event for this fd
-    if (!event) {
-        auto it = mFdToEvent.find(fd);
-        if (it != mFdToEvent.end()) {
-            event = it->second;
-        }
-    }
-
-    struct epoll_event epoll_event;
-    epoll_event.events   = events;
-    epoll_event.data.ptr = event;
-    auto reslut          = ::epoll_ctl(mEpollFd, EPOLL_CTL_MOD, fd, &epoll_event);
-    VERBOSEF("::epoll_ctl(%d, EPOLL_CTL_MOD, %d, %p) = %d", mEpollFd, fd, &epoll_event, reslut);
-    if (reslut == -1) {
-        ERRORF("failed to modify file descriptor to epoll instance: " ERRNO_FMT, ERRNO_ARGS(errno));
-        return false;
-    }
-
-    return true;
-}
-
 #define EVENT_COUNT 32
 
-void Scheduler::execute() NOEXCEPT {
+ExecuteResult Scheduler::execute() NOEXCEPT {
     VSCOPE_FUNCTION();
     if (mEpollFd == -1 || mInterruptFd == -1) {
         ERRORF("epoll_fd or interrupt_fd is not initialized");
-        return;
+        return ExecuteResult::Error;
     }
 
     // We must process the deferred events directly if they were added before the event loop started
@@ -167,15 +96,13 @@ void Scheduler::execute() NOEXCEPT {
     for (;;) {
         if (mEpollCount == 0) {
             DEBUGF("no file descriptors to wait for");
-            return;
+            return ExecuteResult::NoWork;
         }
 
         if (mInterrupted) {
             DEBUGF("interrupted");
-            return;
+            return ExecuteResult::Interrupted;
         }
-
-        tick_callbacks();
 
         // Wait for a file descriptor to become ready.
         VERBOSEF("waiting for events (%d file descriptors)", mEpollCount);
@@ -187,7 +114,7 @@ void Scheduler::execute() NOEXCEPT {
                 continue;
             }
             ERRORF("failed to wait for events: " ERRNO_FMT, ERRNO_ARGS(errno));
-            return;
+            return ExecuteResult::Error;
         }
 
         VERBOSEF("%d file descriptors are ready, processing %d", nfds, mMaxEventsPerWait);
@@ -200,15 +127,14 @@ void Scheduler::execute() NOEXCEPT {
     }
 }
 
-void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NOEXCEPT {
+ExecuteResult Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NOEXCEPT {
     VSCOPE_FUNCTION();
     if (mEpollFd == -1 || mInterruptFd == -1) {
         ERRORF("epoll_fd or interrupt_fd is not initialized");
-        return;
+        return ExecuteResult::Error;
     }
 
     process_deferred();
-    tick_callbacks();
 
     auto now = std::chrono::steady_clock::now();
     auto end = now + duration;
@@ -216,20 +142,20 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
     for (;;) {
         if (mInterrupted) {
             DEBUGF("interrupted");
-            return;
+            return ExecuteResult::Interrupted;
         }
 
         // Calculate the timeout for epoll_pwait.
         now = std::chrono::steady_clock::now();
         if (now >= end) {
             VERBOSEF("timeout expired");
-            return;
+            return ExecuteResult::Timeout;
         }
 
         auto timeout = std::chrono::duration_cast<std::chrono::milliseconds>(end - now).count();
         if (timeout <= 1) {
             VERBOSEF("timeout expired (less than 1 ms)");
-            return;
+            return ExecuteResult::Timeout;
         }
 
         auto timeout_ms = static_cast<int>(timeout);
@@ -243,10 +169,10 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
         if (nfds == -1) {
             if (errno == EINTR) {
                 VERBOSEF("timeout expired");
-                return;
+                return ExecuteResult::Timeout;
             }
             ERRORF("failed to wait for events: " ERRNO_FMT, ERRNO_ARGS(errno));
-            return;
+            return ExecuteResult::Error;
         }
 
         VERBOSEF("%d file descriptors are ready, processing %d", nfds, mMaxEventsPerWait);
@@ -255,7 +181,7 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
             now = std::chrono::steady_clock::now();
             if (now >= end) {
                 VERBOSEF("timeout expired (skipping events)");
-                return;
+                return ExecuteResult::Timeout;
             }
 
             process_event(mEvents[i]);
@@ -265,24 +191,23 @@ void Scheduler::execute_timeout(std::chrono::steady_clock::duration duration) NO
     }
 }
 
-void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
+ExecuteResult Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
     VSCOPE_FUNCTION();
     if (mEpollFd == -1 || mInterruptFd == -1) {
         ERRORF("epoll_fd or interrupt_fd is not initialized");
-        return;
+        return ExecuteResult::Error;
     }
 
     process_deferred();
-    tick_callbacks();
 
     for (;;) {
         if (mInterrupted) {
             DEBUGF("interrupted");
-            return;
+            return ExecuteResult::Interrupted;
         }
 
         if (!condition()) {
-            return;
+            return ExecuteResult::ConditionMet;
         }
 
         // Wait for a file descriptor to become ready.
@@ -295,7 +220,7 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
                 continue;
             }
             ERRORF("failed to wait for events: " ERRNO_FMT, ERRNO_ARGS(errno));
-            return;
+            return ExecuteResult::Error;
         }
 
         VERBOSEF("%d file descriptors are ready, processing %d", nfds, mMaxEventsPerWait);
@@ -308,20 +233,19 @@ void Scheduler::execute_while(std::function<bool()> condition) NOEXCEPT {
     }
 }
 
-void Scheduler::execute_once() NOEXCEPT {
+ExecuteResult Scheduler::execute_once() NOEXCEPT {
     VSCOPE_FUNCTION();
     if (mEpollFd == -1 || mInterruptFd == -1) {
         ERRORF("epoll_fd or interrupt_fd is not initialized");
-        return;
+        return ExecuteResult::Error;
     }
 
     process_deferred();
-    tick_callbacks();
 
     for (;;) {
         if (mInterrupted) {
             DEBUGF("interrupted");
-            return;
+            return ExecuteResult::Interrupted;
         }
 
         // Wait for a file descriptor to become ready.
@@ -334,7 +258,7 @@ void Scheduler::execute_once() NOEXCEPT {
                 continue;
             }
             ERRORF("failed to wait for events: " ERRNO_FMT, ERRNO_ARGS(errno));
-            return;
+            return ExecuteResult::Error;
         }
 
         VERBOSEF("%d file descriptors are ready, processing %d", nfds, mMaxEventsPerWait);
@@ -344,7 +268,7 @@ void Scheduler::execute_once() NOEXCEPT {
         }
 
         process_deferred();
-        return;
+        return nfds > 0 ? ExecuteResult::ConditionMet : ExecuteResult::NoWork;
     }
 }
 
@@ -375,7 +299,6 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
     if (event.data.fd == mInterruptFd) {
         DEBUGF("interrupt event");
         mInterrupted = true;
-        // Clear the eventfd.
         uint64_t value;
         auto     result = ::read(mInterruptFd, &value, sizeof(value));
         VERBOSEF("::read(%d, %p, %zu) = %d", mInterruptFd, &value, sizeof(value), result);
@@ -385,41 +308,26 @@ void Scheduler::process_event(struct epoll_event& event) NOEXCEPT {
         return;
     }
 
-    auto epoll_event = reinterpret_cast<EpollEvent*>(event.data.ptr);
-    if (epoll_event && mActiveEvents.find(epoll_event) == mActiveEvents.end()) {
-        ERRORF("use-after-free detected - event %p not in active events", epoll_event);
+    auto  handle = decode_handle(event.data.u64);
+    auto* slot   = get_slot(handle);
+    if (!slot) {
+        if (is_stale(handle)) {
+            VERBOSEF("event stale %04x:%04x", handle.index, handle.generation);
+        } else {
+            ERRORF("event %04x:%04x is not registered", handle.index, handle.generation);
+        }
         return;
     }
 
-    if (epoll_event) {
+    if (slot->callback) {
         auto before_event = std::chrono::steady_clock::now();
-        epoll_event->event(&event);
+        auto interests    = epoll_to_interests(event.events);
+        slot->callback(interests);
         auto after_event = std::chrono::steady_clock::now();
-        auto event_name  = "unknown";
-        if (mActiveEvents.find(epoll_event) == mActiveEvents.end()) {
-            event_name = "deleted";
-        } else if (epoll_event->name) {
-            event_name = epoll_event->name;
-        }
-        DEBUGF("event \"%s\" took %lld ms", event_name,
+        DEBUGF("event %04x:%04x \"%s\" took %lld ms", handle.index, handle.generation,
+               slot->name.c_str(),
                std::chrono::duration_cast<std::chrono::milliseconds>(after_event - before_event)
                    .count());
-    }
-}
-
-void Scheduler::register_tick(void* unique_ptr, std::function<void()> callback) NOEXCEPT {
-    mTickCallbacks[unique_ptr] = callback;
-}
-
-void Scheduler::unregister_tick(void* unique_ptr) NOEXCEPT {
-    mTickCallbacks.erase(unique_ptr);
-}
-
-void Scheduler::tick_callbacks() {
-    for (auto& callback : mTickCallbacks) {
-        if (callback.second) {
-            callback.second();
-        }
     }
 }
 
@@ -429,6 +337,15 @@ void Scheduler::defer(std::function<void(scheduler::Scheduler&)> callback) NOEXC
 }
 
 void Scheduler::process_deferred() {
+    for (auto& slot : mEventPool) {
+        if (slot.pending_free) {
+            slot.pending_free = false;
+            slot.callback     = nullptr;
+            slot.name.clear();
+            slot.fd = -1;
+        }
+    }
+
     auto callbacks = std::move(mDeferredCallbacks);
     mDeferredCallbacks.clear();
 
@@ -442,6 +359,165 @@ void Scheduler::process_deferred() {
             callback(*this);
         }
     }
+}
+
+uint64_t Scheduler::encode_handle(ScheduledEvent h) NOEXCEPT {
+    return (static_cast<uint64_t>(h.generation) << 16) | h.index;
+}
+
+ScheduledEvent Scheduler::decode_handle(uint64_t v) NOEXCEPT {
+    return {static_cast<uint16_t>(v), static_cast<uint16_t>(v >> 16)};
+}
+
+uint32_t Scheduler::interests_to_epoll(EventInterest i) NOEXCEPT {
+    uint32_t e = 0;
+    if (i & EventInterest::Read) e |= EPOLLIN;
+    if (i & EventInterest::Write) e |= EPOLLOUT;
+    if (i & EventInterest::Error) e |= EPOLLERR;
+    if (i & EventInterest::Hangup) e |= EPOLLHUP | EPOLLRDHUP;
+    return e;
+}
+
+EventInterest Scheduler::epoll_to_interests(uint32_t e) NOEXCEPT {
+    EventInterest i = EventInterest::None;
+    if (e & EPOLLIN) i = i | EventInterest::Read;
+    if (e & EPOLLOUT) i = i | EventInterest::Write;
+    if (e & EPOLLERR) i = i | EventInterest::Error;
+    if (e & (EPOLLHUP | EPOLLRDHUP)) i = i | EventInterest::Hangup;
+    return i;
+}
+
+EventSlot* Scheduler::get_slot(ScheduledEvent handle) NOEXCEPT {
+    if (!handle.valid()) return nullptr;
+    if (handle.index >= MAX_EVENT_SLOTS) return nullptr;
+    auto& slot = mEventPool[handle.index];
+    if (!slot.in_use || slot.generation != handle.generation) return nullptr;
+    return &slot;
+}
+
+bool Scheduler::is_stale(ScheduledEvent handle) NOEXCEPT {
+    if (!handle.valid()) return false;
+    if (handle.index >= MAX_EVENT_SLOTS) return true;
+    auto& slot = mEventPool[handle.index];
+    return slot.pending_free || slot.generation != handle.generation;
+}
+
+ScheduledEvent Scheduler::register_fd(int fd, EventInterest interests,
+                                      std::function<void(EventInterest)> callback,
+                                      std::string                        name) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%d, %u, %s", fd, static_cast<uint32_t>(interests), name.c_str());
+    if (mEpollFd == -1 || mInterruptFd == -1) {
+        ERRORF("epoll_fd or interrupt_fd is not initialized");
+        return ScheduledEvent::invalid();
+    }
+
+    int slot_index = -1;
+    for (int i = 0; i < MAX_EVENT_SLOTS; i++) {
+        if (!mEventPool[i].in_use && !mEventPool[i].pending_free) {
+            slot_index = i;
+            break;
+        }
+    }
+
+    if (slot_index == -1) {
+        ERRORF("event pool exhausted");
+        return ScheduledEvent::invalid();
+    }
+
+    auto& slot      = mEventPool[slot_index];
+    slot.callback   = std::move(callback);
+    slot.name       = std::move(name);
+    slot.fd         = fd;
+    slot.in_use     = true;
+    slot.generation = static_cast<uint16_t>((slot.generation + 1) & 0xFFFF);
+    if (slot.generation == 0) slot.generation = 1;
+    DEBUGF("event register %04x:%04x \"%s\"", slot_index, slot.generation, slot.name.c_str());
+
+    ScheduledEvent handle{static_cast<uint16_t>(slot_index), slot.generation};
+
+    struct epoll_event epoll_event;
+    epoll_event.events   = interests_to_epoll(interests);
+    epoll_event.data.u64 = encode_handle(handle);
+    auto result          = ::epoll_ctl(mEpollFd, EPOLL_CTL_ADD, fd, &epoll_event);
+    VERBOSEF("::epoll_ctl(%d, EPOLL_CTL_ADD, %d, %p) = %d", mEpollFd, fd, &epoll_event, result);
+    if (result == -1) {
+        ERRORF("failed to add file descriptor to epoll instance: " ERRNO_FMT, ERRNO_ARGS(errno));
+        slot.in_use   = false;
+        slot.callback = nullptr;
+        slot.name.clear();
+        slot.fd = -1;
+        return ScheduledEvent::invalid();
+    }
+
+    mEpollCount++;
+    return handle;
+}
+
+void Scheduler::update_interests(ScheduledEvent event, EventInterest interests) NOEXCEPT {
+    VSCOPE_FUNCTIONF("{%u, %u}, %u", event.index, event.generation,
+                     static_cast<uint32_t>(interests));
+    if (mEpollFd == -1 || mInterruptFd == -1) {
+        ERRORF("epoll_fd or interrupt_fd is not initialized");
+        return;
+    }
+
+    auto* slot = get_slot(event);
+    if (!slot) {
+        ERRORF("invalid event handle or generation mismatch");
+        return;
+    }
+
+    DEBUGF("event interests %04x:%04x \"%s\" to %u", event.index, event.generation,
+           slot->name.c_str(), static_cast<uint32_t>(interests));
+
+    struct epoll_event epoll_event;
+    epoll_event.events   = interests_to_epoll(interests);
+    epoll_event.data.u64 = encode_handle(event);
+    auto result          = ::epoll_ctl(mEpollFd, EPOLL_CTL_MOD, slot->fd, &epoll_event);
+    VERBOSEF("::epoll_ctl(%d, EPOLL_CTL_MOD, %d, %p) = %d", mEpollFd, slot->fd, &epoll_event,
+             result);
+    if (result == -1) {
+        ERRORF("failed to modify file descriptor in epoll instance: " ERRNO_FMT, ERRNO_ARGS(errno));
+    }
+}
+
+void Scheduler::update_callback(ScheduledEvent                     event,
+                                std::function<void(EventInterest)> callback) NOEXCEPT {
+    VSCOPE_FUNCTIONF("{%u, %u}", event.index, event.generation);
+    auto* slot = get_slot(event);
+    if (!slot) {
+        ERRORF("invalid event handle or generation mismatch");
+        return;
+    }
+
+    DEBUGF("event callback %04x:%04x \"%s\"", event.index, event.generation, slot->name.c_str());
+    slot->callback = std::move(callback);
+}
+
+void Scheduler::unregister(ScheduledEvent event) NOEXCEPT {
+    VSCOPE_FUNCTIONF("{%u, %u}", event.index, event.generation);
+    if (mEpollFd == -1 || mInterruptFd == -1) {
+        ERRORF("epoll_fd or interrupt_fd is not initialized");
+        return;
+    }
+
+    auto* slot = get_slot(event);
+    if (!slot) {
+        ERRORF("invalid event handle or generation mismatch");
+        return;
+    }
+
+    DEBUGF("event unregister %04x:%04x \"%s\"", event.index, event.generation, slot->name.c_str());
+    auto result = ::epoll_ctl(mEpollFd, EPOLL_CTL_DEL, slot->fd, nullptr);
+    VERBOSEF("::epoll_ctl(%d, EPOLL_CTL_DEL, %d, nullptr) = %d", mEpollFd, slot->fd, result);
+    if (result == -1) {
+        ERRORF("failed to remove file descriptor from epoll instance: " ERRNO_FMT,
+               ERRNO_ARGS(errno));
+    }
+
+    slot->in_use       = false;
+    slot->pending_free = true;
+    mEpollCount--;
 }
 
 }  // namespace scheduler

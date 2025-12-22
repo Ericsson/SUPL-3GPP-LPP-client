@@ -1,5 +1,5 @@
 #include <io/stream/pty.hpp>
-#include <scheduler/socket.hpp>
+#include <scheduler/file_descriptor.hpp>
 
 #include <cerrno>
 #include <cstdlib>
@@ -96,9 +96,9 @@ bool PtyStream::schedule(scheduler::Scheduler& scheduler) {
         }
     }
 
-    mSocketTask.reset(new scheduler::SocketTask(mMasterFd));
+    mSocketTask.reset(new scheduler::OwnedFileDescriptorTask(mMasterFd));
     mSocketTask->set_event_name("pty:" + mId);
-    mSocketTask->on_read = [this](scheduler::SocketTask&) {
+    mSocketTask->on_read = [this](scheduler::OwnedFileDescriptorTask&) {
         auto result = ::read(mMasterFd, mReadBuf, sizeof(mReadBuf));
         VERBOSEF("::read(%d, %p, %zu) = %zd", mMasterFd, mReadBuf, sizeof(mReadBuf), result);
         if (result > 0) {
@@ -111,7 +111,7 @@ bool PtyStream::schedule(scheduler::Scheduler& scheduler) {
             set_error(errno, strerror(errno));
         }
     };
-    mSocketTask->on_write = [this](scheduler::SocketTask&) {
+    mSocketTask->on_write = [this](scheduler::OwnedFileDescriptorTask&) {
         while (!mWriteBuffer.empty()) {
             auto  peek   = mWriteBuffer.peek();
             auto& data   = peek.first;
@@ -126,11 +126,13 @@ bool PtyStream::schedule(scheduler::Scheduler& scheduler) {
             mWriteBuffer.consume(result);
         }
         if (mWriteBuffer.empty() && mWriteRegistered) {
-            mScheduler->update_epoll_fd(mMasterFd, EPOLLIN, nullptr);
+            mSocketTask->update_interests(scheduler::EventInterest::Read |
+                                          scheduler::EventInterest::Error |
+                                          scheduler::EventInterest::Hangup);
             mWriteRegistered = false;
         }
     };
-    mSocketTask->on_error = [this](scheduler::SocketTask&) {
+    mSocketTask->on_error = [this](scheduler::OwnedFileDescriptorTask&) {
         ERRORF("pty error: " ERRNO_FMT, ERRNO_ARGS(errno));
         set_error(errno, strerror(errno));
     };
@@ -195,8 +197,10 @@ void PtyStream::write(uint8_t const* data, size_t length) NOEXCEPT {
     }
 
     mWriteBuffer.enqueue(data, length);
-    if (!mWriteRegistered && mScheduler) {
-        mScheduler->update_epoll_fd(mMasterFd, EPOLLIN | EPOLLOUT, nullptr);
+    if (!mWriteRegistered && mSocketTask) {
+        mSocketTask->update_interests(
+            scheduler::EventInterest::Read | scheduler::EventInterest::Write |
+            scheduler::EventInterest::Error | scheduler::EventInterest::Hangup);
         mWriteRegistered = true;
     }
 }

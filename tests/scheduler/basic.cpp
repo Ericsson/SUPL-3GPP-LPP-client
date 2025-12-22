@@ -1,9 +1,12 @@
 #include <chrono>
 #include <doctest/doctest.h>
+#include <scheduler/file_descriptor.hpp>
 #include <scheduler/periodic.hpp>
 #include <scheduler/scheduler.hpp>
 #include <scheduler/timeout.hpp>
+#include <sys/socket.h>
 #include <thread>
+#include <unistd.h>
 
 TEST_CASE("Scheduler creation and destruction") {
     scheduler::Scheduler sched;
@@ -39,39 +42,35 @@ TEST_CASE("Scheduler interrupt") {
 }
 
 TEST_CASE("TimeoutTask basic") {
-    scheduler::Scheduler   sched;
-    scheduler::TimeoutTask timeout(std::chrono::milliseconds(50));
+    scheduler::ScopedScheduler sched;
 
-    bool fired       = false;
-    timeout.callback = [&]() {
+    bool                   fired = false;
+    scheduler::TimeoutTask timeout(std::chrono::milliseconds(50), [&]() {
         fired = true;
-    };
+    });
 
-    CHECK(timeout.schedule(sched));
     sched.execute_timeout(std::chrono::milliseconds(200));
 
     CHECK(fired);
 }
 
 TEST_CASE("TimeoutTask cancel") {
-    scheduler::Scheduler   sched;
-    scheduler::TimeoutTask timeout(std::chrono::milliseconds(50));
+    scheduler::ScopedScheduler sched;
 
-    bool fired       = false;
-    timeout.callback = [&]() {
+    bool                   fired = false;
+    scheduler::TimeoutTask timeout(std::chrono::milliseconds(50), [&]() {
         fired = true;
-    };
+    });
 
-    CHECK(timeout.schedule(sched));
-    CHECK(timeout.cancel());
+    timeout.cancel();
 
     sched.execute_timeout(std::chrono::milliseconds(100));
     CHECK_FALSE(fired);
 }
 
 TEST_CASE("PeriodicTask fires multiple times") {
-    scheduler::Scheduler    sched;
-    scheduler::PeriodicTask periodic(std::chrono::milliseconds(20));
+    scheduler::ScopedScheduler sched;
+    scheduler::PeriodicTask    periodic(std::chrono::milliseconds(20));
 
     int count         = 0;
     periodic.callback = [&]() {
@@ -86,49 +85,135 @@ TEST_CASE("PeriodicTask fires multiple times") {
 }
 
 TEST_CASE("Deferred callbacks execute after events") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     int order          = 0;
     int event_order    = 0;
     int deferred_order = 0;
 
-    scheduler::TimeoutTask timeout(std::chrono::milliseconds(10));
-    timeout.callback = [&]() {
+    scheduler::TimeoutTask timeout(std::chrono::milliseconds(10), [&]() {
         event_order = ++order;
         sched.defer([&](scheduler::Scheduler&) {
             deferred_order = ++order;
         });
         sched.interrupt();
-    };
+    });
 
-    timeout.schedule(sched);
     sched.execute();
 
     CHECK(event_order == 1);
     CHECK(deferred_order == 2);
 }
 
-TEST_CASE("Tick callbacks run every iteration") {
-    scheduler::Scheduler sched;
+TEST_CASE("TimeoutTask move") {
+    scheduler::ScopedScheduler sched;
 
-    int tick_count  = 0;
-    int event_count = 0;
-
-    sched.register_tick(&tick_count, [&]() {
-        tick_count++;
+    bool fired    = false;
+    auto timeout1 = std::make_unique<scheduler::TimeoutTask>(std::chrono::milliseconds(50), [&]() {
+        fired = true;
     });
 
-    scheduler::PeriodicTask periodic(std::chrono::milliseconds(10));
-    periodic.callback = [&]() {
-        event_count++;
-        if (event_count >= 3) sched.interrupt();
+    CHECK(timeout1->is_scheduled());
+
+    // Move construct
+    scheduler::TimeoutTask timeout2(std::move(*timeout1));
+    CHECK_FALSE(timeout1->is_scheduled());
+    CHECK(timeout2.is_scheduled());
+
+    sched.execute_timeout(std::chrono::milliseconds(200));
+    CHECK(fired);
+}
+
+TEST_CASE("FileDescriptorTask move") {
+    scheduler::ScopedScheduler sched;
+
+    int fds[2];
+    REQUIRE(pipe(fds) == 0);
+
+    bool read_called = false;
+
+    scheduler::FileDescriptorTask task1;
+    task1.set_fd(fds[0]);
+    task1.on_read = [&](scheduler::FileDescriptorTask&) {
+        read_called = true;
+        sched.interrupt();
     };
+    task1.schedule(sched);
 
-    periodic.schedule(sched);
-    sched.execute();
+    CHECK(task1.is_scheduled());
+    CHECK(task1.fd() == fds[0]);
 
-    CHECK(event_count == 3);
-    CHECK(tick_count >= event_count);
+    // Move construct
+    scheduler::FileDescriptorTask task2(std::move(task1));
+    CHECK_FALSE(task1.is_scheduled());
+    CHECK(task1.fd() == -1);
+    CHECK(task2.is_scheduled());
+    CHECK(task2.fd() == fds[0]);
 
-    sched.unregister_tick(&tick_count);
+    // Trigger read
+    ::write(fds[1], "x", 1);
+    sched.execute_timeout(std::chrono::milliseconds(100));
+
+    CHECK(read_called);
+
+    ::close(fds[0]);
+    ::close(fds[1]);
+}
+
+TEST_CASE("OwnedFileDescriptorTask move") {
+    scheduler::ScopedScheduler sched;
+
+    int fds[2];
+    REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0);
+
+    bool read_called = false;
+
+    auto task1     = std::make_unique<scheduler::OwnedFileDescriptorTask>(fds[0]);
+    task1->on_read = [&](scheduler::OwnedFileDescriptorTask&) {
+        read_called = true;
+        sched.interrupt();
+    };
+    task1->schedule(sched);
+
+    CHECK(task1->is_scheduled());
+    CHECK(task1->fd() == fds[0]);
+
+    // Move construct
+    scheduler::OwnedFileDescriptorTask task2(std::move(*task1));
+    CHECK_FALSE(task1->is_scheduled());
+    CHECK(task1->fd() == -1);
+    CHECK(task2.is_scheduled());
+    CHECK(task2.fd() == fds[0]);
+
+    // Trigger read
+    ::write(fds[1], "x", 1);
+    sched.execute_timeout(std::chrono::milliseconds(100));
+
+    CHECK(read_called);
+
+    ::close(fds[1]);
+    // fds[0] owned by task2, will be closed in destructor
+}
+
+TEST_CASE("RepeatableTimeoutTask move") {
+    scheduler::ScopedScheduler sched;
+
+    bool fired = false;
+
+    scheduler::RepeatableTimeoutTask task1(std::chrono::milliseconds(50));
+    task1.callback = [&]() {
+        fired = true;
+        sched.interrupt();
+    };
+    task1.schedule();
+
+    CHECK(task1.is_scheduled());
+
+    // Move construct
+    scheduler::RepeatableTimeoutTask task2(std::move(task1));
+    CHECK_FALSE(task1.is_scheduled());
+    CHECK(task2.is_scheduled());
+
+    sched.execute_timeout(std::chrono::milliseconds(200));
+    CHECK(fired);
 }

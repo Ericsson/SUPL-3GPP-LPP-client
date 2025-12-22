@@ -1,33 +1,19 @@
+#include "parse.hpp"
+#include "types.hpp"
+
 #include <core/string.hpp>
-#include <cxx11_compat.hpp>
-#include <io/adapters.hpp>
-#include <io/file.hpp>
-#include <io/serial.hpp>
-#include <io/stdin.hpp>
-#include <io/stdout.hpp>
-#include <io/stream/serial.hpp>
-#include <io/stream/tcp_client.hpp>
-#include <io/stream/tcp_server.hpp>
-#include <io/stream/udp_server.hpp>
-#include <io/tcp.hpp>
-#include <io/udp.hpp>
 #include <loglet/loglet.hpp>
+
 #include "../config.hpp"
+#include "../program_io.hpp"
 
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
-#pragma GCC diagnostic ignored "-Wdeprecated-copy-with-user-provided-dtor"
-#pragma GCC diagnostic ignored "-Wnewline-eof"
-#pragma GCC diagnostic ignored "-Wmissing-variable-declarations"
-#pragma GCC diagnostic ignored "-Winconsistent-missing-destructor-override"
-#pragma GCC diagnostic ignored "-Wsuggest-override"
-#pragma GCC diagnostic ignored "-Wshadow-field"
-#pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
+#include <external_warnings.hpp>
+EXTERNAL_WARNINGS_PUSH
 #include <args.hxx>
-#pragma GCC diagnostic pop
+EXTERNAL_WARNINGS_POP
 
 namespace input {
 
@@ -105,17 +91,6 @@ void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
 }
 
-static bool parse_bool_option(std::unordered_map<std::string, std::string> const& options,
-                              std::string const& type, std::string const& key, bool default_value) {
-    if (options.find(key) == options.end()) return default_value;
-    auto value = options.at(key);
-    if (value.empty()) return true;
-    if (value == "true") return true;
-    if (value == "false") return false;
-    throw args::ValidationError("--input " + type + ": `" + key + "` must be a boolean, got `" +
-                                value + "'");
-}
-
 static InputFormat parse_format(std::string const& str) {
     if (str == "all") return INPUT_FORMAT_ALL;
     if (str == "ubx") return INPUT_FORMAT_UBX;
@@ -129,7 +104,7 @@ static InputFormat parse_format(std::string const& str) {
 }
 
 static InputFormat parse_format_list(std::string const& str) {
-    auto parts  = core::split(str, '+');
+    auto parts  = parse_list(str, '+');
     auto format = INPUT_FORMAT_NONE;
     for (auto const& part : parts) {
         format |= parse_format(part);
@@ -137,21 +112,13 @@ static InputFormat parse_format_list(std::string const& str) {
     return format;
 }
 
-static InputFormat
-parse_format_list_from_options(std::unordered_map<std::string, std::string> const& options) {
-    if (options.find("format") == options.end()) {
-        throw args::ValidationError("--output: missing `format` option");
-    }
-    return parse_format_list(options.at("format"));
-}
-
 static std::string parse_stage(std::string const& str) {
     if (str == "tlf") return "tlf";
-    throw args::ValidationError("--output stage: invalid stage, got `" + str + "`");
+    throw args::ValidationError("--input stage: invalid stage, got `" + str + "`");
 }
 
 static std::vector<std::string> parse_stages(std::string const& str) {
-    auto                     parts = core::split(str, '+');
+    auto                     parts = parse_list(str, '+');
     std::vector<std::string> stages;
     for (auto const& part : parts) {
         stages.push_back(parse_stage(part));
@@ -159,591 +126,253 @@ static std::vector<std::string> parse_stages(std::string const& str) {
     return stages;
 }
 
-static std::vector<std::string>
-parse_stages_from_options(std::unordered_map<std::string, std::string> const& options) {
-    if (options.find("chain") == options.end()) {
-        return {};
-    } else {
-        return parse_stages(options.at("chain"));
+static void fill_common(InputCommon& common, Options const& options, std::string const& type) {
+    if (options.find("format") == options.end()) {
+        throw args::ValidationError("--input " + type + ": missing `format` option");
     }
-}
+    common.format = parse_format_list(options.at("format"));
 
-static std::vector<std::string> parse_tags(std::string const& str) {
-    return core::split(str, '+');
-}
-
-static std::vector<std::string>
-parse_tags_from_options(std::unordered_map<std::string, std::string> const& options) {
-    if (options.find("tags") == options.end()) {
-        return {};
-    } else {
-        return parse_tags(options.at("tags"));
+    if (options.find("tags") != options.end()) {
+        common.tags = parse_list(options.at("tags"), '+');
     }
+    if (options.find("chain") != options.end()) {
+        common.stages = parse_stages(options.at("chain"));
+    }
+
+    common.print                 = parse_bool(options, "print", false);
+    common.nmea_lf_only          = parse_bool(options, "nmea_lf_only", false);
+    common.discard_errors        = parse_bool(options, "discard_errors", false);
+    common.discard_unknowns      = parse_bool(options, "discard_unknowns", false);
+    common.exclude_from_shutdown = parse_bool(options, "exclude_from_shutdown", false);
 }
 
-static std::unordered_map<std::string, std::string> parse_options(std::string const& str) {
-    auto                                         parts = core::split(str, ',');
-    std::unordered_map<std::string, std::string> options;
-    for (auto const& part : parts) {
-        auto kv = core::split(part, '=');
-        if (kv.size() == 1) {
-            options[kv[0]] = "";
-        } else if (kv.size() == 2) {
-            options[kv[0]] = kv[1];
+static std::string generate_stream_id(std::string const& type, Options const& options,
+                                      bool unique) {
+    std::string base_id;
+    if (type == "serial") {
+        base_id = "serial:" + options.at("device");
+    } else if (type == "tcp-client") {
+        if (options.find("path") != options.end()) {
+            base_id = "tcp-client:" + options.at("path");
         } else {
-            throw args::ValidationError("--output: invalid option, got `" + part + "`");
+            base_id = "tcp-client:" + options.at("host") + ":" + options.at("port");
+        }
+    } else if (type == "tcp-server") {
+        if (options.find("path") != options.end()) {
+            base_id = "tcp-server:" + options.at("path");
+        } else {
+            auto listen =
+                options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+            base_id = "tcp-server:" + listen + ":" + options.at("port");
+        }
+    } else if (type == "udp-server") {
+        if (options.find("path") != options.end()) {
+            base_id = "udp-server:" + options.at("path");
+        } else {
+            auto listen =
+                options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+            base_id = "udp-server:" + listen + ":" + options.at("port");
         }
     }
-    return options;
+
+    if (unique) {
+        return base_id + "#" + generate_unique_id();
+    }
+    return base_id;
 }
 
-static std::unique_ptr<io::Input>
-parse_input_stdin(std::unordered_map<std::string, std::string> const&) {
-    return std::make_unique<io::StdinInput>();
+static void parse_stdin(Options const& options, InputsConfig& inputs) {
+    InputStdinConfig cfg;
+    fill_common(cfg, options, "stdin");
+    inputs.stdin_inputs.push_back(std::move(cfg));
 }
 
-static std::unique_ptr<io::Input>
-parse_input_file(std::unordered_map<std::string, std::string> const& options,
-                 Config const*                                       config) {
+static void parse_file(Options const& options, InputsConfig& inputs) {
     if (options.find("path") == options.end()) {
         throw args::ValidationError("--input file: missing `path` option");
     }
 
-    auto path = options.at("path");
-    auto bps  = 128ULL * 10;
+    InputFileConfig cfg;
+    fill_common(cfg, options, "file");
+    cfg.path = options.at("path");
+
     if (options.find("bps") != options.end()) {
-        try {
-            bps = std::stoull(options.at("bps"));
-        } catch (...) {
-            throw args::ParseError("--input file: `bps` must be an integer, got `" +
-                                   options.at("bps") + "'");
-        }
+        auto bps           = std::stoull(options.at("bps"));
+        cfg.bytes_per_tick = static_cast<size_t>((bps + 9) / 10);
     }
 
-    auto tick_interval  = std::chrono::milliseconds(100);
-    auto bytes_per_tick = static_cast<size_t>((bps + 9) / 10);
-    return std::unique_ptr<io::Input>(new io::FileInput(
-        path, bytes_per_tick, tick_interval, config->input.disable_pipe_buffer_optimization));
+    inputs.file.push_back(std::move(cfg));
 }
 
-static io::BaudRate parse_baudrate(std::string const& str) {
-    long baud_rate = 0;
-    try {
-        baud_rate = std::stol(str);
-    } catch (...) {
-        throw args::ParseError("--input serial: `baudrate` must be an integer, got `" + str + "'");
+static void parse_stream_ref(Options const& options, InputsConfig& inputs) {
+    if (options.find("id") == options.end()) {
+        throw args::ValidationError("--input stream: missing `id` option");
     }
 
-    if (baud_rate == 50) return io::BaudRate::BR50;
-    if (baud_rate == 75) return io::BaudRate::BR75;
-    if (baud_rate == 110) return io::BaudRate::BR110;
-    if (baud_rate == 134) return io::BaudRate::BR134;
-    if (baud_rate == 150) return io::BaudRate::BR150;
-    if (baud_rate == 200) return io::BaudRate::BR200;
-    if (baud_rate == 300) return io::BaudRate::BR300;
-    if (baud_rate == 600) return io::BaudRate::BR600;
-    if (baud_rate == 1200) return io::BaudRate::BR1200;
-    if (baud_rate == 1800) return io::BaudRate::BR1800;
-    if (baud_rate == 2400) return io::BaudRate::BR2400;
-    if (baud_rate == 4800) return io::BaudRate::BR4800;
-    if (baud_rate == 9600) return io::BaudRate::BR9600;
-    if (baud_rate == 19200) return io::BaudRate::BR19200;
-    if (baud_rate == 38400) return io::BaudRate::BR38400;
-    if (baud_rate == 57600) return io::BaudRate::BR57600;
-    if (baud_rate == 115200) return io::BaudRate::BR115200;
-    if (baud_rate == 230400) return io::BaudRate::BR230400;
-    if (baud_rate == 460800) return io::BaudRate::BR460800;
-    if (baud_rate == 500000) return io::BaudRate::BR500000;
-    if (baud_rate == 576000) return io::BaudRate::BR576000;
-    if (baud_rate == 921600) return io::BaudRate::BR921600;
-    if (baud_rate == 1000000) return io::BaudRate::BR1000000;
-    if (baud_rate == 1152000) return io::BaudRate::BR1152000;
-    if (baud_rate == 1500000) return io::BaudRate::BR1500000;
-    if (baud_rate == 2000000) return io::BaudRate::BR2000000;
-    if (baud_rate == 2500000) return io::BaudRate::BR2500000;
-    if (baud_rate == 3000000) return io::BaudRate::BR3000000;
-    if (baud_rate == 3500000) return io::BaudRate::BR3500000;
-    if (baud_rate == 4000000) return io::BaudRate::BR4000000;
-    throw args::ParseError("--input serial: `baudrate` must be a valid baud rate, got `" + str +
-                           "'");
+    InputStreamConfig cfg;
+    fill_common(cfg, options, "stream");
+    cfg.stream_id = options.at("id");
+    inputs.stream.push_back(std::move(cfg));
 }
 
-static io::DataBits parse_databits(std::string const& str) {
-    long databits = 0;
-    try {
-        databits = std::stol(str);
-    } catch (...) {
-        throw args::ParseError("--input serial: `data` must be an integer, got `" + str + "'");
-    }
-
-    if (databits == 5) return io::DataBits::FIVE;
-    if (databits == 6) return io::DataBits::SIX;
-    if (databits == 7) return io::DataBits::SEVEN;
-    if (databits == 8) return io::DataBits::EIGHT;
-    throw args::ParseError("--input serial: `data` must be 5, 6, 7, or 8, got `" + str + "'");
-}
-
-static io::StopBits parse_stopbits(std::string const& str) {
-    long stopbits = 0;
-    try {
-        stopbits = std::stol(str);
-    } catch (...) {
-        throw args::ParseError("--input serial: `stop` must be an integer, got `" + str + "'");
-    }
-
-    if (stopbits == 1) return io::StopBits::ONE;
-    if (stopbits == 2) return io::StopBits::TWO;
-    throw args::ParseError("--input serial: `stop` must be 1 or 2, got `" + str + "'");
-}
-
-static io::ParityBit parse_paritybit(std::string const& str) {
-    if (str == "none") return io::ParityBit::NONE;
-    if (str == "odd") return io::ParityBit::ODD;
-    if (str == "even") return io::ParityBit::EVEN;
-    throw args::ParseError("--input serial: `parity` must be none, odd, or even, got `" + str +
-                           "'");
-}
-
-static std::unique_ptr<io::Input>
-parse_serial(std::unordered_map<std::string, std::string> const& options) {
+static void parse_serial(Options const& options, InputsConfig& inputs) {
     if (options.find("device") == options.end()) {
-        throw args::RequiredError("--input serial: missing `device` option");
+        throw args::ValidationError("--input serial: missing `device` option");
     }
 
-    auto baud_rate  = io::BaudRate::BR115200;
-    auto data_bits  = io::DataBits::EIGHT;
-    auto stop_bits  = io::StopBits::ONE;
-    auto parity_bit = io::ParityBit::NONE;
+    auto unique = parse_bool(options, "unique", false);
 
-    auto baud_rate_it = options.find("baudrate");
-    if (baud_rate_it != options.end()) baud_rate = parse_baudrate(baud_rate_it->second);
+    InputSerialConfig cfg;
+    fill_common(cfg, options, "serial");
+    cfg.stream_id     = generate_stream_id("serial", options, unique);
+    cfg.config.device = options.at("device");
 
-    auto data_bits_it = options.find("data");
-    if (data_bits_it != options.end()) data_bits = parse_databits(data_bits_it->second);
-
-    auto stop_bits_it = options.find("stop");
-    if (stop_bits_it != options.end()) stop_bits = parse_stopbits(stop_bits_it->second);
-
-    auto parity_bit_it = options.find("parity");
-    if (parity_bit_it != options.end()) parity_bit = parse_paritybit(parity_bit_it->second);
-
-    auto device = options.at("device");
-    return std::unique_ptr<io::Input>(
-        new io::SerialInput(device, baud_rate, data_bits, stop_bits, parity_bit));
-}
-
-static std::unique_ptr<io::Input>
-parse_tcp_client(std::unordered_map<std::string, std::string> const& options) {
-    auto reconnect = true;
-    if (options.find("reconnect") != options.end()) {
-        if (options.at("reconnect") == "true") {
-            reconnect = true;
-        } else if (options.at("reconnect") == "false") {
-            reconnect = false;
-        } else {
-            throw args::ValidationError("--input tcp-client: `reconnect` must be a boolean, got `" +
-                                        options.at("reconnect") + "'");
-        }
-    }
-
-    if (options.find("host") != options.end()) {
-        if (options.find("host") == options.end()) {
-            throw args::RequiredError("--input tcp-client: missing `host` option");
-        } else if (options.find("port") == options.end()) {
-            throw args::RequiredError("--input tcp-client: missing `port` option");
-        } else if (options.find("path") != options.end()) {
-            throw args::RequiredError(
-                "--input tcp-client: `path` cannot be used with `host` and `port`");
-        }
-
-        auto host = options.at("host");
-        auto port = 0;
-        try {
-            port = std::stoi(options.at("port"));
-        } catch (...) {
-            throw args::ParseError("--input tcp-client: `port` must be an integer, got `" +
-                                   options.at("port") + "'");
-        }
-
-        if (port < 0 || port > 65535) {
-            throw args::ParseError(
-                "--input tcp-client: `port` must be in the range [0, 65535], got `" +
-                std::to_string(port) + "'");
-        }
-
-        return std::unique_ptr<io::Input>(
-            new io::TcpClientInput(host, static_cast<uint16_t>(port), reconnect));
-    } else if (options.find("path") != options.end()) {
-        auto path = options.at("path");
-        return std::unique_ptr<io::Input>(new io::TcpClientInput(path, reconnect));
-    } else {
-        throw args::RequiredError("--input tcp-client: missing `host` and `port` or `path` option");
-    }
-}
-
-static std::unique_ptr<io::Input>
-parse_tcp_server(std::unordered_map<std::string, std::string> const& options) {
-    if (options.find("listen") != options.end() || options.find("port") != options.end()) {
-        if (options.find("port") == options.end()) {
-            throw args::RequiredError("--input tcp-server: missing `port` option");
-        } else if (options.find("path") != options.end()) {
-            throw args::RequiredError(
-                "--input tcp-server: `path` cannot be used with `listen` and `port`");
-        }
-
-        std::string listen{};
-        if (options.find("listen") == options.end()) {
-            listen = "0.0.0.0";
-        } else {
-            listen = options.at("listen");
-        }
-
-        auto port = 0;
-        try {
-            port = std::stoi(options.at("port"));
-        } catch (...) {
-            throw args::ParseError("--input tcp-server: `port` must be an integer, got `" +
-                                   options.at("port") + "'");
-        }
-
-        if (port < 0 || port > 65535) {
-            throw args::ParseError(
-                "--input tcp-server: `port` must be in the range [0, 65535], got `" +
-                std::to_string(port) + "'");
-        }
-
-        return std::unique_ptr<io::Input>(
-            new io::TcpServerInput(listen, static_cast<uint16_t>(port)));
-    } else if (options.find("path") != options.end()) {
-        auto path = options.at("path");
-        return std::unique_ptr<io::Input>(new io::TcpServerInput(path));
-    } else {
-        throw args::RequiredError(
-            "--input tcp-server: missing `listen` and `port` or `path` option");
-    }
-}
-
-static std::unique_ptr<io::Input>
-parse_udp_server(std::unordered_map<std::string, std::string> const& options) {
-    if (options.find("listen") != options.end() || options.find("port") != options.end()) {
-        if (options.find("port") == options.end()) {
-            throw args::RequiredError("--input udp-server: missing `port` option");
-        } else if (options.find("path") != options.end()) {
-            throw args::RequiredError(
-                "--input udp-server: `path` cannot be used with `listen` and `port`");
-        }
-
-        std::string listen{};
-        if (options.find("listen") == options.end()) {
-            listen = "0.0.0.0";
-        } else {
-            listen = options.at("listen");
-        }
-
-        auto port = 0;
-        try {
-            port = std::stoi(options.at("port"));
-        } catch (...) {
-            throw args::ParseError("--input udp-server: `port` must be an integer, got `" +
-                                   options.at("port") + "'");
-        }
-
-        if (port < 0 || port > 65535) {
-            throw args::ParseError(
-                "--input udp-server: `port` must be in the range [0, 65535], got `" +
-                std::to_string(port) + "'");
-        }
-
-        return std::unique_ptr<io::Input>(
-            new io::UdpServerInput(listen, static_cast<uint16_t>(port)));
-    } else if (options.find("path") != options.end()) {
-        auto path = options.at("path");
-        return std::unique_ptr<io::Input>(new io::UdpServerInput(path));
-    } else {
-        throw args::RequiredError(
-            "--input udp-server: missing `listen` and `port` or `path` option");
-    }
-}
-
-static std::string generate_stream_id(std::string const&                                  type,
-                                      std::unordered_map<std::string, std::string> const& options) {
-    if (type == "serial") {
-        return "serial:" + options.at("device");
-    } else if (type == "tcp-client") {
-        if (options.find("path") != options.end()) {
-            return "tcp-client:" + options.at("path");
-        }
-        return "tcp-client:" + options.at("host") + ":" + options.at("port");
-    } else if (type == "tcp-server") {
-        if (options.find("path") != options.end()) {
-            return "tcp-server:" + options.at("path");
-        }
-        auto listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
-        return "tcp-server:" + listen + ":" + options.at("port");
-    } else if (type == "udp-server") {
-        if (options.find("path") != options.end()) {
-            return "udp-server:" + options.at("path");
-        }
-        auto listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
-        return "udp-server:" + listen + ":" + options.at("port");
-    }
-    return "";
-}
-
-static std::shared_ptr<io::Stream>
-create_stream_serial(std::string const&                                  id,
-                     std::unordered_map<std::string, std::string> const& options) {
-    io::SerialConfig config;
-    config.device = options.at("device");
     if (options.find("baudrate") != options.end()) {
-        config.baud_rate = parse_baudrate(options.at("baudrate"));
+        cfg.config.baud_rate = parse_baudrate(options.at("baudrate"));
     }
     if (options.find("databits") != options.end()) {
-        config.data_bits = parse_databits(options.at("databits"));
+        cfg.config.data_bits = parse_databits(options.at("databits"));
     }
     if (options.find("stopbits") != options.end()) {
-        config.stop_bits = parse_stopbits(options.at("stopbits"));
+        cfg.config.stop_bits = parse_stopbits(options.at("stopbits"));
     }
     if (options.find("parity") != options.end()) {
-        config.parity_bit = parse_paritybit(options.at("parity"));
+        cfg.config.parity_bit = parse_paritybit(options.at("parity"));
     }
-    return std::make_shared<io::SerialStream>(id, config);
+
+    inputs.serial.push_back(std::move(cfg));
 }
 
-static std::shared_ptr<io::Stream>
-create_stream_tcp_client(std::string const&                                  id,
-                         std::unordered_map<std::string, std::string> const& options) {
-    io::TcpClientConfig config;
-    if (options.find("reconnect") != options.end()) {
-        config.reconnect = options.at("reconnect") != "false";
-    }
+static void parse_tcp_client(Options const& options, InputsConfig& inputs) {
+    auto unique = parse_bool(options, "unique", false);
+
+    InputTcpClientConfig cfg;
+    fill_common(cfg, options, "tcp-client");
+
     if (options.find("path") != options.end()) {
-        config.path = options.at("path");
+        cfg.config.path = options.at("path");
     } else {
-        config.host = options.at("host");
-        config.port = static_cast<uint16_t>(std::stoul(options.at("port")));
-    }
-    return std::make_shared<io::TcpClientStream>(id, config);
-}
-
-static std::shared_ptr<io::Stream>
-create_stream_tcp_server(std::string const&                                  id,
-                         std::unordered_map<std::string, std::string> const& options) {
-    io::TcpServerConfig config;
-    if (options.find("path") != options.end()) {
-        config.path = options.at("path");
-    } else {
-        config.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
-        config.port   = static_cast<uint16_t>(std::stoul(options.at("port")));
-    }
-    return std::make_shared<io::TcpServerStream>(id, config);
-}
-
-static std::shared_ptr<io::Stream>
-create_stream_udp_server(std::string const&                                  id,
-                         std::unordered_map<std::string, std::string> const& options) {
-    io::UdpServerConfig config;
-    if (options.find("path") != options.end()) {
-        config.path = options.at("path");
-    } else {
-        config.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
-        config.port   = static_cast<uint16_t>(std::stoul(options.at("port")));
-    }
-    return std::make_shared<io::UdpServerStream>(id, config);
-}
-
-static std::unique_ptr<io::Input>
-get_or_create_stream_input(std::string const&                                  type,
-                           std::unordered_map<std::string, std::string> const& options,
-                           Config*                                             config) {
-    auto unique = parse_bool_option(options, type, "unique", false);
-    auto id     = generate_stream_id(type, options);
-    if (id.empty()) return nullptr;
-
-    std::shared_ptr<io::Stream> stream;
-    if (!unique && config->stream_registry.has(id)) {
-        stream = config->stream_registry.get(id);
-    } else {
-        if (unique) {
-            static int unique_counter = 0;
-            id += "#" + std::to_string(++unique_counter);
+        if (options.find("host") == options.end() || options.find("port") == options.end()) {
+            throw args::ValidationError("--input tcp-client: missing `host` or `port` option");
         }
-        if (type == "serial")
-            stream = create_stream_serial(id, options);
-        else if (type == "tcp-client")
-            stream = create_stream_tcp_client(id, options);
-        else if (type == "tcp-server")
-            stream = create_stream_tcp_server(id, options);
-        else if (type == "udp-server")
-            stream = create_stream_udp_server(id, options);
-
-        if (stream) config->stream_registry.add(id, stream);
+        cfg.config.host = options.at("host");
+        cfg.config.port = static_cast<uint16_t>(std::stoul(options.at("port")));
     }
+    cfg.config.reconnect = parse_bool(options, "reconnect", true);
+    cfg.stream_id        = generate_stream_id("tcp-client", options, unique);
 
-    if (stream) return std::make_unique<io::StreamInputAdapter>(stream);
-    return nullptr;
+    inputs.tcp_client.push_back(std::move(cfg));
 }
 
-static InputInterface parse_interface(std::string const& source, Config* config) {
-    std::unordered_map<std::string, std::string> options;
+static void parse_tcp_server(Options const& options, InputsConfig& inputs) {
+    auto unique = parse_bool(options, "unique", false);
 
-    auto parts = core::split(source, ':');
-    if (parts.size() == 1) {
-        // No options
-    } else if (parts.size() == 2) {
-        options = parse_options(parts[1]);
+    InputTcpServerConfig cfg;
+    fill_common(cfg, options, "tcp-server");
+
+    if (options.find("path") != options.end()) {
+        cfg.path = options.at("path");
     } else {
+        if (options.find("port") == options.end()) {
+            throw args::ValidationError("--input tcp-server: missing `port` option");
+        }
+        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+        cfg.port   = static_cast<uint16_t>(std::stoul(options.at("port")));
+    }
+    cfg.stream_id = generate_stream_id("tcp-server", options, unique);
+
+    inputs.tcp_server.push_back(std::move(cfg));
+}
+
+static void parse_udp_server(Options const& options, InputsConfig& inputs) {
+    auto unique = parse_bool(options, "unique", false);
+
+    InputUdpServerConfig cfg;
+    fill_common(cfg, options, "udp-server");
+
+    if (options.find("path") != options.end()) {
+        cfg.path = options.at("path");
+    } else {
+        if (options.find("port") == options.end()) {
+            throw args::ValidationError("--input udp-server: missing `port` option");
+        }
+        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+        cfg.port   = static_cast<uint16_t>(std::stoul(options.at("port")));
+    }
+    cfg.stream_id = generate_stream_id("udp-server", options, unique);
+
+    inputs.udp_server.push_back(std::move(cfg));
+}
+
+static void parse_interface(std::string const& source, Config* config) {
+    auto parts = core::split(source, ':');
+    if (parts.size() < 1 || parts.size() > 2) {
         throw args::ValidationError("--input: invalid input, got `" + source + "`");
     }
 
-    auto format           = parse_format_list_from_options(options);
-    auto tags             = parse_tags_from_options(options);
-    auto stages           = parse_stages_from_options(options);
-    auto print            = parse_bool_option(options, parts[0], "print", false);
-    auto nmea_lf_only     = parse_bool_option(options, parts[0], "nmea_lf_only", false);
-    auto discard_errors   = parse_bool_option(options, parts[0], "discard_errors", false);
-    auto discard_unknowns = parse_bool_option(options, parts[0], "discard_unknowns", false);
-    auto exclude_from_shutdown =
-        parse_bool_option(options, parts[0], "exclude_from_shutdown", false);
+    auto type    = parts[0];
+    auto options = parts.size() == 2 ? parse_options(parts[1]) : Options{};
 
-    std::unique_ptr<io::Input> input;
-    if (parts[0] == "stdin") input = parse_input_stdin(options);
-    if (parts[0] == "file") input = parse_input_file(options, config);
-    if (parts[0] == "serial") input = get_or_create_stream_input(parts[0], options, config);
-    if (parts[0] == "tcp-client") input = get_or_create_stream_input(parts[0], options, config);
-    if (parts[0] == "tcp-server") input = get_or_create_stream_input(parts[0], options, config);
-    if (parts[0] == "udp-server") input = get_or_create_stream_input(parts[0], options, config);
-    if (parts[0] == "stream") {
-        if (options.find("id") == options.end()) {
-            throw args::ValidationError("--input stream: missing `id` option");
-        }
-        auto stream = config->stream_registry.get(options.at("id"));
-        if (!stream) {
-            throw args::ValidationError("--input stream: unknown stream id `" + options.at("id") +
-                                        "`");
-        }
-        input = std::make_unique<io::StreamInputAdapter>(stream);
-    }
+    if (type == "stdin") return parse_stdin(options, config->inputs_config);
+    if (type == "file") return parse_file(options, config->inputs_config);
+    if (type == "stream") return parse_stream_ref(options, config->inputs_config);
+    if (type == "serial") return parse_serial(options, config->inputs_config);
+    if (type == "tcp-client") return parse_tcp_client(options, config->inputs_config);
+    if (type == "tcp-server") return parse_tcp_server(options, config->inputs_config);
+    if (type == "udp-server") return parse_udp_server(options, config->inputs_config);
 
-    if (input) {
-        return {format,
-                print,
-                std::move(input),
-                tags,
-                stages,
-                nmea_lf_only,
-                discard_errors,
-                discard_unknowns,
-                exclude_from_shutdown};
-    }
-
-    throw args::ValidationError("--input: invalid input type, got `" + parts[0] + "`");
+    throw args::ValidationError("--input: invalid input type, got `" + type + "`");
 }
 
 void parse(Config* config) {
-    config->input.disable_pipe_buffer_optimization = gDisablePipeBufferOptimization.Get();
-    config->input.shutdown_on_complete             = gShutdownOnComplete.Get();
-    config->input.shutdown_delay = std::chrono::milliseconds(gShutdownDelay.Get());
+    config->inputs_config.disable_pipe_buffer_optimization = gDisablePipeBufferOptimization.Get();
+    config->inputs_config.shutdown_on_complete             = gShutdownOnComplete.Get();
+    config->inputs_config.shutdown_delay = std::chrono::milliseconds(gShutdownDelay.Get());
 
     for (auto const& input : gArgs.Get()) {
-        config->input.inputs.push_back(parse_interface(input, config));
-    }
-
-    for (auto& input : config->input.inputs) {
-        for (auto& tag : input.tags) {
-            config->register_tag(tag);
-        }
+        parse_interface(input, config);
     }
 }
 
-static char const* input_type(io::Input* input) {
-    if (dynamic_cast<io::StdinInput*>(input)) return "stdin";
-    if (dynamic_cast<io::FileInput*>(input)) return "file";
-    if (dynamic_cast<io::SerialInput*>(input)) return "serial";
-    if (dynamic_cast<io::TcpClientInput*>(input)) return "tcp-client";
-    if (dynamic_cast<io::TcpServerInput*>(input)) return "tcp-server";
-    if (dynamic_cast<io::UdpServerInput*>(input)) return "udp-server";
-    return "unknown";
-}
-
-void dump(InputConfig const& config) {
+void dump(ProgramInput const& config) {
     for (auto const& input : config.inputs) {
-        DEBUGF("%p: %s", input.interface.get(), input_type(input.interface.get()));
+        DEBUGF("%p", input.interface.get());
         DEBUG_INDENT_SCOPE();
-        DEBUGF("format: %s%s%s%s%s%s", (input.format & INPUT_FORMAT_UBX) ? "UBX " : "",
+        DEBUGF("format: %s%s%s%s%s%s%s", (input.format & INPUT_FORMAT_UBX) ? "UBX " : "",
                (input.format & INPUT_FORMAT_NMEA) ? "NMEA " : "",
                (input.format & INPUT_FORMAT_RTCM) ? "RTCM " : "",
                (input.format & INPUT_FORMAT_CTRL) ? "CTRL " : "",
                (input.format & INPUT_FORMAT_LPP_UPER) ? "LPP-UPER " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "LPP-UPER-PAD " : "");
+               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "LPP-UPER-PAD " : "",
+               (input.format & INPUT_FORMAT_RAW) ? "RAW " : "");
+    }
+}
 
-        std::stringstream tag_ss;
-        for (auto const& tag : input.tags) {
-            tag_ss << tag << " ";
-        }
-        auto tag_str = tag_ss.str();
-        DEBUGF("tags: %s", tag_str.c_str());
-
-        DEBUGF("print: %s", input.print ? "true" : "false");
-        DEBUGF("discard_errors: %s", input.discard_errors ? "true" : "false");
-        DEBUGF("discard_unknowns: %s", input.discard_unknowns ? "true" : "false");
-        if (input.format & INPUT_FORMAT_NMEA) {
-            DEBUGF("nmea_lf_only: %s", input.nmea_lf_only ? "true" : "false");
-        }
-        auto stdin_input = dynamic_cast<io::StdinInput*>(input.interface.get());
-        if (stdin_input) continue;
-
-        auto file_input = dynamic_cast<io::FileInput*>(input.interface.get());
-        if (file_input) {
-            DEBUGF("path: \"%s\"", file_input->path().c_str());
-            continue;
-        }
-
-        auto serial_input = dynamic_cast<io::SerialInput*>(input.interface.get());
-        if (serial_input) {
-            DEBUGF("device: \"%s\"", serial_input->device().c_str());
-            DEBUGF("baudrate: %s", io::baud_rate_to_str(serial_input->baud_rate()));
-            DEBUGF("data: %s", io::data_bits_to_str(serial_input->data_bits()));
-            DEBUGF("stop: %s", io::stop_bits_to_str(serial_input->stop_bits()));
-            DEBUGF("parity: %s", io::parity_bit_to_str(serial_input->parity_bit()));
-            continue;
-        }
-
-        auto tcp_client_input = dynamic_cast<io::TcpClientInput*>(input.interface.get());
-        if (tcp_client_input) {
-            if (tcp_client_input->path().empty()) {
-                DEBUGF("host: \"%s\"", tcp_client_input->host().c_str());
-                DEBUGF("port: %u", tcp_client_input->port());
-            } else {
-                DEBUGF("path: \"%s\"", tcp_client_input->path().c_str());
-            }
-            DEBUGF("reconnect: %s", tcp_client_input->reconnect() ? "true" : "false");
-            continue;
-        }
-
-        auto tcp_server_input = dynamic_cast<io::TcpServerInput*>(input.interface.get());
-        if (tcp_server_input) {
-            if (tcp_server_input->path().empty()) {
-                DEBUGF("listen: \"%s\"", tcp_server_input->listen().c_str());
-                DEBUGF("port: %u", tcp_server_input->port());
-            } else {
-                DEBUGF("path: \"%s\"", tcp_server_input->path().c_str());
-            }
-            continue;
-        }
-
-        auto udp_server_input = dynamic_cast<io::UdpServerInput*>(input.interface.get());
-        if (udp_server_input) {
-            if (udp_server_input->path().empty()) {
-                DEBUGF("listen: \"%s\"", udp_server_input->listen().c_str());
-                DEBUGF("port: %u", udp_server_input->port());
-            } else {
-                DEBUGF("path: \"%s\"", udp_server_input->path().c_str());
-            }
-            continue;
-        }
-
-        DEBUGF("unimplemented type");
+void dump(InputsConfig const& config) {
+    for (auto const& c : config.stream) {
+        DEBUGF("stream: id=%s", c.stream_id.c_str());
+    }
+    for (auto const& c : config.stdin_inputs) {
+        (void)c;
+        DEBUGF("stdin");
+    }
+    for (auto const& c : config.file) {
+        DEBUGF("file: path=%s", c.path.c_str());
+    }
+    for (auto const& c : config.serial) {
+        DEBUGF("serial: stream_id=%s device=%s", c.stream_id.c_str(), c.config.device.c_str());
+    }
+    for (auto const& c : config.tcp_client) {
+        DEBUGF("tcp-client: stream_id=%s host=%s port=%u", c.stream_id.c_str(),
+               c.config.host.c_str(), c.config.port);
+    }
+    for (auto const& c : config.tcp_server) {
+        DEBUGF("tcp-server: stream_id=%s listen=%s port=%u", c.stream_id.c_str(), c.listen.c_str(),
+               c.port);
+    }
+    for (auto const& c : config.udp_server) {
+        DEBUGF("udp-server: stream_id=%s listen=%s port=%u", c.stream_id.c_str(), c.listen.c_str(),
+               c.port);
     }
 }
 

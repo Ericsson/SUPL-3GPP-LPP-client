@@ -22,6 +22,7 @@
 #include <scheduler/timeout.hpp>
 
 #include "config.hpp"
+#include "program_io.hpp"
 #include "stage.hpp"
 
 struct InputContext {
@@ -38,6 +39,9 @@ struct InputContext {
 
 struct Program {
     Config               config;
+    ProgramOutput        output;
+    ProgramInput         input;
+    io::StreamRegistry   stream_registry;
     scheduler::Scheduler scheduler;
     streamline::System   stream;
     bool                 is_disconnected;

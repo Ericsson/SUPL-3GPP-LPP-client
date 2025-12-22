@@ -3,6 +3,7 @@
 #include <doctest/doctest.h>
 #include <memory>
 #include <netinet/in.h>
+#include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
 #include <scheduler/socket.hpp>
 #include <sys/socket.h>
@@ -10,17 +11,17 @@
 #include <unistd.h>
 
 TEST_CASE("SocketTask read/write with socketpair") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     int fds[2];
     REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0);
 
-    scheduler::SocketTask task(fds[0]);
+    scheduler::OwnedFileDescriptorTask task(fds[0]);
 
     bool                 read_called = false;
     std::vector<uint8_t> received;
 
-    task.on_read = [&](scheduler::SocketTask& t) {
+    task.on_read = [&](scheduler::OwnedFileDescriptorTask& t) {
         char buf[256];
         auto n = ::read(t.fd(), buf, sizeof(buf));
         if (n > 0) {
@@ -46,15 +47,15 @@ TEST_CASE("SocketTask read/write with socketpair") {
 }
 
 TEST_CASE("SocketTask error on close") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     int fds[2];
     REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0);
 
-    scheduler::SocketTask task(fds[0]);
+    scheduler::OwnedFileDescriptorTask task(fds[0]);
 
     bool error_called = false;
-    task.on_error     = [&](scheduler::SocketTask&) {
+    task.on_error     = [&](scheduler::OwnedFileDescriptorTask&) {
         error_called = true;
         sched.interrupt();
     };
@@ -76,9 +77,9 @@ TEST_CASE("TcpListenerTask accepts connections") {
 }
 
 TEST_CASE("TcpConnectTask read/write") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
-    scheduler::TcpListenerTask listener("/tmp/test_scheduler_rw.sock");
+    scheduler::TcpUnixListenerTask listener("/tmp/test_scheduler_rw.sock");
     ::unlink("/tmp/test_scheduler_rw.sock");
 
     int server_fd      = -1;
@@ -124,12 +125,12 @@ TEST_CASE("TcpConnectTask read/write") {
 }
 
 TEST_CASE("UdpListenerTask basic") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
-    scheduler::UdpListenerTask listener("127.0.0.1", 0);
+    scheduler::UdpInetListenerTask listener("127.0.0.1", 0);
 
     bool received    = false;
-    listener.on_read = [&](scheduler::UdpListenerTask& l) {
+    listener.on_read = [&](scheduler::UdpSocketListenerTask& l) {
         char buf[256];
         auto n = ::read(l.fd(), buf, sizeof(buf));
         if (n > 0) {
@@ -138,7 +139,8 @@ TEST_CASE("UdpListenerTask basic") {
         }
     };
 
-    CHECK(listener.schedule(sched));
+    listener.schedule(sched);
+    CHECK(listener.is_scheduled());
 
     // Get actual port
     struct sockaddr_in addr;

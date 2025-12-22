@@ -4,7 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+- Removed tick_callbacks API from Scheduler (use defer() instead for deferred operations)
+- Removed SocketTask class (use OwnedFileDescriptorTask instead)
+
 ### Changed
+- `TimeoutTask` now auto-schedules on construction (takes duration + callback)
+- Scheduler now owns event registrations via ScheduledEvent handles with generation counters for safe event lifecycle management
+- Task classes (TimeoutTask, PeriodicTask, FileDescriptorTask, ListenerTask, UdpListenerTask, TcpConnectTask) migrated to new abstracted EventInterest API
+- Scheduler uses deferred slot deallocation (pending_free) to keep slot data valid throughout event processing frame
 - Serial port is now configured with `VMIN=0` and `VTIME=0`
 - CPM is now required to build
 - Refactored coordinate frames to use FrameTrait pattern with modular file structure and temporal model classification
@@ -31,6 +39,10 @@ All notable changes to this project will be documented in this file.
 - Tokoro tropospheric and ionospheric correction warnings now include specific failure reasons and satellite names
 
 ### Added
+- Global scheduler with `current()`, `set_current()`, `has_current()` and `ScopedScheduler` RAII guard
+- No-argument `schedule()` overloads on all task classes that use `scheduler::current()`
+- `Timer` base class for timerfd management with arm/disarm/move support
+- `RepeatableTimeoutTask` for reconnect/retry patterns with schedule/cancel/restart
 - New Stream abstraction for bidirectional I/O with write buffering, read buffering, and epoll integration
 - `--stream` CLI option for explicit stream declaration with `--input stream:id=...` and `--output stream:id=...` references
 - Stream types: serial, tcp-client, tcp-server, udp-client, udp-server, fd, pty, stdio, file

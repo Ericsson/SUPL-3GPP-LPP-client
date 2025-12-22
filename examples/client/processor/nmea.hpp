@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include "../program_io.hpp"
 
 #include <format/nmea/message.hpp>
 #include <lpp/location_information.hpp>
@@ -39,13 +40,13 @@ private:
 
 class NmeaOutput : public streamline::Inspector<NmeaMessage> {
 public:
-    NmeaOutput(OutputConfig const& output) : mOutput(output) {}
+    NmeaOutput(ProgramOutput const& output) : mOutput(output) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "NmeaOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
-    OutputConfig const& mOutput;
+    ProgramOutput const& mOutput;
 };
 
 class NmeaLocation : public streamline::Consumer<NmeaMessage> {

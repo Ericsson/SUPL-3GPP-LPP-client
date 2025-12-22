@@ -13,8 +13,8 @@ TEST_CASE("FdStream - pipe loopback") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd      = fds[0];
     config.owns_fd = true;
     io::FdStream stream("test", config);
@@ -42,8 +42,8 @@ TEST_CASE("FdStream - write to pipe") {
 
     fcntl(fds[1], F_SETFL, fcntl(fds[1], F_GETFL, 0) | O_NONBLOCK);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd      = fds[1];
     config.owns_fd = true;
     io::FdStream stream("test", config);
@@ -66,8 +66,8 @@ TEST_CASE("FdStream - read buffering min_bytes") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd                    = fds[0];
     config.owns_fd               = true;
     config.read_config.min_bytes = 10;
@@ -98,8 +98,8 @@ TEST_CASE("FdStream - multiple read callbacks") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd      = fds[0];
     config.owns_fd = true;
     io::FdStream stream("test", config);
@@ -139,8 +139,8 @@ TEST_CASE("FdStream - high load write") {
     fcntl(fds[0], F_SETFL, fcntl(fds[0], F_GETFL, 0) | O_NONBLOCK);
     fcntl(fds[1], F_SETFL, fcntl(fds[1], F_GETFL, 0) | O_NONBLOCK);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd      = fds[0];
     config.owns_fd = true;
     io::FdStream stream("test", config);
@@ -171,8 +171,8 @@ TEST_CASE("FdStream - read buffering timeout") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd                    = fds[0];
     config.owns_fd               = true;
     config.read_config.min_bytes = 10;
@@ -217,8 +217,8 @@ TEST_CASE("FdStream - write buffer with small pipe") {
     // Set small pipe buffer (Linux specific)
     fcntl(fds[1], F_SETPIPE_SZ, buf_size);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd      = fds[1];
     config.owns_fd = true;
     io::FdStream stream("test", config);
@@ -261,8 +261,8 @@ TEST_CASE("FdStream - on_complete on closed fd") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd      = fds[0];
     config.owns_fd = true;
     io::FdStream stream("test", config);

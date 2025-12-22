@@ -2,22 +2,20 @@
 #include <io/stream/udp_client.hpp>
 #include <io/stream/udp_server.hpp>
 #include <scheduler/scheduler.hpp>
+#include <scheduler/socket.hpp>
 
 #include "test_helper.hpp"
 
 #include <cstring>
 
 TEST_CASE("UdpServerStream + UdpClientStream - loopback") {
-    LogletTesting        loglet;
-    scheduler::Scheduler scheduler;
+    scheduler::ScopedScheduler scheduler;
 
-    io::UdpServerConfig server_config;
-    server_config.listen = "127.0.0.1";
-    server_config.port   = 0;
-    io::UdpServerStream server("server", server_config);
+    auto                listener = std::make_unique<scheduler::UdpInetListenerTask>("127.0.0.1", 0);
+    io::UdpServerStream server("server", std::move(listener));
     REQUIRE(server.schedule(scheduler));
 
-    auto port = server.actual_port();
+    auto port = server.port();
     REQUIRE(port > 0);
 
     io::UdpClientConfig client_config;

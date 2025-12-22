@@ -14,9 +14,7 @@
 #include <generator/idokeido/idokeido.hpp>
 #endif
 
-#include "input_format.hpp"
-#include "output_format.hpp"
-#include "stage.hpp"
+#include "config/types.hpp"
 
 #include <memory>
 #include <string>
@@ -75,61 +73,6 @@ struct IdentityConfig {
 LOGLET_MODULE_FORWARD_REF(output);
 #define OUTPUT_PRINT_MODULE &LOGLET_MODULE_REF(output)
 
-struct OutputInterface {
-    OutputFormat                 format;
-    std::unique_ptr<io::Output>  initial_interface;
-    std::unique_ptr<OutputStage> stage;
-    std::vector<std::string>     include_tags;
-    std::vector<std::string>     exclude_tags;
-    std::vector<std::string>     stages;
-
-    uint64_t include_tag_mask;
-    uint64_t exclude_tag_mask;
-
-    static OutputInterface create(OutputFormat format, std::unique_ptr<io::Output> interface,
-                                  std::vector<std::string> include_tags,
-                                  std::vector<std::string> exclude_tags,
-                                  std::vector<std::string> stages) {
-        return {
-            format,
-            std::move(interface),
-            nullptr,
-            std::move(include_tags),
-            std::move(exclude_tags),
-            std::move(stages),
-            0,
-            0,
-        };
-    }
-
-    NODISCARD inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
-    NODISCARD inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
-    NODISCARD inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
-    NODISCARD inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
-    NODISCARD inline bool lpp_xer_support() const { return (format & OUTPUT_FORMAT_LPP_XER) != 0; }
-    NODISCARD inline bool lpp_uper_support() const {
-        return (format & OUTPUT_FORMAT_LPP_UPER) != 0;
-    }
-    NODISCARD inline bool spartn_support() const { return (format & OUTPUT_FORMAT_SPARTN) != 0; }
-    NODISCARD inline bool lfr_support() const { return (format & OUTPUT_FORMAT_LFR) != 0; }
-    NODISCARD inline bool possib_support() const { return (format & OUTPUT_FORMAT_POSSIB) != 0; }
-    NODISCARD inline bool location_support() const {
-        return (format & OUTPUT_FORMAT_LOCATION) != 0;
-    }
-    NODISCARD inline bool raw_support() const { return (format & OUTPUT_FORMAT_RAW) != 0; }
-
-    NODISCARD inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
-
-    NODISCARD inline bool accept_tag(uint64_t tag) const {
-        return tag == 0 ||
-               (((include_tag_mask & tag) || include_tag_mask == 0) && !(exclude_tag_mask & tag));
-    }
-};
-
-struct OutputConfig {
-    std::vector<OutputInterface> outputs;
-};
-
 struct PrintInterface {
     OutputFormat             format;
     std::vector<std::string> include_tags;
@@ -162,25 +105,6 @@ struct PrintInterface {
 
 struct PrintConfig {
     std::vector<PrintInterface> prints;
-};
-
-struct InputInterface {
-    InputFormat                format;
-    bool                       print;
-    std::unique_ptr<io::Input> interface;
-    std::vector<std::string>   tags;
-    std::vector<std::string>   stages;
-    bool                       nmea_lf_only;
-    bool                       discard_errors;
-    bool                       discard_unknowns;
-    bool                       exclude_from_shutdown;
-};
-
-struct InputConfig {
-    std::vector<InputInterface> inputs;
-    bool                        disable_pipe_buffer_optimization;
-    bool                        shutdown_on_complete;
-    std::chrono::milliseconds   shutdown_delay;
 };
 
 struct AssistanceDataConfig {
@@ -492,12 +416,15 @@ struct Config {
     IdentityConfig            identity;
     AssistanceDataConfig      assistance_data;
     LocationInformationConfig location_information;
-    OutputConfig              output;
-    InputConfig               input;
     PrintConfig               print;
     GnssConfig                gnss;
     SchedulerConfig           scheduler;
-    io::StreamRegistry        stream_registry;
+
+    // Parsed configuration (populated by config parsers)
+    StreamsConfig streams_config;
+    InputsConfig  inputs_config;
+    OutputsConfig outputs_config;
+
 #ifdef INCLUDE_GENERATOR_RTCM
     Lpp2RtcmConfig      lpp2rtcm;
     Lpp2FrameRtcmConfig lpp2frame_rtcm;
@@ -587,7 +514,7 @@ void dump(IdentityConfig const& config);
 namespace input {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
-void dump(InputConfig const& config);
+void dump(InputsConfig const& config);
 }  // namespace input
 
 namespace li {
@@ -611,7 +538,7 @@ void dump(LoggingConfig const& config);
 namespace output {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
-void dump(OutputConfig const& config);
+void dump(OutputsConfig const& config);
 }  // namespace output
 
 namespace print {
@@ -693,9 +620,8 @@ void dump(UbxConfigConfig const& config);
 namespace stream {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
+void dump(StreamsConfig const& config);
 }  // namespace stream
 
-namespace config {
-bool parse(int argc, char** argv, Config* config);
-void dump(Config* config);
-}  // namespace config
+bool config_parse(int argc, char** argv, Config* config);
+void config_dump(Config* config);

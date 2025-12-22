@@ -11,8 +11,7 @@
 #include <unistd.h>
 
 TEST_CASE("FileStream - write to regular file") {
-    LogletTesting        loglet;
-    scheduler::Scheduler scheduler;
+    scheduler::ScopedScheduler scheduler;
 
     char temp_path[] = "/tmp/file_stream_test_XXXXXX";
     int  temp_fd     = mkstemp(temp_path);
@@ -45,8 +44,7 @@ TEST_CASE("FileStream - write to regular file") {
 }
 
 TEST_CASE("FileStream - read from FIFO") {
-    LogletTesting        loglet;
-    scheduler::Scheduler scheduler;
+    scheduler::ScopedScheduler scheduler;
 
     char temp_dir[] = "/tmp/file_stream_XXXXXX";
     REQUIRE(mkdtemp(temp_dir) != nullptr);
@@ -92,8 +90,7 @@ TEST_CASE("FileStream - read from FIFO") {
 }
 
 TEST_CASE("FileStream - rate-limited read") {
-    LogletTesting        loglet;
-    scheduler::Scheduler scheduler;
+    scheduler::ScopedScheduler scheduler;
 
     char temp_path[] = "/tmp/file_stream_rate_XXXXXX";
     int  temp_fd     = mkstemp(temp_path);
@@ -140,8 +137,7 @@ TEST_CASE("FileStream - rate-limited read") {
 }
 
 TEST_CASE("FileStream - read buffering with min_bytes") {
-    LogletTesting        loglet;
-    scheduler::Scheduler scheduler;
+    scheduler::ScopedScheduler scheduler;
 
     char temp_dir[] = "/tmp/file_stream_buf_XXXXXX";
     REQUIRE(mkdtemp(temp_dir) != nullptr);
@@ -191,8 +187,7 @@ TEST_CASE("FileStream - read buffering with min_bytes") {
 }
 
 TEST_CASE("FileStream - read buffering with timeout flush") {
-    LogletTesting        loglet;
-    scheduler::Scheduler scheduler;
+    scheduler::ScopedScheduler scheduler;
 
     char temp_dir[] = "/tmp/file_stream_flush_XXXXXX";
     REQUIRE(mkdtemp(temp_dir) != nullptr);

@@ -1,6 +1,6 @@
 #include <io/stream/stdio.hpp>
+#include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
-#include <scheduler/socket.hpp>
 
 #include <cerrno>
 #include <cstring>
@@ -43,9 +43,9 @@ bool StdioStream::schedule(scheduler::Scheduler& scheduler) {
         ::fcntl(write_fd, F_SETFL, flags | O_NONBLOCK);
     }
 
-    mSocketTask.reset(new scheduler::SocketTask(STDIN_FILENO));
+    mSocketTask.reset(new scheduler::OwnedFileDescriptorTask(STDIN_FILENO));
     mSocketTask->set_event_name("stdio:" + mId);
-    mSocketTask->on_read = [this](scheduler::SocketTask&) {
+    mSocketTask->on_read = [this](scheduler::OwnedFileDescriptorTask&) {
         auto result = ::read(STDIN_FILENO, mReadBuf, sizeof(mReadBuf));
         VERBOSEF("::read(%d, %p, %zu) = %zd", STDIN_FILENO, mReadBuf, sizeof(mReadBuf), result);
         if (result > 0) {
@@ -58,7 +58,7 @@ bool StdioStream::schedule(scheduler::Scheduler& scheduler) {
             set_error(errno, strerror(errno));
         }
     };
-    mSocketTask->on_error = [this](scheduler::SocketTask&) {
+    mSocketTask->on_error = [this](scheduler::OwnedFileDescriptorTask&) {
         ERRORF("stdin error: " ERRNO_FMT, ERRNO_ARGS(errno));
         set_error(errno, strerror(errno));
     };
@@ -68,9 +68,9 @@ bool StdioStream::schedule(scheduler::Scheduler& scheduler) {
         return false;
     }
 
-    mWriteTask.reset(new scheduler::SocketTask(write_fd));
+    mWriteTask.reset(new scheduler::OwnedFileDescriptorTask(write_fd));
     mWriteTask->set_event_name("stdio-write:" + mId);
-    mWriteTask->on_write = [this, write_fd](scheduler::SocketTask&) {
+    mWriteTask->on_write = [this, write_fd](scheduler::OwnedFileDescriptorTask&) {
         while (!mWriteBuffer.empty()) {
             auto  peek   = mWriteBuffer.peek();
             auto& data   = peek.first;

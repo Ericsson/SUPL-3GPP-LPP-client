@@ -10,7 +10,7 @@ LOGLET_MODULE2(p, test);
 
 static std::unique_ptr<scheduler::PeriodicTask> gPeriodicTask = nullptr;
 
-void test_outputer(scheduler::Scheduler& scheduler, OutputConfig const& output, uint64_t tag) {
+void test_outputer(scheduler::Scheduler& scheduler, ProgramOutput const& output, uint64_t tag) {
     VSCOPE_FUNCTION();
 
     ASSERT(gPeriodicTask == nullptr, "periodic task already exists");

@@ -31,7 +31,7 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     mFdTask.reset(new scheduler::FileDescriptorTask());
     // Return value indicates rescheduling need, not failure - safe to ignore for new task
     (void)mFdTask->set_fd(STDIN_FILENO);
-    mFdTask->on_read = [this, &scheduler](int) {
+    mFdTask->on_read = [this, &scheduler](scheduler::FileDescriptorTask&) {
         auto result = ::read(STDIN_FILENO, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", STDIN_FILENO, mBuffer, sizeof(mBuffer), result);
         if (result < 0) {
@@ -55,7 +55,7 @@ bool StdinInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             callback(*this, mBuffer, static_cast<size_t>(result));
         }
     };
-    mFdTask->on_error = [this, &scheduler](int) {
+    mFdTask->on_error = [this, &scheduler](scheduler::FileDescriptorTask&) {
         scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
             if (on_complete) on_complete();

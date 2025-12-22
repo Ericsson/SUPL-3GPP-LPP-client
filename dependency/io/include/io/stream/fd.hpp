@@ -5,7 +5,7 @@
 #include <memory>
 
 namespace scheduler {
-class SocketTask;
+class OwnedFileDescriptorTask;
 }
 
 namespace io {
@@ -29,11 +29,11 @@ public:
     NODISCARD size_t pending_writes() const NOEXCEPT override { return mWriteBuffer.size(); }
 
 private:
-    FdConfig                               mConfig;
-    std::unique_ptr<scheduler::SocketTask> mSocketTask;
-    WriteBuffer                            mWriteBuffer;
-    bool                                   mWriteRegistered = false;
-    uint8_t                                mReadBuf[4096];
+    FdConfig                                            mConfig;
+    std::unique_ptr<scheduler::OwnedFileDescriptorTask> mSocketTask;
+    WriteBuffer                                         mWriteBuffer;
+    bool                                                mWriteRegistered = false;
+    uint8_t                                             mReadBuf[4096];
 };
 
 }  // namespace io

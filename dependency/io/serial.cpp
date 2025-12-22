@@ -302,7 +302,7 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     (void)mFdTask->set_fd(mFd);
 
     mFdTask->set_event_name("fd/" + mEventName);
-    mFdTask->on_read = [this](int) {
+    mFdTask->on_read = [this](scheduler::FileDescriptorTask&) {
         while (true) {
             auto read_result = ::read(mFd, mBuffer, sizeof(mBuffer));
             VERBOSEF("::read(%d, %p, %zu) = %d", mFd, mBuffer, sizeof(mBuffer), read_result);
@@ -323,7 +323,7 @@ bool SerialInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             }
         }
     };
-    mFdTask->on_error = [this, &scheduler](int) {
+    mFdTask->on_error = [this, &scheduler](scheduler::FileDescriptorTask&) {
         scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
             if (on_complete) on_complete();

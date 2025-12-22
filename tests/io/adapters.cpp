@@ -12,8 +12,8 @@ TEST_CASE("StreamInputAdapter - receives data") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd                     = fds[0];
     config.owns_fd                = true;
     auto                   stream = std::make_shared<io::FdStream>("test", config);
@@ -42,8 +42,8 @@ TEST_CASE("StreamOutputAdapter - writes data") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd                      = fds[1];
     config.owns_fd                 = true;
     auto                    stream = std::make_shared<io::FdStream>("test", config);
@@ -68,8 +68,8 @@ TEST_CASE("StreamInputAdapter - on_complete called") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd                     = fds[0];
     config.owns_fd                = true;
     auto                   stream = std::make_shared<io::FdStream>("test", config);
@@ -95,8 +95,8 @@ TEST_CASE("Multiple adapters share stream") {
     int fds[2];
     REQUIRE(pipe(fds) == 0);
 
-    scheduler::Scheduler sched;
-    io::FdConfig         config;
+    scheduler::ScopedScheduler sched;
+    io::FdConfig               config;
     config.fd      = fds[0];
     config.owns_fd = true;
     auto stream    = std::make_shared<io::FdStream>("test", config);

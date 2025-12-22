@@ -3,8 +3,8 @@
 #include <scheduler/scheduler.hpp>
 
 TEST_CASE("BufferInput - basic read") {
-    io::BufferInput      input;
-    scheduler::Scheduler scheduler;
+    io::BufferInput            input;
+    scheduler::ScopedScheduler scheduler;
 
     bool     received = false;
     uint8_t* data_ptr = nullptr;

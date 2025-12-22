@@ -1,5 +1,5 @@
 #include <io/stream/udp_client.hpp>
-#include <scheduler/socket.hpp>
+#include <scheduler/file_descriptor.hpp>
 
 #include <arpa/inet.h>
 #include <cerrno>
@@ -100,9 +100,9 @@ bool UdpClientStream::schedule(scheduler::Scheduler& scheduler) {
         }
     }
 
-    mSocketTask.reset(new scheduler::SocketTask(mFd));
+    mSocketTask.reset(new scheduler::OwnedFileDescriptorTask(mFd));
     mSocketTask->set_event_name("udp-client:" + mId);
-    mSocketTask->on_read = [this](scheduler::SocketTask&) {
+    mSocketTask->on_read = [this](scheduler::OwnedFileDescriptorTask&) {
         auto result = ::recv(mFd, mReadBuf, sizeof(mReadBuf), 0);
         VERBOSEF("::recv(%d, %p, %zu, 0) = %zd", mFd, mReadBuf, sizeof(mReadBuf), result);
         if (result > 0) {
@@ -112,7 +112,7 @@ bool UdpClientStream::schedule(scheduler::Scheduler& scheduler) {
             set_error(errno, strerror(errno));
         }
     };
-    mSocketTask->on_write = [this](scheduler::SocketTask&) {
+    mSocketTask->on_write = [this](scheduler::OwnedFileDescriptorTask&) {
         while (!mWriteBuffer.empty()) {
             auto  peek   = mWriteBuffer.peek();
             auto& data   = peek.first;
@@ -127,27 +127,26 @@ bool UdpClientStream::schedule(scheduler::Scheduler& scheduler) {
             mWriteBuffer.consume(result);
         }
         if (mWriteBuffer.empty() && mWriteRegistered) {
-            mScheduler->update_epoll_fd(mFd, EPOLLIN, nullptr);
+            mSocketTask->update_interests(scheduler::EventInterest::Read |
+                                          scheduler::EventInterest::Error |
+                                          scheduler::EventInterest::Hangup);
             mWriteRegistered = false;
         }
     };
-    mSocketTask->on_error = [this](scheduler::SocketTask&) {
+    mSocketTask->on_error = [this](scheduler::OwnedFileDescriptorTask&) {
         ERRORF("socket error: " ERRNO_FMT, ERRNO_ARGS(errno));
         set_error(errno, strerror(errno));
     };
 
     if (!mSocketTask->schedule(scheduler)) {
         ERRORF("failed to schedule socket task");
-        auto result = ::close(mFd);
-        VERBOSEF("::close(%d) = %d", mFd, result);
+        mSocketTask.reset();
         mFd = -1;
         return false;
     }
 
     if (!schedule_read_timeout(scheduler)) {
-        mSocketTask->cancel();
-        auto result = ::close(mFd);
-        VERBOSEF("::close(%d) = %d", mFd, result);
+        mSocketTask.reset();
         mFd = -1;
         return false;
     }
@@ -161,12 +160,7 @@ bool UdpClientStream::cancel() {
     VSCOPE_FUNCTION();
     cancel_read_timeout();
     if (mSocketTask) {
-        mSocketTask->cancel();
         mSocketTask.reset();
-    }
-    if (mFd >= 0) {
-        auto result = ::close(mFd);
-        VERBOSEF("::close(%d) = %d", mFd, result);
         mFd = -1;
     }
     return true;
@@ -192,8 +186,10 @@ void UdpClientStream::write(uint8_t const* data, size_t length) NOEXCEPT {
     }
 
     mWriteBuffer.enqueue(data, length);
-    if (!mWriteRegistered && mScheduler) {
-        mScheduler->update_epoll_fd(mFd, EPOLLIN | EPOLLOUT, nullptr);
+    if (!mWriteRegistered && mSocketTask) {
+        mSocketTask->update_interests(
+            scheduler::EventInterest::Read | scheduler::EventInterest::Write |
+            scheduler::EventInterest::Error | scheduler::EventInterest::Hangup);
         mWriteRegistered = true;
     }
 }

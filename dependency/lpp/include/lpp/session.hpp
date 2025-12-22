@@ -86,8 +86,8 @@ struct TransactionData {
 class SessionTask {
 public:
     SessionTask()
-        : mFd(-1), mSession(nullptr), mScheduler(nullptr), mReadEnabled(false),
-          mWriteEnabled(false), mErrorEnabled(false) {}
+        : mFd(-1), mEvent{scheduler::ScheduledEvent::invalid()}, mSession(nullptr),
+          mScheduler(nullptr), mReadEnabled(false), mWriteEnabled(false), mErrorEnabled(false) {}
     SessionTask(Session* session, int fd);
     ~SessionTask() = default;
 
@@ -95,17 +95,17 @@ public:
     bool cancel();
     bool is_scheduled() const { return mScheduler != nullptr; }
 
-    void event(struct epoll_event* event);
+    void event(scheduler::EventInterest triggered);
     bool update(scheduler::Scheduler& scheduler, int fd, bool read, bool write, bool error);
 
 protected:
-    int                   mFd;
-    scheduler::EpollEvent mEvent;
-    Session*              mSession;
-    scheduler::Scheduler* mScheduler;
-    bool                  mReadEnabled;
-    bool                  mWriteEnabled;
-    bool                  mErrorEnabled;
+    int                       mFd;
+    scheduler::ScheduledEvent mEvent;
+    Session*                  mSession;
+    scheduler::Scheduler*     mScheduler;
+    bool                      mReadEnabled;
+    bool                      mWriteEnabled;
+    bool                      mErrorEnabled;
 };
 
 class Session {

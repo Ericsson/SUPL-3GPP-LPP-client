@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include "../program_io.hpp"
 
 #include <format/ubx/message.hpp>
 #include <streamline/inspector.hpp>
@@ -35,13 +36,13 @@ private:
 
 class UbxOutput : public streamline::Inspector<UbxMessage> {
 public:
-    UbxOutput(OutputConfig const& output) : mOutput(output) {}
+    UbxOutput(ProgramOutput const& output) : mOutput(output) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "UbxOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
-    OutputConfig const& mOutput;
+    ProgramOutput const& mOutput;
 };
 
 class UbxLocation : public streamline::Inspector<UbxMessage> {

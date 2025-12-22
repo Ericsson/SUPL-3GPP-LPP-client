@@ -149,8 +149,6 @@ private:
     std::unordered_map<PeriodicSessionHandle, Pah>               mSessions;
     std::unordered_map<TransactionHandle, Lid>                   mLocationInformationDeliveries;
     long                                                         mNextSessionId;
-    std::vector<PeriodicSessionHandle>                           mSessionsToDestroy;
-    std::vector<TransactionHandle>                               mSingleSessionsToDestroy;
 
     friend class PeriodicSession;
     friend class SingleSession;

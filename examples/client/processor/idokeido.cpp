@@ -313,7 +313,7 @@ template class IdokeidoMeasurmentUbx<IdokeidoSpp>;
 //
 //
 
-IdokeidoSpp::IdokeidoSpp(OutputConfig const&, IdokeidoConfig const& config,
+IdokeidoSpp::IdokeidoSpp(ProgramOutput const&, IdokeidoConfig const& config,
                          scheduler::Scheduler& scheduler, streamline::System& system)
     : mConfig(std::move(config)), mScheduler(scheduler), mSystem(system) {
     VSCOPE_FUNCTION();

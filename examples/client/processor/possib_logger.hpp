@@ -1,4 +1,5 @@
 #pragma once
+#include "../program_io.hpp"
 
 #ifdef DATA_TRACING
 #include <fstream>
@@ -86,13 +87,13 @@ struct TypeName<std::unique_ptr<PossibMessage>> {
 
 class PossibOutput : public streamline::Inspector<std::unique_ptr<PossibMessage>> {
 public:
-    PossibOutput(OutputConfig const& output) : mOutput(output) {}
+    PossibOutput(ProgramOutput const& output) : mOutput(output) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "PossibOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
-    OutputConfig const& mOutput;
+    ProgramOutput const& mOutput;
 };
 
 class LppPossibBuilder : public streamline::Inspector<lpp::Message> {

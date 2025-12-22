@@ -13,11 +13,12 @@ LOGLET_MODULE3(io, stream, udp_server);
 
 namespace io {
 
-UdpServerStream::UdpServerStream(std::string id, UdpServerConfig config) NOEXCEPT
-    : Stream(std::move(id), config.read_config),
-      mConfig(std::move(config)) {
-    VSCOPE_FUNCTIONF("\"%s\", listen=\"%s\", port=%u, path=\"%s\"", mId.c_str(),
-                     mConfig.listen.c_str(), mConfig.port, mConfig.path.c_str());
+UdpServerStream::UdpServerStream(std::string                                       id,
+                                 std::unique_ptr<scheduler::UdpSocketListenerTask> listener,
+                                 ReadBufferConfig read_config) NOEXCEPT
+    : Stream(std::move(id), read_config),
+      mListenerTask(std::move(listener)) {
+    VSCOPE_FUNCTIONF("\"%s\"", mId.c_str());
 }
 
 UdpServerStream::~UdpServerStream() NOEXCEPT {
@@ -29,15 +30,7 @@ bool UdpServerStream::schedule(scheduler::Scheduler& scheduler) {
     VSCOPE_FUNCTIONF("%p", &scheduler);
     mScheduler = &scheduler;
 
-    if (!mConfig.path.empty()) {
-        INFOF("listening on unix datagram socket: %s", mConfig.path.c_str());
-        mListenerTask.reset(new scheduler::UdpListenerTask(mConfig.path));
-    } else {
-        INFOF("listening on %s:%u", mConfig.listen.c_str(), mConfig.port);
-        mListenerTask.reset(new scheduler::UdpListenerTask(mConfig.listen, mConfig.port));
-    }
-
-    mListenerTask->on_read = [this](scheduler::UdpListenerTask& task) {
+    mListenerTask->on_read = [this](scheduler::UdpSocketListenerTask& task) {
         mLastSenderLen = sizeof(mLastSender);
         auto result    = ::recvfrom(task.fd(), mReadBuf, sizeof(mReadBuf), 0,
                                     reinterpret_cast<sockaddr*>(&mLastSender), &mLastSenderLen);
@@ -51,12 +44,13 @@ bool UdpServerStream::schedule(scheduler::Scheduler& scheduler) {
         }
     };
 
-    mListenerTask->on_error = [this](scheduler::UdpListenerTask&) {
+    mListenerTask->on_error = [this](scheduler::UdpSocketListenerTask&) {
         ERRORF("listener error: " ERRNO_FMT, ERRNO_ARGS(errno));
         set_error(errno, "listener error");
     };
 
-    if (!mListenerTask->schedule(scheduler)) {
+    mListenerTask->schedule(scheduler);
+    if (!mListenerTask->is_scheduled()) {
         ERRORF("failed to schedule UDP listener");
         set_error(errno, "failed to schedule UDP listener");
         return false;
@@ -68,7 +62,6 @@ bool UdpServerStream::schedule(scheduler::Scheduler& scheduler) {
     }
 
     mState = State::Connected;
-    DEBUGF("udp server listening");
     return true;
 }
 
@@ -77,26 +70,28 @@ bool UdpServerStream::cancel() {
     cancel_read_timeout();
     if (mListenerTask) {
         mListenerTask->cancel();
-        mListenerTask.reset();
     }
     return true;
 }
 
-uint16_t UdpServerStream::actual_port() const NOEXCEPT {
+uint16_t UdpServerStream::port() const NOEXCEPT {
     return mListenerTask ? mListenerTask->port() : 0;
 }
 
 void UdpServerStream::write(uint8_t const* data, size_t length) NOEXCEPT {
-    if (mLastSenderLen == 0) {
-        WARNF("cannot write: no sender address");
+    TRACEF("%p, %zu", data, length);
+
+    if (!mListenerTask || mLastSenderLen == 0) {
+        WARNF("no destination address");
         return;
     }
-    auto result = ::sendto(mListenerTask->fd(), data, length, MSG_NOSIGNAL,
+
+    auto result = ::sendto(mListenerTask->fd(), data, length, 0,
                            reinterpret_cast<sockaddr*>(&mLastSender), mLastSenderLen);
-    VERBOSEF("::sendto(%d, %p, %zu, MSG_NOSIGNAL, %p, %u) = %zd", mListenerTask->fd(), data, length,
+    VERBOSEF("::sendto(%d, %p, %zu, 0, %p, %d) = %zd", mListenerTask->fd(), data, length,
              &mLastSender, mLastSenderLen, result);
     if (result < 0) {
-        WARNF("failed to write to socket: " ERRNO_FMT, ERRNO_ARGS(errno));
+        WARNF("sendto failed: " ERRNO_FMT, ERRNO_ARGS(errno));
     }
 }
 

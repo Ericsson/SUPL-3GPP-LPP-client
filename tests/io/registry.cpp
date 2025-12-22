@@ -26,8 +26,8 @@ TEST_CASE("StreamRegistry - add and get") {
 }
 
 TEST_CASE("StreamRegistry - schedule_all") {
-    io::StreamRegistry   registry;
-    scheduler::Scheduler sched;
+    io::StreamRegistry         registry;
+    scheduler::ScopedScheduler sched;
 
     int fds1[2], fds2[2];
     REQUIRE(pipe(fds1) == 0);
@@ -57,8 +57,8 @@ TEST_CASE("StreamRegistry - schedule_all") {
 }
 
 TEST_CASE("StreamRegistry - schedule_all skips already scheduled") {
-    io::StreamRegistry   registry;
-    scheduler::Scheduler sched;
+    io::StreamRegistry         registry;
+    scheduler::ScopedScheduler sched;
 
     int fds[2];
     REQUIRE(pipe(fds) == 0);

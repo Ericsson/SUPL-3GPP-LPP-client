@@ -7,7 +7,7 @@ LOGLET_MODULE2(p, l2s);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2s)
 
-Lpp2Spartn::Lpp2Spartn(OutputConfig const& output, Lpp2SpartnConfig const& config)
+Lpp2Spartn::Lpp2Spartn(ProgramOutput const& output, Lpp2SpartnConfig const& config)
     : mOutput(output), mConfig(config) {
     VSCOPE_FUNCTION();
     mGenerator = std::unique_ptr<generator::spartn::Generator>(new generator::spartn::Generator{});

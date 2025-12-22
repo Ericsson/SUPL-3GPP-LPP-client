@@ -7,7 +7,7 @@ LOGLET_MODULE2(p, l2r);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2r)
 
-Lpp2Rtcm::Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config,
+Lpp2Rtcm::Lpp2Rtcm(ProgramOutput const& output, Lpp2RtcmConfig const& config,
                    scheduler::Scheduler& scheduler)
     : mOutput(output), mConfig(config), mScheduler(scheduler), mConversionCount(0) {
     VSCOPE_FUNCTION();

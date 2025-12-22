@@ -83,7 +83,7 @@ bool FileStream::schedule(scheduler::Scheduler& scheduler) {
         } else {
             mFdTask.reset(new scheduler::FileDescriptorTask());
             (void)mFdTask->set_fd(mFd);
-            mFdTask->on_read = [this](int) {
+            mFdTask->on_read = [this](scheduler::FileDescriptorTask&) {
                 auto result = ::read(mFd, mReadBuf, sizeof(mReadBuf));
                 VERBOSEF("::read(%d, %p, %zu) = %zd", mFd, mReadBuf, sizeof(mReadBuf), result);
                 if (result > 0) {
@@ -96,7 +96,7 @@ bool FileStream::schedule(scheduler::Scheduler& scheduler) {
                     set_error(errno, strerror(errno));
                 }
             };
-            mFdTask->on_error = [this](int) {
+            mFdTask->on_error = [this](scheduler::FileDescriptorTask&) {
                 ERRORF("file read error");
                 set_error(errno, strerror(errno));
             };

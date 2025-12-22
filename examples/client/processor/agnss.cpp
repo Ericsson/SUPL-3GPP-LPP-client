@@ -53,14 +53,10 @@ void AGnssProcessor::schedule_triggered_request(streamline::System& system) {
     mTriggeredRequestPending = true;
     mSystem                  = &system;
 
-    mTriggeredDelayTask.reset(new scheduler::TimeoutTask{std::chrono::seconds(2)});
-    mTriggeredDelayTask->callback = [this]() {
-        mTriggeredRequestPending = false;
-        if (mSystem) request_agnss(*mSystem);
-    };
-    if (!mTriggeredDelayTask->schedule(mScheduler)) {
-        ERRORF("failed to schedule A-GNSS triggered delay task");
-    }
+    mTriggeredDelayTask.reset(new scheduler::TimeoutTask{std::chrono::seconds(2), [this]() {
+                                                             mTriggeredRequestPending = false;
+                                                             if (mSystem) request_agnss(*mSystem);
+                                                         }});
 }
 
 void AGnssProcessor::inspect(streamline::System& system, DataType const& message,

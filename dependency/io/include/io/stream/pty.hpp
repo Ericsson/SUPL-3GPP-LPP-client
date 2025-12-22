@@ -6,7 +6,7 @@
 #include <string>
 
 namespace scheduler {
-class SocketTask;
+class OwnedFileDescriptorTask;
 }
 
 namespace io {
@@ -37,10 +37,10 @@ private:
     std::string mSlavePath;
     int         mMasterFd = -1;
 
-    std::unique_ptr<scheduler::SocketTask> mSocketTask;
-    WriteBuffer                            mWriteBuffer;
-    bool                                   mWriteRegistered = false;
-    uint8_t                                mReadBuf[4096];
+    std::unique_ptr<scheduler::OwnedFileDescriptorTask> mSocketTask;
+    WriteBuffer                                         mWriteBuffer;
+    bool                                                mWriteRegistered = false;
+    uint8_t                                             mReadBuf[4096];
 };
 
 }  // namespace io

@@ -303,7 +303,7 @@ void TokoroLocation::inspect(streamline::System&, DataType const& location, uint
 //
 //
 
-Tokoro::Tokoro(OutputConfig const& output, TokoroConfig const& config,
+Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
                scheduler::Scheduler& scheduler)
     : mOutput(output), mConfig(config), mScheduler(scheduler), mSystem(nullptr) {
     VSCOPE_FUNCTION();

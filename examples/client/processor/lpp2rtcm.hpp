@@ -1,4 +1,5 @@
 #pragma once
+#include "../program_io.hpp"
 
 #if !defined(INCLUDE_GENERATOR_RTCM)
 #error "INCLUDE_GENERATOR_RTCM must be defined"
@@ -12,7 +13,7 @@
 
 class Lpp2Rtcm : public streamline::Inspector<lpp::Message> {
 public:
-    Lpp2Rtcm(OutputConfig const& output, Lpp2RtcmConfig const& config,
+    Lpp2Rtcm(ProgramOutput const& output, Lpp2RtcmConfig const& config,
              scheduler::Scheduler& scheduler);
     ~Lpp2Rtcm() override;
 
@@ -23,7 +24,7 @@ private:
     std::unique_ptr<generator::rtcm::Generator> mGenerator;
     generator::rtcm::MessageFilter              mFilter;
 
-    OutputConfig const&   mOutput;
+    ProgramOutput const&  mOutput;
     Lpp2RtcmConfig const& mConfig;
     scheduler::Scheduler& mScheduler;
     size_t                mConversionCount;

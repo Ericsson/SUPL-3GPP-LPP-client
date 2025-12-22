@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include "../program_io.hpp"
 
 #include <format/ctrl/message.hpp>
 #include <streamline/inspector.hpp>
@@ -36,13 +37,13 @@ private:
 
 class CtrlOutput : public streamline::Inspector<CtrlMessage> {
 public:
-    CtrlOutput(OutputConfig const& config) : mConfig(config) {}
+    CtrlOutput(ProgramOutput const& config) : mConfig(config) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "CtrlOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
-    OutputConfig const& mConfig;
+    ProgramOutput const& mConfig;
 };
 
 class CtrlEvents : public streamline::Inspector<CtrlMessage> {

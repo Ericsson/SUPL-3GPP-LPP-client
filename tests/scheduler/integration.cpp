@@ -1,6 +1,7 @@
 #include <cstring>
 #include <cxx11_compat.hpp>
 #include <doctest/doctest.h>
+#include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
 #include <scheduler/socket.hpp>
 #include <scheduler/timeout.hpp>
@@ -8,23 +9,22 @@
 #include <unistd.h>
 
 TEST_CASE("Echo server integration") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
-    // Server
-    scheduler::TcpListenerTask server("/tmp/echo_server.sock");
+    scheduler::TcpUnixListenerTask server("/tmp/echo_server.sock");
     ::unlink("/tmp/echo_server.sock");
 
-    std::unique_ptr<scheduler::SocketTask> server_conn;
+    std::unique_ptr<scheduler::OwnedFileDescriptorTask> server_conn;
 
     server.on_accept = [&](scheduler::TcpListenerTask&, int fd, struct sockaddr_storage*,
                            socklen_t) {
-        server_conn = std::make_unique<scheduler::SocketTask>(fd);
+        server_conn = std::make_unique<scheduler::OwnedFileDescriptorTask>(fd);
 
-        server_conn->on_read = [](scheduler::SocketTask& task) {
+        server_conn->on_read = [](scheduler::OwnedFileDescriptorTask& task) {
             char buf[256];
             auto n = ::read(task.fd(), buf, sizeof(buf));
             if (n > 0) {
-                ::write(task.fd(), buf, n);  // Echo back
+                ::write(task.fd(), buf, n);
             }
         };
 
@@ -33,7 +33,6 @@ TEST_CASE("Echo server integration") {
 
     server.schedule(sched);
 
-    // Client
     scheduler::TcpConnectTask client("/tmp/echo_server.sock", false);
 
     std::string received;
@@ -64,18 +63,18 @@ TEST_CASE("Echo server integration") {
 }
 
 TEST_CASE("Multiple clients to one server") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
-    scheduler::TcpListenerTask server("/tmp/multi_server.sock");
+    scheduler::TcpUnixListenerTask server("/tmp/multi_server.sock");
     ::unlink("/tmp/multi_server.sock");
 
-    std::vector<std::unique_ptr<scheduler::SocketTask>> connections;
+    std::vector<std::unique_ptr<scheduler::OwnedFileDescriptorTask>> connections;
 
     server.on_accept = [&](scheduler::TcpListenerTask&, int fd, struct sockaddr_storage*,
                            socklen_t) {
-        auto conn = std::make_unique<scheduler::SocketTask>(fd);
+        auto conn = std::make_unique<scheduler::OwnedFileDescriptorTask>(fd);
 
-        conn->on_read = [](scheduler::SocketTask& task) {
+        conn->on_read = [](scheduler::OwnedFileDescriptorTask& task) {
             char buf[256];
             auto n = ::read(task.fd(), buf, sizeof(buf));
             if (n > 0) {
@@ -89,7 +88,6 @@ TEST_CASE("Multiple clients to one server") {
 
     server.schedule(sched);
 
-    // Create 5 clients
     std::vector<std::unique_ptr<scheduler::TcpConnectTask>> clients;
     std::vector<bool>                                       responses(5, false);
 
@@ -131,58 +129,53 @@ TEST_CASE("Multiple clients to one server") {
 }
 
 TEST_CASE("Timeout during socket operation") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     int fds[2];
     REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, fds) == 0);
 
-    scheduler::SocketTask task(fds[0]);
+    scheduler::OwnedFileDescriptorTask task(fds[0]);
 
     bool read_called   = false;
     bool timeout_fired = false;
 
-    task.on_read = [&](scheduler::SocketTask&) {
+    task.on_read = [&](scheduler::OwnedFileDescriptorTask&) {
         read_called = true;
     };
 
     task.schedule(sched);
 
-    scheduler::TimeoutTask timeout(std::chrono::milliseconds(50));
-    timeout.callback = [&]() {
+    scheduler::TimeoutTask timeout(std::chrono::milliseconds(50), [&]() {
         timeout_fired = true;
         sched.interrupt();
-    };
-    timeout.schedule(sched);
+    });
 
-    // Don't write anything - socket won't be readable
     sched.execute();
 
     CHECK_FALSE(read_called);
     CHECK(timeout_fired);
 
-    ::close(fds[0]);
     ::close(fds[1]);
 }
 
 TEST_CASE("Reconnection after disconnect") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
-    scheduler::TcpListenerTask server("/tmp/reconnect_server.sock");
+    scheduler::TcpUnixListenerTask server("/tmp/reconnect_server.sock");
     ::unlink("/tmp/reconnect_server.sock");
 
-    int                                                 accept_count = 0;
-    std::vector<std::unique_ptr<scheduler::SocketTask>> connections;
+    int                                                              accept_count = 0;
+    std::vector<std::unique_ptr<scheduler::OwnedFileDescriptorTask>> connections;
 
     server.on_accept = [&](scheduler::TcpListenerTask&, int fd, struct sockaddr_storage*,
                            socklen_t) {
         accept_count++;
-        auto conn = std::make_unique<scheduler::SocketTask>(fd);
 
         if (accept_count == 1) {
-            // Close first connection immediately
             ::close(fd);
         } else {
-            conn->on_read = [&sched](scheduler::SocketTask& task) {
+            auto conn     = std::make_unique<scheduler::OwnedFileDescriptorTask>(fd);
+            conn->on_read = [&sched](scheduler::OwnedFileDescriptorTask& task) {
                 char buf[1];
                 ::read(task.fd(), buf, 1);
                 sched.interrupt();

@@ -9,8 +9,8 @@
 #include <vector>
 
 namespace scheduler {
-class TcpListenerTask;
-class SocketTask;
+class SocketListenerTask;
+class OwnedFileDescriptorTask;
 class TcpConnectTask;
 }  // namespace scheduler
 
@@ -35,8 +35,8 @@ private:
     std::string mListen;
     uint16_t    mPort;
 
-    std::unique_ptr<scheduler::TcpListenerTask>         mListenerTask;
-    std::vector<std::unique_ptr<scheduler::SocketTask>> mClientTasks;
+    std::unique_ptr<scheduler::SocketListenerTask>                   mListenerTask;
+    std::vector<std::unique_ptr<scheduler::OwnedFileDescriptorTask>> mClientTasks;
 
     uint8_t mBuffer[4096];
 };
@@ -137,9 +137,9 @@ private:
     std::string mListen;
     uint16_t    mPort;
 
-    std::unique_ptr<scheduler::TcpListenerTask>         mListenerTask;
-    std::vector<std::unique_ptr<scheduler::SocketTask>> mClientTasks;
-    std::vector<std::unique_ptr<scheduler::SocketTask>> mRemoveClientTasks;
+    std::unique_ptr<scheduler::SocketListenerTask>                   mListenerTask;
+    std::vector<std::unique_ptr<scheduler::OwnedFileDescriptorTask>> mClientTasks;
+    std::vector<std::unique_ptr<scheduler::OwnedFileDescriptorTask>> mRemoveClientTasks;
 };
 
 }  // namespace io

@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include "../program_io.hpp"
 
 #include <format/rtcm/message.hpp>
 #include <streamline/inspector.hpp>
@@ -35,11 +36,11 @@ private:
 
 class RtcmOutput : public streamline::Inspector<RtcmMessage> {
 public:
-    RtcmOutput(OutputConfig const& output) : mOutput(output) {}
+    RtcmOutput(ProgramOutput const& output) : mOutput(output) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "RtcmOutput"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
-    OutputConfig const& mOutput;
+    ProgramOutput const& mOutput;
 };

@@ -83,7 +83,9 @@ bool TcpClientStream::schedule(scheduler::Scheduler& scheduler) {
             mWriteBuffer.consume(result);
         }
         if (mWriteBuffer.empty() && mWriteRegistered) {
-            mScheduler->update_epoll_fd(task.fd(), EPOLLIN, nullptr);
+            mConnectTask->update_interests(scheduler::EventInterest::Read |
+                                           scheduler::EventInterest::Error |
+                                           scheduler::EventInterest::Hangup);
             mWriteRegistered = false;
         }
     };
@@ -100,10 +102,7 @@ bool TcpClientStream::schedule(scheduler::Scheduler& scheduler) {
 bool TcpClientStream::cancel() {
     VSCOPE_FUNCTION();
     cancel_read_timeout();
-    if (mConnectTask) {
-        mConnectTask->cancel();
-        mConnectTask.reset();
-    }
+    mConnectTask.reset();
     return true;
 }
 
@@ -133,8 +132,10 @@ void TcpClientStream::write(uint8_t const* data, size_t length) NOEXCEPT {
     }
 
     mWriteBuffer.enqueue(data, length);
-    if (!mWriteRegistered && mScheduler) {
-        mScheduler->update_epoll_fd(fd, EPOLLIN | EPOLLOUT, nullptr);
+    if (!mWriteRegistered && mConnectTask) {
+        mConnectTask->update_interests(
+            scheduler::EventInterest::Read | scheduler::EventInterest::Write |
+            scheduler::EventInterest::Error | scheduler::EventInterest::Hangup);
         mWriteRegistered = true;
     }
 }

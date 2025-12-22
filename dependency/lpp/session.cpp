@@ -30,13 +30,8 @@ LOGLET_MODULE2(lpp, print);
 namespace lpp {
 
 SessionTask::SessionTask(Session* session, int fd)
-    : mFd(fd), mSession(session), mScheduler(nullptr), mReadEnabled(false), mWriteEnabled(false),
-      mErrorEnabled(false) {
-    mEvent.name  = "lpp-session";
-    mEvent.event = [this](struct epoll_event* event) {
-        this->event(event);
-    };
-}
+    : mFd(fd), mEvent{scheduler::ScheduledEvent::invalid()}, mSession(session), mScheduler(nullptr),
+      mReadEnabled(false), mWriteEnabled(false), mErrorEnabled(false) {}
 
 bool SessionTask::schedule(scheduler::Scheduler& scheduler) {
     if (mScheduler) {
@@ -44,16 +39,24 @@ bool SessionTask::schedule(scheduler::Scheduler& scheduler) {
         return false;
     }
 
-    uint32_t events = 0;
-    if (mReadEnabled) events |= EPOLLIN;
-    if (mWriteEnabled) events |= EPOLLOUT;
-    if (mErrorEnabled) events |= EPOLLERR;
-    if (scheduler.add_epoll_fd(mFd, events, &mEvent)) {
+    scheduler::EventInterest interests = scheduler::EventInterest::None;
+    if (mReadEnabled) interests = interests | scheduler::EventInterest::Read;
+    if (mWriteEnabled) interests = interests | scheduler::EventInterest::Write;
+    if (mErrorEnabled) interests = interests | scheduler::EventInterest::Error;
+
+    mEvent = scheduler.register_fd(
+        mFd, interests,
+        [this](scheduler::EventInterest triggered) {
+            this->event(triggered);
+        },
+        "lpp-session");
+
+    if (mEvent.valid()) {
         VERBOSEF("session task: scheduled");
         mScheduler = &scheduler;
         return true;
     } else {
-        WARNF("session task: failed to add file descriptor to epoll");
+        WARNF("session task: failed to register file descriptor");
         return false;
     }
 }
@@ -64,16 +67,11 @@ bool SessionTask::cancel() {
         return false;
     }
 
-    auto result = mScheduler->remove_epoll_fd(mFd);
-    mScheduler  = nullptr;
-
-    if (result) {
-        VERBOSEF("session task: cancelled");
-        return true;
-    } else {
-        WARNF("session task: failed to remove file descriptor from epoll");
-        return false;
-    }
+    mScheduler->unregister(mEvent);
+    mScheduler = nullptr;
+    mEvent     = scheduler::ScheduledEvent::invalid();
+    VERBOSEF("session task: cancelled");
+    return true;
 }
 
 bool SessionTask::update(scheduler::Scheduler& scheduler, int fd, bool read, bool write,
@@ -120,16 +118,13 @@ bool SessionTask::update(scheduler::Scheduler& scheduler, int fd, bool read, boo
     }
 }
 
-void SessionTask::event(struct epoll_event* event) {
+void SessionTask::event(scheduler::EventInterest triggered) {
     if (mSession) {
-        // NOTE: There are cases when we would get all three events at the same time. In that case,
-        // it is not possible right now to handle them all, and doing them one by one will not work
-        // as the state will change in between. So, we will just handle the first event.
-        if (event->events & EPOLLIN)
+        if (triggered & scheduler::EventInterest::Read)
             mSession->process_read();
-        else if (event->events & EPOLLOUT)
+        else if (triggered & scheduler::EventInterest::Write)
             mSession->process_write();
-        else if (event->events & EPOLLERR)
+        else if (triggered & scheduler::EventInterest::Error)
             mSession->process_error();
     }
 }

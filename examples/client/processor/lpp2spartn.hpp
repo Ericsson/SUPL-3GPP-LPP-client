@@ -1,4 +1,5 @@
 #pragma once
+#include "../program_io.hpp"
 
 #if !defined(INCLUDE_GENERATOR_SPARTN)
 #error "INCLUDE_GENERATOR_SPARTN must be defined"
@@ -11,7 +12,7 @@
 
 class Lpp2Spartn : public streamline::Inspector<lpp::Message> {
 public:
-    Lpp2Spartn(OutputConfig const& output, Lpp2SpartnConfig const& config);
+    Lpp2Spartn(ProgramOutput const& output, Lpp2SpartnConfig const& config);
     ~Lpp2Spartn() override;
 
     NODISCARD char const* name() const NOEXCEPT override { return "Lpp2Spartn"; }
@@ -20,6 +21,6 @@ public:
 private:
     std::unique_ptr<generator::spartn::Generator> mGenerator;
 
-    OutputConfig const&     mOutput;
+    ProgramOutput const&    mOutput;
     Lpp2SpartnConfig const& mConfig;
 };

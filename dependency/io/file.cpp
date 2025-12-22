@@ -61,7 +61,7 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     // Return value indicates rescheduling need, not failure - safe to ignore for new task
     (void)mFdTask->set_fd(mForwardFd);
     mFdTask->set_event_name("fd/" + mEventName);
-    mFdTask->on_read = [this, &scheduler](int) {
+    mFdTask->on_read = [this, &scheduler](scheduler::FileDescriptorTask&) {
         auto result = ::read(mForwardFd, mBuffer, sizeof(mBuffer));
         VERBOSEF("::read(%d, %p, %zu) = %d", mForwardFd, mBuffer, sizeof(mBuffer), result);
         if (result < 0) {
@@ -87,7 +87,7 @@ bool FileInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             callback(*this, mBuffer, static_cast<size_t>(result));
         }
     };
-    mFdTask->on_error = [this, &scheduler](int) {
+    mFdTask->on_error = [this, &scheduler](scheduler::FileDescriptorTask&) {
         scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
             VERBOSEF("calling on_complete (on_error)");

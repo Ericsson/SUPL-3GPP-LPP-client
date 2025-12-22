@@ -41,8 +41,8 @@ protected:
 private:
     void on_readable();
 
-    int                   mPipeFds[2];
-    scheduler::EpollEvent mEvent;
+    int                       mPipeFds[2];
+    scheduler::ScheduledEvent mEvent;
 };
 
 }  // namespace io

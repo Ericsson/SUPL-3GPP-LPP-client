@@ -1,5 +1,6 @@
 #pragma once
 #include <scheduler/scheduler.hpp>
+#include <scheduler/timeout.hpp>
 
 #include <chrono>
 #include <functional>
@@ -18,20 +19,16 @@ public:
     PeriodicTask& operator=(PeriodicTask&&)      = delete;
 
     NODISCARD bool schedule(Scheduler& scheduler) NOEXCEPT;
+    NODISCARD bool schedule() NOEXCEPT { return schedule(current()); }
     bool           cancel() NOEXCEPT;
 
     std::function<void()> callback;
 
-    void set_event_name(std::string const& name) {
-        mEventName  = name;
-        mEvent.name = mEventName.c_str();
-    }
+    void set_event_name(std::string name) { mEventName = std::move(name); }
 
 private:
-    Scheduler*                          mScheduler;
-    EpollEvent                          mEvent;
-    std::chrono::steady_clock::duration mDuration;
-    int                                 mTimerFd;
-    std::string                         mEventName;
+    ScheduledEvent mEvent;
+    Timer          mTimer;
+    std::string    mEventName;
 };
 }  // namespace scheduler

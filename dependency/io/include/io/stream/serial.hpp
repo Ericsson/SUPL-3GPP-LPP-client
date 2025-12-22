@@ -7,7 +7,7 @@
 #include <string>
 
 namespace scheduler {
-class SocketTask;
+class OwnedFileDescriptorTask;
 }
 
 namespace io {
@@ -37,12 +37,12 @@ public:
 private:
     bool configure_termios() NOEXCEPT;
 
-    SerialConfig                           mConfig;
-    int                                    mFd = -1;
-    std::unique_ptr<scheduler::SocketTask> mSocketTask;
-    WriteBuffer                            mWriteBuffer;
-    bool                                   mWriteRegistered = false;
-    uint8_t                                mReadBuf[4096];
+    SerialConfig                                        mConfig;
+    int                                                 mFd = -1;
+    std::unique_ptr<scheduler::OwnedFileDescriptorTask> mSocketTask;
+    WriteBuffer                                         mWriteBuffer;
+    bool                                                mWriteRegistered = false;
+    uint8_t                                             mReadBuf[4096];
 };
 
 }  // namespace io

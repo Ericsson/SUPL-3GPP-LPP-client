@@ -18,7 +18,7 @@ static void set_raw_mode(int fd) {
 }
 
 TEST_CASE("SerialStream - loopback via PTY") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     // Create PTY to get a slave path we can use as fake serial device
     io::PtyConfig pty_config;
@@ -61,7 +61,7 @@ TEST_CASE("SerialStream - loopback via PTY") {
 }
 
 TEST_CASE("SerialStream - configured termios via PTY") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     // Create PTY
     io::PtyConfig pty_config;

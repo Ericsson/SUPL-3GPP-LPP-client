@@ -21,7 +21,7 @@ void BufferOutput::write(uint8_t const* buffer, size_t length) NOEXCEPT {
     }
 }
 
-BufferInput::BufferInput() {
+BufferInput::BufferInput() : mEvent{scheduler::ScheduledEvent::invalid()} {
     FUNCTION_SCOPE();
     if (pipe(mPipeFds) == -1) {
         ERRORF("failed to create pipe");
@@ -32,11 +32,6 @@ BufferInput::BufferInput() {
 
     int flags = fcntl(mPipeFds[0], F_GETFL, 0);
     fcntl(mPipeFds[0], F_SETFL, flags | O_NONBLOCK);
-
-    mEvent.name  = "buffer-input";
-    mEvent.event = [this](struct epoll_event*) {
-        on_readable();
-    };
 }
 
 BufferInput::~BufferInput() {
@@ -66,13 +61,27 @@ void BufferInput::on_readable() {
 bool BufferInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     FUNCTION_SCOPE();
     if (mPipeFds[0] == -1) return false;
-    return scheduler.add_epoll_fd(mPipeFds[0], EPOLLIN, &mEvent);
+
+    mEvent = scheduler.register_fd(
+        mPipeFds[0], scheduler::EventInterest::Read,
+        [this](scheduler::EventInterest triggered) {
+            if (triggered & scheduler::EventInterest::Read) {
+                on_readable();
+            }
+        },
+        "buffer-input");
+
+    return mEvent.valid();
 }
 
 bool BufferInput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
     FUNCTION_SCOPE();
     if (mPipeFds[0] == -1) return true;
-    return scheduler.remove_epoll_fd(mPipeFds[0]);
+    if (!mEvent.valid()) return true;
+
+    scheduler.unregister(mEvent);
+    mEvent = scheduler::ScheduledEvent::invalid();
+    return true;
 }
 
 }  // namespace io

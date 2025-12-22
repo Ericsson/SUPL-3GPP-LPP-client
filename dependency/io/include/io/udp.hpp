@@ -8,7 +8,7 @@
 #include <vector>
 
 namespace scheduler {
-class UdpListenerTask;
+class UdpSocketListenerTask;
 }  // namespace scheduler
 
 namespace io {
@@ -32,8 +32,8 @@ private:
     std::string mListen;
     uint16_t    mPort;
 
-    std::unique_ptr<scheduler::UdpListenerTask> mListenerTask;
-    uint8_t                                     mBuffer[4096];
+    std::unique_ptr<scheduler::UdpSocketListenerTask> mListenerTask;
+    uint8_t                                           mBuffer[4096];
 };
 
 /// An output that sends UDP packets to a server.

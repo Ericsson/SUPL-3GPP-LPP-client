@@ -59,6 +59,7 @@ EXTERNAL_WARNINGS_POP
 #endif
 
 #include "client.hpp"
+#include "io.hpp"
 #include "processor/tlf.hpp"
 #include "raw_message.hpp"
 
@@ -381,7 +382,107 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
     }
 }
 
-static void initialize_inputs(Program& program, InputConfig& config) {
+static void create_io_from_config(Program& program) {
+    auto& config = program.config;
+    // Create explicit streams from --stream arguments
+    create_streams(config.streams_config, program.stream_registry);
+    // Create implicit streams from --input/--output arguments
+    create_implicit_streams(config.inputs_config, config.outputs_config, program.stream_registry);
+
+    // Create inputs from parsed config
+    auto& inputs_cfg                               = config.inputs_config;
+    program.input.disable_pipe_buffer_optimization = inputs_cfg.disable_pipe_buffer_optimization;
+    program.input.shutdown_on_complete             = inputs_cfg.shutdown_on_complete;
+    program.input.shutdown_delay                   = inputs_cfg.shutdown_delay;
+
+    auto create_input_interface = [&](auto const& cfg, std::unique_ptr<io::Input> input) {
+        if (!input) return;
+        InputInterface iface;
+        iface.format                = cfg.format;
+        iface.print                 = cfg.print;
+        iface.interface             = std::move(input);
+        iface.tags                  = cfg.tags;
+        iface.stages                = cfg.stages;
+        iface.nmea_lf_only          = cfg.nmea_lf_only;
+        iface.discard_errors        = cfg.discard_errors;
+        iface.discard_unknowns      = cfg.discard_unknowns;
+        iface.exclude_from_shutdown = cfg.exclude_from_shutdown;
+        program.input.inputs.push_back(std::move(iface));
+    };
+
+    for (auto const& cfg : inputs_cfg.stream) {
+        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : inputs_cfg.stdin_inputs) {
+        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : inputs_cfg.file) {
+        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : inputs_cfg.serial) {
+        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : inputs_cfg.tcp_client) {
+        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : inputs_cfg.tcp_server) {
+        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : inputs_cfg.udp_server) {
+        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+    }
+
+    // Create outputs from parsed config
+    auto& outputs_cfg = config.outputs_config;
+
+    auto create_output_interface = [&](auto const& cfg, std::unique_ptr<io::Output> output) {
+        if (!output) return;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
+    };
+
+    for (auto const& cfg : outputs_cfg.stream) {
+        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : outputs_cfg.stdout_outputs) {
+        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : outputs_cfg.file) {
+        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : outputs_cfg.chunked_log) {
+        create_output_interface(cfg, create_output(cfg));
+    }
+    for (auto const& cfg : outputs_cfg.tcp_server) {
+        create_output_interface(cfg, create_output(cfg));
+    }
+    for (auto const& cfg : outputs_cfg.serial) {
+        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : outputs_cfg.tcp_client) {
+        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+    }
+    for (auto const& cfg : outputs_cfg.udp_client) {
+        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+    }
+
+    // Register tags
+    for (auto& input : program.input.inputs) {
+        for (auto& tag : input.tags) {
+            config.register_tag(tag);
+        }
+    }
+    for (auto& output : program.output.outputs) {
+        for (auto const& tag : output.include_tags) {
+            config.register_tag(tag);
+        }
+        for (auto const& tag : output.exclude_tags) {
+            config.register_tag(tag);
+        }
+    }
+}
+
+static void initialize_inputs(Program& program, ProgramInput& config) {
     for (auto& input : config.inputs) {
         format::nmea::Parser*    nmea{};
         format::rtcm::Parser*    rtcm{};
@@ -444,7 +545,7 @@ static void initialize_inputs(Program& program, InputConfig& config) {
 
         input.interface->set_event_name(event_name);
 
-        if (program.config.input.shutdown_on_complete && !input.exclude_from_shutdown) {
+        if (program.input.shutdown_on_complete && !input.exclude_from_shutdown) {
             program.active_inputs++;
             DEBUGF("registered input for shutdown tracking (active_inputs=%d)",
                    program.active_inputs.load());
@@ -454,17 +555,12 @@ static void initialize_inputs(Program& program, InputConfig& config) {
                 if (remaining == 0 && !program.shutdown_scheduled) {
                     program.shutdown_scheduled = true;
                     INFOF("all inputs completed, scheduling shutdown in %ld ms",
-                          program.config.input.shutdown_delay.count());
+                          program.input.shutdown_delay.count());
                     program.shutdown_task.reset(
-                        new scheduler::TimeoutTask(program.config.input.shutdown_delay));
-                    program.shutdown_task->callback = [&program]() {
-                        INFOF("shutdown timeout expired, interrupting scheduler");
-                        program.scheduler.interrupt();
-                    };
-                    if (!program.shutdown_task->schedule(program.scheduler)) {
-                        ERRORF("failed to schedule shutdown task");
-                        program.shutdown_task.reset();
-                    }
+                        new scheduler::TimeoutTask(program.input.shutdown_delay, [&program]() {
+                            INFOF("shutdown timeout expired, interrupting scheduler");
+                            program.scheduler.interrupt();
+                        }));
                 }
             };
         }
@@ -505,7 +601,7 @@ static void initialize_inputs(Program& program, InputConfig& config) {
     }
 }
 
-static void initialize_outputs(Program& program, OutputConfig& config) {
+static void initialize_outputs(Program& program, ProgramOutput& config) {
     VSCOPE_FUNCTION();
 
     bool lpp_xer_output  = false;
@@ -767,13 +863,12 @@ static void setup_fake_location(Program& program) {
 static void setup_lpp2osr(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_RTCM)
     if (program.config.lpp2rtcm.enabled) {
-        program.stream.add_inspector<Lpp2Rtcm>(program.config.output, program.config.lpp2rtcm,
+        program.stream.add_inspector<Lpp2Rtcm>(program.output, program.config.lpp2rtcm,
                                                program.scheduler);
     }
 
     if (program.config.lpp2frame_rtcm.enabled) {
-        program.stream.add_inspector<Lpp2FrameRtcm>(program.config.output,
-                                                    program.config.lpp2frame_rtcm);
+        program.stream.add_inspector<Lpp2FrameRtcm>(program.output, program.config.lpp2frame_rtcm);
     }
 
     if (program.config.lpp2eph.enabled) {
@@ -793,7 +888,7 @@ static void setup_lpp2osr(UNUSED Program& program) {
 static void setup_lpp2spartn(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_SPARTN)
     if (program.config.lpp2spartn.enabled) {
-        program.stream.add_inspector<Lpp2Spartn>(program.config.output, program.config.lpp2spartn);
+        program.stream.add_inspector<Lpp2Spartn>(program.output, program.config.lpp2spartn);
     }
 #endif
 }
@@ -806,8 +901,8 @@ static void setup_tokoro(UNUSED Program& program) {
             WARNF("tokoro enabled but ubx2eph, rtcm2eph, and lpp2eph are all disabled - no "
                   "ephemeris will be available");
         }
-        auto tokoro = program.stream.add_inspector<Tokoro>(
-            program.config.output, program.config.tokoro, program.scheduler);
+        auto tokoro = program.stream.add_inspector<Tokoro>(program.output, program.config.tokoro,
+                                                           program.scheduler);
         program.stream.add_inspector<TokoroEphemerisGps>(*tokoro);
         program.stream.add_inspector<TokoroEphemerisGal>(*tokoro);
         program.stream.add_inspector<TokoroEphemerisBds>(*tokoro);
@@ -829,7 +924,7 @@ static void setup_idokeido(UNUSED Program& program) {
 #if defined(INCLUDE_GENERATOR_IDOKEIDO)
     if (program.config.idokeido.enabled) {
         auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
-            program.config.output, program.config.idokeido, program.scheduler, program.stream);
+            program.output, program.config.idokeido, program.scheduler, program.stream);
         program.stream.add_inspector<IdokeidoEphemerisUbx<IdokeidoSpp>>(*idokeido_spp);
         program.stream.add_inspector<IdokeidoMeasurmentUbx<IdokeidoSpp>>(*idokeido_spp);
     }
@@ -916,7 +1011,7 @@ int main(int argc, char** argv) {
     }
 
     Config config{};
-    if (!config::parse(argc, argv, &config)) {
+    if (!config_parse(argc, argv, &config)) {
         return 1;
     }
 
@@ -966,10 +1061,11 @@ int main(int argc, char** argv) {
             nullptr);
     }
 
-    config::dump(&config);
+    config_dump(&config);
 
     Program program{};
     program.config = std::move(config);
+    scheduler::SchedulerGuard scheduler_guard{program.scheduler};
 
 #ifdef DATA_TRACING
     if (program.config.data_tracing.enabled) {
@@ -988,8 +1084,9 @@ int main(int argc, char** argv) {
 
     program.config.register_tag("input");
 
-    initialize_inputs(program, program.config.input);
-    initialize_outputs(program, program.config.output);
+    create_io_from_config(program);
+    initialize_inputs(program, program.input);
+    initialize_outputs(program, program.output);
     setup_print_inspectors(program);
 
     apply_ubx_config(program);
@@ -1168,7 +1265,7 @@ int main(int argc, char** argv) {
 #endif
     }
 
-    if (!program.config.stream_registry.schedule_all(program.scheduler)) {
+    if (!program.stream_registry.schedule_all(program.scheduler)) {
         ERRORF("failed to schedule streams");
         return 1;
     }

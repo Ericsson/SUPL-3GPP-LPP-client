@@ -1,27 +1,25 @@
 #include <cxx11_compat.hpp>
 #include <doctest/doctest.h>
 #include <memory>
+#include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
-#include <scheduler/socket.hpp>
 #include <scheduler/timeout.hpp>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <vector>
 
 TEST_CASE("Multiple concurrent timers") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     std::vector<std::unique_ptr<scheduler::TimeoutTask>> timers;
     std::vector<bool>                                    fired(10, false);
 
     for (int i = 0; i < 10; i++) {
-        auto timeout =
-            std::make_unique<scheduler::TimeoutTask>(std::chrono::milliseconds(10 + i * 5));
-        timeout->callback = [&fired, i, &sched]() {
-            fired[i] = true;
-            if (i == 9) sched.interrupt();
-        };
-        timeout->schedule(sched);
+        auto timeout = std::make_unique<scheduler::TimeoutTask>(
+            std::chrono::milliseconds(10 + i * 5), [&fired, i, &sched]() {
+                fired[i] = true;
+                if (i == 9) sched.interrupt();
+            });
         timers.push_back(std::move(timeout));
     }
 
@@ -33,21 +31,20 @@ TEST_CASE("Multiple concurrent timers") {
 }
 
 TEST_CASE("Many socket pairs") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
-    int const                                           N = 50;
-    std::vector<int>                                    fds;
-    std::vector<std::unique_ptr<scheduler::SocketTask>> tasks;
-    std::vector<bool>                                   received(N, false);
+    int const                                                        N = 50;
+    std::vector<int>                                                 write_fds;
+    std::vector<std::unique_ptr<scheduler::OwnedFileDescriptorTask>> tasks;
+    std::vector<bool>                                                received(N, false);
 
     for (int i = 0; i < N; i++) {
         int pair[2];
         REQUIRE(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0);
-        fds.push_back(pair[0]);
-        fds.push_back(pair[1]);
+        write_fds.push_back(pair[1]);
 
-        auto task     = std::make_unique<scheduler::SocketTask>(pair[0]);
-        task->on_read = [&received, i, &sched](scheduler::SocketTask& t) {
+        auto task     = std::make_unique<scheduler::OwnedFileDescriptorTask>(pair[0]);
+        task->on_read = [&received, i, &sched](scheduler::OwnedFileDescriptorTask& t) {
             char buf[1];
             ::read(t.fd(), buf, 1);
             received[i] = true;
@@ -64,7 +61,6 @@ TEST_CASE("Many socket pairs") {
         task->schedule(sched);
         tasks.push_back(std::move(task));
 
-        // Write to trigger read
         ::write(pair[1], "x", 1);
     }
 
@@ -74,28 +70,26 @@ TEST_CASE("Many socket pairs") {
         CHECK(received[i]);
     }
 
-    for (auto fd : fds)
+    for (auto fd : write_fds)
         ::close(fd);
 }
 
 TEST_CASE("Rapid timer creation and cancellation") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     int                                                  fired_count = 0;
     std::vector<std::unique_ptr<scheduler::TimeoutTask>> timers;
 
     for (int i = 0; i < 100; i++) {
-        auto timeout = std::unique_ptr<scheduler::TimeoutTask>(
-            new scheduler::TimeoutTask(std::chrono::milliseconds(10)));
-        timeout->callback = [&fired_count]() {
-            fired_count++;
-        };
-        timeout->schedule(sched);
+        auto timeout = std::make_unique<scheduler::TimeoutTask>(std::chrono::milliseconds(10),
+                                                                [&fired_count]() {
+                                                                    fired_count++;
+                                                                });
 
         if (i % 2 == 0) {
-            timeout->cancel();  // Cancel half
+            timeout->cancel();
         } else {
-            timers.push_back(std::move(timeout));  // Keep alive
+            timers.push_back(std::move(timeout));
         }
     }
 
@@ -106,28 +100,26 @@ TEST_CASE("Rapid timer creation and cancellation") {
 }
 
 TEST_CASE("Deferred callback accumulation") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     int deferred_count = 0;
 
-    scheduler::TimeoutTask timeout(std::chrono::milliseconds(10));
-    timeout.callback = [&]() {
+    scheduler::TimeoutTask timeout(std::chrono::milliseconds(10), [&]() {
         for (int i = 0; i < 100; i++) {
             sched.defer([&deferred_count](scheduler::Scheduler&) {
                 deferred_count++;
             });
         }
         sched.interrupt();
-    };
+    });
 
-    timeout.schedule(sched);
     sched.execute();
 
     CHECK(deferred_count == 100);
 }
 
 TEST_CASE("Deferred callback before execute") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     int deferred_count = 0;
 
@@ -138,34 +130,4 @@ TEST_CASE("Deferred callback before execute") {
     sched.execute();
 
     CHECK(deferred_count == 1);
-}
-
-TEST_CASE("Tick callback overhead") {
-    scheduler::Scheduler sched;
-
-    int              tick_count = 0;
-    std::vector<int> dummy_data(100);
-
-    for (int i = 0; i < 100; i++) {
-        sched.register_tick(&dummy_data[i], [&tick_count]() {
-            tick_count++;
-        });
-    }
-
-    scheduler::TimeoutTask timeout(std::chrono::milliseconds(50));
-    timeout.callback = [&sched]() {
-        sched.interrupt();
-    };
-    timeout.schedule(sched);
-
-    auto start = std::chrono::steady_clock::now();
-    sched.execute();
-    auto elapsed = std::chrono::steady_clock::now() - start;
-
-    CHECK(tick_count >= 100);
-    CHECK(elapsed < std::chrono::milliseconds(200));
-
-    for (int i = 0; i < 100; i++) {
-        sched.unregister_tick(&dummy_data[i]);
-    }
 }

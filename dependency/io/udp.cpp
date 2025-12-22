@@ -45,16 +45,16 @@ bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     if (!mListen.empty())
-        mListenerTask.reset(new scheduler::UdpListenerTask(mListen, mPort));
+        mListenerTask.reset(new scheduler::UdpInetListenerTask(mListen, mPort));
     else if (!mPath.empty())
-        mListenerTask.reset(new scheduler::UdpListenerTask(mPath));
+        mListenerTask.reset(new scheduler::UdpUnixListenerTask(mPath));
     else {
         ERRORF("no listen address or path specified");
         return false;
     }
 
     ASSERT(mListenerTask, "failed to create listener task");
-    mListenerTask->on_read = [this, &scheduler](scheduler::UdpListenerTask& task) {
+    mListenerTask->on_read = [this, &scheduler](scheduler::UdpSocketListenerTask& task) {
         struct sockaddr_storage addr;
         socklen_t               addr_len = sizeof(addr);
         auto result = ::recvfrom(mListenerTask->fd(), mBuffer, sizeof(mBuffer), 0,
@@ -73,13 +73,14 @@ bool UdpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             callback(*this, mBuffer, static_cast<size_t>(result));
         }
     };
-    mListenerTask->on_error = [this, &scheduler](scheduler::UdpListenerTask&) {
+    mListenerTask->on_error = [this, &scheduler](scheduler::UdpSocketListenerTask&) {
         scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
         });
     };
 
-    if (!mListenerTask->schedule(scheduler)) {
+    mListenerTask->schedule(scheduler);
+    if (!mListenerTask->is_scheduled()) {
         mListenerTask.reset();
         return false;
     }

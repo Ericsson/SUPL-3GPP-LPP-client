@@ -17,9 +17,9 @@ static void set_raw_mode(int fd) {
 }
 
 TEST_CASE("PtyStream - loopback") {
-    scheduler::Scheduler sched;
-    io::PtyConfig        config;
-    io::PtyStream        stream("test-pty", config);
+    scheduler::ScopedScheduler sched;
+    io::PtyConfig              config;
+    io::PtyStream              stream("test-pty", config);
 
     REQUIRE(stream.schedule(sched));
     REQUIRE_FALSE(stream.slave_path().empty());
@@ -52,8 +52,8 @@ TEST_CASE("PtyStream - loopback") {
 }
 
 TEST_CASE("PtyStream - raw mode") {
-    scheduler::Scheduler sched;
-    io::PtyConfig        config;
+    scheduler::ScopedScheduler sched;
+    io::PtyConfig              config;
     config.raw = true;
     io::PtyStream stream("test-pty-raw", config);
 
@@ -79,8 +79,8 @@ TEST_CASE("PtyStream - raw mode") {
 }
 
 TEST_CASE("PtyStream - symlink creation") {
-    scheduler::Scheduler sched;
-    io::PtyConfig        config;
+    scheduler::ScopedScheduler sched;
+    io::PtyConfig              config;
     config.link_path = "/tmp/test-pty-link";
     io::PtyStream stream("test-pty", config);
 

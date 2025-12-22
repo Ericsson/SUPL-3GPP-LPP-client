@@ -1,6 +1,7 @@
 add_executable(scheduler_tests
     main.cpp
     basic.cpp
+    event_pool.cpp
     socket.cpp
     stream.cpp
     stress.cpp

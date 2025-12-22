@@ -7,7 +7,7 @@
 #include <sys/socket.h>
 
 namespace scheduler {
-class SocketTask;
+class OwnedFileDescriptorTask;
 }
 
 namespace io {
@@ -36,11 +36,11 @@ public:
 private:
     UdpClientConfig mConfig;
 
-    int                                    mFd = -1;
-    std::unique_ptr<scheduler::SocketTask> mSocketTask;
-    WriteBuffer                            mWriteBuffer;
-    bool                                   mWriteRegistered = false;
-    uint8_t                                mReadBuf[65535];
+    int                                                 mFd = -1;
+    std::unique_ptr<scheduler::OwnedFileDescriptorTask> mSocketTask;
+    WriteBuffer                                         mWriteBuffer;
+    bool                                                mWriteRegistered = false;
+    uint8_t                                             mReadBuf[65535];
 };
 
 }  // namespace io

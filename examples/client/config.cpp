@@ -20,9 +20,7 @@ LOGLET_MODULE2(client, config);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
 
-namespace config {
-
-void dump(Config* config) {
+void config_dump(Config* config) {
     DEBUGF("config:");
     DEBUG_INDENT_SCOPE();
 
@@ -59,15 +57,21 @@ void dump(Config* config) {
     }
 
     {
-        DEBUGF("input:");
+        DEBUGF("streams (config):");
         DEBUG_INDENT_SCOPE();
-        ::input::dump(config->input);
+        ::stream::dump(config->streams_config);
     }
 
     {
-        DEBUGF("output:");
+        DEBUGF("inputs (config):");
         DEBUG_INDENT_SCOPE();
-        ::output::dump(config->output);
+        ::input::dump(config->inputs_config);
+    }
+
+    {
+        DEBUGF("outputs (config):");
+        DEBUG_INDENT_SCOPE();
+        ::output::dump(config->outputs_config);
     }
 
     {
@@ -161,7 +165,7 @@ void dump(Config* config) {
     }
 }
 
-bool parse(int argc, char** argv, Config* config) {
+bool config_parse(int argc, char** argv, Config* config) {
     args::ArgumentParser parser("S3LC Client (" CLIENT_VERSION ")");
 
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
@@ -309,5 +313,3 @@ bool parse(int argc, char** argv, Config* config) {
         return false;
     }
 }
-
-}  // namespace config

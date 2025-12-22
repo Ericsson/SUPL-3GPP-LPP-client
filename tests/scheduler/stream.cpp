@@ -6,8 +6,8 @@
 #include <unistd.h>
 
 TEST_CASE("StreamTask basic write") {
-    scheduler::Scheduler  sched;
-    scheduler::StreamTask stream(1024, std::chrono::milliseconds(10));
+    scheduler::ScopedScheduler sched;
+    scheduler::StreamTask      stream(1024, std::chrono::milliseconds(10));
 
     int write_count = 0;
     stream.callback = [&](int fd, size_t block_size) {
@@ -29,7 +29,7 @@ TEST_CASE("StreamTask basic write") {
 }
 
 TEST_CASE("ForwardStreamTask file to pipe") {
-    scheduler::Scheduler sched;
+    scheduler::ScopedScheduler sched;
 
     // Create temp file
     char const* path    = "/tmp/test_forward.txt";
@@ -68,8 +68,8 @@ TEST_CASE("ForwardStreamTask file to pipe") {
 }
 
 TEST_CASE("StreamTask rate limiting") {
-    scheduler::Scheduler  sched;
-    scheduler::StreamTask stream(1024, std::chrono::milliseconds(50));
+    scheduler::ScopedScheduler sched;
+    scheduler::StreamTask      stream(1024, std::chrono::milliseconds(50));
 
     std::vector<std::chrono::steady_clock::time_point> timestamps;
 

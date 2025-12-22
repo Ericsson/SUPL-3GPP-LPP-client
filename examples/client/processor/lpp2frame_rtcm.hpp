@@ -1,4 +1,5 @@
 #pragma once
+#include "../program_io.hpp"
 
 #if !defined(INCLUDE_GENERATOR_RTCM)
 #error "INCLUDE_GENERATOR_RTCM must be defined"
@@ -12,13 +13,13 @@
 
 class Lpp2FrameRtcm : public streamline::Inspector<lpp::Message> {
 public:
-    Lpp2FrameRtcm(OutputConfig const& output, Lpp2FrameRtcmConfig const& config)
+    Lpp2FrameRtcm(ProgramOutput const& output, Lpp2FrameRtcmConfig const& config)
         : mOutput(output), mConfig(config) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "Lpp2FrameRtcm"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) NOEXCEPT override;
 
 private:
-    OutputConfig const& mOutput;
-    Lpp2FrameRtcmConfig mConfig;
+    ProgramOutput const& mOutput;
+    Lpp2FrameRtcmConfig  mConfig;
 };

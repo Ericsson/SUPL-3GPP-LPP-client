@@ -5,7 +5,7 @@
 #include <memory>
 
 namespace scheduler {
-class SocketTask;
+class OwnedFileDescriptorTask;
 }
 
 namespace io {
@@ -29,11 +29,11 @@ public:
 private:
     StdioConfig mConfig;
 
-    std::unique_ptr<scheduler::SocketTask> mSocketTask;
-    std::unique_ptr<scheduler::SocketTask> mWriteTask;
-    WriteBuffer                            mWriteBuffer;
-    bool                                   mWriteRegistered = false;
-    uint8_t                                mReadBuf[4096];
+    std::unique_ptr<scheduler::OwnedFileDescriptorTask> mSocketTask;
+    std::unique_ptr<scheduler::OwnedFileDescriptorTask> mWriteTask;
+    WriteBuffer                                         mWriteBuffer;
+    bool                                                mWriteRegistered = false;
+    uint8_t                                             mReadBuf[4096];
 };
 
 }  // namespace io

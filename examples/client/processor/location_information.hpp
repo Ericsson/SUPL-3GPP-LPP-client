@@ -1,6 +1,7 @@
 
 #pragma once
 #include <memory>
+#include "../program_io.hpp"
 
 #include <lpp/location_information.hpp>
 #include <streamline/inspector.hpp>
@@ -33,11 +34,11 @@ private:
 
 class LocationOutput : public streamline::Inspector<lpp::LocationInformation> {
 public:
-    LocationOutput(OutputConfig const& output) : mOutput(output) {}
+    LocationOutput(ProgramOutput const& output) : mOutput(output) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "LocationOutput"; }
     void inspect(streamline::System&, DataType const& location, uint64_t tag) NOEXCEPT override;
 
 private:
-    OutputConfig const& mOutput;
+    ProgramOutput const& mOutput;
 };

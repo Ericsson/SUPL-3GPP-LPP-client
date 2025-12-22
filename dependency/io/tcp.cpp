@@ -14,6 +14,7 @@
 #include <sys/un.h>
 #include <unistd.h>
 
+#include <scheduler/file_descriptor.hpp>
 #include <scheduler/scheduler.hpp>
 #include <scheduler/socket.hpp>
 
@@ -46,16 +47,16 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     if (!mListen.empty())
-        mListenerTask.reset(new scheduler::TcpListenerTask(mListen, mPort));
+        mListenerTask.reset(new scheduler::TcpInetListenerTask(mListen, mPort));
     else if (!mPath.empty())
-        mListenerTask.reset(new scheduler::TcpListenerTask(mPath));
+        mListenerTask.reset(new scheduler::TcpUnixListenerTask(mPath));
     else {
         ERRORF("no listen address or path specified");
         return false;
     }
 
     ASSERT(mListenerTask, "failed to create listener task");
-    mListenerTask->on_accept = [this, &scheduler](scheduler::TcpListenerTask&, int data_fd,
+    mListenerTask->on_accept = [this, &scheduler](scheduler::SocketListenerTask&, int data_fd,
                                                   struct sockaddr_storage*, socklen_t) {
         auto it = mClientTasks.begin();
         while (it != mClientTasks.end()) {
@@ -67,9 +68,10 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             }
         }
 
-        auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
+        auto client = std::unique_ptr<scheduler::OwnedFileDescriptorTask>(
+            new scheduler::OwnedFileDescriptorTask(data_fd));
         client->set_event_name("tcp-client:" + std::to_string(data_fd));
-        client->on_read = [this, &scheduler](scheduler::SocketTask& task) {
+        client->on_read = [this, &scheduler](scheduler::OwnedFileDescriptorTask& task) {
             auto result = ::read(task.fd(), mBuffer, sizeof(mBuffer));
             VERBOSEF("::read(%d, %p, %zu) = %d", task.fd(), mBuffer, sizeof(mBuffer), result);
             if (result < 0) {
@@ -84,7 +86,7 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
                 callback(*this, mBuffer, static_cast<size_t>(result));
             }
         };
-        client->on_error = [&scheduler](scheduler::SocketTask& task) {
+        client->on_error = [&scheduler](scheduler::OwnedFileDescriptorTask& task) {
             scheduler.defer([&task](scheduler::Scheduler&) {
                 task.cancel();
             });
@@ -98,13 +100,14 @@ bool TcpServerInput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
             mClientTasks.push_back(std::move(client));
         }
     };
-    mListenerTask->on_error = [this, &scheduler](scheduler::TcpListenerTask&) {
+    mListenerTask->on_error = [this, &scheduler](scheduler::SocketListenerTask&) {
         scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
         });
     };
 
-    if (!mListenerTask->schedule(scheduler)) {
+    mListenerTask->schedule(scheduler);
+    if (!mListenerTask->is_scheduled()) {
         mListenerTask.reset();
         return false;
     }
@@ -116,9 +119,8 @@ bool TcpServerInput::do_cancel(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     if (mListenerTask) {
-        auto result = mListenerTask->cancel();
+        mListenerTask->cancel();
         mListenerTask.reset();
-        return result;
     }
 
     return true;
@@ -500,16 +502,16 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
 
     if (!mListen.empty())
-        mListenerTask.reset(new scheduler::TcpListenerTask(mListen, mPort));
+        mListenerTask.reset(new scheduler::TcpInetListenerTask(mListen, mPort));
     else if (!mPath.empty())
-        mListenerTask.reset(new scheduler::TcpListenerTask(mPath));
+        mListenerTask.reset(new scheduler::TcpUnixListenerTask(mPath));
     else {
         ERRORF("no listen or path specified");
         return false;
     }
 
     ASSERT(mListenerTask, "failed to create listener task");
-    mListenerTask->on_accept = [this, &scheduler](scheduler::TcpListenerTask&, int data_fd,
+    mListenerTask->on_accept = [this, &scheduler](scheduler::SocketListenerTask&, int data_fd,
                                                   struct sockaddr_storage*, socklen_t) {
         // Cleanup removed clients
         for (auto& client : mRemoveClientTasks) {
@@ -519,9 +521,10 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         mRemoveClientTasks.clear();
 
         // Add new client
-        auto client = std::unique_ptr<scheduler::SocketTask>(new scheduler::SocketTask(data_fd));
+        auto client = std::unique_ptr<scheduler::OwnedFileDescriptorTask>(
+            new scheduler::OwnedFileDescriptorTask(data_fd));
         client->set_event_name("tcp-client:" + std::to_string(data_fd));
-        client->on_error = [this, &scheduler](scheduler::SocketTask& task) {
+        client->on_error = [this, &scheduler](scheduler::OwnedFileDescriptorTask& task) {
             auto fd = task.fd();
             scheduler.defer([this, fd, &task](scheduler::Scheduler&) {
                 task.cancel();
@@ -538,13 +541,14 @@ bool TcpServerOutput::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
         }
     };
 
-    mListenerTask->on_error = [this, &scheduler](scheduler::TcpListenerTask&) {
+    mListenerTask->on_error = [this, &scheduler](scheduler::SocketListenerTask&) {
         scheduler.defer([this](scheduler::Scheduler&) {
             cancel();
         });
     };
 
-    if (!mListenerTask->schedule(scheduler)) {
+    mListenerTask->schedule(scheduler);
+    if (!mListenerTask->is_scheduled()) {
         mListenerTask.reset();
         return false;
     }
@@ -588,7 +592,7 @@ void TcpServerOutput::remove_client(int fd) NOEXCEPT {
     VSCOPE_FUNCTIONF("%d", fd);
 
     auto client = std::find_if(mClientTasks.begin(), mClientTasks.end(),
-                               [fd](std::unique_ptr<scheduler::SocketTask>& task) {
+                               [fd](std::unique_ptr<scheduler::OwnedFileDescriptorTask>& task) {
                                    return task->fd() == fd;
                                });
 

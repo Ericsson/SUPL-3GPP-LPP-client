@@ -20,19 +20,118 @@ LOGLET_MODULE2(sched, socket);
 
 namespace scheduler {
 
-ListenerTask::ListenerTask(int listener_fd) NOEXCEPT : mScheduler{nullptr},
-                                                       mEvent{},
-                                                       mListenerFd{listener_fd} {
+ListenerTask::ListenerTask(
+    int listener_fd, std::string name,
+    std::function<void(ListenerTask&, int, struct sockaddr_storage*, socklen_t)> on_accept) NOEXCEPT
+    : mEvent{ScheduledEvent::invalid()},
+      mListenerFd{listener_fd},
+      mOnAccept{std::move(on_accept)} {
     VSCOPE_FUNCTION();
-    mEvent.event = [this](struct epoll_event* event) {
-        this->event(event);
-    };
+
+    if (mListenerFd < 0) {
+        ERRORF("invalid file descriptor");
+        return;
+    }
+
+    auto fcntl_flags = ::fcntl(mListenerFd, F_GETFL, 0);
+    VERBOSEF("::fcntl(%d, F_GETFL, 0) = %d", mListenerFd, fcntl_flags);
+    if (!(fcntl_flags & O_NONBLOCK)) {
+        ERRORF("listener fd must be non-blocking");
+        return;
+    }
+
+    auto result = ::listen(mListenerFd, SOMAXCONN);
+    VERBOSEF("::listen(%d, %d) = %d", mListenerFd, SOMAXCONN, result);
+    if (result < 0) {
+        ERRORF("listen failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        return;
+    }
+
+    mEvent = current().register_fd(
+        mListenerFd, EventInterest::Read | EventInterest::Error | EventInterest::Hangup,
+        [this](EventInterest i) {
+            on_event(i);
+        },
+        std::move(name));
 }
 
 ListenerTask::~ListenerTask() NOEXCEPT {
     VSCOPE_FUNCTION();
-    if (is_scheduled()) {
-        cancel();
+    cancel();
+}
+
+void ListenerTask::on_event(EventInterest triggered) NOEXCEPT {
+    if (triggered & (EventInterest::Error | EventInterest::Hangup)) {
+        if (on_error) on_error(*this);
+        return;
+    }
+
+    if (triggered & EventInterest::Read) {
+        struct sockaddr_storage addr{};
+        socklen_t               addr_len = sizeof(addr);
+        auto client_fd = ::accept(mListenerFd, (struct sockaddr*)&addr, &addr_len);
+        VERBOSEF("::accept(%d, %p, %p) = %d", mListenerFd, &addr, &addr_len, client_fd);
+        if (client_fd >= 0) {
+            auto flags = ::fcntl(client_fd, F_GETFL, 0);
+            VERBOSEF("::fcntl(%d, F_GETFL, 0) = %d", client_fd, flags);
+            auto result = ::fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
+            VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", client_fd, flags | O_NONBLOCK, result);
+            mOnAccept(*this, client_fd, &addr, addr_len);
+        } else {
+            WARNF("accept failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        }
+    }
+}
+
+void ListenerTask::cancel() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    mEvent.unregister();
+}
+
+//
+//
+//
+
+SocketListenerTask::SocketListenerTask() NOEXCEPT : mListenerFd{-1},
+                                                    mPort{0},
+                                                    mListenerTask{nullptr} {}
+
+SocketListenerTask::~SocketListenerTask() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    cancel();
+}
+
+void SocketListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%p", &scheduler);
+    if (mListenerTask) {
+        WARNF("already scheduled");
+        return;
+    }
+
+    if (!create_socket()) return;
+
+    auto fcntl_flags = ::fcntl(mListenerFd, F_GETFL, 0);
+    VERBOSEF("::fcntl(%d, F_GETFL, 0) = %d", mListenerFd, fcntl_flags);
+    auto result = ::fcntl(mListenerFd, F_SETFL, fcntl_flags | O_NONBLOCK);
+    VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", mListenerFd, fcntl_flags | O_NONBLOCK, result);
+
+    mListenerTask.reset(
+        new ListenerTask(mListenerFd, event_name(),
+                         [this](ListenerTask&, int client_fd, struct sockaddr_storage* client_addr,
+                                socklen_t client_addr_len) {
+                             if (on_accept)
+                                 on_accept(*this, client_fd, client_addr, client_addr_len);
+                         }));
+    mListenerTask->on_error = [this](ListenerTask&) {
+        if (on_error) on_error(*this);
+    };
+}
+
+void SocketListenerTask::cancel() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    if (mListenerTask) {
+        mListenerTask->cancel();
+        mListenerTask.reset();
     }
 
     if (mListenerFd >= 0) {
@@ -42,370 +141,212 @@ ListenerTask::~ListenerTask() NOEXCEPT {
     }
 }
 
-void ListenerTask::event(struct epoll_event* event) NOEXCEPT {
-    auto events = event->events;
-    VERBOSEF("event(%p) fd=%d events: %s%s%s%s%s", event, mListenerFd,
-             (events & EPOLL_IN) ? "read " : "", (events & EPOLL_OUT) ? "write " : "",
-             (events & EPOLL_ERR) ? "error " : "", (events & EPOLL_HUP) ? "hup " : "",
-             (events & EPOLL_RDHUP) ? "rdhup " : "");
-    TRACE_INDENT_SCOPE();
-
-    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
-        if (on_error) {
-            this->on_error(*this);
-        }
-    } else if ((events & EPOLL_IN) != 0) {
-        this->accept();
-    }
-}
-
-void ListenerTask::accept() NOEXCEPT {
-    VSCOPE_FUNCTION();
-    struct sockaddr_storage addr_storage{};
-    socklen_t               addr_len = sizeof(addr_storage);
-    auto                    client_fd =
-        ::accept(mListenerFd, reinterpret_cast<struct sockaddr*>(&addr_storage), &addr_len);
-    VERBOSEF("::accept(%d, %p, %p) = %d", mListenerFd, &addr_storage, &addr_len, client_fd);
-    if (client_fd >= 0) {
-        auto flags = ::fcntl(client_fd, F_GETFL, 0);
-        VERBOSEF("::fcntl(%d, F_GETFL, 0) = %d", client_fd, flags);
-        auto result = ::fcntl(client_fd, F_SETFL, flags | O_NONBLOCK);
-        VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", client_fd, flags | O_NONBLOCK, result);
-
-        if (on_accept) {
-            on_accept(*this, client_fd, &addr_storage, addr_len);
-        }
-    } else {
-        WARNF("accept failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-    }
-}
-
-bool ListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%p", &scheduler);
-    if (mScheduler) {
-        WARNF("already scheduled");
-        return false;
-    } else if (mListenerFd < 0) {
-        WARNF("invalid file descriptor");
-        return false;
-    }
-
-    // we're using epoll so we need to set the listener fd to non-blocking
-    auto fcntl_flags = ::fcntl(mListenerFd, F_GETFL, 0);
-    VERBOSEF("::fcntl(%d, F_GETFL, 0) = %d", mListenerFd, fcntl_flags);
-    auto fcntl_reslut = ::fcntl(mListenerFd, F_SETFL, fcntl_flags | O_NONBLOCK);
-    VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", mListenerFd, fcntl_flags | O_NONBLOCK, fcntl_reslut);
-
-    // start listening
-    auto result = ::listen(mListenerFd, SOMAXCONN);
-    VERBOSEF("::listen(%d, %d) = %d", mListenerFd, SOMAXCONN, result);
-    if (result < 0) {
-        ERRORF("listen failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-        return false;
-    }
-
-    uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
-    if (on_accept) events |= EPOLLIN;
-    if (scheduler.add_epoll_fd(mListenerFd, events, &mEvent)) {
-        mScheduler = &scheduler;
-        return true;
-    } else {
-        return false;
-    }
-}
-
-bool ListenerTask::cancel() NOEXCEPT {
-    VSCOPE_FUNCTION();
-    if (!mScheduler) {
-        WARNF("not scheduled");
-        return false;
-    }
-
-    if (mScheduler->remove_epoll_fd(mListenerFd)) {
-        mScheduler = nullptr;
-        return true;
-    } else {
-        return false;
-    }
-}
-
-//
-//
-//
-
-TcpListenerTask::TcpListenerTask(std::string address, uint16_t port) NOEXCEPT
-    : mPath{},
-      mAddress{std::move(address)},
-      mPort{port},
-      mListenerTask{nullptr} {
-    VSCOPE_FUNCTION();
-}
-
-TcpListenerTask::TcpListenerTask(std::string path) NOEXCEPT : mPath{std::move(path)},
-                                                              mAddress{},
-                                                              mPort{0},
-                                                              mListenerTask{nullptr} {
-    VSCOPE_FUNCTION();
-}
-
-TcpListenerTask::~TcpListenerTask() NOEXCEPT {
-    VSCOPE_FUNCTION();
-    if (is_scheduled()) {
-        cancel();
-    }
-}
-
-bool TcpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%p", &scheduler);
-    if (mListenerTask) {
-        WARNF("already scheduled");
-        return false;
-    }
-
-    struct sockaddr* addr     = nullptr;
-    socklen_t        addr_len = 0;
-
-    struct sockaddr_in addr_in{};
-    struct sockaddr_un addr_un{};
-    if (!mAddress.empty()) {
-        addr_in.sin_family = AF_INET;
-        addr_in.sin_port   = htons(mPort);
-        auto result        = ::inet_pton(AF_INET, mAddress.c_str(), &addr_in.sin_addr);
-        VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr_in.sin_addr, result);
-        if (result <= 0) {
-            ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-            return false;
-        }
-        addr     = reinterpret_cast<struct sockaddr*>(&addr_in);
-        addr_len = sizeof(addr_in);
-    } else if (!mPath.empty()) {
-        addr_un.sun_family = AF_UNIX;
-
-        if (mPath.size() + 1 >= sizeof(addr_un.sun_path)) {
-            ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
-            return false;
-        }
-
-        memset(addr_un.sun_path, 0, sizeof(addr_un.sun_path));
-        memcpy(addr_un.sun_path, mPath.c_str(), mPath.size());
-        addr_un.sun_path[mPath.size()] = '\0';
-        addr                           = reinterpret_cast<struct sockaddr*>(&addr_un);
-        addr_len = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
-    } else {
-        ERRORF("no listen address or path specified");
-        return false;
-    }
-
-    ASSERT(addr, "invalid address");
-    ASSERT(addr_len > 0, "invalid address length");
-    auto listener_fd = ::socket(addr->sa_family, SOCK_STREAM, 0);
-    VERBOSEF("::socket(%d, SOCK_STREAM, 0) = %d", addr->sa_family, listener_fd);
-    if (listener_fd < 0) {
-        ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-        return false;
-    }
-
-    int  enable = 1;
-    auto result = ::setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
-    VERBOSEF("::setsockopt(%d, SOL_SOCKET, SO_REUSEADDR, %p (%d), %d) = %d", listener_fd, &enable,
-             enable, sizeof(enable), result);
-    if (result < 0) {
-        WARNF("setsockopt failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-    }
-
-    result = ::bind(listener_fd, addr, addr_len);
-    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, addr, addr_len, result);
-    if (result < 0) {
-        ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-        ::close(listener_fd);
-        return false;
-    }
-
-    if (mPort == 0 && !mAddress.empty()) {
-        struct sockaddr_in bound_addr{};
-        socklen_t          bound_len = sizeof(bound_addr);
-        if (::getsockname(listener_fd, reinterpret_cast<struct sockaddr*>(&bound_addr),
-                          &bound_len) == 0) {
-            mPort = ntohs(bound_addr.sin_port);
-            INFOF("bound to port %u", mPort);
-        }
-    }
-
-    mListenerTask.reset(new ListenerTask(listener_fd));
-    if (!mPath.empty()) {
-        mListenerTask->set_event_name("tcp-listener:" + mPath);
-    } else {
-        mListenerTask->set_event_name("tcp-listener:" + mAddress + ":" + std::to_string(mPort));
-    }
-    mListenerTask->on_accept = [this](ListenerTask&, int client_fd,
-                                      struct sockaddr_storage* client_addr,
-                                      socklen_t                client_addr_len) {
-        if (on_accept) {
-            on_accept(*this, client_fd, client_addr, client_addr_len);
-        }
-    };
-    mListenerTask->on_error = [this](ListenerTask&) {
-        if (on_error) {
-            on_error(*this);
-        }
-    };
-
-    if (mListenerTask->schedule(scheduler)) {
-        return true;
-    } else {
-        mListenerTask.reset();
-        return false;
-    }
-}
-
-bool TcpListenerTask::cancel() NOEXCEPT {
-    VSCOPE_FUNCTION();
-    if (!mListenerTask) {
-        WARNF("not scheduled");
-        return false;
-    }
-
-    if (mListenerTask->cancel()) {
-        mListenerTask.reset();
-        return true;
-    } else {
-        return false;
-    }
-}
-
-uint16_t TcpListenerTask::port() const NOEXCEPT {
+uint16_t SocketListenerTask::port() const NOEXCEPT {
     return mPort;
 }
 
 //
-//
+// TcpInetListenerTask
 //
 
-UdpListenerTask::UdpListenerTask(std::string address, uint16_t port) NOEXCEPT
-    : mPath{},
-      mAddress{std::move(address)},
-      mPort{port},
-      mScheduler{nullptr},
-      mListenerFd{-1} {
-    VSCOPE_FUNCTIONF("\"%s\", %u", mAddress.c_str(), mPort);
-
-    mEventName   = "udp-listener:" + mAddress + ":" + std::to_string(mPort);
-    mEvent.name  = mEventName.c_str();
-    mEvent.event = [this](struct epoll_event* event) {
-        this->event(event);
-    };
+TcpInetListenerTask::TcpInetListenerTask(std::string address, uint16_t port) NOEXCEPT
+    : mAddress{std::move(address)} {
+    mPort = port;
 }
 
-UdpListenerTask::UdpListenerTask(std::string path) NOEXCEPT : mPath{std::move(path)},
-                                                              mAddress{},
-                                                              mPort{0},
-                                                              mScheduler{nullptr},
-                                                              mListenerFd{-1} {
-    VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
+bool TcpInetListenerTask::create_socket() NOEXCEPT {
+    struct sockaddr_in addr{};
+    addr.sin_family = AF_INET;
+    addr.sin_port   = htons(mPort);
+    auto result     = ::inet_pton(AF_INET, mAddress.c_str(), &addr.sin_addr);
+    VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr.sin_addr, result);
+    if (result <= 0) {
+        ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        return false;
+    }
 
-    mEventName   = "udp-listener:" + mPath;
-    mEvent.name  = mEventName.c_str();
-    mEvent.event = [this](struct epoll_event* event) {
-        this->event(event);
-    };
+    mListenerFd = ::socket(AF_INET, SOCK_STREAM, 0);
+    VERBOSEF("::socket(AF_INET, SOCK_STREAM, 0) = %d", mListenerFd);
+    if (mListenerFd < 0) {
+        ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        return false;
+    }
+
+    int enable = 1;
+    result     = ::setsockopt(mListenerFd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+    VERBOSEF("::setsockopt(%d, SOL_SOCKET, SO_REUSEADDR, %p, %zu) = %d", mListenerFd, &enable,
+             sizeof(enable), result);
+
+    result = ::bind(mListenerFd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr));
+    VERBOSEF("::bind(%d, %p, %zu) = %d", mListenerFd, &addr, sizeof(addr), result);
+    if (result < 0) {
+        ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        result = ::close(mListenerFd);
+        VERBOSEF("::close(%d) = %d", mListenerFd, result);
+        mListenerFd = -1;
+        return false;
+    }
+
+    if (mPort == 0) {
+        struct sockaddr_in bound_addr{};
+        socklen_t          bound_len = sizeof(bound_addr);
+        result =
+            ::getsockname(mListenerFd, reinterpret_cast<struct sockaddr*>(&bound_addr), &bound_len);
+        VERBOSEF("::getsockname(%d, %p, %p) = %d", mListenerFd, &bound_addr, &bound_len, result);
+        if (result == 0) {
+            mPort = ntohs(bound_addr.sin_port);
+            INFOF("bound to port %u", mPort);
+        }
+    }
+
+    return true;
 }
 
-UdpListenerTask::~UdpListenerTask() NOEXCEPT {
+std::string TcpInetListenerTask::event_name() const NOEXCEPT {
+    return "tcp-listener:" + mAddress + ":" + std::to_string(mPort);
+}
+
+//
+// TcpUnixListenerTask
+//
+
+TcpUnixListenerTask::TcpUnixListenerTask(std::string path) NOEXCEPT : mPath{std::move(path)} {}
+
+bool TcpUnixListenerTask::create_socket() NOEXCEPT {
+    struct sockaddr_un addr{};
+    addr.sun_family = AF_UNIX;
+
+    if (mPath.size() + 1 >= sizeof(addr.sun_path)) {
+        ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
+        return false;
+    }
+
+    memset(addr.sun_path, 0, sizeof(addr.sun_path));
+    memcpy(addr.sun_path, mPath.c_str(), mPath.size());
+
+    mListenerFd = ::socket(AF_UNIX, SOCK_STREAM, 0);
+    VERBOSEF("::socket(AF_UNIX, SOCK_STREAM, 0) = %d", mListenerFd);
+    if (mListenerFd < 0) {
+        ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        return false;
+    }
+
+    auto addr_len = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
+    auto result   = ::bind(mListenerFd, reinterpret_cast<struct sockaddr*>(&addr), addr_len);
+    VERBOSEF("::bind(%d, %p, %d) = %d", mListenerFd, &addr, addr_len, result);
+    if (result < 0) {
+        ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        result = ::close(mListenerFd);
+        VERBOSEF("::close(%d) = %d", mListenerFd, result);
+        mListenerFd = -1;
+        return false;
+    }
+
+    return true;
+}
+
+std::string TcpUnixListenerTask::event_name() const NOEXCEPT {
+    return "tcp-listener:" + mPath;
+}
+
+//
+//
+//
+
+UdpSocketListenerTask::UdpSocketListenerTask() NOEXCEPT : mListenerFd{-1},
+                                                          mPort{0},
+                                                          mEvent{ScheduledEvent::invalid()} {}
+
+UdpSocketListenerTask::~UdpSocketListenerTask() NOEXCEPT {
     VSCOPE_FUNCTION();
-    if (is_scheduled()) {
-        cancel();
-    }
+    cancel();
 }
 
-void UdpListenerTask::event(struct epoll_event* event) NOEXCEPT {
-    auto events = event->events;
-    VERBOSEF("event(%p) fd=%d events: %s%s%s%s%s", event, mListenerFd,
-             (events & EPOLL_IN) ? "read " : "", (events & EPOLL_OUT) ? "write " : "",
-             (events & EPOLL_ERR) ? "error " : "", (events & EPOLL_HUP) ? "hup " : "",
-             (events & EPOLL_RDHUP) ? "rdhup " : "");
-    TRACE_INDENT_SCOPE();
-
-    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
-        if (on_error) {
-            this->on_error(*this);
-        }
-    } else if ((events & EPOLL_IN) != 0) {
-        if (on_read) {
-            this->on_read(*this);
-        }
-    }
-}
-
-bool UdpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
+void UdpSocketListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
     VSCOPE_FUNCTIONF("%p", &scheduler);
-    if (mScheduler) {
+    if (mEvent.valid()) {
         WARNF("already scheduled");
-        return false;
-    } else if (mListenerFd >= 0) {
-        WARNF("already scheduled");
-        return false;
+        return;
     }
 
-    struct sockaddr* addr     = nullptr;
-    socklen_t        addr_len = 0;
+    if (!create_socket()) {
+        return;
+    }
 
+    EventInterest interests = EventInterest::Error | EventInterest::Hangup;
+    if (on_read) interests = interests | EventInterest::Read;
+
+    mEvent = scheduler.register_fd(
+        mListenerFd, interests,
+        [this](EventInterest triggered) {
+            VERBOSEF("event fd=%d triggered: %s%s%s%s", mListenerFd,
+                     (triggered & EventInterest::Read) ? "read " : "",
+                     (triggered & EventInterest::Write) ? "write " : "",
+                     (triggered & EventInterest::Error) ? "error " : "",
+                     (triggered & EventInterest::Hangup) ? "hangup " : "");
+            if (triggered & (EventInterest::Error | EventInterest::Hangup)) {
+                if (on_error) on_error(*this);
+            } else if (triggered & EventInterest::Read) {
+                if (on_read) on_read(*this);
+            }
+        },
+        event_name());
+
+    if (!mEvent.valid()) {
+        auto result = ::close(mListenerFd);
+        VERBOSEF("::close(%d) = %d", mListenerFd, result);
+        mListenerFd = -1;
+    }
+}
+
+void UdpSocketListenerTask::cancel() NOEXCEPT {
+    VSCOPE_FUNCTION();
+    mEvent.unregister();
+
+    if (mListenerFd < 0) return;
+    auto result = ::close(mListenerFd);
+    VERBOSEF("::close(%d) = %d", mListenerFd, result);
+    mListenerFd = -1;
+}
+
+UdpInetListenerTask::UdpInetListenerTask(std::string address, uint16_t port) NOEXCEPT
+    : mAddress{std::move(address)} {
+    mPort = port;
+    VSCOPE_FUNCTIONF("\"%s\", %u", mAddress.c_str(), mPort);
+}
+
+bool UdpInetListenerTask::create_socket() NOEXCEPT {
     struct sockaddr_in addr_in{};
-    struct sockaddr_un addr_un{};
-    if (!mAddress.empty()) {
-        addr_in.sin_family = AF_INET;
-        addr_in.sin_port   = htons(mPort);
-        auto result        = ::inet_pton(AF_INET, mAddress.c_str(), &addr_in.sin_addr);
-        VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr_in.sin_addr, result);
-        if (result <= 0) {
-            ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-            return false;
-        }
-        addr     = reinterpret_cast<struct sockaddr*>(&addr_in);
-        addr_len = sizeof(addr_in);
-    } else if (!mPath.empty()) {
-        addr_un.sun_family = AF_UNIX;
-
-        if (mPath.size() + 1 >= sizeof(addr_un.sun_path)) {
-            ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
-            return false;
-        }
-
-        memset(addr_un.sun_path, 0, sizeof(addr_un.sun_path));
-        memcpy(addr_un.sun_path, mPath.c_str(), mPath.size());
-        addr_un.sun_path[mPath.size()] = '\0';
-        addr                           = reinterpret_cast<struct sockaddr*>(&addr_un);
-        addr_len = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
-    } else {
-        ERRORF("no listen address or path specified");
+    addr_in.sin_family = AF_INET;
+    addr_in.sin_port   = htons(mPort);
+    auto result        = ::inet_pton(AF_INET, mAddress.c_str(), &addr_in.sin_addr);
+    VERBOSEF("::inet_pton(AF_INET, %s, %p) = %d", mAddress.c_str(), &addr_in.sin_addr, result);
+    if (result <= 0) {
+        ERRORF("inet_pton failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         return false;
     }
 
-    ASSERT(addr, "invalid address");
-    ASSERT(addr_len > 0, "invalid address length");
-    auto listener_fd = ::socket(addr->sa_family, SOCK_DGRAM, 0);
-    VERBOSEF("::socket(%d, SOCK_DGRAM, 0) = %d", addr->sa_family, listener_fd);
+    auto listener_fd = ::socket(AF_INET, SOCK_DGRAM, 0);
+    VERBOSEF("::socket(AF_INET, SOCK_DGRAM, 0) = %d", listener_fd);
     if (listener_fd < 0) {
         ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         return false;
     }
 
-    int  enable = 1;
-    auto result = ::setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
+    int enable = 1;
+    result     = ::setsockopt(listener_fd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(enable));
     VERBOSEF("::setsockopt(%d, SOL_SOCKET, SO_REUSEADDR, %p (%d), %d) = %d", listener_fd, &enable,
              enable, sizeof(enable), result);
-    if (result < 0) {
-        WARNF("setsockopt failed: " ERRNO_FMT, ERRNO_ARGS(errno));
-    }
 
-    result = ::bind(listener_fd, addr, addr_len);
-    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, addr, addr_len, result);
+    result = ::bind(listener_fd, reinterpret_cast<struct sockaddr*>(&addr_in), sizeof(addr_in));
+    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, &addr_in, sizeof(addr_in), result);
     if (result < 0) {
         ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         ::close(listener_fd);
         return false;
     }
 
-    if (mPort == 0 && !mAddress.empty()) {
+    if (mPort == 0) {
         struct sockaddr_in bound_addr{};
         socklen_t          bound_len = sizeof(bound_addr);
         if (::getsockname(listener_fd, reinterpret_cast<struct sockaddr*>(&bound_addr),
@@ -415,134 +356,52 @@ bool UdpListenerTask::schedule(Scheduler& scheduler) NOEXCEPT {
         }
     }
 
-    uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
-    if (on_read) events |= EPOLLIN;
-    if (scheduler.add_epoll_fd(listener_fd, events, &mEvent)) {
-        mScheduler  = &scheduler;
-        mListenerFd = listener_fd;
-        return true;
-    } else {
-        result = ::close(listener_fd);
-        VERBOSEF("::close(%d) = %d", listener_fd, result);
-        return false;
-    }
+    mListenerFd = listener_fd;
+    return true;
 }
 
-bool UdpListenerTask::cancel() NOEXCEPT {
-    VSCOPE_FUNCTION();
-
-    if (!mScheduler) {
-        WARNF("not scheduled");
-        return false;
-    }
-
-    if (mScheduler->remove_epoll_fd(mListenerFd)) {
-        mScheduler = nullptr;
-
-        auto result = ::close(mListenerFd);
-        VERBOSEF("::close(%d) = %d", mListenerFd, result);
-        mListenerFd = -1;
-        return true;
-    } else {
-        return false;
-    }
+std::string UdpInetListenerTask::event_name() const NOEXCEPT {
+    return "udp-listener:" + mAddress + ":" + std::to_string(mPort);
 }
 
-//
-//
-//
-
-SocketTask::SocketTask(int fd) NOEXCEPT : mScheduler(nullptr), mEvent{}, mFd(fd) {
-    VSCOPE_FUNCTION();
-    mEvent.event = [this](struct epoll_event* event) {
-        this->event(event);
-    };
+UdpUnixListenerTask::UdpUnixListenerTask(std::string path) NOEXCEPT : mPath{std::move(path)} {
+    VSCOPE_FUNCTIONF("\"%s\"", mPath.c_str());
 }
 
-SocketTask::~SocketTask() NOEXCEPT {
-    VSCOPE_FUNCTION();
-    if (is_scheduled()) {
-        cancel();
-    }
+bool UdpUnixListenerTask::create_socket() NOEXCEPT {
+    struct sockaddr_un addr_un{};
+    addr_un.sun_family = AF_UNIX;
 
-    if (mFd >= 0) {
-        auto result = ::close(mFd);
-        VERBOSEF("::close(%d) = %d", mFd, result);
-        mFd = -1;
-    }
-}
-
-void SocketTask::event(struct epoll_event* event) NOEXCEPT {
-    auto events = event->events;
-    VERBOSEF("event(%p) fd=%d events: %s%s%s%s%s", event, mFd, (events & EPOLL_IN) ? "read " : "",
-             (events & EPOLL_OUT) ? "write " : "", (events & EPOLL_ERR) ? "error " : "",
-             (events & EPOLL_HUP) ? "hup " : "", (events & EPOLL_RDHUP) ? "rdhup " : "");
-    TRACE_INDENT_SCOPE();
-
-    if ((events & EPOLL_IN) != 0) {
-        this->read();
-    }
-
-    if ((events & EPOLL_OUT) != 0) {
-        this->write();
-    }
-
-    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
-        this->error();
-    }
-}
-
-void SocketTask::read() NOEXCEPT {
-    if (on_read) {
-        on_read(*this);
-    }
-}
-
-void SocketTask::write() NOEXCEPT {
-    if (on_write) {
-        on_write(*this);
-    }
-}
-
-void SocketTask::error() NOEXCEPT {
-    if (on_error) {
-        on_error(*this);
-    }
-}
-
-bool SocketTask::schedule(Scheduler& scheduler) NOEXCEPT {
-    VSCOPE_FUNCTIONF("%p", &scheduler);
-    if (mScheduler) {
-        WARNF("already scheduled");
-        return false;
-    } else if (mFd < 0) {
-        WARNF("invalid file descriptor");
+    if (mPath.size() + 1 >= sizeof(addr_un.sun_path)) {
+        ERRORF("path too long for unix socket: \"%s\"", mPath.c_str());
         return false;
     }
 
-    uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
-    if (on_read) events |= EPOLLIN;
-    if (scheduler.add_epoll_fd(mFd, events, &mEvent)) {
-        mScheduler = &scheduler;
-        return true;
-    } else {
+    memset(addr_un.sun_path, 0, sizeof(addr_un.sun_path));
+    memcpy(addr_un.sun_path, mPath.c_str(), mPath.size());
+
+    auto listener_fd = ::socket(AF_UNIX, SOCK_DGRAM, 0);
+    VERBOSEF("::socket(AF_UNIX, SOCK_DGRAM, 0) = %d", listener_fd);
+    if (listener_fd < 0) {
+        ERRORF("socket failed: " ERRNO_FMT, ERRNO_ARGS(errno));
         return false;
     }
+
+    auto addr_len = static_cast<socklen_t>(sizeof(sa_family_t) + mPath.size() + 1);
+    auto result   = ::bind(listener_fd, reinterpret_cast<struct sockaddr*>(&addr_un), addr_len);
+    VERBOSEF("::bind(%d, %p, %d) = %d", listener_fd, &addr_un, addr_len, result);
+    if (result < 0) {
+        ERRORF("bind failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+        ::close(listener_fd);
+        return false;
+    }
+
+    mListenerFd = listener_fd;
+    return true;
 }
 
-bool SocketTask::cancel() NOEXCEPT {
-    VSCOPE_FUNCTION();
-    if (!mScheduler) {
-        WARNF("not scheduled");
-        return false;
-    }
-
-    if (mScheduler->remove_epoll_fd(mFd)) {
-        mScheduler = nullptr;
-        return true;
-    } else {
-        return false;
-    }
+std::string UdpUnixListenerTask::event_name() const NOEXCEPT {
+    return "udp-listener:" + mPath;
 }
 
 //
@@ -553,7 +412,7 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
     : mState(StateUnscheduled),
       mScheduler{nullptr},
       mIsScheduled{false},
-      mEvent{},
+      mEvent{ScheduledEvent::invalid()},
       mPath{},
       mHost{std::move(host)},
       mPort{port},
@@ -564,15 +423,10 @@ TcpConnectTask::TcpConnectTask(std::string host, uint16_t port, bool should_reco
 
     char name[256];
     snprintf(name, sizeof(name), "tcp:%s:%u", mHost.c_str(), mPort);
-    mEventName   = name;
-    mEvent.name  = mEventName.c_str();
-    mEvent.event = [this](struct epoll_event* event) {
-        this->event(event);
-    };
+    mEventName = name;
 
     mReconnectTimeout.callback = [this]() {
-        auto scheduler = &mReconnectTimeout.scheduler();
-        scheduler->defer([this](scheduler::Scheduler& sched) {
+        defer([this](Scheduler& sched) {
             mReconnectTimeout.cancel();
             if (!schedule(sched)) {
                 ERRORF("failed to schedule reconnect timeout");
@@ -585,7 +439,7 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     : mState(StateUnscheduled),
       mScheduler{nullptr},
       mIsScheduled{false},
-      mEvent{},
+      mEvent{ScheduledEvent::invalid()},
       mPath{std::move(path)},
       mHost{},
       mPort{0},
@@ -594,15 +448,10 @@ TcpConnectTask::TcpConnectTask(std::string path, bool should_reconnect) NOEXCEPT
     mConnected       = false;
     mShouldReconnect = should_reconnect;
 
-    mEventName   = "tcp:" + mPath;
-    mEvent.name  = mEventName.c_str();
-    mEvent.event = [this](struct epoll_event* event) {
-        this->event(event);
-    };
+    mEventName = "tcp:" + mPath;
 
     mReconnectTimeout.callback = [this]() {
-        auto scheduler = &mReconnectTimeout.scheduler();
-        scheduler->defer([this](scheduler::Scheduler& sched) {
+        defer([this](Scheduler& sched) {
             mReconnectTimeout.cancel();
             if (!schedule(sched)) {
                 ERRORF("failed to schedule reconnect timeout");
@@ -628,7 +477,7 @@ TcpConnectTask::~TcpConnectTask() NOEXCEPT {
 }
 
 void TcpConnectTask::set_reconnect_delay(std::chrono::milliseconds delay) NOEXCEPT {
-    mReconnectTimeout.set_timeout(delay);
+    mReconnectTimeout.set_duration(delay);
 }
 
 char const* TcpConnectTask::state_to_string(State state) const NOEXCEPT {
@@ -810,22 +659,22 @@ void TcpConnectTask::disconnect() NOEXCEPT {
     mState = StateDisconnected;
 }
 
-void TcpConnectTask::event(struct epoll_event* event) NOEXCEPT {
-    auto events = event->events;
-    VERBOSEF("event(%p) (state=%s) fd=%d events: %s%s%s%s%s", event, state_to_string(mState), mFd,
-             (events & EPOLL_IN) ? "read " : "", (events & EPOLL_OUT) ? "write " : "",
-             (events & EPOLL_ERR) ? "error " : "", (events & EPOLL_HUP) ? "hup " : "",
-             (events & EPOLL_RDHUP) ? "rdhup " : "");
+void TcpConnectTask::event(EventInterest triggered) NOEXCEPT {
+    VERBOSEF("event (state=%s) fd=%d triggered: %s%s%s%s", state_to_string(mState), mFd,
+             (triggered & EventInterest::Read) ? "read " : "",
+             (triggered & EventInterest::Write) ? "write " : "",
+             (triggered & EventInterest::Error) ? "error " : "",
+             (triggered & EventInterest::Hangup) ? "hangup " : "");
     TRACE_INDENT_SCOPE();
 
-    if ((events & (EPOLL_ERR | EPOLL_HUP | EPOLL_RDHUP)) != 0) {
+    if (triggered & (EventInterest::Error | EventInterest::Hangup)) {
         this->error();
     } else {
-        if ((events & EPOLL_IN) != 0) {
+        if (triggered & EventInterest::Read) {
             this->read();
         }
 
-        if ((events & EPOLL_OUT) != 0) {
+        if (triggered & EventInterest::Write) {
             this->write();
         }
     }
@@ -846,12 +695,9 @@ void TcpConnectTask::write() NOEXCEPT {
             on_connected(*this);
         }
 
-        // Remove EPOLLOUT after connection - streams will add it when they have data to write
-        uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
-        if (on_read) events |= EPOLLIN;
-        if (!mScheduler->update_epoll_fd(mFd, events, &mEvent)) {
-            WARNF("failed to update epoll: write is not disabled");
-        }
+        EventInterest interests = EventInterest::Error | EventInterest::Hangup;
+        if (on_read) interests = interests | EventInterest::Read;
+        mScheduler->update_interests(mEvent, interests);
         return;
     }
 
@@ -905,10 +751,8 @@ void TcpConnectTask::error() NOEXCEPT {
     if (mShouldReconnect && mScheduler) {
         if (!mReconnectTimeout.is_scheduled()) {
             VERBOSEF("schedule reconnect");
-            mScheduler->defer([this](scheduler::Scheduler&) {
-                if (!mReconnectTimeout.schedule(*mScheduler)) {
-                    ERRORF("failed to schedule reconnect timeout");
-                }
+            defer([this](Scheduler&) {
+                mReconnectTimeout.schedule();
             });
         }
     }
@@ -923,9 +767,7 @@ bool TcpConnectTask::schedule(Scheduler& scheduler) NOEXCEPT {
         if (mShouldReconnect) {
             if (!mReconnectTimeout.is_scheduled()) {
                 VERBOSEF("schedule reconnect");
-                if (!mReconnectTimeout.schedule(scheduler)) {
-                    ERRORF("failed to schedule reconnect timeout");
-                }
+                mReconnectTimeout.schedule();
             }
             return true;
         } else {
@@ -943,13 +785,21 @@ bool TcpConnectTask::schedule(Scheduler& scheduler) NOEXCEPT {
         return false;
     }
 
-    uint32_t events = EPOLLERR | EPOLLHUP | EPOLLRDHUP;
-    if (on_read) events |= EPOLLIN;
-    if (on_write) events |= EPOLLIN;
+    EventInterest interests = EventInterest::Error | EventInterest::Hangup;
+    if (on_read) interests = interests | EventInterest::Read;
+    if (on_write) interests = interests | EventInterest::Read;
     if (mState == StateConnecting) {
-        events |= EPOLLOUT;
+        interests = interests | EventInterest::Write;
     }
-    if (scheduler.add_epoll_fd(mFd, events, &mEvent)) {
+
+    mEvent = scheduler.register_fd(
+        mFd, interests,
+        [this](EventInterest triggered) {
+            this->event(triggered);
+        },
+        mEventName);
+
+    if (mEvent.valid()) {
         mConnected   = false;
         mScheduler   = &scheduler;
         mIsScheduled = true;
@@ -967,13 +817,20 @@ bool TcpConnectTask::cancel() NOEXCEPT {
         return false;
     }
 
-    if (mScheduler->remove_epoll_fd(mFd)) {
-        mIsScheduled = false;
-        return true;
-    } else {
-        mState = StateError;
-        return false;
+    mScheduler->unregister(mEvent);
+    mIsScheduled = false;
+    mEvent       = ScheduledEvent::invalid();
+    return true;
+}
+
+void TcpConnectTask::update_interests(EventInterest interests) NOEXCEPT {
+    VSCOPE_FUNCTIONF("%u) (state=%s", static_cast<uint32_t>(interests), state_to_string(mState));
+    if (!mScheduler) {
+        WARNF("not scheduled");
+        return;
     }
+
+    mScheduler->update_interests(mEvent, interests);
 }
 
 }  // namespace scheduler
