@@ -67,8 +67,10 @@ void TcpServerStream::Client::on_read() NOEXCEPT {
 void TcpServerStream::Client::on_write() NOEXCEPT {
     FUNCTION_SCOPEF("fd=%d", mFd);
     while (!mWriteBuffer.empty()) {
-        auto [data, len] = mWriteBuffer.peek();
-        auto result      = ::write(mFd, data, len);
+        auto peek   = mWriteBuffer.peek();
+        auto data   = peek.first;
+        auto len    = peek.second;
+        auto result = ::write(mFd, data, len);
         VERBOSEF("::write(%d, %p, %zu) = %zd", mFd, data, len, result);
         if (result < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) break;
@@ -192,9 +194,10 @@ void TcpServerStream::write(uint8_t const* data, size_t length) NOEXCEPT {
 
 void TcpServerStream::remove_client(int fd) NOEXCEPT {
     FUNCTION_SCOPE();
-    auto it = std::find_if(mClients.begin(), mClients.end(), [fd](auto& c) {
-        return c->fd() == fd;
-    });
+    auto it =
+        std::find_if(mClients.begin(), mClients.end(), [fd](std::unique_ptr<Client> const& c) {
+            return c->fd() == fd;
+        });
     if (it == mClients.end()) {
         VERBOSEF("client fd=%d not found", fd);
     } else {

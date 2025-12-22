@@ -4,9 +4,9 @@
 #include <core/string.hpp>
 #include <loglet/loglet.hpp>
 
+#include <cxx11_compat.hpp>
 #include "../config.hpp"
 #include "../processor/chunked_log.hpp"
-#include <cxx11_compat.hpp>
 #include "../program_io.hpp"
 
 #undef LOGLET_CURRENT_MODULE

@@ -14,6 +14,10 @@ LOGLET_MODULE(sched);
 
 namespace scheduler {
 
+namespace detail {
+Scheduler* current_scheduler = nullptr;
+}
+
 void ScheduledEvent::interests(EventInterest interests) {
     if (valid()) current().update_interests(*this, interests);
 }

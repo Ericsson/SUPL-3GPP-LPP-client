@@ -395,75 +395,103 @@ static void create_io_from_config(Program& program) {
     program.input.shutdown_on_complete             = inputs_cfg.shutdown_on_complete;
     program.input.shutdown_delay                   = inputs_cfg.shutdown_delay;
 
-    auto create_input_interface = [&](auto const& cfg, std::unique_ptr<io::Input> input) {
-        if (!input) return;
-        InputInterface iface;
-        iface.format                = cfg.format;
-        iface.print                 = cfg.print;
-        iface.interface             = std::move(input);
-        iface.tags                  = cfg.tags;
-        iface.stages                = cfg.stages;
-        iface.nmea_lf_only          = cfg.nmea_lf_only;
-        iface.discard_errors        = cfg.discard_errors;
-        iface.discard_unknowns      = cfg.discard_unknowns;
-        iface.exclude_from_shutdown = cfg.exclude_from_shutdown;
+    auto add_input = [&](InputInterface iface) {
         program.input.inputs.push_back(std::move(iface));
     };
 
     for (auto const& cfg : inputs_cfg.stream) {
-        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+        auto input = create_input(cfg, program.stream_registry);
+        if (!input) continue;
+        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
+                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
     for (auto const& cfg : inputs_cfg.stdin_inputs) {
-        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+        auto input = create_input(cfg, program.stream_registry);
+        if (!input) continue;
+        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
+                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
     for (auto const& cfg : inputs_cfg.file) {
-        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+        auto input = create_input(cfg, program.stream_registry);
+        if (!input) continue;
+        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
+                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
     for (auto const& cfg : inputs_cfg.serial) {
-        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+        auto input = create_input(cfg, program.stream_registry);
+        if (!input) continue;
+        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
+                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
     for (auto const& cfg : inputs_cfg.tcp_client) {
-        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+        auto input = create_input(cfg, program.stream_registry);
+        if (!input) continue;
+        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
+                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
     for (auto const& cfg : inputs_cfg.tcp_server) {
-        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+        auto input = create_input(cfg, program.stream_registry);
+        if (!input) continue;
+        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
+                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
     for (auto const& cfg : inputs_cfg.udp_server) {
-        create_input_interface(cfg, create_input(cfg, program.stream_registry));
+        auto input = create_input(cfg, program.stream_registry);
+        if (!input) continue;
+        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
+                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
 
     // Create outputs from parsed config
     auto& outputs_cfg = config.outputs_config;
 
-    auto create_output_interface = [&](auto const& cfg, std::unique_ptr<io::Output> output) {
-        if (!output) return;
+    for (auto const& cfg : outputs_cfg.stream) {
+        auto output = create_output(cfg, program.stream_registry);
+        if (!output) continue;
         program.output.outputs.push_back(OutputInterface::create(
             cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    };
-
-    for (auto const& cfg : outputs_cfg.stream) {
-        create_output_interface(cfg, create_output(cfg, program.stream_registry));
     }
     for (auto const& cfg : outputs_cfg.stdout_outputs) {
-        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+        auto output = create_output(cfg, program.stream_registry);
+        if (!output) continue;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
     }
     for (auto const& cfg : outputs_cfg.file) {
-        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+        auto output = create_output(cfg, program.stream_registry);
+        if (!output) continue;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
     }
     for (auto const& cfg : outputs_cfg.chunked_log) {
-        create_output_interface(cfg, create_output(cfg));
+        auto output = create_output(cfg);
+        if (!output) continue;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
     }
     for (auto const& cfg : outputs_cfg.tcp_server) {
-        create_output_interface(cfg, create_output(cfg));
+        auto output = create_output(cfg);
+        if (!output) continue;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
     }
     for (auto const& cfg : outputs_cfg.serial) {
-        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+        auto output = create_output(cfg, program.stream_registry);
+        if (!output) continue;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
     }
     for (auto const& cfg : outputs_cfg.tcp_client) {
-        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+        auto output = create_output(cfg, program.stream_registry);
+        if (!output) continue;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
     }
     for (auto const& cfg : outputs_cfg.udp_client) {
-        create_output_interface(cfg, create_output(cfg, program.stream_registry));
+        auto output = create_output(cfg, program.stream_registry);
+        if (!output) continue;
+        program.output.outputs.push_back(OutputInterface::create(
+            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
     }
 
     // Register tags

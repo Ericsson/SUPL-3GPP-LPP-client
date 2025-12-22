@@ -44,6 +44,9 @@ struct ScheduledEvent {
     uint16_t index;
     uint16_t generation;
 
+    ScheduledEvent() : index(UINT16_MAX), generation(0) {}
+    ScheduledEvent(uint16_t idx, uint16_t gen) : index(idx), generation(gen) {}
+
     bool valid() const { return index != UINT16_MAX; }
     void invalidate() { index = UINT16_MAX; }
 
@@ -51,7 +54,7 @@ struct ScheduledEvent {
     void callback(std::function<void(EventInterest)> callback);
     void unregister();
 
-    static ScheduledEvent invalid() { return {UINT16_MAX, 0}; }
+    static ScheduledEvent invalid() { return ScheduledEvent(); }
 };
 
 struct EventSlot {
@@ -116,7 +119,7 @@ private:
 };
 
 namespace detail {
-inline Scheduler* current_scheduler = nullptr;
+extern Scheduler* current_scheduler;
 }
 
 inline Scheduler& current() {
