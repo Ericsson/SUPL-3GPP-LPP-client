@@ -118,7 +118,7 @@ TagRegistry& registry() {
 }
 
 void register_tag(std::string const& name, std::string const& description,
-                 std::string const& category) {
+                  std::string const& category) {
     registry().register_tag(name, description, category);
 }
 

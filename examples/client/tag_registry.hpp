@@ -31,19 +31,28 @@ struct TagMask {
     explicit TagMask(Tag tag) : value(tag.value) {}
     operator uint64_t() const { return value; }
 
-    TagMask operator|(TagMask other) const { return TagMask(value | other.value); }
-    TagMask operator&(TagMask other) const { return TagMask(value & other.value); }
-    TagMask& operator|=(TagMask other) { value |= other.value; return *this; }
-    TagMask& operator&=(TagMask other) { value &= other.value; return *this; }
+    TagMask  operator|(TagMask other) const { return TagMask(value | other.value); }
+    TagMask  operator&(TagMask other) const { return TagMask(value & other.value); }
+    TagMask& operator|=(TagMask other) {
+        value |= other.value;
+        return *this;
+    }
+    TagMask& operator&=(TagMask other) {
+        value &= other.value;
+        return *this;
+    }
     bool operator==(TagMask other) const { return value == other.value; }
     bool operator!=(TagMask other) const { return value != other.value; }
 
-    TagMask operator|(Tag tag) const { return TagMask(value | tag.value); }
-    TagMask& operator|=(Tag tag) { value |= tag.value; return *this; }
+    TagMask  operator|(Tag tag) const { return TagMask(value | tag.value); }
+    TagMask& operator|=(Tag tag) {
+        value |= tag.value;
+        return *this;
+    }
 
     static bool filter(TagMask include, TagMask exclude, Tag tag) {
-        return tag.value == 0 ||
-               (((include.value & tag.value) || include.value == 0) && !(exclude.value & tag.value));
+        return tag.value == 0 || (((include.value & tag.value) || include.value == 0) &&
+                                  !(exclude.value & tag.value));
     }
 #else
 #error "TAG_MAX_COUNT > 64 not yet implemented"
@@ -63,11 +72,11 @@ public:
     TagRegistry() : mNextBitMask(1) {}
 
     void register_tag(std::string const& name, std::string const& description,
-                     std::string const& category = "general");
+                      std::string const& category = "general");
 
     void add_alias(std::string const& tag, std::string const& alias);
 
-    Tag get_tag(std::string const& name) const;
+    Tag     get_tag(std::string const& name) const;
     TagMask get_tag(std::vector<std::string> const& names) const;
 
     std::string mask_to_string(TagMask mask) const;
@@ -91,7 +100,7 @@ private:
 TagRegistry& registry();
 
 void register_tag(std::string const& name, std::string const& description,
-                 std::string const& category = "general");
+                  std::string const& category = "general");
 
 void add_alias(std::string const& tag, std::string const& alias);
 

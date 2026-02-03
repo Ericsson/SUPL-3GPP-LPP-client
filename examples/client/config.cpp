@@ -1,5 +1,4 @@
 #include "config.hpp"
-#include "tag_registry.hpp"
 #include <core/string.hpp>
 #include <cxx11_compat.hpp>
 #include <io/file.hpp>
@@ -11,6 +10,7 @@
 #include <loglet/loglet.hpp>
 #include <version.hpp>
 #include "processor/chunked_log.hpp"
+#include "tag_registry.hpp"
 
 #include <map>
 
@@ -236,12 +236,12 @@ bool config_parse(int argc, char** argv, Config* config) {
 
         if (list_tags) {
             printf("\nAvailable tags:\n");
-            
+
             auto tags_by_category = std::map<std::string, std::vector<tags::TagInfo>>{};
             for (auto const& info : global_tag_registry().list_tags()) {
                 tags_by_category[info.category].push_back(info);
             }
-            
+
             for (auto const& [category, tags] : tags_by_category) {
                 printf("  %s\n", category.c_str());
                 for (auto const& info : tags) {
@@ -257,13 +257,13 @@ bool config_parse(int argc, char** argv, Config* config) {
                     printf("\n");
                 }
             }
-            
+
             printf("\nUsage:\n");
             printf("  Input:   --input serial:device=/dev/ttyUSB0,format=ubx,tags=receiver1\n");
             printf("  Output:  --output file:path=out.rtcm,format=rtcm,itags=tokoro,otags=input\n");
             printf("  Print:   --print rtcm,itags=tokoro+lpp2rtcm\n");
             printf("\n");
-            
+
             return false;
         }
 
@@ -359,4 +359,3 @@ bool config_parse(int argc, char** argv, Config* config) {
         return false;
     }
 }
-

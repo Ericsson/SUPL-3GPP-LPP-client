@@ -537,7 +537,8 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
         }
 
         auto tag_str = tag_stream.str();
-        auto tag     = global_tag_registry().get_tag(input.tags) | global_tag_registry().get_tag("input");
+        auto tag =
+            global_tag_registry().get_tag(input.tags) | global_tag_registry().get_tag("input");
 
         std::stringstream stage_stream;
         for (size_t i = 0; i < input.stages.size(); i++) {
@@ -740,7 +741,8 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
 #endif
     if (location_output) program.stream.add_inspector<LocationOutput>(config);
-    if (test_output) test_outputer(program.scheduler, config, global_tag_registry().get_tag("test"));
+    if (test_output)
+        test_outputer(program.scheduler, config, global_tag_registry().get_tag("test"));
 }
 
 static void setup_print_inspectors(Program& program) {

@@ -1,11 +1,11 @@
 #pragma once
-#include "tag_registry.hpp"
 #include <io/input.hpp>
 #include <io/output.hpp>
 #include <io/registry.hpp>
 #include <loglet/loglet.hpp>
 #include <lpp/assistance_data.hpp>
 #include <supl/cell.hpp>
+#include "tag_registry.hpp"
 
 #ifdef INCLUDE_GENERATOR_SPARTN
 #include <generator/spartn2/generator.hpp>
@@ -85,7 +85,8 @@ struct PrintInterface {
     static PrintInterface create(OutputFormat format, std::vector<std::string> include_tags,
                                  std::vector<std::string> exclude_tags) {
         return {
-            format, std::move(include_tags), std::move(exclude_tags), tags::TagMask(0), tags::TagMask(0),
+            format,           std::move(include_tags), std::move(exclude_tags),
+            tags::TagMask(0), tags::TagMask(0),
         };
     }
 
