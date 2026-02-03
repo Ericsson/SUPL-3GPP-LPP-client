@@ -1,4 +1,5 @@
 #pragma once
+#include "tag_registry.hpp"
 #include <io/input.hpp>
 #include <io/output.hpp>
 #include <io/registry.hpp>
@@ -78,13 +79,13 @@ struct PrintInterface {
     std::vector<std::string> include_tags;
     std::vector<std::string> exclude_tags;
 
-    uint64_t include_tag_mask;
-    uint64_t exclude_tag_mask;
+    tags::TagMask include_tag_mask;
+    tags::TagMask exclude_tag_mask;
 
     static PrintInterface create(OutputFormat format, std::vector<std::string> include_tags,
                                  std::vector<std::string> exclude_tags) {
         return {
-            format, std::move(include_tags), std::move(exclude_tags), 0, 0,
+            format, std::move(include_tags), std::move(exclude_tags), tags::TagMask(0), tags::TagMask(0),
         };
     }
 
@@ -98,8 +99,7 @@ struct PrintInterface {
     }
 
     NODISCARD inline bool accept_tag(uint64_t tag) const {
-        return tag == 0 ||
-               (((include_tag_mask & tag) || include_tag_mask == 0) && !(exclude_tag_mask & tag));
+        return tags::TagMask::filter(include_tag_mask, exclude_tag_mask, tags::Tag(tag));
     }
 };
 
@@ -446,33 +446,6 @@ struct Config {
     DataTracingConfig data_tracing;
 #endif
     UbxConfigConfig ubx_config;
-
-    uint64_t                                  next_tag_bit_mask;
-    std::unordered_map<std::string, uint64_t> tag_to_bit_mask;
-
-    void register_tag(std::string const& tag) {
-        if (tag_to_bit_mask.find(tag) == tag_to_bit_mask.end()) {
-            tag_to_bit_mask[tag] = next_tag_bit_mask;
-            next_tag_bit_mask    = next_tag_bit_mask << 1;
-        }
-    }
-
-    uint64_t get_tag(std::string const& tag) {
-        if (tag_to_bit_mask.find(tag) == tag_to_bit_mask.end()) {
-            return 0;
-        }
-        return tag_to_bit_mask[tag];
-    }
-
-    uint64_t get_tag(char const* tag) { return get_tag(std::string(tag)); }
-
-    uint64_t get_tag(std::vector<std::string> const& tags) {
-        uint64_t tag_bit_mask = 0;
-        for (auto const& tag : tags) {
-            tag_bit_mask |= get_tag(tag);
-        }
-        return tag_bit_mask;
-    }
 };
 
 LOGLET_MODULE_FORWARD_REF2(client, config);

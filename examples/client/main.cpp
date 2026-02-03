@@ -62,6 +62,7 @@ EXTERNAL_WARNINGS_POP
 #include "io.hpp"
 #include "processor/tlf.hpp"
 #include "raw_message.hpp"
+#include "tag_registry.hpp"
 
 LOGLET_MODULE(client);
 LOGLET_MODULE(output);
@@ -495,17 +496,18 @@ static void create_io_from_config(Program& program) {
     }
 
     // Register tags
+    auto& registry = global_tag_registry();
     for (auto& input : program.input.inputs) {
         for (auto& tag : input.tags) {
-            config.register_tag(tag);
+            registry.register_tag(tag, "Custom input tag", "custom");
         }
     }
     for (auto& output : program.output.outputs) {
         for (auto const& tag : output.include_tags) {
-            config.register_tag(tag);
+            registry.register_tag(tag, "Custom output tag", "custom");
         }
         for (auto const& tag : output.exclude_tags) {
-            config.register_tag(tag);
+            registry.register_tag(tag, "Custom output tag", "custom");
         }
     }
 }
@@ -535,7 +537,7 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
         }
 
         auto tag_str = tag_stream.str();
-        auto tag     = program.config.get_tag(input.tags) | program.config.get_tag("input");
+        auto tag     = global_tag_registry().get_tag(input.tags) | global_tag_registry().get_tag("input");
 
         std::stringstream stage_stream;
         for (size_t i = 0; i < input.stages.size(); i++) {
@@ -664,8 +666,8 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
 
         auto otag_str = otag_stream.str();
 
-        output.include_tag_mask = program.config.get_tag(output.include_tags);
-        output.exclude_tag_mask = program.config.get_tag(output.exclude_tags);
+        output.include_tag_mask = global_tag_registry().get_tag(output.include_tags);
+        output.exclude_tag_mask = global_tag_registry().get_tag(output.exclude_tags);
 
         std::stringstream stage_stream;
         for (size_t i = 0; i < output.stages.size(); i++) {
@@ -675,8 +677,7 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
 
         auto stage_str = stage_stream.str();
 
-        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s%s | include=%s[%" PRIu64
-               "] | exclude=%s[%" PRIu64 "] | stages=%s",
+        DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s%s | include=%s[%s] | exclude=%s[%s] | stages=%s",
                output.initial_interface.get()->name(),
                (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
@@ -689,8 +690,8 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
                (output.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
                (output.format & OUTPUT_FORMAT_LOCATION) ? "location " : "",
                (output.format & OUTPUT_FORMAT_TEST) ? "test " : "", itag_str.c_str(),
-               output.include_tag_mask, otag_str.c_str(), output.exclude_tag_mask,
-               stage_str.c_str());
+               tags::to_string(output.include_tag_mask).c_str(), otag_str.c_str(),
+               tags::to_string(output.exclude_tag_mask).c_str(), stage_str.c_str());
 
         if (output.lpp_xer_support()) lpp_xer_output = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
@@ -739,7 +740,7 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
 #endif
     if (location_output) program.stream.add_inspector<LocationOutput>(config);
-    if (test_output) test_outputer(program.scheduler, config, program.config.get_tag("test"));
+    if (test_output) test_outputer(program.scheduler, config, global_tag_registry().get_tag("test"));
 }
 
 static void setup_print_inspectors(Program& program) {
@@ -754,8 +755,8 @@ static void setup_print_inspectors(Program& program) {
 #endif
 
     for (auto& print : program.config.print.prints) {
-        print.include_tag_mask = program.config.get_tag(print.include_tags);
-        print.exclude_tag_mask = program.config.get_tag(print.exclude_tags);
+        print.include_tag_mask = global_tag_registry().get_tag(print.include_tags);
+        print.exclude_tag_mask = global_tag_registry().get_tag(print.exclude_tags);
 
         if (print.nmea_support()) nmea_print = true;
         if (print.ubx_support()) ubx_print = true;
@@ -900,15 +901,18 @@ static void setup_lpp2osr(UNUSED Program& program) {
     }
 
     if (program.config.lpp2eph.enabled) {
-        program.stream.add_inspector<Lpp2Eph>(program.config.lpp2eph);
+        auto tag = global_tag_registry().get_tag("lpp2eph");
+        program.stream.add_inspector<Lpp2Eph>(program.config.lpp2eph, tag);
     }
 
     if (program.config.ubx2eph.enabled) {
-        program.stream.add_inspector<Ubx2Eph>(program.config.ubx2eph);
+        auto tag = global_tag_registry().get_tag("ubx2eph");
+        program.stream.add_inspector<Ubx2Eph>(program.config.ubx2eph, tag);
     }
 
     if (program.config.rtcm2eph.enabled) {
-        program.stream.add_inspector<Rtcm2Eph>(program.config.rtcm2eph);
+        auto tag = global_tag_registry().get_tag("rtcm2eph");
+        program.stream.add_inspector<Rtcm2Eph>(program.config.rtcm2eph, tag);
     }
 #endif
 }
@@ -1110,7 +1114,7 @@ int main(int argc, char** argv) {
 
     program.scheduler.set_max_events_per_wait(program.config.scheduler.max_events_per_wait);
 
-    program.config.register_tag("input");
+    global_tag_registry().register_tag("input", "Input data", "custom");
 
     create_io_from_config(program);
     initialize_inputs(program, program.input);

@@ -18,7 +18,7 @@ void Ubx2Eph::handle_gps_lnav(streamline::System& system, format::ubx::RxmSfrbx*
     ephemeris::GpsEphemeris ephemeris{};
     if (!mGpsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) return;
 
-    system.push(std::move(ephemeris));
+    system.push(std::move(ephemeris), mTag);
 }
 
 void Ubx2Eph::handle_gps(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT {
@@ -44,7 +44,7 @@ void Ubx2Eph::handle_gal_inav(streamline::System& system, format::ubx::RxmSfrbx*
     ephemeris::GalEphemeris ephemeris{};
     if (!mGalCollector.process(sfrbx->sv_id(), word, ephemeris)) return;
 
-    system.push(std::move(ephemeris));
+    system.push(std::move(ephemeris), mTag);
 }
 
 void Ubx2Eph::handle_gal(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT {
@@ -70,7 +70,7 @@ void Ubx2Eph::handle_bds_d1(streamline::System& system, format::ubx::RxmSfrbx* s
     ephemeris::BdsEphemeris ephemeris{};
     if (!mBdsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) return;
 
-    system.push(std::move(ephemeris));
+    system.push(std::move(ephemeris), mTag);
 }
 
 void Ubx2Eph::handle_bds(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT {

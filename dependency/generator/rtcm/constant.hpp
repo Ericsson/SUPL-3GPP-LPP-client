@@ -30,7 +30,7 @@
 #define RTCM_N2_28 0x1p-28
 #define RTCM_N2_29 0x1p-29
 #define RTCM_N2_30 0x1p-30
-#define RTCM_N2_31 0x1p-32
+#define RTCM_N2_31 0x1p-31
 
 #define RTCM_P2_1 0x1p1
 #define RTCM_P2_2 0x1p2

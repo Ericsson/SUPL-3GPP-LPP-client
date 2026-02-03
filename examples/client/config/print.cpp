@@ -1,6 +1,7 @@
 #include <core/string.hpp>
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
+#include "../tag_registry.hpp"
 
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, config)
@@ -98,13 +99,14 @@ void parse(Config* config) {
         config->print.prints.push_back(parse_interface(print));
     }
 
+    auto& registry = global_tag_registry();
     for (auto& print : config->print.prints) {
         for (auto const& itag : print.include_tags) {
-            config->register_tag(itag);
+            registry.register_tag(itag, "Custom print tag", "custom");
         }
 
         for (auto const& xtag : print.exclude_tags) {
-            config->register_tag(xtag);
+            registry.register_tag(xtag, "Custom print tag", "custom");
         }
     }
 }
@@ -125,13 +127,14 @@ void dump(PrintConfig const& config) {
         }
         auto xtag_str = xtag_stream.str();
 
-        DEBUGF("print: %s%s%s%s%s | include=%s[%" PRIu64 "] | exclude=%s[%" PRIu64 "]",
+        DEBUGF("print: %s%s%s%s%s | include=%s[%s] | exclude=%s[%s]",
                (print.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
                (print.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
                (print.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
                (print.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
                (print.format & OUTPUT_FORMAT_AGNSS) ? "agnss " : "", itag_str.c_str(),
-               print.include_tag_mask, xtag_str.c_str(), print.exclude_tag_mask);
+               tags::to_string(print.include_tag_mask).c_str(), xtag_str.c_str(),
+               tags::to_string(print.exclude_tag_mask).c_str());
     }
 }
 

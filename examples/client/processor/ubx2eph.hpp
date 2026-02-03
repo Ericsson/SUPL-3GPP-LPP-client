@@ -14,7 +14,7 @@
 
 class Ubx2Eph : public streamline::Inspector<UbxMessage> {
 public:
-    Ubx2Eph(Ubx2EphConfig const& config) : mConfig(config) {}
+    Ubx2Eph(Ubx2EphConfig const& config, uint64_t tag) : mConfig(config), mTag(tag) {}
 
     char const* name() const NOEXCEPT override { return "Ubx2Eph"; }
     void        inspect(streamline::System& system, DataType const& message,
@@ -29,6 +29,7 @@ private:
     void handle_bds(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
 
     Ubx2EphConfig const&                       mConfig;
+    uint64_t                                   mTag;
     format::nav::gps::lnav::EphemerisCollector mGpsCollector;
     format::nav::gal::InavEphemerisCollector   mGalCollector;
     format::nav::D1Collector                   mBdsCollector;

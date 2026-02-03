@@ -13,7 +13,7 @@
 
 class Rtcm2Eph : public streamline::Inspector<RtcmMessage> {
 public:
-    Rtcm2Eph(Rtcm2EphConfig const& config) : mConfig(config) {}
+    Rtcm2Eph(Rtcm2EphConfig const& config, uint64_t tag) : mConfig(config), mTag(tag) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "Rtcm2Eph"; }
     void                  inspect(streamline::System& system, DataType const& message,
@@ -28,4 +28,5 @@ private:
     void handle_bds(streamline::System& system, format::rtcm::Rtcm1042* rtcm) NOEXCEPT;
 
     Rtcm2EphConfig const& mConfig;
+    uint64_t              mTag;
 };

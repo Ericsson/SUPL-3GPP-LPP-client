@@ -5,6 +5,7 @@
 #include "input_format.hpp"
 #include "output_format.hpp"
 #include "stage.hpp"
+#include "tag_registry.hpp"
 
 #include <chrono>
 #include <memory>
@@ -19,8 +20,8 @@ struct OutputInterface {
     std::vector<std::string>     exclude_tags;
     std::vector<std::string>     stages;
 
-    uint64_t include_tag_mask;
-    uint64_t exclude_tag_mask;
+    tags::TagMask include_tag_mask;
+    tags::TagMask exclude_tag_mask;
 
     static OutputInterface create(OutputFormat format, std::unique_ptr<io::Output> interface,
                                   std::vector<std::string> include_tags,
@@ -33,8 +34,8 @@ struct OutputInterface {
             std::move(include_tags),
             std::move(exclude_tags),
             std::move(stages),
-            0,
-            0,
+            tags::TagMask(0),
+            tags::TagMask(0),
         };
     }
 
@@ -56,8 +57,7 @@ struct OutputInterface {
     NODISCARD inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
 
     NODISCARD inline bool accept_tag(uint64_t tag) const {
-        return tag == 0 ||
-               (((include_tag_mask & tag) || include_tag_mask == 0) && !(exclude_tag_mask & tag));
+        return tags::TagMask::filter(include_tag_mask, exclude_tag_mask, tags::Tag(tag));
     }
 };
 

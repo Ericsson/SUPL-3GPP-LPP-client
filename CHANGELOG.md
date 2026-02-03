@@ -4,12 +4,33 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Tag system: Global tag registry with descriptions and categories
+- Tag system: --list-tags CLI flag with tree-like format similar to --log-tree
+- Tag system: Tag aliases (e.g., "tok" for "tokoro", "ido" for "idokeido")
+- Tag system: All ephemeris converters (lpp2eph, ubx2eph, rtcm2eph) now properly tag their output
+- Tag system: tags namespace with convenience functions (tags::register_tag, tags::get, tags::to_string)
+- Tag system: Tag and TagMask types with compile-time configurable size (default 64)
+- Tag system: TagMask operators (|, &, |=, &=) and static filter function
+- Tag system: Tag mask to string conversion for debug printing
+- Time library: scalar operators (+/-/+=/-=) and operator- returning double for all time classes
+- Time library: as_double() method for Timestamp (alias for full_seconds())
+- Time library: comparison operators (< <= > >= == !=) for Tai, Utc, Gst, Bdt, Glo
+- Time library: simplified Gps::from_week_tow(week, tow) overload combining integer and fractional TOW
+- Time library: Tests demonstrating double precision loss vs Timestamp precision preservation
+
+### Fixed
+- Fixed 6 precision bugs in tokoro/data/gather.cpp using direct Tai comparison instead of full_seconds()
+- Fixed SPARTN satellite mask size calculation using highest PRN instead of satellite count
+
+
 ### Removed
 - Removed tick_callbacks API from Scheduler (use defer() instead for deferred operations)
 - Removed SocketTask class (use OwnedFileDescriptorTask instead)
 
 ### Changed
-- Time lirary is now more ergonomic
+- Config::get_tag() now uses global tag registry instead of local storage
+- Time library is now more ergonomic
 - `TimeoutTask` now auto-schedules on construction (takes duration + callback)
 - Scheduler now owns event registrations via ScheduledEvent handles with generation counters for safe event lifecycle management
 - Task classes (TimeoutTask, PeriodicTask, FileDescriptorTask, ListenerTask, UdpListenerTask, TcpConnectTask) migrated to new abstracted EventInterest API

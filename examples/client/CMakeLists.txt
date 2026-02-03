@@ -2,6 +2,7 @@
 add_executable(example_client 
     "main.cpp" 
     "config.cpp"
+    "tag_registry.cpp"
     "config/assistance_data.cpp"
     "config/data_tracing.cpp"
     "config/gnss.cpp"

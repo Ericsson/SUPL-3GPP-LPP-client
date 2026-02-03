@@ -12,7 +12,7 @@ struct GNSS_NavigationModel;
 
 class Lpp2Eph : public streamline::Inspector<lpp::Message> {
 public:
-    Lpp2Eph(Lpp2EphConfig const& config) : mConfig(config) {}
+    Lpp2Eph(Lpp2EphConfig const& config, uint64_t tag) : mConfig(config), mTag(tag) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "Lpp2Eph"; }
     void                  inspect(streamline::System& system, DataType const& message,
@@ -27,4 +27,5 @@ private:
                                       GNSS_NavigationModel const& nav_model) NOEXCEPT;
 
     Lpp2EphConfig const& mConfig;
+    uint64_t             mTag;
 };

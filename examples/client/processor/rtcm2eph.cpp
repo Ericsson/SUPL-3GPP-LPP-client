@@ -45,7 +45,7 @@ void Rtcm2Eph::handle_gps_lnav(streamline::System& system, format::rtcm::Rtcm101
     ephemeris.fit_interval_flag = rtcm->fit;
     ephemeris.l2_p_data_flag    = rtcm->l2_p_data_flag;
 
-    system.push(std::move(ephemeris));
+    system.push(std::move(ephemeris), mTag);
 }
 
 void Rtcm2Eph::handle_gps(streamline::System& system, format::rtcm::Rtcm1019* rtcm) NOEXCEPT {
@@ -95,7 +95,7 @@ void Rtcm2Eph::handle_bds_d1(streamline::System& system, format::rtcm::Rtcm1042*
     ephemeris.omega_dot = rtcm->omega_dot;
     ephemeris.idot      = rtcm->idot;
 
-    system.push(std::move(ephemeris));
+    system.push(std::move(ephemeris), mTag);
 }
 
 void Rtcm2Eph::handle_bds(streamline::System& system, format::rtcm::Rtcm1042* rtcm) NOEXCEPT {
@@ -137,7 +137,7 @@ void Rtcm2Eph::handle_gal_inav(streamline::System& system, format::rtcm::Rtcm104
     ephemeris.omega_dot   = rtcm->omega_dot;
     ephemeris.idot        = rtcm->idot;
 
-    system.push(std::move(ephemeris));
+    system.push(std::move(ephemeris), mTag);
 }
 
 void Rtcm2Eph::handle_gal(streamline::System& system, format::rtcm::Rtcm1046* rtcm) NOEXCEPT {
