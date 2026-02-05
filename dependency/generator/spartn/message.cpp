@@ -74,26 +74,30 @@ Message::Message(uint8_t message_type, uint8_t message_subtype, uint32_t message
       mPayload(std::move(payload)) {}
 
 std::vector<uint8_t> Message::build() {
-    if (mPayload.size() > 1023) {
+    // TF007-TF011: 4 + 1 + 32 + 7 + 4 = 48 bits = 6 bytes
+    CONSTEXPR const size_t PAYLOAD_DESCRIPTION_SIZE = 6;
+
+    auto payload_length = PAYLOAD_DESCRIPTION_SIZE + mPayload.size();
+    if (payload_length > 1023) {
         return {};
     }
 
     TransportBuilder builder{};
     builder.tf001();
     builder.tf002(mMessageType);
-    builder.tf003(mPayload.size());
+    builder.tf003(payload_length);
     builder.tf004(false);
     builder.tf005(CRC_16_CCITT);
     builder.tf006();
     builder.tf007(mMessageSubtype);
-    builder.tf008(true);  // Full 32-bit time
+    builder.tf008(true);
     builder.tf009_32bit(mMessageTime);
     builder.tf010(0);
     builder.tf011(0);
 
     builder.tf016(mPayload);
 
-    auto tf002_to_tf016 = builder.range(8 /* skip TF001, 8 bits */, builder.bit_length() - 8);
+    auto tf002_to_tf016 = builder.range(8, builder.bit_length() - 8);
     auto crc            = crc16_ccitt(tf002_to_tf016.ptr, tf002_to_tf016.size);
     builder.tf018_16bit(crc);
 
