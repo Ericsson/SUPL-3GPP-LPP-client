@@ -42,6 +42,18 @@ enum class StecMethod {
     MoveToResiduals,
 };
 
+struct Statistics {
+    std::unordered_map<uint16_t, size_t>                              message_counts;
+    std::unordered_map<std::string, size_t>                           lpp_ie_counts;
+    std::unordered_map<std::string, std::unordered_map<long, size_t>> lpp_ie_per_gnss;
+
+    void reset() {
+        message_counts.clear();
+        lpp_ie_counts.clear();
+        lpp_ie_per_gnss.clear();
+    }
+};
+
 /// Generates SPARTN messages based on LPP SSR messages.
 class Generator {
 public:
@@ -66,7 +78,6 @@ public:
         mComputeAverageZenithDelay = compute_average_zenith_delay;
     }
 
-    void set_iode_shift(bool iode_shift) { mIodeShift = iode_shift; }
     void set_sf055_override(int sf055_override) { mSf055Override = sf055_override; }
     void set_sf055_default(int sf055_default) { mSf055Default = sf055_default; }
 
@@ -119,6 +130,9 @@ public:
     /// @return The generated SPARTN messages.
     std::vector<Message> generate(LPP_Message const* lpp_message);
 
+    NODISCARD Statistics const& statistics() const { return mStatistics; }
+    void                        reset_statistics() { mStatistics.reset(); }
+
 private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const* message);
     void find_ocb_corrections(ProvideAssistanceData_r9_IEs const* message);
@@ -152,19 +166,21 @@ private:
     int mSf042Override;  // <0 = no override
     int mSf042Default;
 
-    bool       mComputeAverageZenithDelay;
-    bool       mGroupByEpochTime;
-    bool       mIodeShift;
-    bool       mIncreasingSiou;
-    uint16_t   mSiouIndex;
-    bool       mCodeBiasTranslate;
-    bool       mCodeBiasCorrectionShift;
-    bool       mPhaseBiasTranslate;
-    bool       mPhaseBiasCorrectionShift;
-    bool       mHydrostaticResidualInZenith;
-    StecMethod mStecMethod;
-    bool       mStecTranform;
-    bool       mFlipGridBitmask;
+    bool                               mComputeAverageZenithDelay;
+    bool                               mGroupByEpochTime;
+    bool                               mIncreasingSiou;
+    uint16_t                           mSiouIndex;
+    std::unordered_map<long, uint32_t> mLastOcbTimeTagPerGnss;
+    std::unordered_map<long, uint32_t> mLastHpacTimeTagPerGnss;
+    uint32_t                           mLastGadTimeTag;
+    bool                               mCodeBiasTranslate;
+    bool                               mCodeBiasCorrectionShift;
+    bool                               mPhaseBiasTranslate;
+    bool                               mPhaseBiasCorrectionShift;
+    bool                               mHydrostaticResidualInZenith;
+    StecMethod                         mStecMethod;
+    bool                               mStecTranform;
+    bool                               mFlipGridBitmask;
 
     bool mFilterByResiduals;
     bool mFilterByOcb;
@@ -187,6 +203,8 @@ private:
     bool mBeidouSupported;
     bool mQzssSupported;
     bool mNavicSupported;
+
+    Statistics mStatistics;
 };
 
 }  // namespace spartn

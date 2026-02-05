@@ -16,3 +16,4 @@ docker/__pycache__/
 docker/venv/
 plans
 AGENTS.md
+.kiro

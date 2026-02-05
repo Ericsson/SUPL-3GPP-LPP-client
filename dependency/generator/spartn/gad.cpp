@@ -17,6 +17,12 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
     if (cps_it == mCorrectionPointSets.end()) return;
     auto& correction_point_set = *(cps_it->second.get());
 
+    if (mLastGadTimeTag != 0 && epoch_time < mLastGadTimeTag) {
+        WARNF("GAD time tag out of order: %u < %u (diff=%d)", epoch_time, mLastGadTimeTag,
+              static_cast<int>(epoch_time) - static_cast<int>(mLastGadTimeTag));
+    }
+    mLastGadTimeTag = epoch_time;
+
     VERBOSEF("  grid points: %ld", correction_point_set.grid_point_count);
 
     char buffer[256];
@@ -102,7 +108,9 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
         builder.sf037(delta_lng);
     }
 
-    mMessages.push_back(builder.build());
+    auto message = builder.build();
+    mStatistics.message_counts[(message.message_type() << 8) | message.message_subtype()]++;
+    mMessages.push_back(std::move(message));
 }
 
 }  // namespace spartn

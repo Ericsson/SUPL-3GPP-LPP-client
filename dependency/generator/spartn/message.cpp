@@ -179,19 +179,19 @@ void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
             count = 36;
         }
         break;
-    case GNSS_ID_BDS:
-        if (count > 48) {
+    case GNSS_ID_BDS:  // SF094 - BeiDou Satellite Mask
+        if (count > 55) {
             mBuilder.bits(3, 2);
             count = 64;
-        } else if (count > 40) {
+        } else if (count > 46) {
             mBuilder.bits(2, 2);
-            count = 48;
-        } else if (count > 10) {
+            count = 55;
+        } else if (count > 37) {
             mBuilder.bits(1, 2);
-            count = 40;
+            count = 46;
         } else {
             mBuilder.bits(0, 2);
-            count = 10;
+            count = 37;
         }
         break;
     default: UNREACHABLE();
@@ -204,32 +204,32 @@ void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
 
 void MessageBuilder::satellite_mask(
     long gnss_id, std::vector<generator::spartn::OcbSatellite> const& satellites) {
-    uint64_t count    = 0;
-    bool     bits[64] = {false};
+    uint64_t highest_prn = 0;
+    bool     bits[64]    = {false};
     for (auto& satellite : satellites) {
         auto prn = satellite.prn();
         // NOTE(ewasjon): 0th bit is used for PRN 1
         auto bit  = prn - 1;
         bits[bit] = true;
-        count++;
+        if (prn > highest_prn) highest_prn = prn;
     }
 
-    satellite_mask(gnss_id, count, bits);
+    satellite_mask(gnss_id, highest_prn, bits);
 }
 
 void MessageBuilder::satellite_mask(
     long gnss_id, std::vector<generator::spartn::HpacSatellite> const& satellites) {
-    uint64_t count    = 0;
-    bool     bits[64] = {false};
+    uint64_t highest_prn = 0;
+    bool     bits[64]    = {false};
     for (auto& satellite : satellites) {
         auto prn = satellite.prn();
         // NOTE(ewasjon): 0th bit is used for PRN 1
         auto bit  = prn - 1;
         bits[bit] = true;
-        count++;
+        if (prn > highest_prn) highest_prn = prn;
     }
 
-    satellite_mask(gnss_id, count, bits);
+    satellite_mask(gnss_id, highest_prn, bits);
 }
 
 void MessageBuilder::ephemeris_type(long gnss_id) {
@@ -253,11 +253,8 @@ void MessageBuilder::ephemeris_type(long gnss_id) {
     }
 }
 
-void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string, bool iode_shift) {
+void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string) {
     auto iode = helper::BitString::from(&bit_string)->as_int64();
-    if (iode_shift) {
-        iode >>= 3;
-    }
 
     switch (gnss_id) {
     case GNSS_ID_GPS:  // SF018 - GPS IODE
@@ -270,7 +267,7 @@ void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string, bool iod
         mBuilder.bits(iode & 0x3FF, 10);
         break;
     case GNSS_ID_BDS:  // SF100 - BeiDou IODE/IODC
-        mBuilder.bits(iode & 0x3FF, 10);
+        mBuilder.bits(iode & 0xFF, 8);
         break;
     default: UNREACHABLE();
     }

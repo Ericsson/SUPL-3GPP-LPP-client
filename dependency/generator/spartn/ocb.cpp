@@ -639,6 +639,13 @@ void Generator::generate_ocb(uint16_t iod) {
 
         auto satellites = corrections.satellites();
 
+        if (epoch_time == 0) {
+            WARNF("OCB has epoch_time=0 for GNSS=%ld, skipping", gnss_id);
+            continue;
+        }
+
+        mLastOcbTimeTagPerGnss[gnss_id] = epoch_time;
+
         VERBOSEF("OCB: time=%u, gnss=%ld, iod=%hu", epoch_time, gnss_id, iod);
         for (auto& satellite : satellites) {
             VERBOSEF("  satellite: %4ld %s%s%s%s%s", satellite.id, satellite.orbit ? "O" : "-",
@@ -685,7 +692,7 @@ void Generator::generate_ocb(uint16_t iod) {
 
             if (satellite.orbit) {
                 auto& orbit = *satellite.orbit;
-                builder.orbit_iode(gnss_id, orbit.iod_r15, mIodeShift);
+                builder.orbit_iode(gnss_id, orbit.iod_r15);
 
                 auto radial = decode::delta_radial_r15(orbit.delta_radial_r15);
                 auto along  = decode::delta_along_track_r15(orbit.delta_AlongTrack_r15);
@@ -805,7 +812,9 @@ void Generator::generate_ocb(uint16_t iod) {
             }
         }
 
-        mMessages.push_back(builder.build());
+        auto message = builder.build();
+        mStatistics.message_counts[(message.message_type() << 8) | message.message_subtype()]++;
+        mMessages.push_back(std::move(message));
     }
 }
 

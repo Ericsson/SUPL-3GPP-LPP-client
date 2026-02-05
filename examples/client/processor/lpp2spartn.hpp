@@ -18,6 +18,8 @@ public:
     NODISCARD char const* name() const NOEXCEPT override { return "Lpp2Spartn"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
 
+    NODISCARD generator::spartn::Generator const* generator() const { return mGenerator.get(); }
+
 private:
     std::unique_ptr<generator::spartn::Generator> mGenerator;
 

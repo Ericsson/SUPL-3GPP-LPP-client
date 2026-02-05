@@ -2,6 +2,13 @@
 #include "data.hpp"
 #include "decode.hpp"
 #include "message.hpp"
+#include "time.hpp"
+
+#include <time/bdt.hpp>
+#include <time/glo.hpp>
+#include <time/gps.hpp>
+#include <time/gst.hpp>
+#include <time/tai.hpp>
 
 #include <external_warnings.hpp>
 
@@ -10,7 +17,11 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
+#include <GNSS-SSR-ClockCorrections-r15.h>
+#include <GNSS-SSR-CodeBias-r15.h>
 #include <GNSS-SSR-CorrectionPoints-r16.h>
+#include <GNSS-SSR-OrbitCorrections-r15.h>
+#include <GNSS-SSR-PhaseBias-r16.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
 #include <SSR-CodeBiasSatElement-r15.h>
@@ -36,16 +47,16 @@ Generator::Generator()
       mUraDefault(0 /* SF024(0) = unknown */), mContinuityIndicator(-1),
       mUBloxClockCorrection(false), mSf055Override(-1), mSf055Default(0 /* SF055(0) = invalid */),
       mSf042Override(-1), mSf042Default(0 /* SF042(0) = invalid */),
-      mComputeAverageZenithDelay(false), mIodeShift(true), mIncreasingSiou(false), mSiouIndex(1),
-      mCodeBiasTranslate(true), mCodeBiasCorrectionShift(true), mPhaseBiasTranslate(true),
-      mPhaseBiasCorrectionShift(true), mHydrostaticResidualInZenith(false),
-      mStecMethod(StecMethod::Default), mStecTranform(true), mFlipGridBitmask(false),
-      mFilterByResiduals(false), mFilterByOcb(false), mIgnoreL2L(false), mStecInvalidToZero(false),
-      mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false), mSignFlipC11(false),
-      mSignFlipStecResiduals(false), mFlipOrbitCorrection(false), mDoNotUseSatellite(true),
-      mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
-      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false),
-      mQzssSupported(false), mNavicSupported(false) {}
+      mComputeAverageZenithDelay(false), mGroupByEpochTime(true), mIncreasingSiou(false),
+      mSiouIndex(1), mLastGadTimeTag(0), mCodeBiasTranslate(true), mCodeBiasCorrectionShift(true),
+      mPhaseBiasTranslate(true), mPhaseBiasCorrectionShift(true),
+      mHydrostaticResidualInZenith(false), mStecMethod(StecMethod::Default), mStecTranform(true),
+      mFlipGridBitmask(false), mFilterByResiduals(false), mFilterByOcb(false), mIgnoreL2L(false),
+      mStecInvalidToZero(false), mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false),
+      mSignFlipC11(false), mSignFlipStecResiduals(false), mFlipOrbitCorrection(false),
+      mDoNotUseSatellite(true), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
+      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
+      mBeidouSupported(false), mQzssSupported(false), mNavicSupported(false) {}
 
 Generator::~Generator() = default;
 
@@ -131,6 +142,8 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
     if (!cad.ext2) return;
     if (!cad.ext2->gnss_SSR_CorrectionPoints_r16) return;
 
+    mStatistics.lpp_ie_counts["gnss_SSR_CorrectionPoints_r16"]++;
+
     auto& ssr = *cad.ext2->gnss_SSR_CorrectionPoints_r16;
     if (ssr.correctionPoints_r16.present ==
         GNSS_SSR_CorrectionPoints_r16__correctionPoints_r16_PR_arrayOfCorrectionPoints_r16) {
@@ -211,14 +224,36 @@ void Generator::find_ocb_corrections(ProvideAssistanceData_r9_IEs const* message
 
         auto gnss_id = element->gnss_ID.gnss_id;
         if (element->ext2) {
-            mCorrectionData->add_correction(gnss_id, element->ext2->gnss_SSR_OrbitCorrections_r15);
-            mCorrectionData->add_correction(gnss_id, element->ext2->gnss_SSR_ClockCorrections_r15);
-            mCorrectionData->add_correction(gnss_id, element->ext2->gnss_SSR_CodeBias_r15);
+            if (element->ext2->gnss_SSR_OrbitCorrections_r15) {
+                mStatistics.lpp_ie_counts["gnss_SSR_OrbitCorrections_r15"]++;
+                mStatistics.lpp_ie_per_gnss["gnss_SSR_OrbitCorrections_r15"][gnss_id]++;
+                mCorrectionData->add_correction(gnss_id,
+                                                element->ext2->gnss_SSR_OrbitCorrections_r15);
+            }
+            if (element->ext2->gnss_SSR_ClockCorrections_r15) {
+                mStatistics.lpp_ie_counts["gnss_SSR_ClockCorrections_r15"]++;
+                mStatistics.lpp_ie_per_gnss["gnss_SSR_ClockCorrections_r15"][gnss_id]++;
+                mCorrectionData->add_correction(gnss_id,
+                                                element->ext2->gnss_SSR_ClockCorrections_r15);
+            }
+            if (element->ext2->gnss_SSR_CodeBias_r15) {
+                mStatistics.lpp_ie_counts["gnss_SSR_CodeBias_r15"]++;
+                mStatistics.lpp_ie_per_gnss["gnss_SSR_CodeBias_r15"][gnss_id]++;
+                mCorrectionData->add_correction(gnss_id, element->ext2->gnss_SSR_CodeBias_r15);
+            }
         }
 
         if (element->ext3) {
-            mCorrectionData->add_correction(gnss_id, element->ext3->gnss_SSR_PhaseBias_r16);
-            mCorrectionData->add_correction(gnss_id, element->ext3->gnss_SSR_URA_r16);
+            if (element->ext3->gnss_SSR_PhaseBias_r16) {
+                mStatistics.lpp_ie_counts["gnss_SSR_PhaseBias_r16"]++;
+                mStatistics.lpp_ie_per_gnss["gnss_SSR_PhaseBias_r16"][gnss_id]++;
+                mCorrectionData->add_correction(gnss_id, element->ext3->gnss_SSR_PhaseBias_r16);
+            }
+            if (element->ext3->gnss_SSR_URA_r16) {
+                mStatistics.lpp_ie_counts["gnss_SSR_URA_r16"]++;
+                mStatistics.lpp_ie_per_gnss["gnss_SSR_URA_r16"][gnss_id]++;
+                mCorrectionData->add_correction(gnss_id, element->ext3->gnss_SSR_URA_r16);
+            }
         }
     }
 }
@@ -235,8 +270,18 @@ void Generator::find_hpac_corrections(ProvideAssistanceData_r9_IEs const* messag
 
         auto gnss_id = element->gnss_ID.gnss_id;
         if (element->ext3) {
-            mCorrectionData->add_correction(gnss_id, element->ext3->gnss_SSR_STEC_Correction_r16);
-            mCorrectionData->add_correction(gnss_id, element->ext3->gnss_SSR_GriddedCorrection_r16);
+            if (element->ext3->gnss_SSR_STEC_Correction_r16) {
+                mStatistics.lpp_ie_counts["gnss_SSR_STEC_Correction_r16"]++;
+                mStatistics.lpp_ie_per_gnss["gnss_SSR_STEC_Correction_r16"][gnss_id]++;
+                mCorrectionData->add_correction(gnss_id,
+                                                element->ext3->gnss_SSR_STEC_Correction_r16);
+            }
+            if (element->ext3->gnss_SSR_GriddedCorrection_r16) {
+                mStatistics.lpp_ie_counts["gnss_SSR_GriddedCorrection_r16"]++;
+                mStatistics.lpp_ie_per_gnss["gnss_SSR_GriddedCorrection_r16"][gnss_id]++;
+                mCorrectionData->add_correction(gnss_id,
+                                                element->ext3->gnss_SSR_GriddedCorrection_r16);
+            }
         }
     }
 }
@@ -252,7 +297,10 @@ void Generator::find_rti_corrections(ProvideAssistanceData_r9_IEs const* message
         if (!element) continue;
 
         auto gnss_id = element->gnss_ID.gnss_id;
-        mCorrectionData->add_correction(gnss_id, element->gnss_RealTimeIntegrity);
+        if (element->gnss_RealTimeIntegrity) {
+            mStatistics.lpp_ie_counts["gnss_RealTimeIntegrity"]++;
+            mCorrectionData->add_correction(gnss_id, element->gnss_RealTimeIntegrity);
+        }
     }
 }
 

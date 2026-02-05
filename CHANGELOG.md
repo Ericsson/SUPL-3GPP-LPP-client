@@ -22,9 +22,14 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Fixed 6 precision bugs in tokoro/data/gather.cpp using direct Tai comparison instead of full_seconds()
 - Fixed SPARTN satellite mask size calculation using highest PRN instead of satellite count
-
+- Fixed SPARTN BeiDou satellite mask sizes to match SF094 specification (37/46/55/64 bits)
+- Fixed SPARTN BeiDou IODE (SF100) to use 8 bits per specification (was incorrectly 10 bits)
+- Fixed SPARTN BeiDou time tags off by 14 seconds (BDS=TAI-33s vs GPS=TAI-19s)
+- Fixed SPARTN GLONASS time tags off by ~3 hours (was ignoring UTC+3 Moscow offset and leap seconds)
+- Fixed SPARTN bias mask size selection to use highest bias type instead of count
 
 ### Removed
+- Removed SPARTN iode_shift parameter (was incorrectly defaulting to true)
 - Removed tick_callbacks API from Scheduler (use defer() instead for deferred operations)
 - Removed SocketTask class (use OwnedFileDescriptorTask instead)
 

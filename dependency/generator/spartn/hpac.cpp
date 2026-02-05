@@ -918,6 +918,8 @@ void Generator::generate_hpac(uint16_t iod) {
         if (!mGlonassSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_glonass) continue;
         if (!mGalileoSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_galileo) continue;
         if (!mBeidouSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_bds) continue;
+        if (!mQzssSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_qzss) continue;
+        if (!mNavicSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_navic_v1610) continue;
 
         messages.push_back(&kvp.second);
     }
@@ -950,6 +952,9 @@ void Generator::generate_hpac(uint16_t iod) {
         }
 
         VERBOSEF("HPAC: time=%u, set=%hu, gnss=%ld, iod=%hu", epoch_time, set_id, gnss_id, iod);
+
+        mLastHpacTimeTagPerGnss[gnss_id] = epoch_time;
+
         VERBOSEF("  area_id=%u", correction_point_set.area_id);
 
         auto subtype = subtype_from_gnss_id(gnss_id);
@@ -999,7 +1004,9 @@ void Generator::generate_hpac(uint16_t iod) {
             }
         }
 
-        mMessages.push_back(builder.build());
+        auto message = builder.build();
+        mStatistics.message_counts[(message.message_type() << 8) | message.message_subtype()]++;
+        mMessages.push_back(std::move(message));
     }
 }
 

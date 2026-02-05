@@ -19,5 +19,6 @@ target_include_directories(dependency_generator_spartn2 PUBLIC "include/")
 target_link_libraries(dependency_generator_spartn2 PRIVATE asn1::generated::lpp asn1::helper)
 target_link_libraries(dependency_generator_spartn2 PUBLIC dependency::loglet)
 target_link_libraries(dependency_generator_spartn2 PUBLIC dependency::core)
+target_link_libraries(dependency_generator_spartn2 PUBLIC dependency::time)
 
 setup_target(dependency_generator_spartn2)

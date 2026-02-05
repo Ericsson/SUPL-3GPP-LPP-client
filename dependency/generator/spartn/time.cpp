@@ -1,51 +1,48 @@
 #include "time.hpp"
 
+#include <time/bdt.hpp>
+#include <time/glo.hpp>
+#include <time/gps.hpp>
+#include <time/gst.hpp>
+
 #include <external_warnings.hpp>
 
 EXTERNAL_WARNINGS_PUSH
 #include "GNSS-SystemTime.h"
 EXTERNAL_WARNINGS_POP
 
-#include <loglet/loglet.hpp>
-
-LOGLET_MODULE2(spartn, time);
-#undef LOGLET_CURRENT_MODULE
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(spartn, time)
-
-CONSTEXPR static uint32_t SECONDS_IN_DAY        = 86400;
-CONSTEXPR static uint64_t DAY_BETWEEN_1970_1980 = 3657;   // Jan 6
-CONSTEXPR static uint64_t DAY_BETWEEN_1970_1996 = 9496;   // Jan 1
-CONSTEXPR static uint64_t DAY_BETWEEN_1970_1999 = 10825;  // Aug 2
-CONSTEXPR static uint64_t DAY_BETWEEN_1970_2006 = 13149;  // Jan 1
-CONSTEXPR static uint64_t DAY_BETWEEN_1970_2010 = 14610;  // Jan 1
-
-uint64_t standard_day_number(long const gnss_id, long const day_number) {
-    switch (gnss_id) {
-    case GNSS_ID__gnss_id_gps: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1980;
-    case GNSS_ID__gnss_id_galileo: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1999;
-    case GNSS_ID__gnss_id_glonass: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_1996;
-    case GNSS_ID__gnss_id_bds: return static_cast<uint64_t>(day_number) + DAY_BETWEEN_1970_2006;
-    default: UNREACHABLE();
-    }
-}
+// SPARTN epoch: Jan 1, 2010 00:00:00 GPS time
+// = 14610 (days 1970->2010) - 3657 (days 1970->GPS epoch) = 10953 days from GPS epoch
+CONSTEXPR static int64_t SPARTN_EPOCH_GPS_DAYS = 10953;
 
 SpartnTime spartn_time_from(GNSS_SystemTime const& epoch_time) {
+    auto day_number  = epoch_time.gnss_DayNumber;
     auto time_of_day = static_cast<double>(epoch_time.gnss_TimeOfDay);
     if (epoch_time.gnss_TimeOfDayFrac_msec) {
         time_of_day += static_cast<double>(*epoch_time.gnss_TimeOfDayFrac_msec) / 1000.0;
     }
 
-    auto day_number      = epoch_time.gnss_DayNumber;
-    auto gnss_id         = epoch_time.gnss_TimeID.gnss_id;
-    auto days_since_1970 = standard_day_number(gnss_id, day_number);
-    auto days_since_2010 = days_since_1970 - DAY_BETWEEN_1970_2010;
+    ts::Gps gps_time;
+    switch (epoch_time.gnss_TimeID.gnss_id) {
+    case GNSS_ID__gnss_id_gps: gps_time = ts::Gps::from_day_tod(day_number, time_of_day); break;
+    case GNSS_ID__gnss_id_galileo:
+        gps_time = ts::Gps(ts::Gst::from_day_tod(day_number, time_of_day));
+        break;
+    case GNSS_ID__gnss_id_glonass:
+        gps_time = ts::Gps(ts::Glo::from_day_tod(day_number, time_of_day));
+        break;
+    case GNSS_ID__gnss_id_bds:
+        gps_time = ts::Gps(ts::Bdt::from_day_tod(day_number, time_of_day));
+        break;
+    default: return SpartnTime{0, 0};
+    }
 
-    auto seconds_since_2010  = days_since_2010 * SECONDS_IN_DAY;
-    auto rounded_time_of_day = static_cast<uint32_t>(time_of_day + 0.5);
-    auto seconds             = static_cast<uint32_t>(seconds_since_2010) + rounded_time_of_day;
+    auto days_since_2010    = gps_time.days() - SPARTN_EPOCH_GPS_DAYS;
+    auto seconds_since_2010 = static_cast<double>(days_since_2010 * ts::DAY_IN_SECONDS) +
+                              gps_time.time_of_day().as_double();
 
     return SpartnTime{
-        static_cast<double>(seconds_since_2010) + time_of_day,
-        seconds,
+        seconds_since_2010,
+        static_cast<uint32_t>(seconds_since_2010 + 0.5),
     };
 }

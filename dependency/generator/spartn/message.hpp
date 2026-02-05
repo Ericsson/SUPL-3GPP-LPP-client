@@ -205,7 +205,7 @@ public:
     void ephemeris_type(long gnss_id);
 
     // Issue of data ephemeris
-    void orbit_iode(long gnss_id, BIT_STRING_s& iode, bool iode_shift);
+    void orbit_iode(long gnss_id, BIT_STRING_s& iode);
 
     // SF020 - Satellite corrections
     inline void sf020(double value) { mBuilder.double_to_bits(-16.382, 16.382, 0.002, value, 14); }
@@ -260,15 +260,10 @@ public:
 
     template <typename T>
     inline void sfxxx_bias_mask(uint8_t low, uint8_t high, std::map<uint8_t, T> const* types) {
-        uint8_t size = 0;
-        if (types->size() > low) {
-            size = high;
-            mBuilder.b(true);
-        } else {
-            size = low;
-            mBuilder.b(false);
-        }
-
+        uint8_t highest  = types->empty() ? 0 : types->rbegin()->first;
+        bool    extended = highest >= low;
+        uint8_t size     = extended ? high : low;
+        mBuilder.b(extended);
         for (uint8_t i = 0; i < size; ++i) {
             mBuilder.b(types->count(i) > 0);
         }
