@@ -56,6 +56,13 @@ static args::Flag gNoBeiDou{
     {"tkr-no-beidou"},
 };
 
+static args::ValueFlag<std::string> gMsmType{
+    gGroup,
+    "type",
+    "Which MSM type to generate",
+    {"tkr-msm"},
+};
+
 static args::ValueFlag<std::string> gVrsModeArg{
     gGroup,
     "vrs-mode",
@@ -295,6 +302,8 @@ static args::ValueFlag<double> gRecordSnapshotRate{
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
+    gMsmType.HelpDefault("5");
+    gMsmType.HelpChoices({"4", "5", "6", "7"});
     gVrsModeArg.HelpChoices({"fixed", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
 
@@ -312,6 +321,7 @@ void parse(Config* config) {
     tokoro.generate_glonass = true;
     tokoro.generate_galileo = true;
     tokoro.generate_beidou  = true;
+    tokoro.msm_type         = TokoroConfig::MsmType::MSM5;
 
     tokoro.shapiro_correction                 = true;
     tokoro.phase_windup_correction            = true;
@@ -360,6 +370,20 @@ void parse(Config* config) {
     if (gNoGLONASS) tokoro.generate_glonass = false;
     if (gNoGalileo) tokoro.generate_galileo = false;
     if (gNoBeiDou) tokoro.generate_beidou = false;
+
+    if (gMsmType) {
+        auto type = gMsmType.Get();
+        if (type == "4")
+            tokoro.msm_type = TokoroConfig::MsmType::MSM4;
+        else if (type == "5")
+            tokoro.msm_type = TokoroConfig::MsmType::MSM5;
+        else if (type == "6")
+            tokoro.msm_type = TokoroConfig::MsmType::MSM6;
+        else if (type == "7")
+            tokoro.msm_type = TokoroConfig::MsmType::MSM7;
+        else
+            throw args::ParseError("--tkr-msm not recognized: `" + type + "`");
+    }
 
     if (gVrsModeArg) {
         auto v = gVrsModeArg.Get();
@@ -480,6 +504,15 @@ void dump(TokoroConfig const& config) {
     DEBUGF("glonass: %s", config.generate_glonass ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.generate_galileo ? "enabled" : "disabled");
     DEBUGF("beidou:  %s", config.generate_beidou ? "enabled" : "disabled");
+    DEBUGF("msm type: %s", [&]() {
+        switch (config.msm_type) {
+        case TokoroConfig::MsmType::MSM4: return "4";
+        case TokoroConfig::MsmType::MSM5: return "5";
+        case TokoroConfig::MsmType::MSM6: return "6";
+        case TokoroConfig::MsmType::MSM7: return "7";
+        }
+        return "unknown";
+    }());
 
     DEBUGF("VRS mode: %s", [&]() {
         switch (config.vrs_mode) {

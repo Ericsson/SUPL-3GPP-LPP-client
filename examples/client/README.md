@@ -265,6 +265,7 @@
         --tkr-no-glonass                  Skip generating GLONASS messages
         --tkr-no-galileo                  Skip generating Galileo messages
         --tkr-no-beidou                   Skip generating BeiDou messages
+        --tkr-msm=[type]                  Which MSM type to generate
         --tkr-vrs-mode=[vrs-mode]         VRS mode
                                           One of: fixed, dynamic
                                           Default: dynamic

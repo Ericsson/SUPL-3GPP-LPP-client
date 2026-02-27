@@ -389,6 +389,13 @@ struct Lpp2SpartnConfig {
 
 #ifdef INCLUDE_GENERATOR_TOKORO
 struct TokoroConfig {
+    enum class MsmType {
+        MSM4,
+        MSM5,
+        MSM6,
+        MSM7,
+    };
+
     enum class VrsMode {
         Fixed,
         Dynamic,
@@ -409,6 +416,7 @@ struct TokoroConfig {
     bool generate_glonass;
     bool generate_galileo;
     bool generate_beidou;
+    MsmType msm_type;
 
     VrsMode            vrs_mode;
     GenerationStrategy generation_strategy;

@@ -18,6 +18,17 @@ LOGLET_MODULE2(p, tkr);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, tkr)
 
+static uint32_t tokoro_rtcm_msm_type(TokoroConfig::MsmType msm_type) {
+    switch (msm_type) {
+    case TokoroConfig::MsmType::MSM4: return 4;
+    case TokoroConfig::MsmType::MSM5: return 5;
+    case TokoroConfig::MsmType::MSM6: return 6;
+    case TokoroConfig::MsmType::MSM7: return 7;
+    }
+
+    return 5;
+}
+
 void TokoroEphemerisUbx::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
     VSCOPE_FUNCTION();
     auto words = format::nav::Words::from_sfrbx_l1ca(sfrbx->words());
@@ -559,6 +570,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_earth_solid_tides_correction(mConfig.earth_solid_tides_correction);
     mReferenceStation->set_phase_windup_correction(mConfig.phase_windup_correction);
     mReferenceStation->set_tropospheric_height_correction(mConfig.tropospheric_height_correction);
+    mReferenceStation->set_msm_type(tokoro_rtcm_msm_type(mConfig.msm_type));
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
 #ifdef INCLUDE_FORMAT_RINEX
