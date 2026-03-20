@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [4.0.23] - 2026-03-20
+
 ### Added
 - Tag system: Global tag registry with descriptions and categories
 - Tag system: --list-tags CLI flag with tree-like format similar to --log-tree

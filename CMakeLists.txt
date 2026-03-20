@@ -16,8 +16,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(example LANGUAGES C CXX)
 
-set(CLIENT_VERSION "4.0.22")
-set(CLIENT_VERSION_INT "0x040016")
+set(CLIENT_VERSION "4.0.23")
+set(CLIENT_VERSION_INT "0x040017")
 
 include(cmake/clang-tidy.cmake)
 include(cmake/cppcheck.cmake)
