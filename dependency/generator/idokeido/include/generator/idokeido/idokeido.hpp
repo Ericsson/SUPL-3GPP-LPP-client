@@ -65,6 +65,9 @@ struct Solution {
     double longitude;
     double altitude;
 
+    Vector3 position_ecef;
+    double  receiver_clock;
+
     size_t satellite_count;
 };
 

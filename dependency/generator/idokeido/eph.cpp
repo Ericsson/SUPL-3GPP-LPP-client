@@ -157,7 +157,7 @@ void EphemerisEngine::add(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 10) {
+    if (list.size() >= 48) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -191,7 +191,7 @@ void EphemerisEngine::add(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 10) {
+    if (list.size() >= 48) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -225,7 +225,7 @@ void EphemerisEngine::add(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 10) {
+    if (list.size() >= 48) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }

@@ -41,7 +41,7 @@ TEST_CASE("GPS week rollover - second rollover week 2048") {
 TEST_CASE("GPS from date - GPS epoch Jan 6, 1980") {
     auto gps = ts::Gps::from_ymdhms(1980, 1, 6, 0, 0, 0.0);
     CHECK(gps.week() == 0);
-    CHECK(gps.days() == 5);
+    CHECK(gps.days() == 0);  // GPS epoch is day 0
 }
 
 TEST_CASE("GPS from date - leap year Feb 29, 2020") {

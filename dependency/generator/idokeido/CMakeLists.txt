@@ -3,6 +3,8 @@ add_library(dependency_generator_idokeido STATIC
     "satellite_position.cpp"
     "idokeido.cpp"
     "spp.cpp"
+    "ppp.cpp"
+    "kalman.cpp"
     "eph.cpp"
     "clock.cpp"
     "orbit.cpp"

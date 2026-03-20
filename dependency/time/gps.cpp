@@ -208,7 +208,8 @@ int64_t Gps::days_from_ymd(int64_t year, int64_t month, int64_t day) {
     days += -1;
     days += (year % 4 == 0 && month >= 3 ? 1 : 0);
 
-    return days;
+    // GPS epoch is 1980-01-06, not 1980-01-01 (subtract 5 days)
+    return days - 5;
 }
 
 Timestamp Gps::utc_timestamp() const {

@@ -13,6 +13,36 @@ TEST_CASE("UTC to GPS round-trip") {
     CHECK(utc.timestamp().seconds() == utc2.timestamp().seconds());
 }
 
+// Verify from_date_time returns the correct day for known dates
+TEST_CASE("UTC from_date_time - known dates") {
+    // 2026-03-17 is day 76 of 2026 (1-indexed)
+    // Verify by checking that consecutive days differ by exactly 86400 seconds
+    auto d16 = ts::Utc::from_date_time(2026, 3, 16, 0, 0, 0.0);
+    auto d17 = ts::Utc::from_date_time(2026, 3, 17, 0, 0, 0.0);
+    auto d18 = ts::Utc::from_date_time(2026, 3, 18, 0, 0, 0.0);
+    CHECK(d17.timestamp().seconds() - d16.timestamp().seconds() == 86400);
+    CHECK(d18.timestamp().seconds() - d17.timestamp().seconds() == 86400);
+}
+
+// Verify GPS week/TOW for 2026-03-17 00:00:00 UTC
+// GPS = UTC + 18 leap seconds
+// GPS week 2410 starts 2026-03-15 (Sunday)
+// 2026-03-17 = 2 days into week 2410 → TOW = 2*86400 + 18 = 172818
+TEST_CASE("GPS week/TOW for 2026-03-17") {
+    auto utc = ts::Utc::from_date_time(2026, 3, 17, 0, 0, 0.0);
+    auto gps = ts::Gps(ts::Tai{utc});
+    CHECK(gps.week() == 2410);
+    CHECK(gps.time_of_week().seconds() == 2 * 86400 + 18);  // 172818
+}
+
+// Verify GPS from_ymdhms for nav file toc
+// 2026-03-17 00:00:00 GPS = week 2410, TOW = 2*86400 = 172800
+TEST_CASE("GPS from_ymdhms for 2026-03-17") {
+    auto gps = ts::Gps::from_ymdhms(2026, 3, 17, 0, 0, 0.0);
+    CHECK(gps.week() == 2410);
+    CHECK(gps.time_of_week().seconds() == 2 * 86400);  // 172800
+}
+
 TEST_CASE("TAI to GPS round-trip") {
     auto tai  = ts::Tai(ts::Timestamp(1000000, 0.0));
     auto gps  = ts::Gps(tai);

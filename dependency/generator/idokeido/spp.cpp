@@ -578,6 +578,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         .latitude        = llh.x * constant::K_R2D,
         .longitude       = llh.y * constant::K_R2D,
         .altitude        = llh.z,
+        .position_ecef   = Vector3{final_position.x(), final_position.y(), final_position.z()},
+        .receiver_clock  = final_bias,
         .satellite_count = satellite_count,
     };
 

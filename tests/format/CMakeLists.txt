@@ -19,6 +19,11 @@ if(INCLUDE_FORMAT_ANTEX)
     target_link_libraries(format_tests PRIVATE dependency::format::antex)
 endif()
 
+if(INCLUDE_FORMAT_RINEX)
+    target_sources(format_tests PRIVATE rinex/obs.cpp rinex/nav.cpp)
+    target_link_libraries(format_tests PRIVATE dependency::format::rinex)
+endif()
+
 target_compile_options(format_tests PRIVATE -fsanitize=address -g)
 target_link_options(format_tests PRIVATE -fsanitize=address)
 
