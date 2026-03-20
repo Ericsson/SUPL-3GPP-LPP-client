@@ -77,7 +77,7 @@ std::vector<uint8_t> Message::build() {
     // TF007-TF011: 4 + 1 + 32 + 7 + 4 = 48 bits = 6 bytes
     CONSTEXPR const size_t PAYLOAD_DESCRIPTION_SIZE = 6;
 
-    auto payload_length = PAYLOAD_DESCRIPTION_SIZE + mPayload.size();
+    auto payload_length = mPayload.size();
     if (payload_length > 1023) {
         return {};
     }

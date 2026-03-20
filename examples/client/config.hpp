@@ -336,11 +336,11 @@ struct TokoroConfig {
                           // assistance data
     };
 
-    bool enabled;
-    bool generate_gps;
-    bool generate_glonass;
-    bool generate_galileo;
-    bool generate_beidou;
+    bool    enabled;
+    bool    generate_gps;
+    bool    generate_glonass;
+    bool    generate_galileo;
+    bool    generate_beidou;
     MsmType msm_type;
 
     VrsMode            vrs_mode;

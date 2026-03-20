@@ -316,7 +316,7 @@ public:
     inline void sf030(uint8_t count) {
         assert(count >= 1);
         assert(count <= 32);
-        mBuilder.bits(count, 5);
+        mBuilder.bits(count - 1, 5);  // encoded as count-1 per spec (range 1-32 in 5 bits)
     }
 
     // SF031 - Area ID
