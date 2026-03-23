@@ -184,7 +184,7 @@ std::unique_ptr<io::Input> create_input(InputStreamConfig const& cfg,
 }
 
 static std::shared_ptr<io::Stream> get_or_create_stdio(io::StreamRegistry& registry) {
-    static const std::string id = "stdio";
+    static std::string const id       = "stdio";
     auto                     existing = registry.get(id);
     if (existing) return existing;
     io::StdioConfig cfg;
