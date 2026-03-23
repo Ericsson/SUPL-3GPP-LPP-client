@@ -183,14 +183,20 @@ std::unique_ptr<io::Input> create_input(InputStreamConfig const& cfg,
     return std::make_unique<io::StreamInputAdapter>(stream);
 }
 
-std::unique_ptr<io::Input> create_input(InputStdinConfig const&, io::StreamRegistry& registry) {
-    DEBUGF("input: stdin");
-    auto            id = "stdin:" + generate_unique_id();
+static std::shared_ptr<io::Stream> get_or_create_stdio(io::StreamRegistry& registry) {
+    static const std::string id = "stdio";
+    auto                     existing = registry.get(id);
+    if (existing) return existing;
     io::StdioConfig cfg;
     cfg.use_stderr = false;
     auto stream    = std::make_shared<io::StdioStream>(id, cfg);
     registry.add(id, stream);
-    return std::make_unique<io::StreamInputAdapter>(stream);
+    return stream;
+}
+
+std::unique_ptr<io::Input> create_input(InputStdinConfig const&, io::StreamRegistry& registry) {
+    DEBUGF("input: stdin");
+    return std::make_unique<io::StreamInputAdapter>(get_or_create_stdio(registry));
 }
 
 std::unique_ptr<io::Input> create_input(InputFileConfig const& cfg, io::StreamRegistry& registry) {
@@ -246,12 +252,7 @@ std::unique_ptr<io::Output> create_output(OutputStreamConfig const& cfg,
 
 std::unique_ptr<io::Output> create_output(OutputStdoutConfig const&, io::StreamRegistry& registry) {
     DEBUGF("output: stdout");
-    auto            id = "stdout:" + generate_unique_id();
-    io::StdioConfig cfg;
-    cfg.use_stderr = false;
-    auto stream    = std::make_shared<io::StdioStream>(id, cfg);
-    registry.add(id, stream);
-    return std::make_unique<io::StreamOutputAdapter>(stream);
+    return std::make_unique<io::StreamOutputAdapter>(get_or_create_stdio(registry));
 }
 
 std::unique_ptr<io::Output> create_output(OutputFileConfig const& cfg,
