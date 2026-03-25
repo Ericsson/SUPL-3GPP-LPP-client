@@ -277,6 +277,13 @@ static args::Flag gIgnoreBitmask{
     {"tkr-ignore-bitmask"},
 };
 
+static args::ValueFlag<std::string> gOutputTag{
+    gGroup,
+    "tag",
+    "Tag to apply to generated RTCM messages",
+    {"tkr-output-tag"},
+};
+
 #ifdef ENABLE_TOKORO_SNAPSHOT
 static args::Flag gRecordSnapshot{
     gGroup,
@@ -358,6 +365,7 @@ void parse(Config* config) {
 
     tokoro.antex_file     = "";
     tokoro.ignore_bitmask = false;
+    tokoro.output_tag     = "";
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     tokoro.record_snapshot      = false;
@@ -488,6 +496,7 @@ void parse(Config* config) {
     if (gUseIonosphericHeightCorrection) tokoro.use_ionospheric_height_correction = true;
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
+    if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     if (gRecordSnapshot) tokoro.record_snapshot = true;

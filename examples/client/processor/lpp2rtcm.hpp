@@ -28,4 +28,5 @@ private:
     Lpp2RtcmConfig const& mConfig;
     scheduler::Scheduler& mScheduler;
     size_t                mConversionCount;
+    uint64_t              mOutputTag;
 };

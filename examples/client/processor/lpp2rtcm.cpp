@@ -9,7 +9,8 @@ LOGLET_MODULE2(p, l2r);
 
 Lpp2Rtcm::Lpp2Rtcm(ProgramOutput const& output, Lpp2RtcmConfig const& config,
                    scheduler::Scheduler& scheduler)
-    : mOutput(output), mConfig(config), mScheduler(scheduler), mConversionCount(0) {
+    : mOutput(output), mConfig(config), mScheduler(scheduler), mConversionCount(0),
+      mOutputTag(tags::get(config.output_tag).value) {
     VSCOPE_FUNCTION();
     mGenerator = std::unique_ptr<generator::rtcm::Generator>(new generator::rtcm::Generator{});
     mFilter    = generator::rtcm::MessageFilter{};
@@ -46,12 +47,12 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t ta
         // TODO(ewasjon): These message should be passed back into the system
         for (auto const& output : mOutput.outputs) {
             if (!output.rtcm_support()) continue;
-            if (!output.accept_tag(tag)) {
-                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            if (!output.accept_tag(mOutputTag)) {
+                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", mOutputTag);
                 continue;
             }
             XDEBUGF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", submessage.id(), size,
-                    tag);
+                    mOutputTag);
 
             ASSERT(output.stage, "stage is null");
             output.stage->write(OUTPUT_FORMAT_RTCM, buffer, size);

@@ -310,7 +310,7 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mGenerator = std::unique_ptr<generator::tokoro::Generator>(new generator::tokoro::Generator{});
     mReferenceStation = nullptr;
     mPeriodicTask     = nullptr;
-    mOutputTag        = 0;
+    mOutputTag        = tags::get(mConfig.output_tag).value;
 
     mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
     mGenerator->set_rtoc(mConfig.rtoc);

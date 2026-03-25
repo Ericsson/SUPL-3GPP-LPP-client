@@ -65,6 +65,13 @@ static args::ValueFlag<size_t> gMaxConversions{
     {"l2r-shutdown-after", "l2r-max-conversions"},
 };
 
+static args::ValueFlag<std::string> gOutputTag{
+    gGroup,
+    "tag",
+    "Tag to apply to generated RTCM messages",
+    {"l2r-output-tag"},
+};
+
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gMsmType.HelpDefault("any");
@@ -81,6 +88,7 @@ void parse(Config* config) {
     lpp2rtcm.generate_beidou  = true;
     lpp2rtcm.msm_type         = Lpp2RtcmConfig::MsmType::ANY;
     lpp2rtcm.max_conversions  = 0;
+    lpp2rtcm.output_tag       = "";
 
     if (gEnable) lpp2rtcm.enabled = true;
     if (gNoGps) lpp2rtcm.generate_gps = false;
@@ -106,6 +114,9 @@ void parse(Config* config) {
 
     if (gMaxConversions) {
         lpp2rtcm.max_conversions = gMaxConversions.Get();
+    }
+    if (gOutputTag) {
+        lpp2rtcm.output_tag = gOutputTag.Get();
     }
 }
 

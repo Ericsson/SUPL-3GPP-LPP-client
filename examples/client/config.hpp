@@ -29,12 +29,13 @@ struct LocationServerConfig {
     uint16_t                     port;
     std::unique_ptr<std::string> interface;
 
-    bool enabled;
-    bool slp_host_cell;
-    bool slp_host_imsi;
-    bool shutdown_on_disconnect;
-    bool hack_bad_transaction_initiator;
-    bool hack_never_send_abort;
+    bool        enabled;
+    bool        slp_host_cell;
+    bool        slp_host_imsi;
+    bool        shutdown_on_disconnect;
+    bool        hack_bad_transaction_initiator;
+    bool        hack_never_send_abort;
+    std::string output_tag;
 };
 
 enum class AGnssMode {
@@ -231,13 +232,14 @@ struct Lpp2RtcmConfig {
         MSM7,
     };
 
-    bool    enabled;
-    bool    generate_gps;
-    bool    generate_glonass;
-    bool    generate_galileo;
-    bool    generate_beidou;
-    MsmType msm_type;
-    size_t  max_conversions;
+    bool        enabled;
+    bool        generate_gps;
+    bool        generate_glonass;
+    bool        generate_galileo;
+    bool        generate_beidou;
+    MsmType     msm_type;
+    size_t      max_conversions;
+    std::string output_tag;
 };
 
 struct Lpp2FrameRtcmConfig {
@@ -309,6 +311,7 @@ struct Lpp2SpartnConfig {
     bool                          flip_grid_bitmask;
     bool                          flip_orbit_correction;
     bool                          do_not_use_satellite;
+    std::string                   output_tag;
 };
 #endif
 
@@ -382,6 +385,7 @@ struct TokoroConfig {
 
     std::string antex_file;
     bool        ignore_bitmask;
+    std::string output_tag;
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     bool        record_snapshot;
@@ -408,6 +412,7 @@ struct IdokeidoConfig {
     idokeido::RelativisticModel relativistic_model;
     idokeido::IonosphericMode   ionospheric_mode;
     double                      observation_window;
+    std::string                 output_tag;
 };
 #endif
 

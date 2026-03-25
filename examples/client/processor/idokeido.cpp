@@ -343,7 +343,7 @@ IdokeidoSpp::IdokeidoSpp(ProgramOutput const&, IdokeidoConfig const& config,
 
     mEngine = std::unique_ptr<idokeido::SppEngine>(
         new idokeido::SppEngine{configuration, *mEphemerisEngine, *mCorrectionCache});
-    mOutputTag = 0;
+    mOutputTag = tags::get(mConfig.output_tag).value;
 
     // TODO(ewasjon): Change to a better system
     {

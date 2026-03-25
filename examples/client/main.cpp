@@ -109,11 +109,11 @@ static void client_request(Program& program, lpp::Client& client) {
         },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("provide assistance data (non-periodic)");
-            program.stream.push(std::move(message));
+            program.stream.push(std::move(message), program.lpp_tag);
         },
         [&program](lpp::Client&, lpp::PeriodicSessionHandle, lpp::Message message) {
             INFOF("provide assistance data (periodic)");
-            program.stream.push(std::move(message));
+            program.stream.push(std::move(message), program.lpp_tag);
         },
         [](lpp::Client&, lpp::PeriodicSessionHandle) {
             INFOF("request assistance data (started)");
@@ -147,7 +147,7 @@ static void client_request_assisted_gnss(Program& program, lpp::Client& client) 
         },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("[AGNSS] provide assistance data");
-            program.stream.push(std::move(message));
+            program.stream.push(std::move(message), program.lpp_tag);
         },
         [&](lpp::Client&) {
             ERRORF("[AGNSS] request assistance data failed");
@@ -323,7 +323,7 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
                 dynamic_cast<format::rtcm::UnsupportedMessage*>(message.get()))
                 continue;
             if (p.input->print) message->print();
-            program.stream.push(std::move(message));
+            program.stream.push(std::move(message), tag);
         }
     }
 
@@ -510,6 +510,26 @@ static void create_io_from_config(Program& program) {
             registry.register_tag(tag, "Custom output tag", "custom");
         }
     }
+#ifdef INCLUDE_GENERATOR_RTCM
+    if (!config.lpp2rtcm.output_tag.empty())
+        registry.register_tag(config.lpp2rtcm.output_tag, "lpp2rtcm output tag", "custom");
+#endif
+#ifdef INCLUDE_GENERATOR_SPARTN
+    if (!config.lpp2spartn.output_tag.empty())
+        registry.register_tag(config.lpp2spartn.output_tag, "lpp2spartn output tag", "custom");
+#endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+    if (!config.tokoro.output_tag.empty())
+        registry.register_tag(config.tokoro.output_tag, "tokoro output tag", "custom");
+#endif
+#ifdef INCLUDE_GENERATOR_IDOKEIDO
+    if (!config.idokeido.output_tag.empty())
+        registry.register_tag(config.idokeido.output_tag, "idokeido output tag", "custom");
+#endif
+    if (!config.location_server.output_tag.empty())
+        registry.register_tag(config.location_server.output_tag, "location server tag", "custom");
+
+    program.lpp_tag = registry.get_tag(config.location_server.output_tag).value;
 }
 
 static void initialize_inputs(Program& program, ProgramInput& config) {

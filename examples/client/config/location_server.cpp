@@ -69,6 +69,12 @@ static args::Flag gHackNeverSendAbort{
     "Hack to disable sending Abort in assistance data handler",
     {"ls-hack-never-send-abort"},
 };
+static args::ValueFlag<std::string> gOutputTag{
+    gGroup,
+    "tag",
+    "Tag to apply to LPP messages from the location server",
+    {"ls-output-tag"},
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
@@ -79,6 +85,7 @@ void parse(Config* config) {
     ls.enabled                        = true;
     ls.shutdown_on_disconnect         = false;
     ls.interface                      = nullptr;
+    ls.output_tag                     = "";
     ls.hack_bad_transaction_initiator = gHackBadTransactionInitiator.Get();
     ls.hack_never_send_abort          = gHackNeverSendAbort.Get();
 
@@ -113,6 +120,7 @@ void parse(Config* config) {
     }
 
     if (gShutdownOnDisconnect) ls.shutdown_on_disconnect = true;
+    if (gOutputTag) ls.output_tag = gOutputTag.Get();
 }
 
 void dump(LocationServerConfig const& config) {

@@ -266,6 +266,13 @@ static args::Flag gSignFlipC11{
     {"l2s-sf-c11"},
 };
 
+static args::ValueFlag<std::string> gOutputTag{
+    gGroup,
+    "tag",
+    "Tag to apply to generated SPARTN messages",
+    {"l2s-output-tag"},
+};
+
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gStecMethod.HelpChoices({"default", "discard", "residual"});
@@ -316,6 +323,7 @@ void parse(Config* config) {
     lpp2spartn.sign_flip_stec_residuals = false;
 
     lpp2spartn.do_not_use_satellite = true;
+    lpp2spartn.output_tag           = "";
 
     if (gEnable) lpp2spartn.enabled = true;
     if (gNoGPS) lpp2spartn.generate_gps = false;
@@ -376,6 +384,7 @@ void parse(Config* config) {
     if (gSignFlipC01) lpp2spartn.sign_flip_c01 = true;
     if (gSignFlipC10) lpp2spartn.sign_flip_c10 = true;
     if (gSignFlipC11) lpp2spartn.sign_flip_c11 = true;
+    if (gOutputTag) lpp2spartn.output_tag = gOutputTag.Get();
 
     if (gUraOverride && (lpp2spartn.sf024_override < 0 || lpp2spartn.sf024_override > 7)) {
         throw args::ValidationError("URA override must be between 0 and 7, got `" +

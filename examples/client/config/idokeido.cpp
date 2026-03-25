@@ -78,6 +78,13 @@ static args::ValueFlag<double> gObservationWindow{
     100.0,
 };
 
+static args::ValueFlag<std::string> gOutputTag{
+    gGroup,
+    "tag",
+    "Tag to apply to generated messages",
+    {"ido-output-tag"},
+};
+
 static args::ValueFlag<std::string> gIonosphericModel{
     gGroup,
     "ionospheric",
@@ -121,6 +128,7 @@ void parse(Config* config) {
     cfg.weight_function    = ::idokeido::WeightFunction::None;
     cfg.epoch_selection    = ::idokeido::EpochSelection::LastObservation;
     cfg.observation_window = 0.1;
+    cfg.output_tag         = "";
 
     if (gEnable) cfg.enabled = true;
     if (gNoGPS) cfg.gps = false;
@@ -188,6 +196,9 @@ void parse(Config* config) {
 
     if (gObservationWindow) {
         cfg.observation_window = gObservationWindow.Get() / 1000.0;
+    }
+    if (gOutputTag) {
+        cfg.output_tag = gOutputTag.Get();
     }
 }
 

@@ -8,7 +8,7 @@ LOGLET_MODULE2(p, l2s);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, l2s)
 
 Lpp2Spartn::Lpp2Spartn(ProgramOutput const& output, Lpp2SpartnConfig const& config)
-    : mOutput(output), mConfig(config) {
+    : mOutput(output), mConfig(config), mOutputTag(tags::get(config.output_tag).value) {
     VSCOPE_FUNCTION();
     mGenerator = std::unique_ptr<generator::spartn::Generator>(new generator::spartn::Generator{});
 
@@ -77,12 +77,12 @@ void Lpp2Spartn::inspect(streamline::System&, DataType const& message, uint64_t 
             // TODO(ewasjon): These message should be passed back into the system
             for (auto const& output : mOutput.outputs) {
                 if (!output.spartn_support()) continue;
-                if (!output.accept_tag(tag)) {
-                    XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                if (!output.accept_tag(mOutputTag)) {
+                    XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", mOutputTag);
                     continue;
                 }
                 XDEBUGF(OUTPUT_PRINT_MODULE, "spartn: %02X-%02X (%zd bytes) tag=%llX",
-                        msg.message_type(), msg.message_subtype(), data.size(), tag);
+                        msg.message_type(), msg.message_subtype(), data.size(), mOutputTag);
 
                 ASSERT(output.stage, "stage is null");
                 output.stage->write(OUTPUT_FORMAT_SPARTN, data.data(), data.size());

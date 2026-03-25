@@ -57,6 +57,8 @@ public:
     void vrs_mode_dynamic();
     void generate(ts::Tai const& generation_time);
 
+    void set_output_tag(uint64_t tag) { mOutputTag = tag; }
+
     bool is_gps_enabled();
     bool is_gal_enabled();
     bool is_bds_enabled();

@@ -25,4 +25,5 @@ private:
 
     ProgramOutput const&    mOutput;
     Lpp2SpartnConfig const& mConfig;
+    uint64_t                mOutputTag;
 };

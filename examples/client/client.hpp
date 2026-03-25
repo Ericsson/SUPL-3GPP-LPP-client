@@ -64,6 +64,8 @@ struct Program {
 
     std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
 
+    uint64_t lpp_tag{0};
+
     std::atomic<int>                        active_inputs{0};
     bool                                    shutdown_scheduled{false};
     std::unique_ptr<scheduler::TimeoutTask> shutdown_task;
