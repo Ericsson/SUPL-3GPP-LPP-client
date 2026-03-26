@@ -121,7 +121,9 @@ public:
     }
 
     // TF018 - Message CRC
+    inline void tf018_8bit(uint8_t crc) { mBuilder.u8(crc); }
     inline void tf018_16bit(uint16_t crc) { mBuilder.u16(crc); }
+    inline void tf018_24bit(uint32_t crc) { mBuilder.bits(crc, 24); }
 
 private:
     Builder mBuilder;

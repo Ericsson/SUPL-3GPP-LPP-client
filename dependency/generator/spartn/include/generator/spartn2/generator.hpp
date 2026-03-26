@@ -11,6 +11,12 @@ struct ProvideAssistanceData_r9_IEs;
 namespace generator {
 namespace spartn {
 
+enum class CrcType : uint8_t {
+    CRC8      = 0,
+    CRC16     = 1,
+    CRC24Q    = 2,
+};
+
 /// SPARTN message
 class Message {
 public:
@@ -24,6 +30,10 @@ public:
     /// Message data
     NODISCARD std::vector<uint8_t> const& payload() const { return mPayload; }
 
+    void set_crc_type(CrcType crc_type) { mCrcType = crc_type; }
+    void set_solution_id(uint8_t solution_id) { mSolutionId = solution_id; }
+    void set_solution_processor_id(uint8_t id) { mSolutionProcessorId = id; }
+
     std::vector<uint8_t> build();
 
 private:
@@ -31,6 +41,9 @@ private:
     uint8_t              mMessageSubtype;
     uint32_t             mMessageTime;
     std::vector<uint8_t> mPayload;
+    CrcType              mCrcType{CrcType::CRC16};
+    uint8_t              mSolutionId{0};
+    uint8_t              mSolutionProcessorId{0};
 };
 
 struct CorrectionPointSet;
