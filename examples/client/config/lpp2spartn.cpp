@@ -273,6 +273,26 @@ static args::ValueFlag<std::string> gOutputTag{
     {"l2s-output-tag"},
 };
 
+static args::Group                  gTransportGroup{gGroup, "Transport:"};
+static args::ValueFlag<std::string> gCrcType{
+    gTransportGroup,
+    "crc8|crc16|crc24q",
+    "CRC type for SPARTN transport layer (default: crc16)",
+    {"l2s-crc-type"},
+};
+static args::ValueFlag<int> gSolutionId{
+    gTransportGroup,
+    "0-127",
+    "Solution ID (TF010, default: 0)",
+    {"l2s-solution-id"},
+};
+static args::ValueFlag<int> gSolutionProcessorId{
+    gTransportGroup,
+    "0-15",
+    "Solution Processor ID (TF011, default: 0)",
+    {"l2s-solution-processor-id"},
+};
+
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gStecMethod.HelpChoices({"default", "discard", "residual"});
@@ -322,8 +342,11 @@ void parse(Config* config) {
     lpp2spartn.sign_flip_c11            = false;
     lpp2spartn.sign_flip_stec_residuals = false;
 
-    lpp2spartn.do_not_use_satellite = true;
-    lpp2spartn.output_tag           = "";
+    lpp2spartn.do_not_use_satellite  = true;
+    lpp2spartn.output_tag            = "";
+    lpp2spartn.crc_type              = generator::spartn::CrcType::CRC16;
+    lpp2spartn.solution_id           = 0;
+    lpp2spartn.solution_processor_id = 0;
 
     if (gEnable) lpp2spartn.enabled = true;
     if (gNoGPS) lpp2spartn.generate_gps = false;
@@ -385,6 +408,23 @@ void parse(Config* config) {
     if (gSignFlipC10) lpp2spartn.sign_flip_c10 = true;
     if (gSignFlipC11) lpp2spartn.sign_flip_c11 = true;
     if (gOutputTag) lpp2spartn.output_tag = gOutputTag.Get();
+
+    if (gCrcType) {
+        auto type = gCrcType.Get();
+        if (type == "crc8") {
+            lpp2spartn.crc_type = generator::spartn::CrcType::CRC8;
+        } else if (type == "crc16") {
+            lpp2spartn.crc_type = generator::spartn::CrcType::CRC16;
+        } else if (type == "crc24q") {
+            lpp2spartn.crc_type = generator::spartn::CrcType::CRC24Q;
+        } else {
+            throw args::ValidationError(
+                "--l2s-crc-type: must be one of 'crc8', 'crc16', or 'crc24q', got `" + type + "`");
+        }
+    }
+    if (gSolutionId) lpp2spartn.solution_id = static_cast<uint8_t>(gSolutionId.Get());
+    if (gSolutionProcessorId)
+        lpp2spartn.solution_processor_id = static_cast<uint8_t>(gSolutionProcessorId.Get());
 
     if (gUraOverride && (lpp2spartn.sf024_override < 0 || lpp2spartn.sf024_override > 7)) {
         throw args::ValidationError("URA override must be between 0 and 7, got `" +

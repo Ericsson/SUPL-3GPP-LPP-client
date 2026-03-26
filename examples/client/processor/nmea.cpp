@@ -31,7 +31,8 @@ void NmeaOutput::inspect(streamline::System&, DataType const& message, uint64_t 
     for (auto const& output : mOutput.outputs) {
         if (!output.nmea_support()) continue;
         if (!output.accept_tag(tag)) {
-            XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %s not accepted: %s", output.tag_name(tag).c_str(),
+                      output.reject_reason(tag).c_str());
             continue;
         }
         XDEBUGF(OUTPUT_PRINT_MODULE, "nmea: %s (%zd bytes) tag=%llX", message->prefix().c_str(),

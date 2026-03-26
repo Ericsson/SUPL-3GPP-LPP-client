@@ -29,7 +29,7 @@ Lpp2Rtcm::~Lpp2Rtcm() {
     VSCOPE_FUNCTION();
 }
 
-void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t tag) {
+void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t /*tag*/) {
     VSCOPE_FUNCTION();
     auto messages = mGenerator->generate(message.get(), mFilter);
     if (messages.empty()) {
@@ -48,7 +48,9 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t ta
         for (auto const& output : mOutput.outputs) {
             if (!output.rtcm_support()) continue;
             if (!output.accept_tag(mOutputTag)) {
-                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", mOutputTag);
+                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %s not accepted: %s",
+                          output.tag_name(mOutputTag).c_str(),
+                          output.reject_reason(mOutputTag).c_str());
                 continue;
             }
             XDEBUGF(OUTPUT_PRINT_MODULE, "rtcm: %04d (%zd bytes) tag=%llX", submessage.id(), size,

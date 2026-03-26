@@ -312,6 +312,9 @@ struct Lpp2SpartnConfig {
     bool                          flip_orbit_correction;
     bool                          do_not_use_satellite;
     std::string                   output_tag;
+    generator::spartn::CrcType    crc_type;
+    uint8_t                       solution_id;
+    uint8_t                       solution_processor_id;
 };
 #endif
 

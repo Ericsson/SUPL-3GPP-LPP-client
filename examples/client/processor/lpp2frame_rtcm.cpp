@@ -36,7 +36,8 @@ void Lpp2FrameRtcm::inspect(streamline::System&, DataType const& message, uint64
             if (!should_output) continue;
 
             if (!output.accept_tag(tag)) {
-                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+                XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %s not accepted: %s",
+                          output.tag_name(tag).c_str(), output.reject_reason(tag).c_str());
                 continue;
             }
 

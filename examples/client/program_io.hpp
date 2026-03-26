@@ -59,6 +59,18 @@ struct OutputInterface {
     NODISCARD inline bool accept_tag(uint64_t tag) const {
         return tags::TagMask::filter(include_tag_mask, exclude_tag_mask, tags::Tag(tag));
     }
+
+    NODISCARD inline std::string tag_name(uint64_t tag) const {
+        auto name = tags::to_string(tags::TagMask(tag));
+        return name.empty() ? "untagged" : name;
+    }
+
+    NODISCARD inline std::string reject_reason(uint64_t tag) const {
+        if (include_tag_mask.value != 0 && !(include_tag_mask.value & tag))
+            return "not in itags=" + tags::to_string(include_tag_mask);
+        if (exclude_tag_mask.value & tag) return "in otags=" + tags::to_string(exclude_tag_mask);
+        return "unknown";
+    }
 };
 
 struct ProgramOutput {

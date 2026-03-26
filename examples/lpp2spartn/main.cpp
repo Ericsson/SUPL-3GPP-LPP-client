@@ -82,6 +82,15 @@ int main(int argc, char** argv) {
     args::Flag  no_gad(msg_group, "no-gad", "Disable GAD generation", {"no-gad"});
     args::Flag  no_dnu(msg_group, "no-dnu", "Disable Do-Not-Use satellite flag", {"no-dnu"});
 
+    args::Group                  transport_group(parser, "Transport:");
+    args::ValueFlag<std::string> crc_type(transport_group, "crc8|crc16|crc24q",
+                                          "CRC type (default: crc16)", {"crc-type"});
+    args::ValueFlag<int> solution_id(transport_group, "0-127", "Solution ID / TF010 (default: 0)",
+                                     {"solution-id"});
+    args::ValueFlag<int> solution_processor_id(transport_group, "0-15",
+                                               "Solution Processor ID / TF011 (default: 0)",
+                                               {"solution-processor-id"});
+
     args::Group log_group(parser, "Logging:");
     args::Flag  trace(log_group, "trace", "Trace logging", {'v', "trace"});
     args::Flag  verbose(log_group, "verbose", "Verbose logging", {'v', "verbose"});
@@ -95,6 +104,21 @@ int main(int argc, char** argv) {
     } catch (args::ParseError const& e) {
         fprintf(stderr, "error: %s\n", e.what());
         return 1;
+    }
+
+    generator::spartn::CrcType resolved_crc_type = generator::spartn::CrcType::CRC16;
+    if (crc_type) {
+        auto t = args::get(crc_type);
+        if (t == "crc8")
+            resolved_crc_type = generator::spartn::CrcType::CRC8;
+        else if (t == "crc16")
+            resolved_crc_type = generator::spartn::CrcType::CRC16;
+        else if (t == "crc24q")
+            resolved_crc_type = generator::spartn::CrcType::CRC24Q;
+        else {
+            fprintf(stderr, "error: --crc-type must be crc8, crc16, or crc24q\n");
+            return 1;
+        }
     }
 
     // Initialize logging
@@ -192,6 +216,11 @@ int main(int argc, char** argv) {
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, lpp);
 
         for (auto& msg : messages) {
+            msg.set_crc_type(resolved_crc_type);
+            if (solution_id) msg.set_solution_id(static_cast<uint8_t>(args::get(solution_id)));
+            if (solution_processor_id)
+                msg.set_solution_processor_id(
+                    static_cast<uint8_t>(args::get(solution_processor_id)));
             auto bytes = msg.build();
             TRACEF("%02X %02X: %zu bytes\n", msg.message_type(), msg.message_subtype(),
                    bytes.size());

@@ -84,7 +84,8 @@ void LocationOutput::inspect(streamline::System&, DataType const& location, uint
     for (auto const& output : mOutput.outputs) {
         if (!output.location_support()) continue;
         if (!output.accept_tag(tag)) {
-            XVERBOSEF(OUTPUT_PRINT_MODULE, "location: tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "location: tag %s not accepted: %s",
+                      output.tag_name(tag).c_str(), output.reject_reason(tag).c_str());
             continue;
         }
         XDEBUGF(OUTPUT_PRINT_MODULE, "location: (%zd bytes) tag=%llX", size, tag);

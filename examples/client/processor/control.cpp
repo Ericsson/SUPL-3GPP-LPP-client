@@ -26,7 +26,8 @@ void CtrlOutput::inspect(streamline::System&, DataType const& message, uint64_t 
     for (auto const& output : mConfig.outputs) {
         if (!output.ctrl_support()) continue;
         if (!output.accept_tag(tag)) {
-            XVERBOSEF(OUTPUT_PRINT_MODULE, "ctrl: tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "ctrl: tag %s not accepted: %s",
+                      output.tag_name(tag).c_str(), output.reject_reason(tag).c_str());
             continue;
         }
         XDEBUGF(OUTPUT_PRINT_MODULE, "ctrl: (%zd bytes) tag=%llX", size, tag);

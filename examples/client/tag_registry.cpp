@@ -68,11 +68,20 @@ std::string TagRegistry::mask_to_string(TagMask mask) const {
     if (mask.value == 0) return "";
 
     std::string result;
+    uint64_t    named_bits = 0;
     for (auto const& pair : mTags) {
         if (pair.second.mask.value & mask.value) {
             if (!result.empty()) result += "+";
             result += pair.second.name;
+            named_bits |= pair.second.mask.value;
         }
+    }
+    uint64_t unnamed = mask.value & ~named_bits;
+    if (unnamed) {
+        if (!result.empty()) result += "+";
+        char buf[32];
+        snprintf(buf, sizeof(buf), "0x%llX", static_cast<unsigned long long>(unnamed));
+        result += buf;
     }
     return result;
 }

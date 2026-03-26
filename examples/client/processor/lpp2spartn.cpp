@@ -61,7 +61,7 @@ Lpp2Spartn::~Lpp2Spartn() {
     VSCOPE_FUNCTION();
 }
 
-void Lpp2Spartn::inspect(streamline::System&, DataType const& message, uint64_t tag) {
+void Lpp2Spartn::inspect(streamline::System&, DataType const& message, uint64_t /*tag*/) {
     VSCOPE_FUNCTION();
     auto messages = mGenerator->generate(message.get());
     if (messages.empty()) {
@@ -70,6 +70,9 @@ void Lpp2Spartn::inspect(streamline::System&, DataType const& message, uint64_t 
         INFOF("generated %zu SPARTN messages", messages.size());
         DEBUG_INDENT_SCOPE();
         for (auto& msg : messages) {
+            msg.set_crc_type(mConfig.crc_type);
+            msg.set_solution_id(mConfig.solution_id);
+            msg.set_solution_processor_id(mConfig.solution_processor_id);
             auto data = msg.build();
             DEBUGF("message: %02X %02X: %zu bytes", msg.message_type(), msg.message_subtype(),
                    data.size());
@@ -78,7 +81,9 @@ void Lpp2Spartn::inspect(streamline::System&, DataType const& message, uint64_t 
             for (auto const& output : mOutput.outputs) {
                 if (!output.spartn_support()) continue;
                 if (!output.accept_tag(mOutputTag)) {
-                    XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", mOutputTag);
+                    XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %s not accepted: %s",
+                              output.tag_name(mOutputTag).c_str(),
+                              output.reject_reason(mOutputTag).c_str());
                     continue;
                 }
                 XDEBUGF(OUTPUT_PRINT_MODULE, "spartn: %02X-%02X (%zd bytes) tag=%llX",

@@ -26,7 +26,8 @@ void UbxOutput::inspect(streamline::System&, DataType const& message, uint64_t t
     for (auto& output : mOutput.outputs) {
         if (!output.ubx_support()) continue;
         if (!output.accept_tag(tag)) {
-            XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %llX not accepted", tag);
+            XVERBOSEF(OUTPUT_PRINT_MODULE, "tag %s not accepted: %s", output.tag_name(tag).c_str(),
+                      output.reject_reason(tag).c_str());
             continue;
         }
         XDEBUGF(OUTPUT_PRINT_MODULE, "ubx: %02X-%02X (%zd bytes) tag=%llX",
