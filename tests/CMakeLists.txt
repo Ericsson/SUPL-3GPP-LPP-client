@@ -16,6 +16,18 @@ add_subdirectory(msgpack)
 add_subdirectory(gnss)
 add_subdirectory(generator)
 
+if(INCLUDE_GENERATOR_RTCM)
+    add_executable(generate_rtcm_golden generate_rtcm_golden.cpp)
+    target_link_libraries(generate_rtcm_golden PRIVATE
+        dependency::generator::rtcm
+        asn1::generated::lpp asn1::helper
+    )
+    target_compile_definitions(generate_rtcm_golden PRIVATE
+        TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/data"
+    )
+    setup_target(generate_rtcm_golden)
+endif()
+
 if(INCLUDE_GENERATOR_TOKORO AND ENABLE_TOKORO_SNAPSHOT)
     add_executable(generate_tokoro_snapshot generate_tokoro_snapshot.cpp)
     target_link_libraries(generate_tokoro_snapshot PRIVATE
