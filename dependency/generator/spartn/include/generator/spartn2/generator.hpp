@@ -12,9 +12,9 @@ namespace generator {
 namespace spartn {
 
 enum class CrcType : uint8_t {
-    CRC8      = 0,
-    CRC16     = 1,
-    CRC24Q    = 2,
+    CRC8   = 0,
+    CRC16  = 1,
+    CRC24Q = 2,
 };
 
 /// SPARTN message
