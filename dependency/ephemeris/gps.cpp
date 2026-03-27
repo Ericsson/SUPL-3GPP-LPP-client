@@ -137,10 +137,7 @@ double GpsEphemeris::calculate_clock_bias(ts::Gps const& time) const NOEXCEPT {
     auto delta_t_sv = af0 + af1 * t_b + af2 * t_b * t_b;
     VERBOSEF("delta_t_sv: %+.14f", delta_t_sv);
 
-    auto clock_bias = delta_t_sv;
-#if 0
-    clock_bias += t_r;
-#endif
+    auto clock_bias = delta_t_sv;  // L1 C/A: TGD applied separately by the caller
     VERBOSEF("clock_bias: %+.14f", clock_bias);
     return clock_bias;
 }

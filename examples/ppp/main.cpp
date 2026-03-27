@@ -41,7 +41,7 @@ static idokeido::SppConfiguration default_spp_config() {
 static idokeido::PppConfiguration default_ppp_config() {
     idokeido::PppConfiguration cfg{};
     cfg.mode                   = idokeido::PppMode::Static;
-    cfg.ionosphere_mode        = idokeido::PppIonosphereMode::None;
+    cfg.ionosphere_mode        = idokeido::PppIonosphereMode::Estimated;
     cfg.troposphere_wet_mode   = idokeido::PppTroposphereMode::Estimated;
     cfg.troposphere_dry_mode   = idokeido::PppTroposphereMode::Estimated;
     cfg.apply_phase_windup     = false;

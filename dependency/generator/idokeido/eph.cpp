@@ -1,6 +1,7 @@
 #include "eph.hpp"
 
 #include <loglet/loglet.hpp>
+#include <time/glo.hpp>
 
 #include <fstream>
 #include <ostream>
@@ -157,7 +158,7 @@ void EphemerisEngine::add(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 48) {
+    if (list.size() >= 200) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -191,7 +192,7 @@ void EphemerisEngine::add(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 48) {
+    if (list.size() >= 200) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -225,7 +226,7 @@ void EphemerisEngine::add(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 48) {
+    if (list.size() >= 200) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -240,6 +241,25 @@ void EphemerisEngine::add(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
     save_cache();
 }
 
+void EphemerisEngine::add(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
+    char buf[8];
+    std::snprintf(buf, sizeof(buf), "R%02u", ephemeris.slot_number);
+    auto satellite_id = SatelliteId::from_string(buf);
+    if (!satellite_id.is_valid()) return;
+
+    auto& list = mGloEphemeris[satellite_id];
+    for (auto& eph : list) {
+        if (eph.match(ephemeris)) return;
+    }
+    if (list.size() >= 200) list.erase(list.begin());
+    list.push_back(ephemeris);
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::GloEphemeris const& a, ephemeris::GloEphemeris const& b) {
+                  return a.compare(b);
+              });
+}
+
 ephemeris::GpsEphemeris const* EphemerisEngine::find_gps(SatelliteId    satellite_id,
                                                          ts::Tai const& time) const NOEXCEPT {
     FUNCTION_SCOPE();
@@ -247,18 +267,18 @@ ephemeris::GpsEphemeris const* EphemerisEngine::find_gps(SatelliteId    satellit
     if (it == mGpsEphemeris.end()) return nullptr;
     auto& list = it->second;
 
-    auto gps_time = ts::Gps(time);
-    VERBOSEF("searching: %s", satellite_id.name());
+    auto                           gps_time = ts::Gps(time);
+    ephemeris::GpsEphemeris const* best     = nullptr;
+    double                         best_dt  = 1e18;
     for (auto& ephemeris : list) {
-        VERBOSEF("  %4u %8.0f %8.0f | %4u %4u %4u |%s", ephemeris.week_number, ephemeris.toe,
-                 ephemeris.toc, ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc,
-                 ephemeris.is_valid(gps_time) ? " [time]" : "");
         if (!ephemeris.is_valid(gps_time)) continue;
-        VERBOSEF("found: %s", satellite_id.name());
-        return &ephemeris;
+        double dt = std::fabs(gps_time.time_of_week().full_seconds() - ephemeris.toe);
+        if (dt < best_dt) {
+            best_dt = dt;
+            best    = &ephemeris;
+        }
     }
-
-    return nullptr;
+    return best;
 }
 
 ephemeris::GalEphemeris const* EphemerisEngine::find_gal(SatelliteId    satellite_id,
@@ -268,16 +288,18 @@ ephemeris::GalEphemeris const* EphemerisEngine::find_gal(SatelliteId    satellit
     if (it == mGalEphemeris.end()) return nullptr;
     auto& list = it->second;
 
-    auto gal_time = ts::Gst(time);
-    VERBOSEF("searching: %s", satellite_id.name());
+    auto                           gal_time = ts::Gst(time);
+    ephemeris::GalEphemeris const* best     = nullptr;
+    double                         best_dt  = 1e18;
     for (auto& ephemeris : list) {
-        VERBOSEF("  %4u %8.0f %8.0f | %4u %4u |%s", ephemeris.week_number, ephemeris.toe,
-                 ephemeris.toc, ephemeris.lpp_iod, ephemeris.iod_nav,
-                 ephemeris.is_valid(gal_time) ? " [time]" : "");
         if (!ephemeris.is_valid(gal_time)) continue;
-        VERBOSEF("found: %s", satellite_id.name());
-        return &ephemeris;
+        double dt = std::fabs(gal_time.time_of_week().full_seconds() - ephemeris.toe);
+        if (dt < best_dt) {
+            best_dt = dt;
+            best    = &ephemeris;
+        }
     }
+    return best;
 
     return nullptr;
 }
@@ -289,17 +311,31 @@ ephemeris::BdsEphemeris const* EphemerisEngine::find_bds(SatelliteId    satellit
     if (it == mBdsEphemeris.end()) return nullptr;
     auto& list = it->second;
 
-    auto bds_time = ts::Bdt(time);
-    VERBOSEF("searching: %s", satellite_id.name());
+    auto                           bds_time = ts::Bdt(time);
+    ephemeris::BdsEphemeris const* best     = nullptr;
+    double                         best_dt  = 1e18;
     for (auto& ephemeris : list) {
-        VERBOSEF("  %4u %8.0f %8.0f | %4u %4u |%s", ephemeris.week_number, ephemeris.toe,
-                 ephemeris.toc, ephemeris.lpp_iod, ephemeris.iodc,
-                 ephemeris.is_valid(bds_time) ? " [time]" : "");
         if (!ephemeris.is_valid(bds_time)) continue;
-        VERBOSEF("found: %s", satellite_id.name());
+        double dt = std::fabs(bds_time.time_of_week().full_seconds() - ephemeris.toe);
+        if (dt < best_dt) {
+            best_dt = dt;
+            best    = &ephemeris;
+        }
+    }
+    return best;
+}
+
+ephemeris::GloEphemeris const* EphemerisEngine::find_glo(SatelliteId    satellite_id,
+                                                         ts::Tai const& time) const NOEXCEPT {
+    FUNCTION_SCOPE();
+    auto it = mGloEphemeris.find(satellite_id);
+    if (it == mGloEphemeris.end()) return nullptr;
+    auto& list     = it->second;
+    auto  glo_time = ts::Glo(time);
+    for (auto& ephemeris : list) {
+        if (!ephemeris.is_valid(glo_time)) continue;
         return &ephemeris;
     }
-
     return nullptr;
 }
 
@@ -325,6 +361,12 @@ bool EphemerisEngine::evaluate(SatelliteId satellite_id, ts::Tai const& time,
         result = evaluate_bds(satellite_id, time, relativistic_model, *eph);
         return true;
     }
+    if (satellite_id.is_glonass()) {
+        auto eph = find_glo(satellite_id, time);
+        if (!eph) return false;
+        result = evaluate_glo(satellite_id, time, *eph);
+        return true;
+    }
 
     return false;
 }
@@ -346,6 +388,12 @@ bool EphemerisEngine::find(SatelliteId satellite_id, ts::Tai const& time,
     }
     if (satellite_id.is_beidou()) {
         auto eph = find_bds(satellite_id, time);
+        if (!eph) return false;
+        ephemeris = ephemeris::Ephemeris{*eph};
+        return true;
+    }
+    if (satellite_id.is_glonass()) {
+        auto eph = find_glo(satellite_id, time);
         if (!eph) return false;
         ephemeris = ephemeris::Ephemeris{*eph};
         return true;
@@ -374,24 +422,67 @@ EphemerisEngine::evaluate_gps(SatelliteId satellite_id, ts::Tai const& time,
     return {.id          = satellite_id,
             .position    = {result.position.x, result.position.y, result.position.z},
             .velocity    = {result.velocity.x, result.velocity.y, result.velocity.z},
-            .clock       = result.clock + rc,
+            .clock       = result.clock + rc - group_delay,
             .group_delay = group_delay};
 }
 
 EphemerisEngine::Satellite
-EphemerisEngine::evaluate_gal(SatelliteId, ts::Tai const&, RelativisticModel,
-                              ephemeris::GalEphemeris const&) const NOEXCEPT {
+EphemerisEngine::evaluate_gal(SatelliteId satellite_id, ts::Tai const& time,
+                              RelativisticModel              relativistic_model,
+                              ephemeris::GalEphemeris const& eph) const NOEXCEPT {
     FUNCTION_SCOPE();
-    TODO("implement EphemerisEngine::evaluate_gal()");
-    return {};
+
+    auto gst_time = ts::Gst(time);
+    auto result   = eph.compute(gst_time);
+
+    Scalar rc = 0.0;
+    if (relativistic_model == RelativisticModel::Broadcast) {
+        rc = result.relativistic_correction_brdc;
+    } else if (relativistic_model == RelativisticModel::Dotrv) {
+        rc = result.relativistic_correction_dotrv;
+    }
+
+    return {.id          = satellite_id,
+            .position    = {result.position.x, result.position.y, result.position.z},
+            .velocity    = {result.velocity.x, result.velocity.y, result.velocity.z},
+            .clock       = result.clock + rc - eph.bgd_e1_e5a,
+            .group_delay = eph.bgd_e1_e5a};
 }
 
 EphemerisEngine::Satellite
-EphemerisEngine::evaluate_bds(SatelliteId, ts::Tai const&, RelativisticModel,
-                              ephemeris::BdsEphemeris const&) const NOEXCEPT {
+EphemerisEngine::evaluate_bds(SatelliteId satellite_id, ts::Tai const& time,
+                              RelativisticModel              relativistic_model,
+                              ephemeris::BdsEphemeris const& eph) const NOEXCEPT {
     FUNCTION_SCOPE();
-    TODO("implement EphemerisEngine::evaluate_bds()");
-    return {};
+
+    auto bdt_time = ts::Bdt(time);
+    auto result   = eph.compute(bdt_time);
+
+    Scalar rc = 0.0;
+    if (relativistic_model == RelativisticModel::Broadcast) {
+        rc = result.relativistic_correction_brdc;
+    } else if (relativistic_model == RelativisticModel::Dotrv) {
+        rc = result.relativistic_correction_dotrv;
+    }
+
+    return {.id          = satellite_id,
+            .position    = {result.position.x, result.position.y, result.position.z},
+            .velocity    = {result.velocity.x, result.velocity.y, result.velocity.z},
+            .clock       = result.clock + rc - eph.tgd1,
+            .group_delay = eph.tgd1};
+}
+
+EphemerisEngine::Satellite
+EphemerisEngine::evaluate_glo(SatelliteId satellite_id, ts::Tai const& time,
+                              ephemeris::GloEphemeris const& eph) const NOEXCEPT {
+    FUNCTION_SCOPE();
+    auto glo_time = ts::Glo(time);
+    auto result   = eph.compute(glo_time);
+    return {.id          = satellite_id,
+            .position    = {result.position.x, result.position.y, result.position.z},
+            .velocity    = {result.velocity.x, result.velocity.y, result.velocity.z},
+            .clock       = result.clock,
+            .group_delay = 0.0};
 }
 
 bool EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time,
@@ -410,17 +501,29 @@ bool EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time,
     if (satellite_id.is_galileo()) {
         auto eph = find_gal(satellite_id, time);
         if (eph) {
-            TODO("implement EphemerisEngine::clock_bias()");
+            auto gst_time = ts::Gst(time);
+            clock_bias    = eph->calculate_clock_bias(gst_time);
+            return true;
         }
-
         return false;
     }
     if (satellite_id.is_beidou()) {
         auto eph = find_bds(satellite_id, time);
         if (eph) {
-            TODO("implement EphemerisEngine::clock_bias()");
+            auto bdt_time = ts::Bdt(time);
+            clock_bias    = eph->calculate_clock_bias(bdt_time);
+            return true;
         }
-
+        return false;
+    }
+    if (satellite_id.is_glonass()) {
+        auto eph = find_glo(satellite_id, time);
+        if (eph) {
+            auto glo_time = ts::Glo(time);
+            auto dt       = (glo_time.timestamp() - eph->reference_time.timestamp()).full_seconds();
+            clock_bias    = eph->calculate_clock_bias(dt);
+            return true;
+        }
         return false;
     }
 

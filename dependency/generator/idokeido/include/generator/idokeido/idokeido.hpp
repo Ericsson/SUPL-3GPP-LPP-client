@@ -6,6 +6,7 @@
 #include <time/tai.hpp>
 
 #include <Eigen/Eigen>
+#include <vector>
 
 namespace idokeido {
 
@@ -58,6 +59,16 @@ struct Solution {
         Standard,
     };
 
+    struct SatelliteInfo {
+        SatelliteId id;
+        double      azimuth;      // radians
+        double      elevation;    // radians
+        double      residual;     // meters (pseudorange post-fit)
+        Vector3     sat_pos;      // satellite ECEF position (m)
+        double      sat_clock;    // satellite clock bias (s)
+        double      pseudorange;  // raw pseudorange (m)
+    };
+
     ts::Tai time;
     Status  status;
 
@@ -68,7 +79,8 @@ struct Solution {
     Vector3 position_ecef;
     double  receiver_clock;
 
-    size_t satellite_count;
+    size_t                     satellite_count;
+    std::vector<SatelliteInfo> satellites;
 };
 
 enum class RelativisticModel {
@@ -89,6 +101,11 @@ enum class IonosphericMode {
     Broadcast,
     Dual,
     Ssr,
+};
+
+enum class TroposphericMode {
+    None,
+    Saastamoinen,  // height-only approximation: ZTD = 2.3 * exp(-0.116e-3 * h) / sin(el)
 };
 
 enum class EpochSelection {

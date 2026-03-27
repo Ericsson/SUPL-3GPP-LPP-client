@@ -258,8 +258,11 @@ void PppEngine::predict_filter() NOEXCEPT {
     if (mIdxZtdDry >= 0) Q(mIdxZtdDry, mIdxZtdDry) = mConfiguration.process_noise_ztd_dry;
     if (mIdxZtdWet >= 0) Q(mIdxZtdWet, mIdxZtdWet) = mConfiguration.process_noise_ztd_wet;
 
-    // Ambiguity and iono states: zero process noise (constant)
-    // (they are at indices >= mBaseStateSize, Q is already zero there)
+    // Per-satellite iono states: random walk
+    for (auto const& obs : mObservations) {
+        if (obs.iono_state_idx >= 0)
+            Q(obs.iono_state_idx, obs.iono_state_idx) = mConfiguration.process_noise_iono;
+    }
 
     mFilter.predict(F, Q);
 }
@@ -432,13 +435,14 @@ PppSolution PppEngine::evaluate(ts::Tai time) NOEXCEPT {
         auto f_khz  = m.signal_id.frequency();
         auto f_hz   = f_khz * 1e3;
         auto i_bias = 0.0;
-        if (mConfiguration.ionosphere_mode == PppIonosphereMode::None) {
-            i_bias = 0.0;
-        } else if (mConfiguration.ionosphere_mode == PppIonosphereMode::Ssr && cps) {
+        if (mConfiguration.ionosphere_mode == PppIonosphereMode::Ssr && cps) {
             Scalar poly = 0.0, resid = 0.0;
             cps->ionospheric_polynomial(ground_llh, obs.satellite_id, poly);
             cps->ionospheric_residual(ground_llh, obs.satellite_id, resid);
             i_bias = 40.3e16 * (poly + resid) / (f_hz * f_hz);
+        } else if (mConfiguration.ionosphere_mode == PppIonosphereMode::Estimated &&
+                   obs.iono_state_idx >= 0) {
+            i_bias = mFilter.state(obs.iono_state_idx);
         }
 
         // Troposphere mapping (naive: 1/sin(el))
@@ -464,6 +468,9 @@ PppSolution PppEngine::evaluate(ts::Tai time) NOEXCEPT {
         h_row[static_cast<size_t>(kIdxClk)] = 1.0;
         if (mIdxZtdDry >= 0) h_row[static_cast<size_t>(mIdxZtdDry)] = mapping;
         if (mIdxZtdWet >= 0) h_row[static_cast<size_t>(mIdxZtdWet)] = mapping;
+        if (mConfiguration.ionosphere_mode == PppIonosphereMode::Estimated &&
+            obs.iono_state_idx >= 0)
+            h_row[static_cast<size_t>(obs.iono_state_idx)] = 1.0;
 
         H_rows.push_back(h_row);
         z_vec.push_back(residual);
@@ -487,6 +494,9 @@ PppSolution PppEngine::evaluate(ts::Tai time) NOEXCEPT {
             h_phase[static_cast<size_t>(kIdxClk)] = 1.0;
             if (mIdxZtdDry >= 0) h_phase[static_cast<size_t>(mIdxZtdDry)] = mapping;
             if (mIdxZtdWet >= 0) h_phase[static_cast<size_t>(mIdxZtdWet)] = mapping;
+            if (mConfiguration.ionosphere_mode == PppIonosphereMode::Estimated &&
+                obs.iono_state_idx >= 0)
+                h_phase[static_cast<size_t>(obs.iono_state_idx)] = -1.0;
             h_phase[static_cast<size_t>(obs.ambiguity_state_idx)] = wavelength;
 
             H_rows.push_back(h_phase);

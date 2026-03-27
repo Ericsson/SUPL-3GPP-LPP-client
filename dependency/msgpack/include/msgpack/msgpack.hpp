@@ -79,8 +79,20 @@ private:
     bool msgpack_unpack_impl(msgpack::Unpacker& unpacker, Args&... args) NOEXCEPT {                \
         uint32_t size = 0;                                                                         \
         if (!unpacker.unpack_array_header(size)) return false;                                     \
-        if (size != sizeof...(args)) return false;                                                 \
-        return msgpack_unpack_each(unpacker, args...);                                             \
+        if (size > sizeof...(args)) return false;                                                  \
+        return msgpack_unpack_n(unpacker, size, args...);                                          \
+    }                                                                                              \
+    template <typename T>                                                                          \
+    bool msgpack_unpack_n(msgpack::Unpacker& unpacker, uint32_t n, T& value) NOEXCEPT {            \
+        if (n == 0) return true;                                                                   \
+        return msgpack::unpack(unpacker, value);                                                   \
+    }                                                                                              \
+    template <typename T, typename... Args>                                                        \
+    bool msgpack_unpack_n(msgpack::Unpacker& unpacker, uint32_t n, T& value, Args&... args)        \
+        NOEXCEPT {                                                                                 \
+        if (n == 0) return true;                                                                   \
+        if (!msgpack::unpack(unpacker, value)) return false;                                       \
+        return msgpack_unpack_n(unpacker, n - 1, args...);                                         \
     }                                                                                              \
     template <typename T>                                                                          \
     void msgpack_pack_each(msgpack::Packer& packer, const T& value) const NOEXCEPT {               \
@@ -91,15 +103,6 @@ private:
         const NOEXCEPT {                                                                           \
         msgpack::pack(packer, value);                                                              \
         msgpack_pack_each(packer, args...);                                                        \
-    }                                                                                              \
-    template <typename T>                                                                          \
-    bool msgpack_unpack_each(msgpack::Unpacker& unpacker, T& value) NOEXCEPT {                     \
-        return msgpack::unpack(unpacker, value);                                                   \
-    }                                                                                              \
-    template <typename T, typename... Args>                                                        \
-    bool msgpack_unpack_each(msgpack::Unpacker& unpacker, T& value, Args&... args) NOEXCEPT {      \
-        if (!msgpack::unpack(unpacker, value)) return false;                                       \
-        return msgpack_unpack_each(unpacker, args...);                                             \
     }
 
 inline void pack(Packer& packer, bool value) NOEXCEPT {

@@ -2,6 +2,7 @@ asn/src
 asn1c
 bin
 build
+/build-*
 logs
 output.txt
 generated_files
@@ -17,3 +18,5 @@ docker/venv/
 plans
 AGENTS.md
 .kiro
+/results
+/igs_data

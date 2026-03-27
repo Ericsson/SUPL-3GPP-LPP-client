@@ -48,6 +48,8 @@ struct BdsEphemeris {
     double omega_dot;
     double idot;
 
+    double tgd1;  // Group delay differential B1/B3 (seconds)
+
     NODISCARD bool is_valid(ts::Bdt const& time) const NOEXCEPT;
     NODISCARD bool match(BdsEphemeris const& other) const NOEXCEPT {
         if (prn != other.prn) return false;
@@ -91,7 +93,7 @@ struct BdsEphemeris {
 
     MSGPACK_DEFINE(prn, week_number, sv_health, lpp_iod, iode, iodc, aode, aodc, toc, toe, af2, af1,
                    af0, crc, crs, cuc, cus, cic, cis, e, m0, delta_n, a, i0, omega0, omega,
-                   omega_dot, idot)
+                   omega_dot, idot, tgd1)
 };
 
 }  // namespace ephemeris

@@ -40,6 +40,8 @@ struct GalEphemeris {
     double omega_dot;
     double idot;
 
+    double bgd_e1_e5a;  // Broadcast Group Delay E1-E5a (seconds)
+
     NODISCARD bool is_valid(ts::Gst const& time) const NOEXCEPT;
     NODISCARD bool match(GalEphemeris const& other) const NOEXCEPT {
         if (prn != other.prn) return false;
@@ -76,7 +78,7 @@ struct GalEphemeris {
     NODISCARD double calculate_relativistic_correction_idc(double e_k) const NOEXCEPT;
 
     MSGPACK_DEFINE(prn, week_number, lpp_iod, iod_nav, toc, toe, af2, af1, af0, crc, crs, cuc, cus,
-                   cic, cis, e, m0, delta_n, a, i0, omega0, omega, omega_dot, idot)
+                   cic, cis, e, m0, delta_n, a, i0, omega0, omega, omega_dot, idot, bgd_e1_e5a)
 };
 
 }  // namespace ephemeris

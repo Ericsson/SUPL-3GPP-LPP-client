@@ -85,16 +85,17 @@ bool satellite_position(SatelliteId id, ts::Tai receive_time, Scalar pseudo_rang
     case RelativisticModel::Dotrv: rc = eph.relativistic_correction_dotrv; break;
     }
 
-    result.id              = id;
-    result.transmit_time   = t;
-    result.receive_time    = receive_time;
-    result.eph_position    = {eph.position.x, eph.position.y, eph.position.z};
-    result.eph_velocity    = {eph.velocity.x, eph.velocity.y, eph.velocity.z};
-    result.eph_clock_bias  = eph.clock + rc;
-    result.group_delay     = 0.0;
-    result.true_position   = {eph.position.x, eph.position.y, eph.position.z};
-    result.true_velocity   = {eph.position.x, eph.position.y, eph.position.z};
-    result.true_clock_bias = eph.clock + rc;
+    result.id             = id;
+    result.transmit_time  = t;
+    result.receive_time   = receive_time;
+    result.eph_position   = {eph.position.x, eph.position.y, eph.position.z};
+    result.eph_velocity   = {eph.velocity.x, eph.velocity.y, eph.velocity.z};
+    result.eph_clock_bias = eph.clock + rc;
+    result.group_delay    = 0.0;
+    result.true_position  = {eph.position.x, eph.position.y, eph.position.z};
+    result.true_velocity  = {eph.position.x, eph.position.y, eph.position.z};
+    // Apply group delay (TGD/BGD) for single-frequency users
+    result.true_clock_bias = eph.clock + rc - ephemeris.group_delay();
 
     if (orbit_correction) {
         result.true_position =

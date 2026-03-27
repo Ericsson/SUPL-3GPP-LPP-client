@@ -2,6 +2,7 @@
 #include <core/core.hpp>
 #include <ephemeris/bds.hpp>
 #include <ephemeris/gal.hpp>
+#include <ephemeris/glo.hpp>
 #include <ephemeris/gps.hpp>
 #include <ephemeris/qzs.hpp>
 #include <ephemeris/result.hpp>
@@ -23,6 +24,7 @@ public:
         GAL,
         BDS,
         QZS,
+        GLO,
     };
 
     Ephemeris() NOEXCEPT : mType(Type::NONE) {}
@@ -34,6 +36,8 @@ public:
                                                                  bds_ephemeris(ephemeris) {}
     EXPLICIT Ephemeris(QzsEphemeris const& ephemeris) NOEXCEPT : mType(Type::QZS),
                                                                  qzs_ephemeris(ephemeris) {}
+    EXPLICIT Ephemeris(GloEphemeris const& ephemeris) NOEXCEPT : mType(Type::GLO),
+                                                                 glo_ephemeris(ephemeris) {}
 
     /// Issue of Data as defined by 3GPP LPP
     NODISCARD uint16_t iod() const NOEXCEPT {
@@ -43,6 +47,7 @@ public:
         case Type::GAL: return gal_ephemeris.lpp_iod;
         case Type::BDS: return bds_ephemeris.lpp_iod;
         case Type::QZS: return qzs_ephemeris.lpp_iod;
+        case Type::GLO: return glo_ephemeris.lpp_iod;
         }
         CORE_UNREACHABLE();
     }
@@ -54,6 +59,7 @@ public:
         case Type::GAL: return gal_ephemeris.iod_nav;
         case Type::BDS: return bds_ephemeris.iode;
         case Type::QZS: return qzs_ephemeris.iode;
+        case Type::GLO: return glo_ephemeris.lpp_iod;
         }
         CORE_UNREACHABLE();
     }
@@ -65,6 +71,7 @@ public:
         case Type::GAL: return gal_ephemeris.iod_nav;
         case Type::BDS: return bds_ephemeris.iodc;
         case Type::QZS: return qzs_ephemeris.iodc;
+        case Type::GLO: return glo_ephemeris.lpp_iod;
         }
         CORE_UNREACHABLE();
     }
@@ -76,6 +83,7 @@ public:
         case Type::GAL: return gal_ephemeris.is_valid(ts::Gst{time});
         case Type::BDS: return bds_ephemeris.is_valid(ts::Bdt{time});
         case Type::QZS: return qzs_ephemeris.is_valid(ts::Gps{time});
+        case Type::GLO: return glo_ephemeris.is_valid(ts::Glo{time});
         }
         CORE_UNREACHABLE();
     }
@@ -87,6 +95,7 @@ public:
         case Type::GAL: return gal_ephemeris.compute(ts::Gst{time});
         case Type::BDS: return bds_ephemeris.compute(ts::Bdt{time});
         case Type::QZS: return qzs_ephemeris.compute(ts::Gps{time});
+        case Type::GLO: return glo_ephemeris.compute(ts::Glo{time});
         }
         CORE_UNREACHABLE();
     }
@@ -98,6 +107,24 @@ public:
         case Type::GAL: return gal_ephemeris.calculate_clock_bias(ts::Gst{time});
         case Type::BDS: return bds_ephemeris.calculate_clock_bias(ts::Bdt{time});
         case Type::QZS: return qzs_ephemeris.calculate_clock_bias(ts::Gps{time});
+        case Type::GLO: {
+            auto glo_time = ts::Glo{time};
+            auto dt =
+                (glo_time.timestamp() - glo_ephemeris.reference_time.timestamp()).full_seconds();
+            return glo_ephemeris.calculate_clock_bias(dt);
+        }
+        }
+        CORE_UNREACHABLE();
+    }
+
+    NODISCARD double group_delay() const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0.0;
+        case Type::GPS: return gps_ephemeris.calculate_group_delay();
+        case Type::GAL: return gal_ephemeris.bgd_e1_e5a;
+        case Type::BDS: return bds_ephemeris.tgd1;
+        case Type::QZS: return qzs_ephemeris.calculate_group_delay();
+        case Type::GLO: return 0.0;
         }
         CORE_UNREACHABLE();
     }
@@ -110,6 +137,7 @@ public:
         case Type::GAL: return gal_ephemeris.calculate_relativistic_correction(position, velocity);
         case Type::BDS: return bds_ephemeris.calculate_relativistic_correction(position, velocity);
         case Type::QZS: return qzs_ephemeris.calculate_relativistic_correction(position, velocity);
+        case Type::GLO: return glo_ephemeris.calculate_relativistic_correction(position, velocity);
         }
         CORE_UNREACHABLE();
     }
@@ -123,6 +151,7 @@ public:
         GalEphemeris gal_ephemeris;
         BdsEphemeris bds_ephemeris;
         QzsEphemeris qzs_ephemeris;
+        GloEphemeris glo_ephemeris;
     };
 };
 

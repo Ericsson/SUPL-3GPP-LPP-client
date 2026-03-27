@@ -2,6 +2,7 @@
 
 #include <loglet/loglet.hpp>
 #include <time/bdt.hpp>
+#include <time/glo.hpp>
 #include <time/gps.hpp>
 #include <time/gst.hpp>
 #include <time/utc.hpp>
@@ -159,8 +160,13 @@ static bool parse_gal(std::ifstream& f, std::string const& line0, ephemeris::Gal
     eph.omega_dot = field(l[3], 61);
 
     // Broadcast orbit 5
-    eph.idot        = field(l[4], 4);
-    eph.week_number = static_cast<uint16_t>(field(l[4], 42));
+    eph.idot = field(l[4], 4);
+    // Derive GST week from the parsed calendar date (robust against GPS/GST week offset and
+    // rollover)
+    eph.week_number = static_cast<uint16_t>(toc_gst.week());
+
+    // Broadcast orbit 6: SISA, health, BGD E5a/E1, BGD E5b/E1
+    eph.bgd_e1_e5a = field(l[5], 42);
 
     // lpp_iod: use iod_nav
     eph.lpp_iod = eph.iod_nav;
@@ -222,15 +228,64 @@ static bool parse_bds(std::ifstream& f, std::string const& line0, ephemeris::Bds
     eph.omega_dot = field(l[3], 61);
 
     // Broadcast orbit 5
-    eph.idot        = field(l[4], 4);
-    eph.week_number = static_cast<uint16_t>(field(l[4], 42));
+    eph.idot = field(l[4], 4);
+    // Derive BDT week from the parsed calendar date (robust against GPS/BDT week offset and
+    // rollover)
+    eph.week_number = static_cast<uint16_t>(toc_bdt.week());
 
     // Broadcast orbit 6
     eph.sv_health = static_cast<uint8_t>(field(l[5], 23));
+    eph.tgd1      = field(l[5], 42);
     eph.iode      = static_cast<uint8_t>(eph.aode);
     eph.iodc      = static_cast<uint8_t>(field(l[5], 61));
 
     eph.lpp_iod = eph.iode;
+
+    return true;
+}
+
+static bool parse_glo(std::ifstream& f, std::string const& line0, ephemeris::GloEphemeris& eph) {
+    int    prn, year, month, day, hour, min;
+    double sec;
+    if (std::sscanf(line0.c_str(), "R%2d %4d %2d %2d %2d %2d %lf", &prn, &year, &month, &day, &hour,
+                    &min, &sec) < 7)
+        return false;
+
+    // Header: -tau_n, gamma_n, message frame time
+    double minus_tau_n = field(line0, 23);
+    double gamma_n     = field(line0, 42);
+
+    std::string l[3];
+    for (int i = 0; i < 3; ++i) {
+        if (!std::getline(f, l[i])) return false;
+    }
+
+    eph                = {};
+    eph.slot_number    = static_cast<uint8_t>(prn);
+    eph.tau_n          = -minus_tau_n;
+    eph.gamma_n        = gamma_n;
+    eph.reference_time = ts::Glo{ts::Utc::from_date_time(year, month, day, hour, min, sec)};
+
+    // Broadcast orbit 1: X position (km), X velocity (km/s), X acceleration (km/s²), health
+    eph.position.x     = field(l[0], 4);
+    eph.velocity.x     = field(l[0], 23);
+    eph.acceleration.x = field(l[0], 42);
+    eph.health         = static_cast<uint8_t>(field(l[0], 61));
+
+    // Broadcast orbit 2: Y
+    eph.position.y       = field(l[1], 4);
+    eph.velocity.y       = field(l[1], 23);
+    eph.acceleration.y   = field(l[1], 42);
+    eph.frequency_number = static_cast<int8_t>(field(l[1], 61));
+
+    // Broadcast orbit 3: Z
+    eph.position.z     = field(l[2], 4);
+    eph.velocity.z     = field(l[2], 23);
+    eph.acceleration.z = field(l[2], 42);
+    eph.age            = static_cast<uint8_t>(field(l[2], 61));
+
+    eph.lpp_iod = static_cast<uint16_t>(
+        static_cast<uint64_t>(eph.reference_time.timestamp().full_seconds() / 900) % 65536);
 
     return true;
 }
@@ -242,10 +297,39 @@ bool parse_nav(std::string const& path, NavCallbacks const& callbacks) NOEXCEPT 
         return false;
     }
 
-    // Skip header
+    // Parse header
     std::string line;
+    double      alpha[4]{}, beta[4]{};
+    double      bds_alpha[4]{}, bds_beta[4]{};
+    bool        has_alpha = false, has_beta = false;
+    bool        has_bds_alpha = false, has_bds_beta = false;
     while (std::getline(f, line)) {
         if (line.find("END OF HEADER") != std::string::npos) break;
+        if (line.find("IONOSPHERIC CORR") != std::string::npos) {
+            if (line.substr(0, 4) == "GPSA") {
+                for (int i = 0; i < 4; ++i)
+                    alpha[i] = field(line, 5 + i * 12, 12);
+                has_alpha = true;
+            } else if (line.substr(0, 4) == "GPSB") {
+                for (int i = 0; i < 4; ++i)
+                    beta[i] = field(line, 5 + i * 12, 12);
+                has_beta = true;
+            } else if (line.substr(0, 4) == "BDSA") {
+                for (int i = 0; i < 4; ++i)
+                    bds_alpha[i] = field(line, 5 + i * 12, 12);
+                has_bds_alpha = true;
+            } else if (line.substr(0, 4) == "BDSB") {
+                for (int i = 0; i < 4; ++i)
+                    bds_beta[i] = field(line, 5 + i * 12, 12);
+                has_bds_beta = true;
+            }
+        }
+    }
+    if (has_alpha && has_beta && callbacks.klobuchar) {
+        callbacks.klobuchar(alpha, beta);
+    }
+    if (has_bds_alpha && has_bds_beta && callbacks.bds_klobuchar) {
+        callbacks.bds_klobuchar(bds_alpha, bds_beta);
     }
 
     long count = 0;
@@ -263,6 +347,12 @@ bool parse_nav(std::string const& path, NavCallbacks const& callbacks) NOEXCEPT 
             ephemeris::GalEphemeris eph{};
             if (parse_gal(f, line, eph)) {
                 callbacks.gal(eph);
+                count++;
+            }
+        } else if (sys == 'R' && callbacks.glo) {
+            ephemeris::GloEphemeris eph{};
+            if (parse_glo(f, line, eph)) {
+                callbacks.glo(eph);
                 count++;
             }
         } else if (sys == 'C' && callbacks.bds) {

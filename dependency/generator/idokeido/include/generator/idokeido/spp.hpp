@@ -17,6 +17,7 @@ namespace idokeido {
 struct SppConfiguration {
     RelativisticModel relativistic_model;
     IonosphericMode   ionospheric_mode;
+    TroposphericMode  tropospheric_mode;
     WeightFunction    weight_function;
     EpochSelection    epoch_selection;
 
@@ -32,6 +33,10 @@ struct SppConfiguration {
     Scalar elevation_cutoff;
     Scalar snr_cutoff;
     Scalar outlier_cutoff;
+
+    // Variance weight model: σ = sigma_a + sigma_b / sin(el), weight = 1/σ²
+    Scalar sigma_a;
+    Scalar sigma_b;
 
     bool reject_cycle_slip;
     bool reject_halfcycle_slip;
@@ -92,6 +97,7 @@ public:
     ~SppEngine();
 
     void klobuchar_model(KlobucharModelParameters const& parameters) NOEXCEPT;
+    void bds_klobuchar_model(KlobucharModelParameters const& parameters) NOEXCEPT;
 
     /// Add an observation
     void add_measurement(RawMeasurement const& measurment) NOEXCEPT;
@@ -125,6 +131,8 @@ private:
 
     KlobucharModelParameters mKlobucharModel;
     bool                     mKlobucharModelSet;
+    KlobucharModelParameters mBdsKlobucharModel;
+    bool                     mBdsKlobucharModelSet;
 };
 
 }  // namespace idokeido
