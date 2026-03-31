@@ -714,6 +714,8 @@ char const* SignalId::name() const {
         return gGalileoNames[id].c_str();
     } else if (mGnss == Gnss::BEIDOU) {
         return gBdsNames[id].c_str();
+    } else if (mGnss == Gnss::QZSS) {
+        return gGpsNames[id].c_str();  // QZSS signal names match GPS
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE

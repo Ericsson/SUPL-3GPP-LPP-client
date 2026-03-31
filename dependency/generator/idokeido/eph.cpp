@@ -158,10 +158,6 @@ void EphemerisEngine::add(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 200) {
-        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
-        list.erase(list.begin());
-    }
 
     list.push_back(ephemeris);
     std::sort(list.begin(), list.end(),
@@ -192,10 +188,6 @@ void EphemerisEngine::add(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 200) {
-        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
-        list.erase(list.begin());
-    }
 
     list.push_back(ephemeris);
     std::sort(list.begin(), list.end(),
@@ -226,10 +218,6 @@ void EphemerisEngine::add(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 200) {
-        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
-        list.erase(list.begin());
-    }
 
     list.push_back(ephemeris);
     std::sort(list.begin(), list.end(),
@@ -252,12 +240,32 @@ void EphemerisEngine::add(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT {
     for (auto& eph : list) {
         if (eph.match(ephemeris)) return;
     }
-    if (list.size() >= 200) list.erase(list.begin());
+
     list.push_back(ephemeris);
     std::sort(list.begin(), list.end(),
               [](ephemeris::GloEphemeris const& a, ephemeris::GloEphemeris const& b) {
                   return a.compare(b);
               });
+}
+
+void EphemerisEngine::add(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
+    char buf[8];
+    std::snprintf(buf, sizeof(buf), "J%02u", ephemeris.prn);
+    auto satellite_id = SatelliteId::from_string(buf);
+    if (!satellite_id.is_valid()) return;
+
+    auto& list = mQzsEphemeris[satellite_id];
+    for (auto& eph : list) {
+        if (eph.match(ephemeris)) return;
+    }
+
+    list.push_back(ephemeris);
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::QzsEphemeris const& a, ephemeris::QzsEphemeris const& b) {
+                  return a.compare(b);
+              });
+    save_cache();
 }
 
 ephemeris::GpsEphemeris const* EphemerisEngine::find_gps(SatelliteId    satellite_id,
@@ -339,6 +347,20 @@ ephemeris::GloEphemeris const* EphemerisEngine::find_glo(SatelliteId    satellit
     return nullptr;
 }
 
+ephemeris::QzsEphemeris const* EphemerisEngine::find_qzs(SatelliteId    satellite_id,
+                                                         ts::Tai const& time) const NOEXCEPT {
+    FUNCTION_SCOPE();
+    auto it = mQzsEphemeris.find(satellite_id);
+    if (it == mQzsEphemeris.end()) return nullptr;
+    auto& list     = it->second;
+    auto  gps_time = ts::Gps(time);
+    for (auto& ephemeris : list) {
+        if (!ephemeris.is_valid(gps_time)) continue;
+        return &ephemeris;
+    }
+    return nullptr;
+}
+
 bool EphemerisEngine::evaluate(SatelliteId satellite_id, ts::Tai const& time,
                                RelativisticModel relativistic_model,
                                Satellite&        result) const NOEXCEPT {
@@ -365,6 +387,12 @@ bool EphemerisEngine::evaluate(SatelliteId satellite_id, ts::Tai const& time,
         auto eph = find_glo(satellite_id, time);
         if (!eph) return false;
         result = evaluate_glo(satellite_id, time, *eph);
+        return true;
+    }
+    if (satellite_id.is_qzss()) {
+        auto eph = find_qzs(satellite_id, time);
+        if (!eph) return false;
+        result = evaluate_qzs(satellite_id, time, relativistic_model, *eph);
         return true;
     }
 
@@ -394,6 +422,12 @@ bool EphemerisEngine::find(SatelliteId satellite_id, ts::Tai const& time,
     }
     if (satellite_id.is_glonass()) {
         auto eph = find_glo(satellite_id, time);
+        if (!eph) return false;
+        ephemeris = ephemeris::Ephemeris{*eph};
+        return true;
+    }
+    if (satellite_id.is_qzss()) {
+        auto eph = find_qzs(satellite_id, time);
         if (!eph) return false;
         ephemeris = ephemeris::Ephemeris{*eph};
         return true;
@@ -485,6 +519,26 @@ EphemerisEngine::evaluate_glo(SatelliteId satellite_id, ts::Tai const& time,
             .group_delay = 0.0};
 }
 
+EphemerisEngine::Satellite
+EphemerisEngine::evaluate_qzs(SatelliteId satellite_id, ts::Tai const& time,
+                              RelativisticModel              relativistic_model,
+                              ephemeris::QzsEphemeris const& eph) const NOEXCEPT {
+    FUNCTION_SCOPE();
+    auto   gps_time    = ts::Gps(time);
+    auto   result      = eph.compute(gps_time);
+    auto   group_delay = eph.calculate_group_delay();
+    Scalar rc          = 0.0;
+    if (relativistic_model == RelativisticModel::Broadcast)
+        rc = result.relativistic_correction_brdc;
+    else if (relativistic_model == RelativisticModel::Dotrv)
+        rc = result.relativistic_correction_dotrv;
+    return {.id          = satellite_id,
+            .position    = {result.position.x, result.position.y, result.position.z},
+            .velocity    = {result.velocity.x, result.velocity.y, result.velocity.z},
+            .clock       = result.clock + rc,
+            .group_delay = group_delay};
+}
+
 bool EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time,
                                  Scalar& clock_bias) const NOEXCEPT {
     FUNCTION_SCOPE();
@@ -522,6 +576,15 @@ bool EphemerisEngine::clock_bias(SatelliteId satellite_id, ts::Tai const& time,
             auto glo_time = ts::Glo(time);
             auto dt       = (glo_time.timestamp() - eph->reference_time.timestamp()).full_seconds();
             clock_bias    = eph->calculate_clock_bias(dt);
+            return true;
+        }
+        return false;
+    }
+    if (satellite_id.is_qzss()) {
+        auto eph = find_qzs(satellite_id, time);
+        if (eph) {
+            auto gps_time = ts::Gps(time);
+            clock_bias    = eph->calculate_clock_bias(gps_time);
             return true;
         }
         return false;

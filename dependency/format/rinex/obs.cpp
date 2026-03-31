@@ -63,6 +63,14 @@ static SignalId signal_from_rinex(char sys, std::string const& code) {
         if (code == "7I") return SignalId::BEIDOU_B2_I;
         if (code == "7Q") return SignalId::BEIDOU_B2_Q;
         if (code == "7X") return SignalId::BEIDOU_B2_I_Q;
+    } else if (sys == 'J') {
+        if (code == "1C") return SignalId::QZSS_L1_CA;
+        if (code == "1X") return SignalId::QZSS_L1C_D_P;
+        if (code == "1Z") return SignalId::QZSS_L1C_D_P;
+        if (code == "2X") return SignalId::QZSS_L2C_M_L;
+        if (code == "5I") return SignalId::QZSS_L5_I;
+        if (code == "5Q") return SignalId::QZSS_L5_Q;
+        if (code == "5X") return SignalId::QZSS_L5_I_Q;
     }
     return SignalId{};
 }

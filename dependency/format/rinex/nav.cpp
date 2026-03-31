@@ -290,6 +290,58 @@ static bool parse_glo(std::ifstream& f, std::string const& line0, ephemeris::Glo
     return true;
 }
 
+static bool parse_qzs(std::ifstream& f, std::string const& line0, ephemeris::QzsEphemeris& eph) {
+    int    prn, year, month, day, hour, min;
+    double sec;
+    if (std::sscanf(line0.c_str(), "J%2d %4d %2d %2d %2d %2d %lf", &prn, &year, &month, &day, &hour,
+                    &min, &sec) < 7)
+        return false;
+
+    double af0 = field(line0, 23);
+    double af1 = field(line0, 42);
+    double af2 = field(line0, 61);
+
+    std::string l[7];
+    for (int i = 0; i < 7; ++i) {
+        if (!std::getline(f, l[i])) return false;
+    }
+
+    eph     = {};
+    eph.prn = static_cast<uint8_t>(prn);
+    eph.af0 = af0;
+    eph.af1 = af1;
+    eph.af2 = af2;
+
+    auto toc_gps = ts::Gps::from_ymdhms(year, month, day, hour, min, sec);
+    eph.toc      = toc_gps.time_of_week().as_double();
+    eph.iode     = static_cast<uint8_t>(field(l[0], 4));
+    eph.crs      = field(l[0], 23);
+    eph.delta_n  = field(l[0], 42);
+    eph.m0       = field(l[0], 61);
+    eph.cuc      = field(l[1], 4);
+    eph.e        = field(l[1], 23);
+    eph.cus      = field(l[1], 42);
+    eph.a        = field(l[1], 61);
+    eph.a *= eph.a;
+    eph.toe         = field(l[2], 4);
+    eph.cic         = field(l[2], 23);
+    eph.omega0      = field(l[2], 42);
+    eph.cis         = field(l[2], 61);
+    eph.i0          = field(l[3], 4);
+    eph.crc         = field(l[3], 23);
+    eph.omega       = field(l[3], 42);
+    eph.omega_dot   = field(l[3], 61);
+    eph.idot        = field(l[4], 4);
+    eph.week_number = static_cast<uint16_t>(field(l[4], 42));
+    eph.ura_index   = static_cast<uint8_t>(field(l[5], 4));
+    eph.sv_health   = static_cast<uint8_t>(field(l[5], 23));
+    eph.tgd         = field(l[5], 42);
+    eph.iodc        = static_cast<uint16_t>(field(l[5], 61));
+    eph.lpp_iod     = eph.iodc & 0xFF;
+
+    return true;
+}
+
 bool parse_nav(std::string const& path, NavCallbacks const& callbacks) NOEXCEPT {
     std::ifstream f(path);
     if (!f.is_open()) {
@@ -361,11 +413,26 @@ bool parse_nav(std::string const& path, NavCallbacks const& callbacks) NOEXCEPT 
                 callbacks.bds(eph);
                 count++;
             }
+        } else if (sys == 'J' && callbacks.qzs) {
+            ephemeris::QzsEphemeris eph{};
+            if (parse_qzs(f, line, eph)) {
+                callbacks.qzs(eph);
+                count++;
+            }
         }
     }
 
     INFOF("parsed %ld nav records from %s", count, path.c_str());
     return true;
+}
+
+bool parse_nav_files(std::vector<std::string> const& paths,
+                     NavCallbacks const&             callbacks) NOEXCEPT {
+    bool ok = true;
+    for (auto const& p : paths) {
+        if (!parse_nav(p, callbacks)) ok = false;
+    }
+    return ok;
 }
 
 }  // namespace rinex

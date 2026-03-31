@@ -27,6 +27,7 @@ public:
     void add(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void add(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
     void add(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT;
+    void add(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
 
     struct Satellite {
         SatelliteId     id;
@@ -56,6 +57,8 @@ protected:
                                             ts::Tai const& time) const NOEXCEPT;
     ephemeris::GloEphemeris const* find_glo(SatelliteId    satellite_id,
                                             ts::Tai const& time) const NOEXCEPT;
+    ephemeris::QzsEphemeris const* find_qzs(SatelliteId    satellite_id,
+                                            ts::Tai const& time) const NOEXCEPT;
 
     Satellite evaluate_gps(SatelliteId satellite_id, ts::Tai const& time,
                            RelativisticModel              relativistic_model,
@@ -68,12 +71,16 @@ protected:
                            ephemeris::BdsEphemeris const& eph) const NOEXCEPT;
     Satellite evaluate_glo(SatelliteId satellite_id, ts::Tai const& time,
                            ephemeris::GloEphemeris const& eph) const NOEXCEPT;
+    Satellite evaluate_qzs(SatelliteId satellite_id, ts::Tai const& time,
+                           RelativisticModel              relativistic_model,
+                           ephemeris::QzsEphemeris const& eph) const NOEXCEPT;
 
 private:
     std::unordered_map<SatelliteId, std::vector<ephemeris::GpsEphemeris>> mGpsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::GloEphemeris>> mGloEphemeris;
+    std::unordered_map<SatelliteId, std::vector<ephemeris::QzsEphemeris>> mQzsEphemeris;
     std::unique_ptr<std::string>                                          mCacheFile;
 };
 

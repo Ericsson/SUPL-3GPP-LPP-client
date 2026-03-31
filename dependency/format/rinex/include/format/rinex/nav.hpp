@@ -4,9 +4,11 @@
 #include <ephemeris/gal.hpp>
 #include <ephemeris/glo.hpp>
 #include <ephemeris/gps.hpp>
+#include <ephemeris/qzs.hpp>
 
 #include <functional>
 #include <string>
+#include <vector>
 
 namespace format {
 namespace rinex {
@@ -16,11 +18,15 @@ struct NavCallbacks {
     std::function<void(ephemeris::GalEphemeris const&)> gal;
     std::function<void(ephemeris::BdsEphemeris const&)> bds;
     std::function<void(ephemeris::GloEphemeris const&)> glo;
+    std::function<void(ephemeris::QzsEphemeris const&)> qzs;
     std::function<void(double[4], double[4])>           klobuchar;      // GPS alpha[4], beta[4]
     std::function<void(double[4], double[4])>           bds_klobuchar;  // BDS alpha[4], beta[4]
 };
 
 bool parse_nav(std::string const& path, NavCallbacks const& callbacks) NOEXCEPT;
+
+/// Load multiple nav files (e.g. multi-day datasets). Calls parse_nav for each.
+bool parse_nav_files(std::vector<std::string> const& paths, NavCallbacks const& callbacks) NOEXCEPT;
 
 }  // namespace rinex
 }  // namespace format

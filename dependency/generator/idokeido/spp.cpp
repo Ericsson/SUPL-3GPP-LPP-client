@@ -38,6 +38,25 @@ SppEngine::SppEngine(SppConfiguration configuration, EphemerisEngine& ephemeris_
 
     mKlobucharModelSet    = false;
     mBdsKlobucharModelSet = false;
+    mFilterInitialized    = false;
+    mLastEpochTimeSet     = false;
+
+    // Assign ISB state indices. GPS is reference if enabled, else first enabled system.
+    // Reference constellation gets index -1 (uses kIdxClk directly).
+    auto& g       = mConfiguration.gnss;
+    bool  gps_ref = g.gps;
+    bool  gal_ref = !gps_ref && g.gal;
+    bool  glo_ref = !gps_ref && !gal_ref && g.glo;
+    bool  bds_ref = !gps_ref && !gal_ref && !glo_ref && g.bds;
+
+    long next_isb = 4;
+    mIsbGps       = (g.gps && !gps_ref) ? next_isb++ : -1;
+    mIsbGal       = (g.gal && !gal_ref) ? next_isb++ : -1;
+    mIsbGlo       = (g.glo && !glo_ref) ? next_isb++ : -1;
+    mIsbBds       = (g.bds && !bds_ref) ? next_isb++ : -1;
+    // QZSS uses GPS time and is steered to GPS — treat as GPS-compatible, no ISB needed
+    mIsbQzs     = -1;
+    mBaseStates = next_isb;
 }
 
 SppEngine::~SppEngine() {
@@ -71,6 +90,7 @@ void SppEngine::add_measurement(RawMeasurement const& raw) NOEXCEPT {
     if (!mConfiguration.gnss.glo && raw.satellite_id.is_glonass()) return;
     if (!mConfiguration.gnss.gal && raw.satellite_id.is_galileo()) return;
     if (!mConfiguration.gnss.bds && raw.satellite_id.is_beidou()) return;
+    if (!mConfiguration.gnss.qzs && raw.satellite_id.is_qzss()) return;
 
     auto satellite_id = raw.satellite_id.absolute_id();
     auto signal_id    = absolute_signal_id(raw.satellite_id, raw.signal_id);
@@ -189,6 +209,10 @@ void SppEngine::select_best_observations(ts::Tai const& time) {
             if (measurement.signal_id == SignalId::GALILEO_E1_C_NO_DATA) continue;
             if (measurement.signal_id == SignalId::BEIDOU_B1_I) continue;
             if (measurement.signal_id == SignalId::GLONASS_G1_CA) continue;
+            if (measurement.signal_id == SignalId::QZSS_L1_CA) continue;
+            if (measurement.signal_id == SignalId::QZSS_L1C_D) continue;
+            if (measurement.signal_id == SignalId::QZSS_L1C_P) continue;
+            if (measurement.signal_id == SignalId::QZSS_L1C_D_P) continue;
 
             WARNF("unsupported signal: %03ld:%04ld %s %s: %s %s", i, j,
                   observation.satellite_id.name(), measurement.signal_id.name(),
@@ -333,8 +357,8 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
     // We can only solve if we have enough satellites
     auto satellite_count = mObservationMask.count();
-    if (satellite_count < 4) {
-        WARNF("not enough satellites: %d < 4", satellite_count);
+    if (static_cast<long>(satellite_count) < mBaseStates) {
+        WARNF("not enough satellites: %zu < %ld", satellite_count, mBaseStates);
         return Solution{};
     }
 
@@ -363,13 +387,23 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
     }
 #endif
 
-    // Initial guess position: (0,0,0), receiver bias: 0, this will _always_ converge to the
-    // correct solution (if possible)
-    Vector4 current = {0, 0, 0, 0};
+    // Initial guess: [X, Y, Z, clk, ISB...]
+    VectorX current = VectorX::Zero(mBaseStates);
+
+    // If filter is active, predict and use filter state as initial guess
+    bool use_filter = mConfiguration.filter_mode != FilterMode::None;
+    if (use_filter) {
+        if (mFilterInitialized) {
+            predict_filter(time);
+            for (long k = 0; k < mBaseStates; ++k)
+                current(k) = mFilter.state(k);
+        }
+    }
 
     MatrixX residuals{satellite_count, 1};
-    MatrixX design_matrix{satellite_count, 4};
+    MatrixX design_matrix{satellite_count, mBaseStates};
     VectorX weights{satellite_count};
+    MatrixX last_dTd = MatrixX::Identity(mBaseStates, mBaseStates);  // for DOP
 
     // Per-epoch outlier exclusion mask (index = observation index in mObservations)
     std::bitset<SATELLITE_ID_MAX> outlier_mask;
@@ -381,7 +415,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
     // Outer loop: outlier detection and exclusion (RAIM-FDE style)
     for (size_t raim_it = 0; raim_it < 8; ++raim_it) {
-        current = {0, 0, 0, 0};
+        current.setZero();
 
         // Saved from last LS iteration for RAIM
         std::vector<size_t> row_to_sat;
@@ -390,7 +424,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         for (size_t it = 0; it < 10; ++it) {
             // Compute the geometric range to the guess
 
-            auto ground_position = current.head<3>();
+            auto ground_position = current.head(3);
             auto ground_llh      = ecef_to_llh(ground_position, ellipsoid::WGS84);
 
             auto cps = mCorrectionCache.correction_point_set(ground_llh);
@@ -483,8 +517,9 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                     t_bias      = ztd / (sin_el > 0.01 ? sin_el : 0.01);
                 }
 
-                // clock bias
-                auto rc_bias = current(3);
+                // clock bias: reference clock + ISB for this constellation
+                auto isb_idx = isb_index(observation.satellite_id);
+                auto rc_bias = current(kIdxClk) + (isb_idx >= 0 ? current(isb_idx) : 0.0);
                 auto sc_bias = constant::K_C * observation.true_clock_bias;
                 auto sc_corr = 0.0;
                 if (correction && correction->clock_valid) {
@@ -527,10 +562,12 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
                    satellite.id.lpp_id().value + 1, satellite.azimuth * constant::K_R2D,
                    satellite.elevation * constant::K_R2D, residual, 0.0);
 #endif
+                design_matrix.row(j).setZero();
                 design_matrix(j, 0) = -line_of_sight.x();
                 design_matrix(j, 1) = -line_of_sight.y();
                 design_matrix(j, 2) = -line_of_sight.z();
                 design_matrix(j, 3) = 1.0;
+                if (isb_idx >= 0) design_matrix(j, isb_idx) = 1.0;
 
                 residuals(j, 0) = residual;
 
@@ -560,7 +597,7 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
             auto r_subset = residuals.topRows(j).eval();
             auto w_subset = weights.head(j).eval();
 
-            if (j < 4) break;  // underdetermined, abort
+            if (j < mBaseStates) break;  // underdetermined, abort
 
             // Apply weights: scale rows by sqrt(w) so H^T W H = (√W H)^T (√W H)
             for (long k = 0; k < j; ++k) {
@@ -571,7 +608,11 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
             auto h_transpose = h_subset.transpose();
 
-            // Compute the solution
+            // Compute the solution (use unweighted H for DOP)
+            auto H_unweighted  = design_matrix.topRows(j).eval();
+            auto Ht_unweighted = H_unweighted.transpose();
+            last_dTd           = Ht_unweighted * H_unweighted;
+
             auto dTd      = h_transpose * h_subset;
             auto dTr      = h_transpose * r_subset;
             auto solution = dTd.ldlt().solve(dTr).eval();
@@ -673,8 +714,39 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
 
     datatrace_report();
 
-    auto final_position = current.head<3>();
-    auto final_bias     = current(3) / constant::K_C;
+    // Kalman update: use LS solution as measurement for all base states
+    if (use_filter) {
+        if (!mFilterInitialized) {
+            initialize_filter(current);
+        } else {
+            long    n = mFilter.size();
+            long    m = mBaseStates;
+            MatrixX H = MatrixX::Zero(m, n);
+            MatrixX R = MatrixX::Zero(m, m);
+            VectorX z(m);
+
+            for (long k = 0; k < m; ++k) {
+                H(k, k) = 1.0;
+                z(k)    = current(k) - mFilter.state(k);
+            }
+            // Position uncertainty ~100m², clock ~1e6m², ISB ~1e4m²
+            R(0, 0) = R(1, 1) = R(2, 2) = 100.0;
+            R(3, 3)                     = 1e6;
+            for (long k = 4; k < m; ++k)
+                R(k, k) = 1e4;
+
+            mFilter.update(H, R, z);
+        }
+        mLastEpochTime    = time;
+        mLastEpochTimeSet = true;
+
+        // Use filter state as final solution
+        for (long k = 0; k < mBaseStates; ++k)
+            current(k) = mFilter.state(k);
+    }
+
+    auto final_position = current.head(3);
+    auto final_bias     = current(kIdxClk) / constant::K_C;
     DEBUGF("final position: %14.4f %14.4f %14.4f", final_position.x(), final_position.y(),
            final_position.z());
     DEBUGF("final bias:     %14.4f", final_bias);
@@ -689,6 +761,25 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
     DEBUGF("bias: %14.8f", final_bias);
     DEBUGF("time: %s", time.rtklib_time_string().c_str());
 
+    // Compute DOP from Q = (H^T H)^{-1}
+    double pdop = 0.0, hdop = 0.0, vdop = 0.0, tdop = 0.0;
+    {
+        MatrixX Q   = last_dTd.inverse();
+        auto    pos = current.head(3);
+        double  r   = pos.norm();
+        if (r > 1e3) {
+            double  lat = std::asin(pos.z() / r), lon = std::atan2(pos.y(), pos.x());
+            double  sl = std::sin(lat), cl = std::cos(lat), sn = std::sin(lon), cn = std::cos(lon);
+            Matrix3 R;
+            R << -sn, cn, 0, -sl * cn, -sl * sn, cl, cl * cn, cl * sn, sl;
+            Matrix3 Q_enu = R * Q.topLeftCorner<3, 3>() * R.transpose();
+            hdop          = std::sqrt(std::max(0.0, Q_enu(0, 0) + Q_enu(1, 1)));
+            vdop          = std::sqrt(std::max(0.0, Q_enu(2, 2)));
+        }
+        pdop = std::sqrt(std::max(0.0, Q(0, 0) + Q(1, 1) + Q(2, 2)));
+        tdop = std::sqrt(std::max(0.0, Q(3, 3)));
+    }
+
     Solution solution{
         .time            = time,
         .status          = Solution::Status::Standard,
@@ -697,6 +788,10 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         .altitude        = llh.z,
         .position_ecef   = Vector3{final_position.x(), final_position.y(), final_position.z()},
         .receiver_clock  = final_bias,
+        .pdop            = pdop,
+        .hdop            = hdop,
+        .vdop            = vdop,
+        .tdop            = tdop,
         .satellite_count = satellite_count,
     };
 
@@ -713,7 +808,9 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
         info.id          = obs.satellite_id;
         info.azimuth     = obs.azimuth;
         info.elevation   = obs.elevation;
-        info.residual    = m.pseudo_range - (gr + current(3) - sc);
+        auto isb_i       = isb_index(obs.satellite_id);
+        auto rc_i        = current(kIdxClk) + (isb_i >= 0 ? current(isb_i) : 0.0);
+        info.residual    = m.pseudo_range - (gr + rc_i - sc);
         info.sat_pos     = obs.true_position;
         info.sat_clock   = obs.true_clock_bias;
         info.pseudorange = m.pseudo_range;
@@ -726,6 +823,83 @@ Solution SppEngine::evaluate(ts::Tai time) NOEXCEPT {
     mEpochTotalObservationTime = 0;
 
     return solution;
+}
+
+void SppEngine::initialize_filter(VectorX const& ls_solution) NOEXCEPT {
+    bool is_velocity = mConfiguration.filter_mode == FilterMode::KinematicVelocity;
+    long n           = is_velocity ? (mBaseStates + 4) : mBaseStates;
+    // For KinematicVelocity: [X,Y,Z,clk,ISB...,Vx,Vy,Vz,clk_dot]
+
+    VectorX x0 = VectorX::Zero(n);
+    MatrixX P0 = MatrixX::Zero(n, n);
+
+    for (long k = 0; k < mBaseStates; ++k)
+        x0(k) = ls_solution(k);
+
+    P0(kIdxX, kIdxX)     = 1e4;
+    P0(kIdxY, kIdxY)     = 1e4;
+    P0(kIdxZ, kIdxZ)     = 1e4;
+    P0(kIdxClk, kIdxClk) = 1e10;
+    for (long k = 4; k < mBaseStates; ++k)
+        P0(k, k) = 1e6;  // ISB: unknown initially
+
+    if (is_velocity) {
+        long vx = mBaseStates, vy = mBaseStates + 1, vz = mBaseStates + 2, cd = mBaseStates + 3;
+        P0(vx, vx) = P0(vy, vy) = P0(vz, vz) = 100.0;
+        P0(cd, cd)                           = 1e6;
+    }
+
+    mFilter.initialize(x0, P0);
+    mFilterInitialized = true;
+}
+
+void SppEngine::predict_filter(ts::Tai const& time) NOEXCEPT {
+    double dt = mLastEpochTimeSet ? time.difference_seconds(mLastEpochTime) : 0.0;
+    if (dt < 0.0 || dt > 300.0) dt = 0.0;
+
+    long    n = mFilter.size();
+    MatrixX F = MatrixX::Identity(n, n);
+    MatrixX Q = MatrixX::Zero(n, n);
+
+    // Build position process noise in ENU then rotate to ECEF
+    auto pos = mFilter.state().head<3>();
+    auto r   = pos.norm();
+    if (r < 1e3) {
+        Q(kIdxX, kIdxX) = mConfiguration.process_noise.position_horizontal;
+        Q(kIdxY, kIdxY) = mConfiguration.process_noise.position_horizontal;
+        Q(kIdxZ, kIdxZ) = mConfiguration.process_noise.position_vertical;
+    } else {
+        double  lat = std::asin(pos.z() / r);
+        double  lon = std::atan2(pos.y(), pos.x());
+        double  sl = std::sin(lat), cl = std::cos(lat);
+        double  sn = std::sin(lon), cn = std::cos(lon);
+        Vector3 e_east  = {-sn, cn, 0.0};
+        Vector3 e_north = {-sl * cn, -sl * sn, cl};
+        Vector3 e_up    = {cl * cn, cl * sn, sl};
+        double  qh      = mConfiguration.process_noise.position_horizontal;
+        double  qv      = mConfiguration.process_noise.position_vertical;
+        Matrix3 Q3      = qh * (e_east * e_east.transpose() + e_north * e_north.transpose()) +
+                     qv * (e_up * e_up.transpose());
+        Q.block<3, 3>(0, 0) = Q3;
+    }
+
+    Q(kIdxClk, kIdxClk) = mConfiguration.process_noise.clock;
+    // ISB: very small process noise (hardware bias changes slowly)
+    for (long k = 4; k < mBaseStates; ++k)
+        Q(k, k) = 1.0;  // ~1m²/s — allows slow drift
+
+    if (mConfiguration.filter_mode == FilterMode::KinematicVelocity && dt > 0.0) {
+        long vx = mBaseStates, vy = mBaseStates + 1, vz = mBaseStates + 2, cd = mBaseStates + 3;
+        F(kIdxX, vx)   = dt;
+        F(kIdxY, vy)   = dt;
+        F(kIdxZ, vz)   = dt;
+        F(kIdxClk, cd) = dt;
+        double qvel    = mConfiguration.process_noise.velocity;
+        Q(vx, vx) = Q(vy, vy) = Q(vz, vz) = qvel;
+        Q(cd, cd)                         = mConfiguration.process_noise.clock * 1e-6;
+    }
+
+    mFilter.predict(F, Q);
 }
 
 void SppEngine::datatrace_report() NOEXCEPT {

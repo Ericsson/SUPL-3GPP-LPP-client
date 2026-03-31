@@ -3,6 +3,7 @@
 #include <ephemeris/ephemeris.hpp>
 #include <generator/idokeido/correction.hpp>
 #include <generator/idokeido/idokeido.hpp>
+#include <generator/idokeido/kalman.hpp>
 #include <generator/idokeido/klobuchar.hpp>
 #include <generator/idokeido/satellite.hpp>
 
@@ -20,12 +21,14 @@ struct SppConfiguration {
     TroposphericMode  tropospheric_mode;
     WeightFunction    weight_function;
     EpochSelection    epoch_selection;
+    FilterMode        filter_mode;
 
     struct {
         bool gps;
         bool glo;
         bool gal;
         bool bds;
+        bool qzs;
     } gnss;
 
     Scalar observation_window;
@@ -41,6 +44,13 @@ struct SppConfiguration {
     bool reject_cycle_slip;
     bool reject_halfcycle_slip;
     bool reject_outliers;
+
+    struct {
+        Scalar position_horizontal;  // m²/s — Q for East/North axes
+        Scalar position_vertical;    // m²/s — Q for Up axis
+        Scalar velocity;             // m²/s — KinematicVelocity only
+        Scalar clock;                // m²/s — receiver clock (always large)
+    } process_noise;
 };
 
 class EphemerisEngine;
@@ -111,6 +121,8 @@ public:
 protected:
     void select_best_observations(ts::Tai const& time);
     void compute_satellite_states(ts::Tai const& time);
+    void initialize_filter(VectorX const& ls_solution) NOEXCEPT;
+    void predict_filter(ts::Tai const& time) NOEXCEPT;
 
     void datatrace_report() NOEXCEPT;
 
@@ -133,6 +145,41 @@ private:
     bool                     mKlobucharModelSet;
     KlobucharModelParameters mBdsKlobucharModel;
     bool                     mBdsKlobucharModelSet;
+
+    // Kalman filter (FilterMode != None)
+    KalmanFilter mFilter;
+    bool         mFilterInitialized;
+    ts::Tai      mLastEpochTime;
+    bool         mLastEpochTimeSet;
+
+    // State indices for KinematicVelocity
+    static constexpr long kIdxX      = 0;
+    static constexpr long kIdxY      = 1;
+    static constexpr long kIdxZ      = 2;
+    static constexpr long kIdxClk    = 3;
+    static constexpr long kIdxVx     = 4;
+    static constexpr long kIdxVy     = 5;
+    static constexpr long kIdxVz     = 6;
+    static constexpr long kIdxClkDot = 7;
+
+    // ISB state indices (-1 = reference or disabled)
+    // Reference constellation has no ISB state (its clock IS clk at kIdxClk)
+    long mIsbGps;  // -1 if GPS is reference or disabled
+    long mIsbGal;
+    long mIsbGlo;
+    long mIsbBds;
+    long mIsbQzs;
+    long mBaseStates;  // 4 (or 8 for KinematicVelocity) before ISB
+
+    // Returns the ISB state index for a satellite (-1 = use reference clock)
+    long isb_index(SatelliteId const& id) const NOEXCEPT {
+        if (id.is_gps()) return mIsbGps;
+        if (id.is_galileo()) return mIsbGal;
+        if (id.is_glonass()) return mIsbGlo;
+        if (id.is_beidou()) return mIsbBds;
+        if (id.is_qzss()) return mIsbQzs;
+        return -1;
+    }
 };
 
 }  // namespace idokeido

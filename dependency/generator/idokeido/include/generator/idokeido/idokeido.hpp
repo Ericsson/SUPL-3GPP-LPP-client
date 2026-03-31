@@ -79,6 +79,11 @@ struct Solution {
     Vector3 position_ecef;
     double  receiver_clock;
 
+    double pdop;
+    double hdop;
+    double vdop;
+    double tdop;
+
     size_t                     satellite_count;
     std::vector<SatelliteInfo> satellites;
 };
@@ -106,6 +111,13 @@ enum class IonosphericMode {
 enum class TroposphericMode {
     None,
     Saastamoinen,  // height-only approximation: ZTD = 2.3 * exp(-0.116e-3 * h) / sin(el)
+};
+
+enum class FilterMode {
+    None,               // per-epoch least-squares (default)
+    Static,             // Kalman [X,Y,Z,clk], position nearly frozen
+    Kinematic,          // Kalman [X,Y,Z,clk], position random walk
+    KinematicVelocity,  // Kalman [X,Y,Z,Vx,Vy,Vz,clk,clk_drift]
 };
 
 enum class EpochSelection {
