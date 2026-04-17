@@ -17,3 +17,6 @@ docker/venv/
 plans
 AGENTS.md
 .kiro
+build-small/
+igs_data/
+results/

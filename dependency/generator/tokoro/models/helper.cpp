@@ -108,7 +108,7 @@ HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Float3 posit
     VERBOSEF("hydrostatic: %+f", hydrostatic);
     VERBOSEF("wet: %+f", wet);
 
-    return {hydrostatic, wet};
+    return {hydrostatic + hydrostatic_delta_m, wet};
 }
 
 }  // namespace tokoro
