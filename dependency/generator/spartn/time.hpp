@@ -20,3 +20,4 @@ inline bool operator>(SpartnTime const& lhs, SpartnTime const& rhs) {
 
 struct GNSS_SystemTime;
 SpartnTime spartn_time_from(GNSS_SystemTime const& epoch_time);
+uint32_t   spartn_time_for_gnss(SpartnTime const& gps_based, long gnss_id);

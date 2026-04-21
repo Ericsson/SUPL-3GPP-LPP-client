@@ -633,8 +633,8 @@ void Generator::generate_ocb(uint16_t iod) {
 
     for (size_t message_id = 0; message_id < messages.size(); message_id++) {
         auto& corrections = *messages[message_id];
-        auto  epoch_time  = corrections.epoch_time.rounded_seconds;
         auto  gnss_id     = corrections.gnss_id;
+        auto  epoch_time  = spartn_time_for_gnss(corrections.epoch_time, gnss_id);
         auto  rti_data    = mCorrectionData->real_time_integrity(gnss_id);
 
         auto satellites = corrections.satellites();

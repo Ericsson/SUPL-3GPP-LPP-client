@@ -9,6 +9,7 @@
 
 EXTERNAL_WARNINGS_PUSH
 #include "GNSS-SystemTime.h"
+#include "GNSS-ID.h"
 EXTERNAL_WARNINGS_POP
 
 // SPARTN epoch per system: Jan 1, 2010 00:00:00 in each system's own time.
@@ -54,5 +55,23 @@ SpartnTime spartn_time_from(GNSS_SystemTime const& epoch_time) {
                                          SPARTN_EPOCH_BDT_DAYS);
     }
     default: return SpartnTime{0, 0};
+    }
+}
+
+uint32_t spartn_time_for_gnss(SpartnTime const& gps_based, long gnss_id) {
+    // gps_based.rounded_seconds = seconds since Jan 1 2010 00:00:00 GPS time.
+    // Convert to seconds since Jan 1 2010 00:00:00 in the target constellation's time.
+    //
+    // BDT = GPS - 14s  =>  BDT 2010 epoch is 14s later  =>  BDT_since_2010 = GPS_since_2010 - 14
+    // GLO = UTC + 3h, GPS = UTC + 18s at 2010 epoch, +3 leap seconds since =>
+    //   GLO 2010 epoch is (3*3600 - 15) = 10785s earlier, but 3 leap seconds reduce GLO count by 3
+    //   => GLO_since_2010 = GPS_since_2010 + 10782
+    auto s = static_cast<int64_t>(gps_based.rounded_seconds);
+    switch (gnss_id) {
+    case GNSS_ID__gnss_id_gps:
+    case GNSS_ID__gnss_id_galileo: return static_cast<uint32_t>(s);
+    case GNSS_ID__gnss_id_bds:     return static_cast<uint32_t>(s - 14);
+    case GNSS_ID__gnss_id_glonass: return static_cast<uint32_t>(s + 10782);
+    default:                        return static_cast<uint32_t>(s);
     }
 }
