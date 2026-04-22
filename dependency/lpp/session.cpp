@@ -167,7 +167,8 @@ static char const* state_to_string(State state) {
     CORE_UNREACHABLE();
 }
 
-void Session::connect(std::string const& host, uint16_t port, std::string const& interface) {
+void Session::connect(std::string const& host, uint16_t port, std::string const& interface,
+                      supl::TlsConfig const& tls) {
     VSCOPE_FUNCTIONF("\"%s\", %d, \"%s\"", host.c_str(), port, interface.c_str());
 
     if (mState != State::UNKNOWN && mState != State::EXIT) {
@@ -178,6 +179,7 @@ void Session::connect(std::string const& host, uint16_t port, std::string const&
     mConnectionHost      = host;
     mConnectionPort      = port;
     mConnectionInterface = interface;
+    mConnectionTls       = tls;
     switch_state(State::CONNECT);
 }
 
@@ -281,7 +283,8 @@ NextState Session::state_connect() {
     }
 
     mSession = new supl::Session(supl::VERSION_2_1, mIdentity);
-    if (!mSession->connect(mConnectionHost, mConnectionPort, mConnectionInterface)) {
+    if (!mSession->connect(mConnectionHost, mConnectionPort, mConnectionInterface,
+                           mConnectionTls)) {
         ERRORF("failed to connect to %s:%d (%s)", mConnectionHost.c_str(), mConnectionPort,
                mConnectionInterface.c_str());
         return NextState::make().next(State::DISCONNECTED);
@@ -293,12 +296,18 @@ NextState Session::state_connect() {
 NextState Session::state_connecting() {
     VSCOPE_FUNCTION();
 
-    if (!mSession->handle_connection()) {
+    auto r = mSession->handle_connection();
+    switch (r) {
+    case supl::Session::ConnectProgress::Done: return NextState::make().next(State::CONNECTED);
+    case supl::Session::ConnectProgress::WantRead:
+        return NextState::make().read(State::CONNECTING).error(State::ERROR);
+    case supl::Session::ConnectProgress::WantWrite:
+        return NextState::make().write(State::CONNECTING).error(State::ERROR);
+    case supl::Session::ConnectProgress::Failed:
+    default:
         ERRORF("failed to establish connection to %s:%d", mConnectionHost.c_str(), mConnectionPort);
         return NextState::make().next(State::ConnectionFailed);
     }
-
-    return NextState::make().next(State::CONNECTED);
 }
 
 NextState Session::state_connection_failed() {

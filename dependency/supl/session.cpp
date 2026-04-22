@@ -56,7 +56,8 @@ Session::~Session() {
     }
 }
 
-bool Session::connect(std::string const& ip, uint16_t port, std::string const& interface) {
+bool Session::connect(std::string const& ip, uint16_t port, std::string const& interface,
+                      TlsConfig const& tls) {
     VSCOPE_FUNCTIONF("\"%s\",%d,\"%s\"", ip.c_str(), port, interface.c_str());
 
     if (mState != State::UNKNOWN) {
@@ -75,7 +76,7 @@ bool Session::connect(std::string const& ip, uint16_t port, std::string const& i
         return false;
     }
 
-    if (!mTcpClient->connect(ip, port, interface, false)) {
+    if (!mTcpClient->connect(ip, port, interface, tls)) {
         WARNF("connect failed");
         delete mTcpClient;
         mTcpClient = nullptr;
@@ -86,27 +87,32 @@ bool Session::connect(std::string const& ip, uint16_t port, std::string const& i
     return true;
 }
 
-bool Session::handle_connection() {
+Session::ConnectProgress Session::handle_connection() {
     if (mState != State::CONNECTING) {
         WARNF("mState != State::CONNECTING");
-        return false;
+        return ConnectProgress::Failed;
     }
 
     if (!mTcpClient) {
         WARNF("mTcpClient is null");
-        return false;
+        return ConnectProgress::Failed;
     }
 
-    if (mTcpClient->handle_connection()) {
+    auto r = mTcpClient->handle_connection();
+    switch (r) {
+    case TcpClient::Progress::Done:
         mState                = State::CONNECTED;
         mSETSession.is_active = true;
         mSLPSession.is_active = false;
-        return true;
-    } else {
+        return ConnectProgress::Done;
+    case TcpClient::Progress::WantRead: return ConnectProgress::WantRead;
+    case TcpClient::Progress::WantWrite: return ConnectProgress::WantWrite;
+    case TcpClient::Progress::Failed:
+    default:
         mState                = State::DISCONNECTED;
         mSETSession.is_active = false;
         mSLPSession.is_active = false;
-        return false;
+        return ConnectProgress::Failed;
     }
 }
 

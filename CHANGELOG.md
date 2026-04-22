@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+- Location server TLS/mTLS support with pluggable backend (OpenSSL). New CLI flags: `--ls-tls`, `--ls-tls-skip-verify`, `--ls-ca-cert`, `--ls-client-cert`, `--ls-client-key`. Uses the system CA store by default; `--ls-ca-cert` overrides it. Supports separate or combined PEM for the client cert/key. The TLS handshake is fully integrated with the epoll scheduler (non-blocking, handles `SSL_ERROR_WANT_READ`/`WANT_WRITE` by re-subscribing to the relevant event). Requires `-DUSE_OPENSSL=ON`. See `examples/client/README.md` for details.
+
+### Changed
+- CLI validation and parse errors are now printed in red both above and below the help dump, so the reason is visible without scrolling.
+
 ## [4.0.24]
 
 ### Added

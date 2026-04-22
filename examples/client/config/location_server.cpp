@@ -75,6 +75,37 @@ static args::ValueFlag<std::string> gOutputTag{
     "Tag to apply to LPP messages from the location server",
     {"ls-output-tag"},
 };
+static args::Flag gTls{
+    gGroup,
+    "tls",
+    "Enable TLS for the location server connection",
+    {"ls-tls"},
+};
+static args::Flag gTlsSkipVerify{
+    gGroup,
+    "tls-skip-verify",
+    "Disable server certificate verification (insecure, for testing only)",
+    {"ls-tls-skip-verify"},
+};
+static args::ValueFlag<std::string> gTlsCaCert{
+    gGroup,
+    "ca-cert",
+    "Path to CA certificate (PEM) for server verification. If omitted, the system trust store is "
+    "used",
+    {"ls-ca-cert"},
+};
+static args::ValueFlag<std::string> gTlsClientCert{
+    gGroup,
+    "client-cert",
+    "Path to client certificate (PEM) for mutual TLS",
+    {"ls-client-cert"},
+};
+static args::ValueFlag<std::string> gTlsClientKey{
+    gGroup,
+    "client-key",
+    "Path to client private key (PEM) for mutual TLS",
+    {"ls-client-key"},
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
@@ -121,6 +152,20 @@ void parse(Config* config) {
 
     if (gShutdownOnDisconnect) ls.shutdown_on_disconnect = true;
     if (gOutputTag) ls.output_tag = gOutputTag.Get();
+
+    ls.tls.enabled     = gTls.Get();
+    ls.tls.skip_verify = gTlsSkipVerify.Get();
+    if (gTlsCaCert) ls.tls.ca_cert_path = gTlsCaCert.Get();
+    if (gTlsClientCert) ls.tls.client_cert_path = gTlsClientCert.Get();
+    if (gTlsClientKey) ls.tls.client_key_path = gTlsClientKey.Get();
+    if (ls.tls.client_cert_path.empty() != ls.tls.client_key_path.empty()) {
+        throw args::RequiredError(
+            "`--ls-client-cert` and `--ls-client-key` must be provided together");
+    }
+    if ((ls.tls.skip_verify || !ls.tls.ca_cert_path.empty() || !ls.tls.client_cert_path.empty()) &&
+        !ls.tls.enabled) {
+        throw args::RequiredError("TLS options require `--ls-tls`");
+    }
 }
 
 void dump(LocationServerConfig const& config) {
@@ -137,6 +182,16 @@ void dump(LocationServerConfig const& config) {
     DEBUGF("shutdown-on-disconnect:         %s", config.shutdown_on_disconnect ? "true" : "false");
     DEBUGF("hack-bad-transaction-initiator: %s",
            config.hack_bad_transaction_initiator ? "true" : "false");
+    DEBUGF("tls: %s", config.tls.enabled ? "enabled" : "disabled");
+    if (config.tls.enabled) {
+        DEBUGF("  skip-verify: %s", config.tls.skip_verify ? "true" : "false");
+        DEBUGF("  ca-cert:     \"%s\"",
+               config.tls.ca_cert_path.empty() ? "<system>" : config.tls.ca_cert_path.c_str());
+        if (!config.tls.client_cert_path.empty()) {
+            DEBUGF("  client-cert: \"%s\"", config.tls.client_cert_path.c_str());
+            DEBUGF("  client-key:  \"%s\"", config.tls.client_key_path.c_str());
+        }
+    }
 }
 
 }  // namespace ls

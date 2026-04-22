@@ -1,5 +1,6 @@
 #pragma once
 #include <supl/identity.hpp>
+#include <supl/tls.hpp>
 #include <supl/version.hpp>
 
 struct ULP_PDU;
@@ -55,8 +56,16 @@ public:
     explicit Session(Version version, Identity identity);
     ~Session();
 
-    bool connect(std::string const& ip, uint16_t port, std::string const& interface);
-    bool handle_connection();
+    enum class ConnectProgress {
+        Done,
+        WantRead,
+        WantWrite,
+        Failed,
+    };
+
+    bool            connect(std::string const& ip, uint16_t port, std::string const& interface,
+                            TlsConfig const& tls);
+    ConnectProgress handle_connection();
 
     void           disconnect();
     NODISCARD bool is_connected() const;

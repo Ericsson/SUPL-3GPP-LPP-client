@@ -1287,6 +1287,7 @@ int main(int argc, char** argv) {
         if (program.config.location_server.interface) {
             client->set_interface(*program.config.location_server.interface);
         }
+        client->set_tls(program.config.location_server.tls);
         program.client.reset(client);
 
         client_initialize(program, *client);

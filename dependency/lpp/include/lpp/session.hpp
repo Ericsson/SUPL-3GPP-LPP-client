@@ -5,6 +5,7 @@
 #include <scheduler/scheduler.hpp>
 #include <supl/cell.hpp>
 #include <supl/identity.hpp>
+#include <supl/tls.hpp>
 
 #include <functional>
 #include <unordered_map>
@@ -114,7 +115,8 @@ public:
     ~Session();
 
     // Setup the connection information for the session and switch to the CONNECT state
-    void connect(std::string const& host, uint16_t port, std::string const& interface);
+    void connect(std::string const& host, uint16_t port, std::string const& interface,
+                 supl::TlsConfig const& tls);
 
     // Create a new transaction. 'single_side_endable' determines if the transaction is can be ended
     // when either sides sends a endTransaction, otherwise you need to end the transaction yourself
@@ -196,9 +198,10 @@ private:
     supl::Cell     mInitialCell;
     supl::Session* mSession;
 
-    std::string mConnectionHost;
-    uint16_t    mConnectionPort;
-    std::string mConnectionInterface;
+    std::string     mConnectionHost;
+    uint16_t        mConnectionPort;
+    std::string     mConnectionInterface;
+    supl::TlsConfig mConnectionTls;
 
     std::unordered_map<TransactionLookup, TransactionHandle> mTransacionLookup;
     std::unordered_map<TransactionHandle, TransactionData>   mTransactions;

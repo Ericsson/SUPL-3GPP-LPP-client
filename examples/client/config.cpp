@@ -344,18 +344,20 @@ bool config_parse(int argc, char** argv, Config* config) {
 
         return true;
     } catch (args::ValidationError const& e) {
+        fprintf(stderr, "\n\033[31mvalidation error: %s\033[0m\n\n", e.what());
         parser.Help(std::cerr);
-        ERRORF("validation error: %s", e.what());
+        fprintf(stderr, "\n\033[31mvalidation error: %s\033[0m\n", e.what());
         return false;
     } catch (args::Help const&) {
         parser.Help(std::cerr);
         return false;
     } catch (args::ParseError const& e) {
+        fprintf(stderr, "\n\033[31mparse error: %s\033[0m\n\n", e.what());
         parser.Help(std::cerr);
-        ERRORF("parse error: %s", e.what());
+        fprintf(stderr, "\n\033[31mparse error: %s\033[0m\n", e.what());
         return false;
     } catch (std::exception const& e) {
-        ERRORF("unknown error: %s", e.what());
+        fprintf(stderr, "\n\033[31munknown error: %s\033[0m\n", e.what());
         return false;
     }
 }

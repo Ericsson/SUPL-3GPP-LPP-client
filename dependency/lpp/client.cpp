@@ -209,7 +209,7 @@ void Client::schedule(scheduler::Scheduler* scheduler) {
     }
 
     mScheduler = scheduler;
-    mSession.connect(mHost, mPort, mInterface);
+    mSession.connect(mHost, mPort, mInterface, mTls);
     mSession.schedule(scheduler);
 }
 

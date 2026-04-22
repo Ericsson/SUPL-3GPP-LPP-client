@@ -17,47 +17,8 @@ LOGLET_MODULE2(supl, tcp);
 
 namespace supl {
 
-#if defined(USE_OPENSSL)
-static bool OpenSSL_initialized = false;
-
-static void OpenSSL_init() {
-    if (OpenSSL_initialized) {
-        return;
-    }
-
-    // OpenSSL is one of the worst libraries I have ever worked with. Too much
-    // global state and no good documentation, this stackoverflow thread goes
-    // through how to initialize and cleanup OpenSSL.
-    // https://stackoverflow.com/questions/29845527/how-to-properly-uninitialize-openssl/29927669#29927669
-    SSL_library_init();
-    SSL_load_error_strings();
-
-    OpenSSL_initialized = true;
-}
-
-static void OpenSSL_cleanup() {
-    if (!OpenSSL_initialized) {
-        return;
-    }
-
-    ERR_free_strings();
-    EVP_cleanup();
-    CRYPTO_cleanup_all_ex_data();
-
-    OpenSSL_initialized = false;
-}
-#endif
-
-TcpClient::TcpClient() : mSocket(-1) {
+TcpClient::TcpClient() : mSocket(-1), mState(State::DISCONNECTED) {
     VSCOPE_FUNCTION();
-    mState = State::DISCONNECTED;
-#if defined(USE_OPENSSL)
-    OpenSSL_init();
-
-    mSSLMethod  = nullptr;
-    mSSLContext = nullptr;
-    mSSL        = nullptr;
-#endif
 }
 
 TcpClient::~TcpClient() {
@@ -69,20 +30,11 @@ TcpClient::~TcpClient() {
 void TcpClient::unitialize_socket() {
     VSCOPE_FUNCTION();
 
-#if defined(USE_OPENSSL)
-    if (mUseSSL && mSSL) {
-        SSL_shutdown(mSSL);
-        SSL_free(mSSL);
-        mSSL = nullptr;
+    if (mTls) {
+        mTls->shutdown();
+        mTls.reset();
     }
-
-    if (mSSLContext) {
-        SSL_CTX_free(mSSLContext);
-        mSSLContext = nullptr;
-    }
-
-    mSSLMethod = nullptr;
-#endif
+    mTlsStarted = false;
 
     if (mSocket >= 0) {
         auto result = shutdown(mSocket, SHUT_RDWR);
@@ -201,7 +153,7 @@ bool TcpClient::initialize_socket() {
 }
 
 bool TcpClient::connect(std::string const& host, int port, std::string const& interface,
-                        bool use_ssl) {
+                        TlsConfig const& tls) {
     VSCOPE_FUNCTION();
     if (!is_disconnected()) {
         DEBUGF("client is already connected");
@@ -211,39 +163,15 @@ bool TcpClient::connect(std::string const& host, int port, std::string const& in
     mHost      = host;
     mPort      = port;
     mInterface = interface;
-    mUseSSL    = use_ssl;
-
-#if defined(USE_OPENSSL)
-    if (mUseSSL) {
-        mSSLMethod =
-#if (OPENSSL_VERSION_NUMBER < 0x10100000L)
-            TLSv1_2_client_method();
-#else
-            TLS_client_method();
-#endif
-        mSSLContext = SSL_CTX_new(mSSLMethod);
-        if (!mSSLContext) {
-            return false;
-        }
-
-        mSSL = SSL_new(mSSLContext);
-        if (!mSSL) {
-            SSL_CTX_free(mSSLContext);
-            mSSLContext = nullptr;
-            return false;
-        }
-    }
-#endif
 
     if (!initialize_socket()) {
-#if defined(USE_OPENSSL)
-        if (mUseSSL) {
-            SSL_free(mSSL);
-            SSL_CTX_free(mSSLContext);
-            mSSL        = nullptr;
-            mSSLContext = nullptr;
-        }
-#endif
+        return false;
+    }
+
+    mTls = create_tls_backend(tls);
+    if (tls.enabled && !mTls) {
+        WARNF("TLS requested but no TLS backend available");
+        unitialize_socket();
         return false;
     }
 
@@ -280,41 +208,46 @@ bool TcpClient::connect(std::string const& host, int port, std::string const& in
     return true;
 }
 
-bool TcpClient::handle_connection() {
+TcpClient::Progress TcpClient::handle_connection() {
     VSCOPE_FUNCTION();
+    if (is_connected()) {
+        return Progress::Done;
+    }
     if (!is_connecting()) {
-        disconnect();
-        return false;
+        return Progress::Failed;
     }
 
-    // check that the connection was successful
-    int       error  = 0;
-    socklen_t len    = sizeof(error);
-    auto      result = ::getsockopt(mSocket, SOL_SOCKET, SO_ERROR, &error, &len);
-    VERBOSEF("::getsockopt(%d, SOL_SOCKET, SO_ERROR, %p, %p) = %d", mSocket, &error, &len, result);
-    if (result < 0) {
-        disconnect();
-        return false;
-    }
-
-    if (error != 0) {
-        disconnect();
-        return false;
-    }
-
-#if defined(USE_OPENSSL)
-    if (mUseSSL) {
-        SSL_set_fd(mSSL, mSocket);
-        if (SSL_connect(mSSL) == -1) {
+    // Check TCP-level connection result only once (when we haven't started TLS yet)
+    if (!mTls || !mTlsStarted) {
+        int       error  = 0;
+        socklen_t len    = sizeof(error);
+        auto      result = ::getsockopt(mSocket, SOL_SOCKET, SO_ERROR, &error, &len);
+        VERBOSEF("::getsockopt(%d, SOL_SOCKET, SO_ERROR, %p, %p) = %d", mSocket, &error, &len,
+                 result);
+        if (result < 0 || error != 0) {
             disconnect();
-            return false;
+            return Progress::Failed;
         }
-    }
-#endif
 
-    VERBOSEF("connected to %s:%d", mHost.c_str(), mPort);
-    mState = State::CONNECTED;
-    return true;
+        if (!mTls) {
+            VERBOSEF("connected to %s:%d", mHost.c_str(), mPort);
+            mState = State::CONNECTED;
+            return Progress::Done;
+        }
+        mTlsStarted = true;
+    }
+
+    auto r = mTls->handshake(mSocket, mHost);
+    switch (r) {
+    case TlsBackend::HandshakeResult::Ok:
+        VERBOSEF("TLS connected to %s:%d", mHost.c_str(), mPort);
+        mState = State::CONNECTED;
+        return Progress::Done;
+    case TlsBackend::HandshakeResult::WantRead: return Progress::WantRead;
+    case TlsBackend::HandshakeResult::WantWrite: return Progress::WantWrite;
+    case TlsBackend::HandshakeResult::Error:
+    default: disconnect(); return Progress::Failed;
+    }
 }
 
 bool TcpClient::disconnect() {
@@ -333,16 +266,11 @@ int TcpClient::receive(void* buffer, int size) {
         return -1;
     }
 
-#if defined(USE_OPENSSL)
-    if (mUseSSL)
-        return SSL_read(mSSL, buffer, size);
-    else
-        return read(mSocket, buffer, size);
-#else
+    if (mTls) return mTls->read(buffer, size);
+
     auto result = ::read(mSocket, buffer, static_cast<size_t>(size));
     VERBOSEF("::read(%d, %p, %d) = %d", mSocket, buffer, size, result);
     return static_cast<int>(result);
-#endif
 }
 
 int TcpClient::send(void const* buffer, int size) {
@@ -351,16 +279,11 @@ int TcpClient::send(void const* buffer, int size) {
         return -1;
     }
 
-#if defined(USE_OPENSSL)
-    if (mUseSSL)
-        return SSL_write(mSSL, buffer, size);
-    else
-        return write(mSocket, buffer, size);
-#else
+    if (mTls) return mTls->write(buffer, size);
+
     auto result = ::send(mSocket, buffer, static_cast<size_t>(size), MSG_NOSIGNAL);
     VERBOSEF("::send(%d, %p, %d, MSG_NOSIGNAL) = %d", mSocket, buffer, size, result);
     return static_cast<int>(result);
-#endif
 }
 
 }  // namespace supl

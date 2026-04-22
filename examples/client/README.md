@@ -340,3 +340,75 @@
         --dt-reliable                     Reliable
         --dt-disable-ssr-data             Disable SSR Data
 ```
+
+## TLS and mutual TLS (mTLS)
+
+TLS for the location server connection is available when the project is built with `-DUSE_OPENSSL=ON`. Support is designed around a pluggable `TlsBackend` interface — OpenSSL is the only backend today, but alternative backends (e.g. mbedTLS) can be added without touching the SUPL/LPP call chain.
+
+### CLI flags
+
+| Flag | Description |
+|------|-------------|
+| `--ls-tls` | Enable TLS for the location server connection |
+| `--ls-tls-skip-verify` | Disable server certificate verification (insecure, test only) |
+| `--ls-ca-cert=<path>` | PEM CA certificate used to verify the server. If omitted, the system trust store is used |
+| `--ls-client-cert=<path>` | PEM client certificate for mutual TLS |
+| `--ls-client-key=<path>` | PEM private key for the client certificate. Must be provided together with `--ls-client-cert` |
+
+### Examples
+
+Default TLS (server verified against the system trust store):
+```bash
+./example-client --ls-host supl.example.com --ls-port 7275 --ls-tls ...
+```
+
+Custom CA for a private/self-signed deployment:
+```bash
+./example-client --ls-host supl.internal --ls-port 7275 --ls-tls \
+    --ls-ca-cert /etc/pki/my-ca.pem ...
+```
+
+Mutual TLS with a client certificate:
+```bash
+./example-client --ls-host supl.internal --ls-port 7275 --ls-tls \
+    --ls-ca-cert /etc/pki/my-ca.pem \
+    --ls-client-cert /etc/pki/client.crt \
+    --ls-client-key  /etc/pki/client.key ...
+```
+
+Combined PEM (cert + key in the same file) works by passing the same path to both flags:
+```bash
+./example-client ... --ls-client-cert bundle.pem --ls-client-key bundle.pem
+```
+
+Testing only — disable server verification:
+```bash
+./example-client ... --ls-tls --ls-tls-skip-verify
+```
+
+### Supported certificate formats
+
+| Format | Supported | Notes |
+|--------|-----------|-------|
+| Separate PEM cert + PEM key | yes | Pass both paths |
+| Combined PEM (cert + key in one file) | yes | Pass the same path to both flags |
+| PEM with certificate chain (intermediates) | partial | Only the first (leaf) certificate is loaded |
+| PKCS#12 (`.p12` / `.pfx`) | no | Would require a separate parser |
+| Encrypted private keys (PEM with passphrase) | no | No passphrase callback is wired up |
+
+### Notes
+
+- The TLS handshake is fully integrated with the epoll-based scheduler — it does not block the event loop. If the non-blocking socket reports `SSL_ERROR_WANT_READ` or `SSL_ERROR_WANT_WRITE` during the handshake, the session stays in the `CONNECTING` state and re-subscribes to the appropriate epoll event until the handshake completes.
+- SNI (Server Name Indication) is set to the `--ls-host` value.
+- Server hostname verification is enabled by default (can be suppressed with `--ls-tls-skip-verify`).
+- Building without `-DUSE_OPENSSL=ON` still accepts the `--ls-tls*` flags but refuses to connect: the client logs `TLS requested but no TLS backend is compiled in` and exits.
+
+### Quick local test
+
+A ready-made test script is in `build/test_tls.sh`. It generates a CA, server cert, and client cert, starts two local `openssl s_server` instances (one requiring mTLS), and verifies all CLI validation, TLS, and mTLS paths:
+
+```bash
+cmake -S . -B build-tls -GNinja -DCMAKE_BUILD_TYPE=Debug -DUSE_OPENSSL=ON
+cmake --build build-tls
+bash build/test_tls.sh
+```

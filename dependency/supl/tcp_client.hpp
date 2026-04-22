@@ -1,14 +1,8 @@
 #pragma once
 #include "supl.hpp"
+#include "supl/tls.hpp"
 
-#if defined(USE_OPENSSL)
-#include <openssl/crypto.h>
-#include <openssl/err.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/x509.h>
-#endif
-
+#include <memory>
 #include <string>
 
 namespace supl {
@@ -21,12 +15,20 @@ public:
         CONNECTED,
     };
 
+    enum class Progress {
+        Done,       // TCP+TLS handshake complete
+        WantRead,   // waiting on readable event to continue
+        WantWrite,  // waiting on writable event to continue
+        Failed,     // fatal error
+    };
+
     TcpClient();
     ~TcpClient();
 
-    bool connect(std::string const& host, int port, std::string const& interface, bool use_ssl);
-    bool handle_connection();
-    bool disconnect();
+    bool     connect(std::string const& host, int port, std::string const& interface,
+                     TlsConfig const& tls);
+    Progress handle_connection();
+    bool     disconnect();
 
     NODISCARD bool is_disconnected() const { return mState == State::DISCONNECTED; }
     NODISCARD bool is_connecting() const { return mState == State::CONNECTING; }
@@ -42,18 +44,13 @@ protected:
     void unitialize_socket();
 
 private:
-    std::string mHost;
-    int         mPort;
-    std::string mInterface;
-    bool        mUseSSL;
-    int         mSocket;
-    State       mState;
-
-#if defined(USE_OPENSSL)
-    const SSL_METHOD* mSSLMethod;
-    SSL_CTX*          mSSLContext;
-    SSL*              mSSL;
-#endif
+    std::string                 mHost;
+    int                         mPort;
+    std::string                 mInterface;
+    int                         mSocket;
+    State                       mState;
+    bool                        mTlsStarted = false;
+    std::unique_ptr<TlsBackend> mTls;
 };
 
 }  // namespace supl

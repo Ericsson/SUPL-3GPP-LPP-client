@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <format/ubx/cfg.hpp>
+#include <supl/tls.hpp>
 
 struct LocationServerConfig {
     std::string                  host;
@@ -36,6 +37,8 @@ struct LocationServerConfig {
     bool        hack_bad_transaction_initiator;
     bool        hack_never_send_abort;
     std::string output_tag;
+
+    supl::TlsConfig tls;
 };
 
 enum class AGnssMode {

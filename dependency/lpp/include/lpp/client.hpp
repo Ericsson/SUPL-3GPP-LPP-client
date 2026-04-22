@@ -90,6 +90,7 @@ public:
     void cancel();
 
     void set_interface(std::string const& interface) { mInterface = interface; }
+    void set_tls(supl::TlsConfig const& tls) { mTls = tls; }
 
     void set_capabilities(ProvideCapabilities const& capabilities);
 
@@ -135,6 +136,7 @@ private:
     std::string                          mHost;
     uint16_t                             mPort;
     std::string                          mInterface;
+    supl::TlsConfig                      mTls;
     Session                              mSession;
     scheduler::Scheduler*                mScheduler;
     std::unique_ptr<ProvideCapabilities> mCapabilities;
