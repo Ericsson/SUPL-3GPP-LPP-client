@@ -21,7 +21,7 @@ bool Timestamp::operator==(Timestamp const& other) const {
 }
 
 int64_t LeapSeconds::count() {
-#define LAST_UPDATE_CHECKED 0x040017
+#define LAST_UPDATE_CHECKED 0x040018
 #if LAST_UPDATE_CHECKED < CLIENT_VERSION_INT
 #error "Please update the leap seconds table"
 #endif

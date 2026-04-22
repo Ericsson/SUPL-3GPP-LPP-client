@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [4.0.24]
+
+### Added
+- SPARTN generator: expose CRC type, solution ID, and solution processor ID as CLI options
+
+### Fixed
+- SPARTN TF009 timestamps now use native GNSS system time per spec (BDS was 14s off, GLO was ~10782s off); rounding changed from round-to-nearest to floor
+- SPARTN payload length encoding
+- Tokoro: apply hydrostatic delta correction in mapping function (previously computed but not applied)
+- Tag support in generators and related RTCM issue
+- IO: support stdin and stdout simultaneously
+- Test: regenerated RTCM golden files after RTCM_N2_31 scale fix (0x1p-32 → 0x1p-31)
+
+### Changed
+- Build: Docker images lowered glibc requirements for broader compatibility
+
 ## [4.0.23] - 2026-03-20
 
 ### Added
