@@ -8,8 +8,8 @@
 #include <external_warnings.hpp>
 
 EXTERNAL_WARNINGS_PUSH
-#include "GNSS-SystemTime.h"
 #include "GNSS-ID.h"
+#include "GNSS-SystemTime.h"
 EXTERNAL_WARNINGS_POP
 
 // SPARTN epoch per system: Jan 1, 2010 00:00:00 in each system's own time.
@@ -70,8 +70,8 @@ uint32_t spartn_time_for_gnss(SpartnTime const& gps_based, long gnss_id) {
     switch (gnss_id) {
     case GNSS_ID__gnss_id_gps:
     case GNSS_ID__gnss_id_galileo: return static_cast<uint32_t>(s);
-    case GNSS_ID__gnss_id_bds:     return static_cast<uint32_t>(s - 14);
+    case GNSS_ID__gnss_id_bds: return static_cast<uint32_t>(s - 14);
     case GNSS_ID__gnss_id_glonass: return static_cast<uint32_t>(s + 10782);
-    default:                        return static_cast<uint32_t>(s);
+    default: return static_cast<uint32_t>(s);
     }
 }
