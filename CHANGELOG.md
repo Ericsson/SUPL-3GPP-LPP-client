@@ -6,6 +6,10 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - Location server TLS/mTLS support with pluggable backend (OpenSSL). New CLI flags: `--ls-tls`, `--ls-tls-skip-verify`, `--ls-ca-cert`, `--ls-client-cert`, `--ls-client-key`. Uses the system CA store by default; `--ls-ca-cert` overrides it. Supports separate or combined PEM for the client cert/key. The TLS handshake is fully integrated with the epoll scheduler (non-blocking, handles `SSL_ERROR_WANT_READ`/`WANT_WRITE` by re-subscribing to the relevant event). Requires `-DUSE_OPENSSL=ON`. See `examples/client/README.md` for details.
+- SPARTN generator: support new Galileo signal slots L8Q/C8Q (E5 AltBOC, SF102/SF105 bit 3) and L6C/C6C (E6 C, bit 4) from SPARTN v2.0.3; support new BDS signal slots L7I/C7I (B2 I, SF103/SF106 bit 2) and L1P/C1P (B1C Pilot, bit 4). AltBOC corrections are now emitted natively on L8Q/C8Q instead of frequency-scaled to E5B Q.
+
+### Fixed
+- SPARTN generator: BDS_FREQ table for B2 I/Q/I+Q entries used B1 frequency (1561.098 MHz) instead of B2b (1207.14 MHz). No observable impact before but would have caused incorrect frequency-scaled corrections if B2 Q or B2 I+Q were ever mapped.
 
 ### Changed
 - CLI validation and parse errors are now printed in red both above and below the help dump, so the reason is visible without scrolling.

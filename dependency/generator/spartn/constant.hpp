@@ -10,8 +10,13 @@ struct SystemMapping {
     uint8_t const*     mapping;
     double const*      freq;
     char const* const* signal_names;
+    char const* const* rinex_suffixes;
+    char const* const* rinex_names;
 
     NODISCARD char const* signal_name(long signal_id) const;
+    NODISCARD char const* signal_rinex_suffix(long signal_id) const;
+    NODISCARD char const* signal_rinex_name(long signal_id) const;
+    NODISCARD char const* gnss_name() const;
 };
 
 extern SystemMapping const gGpsSm;
@@ -20,3 +25,4 @@ extern SystemMapping const gGalSm;
 extern SystemMapping const gBdsSm;
 
 char const* bias_type_name(long gnss_id, bool is_phase, uint8_t type);
+char const* bias_type_rinex_name(long gnss_id, bool is_phase, uint8_t type);
