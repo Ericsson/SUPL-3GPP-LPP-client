@@ -13,6 +13,9 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - CLI validation and parse errors are now printed in red both above and below the help dump, so the reason is visible without scrolling.
+- `examples/CMakeLists.txt`: each example now has its own `BUILD_EXAMPLE_*` option (all ON by default except `transform`)
+- `docker/build-sizes.py`: expanded with per-option impact table, bloaty analysis, and new configs (`no-pie`, `no-xer-jer`, `absolute-min`); only builds `example-client`
+- `dependency/lpp/message.cpp`, `session.cpp`: guard `xer_fprint`/`xer_encode` calls with `#ifndef ASN_DISABLE_XER_SUPPORT` to allow `ASN1_XER_SUPPORT=OFF` builds
 
 ## [4.0.24]
 

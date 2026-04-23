@@ -25,13 +25,21 @@ void Deleter<LPP_Message>::operator()(LPP_Message* ptr) {
 }  // namespace custom
 
 void print(Message const& message) {
+#ifndef ASN_DISABLE_XER_SUPPORT
     if (!message) return;
     xer_fprint(stdout, &asn_DEF_LPP_Message, message.get());
+#else
+    (void)message;
+#endif
 }
 
 void print(A_GNSS_ProvideAssistanceData* message) {
+#ifndef ASN_DISABLE_XER_SUPPORT
     if (!message) return;
     xer_fprint(stdout, &asn_DEF_A_GNSS_ProvideAssistanceData, message);
+#else
+    (void)message;
+#endif
 }
 
 void destroy(A_GNSS_ProvideAssistanceData* message) {

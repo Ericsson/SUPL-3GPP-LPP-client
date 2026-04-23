@@ -871,7 +871,9 @@ std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
     if (result.encoded == -1) {
         WARNF("failed to encode uper: %s",
               result.failed_type ? result.failed_type->name : "<unknown>");
+#ifndef ASN_DISABLE_XER_SUPPORT
         WARNF("result:\n%s", encode_lpp_message_xer(message).c_str());
+#endif
         return {};
     }
 
@@ -884,6 +886,7 @@ std::vector<uint8_t> Session::encode_lpp_message(Message const& message) {
 std::string Session::encode_lpp_message_xer(Message const& message) {
     VSCOPE_FUNCTION();
 
+#ifndef ASN_DISABLE_XER_SUPPORT
     std::stringstream buffer;
     xer_encode(
         &asn_DEF_LPP_Message, message.get(), XER_F_BASIC,
@@ -896,6 +899,10 @@ std::string Session::encode_lpp_message_xer(Message const& message) {
         &buffer);
     auto xer_message = buffer.str();
     return xer_message;
+#else
+    (void)message;
+    return {};
+#endif
 }
 
 }  // namespace lpp
