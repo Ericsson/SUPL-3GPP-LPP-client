@@ -17,6 +17,9 @@ struct SystemMapping {
     NODISCARD char const* signal_rinex_suffix(long signal_id) const;
     NODISCARD char const* signal_rinex_name(long signal_id) const;
     NODISCARD char const* gnss_name() const;
+
+    // Returns the LPP signal index for the given RINEX suffix (e.g. "5X"), or -1 if not found.
+    NODISCARD int rinex_suffix_to_index(char const* suffix) const;
 };
 
 extern SystemMapping const gGpsSm;

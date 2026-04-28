@@ -11,6 +11,7 @@ add_library(dependency_generator_spartn2 STATIC
     "data.cpp"
     "decode.cpp"
     "constant.cpp"
+    "bias_pipeline.cpp"
 )
 add_library(dependency::generator::spartn2 ALIAS dependency_generator_spartn2)
 

@@ -48,6 +48,12 @@ Lpp2Spartn::Lpp2Spartn(ProgramOutput const& output, Lpp2SpartnConfig const& conf
     mGenerator->set_galileo_supported(mConfig.generate_galileo);
     mGenerator->set_beidou_supported(mConfig.generate_beidou);
 
+    // GNSS IDs: gps=0, galileo=3, glonass=4, bds=5 (from GNSS-ID.h)
+    mGenerator->set_bias_map(0, mConfig.bias_maps[0]);  // GPS
+    mGenerator->set_bias_map(4, mConfig.bias_maps[1]);  // GLO
+    mGenerator->set_bias_map(3, mConfig.bias_maps[2]);  // GAL
+    mGenerator->set_bias_map(5, mConfig.bias_maps[3]);  // BDS
+
     mGenerator->set_flip_grid_bitmask(mConfig.flip_grid_bitmask);
     mGenerator->set_flip_orbit_correction(mConfig.flip_orbit_correction);
     mGenerator->set_do_not_use_satellite(mConfig.do_not_use_satellite);

@@ -1,5 +1,6 @@
 #pragma once
 #include <core/core.hpp>
+#include "bias_map.hpp"
 
 #include <memory>
 #include <unordered_map>
@@ -138,6 +139,11 @@ public:
     }
     void set_do_not_use_satellite(bool value) { mDoNotUseSatellite = value; }
 
+    void set_bias_map(long gnss_id, generator::spartn::BiasMap const& map);
+
+    // Returns the RINEX signal index for the given GNSS and suffix (e.g. "5X"), or -1 if unknown.
+    static int rinex_suffix_to_index(long gnss_id, char const* suffix);
+
     /// Generate SPARTN messages based on LPP SSR messages.
     /// @param[in] lpp_message The LPP SSR message.
     /// @return The generated SPARTN messages.
@@ -218,6 +224,11 @@ private:
     bool mNavicSupported;
 
     Statistics mStatistics;
+
+    generator::spartn::BiasMap mGpsBiasMap;
+    generator::spartn::BiasMap mGloBiasMap;
+    generator::spartn::BiasMap mGalBiasMap;
+    generator::spartn::BiasMap mBdsBiasMap;
 };
 
 }  // namespace spartn

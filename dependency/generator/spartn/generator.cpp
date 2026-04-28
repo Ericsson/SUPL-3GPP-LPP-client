@@ -1,4 +1,6 @@
 #include "generator.hpp"
+#include "bias_pipeline.hpp"
+#include "constant.hpp"
 #include "data.hpp"
 #include "decode.hpp"
 #include "message.hpp"
@@ -59,6 +61,25 @@ Generator::Generator()
       mBeidouSupported(false), mQzssSupported(false), mNavicSupported(false) {}
 
 Generator::~Generator() = default;
+
+void Generator::set_bias_map(long gnss_id, generator::spartn::BiasMap const& map) {
+    if (gnss_id == GNSS_ID__gnss_id_gps)
+        mGpsBiasMap = map;
+    else if (gnss_id == GNSS_ID__gnss_id_glonass)
+        mGloBiasMap = map;
+    else if (gnss_id == GNSS_ID__gnss_id_galileo)
+        mGalBiasMap = map;
+    else if (gnss_id == GNSS_ID__gnss_id_bds)
+        mBdsBiasMap = map;
+}
+
+int Generator::rinex_suffix_to_index(long gnss_id, char const* suffix) {
+    if (gnss_id == GNSS_ID__gnss_id_gps) return gGpsSm.rinex_suffix_to_index(suffix);
+    if (gnss_id == GNSS_ID__gnss_id_glonass) return gGloSm.rinex_suffix_to_index(suffix);
+    if (gnss_id == GNSS_ID__gnss_id_galileo) return gGalSm.rinex_suffix_to_index(suffix);
+    if (gnss_id == GNSS_ID__gnss_id_bds) return gBdsSm.rinex_suffix_to_index(suffix);
+    return -1;
+}
 
 std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     FUNCTION_SCOPE();

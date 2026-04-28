@@ -207,6 +207,13 @@ static args::Flag gPhaseBiasNoCorrectionShift{
     "Do not apply correction shift to phase biases when translating",
     {"l2s-no-phase-bias-correction-shift"},
 };
+static args::ValueFlagList<std::string> gBiasMap{
+    gSignalGroup,
+    "GNSS:ENTRY[|ENTRY]...",
+    "Add bias map entries. GNSS: GPS|GLO|GAL|BDS. ENTRY: [L|C]SSS=[L|C]TTT or SSS=TTT (both). "
+    "Example: BDS:L5X=L5P|C5X=C5P",
+    {"l2s-bias-map"},
+};
 
 static args::Group gTroposphereGroup{gGroup, "Troposphere:"};
 static args::Flag  gHydrostaticInZenith{
@@ -425,6 +432,114 @@ void parse(Config* config) {
     if (gSolutionId) lpp2spartn.solution_id = static_cast<uint8_t>(gSolutionId.Get());
     if (gSolutionProcessorId)
         lpp2spartn.solution_processor_id = static_cast<uint8_t>(gSolutionProcessorId.Get());
+
+    if (gBiasMap) {
+        // GNSS name -> bias_maps index and GNSS ID for suffix lookup
+        struct GnssEntry {
+            char const* name;
+            int         idx;
+            long        gnss_id;
+        };
+        // GNSS IDs match GNSS-ID.h: gps=0, galileo=3, glonass=4, bds=5
+        static GnssEntry const gnss_table[] = {
+            {"GPS", 0, 0},
+            {"GLO", 1, 4},
+            {"GAL", 2, 3},
+            {"BDS", 3, 5},
+        };
+
+        for (auto const& value : gBiasMap.Get()) {
+            // Split on ':'
+            auto colon = value.find(':');
+            if (colon == std::string::npos) {
+                throw args::ValidationError("--l2s-bias-map: expected GNSS:ENTRY, got `" + value +
+                                            "`");
+            }
+            auto gnss_str = value.substr(0, colon);
+            auto rest     = value.substr(colon + 1);
+
+            // Find GNSS
+            GnssEntry const* gnss_entry = nullptr;
+            for (auto const& g : gnss_table) {
+                if (gnss_str == g.name) {
+                    gnss_entry = &g;
+                    break;
+                }
+            }
+            if (!gnss_entry) {
+                throw args::ValidationError("--l2s-bias-map: unknown GNSS `" + gnss_str +
+                                            "`, must be one of GPS, GLO, GAL, BDS");
+            }
+
+            // Split entries on '|'
+            std::string::size_type pos = 0;
+            while (pos <= rest.size()) {
+                auto pipe = rest.find('|', pos);
+                auto entry =
+                    rest.substr(pos, pipe == std::string::npos ? std::string::npos : pipe - pos);
+                pos = pipe == std::string::npos ? rest.size() + 1 : pipe + 1;
+                if (entry.empty()) continue;
+
+                // Parse [L|C]SSS=[L|C]TTT or SSS=TTT
+                auto eq = entry.find('=');
+                if (eq == std::string::npos) {
+                    throw args::ValidationError("--l2s-bias-map: expected FROM=TO in entry `" +
+                                                entry + "`");
+                }
+                auto from_tok = entry.substr(0, eq);
+                auto to_tok   = entry.substr(eq + 1);
+
+                auto parse_token = [&](std::string const& tok, bool* apply_code,
+                                       bool* apply_phase) -> std::string {
+                    if (tok.empty()) {
+                        throw args::ValidationError("--l2s-bias-map: empty signal token in `" +
+                                                    entry + "`");
+                    }
+                    char prefix = tok[0];
+                    if (prefix == 'L' || prefix == 'l') {
+                        *apply_code  = false;
+                        *apply_phase = true;
+                        return tok.substr(1);
+                    } else if (prefix == 'C' || prefix == 'c') {
+                        *apply_code  = true;
+                        *apply_phase = false;
+                        return tok.substr(1);
+                    } else {
+                        *apply_code  = true;
+                        *apply_phase = true;
+                        return tok;
+                    }
+                };
+
+                bool        from_code = true, from_phase = true;
+                bool        to_code = true, to_phase = true;
+                std::string from_suffix = parse_token(from_tok, &from_code, &from_phase);
+                std::string to_suffix   = parse_token(to_tok, &to_code, &to_phase);
+
+                // Resolve suffixes via public Generator API
+                int from_idx = generator::spartn::Generator::rinex_suffix_to_index(
+                    gnss_entry->gnss_id, from_suffix.c_str());
+                int to_idx = generator::spartn::Generator::rinex_suffix_to_index(
+                    gnss_entry->gnss_id, to_suffix.c_str());
+                if (from_idx < 0) {
+                    throw args::ValidationError("--l2s-bias-map: unknown " + gnss_str +
+                                                " signal `" + from_suffix + "`");
+                }
+                if (to_idx < 0) {
+                    throw args::ValidationError("--l2s-bias-map: unknown " + gnss_str +
+                                                " signal `" + to_suffix + "`");
+                }
+
+                generator::spartn::BiasMapEntry e{
+                    static_cast<uint8_t>(from_idx),
+                    static_cast<uint8_t>(to_idx),
+                    from_code && to_code,
+                    from_phase && to_phase,
+                };
+                lpp2spartn.bias_maps[gnss_entry->idx].add(e);
+            }
+        }
+    }
 
     if (gUraOverride && (lpp2spartn.sf024_override < 0 || lpp2spartn.sf024_override > 7)) {
         throw args::ValidationError("URA override must be between 0 and 7, got `" +

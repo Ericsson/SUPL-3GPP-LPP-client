@@ -1,3 +1,4 @@
+#include "bias_pipeline.hpp"
 #include "constant.hpp"
 #include "data.hpp"
 #include "decode.hpp"
@@ -30,7 +31,7 @@ EXTERNAL_WARNINGS_PUSH
 EXTERNAL_WARNINGS_POP
 
 #include <algorithm>
-#include <map>
+#include <cstdio>
 
 #include <loglet/loglet.hpp>
 
@@ -297,69 +298,6 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_URA_r16* ura) {
     corrections.ura = ura;
 }
 
-struct Bias {
-    long    signal_id;
-    double  correction;
-    double  continuity_indicator;
-    bool    fix_flag;
-    uint8_t type;
-    bool    mapped;
-
-    static Bias invalid() { return Bias{-1, 0.0, 0.0, false, 0, false}; }
-};
-
-static Bias bias_from_signal(SystemMapping const* mapping, bool is_phase, long from_id,
-                             double correction, double continuity_indicator, bool fix_flag,
-                             bool translate, bool correction_shift) {
-    if (from_id >= mapping->signal_count) {
-        return Bias::invalid();
-    }
-
-    auto type = mapping->to_spartn[from_id];
-    if (type == INVALID_MAPPING) {
-        if (!translate) {
-            return Bias::invalid();
-        }
-
-        auto to_id = mapping->mapping[from_id];
-        if (to_id == INVALID_MAPPING) {
-            return Bias::invalid();
-        } else if (to_id >= mapping->signal_count) {
-            return Bias::invalid();
-        }
-
-        auto from_freq          = mapping->freq[from_id];
-        auto to_freq            = mapping->freq[to_id];
-        auto scale              = from_freq / to_freq;
-        auto shifted_correction = correction * scale;
-        if (!correction_shift) {
-            shifted_correction = correction;
-        }
-
-        VERBOSEF("        from: %2ld '%-16s' %7.2f", from_id, mapping->signal_name(from_id),
-                 correction);
-        VERBOSEF("          to: %2hhu '%-16s' %7.2f", to_id, mapping->signal_name(to_id),
-                 shifted_correction);
-
-        auto new_bias =
-            bias_from_signal(mapping, is_phase, to_id, shifted_correction, continuity_indicator,
-                             fix_flag, translate, correction_shift);
-        new_bias.mapped = true;
-        return new_bias;
-    }
-
-    return Bias{from_id, correction, continuity_indicator, fix_flag, type, false};
-}
-
-static bool phase_bias_fix_flag_from_value(long value) {
-    switch (value) {
-    case 0: return true;
-    case 1: return true;
-    case 2: return false;
-    default: return false;
-    }
-}
-
 static bool phase_bias_fix_flag(SSR_PhaseBiasSignalElement_r16 const& signal) {
     // NOTE(ewasjon): If the phaseBiasIntegerIndicator field is not present then it is
     // interpreted as having Value 0 (Undifferenced Integer).
@@ -367,246 +305,217 @@ static bool phase_bias_fix_flag(SSR_PhaseBiasSignalElement_r16 const& signal) {
     if (signal.phaseBiasIntegerIndicator_r16) {
         value = *signal.phaseBiasIntegerIndicator_r16;
     }
-
-    return phase_bias_fix_flag_from_value(value);
+    // 0 = Undifferenced Integer, 1 = Single-differenced Integer, 2 = Float
+    return value != 2;
 }
 
-template <typename BiasToSignal>
-static std::map<uint8_t, Bias>
-phase_biases(SystemMapping const* mapping, SSR_PhaseBiasSatElement_r16 const& satellite,
-             BiasToSignal* bias_to_signal, bool ignore_l2l, bool translate, bool correction_shift) {
-    std::map<uint8_t, Bias> biases_by_type;
-
-    VERBOSEF("  PHASE BIAS:");
-    auto& list = satellite.ssr_PhaseBiasSignalList_r16.list;
-
-    for (int i = 0; i < list.count; i++) {
-        auto element = list.array[i];
-        if (!element) continue;
-
-        auto signal_id  = decode::signal_id(element->signal_and_tracking_mode_ID_r16);
-        auto correction = decode::phase_bias_r16(element->phaseBias_r16);
-        auto continuity_indicator =
-            320.0;  // TODO(ewasjon): [low-priority] Compute the continuity indicator.
-        auto fix_flag = phase_bias_fix_flag(*element);
-
-        auto bias = (*bias_to_signal)(mapping, true, signal_id, correction, continuity_indicator,
-                                      fix_flag, translate, correction_shift);
-        if (bias.signal_id == -1) {
-            TRACEF("    ?         %2ld '%-16s' %7.2f%s", signal_id, mapping->signal_name(signal_id),
-                   correction, fix_flag ? " (fix)" : " (unfixed)");
-            continue;
-        }
-
-        if (mapping->gnss_id == GNSS_ID__gnss_id_gps && bias.type == 2 && ignore_l2l) {
-            VERBOSEF("    -%s (%u)  %2ld '%-16s' %7.2f%s",
-                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction,
-                     fix_flag ? " (fix)" : " (unfixed)");
-            continue;
-        }
-
-        if (biases_by_type.count(bias.type) == 0) {
-            VERBOSEF("    +%s (%u)  %2ld '%-16s' %7.2f%s",
-                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction,
-                     fix_flag ? " (fix)" : " (unfixed)");
-            biases_by_type[bias.type] = bias;
-        } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
-            // If the bias is mapped and the new bias is not mapped, then we want to prioritize
-            // the "original" bias.
-            VERBOSEF("    =%s (%u)  %2ld '%-16s' %7.2f%s",
-                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction,
-                     fix_flag ? " (fix)" : " (unfixed)");
-            biases_by_type[bias.type] = bias;
+static void debug_print_biases(SystemMapping const& sm, char const* kind, int prn,
+                               RinexBiasSet const& set, BiasSlots const& slots) {
+    for (uint8_t i = 0; i < set.count; ++i) {
+        auto const& rb     = set.entries[i];
+        uint8_t     slot   = sm.to_spartn[rb.rinex_idx];
+        int         spartn = (slot != INVALID_MAPPING && slots.has(slot)) ? slot : -1;
+        char const* suffix =
+            sm.rinex_suffixes[rb.rinex_idx] ? sm.rinex_suffixes[rb.rinex_idx] : "?";
+        char const* lpp = sm.signal_name(rb.rinex_idx);
+        if (rb.mapped_from >= 0 && sm.rinex_suffixes[rb.mapped_from]) {
+            fprintf(stderr, "SPARTN-%s,%s,%d,%s%s,lpp=%d,'%s',%7.4f,slot=%d,from=%s\n", kind,
+                    sm.gnss_name(), prn, kind[0] == 'P' ? "L" : "C", suffix, rb.rinex_idx, lpp,
+                    rb.correction, spartn, sm.rinex_suffixes[rb.mapped_from]);
         } else {
-            VERBOSEF("    !%s (%u)  %2ld '%-16s' %7.2f%s",
-                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction,
-                     fix_flag ? " (fix)" : " (unfixed)");
+            fprintf(stderr, "SPARTN-%s,%s,%d,%s%s,lpp=%d,'%s',%7.4f,slot=%d\n", kind,
+                    sm.gnss_name(), prn, kind[0] == 'P' ? "L" : "C", suffix, rb.rinex_idx, lpp,
+                    rb.correction, spartn);
         }
     }
-
-    return biases_by_type;
 }
 
-template <typename BiasToSignal>
-static std::map<uint8_t, Bias>
-code_biases(SystemMapping const* mapping, SSR_CodeBiasSatElement_r15 const& satellite,
-            BiasToSignal* bias_to_signal, bool ignore_l2l, bool translate, bool correction_shift) {
-    std::map<uint8_t, Bias> biases_by_type;
-
-    VERBOSEF("  CODE BIAS:");
-    auto& list = satellite.ssr_CodeBiasSignalList_r15.list;
-    for (int i = 0; i < list.count; i++) {
-        auto element = list.array[i];
-        if (!element) continue;
-
-        auto signal_id  = decode::signal_id(element->signal_and_tracking_mode_ID_r15);
-        auto correction = decode::code_bias_r15(element->codeBias_r15);
-
-        auto bias = (*bias_to_signal)(mapping, false, signal_id, correction, 0.0, false, translate,
-                                      correction_shift);
-        if (bias.signal_id == -1) {
-            TRACEF("    ?         %2ld '%-16s' %7.2f", signal_id, mapping->signal_name(signal_id),
-                   correction);
-            continue;
-        }
-
-        if (mapping->gnss_id == GNSS_ID__gnss_id_gps && bias.type == 2 && ignore_l2l) {
-            VERBOSEF("    -%s (%u)  %2ld '%-16s' %7.2f",
-                     bias_type_name(mapping->gnss_id, true, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction);
-            continue;
-        }
-
-        if (biases_by_type.count(bias.type) == 0) {
-            VERBOSEF("    +%s (%u)  %2ld '%-16s' %7.2f",
-                     bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction);
-            biases_by_type[bias.type] = bias;
-        } else if (!bias.mapped && biases_by_type[bias.type].mapped) {
-            // If the bias is mapped and the new bias is not mapped, then we want to prioritize
-            // the "original" bias.
-            VERBOSEF("    =%s (%u)  %2ld '%-16s' %7.2f",
-                     bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction);
-            biases_by_type[bias.type] = bias;
-        } else {
-            VERBOSEF("    !%s (%u)  %2ld '%-16s' %7.2f",
-                     bias_type_name(mapping->gnss_id, false, bias.type), bias.type, bias.signal_id,
-                     mapping->signal_name(bias.signal_id), bias.correction);
-        }
+static void emit_phase_slots(MessageBuilder& builder, BiasSlots const& slots,
+                             bool ignore_l2l_slot2) {
+    for (uint8_t i = 0; i < MAX_BIAS_SLOTS; ++i) {
+        if (!slots.has(i)) continue;
+        if (ignore_l2l_slot2 && i == 2) continue;
+        builder.sf023(slots.slots[i].fix_flag);
+        builder.sf015(slots.slots[i].continuity_indicator);
+        builder.sf020(slots.slots[i].correction);
     }
-
-    return biases_by_type;
 }
 
-static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
+static void emit_code_slots(MessageBuilder& builder, BiasSlots const& slots) {
+    for (uint8_t i = 0; i < MAX_BIAS_SLOTS; ++i) {
+        if (!slots.has(i)) continue;
+        builder.sf029(slots.slots[i].correction);
+    }
+}
+
+// Mask that excludes slot 2 (L2L/GPS) when ignore_l2l is set.
+static BiasSlots mask_ignore_l2l(BiasSlots slots, bool ignore_l2l) {
+    if (ignore_l2l) slots.mask &= ~(1u << 2);
+    return slots;
+}
+
+static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const& sm,
+                                    BiasMap const&                     bias_map,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
                                     SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
-                                    bool code_bias_translate, bool code_bias_no_correction_shift,
-                                    bool phase_bias_translate,
-                                    bool phase_bias_no_correction_shift) {
+                                    int prn) {
     if (!phase_bias) {
         builder.sf025_raw(false, 0);
     } else {
-        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
-                                            phase_bias_translate, phase_bias_no_correction_shift);
-
-        builder.sf025(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf023(kvp.second.fix_flag);
-            builder.sf015(kvp.second.continuity_indicator);
-            builder.sf020(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = phase_bias->ssr_PhaseBiasSignalList_r16.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r16);
+            stage1_add(sm, set, sig, decode::phase_bias_r16(list.array[i]->phaseBias_r16), 320.0,
+                       phase_bias_fix_flag(*list.array[i]));
         }
+        stage2_expand(sm, bias_map, set, false);
+        auto slots = mask_ignore_l2l(stage3_assign(sm, set), ignore_l2l);
+        debug_print_biases(sm, "PHASE", prn, set, slots);
+        builder.sf025(slots);
+        emit_phase_slots(builder, slots, false);
     }
 
     if (!code_bias) {
         builder.sf027_raw(false, 0);
     } else {
-        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
-                                           code_bias_translate, code_bias_no_correction_shift);
-
-        builder.sf027(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf029(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = code_bias->ssr_CodeBiasSignalList_r15.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r15);
+            stage1_add(sm, set, sig, decode::code_bias_r15(list.array[i]->codeBias_r15), 0.0,
+                       false);
         }
+        stage2_expand(sm, bias_map, set, true);
+        auto slots = mask_ignore_l2l(stage3_assign(sm, set), ignore_l2l);
+        debug_print_biases(sm, "CODE", prn, set, slots);
+        builder.sf027(slots);
+        emit_code_slots(builder, slots);
     }
 }
 
-static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
+static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const& sm,
+                                    BiasMap const&                     bias_map,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
-                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
-                                    bool code_bias_translate, bool code_bias_correction_shift,
-                                    bool phase_bias_translate, bool phase_bias_correction_shift) {
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, int prn) {
     if (!phase_bias) {
         builder.sf026_raw(false, 0);
     } else {
-        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
-                                            phase_bias_translate, phase_bias_correction_shift);
-
-        builder.sf026(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf023(kvp.second.fix_flag);
-            builder.sf015(kvp.second.continuity_indicator);
-            builder.sf020(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = phase_bias->ssr_PhaseBiasSignalList_r16.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r16);
+            stage1_add(sm, set, sig, decode::phase_bias_r16(list.array[i]->phaseBias_r16), 320.0,
+                       phase_bias_fix_flag(*list.array[i]));
         }
+        stage2_expand(sm, bias_map, set, false);
+        auto slots = stage3_assign(sm, set);
+        debug_print_biases(sm, "PHASE", prn, set, slots);
+        builder.sf026(slots);
+        emit_phase_slots(builder, slots, false);
     }
 
     if (!code_bias) {
         builder.sf028_raw(false, 0);
     } else {
-        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
-                                           code_bias_translate, code_bias_correction_shift);
-
-        builder.sf028(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf029(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = code_bias->ssr_CodeBiasSignalList_r15.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r15);
+            stage1_add(sm, set, sig, decode::code_bias_r15(list.array[i]->codeBias_r15), 0.0,
+                       false);
         }
+        stage2_expand(sm, bias_map, set, true);
+        auto slots = stage3_assign(sm, set);
+        debug_print_biases(sm, "CODE", prn, set, slots);
+        builder.sf028(slots);
+        emit_code_slots(builder, slots);
     }
 }
 
-static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
+static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const& sm,
+                                    BiasMap const&                     bias_map,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
-                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
-                                    bool code_bias_translate, bool code_bias_correction_shift,
-                                    bool phase_bias_translate, bool phase_bias_correction_shift) {
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, int prn) {
     if (!phase_bias) {
         builder.sf102_raw(false, 0);
     } else {
-        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
-                                            phase_bias_translate, phase_bias_correction_shift);
-
-        builder.sf102(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf023(kvp.second.fix_flag);
-            builder.sf015(kvp.second.continuity_indicator);
-            builder.sf020(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = phase_bias->ssr_PhaseBiasSignalList_r16.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r16);
+            stage1_add(sm, set, sig, decode::phase_bias_r16(list.array[i]->phaseBias_r16), 320.0,
+                       phase_bias_fix_flag(*list.array[i]));
         }
+        stage2_expand(sm, bias_map, set, false);
+        auto slots = stage3_assign(sm, set);
+        debug_print_biases(sm, "PHASE", prn, set, slots);
+        builder.sf102(slots);
+        emit_phase_slots(builder, slots, false);
     }
 
     if (!code_bias) {
         builder.sf105_raw(false, 0);
     } else {
-        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
-                                           code_bias_translate, code_bias_correction_shift);
-
-        builder.sf105(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf029(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = code_bias->ssr_CodeBiasSignalList_r15.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r15);
+            stage1_add(sm, set, sig, decode::code_bias_r15(list.array[i]->codeBias_r15), 0.0,
+                       false);
         }
+        stage2_expand(sm, bias_map, set, true);
+        auto slots = stage3_assign(sm, set);
+        debug_print_biases(sm, "CODE", prn, set, slots);
+        builder.sf105(slots);
+        emit_code_slots(builder, slots);
     }
 }
 
-static void generate_bds_bias_block(MessageBuilder& builder, SystemMapping const* mapping,
+static void generate_bds_bias_block(MessageBuilder& builder, SystemMapping const& sm,
+                                    BiasMap const&                     bias_map,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
-                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
-                                    bool code_bias_translate, bool code_bias_correction_shift,
-                                    bool phase_bias_translate, bool phase_bias_correction_shift) {
+                                    SSR_PhaseBiasSatElement_r16 const* phase_bias, int prn) {
     if (!phase_bias) {
         builder.sf103_raw(false, 0);
     } else {
-        auto types_of_biases = phase_biases(mapping, *phase_bias, &bias_from_signal, ignore_l2l,
-                                            phase_bias_translate, phase_bias_correction_shift);
-        builder.sf103(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf023(kvp.second.fix_flag);
-            builder.sf015(kvp.second.continuity_indicator);
-            builder.sf020(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = phase_bias->ssr_PhaseBiasSignalList_r16.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r16);
+            stage1_add(sm, set, sig, decode::phase_bias_r16(list.array[i]->phaseBias_r16), 320.0,
+                       phase_bias_fix_flag(*list.array[i]));
         }
+        stage2_expand(sm, bias_map, set, false);
+        auto slots = stage3_assign(sm, set);
+        debug_print_biases(sm, "PHASE", prn, set, slots);
+        builder.sf103(slots);
+        emit_phase_slots(builder, slots, false);
     }
 
     if (!code_bias) {
         builder.sf106_raw(false, 0);
     } else {
-        auto types_of_biases = code_biases(mapping, *code_bias, &bias_from_signal, ignore_l2l,
-                                           code_bias_translate, code_bias_correction_shift);
-        builder.sf106(&types_of_biases);
-        for (auto& kvp : types_of_biases) {
-            builder.sf029(kvp.second.correction);
+        RinexBiasSet set{};
+        auto&        list = code_bias->ssr_CodeBiasSignalList_r15.list;
+        for (int i = 0; i < list.count; i++) {
+            if (!list.array[i]) continue;
+            auto sig = decode::signal_id(list.array[i]->signal_and_tracking_mode_ID_r15);
+            stage1_add(sm, set, sig, decode::code_bias_r15(list.array[i]->codeBias_r15), 0.0,
+                       false);
         }
+        stage2_expand(sm, bias_map, set, true);
+        auto slots = stage3_assign(sm, set);
+        debug_print_biases(sm, "CODE", prn, set, slots);
+        builder.sf106(slots);
+        emit_code_slots(builder, slots);
     }
 }
 
@@ -784,28 +693,24 @@ void Generator::generate_ocb(uint16_t iod) {
             if (satellite.code_bias || satellite.phase_bias) {
                 switch (gnss_id) {
                 case GNSS_ID__gnss_id_gps:
-                    generate_gps_bias_block(builder, &gGpsSm, satellite.code_bias,
-                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
-                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
-                                            mPhaseBiasCorrectionShift);
+                    generate_gps_bias_block(builder, gGpsSm, mGpsBiasMap, satellite.code_bias,
+                                            satellite.phase_bias, mIgnoreL2L,
+                                            static_cast<int>(satellite.prn()));
                     break;
                 case GNSS_ID__gnss_id_glonass:
-                    generate_glo_bias_block(builder, &gGloSm, satellite.code_bias,
-                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
-                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
-                                            mPhaseBiasCorrectionShift);
+                    generate_glo_bias_block(builder, gGloSm, mGloBiasMap, satellite.code_bias,
+                                            satellite.phase_bias,
+                                            static_cast<int>(satellite.prn()));
                     break;
                 case GNSS_ID__gnss_id_galileo:
-                    generate_gal_bias_block(builder, &gGalSm, satellite.code_bias,
-                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
-                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
-                                            mPhaseBiasCorrectionShift);
+                    generate_gal_bias_block(builder, gGalSm, mGalBiasMap, satellite.code_bias,
+                                            satellite.phase_bias,
+                                            static_cast<int>(satellite.prn()));
                     break;
                 case GNSS_ID__gnss_id_bds:
-                    generate_bds_bias_block(builder, &gBdsSm, satellite.code_bias,
-                                            satellite.phase_bias, mIgnoreL2L, mCodeBiasTranslate,
-                                            mCodeBiasCorrectionShift, mPhaseBiasTranslate,
-                                            mPhaseBiasCorrectionShift);
+                    generate_bds_bias_block(builder, gBdsSm, mBdsBiasMap, satellite.code_bias,
+                                            satellite.phase_bias,
+                                            static_cast<int>(satellite.prn()));
                     break;
                 default: UNREACHABLE();
                 }

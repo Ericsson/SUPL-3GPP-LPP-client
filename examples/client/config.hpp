@@ -10,7 +10,6 @@
 #ifdef INCLUDE_GENERATOR_SPARTN
 #include <generator/spartn2/generator.hpp>
 #endif
-
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
 #include <generator/idokeido/idokeido.hpp>
 #endif
@@ -318,6 +317,9 @@ struct Lpp2SpartnConfig {
     generator::spartn::CrcType    crc_type;
     uint8_t                       solution_id;
     uint8_t                       solution_processor_id;
+
+    // Per-GNSS bias maps: [0]=GPS, [1]=GLO, [2]=GAL, [3]=BDS
+    std::array<generator::spartn::BiasMap, 4> bias_maps;
 };
 #endif
 

@@ -1,4 +1,5 @@
 #pragma once
+#include "bias_pipeline.hpp"
 #include "builder.hpp"
 #include "data.hpp"
 #include "generator.hpp"
@@ -271,6 +272,21 @@ public:
         }
     }
 
+    inline void sfxxx_bias_mask(uint8_t low, uint8_t high,
+                                generator::spartn::BiasSlots const& slots) {
+        // Find highest occupied slot to decide extended vs compact.
+        uint8_t highest = 0;
+        for (uint8_t i = 0; i < high; ++i) {
+            if (slots.has(i)) highest = i;
+        }
+        bool    extended = highest >= low;
+        uint8_t size     = extended ? high : low;
+        mBuilder.b(extended);
+        for (uint8_t i = 0; i < size; ++i) {
+            mBuilder.b(slots.has(i));
+        }
+    }
+
     // SF025 - GPS phase bias mask
     inline void sf025_raw(bool extended, uint32_t mask) {
         sfxxx_bias_mask_raw(6, 11, extended, mask);
@@ -280,6 +296,8 @@ public:
     inline void sf025(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(6, 11, types);
     }
+
+    inline void sf025(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(6, 11, slots); }
 
     // SF026 - GLONASS phase bias mask
     inline void sf026_raw(bool extended, uint32_t mask) {
@@ -291,6 +309,8 @@ public:
         sfxxx_bias_mask(5, 9, types);
     }
 
+    inline void sf026(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(5, 9, slots); }
+
     // SF027 - GPS code bias mask
     inline void sf027_raw(bool extended, uint32_t mask) {
         sfxxx_bias_mask_raw(6, 11, extended, mask);
@@ -301,6 +321,8 @@ public:
         sfxxx_bias_mask(6, 11, types);
     }
 
+    inline void sf027(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(6, 11, slots); }
+
     // SF028 - GLONASS code bias mask
     inline void sf028_raw(bool extended, uint32_t mask) {
         sfxxx_bias_mask_raw(5, 9, extended, mask);
@@ -310,6 +332,8 @@ public:
     inline void sf028(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(5, 9, types);
     }
+
+    inline void sf028(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(5, 9, slots); }
 
     // SF029 - Code bias correction
     inline void sf029(double value) { mBuilder.double_to_bits(-20.46, 20.46, 0.02, value, 11); }
@@ -549,6 +573,8 @@ public:
         sfxxx_bias_mask(8, 15, types);
     }
 
+    inline void sf102(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(8, 15, slots); }
+
     // SF103 - BDS phase bias mask
     inline void sf103_raw(bool extended, uint32_t mask) {
         sfxxx_bias_mask_raw(8, 15, extended, mask);
@@ -558,6 +584,8 @@ public:
     inline void sf103(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(8, 15, types);
     }
+
+    inline void sf103(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(8, 15, slots); }
 
     // SF104 - QZSS phase bias mask
     inline void sf104_raw(bool extended, uint32_t mask) {
@@ -579,6 +607,8 @@ public:
         sfxxx_bias_mask(8, 15, types);
     }
 
+    inline void sf105(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(8, 15, slots); }
+
     // SF106 - BDS code bias mask
     inline void sf106_raw(bool extended, uint32_t mask) {
         sfxxx_bias_mask_raw(8, 15, extended, mask);
@@ -588,6 +618,8 @@ public:
     inline void sf106(std::map<uint8_t, T> const* types) {
         sfxxx_bias_mask(8, 15, types);
     }
+
+    inline void sf106(generator::spartn::BiasSlots const& slots) { sfxxx_bias_mask(8, 15, slots); }
 
     // SF107 - QZSS code bias mask
     inline void sf107_raw(bool extended, uint32_t mask) {

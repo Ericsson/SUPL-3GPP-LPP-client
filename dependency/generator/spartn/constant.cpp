@@ -1,5 +1,6 @@
 #include "constant.hpp"
 
+#include <cstring>
 #include <external_warnings.hpp>
 
 EXTERNAL_WARNINGS_PUSH
@@ -477,38 +478,56 @@ static CONSTEXPR const char* GLO_RINEX_NAME[24] = {
 };
 
 static CONSTEXPR const char* GAL_RINEX_SUFFIX[24] = {
-    "1Z",  // E1
-    "5X",  // E5A
-    "7X",  // E5B
-    "6Z",  // E6
-    "8X",  // E5A+E5B
-    "1C",  // E1 C no data
-    "1A",  // E1 A
-    "1B",  // E1 B I/NAV
-    "1X",  // E1 B+C
-    "1Z",  // E1 A+B+C
-    "6C",  // E6 C
-    "6A",  // E6 A
-    "6B",  // E6 B
-    "6X",  // E6 B+C
-    "6Z",  // E6 A+B+C
-    "7I",  // E5B I
-    "7Q",  // E5B Q
-    "7X",  // E5B I+Q
-    "8I",  // E5(A+B) I
-    "8Q",  // E5(A+B) Q
-    "8X",  // E5(A+B) I+Q
-    "5I",  // E5A I
-    "5Q",  // E5A Q
-    "5X",  // E5A I+Q
+    nullptr,  // E1          (legacy, use E1 B+C index 8 instead)
+    nullptr,  // E5A         (legacy, use E5A I+Q index 23 instead)
+    nullptr,  // E5B         (legacy, use E5B I+Q index 17 instead)
+    nullptr,  // E6          (legacy, use E6 B+C index 13 instead)
+    nullptr,  // E5A+E5B     (legacy, use E5(A+B) I+Q index 20 instead)
+    "1C",     // E1 C no data
+    "1A",     // E1 A
+    "1B",     // E1 B I/NAV
+    "1X",     // E1 B+C
+    "1Z",     // E1 A+B+C
+    "6C",     // E6 C
+    "6A",     // E6 A
+    "6B",     // E6 B
+    "6X",     // E6 B+C
+    "6Z",     // E6 A+B+C
+    "7I",     // E5B I
+    "7Q",     // E5B Q
+    "7X",     // E5B I+Q
+    "8I",     // E5(A+B) I
+    "8Q",     // E5(A+B) Q
+    "8X",     // E5(A+B) I+Q
+    "5I",     // E5A I
+    "5Q",     // E5A Q
+    "5X",     // E5A I+Q
 };
 static CONSTEXPR const char* GAL_RINEX_NAME[24] = {
-    "GAL E1 A+B+C",      "GAL E5a I+Q",      "GAL E5b I+Q",       "GAL E6 A+B+C",
-    "GAL E5(a+b) I+Q",   "GAL E1 C no data", "GAL E1 A PRS",      "GAL E1 B I/NAV",
-    "GAL E1 B+C",        "GAL E1 A+B+C",     "GAL E6 C no data",  "GAL E6 A PRS",
-    "GAL E6 B C/NAV",    "GAL E6 B+C",       "GAL E6 A+B+C",      "GAL E5b I I/NAV",
-    "GAL E5b Q no data", "GAL E5b I+Q",      "GAL E5(a+b) I",     "GAL E5(a+b) Q",
-    "GAL E5(a+b) I+Q",   "GAL E5a I F/NAV",  "GAL E5a Q no data", "GAL E5a I+Q",
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    nullptr,
+    "GAL E1 C no data",
+    "GAL E1 A PRS",
+    "GAL E1 B I/NAV",
+    "GAL E1 B+C",
+    "GAL E1 A+B+C",
+    "GAL E6 C no data",
+    "GAL E6 A PRS",
+    "GAL E6 B C/NAV",
+    "GAL E6 B+C",
+    "GAL E6 A+B+C",
+    "GAL E5b I I/NAV",
+    "GAL E5b Q no data",
+    "GAL E5b I+Q",
+    "GAL E5(a+b) I",
+    "GAL E5(a+b) Q",
+    "GAL E5(a+b) I+Q",
+    "GAL E5a I F/NAV",
+    "GAL E5a Q no data",
+    "GAL E5a I+Q",
 };
 
 static CONSTEXPR const char* BDS_RINEX_SUFFIX[24] = {
@@ -578,6 +597,16 @@ char const* SystemMapping::signal_rinex_suffix(long signal_id) const {
 char const* SystemMapping::signal_rinex_name(long signal_id) const {
     if (signal_id < signal_count && rinex_names[signal_id]) return rinex_names[signal_id];
     return nullptr;
+}
+
+int SystemMapping::rinex_suffix_to_index(char const* suffix) const {
+    if (!suffix) return -1;
+    int result = -1;
+    for (long i = 0; i < signal_count; ++i) {
+        if (rinex_suffixes[i] && strcmp(rinex_suffixes[i], suffix) == 0)
+            result = static_cast<int>(i);
+    }
+    return result;
 }
 
 SystemMapping const gGpsSm = {
