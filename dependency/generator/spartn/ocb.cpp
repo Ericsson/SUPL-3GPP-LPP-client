@@ -309,6 +309,7 @@ static bool phase_bias_fix_flag(SSR_PhaseBiasSignalElement_r16 const& signal) {
     return value != 2;
 }
 
+#if 0  // debug instrumentation: set to 1 to emit per-satellite bias trace lines
 static void debug_print_biases(SystemMapping const& sm, char const* kind, int prn,
                                RinexBiasSet const& set, BiasSlots const& slots) {
     for (uint8_t i = 0; i < set.count; ++i) {
@@ -329,6 +330,7 @@ static void debug_print_biases(SystemMapping const& sm, char const* kind, int pr
         }
     }
 }
+#endif
 
 static void emit_phase_slots(MessageBuilder& builder, BiasSlots const& slots,
                              bool ignore_l2l_slot2) {
@@ -359,6 +361,7 @@ static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
                                     SSR_PhaseBiasSatElement_r16 const* phase_bias, bool ignore_l2l,
                                     int prn) {
+    (void)prn;  // only used inside the #if 0 debug_print_biases blocks
     if (!phase_bias) {
         builder.sf025_raw(false, 0);
     } else {
@@ -372,7 +375,9 @@ static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, false);
         auto slots = mask_ignore_l2l(stage3_assign(sm, set), ignore_l2l);
+#if 0
         debug_print_biases(sm, "PHASE", prn, set, slots);
+#endif
         builder.sf025(slots);
         emit_phase_slots(builder, slots, false);
     }
@@ -390,7 +395,9 @@ static void generate_gps_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, true);
         auto slots = mask_ignore_l2l(stage3_assign(sm, set), ignore_l2l);
+#if 0
         debug_print_biases(sm, "CODE", prn, set, slots);
+#endif
         builder.sf027(slots);
         emit_code_slots(builder, slots);
     }
@@ -400,6 +407,7 @@ static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const
                                     BiasMap const&                     bias_map,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
                                     SSR_PhaseBiasSatElement_r16 const* phase_bias, int prn) {
+    (void)prn;
     if (!phase_bias) {
         builder.sf026_raw(false, 0);
     } else {
@@ -413,7 +421,9 @@ static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, false);
         auto slots = stage3_assign(sm, set);
+#if 0
         debug_print_biases(sm, "PHASE", prn, set, slots);
+#endif
         builder.sf026(slots);
         emit_phase_slots(builder, slots, false);
     }
@@ -431,7 +441,9 @@ static void generate_glo_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, true);
         auto slots = stage3_assign(sm, set);
+#if 0
         debug_print_biases(sm, "CODE", prn, set, slots);
+#endif
         builder.sf028(slots);
         emit_code_slots(builder, slots);
     }
@@ -441,6 +453,7 @@ static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const
                                     BiasMap const&                     bias_map,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
                                     SSR_PhaseBiasSatElement_r16 const* phase_bias, int prn) {
+    (void)prn;
     if (!phase_bias) {
         builder.sf102_raw(false, 0);
     } else {
@@ -454,7 +467,9 @@ static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, false);
         auto slots = stage3_assign(sm, set);
+#if 0
         debug_print_biases(sm, "PHASE", prn, set, slots);
+#endif
         builder.sf102(slots);
         emit_phase_slots(builder, slots, false);
     }
@@ -472,7 +487,9 @@ static void generate_gal_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, true);
         auto slots = stage3_assign(sm, set);
+#if 0
         debug_print_biases(sm, "CODE", prn, set, slots);
+#endif
         builder.sf105(slots);
         emit_code_slots(builder, slots);
     }
@@ -482,6 +499,7 @@ static void generate_bds_bias_block(MessageBuilder& builder, SystemMapping const
                                     BiasMap const&                     bias_map,
                                     SSR_CodeBiasSatElement_r15 const*  code_bias,
                                     SSR_PhaseBiasSatElement_r16 const* phase_bias, int prn) {
+    (void)prn;
     if (!phase_bias) {
         builder.sf103_raw(false, 0);
     } else {
@@ -495,7 +513,9 @@ static void generate_bds_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, false);
         auto slots = stage3_assign(sm, set);
+#if 0
         debug_print_biases(sm, "PHASE", prn, set, slots);
+#endif
         builder.sf103(slots);
         emit_phase_slots(builder, slots, false);
     }
@@ -513,7 +533,9 @@ static void generate_bds_bias_block(MessageBuilder& builder, SystemMapping const
         }
         stage2_expand(sm, bias_map, set, true);
         auto slots = stage3_assign(sm, set);
+#if 0
         debug_print_biases(sm, "CODE", prn, set, slots);
+#endif
         builder.sf106(slots);
         emit_code_slots(builder, slots);
     }

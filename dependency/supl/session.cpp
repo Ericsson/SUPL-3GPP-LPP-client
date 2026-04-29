@@ -221,13 +221,9 @@ bool Session::send_all(void const* buffer, size_t size) {
             }
             break;
         }
-        case TcpClient::IoStatus::Closed:
-            WARNF("peer closed connection during send");
-            return false;
+        case TcpClient::IoStatus::Closed: WARNF("peer closed connection during send"); return false;
         case TcpClient::IoStatus::Error:
-        default:
-            WARNF("send failed");
-            return false;
+        default: WARNF("send failed"); return false;
         }
     }
     return true;
@@ -371,16 +367,10 @@ bool Session::fill_receive_buffer() {
             }
             return true;
         case TcpClient::IoStatus::WantRead:
-        case TcpClient::IoStatus::WantWrite:
-            VERBOSEF("receive would block");
-            return true;
-        case TcpClient::IoStatus::Closed:
-            WARNF("peer closed connection");
-            return false;
+        case TcpClient::IoStatus::WantWrite: VERBOSEF("receive would block"); return true;
+        case TcpClient::IoStatus::Closed: WARNF("peer closed connection"); return false;
         case TcpClient::IoStatus::Error:
-        default:
-            WARNF("receive failed");
-            return false;
+        default: WARNF("receive failed"); return false;
         }
     }
 }
