@@ -16,6 +16,7 @@ EXTERNAL_WARNINGS_POP
 
 #include <chrono>
 #include <loglet/loglet.hpp>
+#include <poll.h>
 
 #define UPER_DECODE_BUFFER_SIZE (64 * 1024)
 
@@ -172,6 +173,66 @@ Session::Handshake Session::handle_handshake() {
     return Handshake::OK;
 }
 
+bool Session::send_all(void const* buffer, size_t size) {
+    VSCOPE_FUNCTIONF("%zu", size);
+
+    auto const* cursor    = static_cast<uint8_t const*>(buffer);
+    size_t      remaining = size;
+    // Upper bound on how long we're willing to wait for the socket to become
+    // ready again between chunks. The session-level FSM has its own overall
+    // timeouts; this only guards against a stuck TLS peer during a single send.
+    constexpr int POLL_TIMEOUT_MS = 5000;
+
+    while (remaining > 0) {
+        auto r = mTcpClient->send(cursor, static_cast<int>(remaining));
+        switch (r.status) {
+        case TcpClient::IoStatus::Ok: {
+            if (r.bytes <= 0) {
+                WARNF("send reported 0 bytes with Ok status");
+                return false;
+            }
+            cursor += static_cast<size_t>(r.bytes);
+            remaining -= static_cast<size_t>(r.bytes);
+            break;
+        }
+        case TcpClient::IoStatus::WantRead:
+        case TcpClient::IoStatus::WantWrite: {
+            auto fd = mTcpClient->fd();
+            if (fd < 0) {
+                WARNF("invalid fd while waiting to send");
+                return false;
+            }
+            struct pollfd pfd;
+            pfd.fd      = fd;
+            pfd.events  = (r.status == TcpClient::IoStatus::WantRead) ? POLLIN : POLLOUT;
+            pfd.revents = 0;
+            auto pr     = ::poll(&pfd, 1, POLL_TIMEOUT_MS);
+            if (pr < 0) {
+                WARNF("::poll failed while waiting to send");
+                return false;
+            }
+            if (pr == 0) {
+                WARNF("timed out waiting to send (%zu/%zu bytes sent)", size - remaining, size);
+                return false;
+            }
+            if (pfd.revents & (POLLERR | POLLHUP | POLLNVAL)) {
+                WARNF("socket error while waiting to send");
+                return false;
+            }
+            break;
+        }
+        case TcpClient::IoStatus::Closed:
+            WARNF("peer closed connection during send");
+            return false;
+        case TcpClient::IoStatus::Error:
+        default:
+            WARNF("send failed");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool Session::send(const START& message) {
     FUNCTION_SCOPEN("START");
     if (!is_connected()) {
@@ -185,8 +246,7 @@ bool Session::send(const START& message) {
         return false;
     }
 
-    auto sent = mTcpClient->send(encoded_message.data(), static_cast<int>(encoded_message.size()));
-    return static_cast<size_t>(sent) == encoded_message.size();
+    return send_all(encoded_message.data(), encoded_message.size());
 }
 
 bool Session::send(const POSINIT& message) {
@@ -202,8 +262,7 @@ bool Session::send(const POSINIT& message) {
         return false;
     }
 
-    auto sent = mTcpClient->send(encoded_message.data(), static_cast<int>(encoded_message.size()));
-    return static_cast<size_t>(sent) == encoded_message.size();
+    return send_all(encoded_message.data(), encoded_message.size());
 }
 
 bool Session::send(const POS& message) {
@@ -219,8 +278,7 @@ bool Session::send(const POS& message) {
         return false;
     }
 
-    auto sent = mTcpClient->send(encoded_message.data(), static_cast<int>(encoded_message.size()));
-    return static_cast<size_t>(sent) == encoded_message.size();
+    return send_all(encoded_message.data(), encoded_message.size());
 }
 
 void Session::rb_consume(size_t bytes) {
@@ -286,17 +344,45 @@ ULP_PDU* Session::parse_receive_buffer() {
 bool Session::fill_receive_buffer() {
     VSCOPE_FUNCTION();
 
-    auto buffer = mReceiveBuffer + mReceiveBufferOffset;
-    auto size   = mReceiveBufferSize - mReceiveBufferOffset;
-    auto bytes  = mTcpClient->receive(buffer, static_cast<int>(size));
-    if (bytes <= 0) {
-        WARNF("receive failed");
-        return false;
-    }
+    // Loop as long as either the socket produced data or the TLS backend has
+    // plaintext already buffered internally. The latter is crucial: epoll
+    // reports readability of the kernel TCP buffer, but OpenSSL may have
+    // already pulled a chunk off the socket and decrypted multiple records
+    // into its own plaintext buffer. If we only drain one record and return
+    // to the event loop, epoll will not fire (there is nothing left on the
+    // socket) and we deadlock.
+    for (;;) {
+        auto buffer = mReceiveBuffer + mReceiveBufferOffset;
+        auto size   = mReceiveBufferSize - mReceiveBufferOffset;
+        if (size == 0) {
+            VERBOSEF("receive buffer full");
+            return true;
+        }
 
-    VERBOSEF("received %zd bytes", bytes);
-    mReceiveBufferOffset += static_cast<size_t>(bytes);
-    return true;
+        auto result = mTcpClient->receive(buffer, static_cast<int>(size));
+        switch (result.status) {
+        case TcpClient::IoStatus::Ok:
+            VERBOSEF("received %d bytes", result.bytes);
+            mReceiveBufferOffset += static_cast<size_t>(result.bytes);
+            // Continue draining if TLS has more decrypted bytes buffered.
+            if (mTcpClient->has_pending_data()) {
+                VERBOSEF("TLS has pending plaintext, continuing to drain");
+                continue;
+            }
+            return true;
+        case TcpClient::IoStatus::WantRead:
+        case TcpClient::IoStatus::WantWrite:
+            VERBOSEF("receive would block");
+            return true;
+        case TcpClient::IoStatus::Closed:
+            WARNF("peer closed connection");
+            return false;
+        case TcpClient::IoStatus::Error:
+        default:
+            WARNF("receive failed");
+            return false;
+        }
+    }
 }
 
 ULP_PDU* Session::wait_for_ulp_pdu() {

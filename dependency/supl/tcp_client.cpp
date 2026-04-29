@@ -260,30 +260,70 @@ bool TcpClient::disconnect() {
     return true;
 }
 
-int TcpClient::receive(void* buffer, int size) {
-    VSCOPE_FUNCTIONF("%d", size);
-    if (!is_connected()) {
-        return -1;
+static TcpClient::IoStatus tls_to_tcp_status(TlsBackend::IoStatus s) {
+    switch (s) {
+    case TlsBackend::IoStatus::Ok: return TcpClient::IoStatus::Ok;
+    case TlsBackend::IoStatus::WantRead: return TcpClient::IoStatus::WantRead;
+    case TlsBackend::IoStatus::WantWrite: return TcpClient::IoStatus::WantWrite;
+    case TlsBackend::IoStatus::Closed: return TcpClient::IoStatus::Closed;
+    case TlsBackend::IoStatus::Error:
+    default: return TcpClient::IoStatus::Error;
     }
-
-    if (mTls) return mTls->read(buffer, size);
-
-    auto result = ::read(mSocket, buffer, static_cast<size_t>(size));
-    VERBOSEF("::read(%d, %p, %d) = %d", mSocket, buffer, size, result);
-    return static_cast<int>(result);
 }
 
-int TcpClient::send(void const* buffer, int size) {
+TcpClient::IoResult TcpClient::receive(void* buffer, int size) {
     VSCOPE_FUNCTIONF("%d", size);
     if (!is_connected()) {
-        return -1;
+        return {IoStatus::Error, 0};
     }
 
-    if (mTls) return mTls->write(buffer, size);
+    if (mTls) {
+        auto r = mTls->read(buffer, size);
+        return {tls_to_tcp_status(r.status), r.bytes};
+    }
 
-    auto result = ::send(mSocket, buffer, static_cast<size_t>(size), MSG_NOSIGNAL);
-    VERBOSEF("::send(%d, %p, %d, MSG_NOSIGNAL) = %d", mSocket, buffer, size, result);
-    return static_cast<int>(result);
+    auto result      = ::read(mSocket, buffer, static_cast<size_t>(size));
+    auto saved_errno = errno;
+    VERBOSEF("::read(%d, %p, %d) = %zd", mSocket, buffer, size, result);
+    if (result > 0) return {IoStatus::Ok, static_cast<int>(result)};
+    if (result == 0) return {IoStatus::Closed, 0};
+    if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK || saved_errno == EINTR) {
+        return {IoStatus::WantRead, 0};
+    }
+    WARNF("::read failed: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
+    return {IoStatus::Error, 0};
+}
+
+TcpClient::IoResult TcpClient::send(void const* buffer, int size) {
+    VSCOPE_FUNCTIONF("%d", size);
+    if (!is_connected()) {
+        return {IoStatus::Error, 0};
+    }
+
+    if (mTls) {
+        auto r = mTls->write(buffer, size);
+        return {tls_to_tcp_status(r.status), r.bytes};
+    }
+
+    auto result      = ::send(mSocket, buffer, static_cast<size_t>(size), MSG_NOSIGNAL);
+    auto saved_errno = errno;
+    VERBOSEF("::send(%d, %p, %d, MSG_NOSIGNAL) = %zd", mSocket, buffer, size, result);
+    if (result > 0) return {IoStatus::Ok, static_cast<int>(result)};
+    if (result == 0) return {IoStatus::Closed, 0};
+    if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK || saved_errno == EINTR) {
+        return {IoStatus::WantWrite, 0};
+    }
+    if (saved_errno == EPIPE || saved_errno == ECONNRESET) {
+        return {IoStatus::Closed, 0};
+    }
+    WARNF("::send failed: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
+    return {IoStatus::Error, 0};
+}
+
+bool TcpClient::has_pending_data() const {
+    if (!is_connected()) return false;
+    if (!mTls) return false;
+    return mTls->has_pending_plaintext();
 }
 
 }  // namespace supl

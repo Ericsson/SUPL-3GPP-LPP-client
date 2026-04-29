@@ -81,6 +81,7 @@ public:
             }
         }
 
+        ERR_clear_error();
         auto ret = SSL_connect(mSsl);
         if (ret == 1) {
             INFOF("TLS handshake ok: %s %s", SSL_get_version(mSsl), SSL_get_cipher(mSsl));
@@ -98,8 +99,47 @@ public:
         return HandshakeResult::Error;
     }
 
-    int read(void* buffer, int size) override { return SSL_read(mSsl, buffer, size); }
-    int write(void const* buffer, int size) override { return SSL_write(mSsl, buffer, size); }
+    IoResult read(void* buffer, int size) override {
+        if (!mSsl) return {IoStatus::Error, 0};
+        ERR_clear_error();
+        auto ret = SSL_read(mSsl, buffer, size);
+        if (ret > 0) return {IoStatus::Ok, ret};
+
+        auto err = SSL_get_error(mSsl, ret);
+        switch (err) {
+        case SSL_ERROR_WANT_READ: return {IoStatus::WantRead, 0};
+        case SSL_ERROR_WANT_WRITE: return {IoStatus::WantWrite, 0};
+        case SSL_ERROR_ZERO_RETURN: return {IoStatus::Closed, 0};
+        default: break;
+        }
+
+        auto queued = ERR_get_error();
+        char buf[256];
+        ERR_error_string_n(queued, buf, sizeof(buf));
+        ERRORF("SSL_read failed: ssl_err=%d %s", err, buf);
+        return {IoStatus::Error, 0};
+    }
+
+    IoResult write(void const* buffer, int size) override {
+        if (!mSsl) return {IoStatus::Error, 0};
+        ERR_clear_error();
+        auto ret = SSL_write(mSsl, buffer, size);
+        if (ret > 0) return {IoStatus::Ok, ret};
+
+        auto err = SSL_get_error(mSsl, ret);
+        switch (err) {
+        case SSL_ERROR_WANT_READ: return {IoStatus::WantRead, 0};
+        case SSL_ERROR_WANT_WRITE: return {IoStatus::WantWrite, 0};
+        case SSL_ERROR_ZERO_RETURN: return {IoStatus::Closed, 0};
+        default: break;
+        }
+
+        auto queued = ERR_get_error();
+        char buf[256];
+        ERR_error_string_n(queued, buf, sizeof(buf));
+        ERRORF("SSL_write failed: ssl_err=%d %s", err, buf);
+        return {IoStatus::Error, 0};
+    }
 
     void shutdown() override {
         if (mSsl) {
@@ -111,6 +151,14 @@ public:
             SSL_CTX_free(mCtx);
             mCtx = nullptr;
         }
+    }
+
+    bool has_pending_plaintext() const override {
+        // SSL_pending returns the number of bytes already decrypted and
+        // buffered inside OpenSSL, available for immediate SSL_read without
+        // any further socket I/O. This is the key signal that epoll alone is
+        // insufficient to drive TLS reads: we must keep reading while > 0.
+        return mSsl && SSL_pending(mSsl) > 0;
     }
 
 private:

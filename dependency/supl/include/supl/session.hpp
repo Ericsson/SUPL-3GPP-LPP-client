@@ -93,6 +93,8 @@ protected:
     ULP_PDU* wait_for_ulp_pdu();
     Received parse_message(ULP_PDU* ulp_pdu, RESPONSE* response, END* end, POS* pos);
 
+    bool send_all(void const* buffer, size_t size);
+
     void rb_consume(size_t bytes);
 
 private:

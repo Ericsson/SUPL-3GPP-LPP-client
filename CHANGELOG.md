@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+- SUPL TLS: `SSL_read`/`SSL_write` returning `SSL_ERROR_WANT_READ`/`WANT_WRITE` during the SUPL handshake (or any subsequent receive) is no longer treated as a fatal error. This previously caused the LPP session to drop to `DISCONNECTED` the first time an epoll read wake-up did not yet carry a full TLS record. `TlsBackend::read`/`write` now return an `IoResult { IoStatus, bytes }`, `TcpClient::receive`/`send` mirror that on a `TcpClient::IoResult`, and `supl::Session::fill_receive_buffer` treats `WantRead`/`WantWrite` as "no data yet, stay in state". `supl::Session::send` now drains the encoded message via a `send_all` helper that loops on `WantRead`/`WantWrite` using `poll()` with a 5 s per-chunk timeout, correctly handling partial TLS writes.
+- SUPL TLS: `fill_receive_buffer` now drains OpenSSL's internal plaintext buffer via `SSL_pending` before returning to epoll. One TCP read can decrypt multiple TLS records into OpenSSL's buffer; epoll only fires on kernel socket readability, so returning after the first record would deadlock the FSM (data available, but epoll silent). A new `TlsBackend::has_pending_plaintext()` (exposed on `TcpClient::has_pending_data()`) reports this condition and drives the drain loop.
+
+### Changed
+- `supl::TcpClient::receive`/`send` signatures: return type is now `TcpClient::IoResult` instead of `int`. The plain-socket path classifies `EAGAIN`/`EWOULDBLOCK`/`EINTR` as `WantRead`/`WantWrite` and `EPIPE`/`ECONNRESET` as `Closed`, matching the TLS path.
+
 ## [4.0.25] - 2026-04-28
 
 ### Added

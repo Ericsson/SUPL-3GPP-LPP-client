@@ -22,6 +22,19 @@ public:
         Failed,     // fatal error
     };
 
+    enum class IoStatus {
+        Ok,         // bytes transferred (see IoResult::bytes)
+        WantRead,   // retry when the fd is readable
+        WantWrite,  // retry when the fd is writable
+        Closed,     // peer closed (TCP EOF or TLS clean shutdown)
+        Error,      // fatal error; caller should disconnect
+    };
+
+    struct IoResult {
+        IoStatus status;
+        int      bytes;  // meaningful when status == Ok; 0 otherwise
+    };
+
     TcpClient();
     ~TcpClient();
 
@@ -34,8 +47,14 @@ public:
     NODISCARD bool is_connecting() const { return mState == State::CONNECTING; }
     NODISCARD bool is_connected() const { return mState == State::CONNECTED; }
 
-    int receive(void* buffer, int size);
-    int send(void const* buffer, int size);
+    IoResult receive(void* buffer, int size);
+    IoResult send(void const* buffer, int size);
+
+    // True if the transport has already-decrypted data buffered that must be
+    // drained before returning to the epoll event loop. Always false for
+    // plain TCP (the kernel buffer is what epoll reports on). For TLS, this
+    // reflects OpenSSL's internal plaintext buffer.
+    NODISCARD bool has_pending_data() const;
 
     NODISCARD int fd() const { return mSocket; }
 
