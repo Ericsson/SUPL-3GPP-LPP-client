@@ -1,4 +1,5 @@
 #include <args.hxx>
+#include <generator/spartn2/default_bias_maps.hpp>
 #include <generator/spartn2/generator.hpp>
 #include <loglet/loglet.hpp>
 
@@ -79,6 +80,8 @@ int main(int argc, char** argv) {
     args::Group                      signal_group(parser, "Signal:");
     args::ValueFlagList<std::string> bias_map(signal_group, "GNSS:ENTRY[|ENTRY]...",
                                               "Bias map. Example: BDS:5X=5P|1X=1P", {"bias-map"});
+    args::Flag                       no_default_bias_map(signal_group, "no-default-bias-map",
+                                                         "Disable default bias mappings", {"no-default-bias-map"});
 
     args::Group msg_group(parser, "Messages:");
     args::Flag  no_ocb(msg_group, "no-ocb", "Disable OCB generation", {"no-ocb"});
@@ -165,7 +168,7 @@ int main(int argc, char** argv) {
     gen.set_do_not_use_satellite(!no_dnu);
     gen.set_continuity_indicator(320.0);
 
-    if (bias_map) {
+    {
         struct GnssEntry {
             char const* name;
             long        gnss_id;
@@ -178,75 +181,81 @@ int main(int argc, char** argv) {
             {"BDS", 5, 3},
         };
         generator::spartn::BiasMap bmaps[4]{};
-        for (auto const& value : args::get(bias_map)) {
-            auto colon = value.find(':');
-            if (colon == std::string::npos) {
-                fprintf(stderr, "error: --bias-map: expected GNSS:ENTRY, got `%s`\n",
-                        value.c_str());
-                return 1;
-            }
-            auto             gnss_str = value.substr(0, colon);
-            auto             rest     = value.substr(colon + 1);
-            GnssEntry const* ge       = nullptr;
-            for (auto const& g : gnss_table) {
-                if (gnss_str == g.name) {
-                    ge = &g;
-                    break;
-                }
-            }
-            if (!ge) {
-                fprintf(stderr, "error: --bias-map: unknown GNSS `%s`\n", gnss_str.c_str());
-                return 1;
-            }
-            std::string::size_type pos = 0;
-            while (pos <= rest.size()) {
-                auto pipe = rest.find('|', pos);
-                auto entry =
-                    rest.substr(pos, pipe == std::string::npos ? std::string::npos : pipe - pos);
-                pos = pipe == std::string::npos ? rest.size() + 1 : pipe + 1;
-                if (entry.empty()) continue;
-                auto eq = entry.find('=');
-                if (eq == std::string::npos) {
-                    fprintf(stderr, "error: --bias-map: expected FROM=TO in `%s`\n", entry.c_str());
+        if (!no_default_bias_map) {
+            generator::spartn::apply_default_bias_maps(bmaps);
+        }
+        if (bias_map) {
+            for (auto const& value : args::get(bias_map)) {
+                auto colon = value.find(':');
+                if (colon == std::string::npos) {
+                    fprintf(stderr, "error: --bias-map: expected GNSS:ENTRY, got `%s`\n",
+                            value.c_str());
                     return 1;
                 }
-                auto parse_tok = [](std::string const& tok, bool* code,
-                                    bool* phase) -> std::string {
-                    if (tok.empty()) return tok;
-                    char p = tok[0];
-                    if (p == 'L' || p == 'l') {
-                        *code  = false;
-                        *phase = true;
-                        return tok.substr(1);
+                auto             gnss_str = value.substr(0, colon);
+                auto             rest     = value.substr(colon + 1);
+                GnssEntry const* ge       = nullptr;
+                for (auto const& g : gnss_table) {
+                    if (gnss_str == g.name) {
+                        ge = &g;
+                        break;
                     }
-                    if (p == 'C' || p == 'c') {
-                        *code  = true;
-                        *phase = false;
-                        return tok.substr(1);
+                }
+                if (!ge) {
+                    fprintf(stderr, "error: --bias-map: unknown GNSS `%s`\n", gnss_str.c_str());
+                    return 1;
+                }
+                std::string::size_type pos = 0;
+                while (pos <= rest.size()) {
+                    auto pipe  = rest.find('|', pos);
+                    auto entry = rest.substr(pos, pipe == std::string::npos ? std::string::npos :
+                                                                              pipe - pos);
+                    pos        = pipe == std::string::npos ? rest.size() + 1 : pipe + 1;
+                    if (entry.empty()) continue;
+                    auto eq = entry.find('=');
+                    if (eq == std::string::npos) {
+                        fprintf(stderr, "error: --bias-map: expected FROM=TO in `%s`\n",
+                                entry.c_str());
+                        return 1;
                     }
-                    *code = *phase = true;
-                    return tok;
-                };
-                bool fc = true, fp = true, tc = true, tp = true;
-                auto fs = parse_tok(entry.substr(0, eq), &fc, &fp);
-                auto ts = parse_tok(entry.substr(eq + 1), &tc, &tp);
-                int  fi =
-                    generator::spartn::Generator::rinex_suffix_to_index(ge->gnss_id, fs.c_str());
-                int ti =
-                    generator::spartn::Generator::rinex_suffix_to_index(ge->gnss_id, ts.c_str());
-                if (fi < 0) {
-                    fprintf(stderr, "error: --bias-map: unknown %s signal `%s`\n", gnss_str.c_str(),
-                            fs.c_str());
-                    return 1;
+                    auto parse_tok = [](std::string const& tok, bool* code,
+                                        bool* phase) -> std::string {
+                        if (tok.empty()) return tok;
+                        char p = tok[0];
+                        if (p == 'L' || p == 'l') {
+                            *code  = false;
+                            *phase = true;
+                            return tok.substr(1);
+                        }
+                        if (p == 'C' || p == 'c') {
+                            *code  = true;
+                            *phase = false;
+                            return tok.substr(1);
+                        }
+                        *code = *phase = true;
+                        return tok;
+                    };
+                    bool fc = true, fp = true, tc = true, tp = true;
+                    auto fs = parse_tok(entry.substr(0, eq), &fc, &fp);
+                    auto ts = parse_tok(entry.substr(eq + 1), &tc, &tp);
+                    int  fi = generator::spartn::Generator::rinex_suffix_to_index(ge->gnss_id,
+                                                                                  fs.c_str());
+                    int  ti = generator::spartn::Generator::rinex_suffix_to_index(ge->gnss_id,
+                                                                                  ts.c_str());
+                    if (fi < 0) {
+                        fprintf(stderr, "error: --bias-map: unknown %s signal `%s`\n",
+                                gnss_str.c_str(), fs.c_str());
+                        return 1;
+                    }
+                    if (ti < 0) {
+                        fprintf(stderr, "error: --bias-map: unknown %s signal `%s`\n",
+                                gnss_str.c_str(), ts.c_str());
+                        return 1;
+                    }
+                    bmaps[ge->idx].add(
+                        {static_cast<uint8_t>(fi), static_cast<uint8_t>(ti), fc && tc, fp && tp});
                 }
-                if (ti < 0) {
-                    fprintf(stderr, "error: --bias-map: unknown %s signal `%s`\n", gnss_str.c_str(),
-                            ts.c_str());
-                    return 1;
-                }
-                bmaps[ge->idx].add(
-                    {static_cast<uint8_t>(fi), static_cast<uint8_t>(ti), fc && tc, fp && tp});
-            }
+            }  // for value
         }
         for (auto const& g : gnss_table)
             gen.set_bias_map(g.gnss_id, bmaps[g.idx]);

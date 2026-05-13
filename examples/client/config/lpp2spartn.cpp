@@ -1,3 +1,4 @@
+#include <generator/spartn2/default_bias_maps.hpp>
 #include <loglet/loglet.hpp>
 #include "../config.hpp"
 
@@ -213,6 +214,12 @@ static args::ValueFlagList<std::string> gBiasMap{
     "Add bias map entries. GNSS: GPS|GLO|GAL|BDS. ENTRY: [L|C]SSS=[L|C]TTT or SSS=TTT (both). "
     "Example: BDS:L5X=L5P|C5X=C5P",
     {"l2s-bias-map"},
+};
+static args::Flag gNoDefaultBiasMap{
+    gSignalGroup,
+    "no-default-bias-map",
+    "Disable default bias mappings",
+    {"l2s-no-default-bias-map"},
 };
 
 static args::Group gTroposphereGroup{gGroup, "Troposphere:"};
@@ -432,6 +439,10 @@ void parse(Config* config) {
     if (gSolutionId) lpp2spartn.solution_id = static_cast<uint8_t>(gSolutionId.Get());
     if (gSolutionProcessorId)
         lpp2spartn.solution_processor_id = static_cast<uint8_t>(gSolutionProcessorId.Get());
+
+    if (!gNoDefaultBiasMap) {
+        generator::spartn::apply_default_bias_maps(lpp2spartn.bias_maps.data());
+    }
 
     if (gBiasMap) {
         // GNSS name -> bias_maps index and GNSS ID for suffix lookup
