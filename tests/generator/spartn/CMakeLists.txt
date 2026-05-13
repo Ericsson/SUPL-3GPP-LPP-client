@@ -1,6 +1,7 @@
 add_executable(generator_spartn_tests
     main.cpp
     time.cpp
+    bds_iod.cpp
 )
 target_include_directories(generator_spartn_tests PRIVATE
     ${CMAKE_SOURCE_DIR}/dependency/generator/spartn

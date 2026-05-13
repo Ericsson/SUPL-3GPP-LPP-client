@@ -326,8 +326,9 @@ void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string) {
     case GNSS_ID_GAL:  // SF099 - Galileo IOD
         mBuilder.bits(iode & 0x3FF, 10);
         break;
-    case GNSS_ID_BDS:  // SF100 - BeiDou IODE/IODC
-        mBuilder.bits(iode & 0xFF, 8);
+    case GNSS_ID_BDS:  // SF100 - BeiDou IODC (D1/D2): iod_r15 = toe_raw (scale 512s)
+        // IODC = mod(toe_sec / 720, 240) = mod(iod_r15 * 512 / 720, 240)
+        mBuilder.bits(static_cast<uint64_t>(iode) * 512 / 720 % 240, 8);
         break;
     default: UNREACHABLE();
     }
