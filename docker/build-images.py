@@ -59,8 +59,15 @@ APPS = {
 
 BUILD_MODES = ['debug', 'release']
 
-NETWORK_HOST = False
+INTERNAL_REGISTRY = 'registry.rosetta.ericssondevops.com/ewasjon/supl-3gpp-lpp-client'
 
+def builder_image_name(registry, platform):
+    return f'{registry}/builder:{platform}'
+
+def runtime_image_name(registry, platform):
+    return f'{registry}/runtime:{platform}'
+
+NETWORK_HOST = False
 class Colors:
     GREEN = '\033[92m'
     RED = '\033[91m'
@@ -127,7 +134,16 @@ def get_image_info(image_name):
     except:
         return 'N/A'
 
-def build_builder_image(platform):
+def build_builder_image(platform, pull_registry=None, push_registry=None):
+    local_tag = f's3lc-builder:{platform}'
+
+    if pull_registry:
+        remote = builder_image_name(pull_registry, platform)
+        print(f"\n{colorize('===', Colors.CYAN)} {colorize(f'Pulling builder for {platform} from {remote}', Colors.BOLD)} {colorize('===', Colors.CYAN)}")
+        if run_cmd(['docker', 'pull', remote], check=False):
+            run_cmd(['docker', 'tag', remote, local_tag])
+            return True
+        print(colorize(f"Pull failed, falling back to local build", Colors.YELLOW))
     platform_config = PLATFORMS[platform]
     
     # Build crosstool builder for cross-compilation platforms
@@ -147,7 +163,13 @@ def build_builder_image(platform):
             SCRIPT_DIR
         ])
         
-        return run_cmd(cmd)
+        if not run_cmd(cmd):
+            return False
+        if push_registry:
+            remote = builder_image_name(push_registry, platform)
+            run_cmd(['docker', 'tag', local_tag, remote])
+            run_cmd(['docker', 'push', remote])
+        return True
     
     print(f"\n{colorize('===', Colors.CYAN)} {colorize(f'Building builder for {platform}', Colors.BOLD)} {colorize('===', Colors.CYAN)}")
     
@@ -163,9 +185,15 @@ def build_builder_image(platform):
         SCRIPT_DIR
     ])
     
-    return run_cmd(cmd)
+    if not run_cmd(cmd):
+        return False
+    if push_registry:
+        remote = builder_image_name(push_registry, platform)
+        run_cmd(['docker', 'tag', local_tag, remote])
+        run_cmd(['docker', 'push', remote])
+    return True
 
-def build_image(app, platform, build_mode, registry=None, tag=None, built_artifacts=None):
+def build_image(app, platform, build_mode, registry=None, tag=None, built_artifacts=None, builder_registry=None):
     print(f"\n{colorize('===', Colors.CYAN)} {colorize(f'Building {app} for {platform} ({build_mode})', Colors.BOLD)} {colorize('===', Colors.CYAN)}")
     
     app_config = APPS[app]
@@ -328,20 +356,33 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
         
         runtime_base = f's3lc-runtime:{platform}'
         runtime_dockerfile = platform_config.get('runtime', 'amd64/runtime')
-        cmd_runtime = ['docker', 'build']
-        if NETWORK_HOST:
-            cmd_runtime.extend(['--network=host'])
-        cmd_runtime.extend(['--platform', platform_config['platform']])
-        if tuple_name:
-            cmd_runtime.extend(['--build-arg', f'TUPLE={tuple_name}'])
-        cmd_runtime.extend([
-            '-f', os.path.join(SCRIPT_DIR, runtime_dockerfile),
-            '-t', runtime_base,
-            artifact_dir
-        ])
-        
-        if not run_cmd(cmd_runtime):
-            return None
+
+        # Try pulling runtime from registry before building
+        runtime_pulled = False
+        if builder_registry:
+            remote_runtime = runtime_image_name(builder_registry, platform)
+            if run_cmd(['docker', 'pull', remote_runtime], check=False):
+                run_cmd(['docker', 'tag', remote_runtime, runtime_base])
+                runtime_pulled = True
+
+        if not runtime_pulled:
+            cmd_runtime = ['docker', 'build']
+            if NETWORK_HOST:
+                cmd_runtime.extend(['--network=host'])
+            cmd_runtime.extend(['--platform', platform_config['platform']])
+            if tuple_name:
+                cmd_runtime.extend(['--build-arg', f'TUPLE={tuple_name}'])
+            cmd_runtime.extend([
+                '-f', os.path.join(SCRIPT_DIR, runtime_dockerfile),
+                '-t', runtime_base,
+                artifact_dir
+            ])
+            if not run_cmd(cmd_runtime):
+                return None
+            if builder_registry:
+                remote_runtime = runtime_image_name(builder_registry, platform)
+                run_cmd(['docker', 'tag', runtime_base, remote_runtime])
+                run_cmd(['docker', 'push', remote_runtime])
         
         if registry:
             image_name = f'{registry}/supl-3gpp-lpp-client/{app}/{platform}:{tag}'
@@ -557,6 +598,10 @@ def main():
     parser.add_argument('--multiarch', action='store_true', help='Build multi-arch images using buildx')
     parser.add_argument('--network-host', action='store_true', help='Use --network=host for all docker commands')
     parser.add_argument('--clean', action='store_true', help='Clean build (remove build cache)')
+    parser.add_argument('--push-builders', action='store_true',
+                        help=f'Build and push builder/runtime images to {INTERNAL_REGISTRY}')
+    parser.add_argument('--no-pull-builders', action='store_true',
+                        help=f'Build builder/runtime images locally instead of pulling from {INTERNAL_REGISTRY}')
     args = parser.parse_args()
     
     NETWORK_HOST = args.network_host
@@ -629,7 +674,9 @@ def main():
         print(f"  {colorize('✓', Colors.GREEN)} Build cache cleaned (crosstool builders preserved)")
     
     for platform in platforms:
-        if not build_builder_image(platform):
+        pull_reg = INTERNAL_REGISTRY if not args.no_pull_builders else None
+        push_reg = INTERNAL_REGISTRY if args.push_builders else None
+        if not build_builder_image(platform, pull_registry=pull_reg, push_registry=push_reg):
             print(colorize(f"Failed to build builder image for {platform}", Colors.RED))
             sys.exit(1)
     
@@ -637,7 +684,7 @@ def main():
         for app in apps:
             for platform in platforms:
                 tag_to_use = args.tag if args.tag else None
-                result = build_image(app, platform, build_mode, args.registry if (args.push or args.dry_run) else None, tag_to_use, built_artifacts)
+                result = build_image(app, platform, build_mode, args.registry if (args.push or args.dry_run) else None, tag_to_use, built_artifacts, builder_registry=INTERNAL_REGISTRY if (args.push_builders or not args.no_pull_builders) else None)
                 if not result:
                     print(colorize(f"Failed to build {app} for {platform} ({build_mode})", Colors.RED))
                     sys.exit(1)
