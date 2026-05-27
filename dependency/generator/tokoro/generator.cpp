@@ -63,6 +63,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mPhaseWindupCorrection(false),
       mAntennaPhaseVariation(false),
       mTropoHeightCorrection(false),
+      mTropoHydrostaticDelta(true),
       mElevationMask(10.0),
       mPhaseRangeRate(true),
       mRtcmReferenceStationId(1902),
@@ -163,6 +164,7 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 #endif
 
     auto& observation = satellite.initialize_observation(signal_id);
+    observation.recompute_mapping_hydrostatic(mTropoHydrostaticDelta);
     observation.update_lock_time(lock_time);
     observation.compute_phase_bias(correction_data);
     observation.compute_code_bias(correction_data);

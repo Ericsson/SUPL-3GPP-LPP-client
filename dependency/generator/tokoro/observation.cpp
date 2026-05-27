@@ -66,9 +66,15 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mGroundLlh      = ecef_to_llh(location, ellipsoid::gWgs84);
 
     auto mapping = hydrostatic_mapping_function(mCurrent->reception_time, mGroundLlh,
-                                                mCurrent->true_elevation);
+                                                mCurrent->true_elevation, true);
     mTropospheric.mapping_hydrostatic = mapping.hydrostatic;
     mTropospheric.mapping_wet         = mapping.wet;
+}
+
+void Observation::recompute_mapping_hydrostatic(bool apply_hydrostatic_delta) NOEXCEPT {
+    auto mapping = hydrostatic_mapping_function(mCurrent->reception_time, mGroundLlh,
+                                                mCurrent->true_elevation, apply_hydrostatic_delta);
+    mTropospheric.mapping_hydrostatic = mapping.hydrostatic;
 }
 
 void Observation::compute_tropospheric_height() NOEXCEPT {

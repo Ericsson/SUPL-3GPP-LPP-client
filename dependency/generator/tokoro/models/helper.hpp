@@ -73,7 +73,8 @@ struct HydrostaticAndWetMapping {
 };
 
 HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Float3 position,
-                                                      double elevation);
+                                                      double elevation,
+                                                      bool   apply_hydrostatic_delta);
 
 }  // namespace tokoro
 }  // namespace generator

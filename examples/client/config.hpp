@@ -374,6 +374,7 @@ struct TokoroConfig {
     bool earth_solid_tides_correction;
     bool antenna_phase_variation_correction;
     bool tropospheric_height_correction;
+    bool tropospheric_hydrostatic_delta;
     bool iod_consistency_check;
     bool rtoc;
     bool ocit;

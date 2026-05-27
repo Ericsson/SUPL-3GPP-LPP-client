@@ -176,6 +176,13 @@ static args::Flag gTroposphericHeightCorrection{
     {"tkr-no-thc"},
 };
 
+static args::Flag gNoTropoHydrostaticDelta{
+    gGroup,
+    "tkr-no-tropo-delta",
+    "Disable hydrostatic delta correction in tropospheric mapping function",
+    {"tkr-no-tropo-delta"},
+};
+
 static args::Flag gIodConsistencyCheck{
     gGroup,
     "tkr-no-iod-consistency-check",
@@ -335,6 +342,7 @@ void parse(Config* config) {
     tokoro.earth_solid_tides_correction       = true;
     tokoro.antenna_phase_variation_correction = true;
     tokoro.tropospheric_height_correction     = true;
+    tokoro.tropospheric_hydrostatic_delta     = true;
     tokoro.iod_consistency_check              = true;
     tokoro.rtoc                               = false;
     tokoro.ocit                               = false;
@@ -478,6 +486,7 @@ void parse(Config* config) {
     if (gEarthSolidTidesCorrection) tokoro.earth_solid_tides_correction = false;
     if (gAntennaPhaseVariationCorrection) tokoro.antenna_phase_variation_correction = false;
     if (gTroposphericHeightCorrection) tokoro.tropospheric_height_correction = false;
+    if (gNoTropoHydrostaticDelta) tokoro.tropospheric_hydrostatic_delta = false;
     if (gIodConsistencyCheck) tokoro.iod_consistency_check = false;
     if (gRtOC) tokoro.rtoc = true;
     if (gOcit) tokoro.ocit = true;

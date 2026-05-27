@@ -570,6 +570,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_earth_solid_tides_correction(mConfig.earth_solid_tides_correction);
     mReferenceStation->set_phase_windup_correction(mConfig.phase_windup_correction);
     mReferenceStation->set_tropospheric_height_correction(mConfig.tropospheric_height_correction);
+    mReferenceStation->set_tropospheric_hydrostatic_delta(mConfig.tropospheric_hydrostatic_delta);
     mReferenceStation->set_msm_type(tokoro_rtcm_msm_type(mConfig.msm_type));
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);

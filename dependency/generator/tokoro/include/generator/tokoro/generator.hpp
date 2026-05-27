@@ -82,6 +82,7 @@ public:
     void set_phase_windup_correction(bool enabled) { mPhaseWindupCorrection = enabled; }
     void set_antenna_phase_variation_correction(bool enabled) { mAntennaPhaseVariation = enabled; }
     void set_tropospheric_height_correction(bool enabled) { mTropoHeightCorrection = enabled; }
+    void set_tropospheric_hydrostatic_delta(bool enabled) { mTropoHydrostaticDelta = enabled; }
     void set_elevation_mask(double mask) { mElevationMask = mask; }
     void set_phase_range_rate(bool enabled) { mPhaseRangeRate = enabled; }
     void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
@@ -134,6 +135,7 @@ private:
     bool     mPhaseWindupCorrection;
     bool     mAntennaPhaseVariation;
     bool     mTropoHeightCorrection;
+    bool     mTropoHydrostaticDelta;
     double   mElevationMask;
     bool     mPhaseRangeRate;
     uint32_t mRtcmReferenceStationId;

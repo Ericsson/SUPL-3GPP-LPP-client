@@ -65,6 +65,7 @@ public:
     void compute_ionospheric(CorrectionData const& correction_data) NOEXCEPT;
 
     void compute_tropospheric_height() NOEXCEPT;
+    void recompute_mapping_hydrostatic(bool apply_hydrostatic_delta) NOEXCEPT;
 
 #ifdef INCLUDE_FORMAT_ANTEX
     void compute_antenna_phase_variation(format::antex::Antex const& antex) NOEXCEPT;

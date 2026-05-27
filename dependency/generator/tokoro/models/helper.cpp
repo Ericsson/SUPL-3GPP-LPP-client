@@ -55,7 +55,8 @@ static double delta_m(double elevation, double ellipsoidal_height) {
 }
 
 HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Float3 position,
-                                                      double elevation) {
+                                                      double elevation,
+                                                      bool   apply_hydrostatic_delta) {
     VSCOPE_FUNCTIONF("%s, (%f, %f, %f), %f", ts::Utc{time}.rtklib_time_string().c_str(),
                      position.x * constant::RAD2DEG, position.y * constant::RAD2DEG, position.z,
                      elevation * constant::RAD2DEG);
@@ -108,7 +109,7 @@ HydrostaticAndWetMapping hydrostatic_mapping_function(ts::Tai time, Float3 posit
     VERBOSEF("hydrostatic: %+f", hydrostatic);
     VERBOSEF("wet: %+f", wet);
 
-    return {hydrostatic + hydrostatic_delta_m, wet};
+    return {hydrostatic + (apply_hydrostatic_delta ? hydrostatic_delta_m : 0.0), wet};
 }
 
 }  // namespace tokoro
