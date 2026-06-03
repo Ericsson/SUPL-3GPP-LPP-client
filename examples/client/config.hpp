@@ -35,6 +35,7 @@ struct LocationServerConfig {
     bool        shutdown_on_disconnect;
     bool        hack_bad_transaction_initiator;
     bool        hack_never_send_abort;
+    bool        hack_server_initiated_push;
     std::string output_tag;
 
     supl::TlsConfig tls;

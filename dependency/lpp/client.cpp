@@ -80,6 +80,7 @@ Client::Client(supl::Identity identity, supl::Cell supl_cell, std::string const&
 
     mHackBadTransactionInitiator = false;
     mHackNeverSendAbort          = false;
+    mHackServerInitiatedPush     = false;
 }
 
 Client::~Client() {

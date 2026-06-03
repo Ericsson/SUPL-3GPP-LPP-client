@@ -96,6 +96,10 @@ public:
 
     void set_hack_bad_transaction_initiator(bool value) { mHackBadTransactionInitiator = value; }
     void set_hack_never_send_abort(bool value) { mHackNeverSendAbort = value; }
+    void set_hack_server_initiated_push(bool value) {
+        mHackServerInitiatedPush = value;
+        mSession.set_hack_server_initiated_push(value);
+    }
 
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
@@ -144,6 +148,7 @@ private:
     // HACK:
     bool mHackBadTransactionInitiator;
     bool mHackNeverSendAbort;
+    bool mHackServerInitiatedPush;
 
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;

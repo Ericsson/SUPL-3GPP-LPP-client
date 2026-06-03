@@ -69,6 +69,14 @@ static args::Flag gHackNeverSendAbort{
     "Hack to disable sending Abort in assistance data handler",
     {"ls-hack-never-send-abort"},
 };
+static args::Flag gHackServerInitiatedPush{
+    gGroup,
+    "hack-server-initiated-push",
+    "Hack to treat targetDevice-initiated unknown transactions as server-initiated (for servers "
+    "that "
+    "push ProvideAssistanceData with wrong initiator flag)",
+    {"ls-hack-server-initiated-push"},
+};
 static args::ValueFlag<std::string> gOutputTag{
     gGroup,
     "tag",
@@ -119,6 +127,7 @@ void parse(Config* config) {
     ls.output_tag                     = "";
     ls.hack_bad_transaction_initiator = gHackBadTransactionInitiator.Get();
     ls.hack_never_send_abort          = gHackNeverSendAbort.Get();
+    ls.hack_server_initiated_push     = gHackServerInitiatedPush.Get();
 
     if (gDisable) {
         ls.enabled = false;
@@ -182,6 +191,8 @@ void dump(LocationServerConfig const& config) {
     DEBUGF("shutdown-on-disconnect:         %s", config.shutdown_on_disconnect ? "true" : "false");
     DEBUGF("hack-bad-transaction-initiator: %s",
            config.hack_bad_transaction_initiator ? "true" : "false");
+    DEBUGF("hack-server-initiated-push:     %s",
+           config.hack_server_initiated_push ? "true" : "false");
     DEBUGF("tls: %s", config.tls.enabled ? "enabled" : "disabled");
     if (config.tls.enabled) {
         DEBUGF("  skip-verify: %s", config.tls.skip_verify ? "true" : "false");

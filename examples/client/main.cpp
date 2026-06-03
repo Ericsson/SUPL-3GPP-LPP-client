@@ -262,6 +262,8 @@ static void client_initialize(Program& program, lpp::Client&) {
     program.client->set_hack_bad_transaction_initiator(
         program.config.location_server.hack_bad_transaction_initiator);
     program.client->set_hack_never_send_abort(program.config.location_server.hack_never_send_abort);
+    program.client->set_hack_server_initiated_push(
+        program.config.location_server.hack_server_initiated_push);
 }
 
 static void process_input(Program& program, InputContext& p, InputFormat formats,

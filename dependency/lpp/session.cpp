@@ -133,7 +133,8 @@ Session::Session(Version version, supl::Identity identity, supl::Cell cell)
     : mState(State::UNKNOWN), mVersion(version), mIdentity(std::move(identity)),
       mInitialCell(std::move(cell)), mSession(nullptr), mTransactionId(1), mGenerationId(1),
       mSequenceNumber(0), mScheduler(nullptr), mTask(this, -1), mNextReadState(State::UNKNOWN),
-      mNextWriteState(State::UNKNOWN), mNextErrorState(State::UNKNOWN) {
+      mNextWriteState(State::UNKNOWN), mNextErrorState(State::UNKNOWN),
+      mHackServerInitiatedPush(false) {
     VSCOPE_FUNCTION();
 }
 
@@ -773,11 +774,17 @@ void Session::process_lpp_payload(supl::Payload const& payload) {
     auto server_ended_transaction = message->endTransaction;
     auto transaction_ptr          = find_transaction(*message->transactionID);
     if (!transaction_ptr) {
-        if (message->transactionID->initiator == Initiator_targetDevice) {
+        if (message->transactionID->initiator == Initiator_targetDevice &&
+            !mHackServerInitiatedPush) {
             WARNF("transaction not found: %ld", message->transactionID->transactionNumber);
             // TODO: Send a endTransaction message to the server
             return;
         } else {
+            if (message->transactionID->initiator == Initiator_targetDevice) {
+                WARNF("HACK: server-initiated-push: treating targetDevice transaction as "
+                      "locationServer: %ld",
+                      message->transactionID->transactionNumber);
+            }
             auto handle = TransactionHandle{this, message->transactionID->transactionNumber,
                                             mGenerationId, Initiator::LocationServer};
             mGenerationId += 1;

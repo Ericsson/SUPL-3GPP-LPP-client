@@ -153,6 +153,8 @@ public:
     // Called when a message was received for a transaction
     std::function<void(Session&, TransactionHandle const&, Message)> on_message;
 
+    void set_hack_server_initiated_push(bool value) { mHackServerInitiatedPush = value; }
+
     static Message              decode_lpp_message(uint8_t const* data, size_t size);
     static std::vector<uint8_t> encode_lpp_message(Message const& message);
     static std::string          encode_lpp_message_xer(Message const& message);
@@ -218,6 +220,7 @@ private:
     State                 mNextReadState;
     State                 mNextWriteState;
     State                 mNextErrorState;
+    bool                  mHackServerInitiatedPush;
 
     friend SessionTask;
 };
