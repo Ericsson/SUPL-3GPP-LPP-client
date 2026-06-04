@@ -774,17 +774,23 @@ void Session::process_lpp_payload(supl::Payload const& payload) {
     auto server_ended_transaction = message->endTransaction;
     auto transaction_ptr          = find_transaction(*message->transactionID);
     if (!transaction_ptr) {
-        if (message->transactionID->initiator == Initiator_targetDevice &&
-            !mHackServerInitiatedPush) {
-            WARNF("transaction not found: %ld", message->transactionID->transactionNumber);
-            // TODO: Send a endTransaction message to the server
+        if (message->transactionID->initiator == Initiator_targetDevice) {
+            if (!mHackServerInitiatedPush) {
+                WARNF("transaction not found: %ld", message->transactionID->transactionNumber);
+                // TODO: Send a endTransaction message to the server
+                return;
+            }
+            WARNF("HACK: server-initiated-push: treating targetDevice transaction as "
+                  "locationServer: %ld",
+                  message->transactionID->transactionNumber);
+            auto id     = message->transactionID->transactionNumber;
+            auto handle = TransactionHandle{this, id, 0, Initiator::LocationServer};
+            DEBUGF("recv message %s (hack)", handle.to_string().c_str());
+            if (on_message) {
+                on_message(*this, handle, std::move(message));
+            }
             return;
         } else {
-            if (message->transactionID->initiator == Initiator_targetDevice) {
-                WARNF("HACK: server-initiated-push: treating targetDevice transaction as "
-                      "locationServer: %ld",
-                      message->transactionID->transactionNumber);
-            }
             auto handle = TransactionHandle{this, message->transactionID->transactionNumber,
                                             mGenerationId, Initiator::LocationServer};
             mGenerationId += 1;
