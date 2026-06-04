@@ -383,6 +383,50 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
     if (p.raw) {
         program.stream.push(RawMessage{buffer, count}, tag);
     }
+
+    // TBIN: auto-detect format from message content and route to appropriate parser
+    if (formats & INPUT_FORMAT_TBIN) {
+        static thread_local std::vector<uint8_t> tbin_buf;
+        static thread_local bool                 tbin_header_skipped = false;
+
+        tbin_buf.insert(tbin_buf.end(), buffer, buffer + count);
+
+        // Skip TBIN file header on first data
+        if (!tbin_header_skipped && tbin_buf.size() >= 6) {
+            if (tbin_buf[0] == 'T' && tbin_buf[1] == 'B' && tbin_buf[2] == 'I' &&
+                tbin_buf[3] == 'N') {
+                uint8_t stream_len = tbin_buf[5];
+                size_t  header_len = 6 + stream_len;
+                if (tbin_buf.size() >= header_len) {
+                    tbin_buf.erase(tbin_buf.begin(),
+                                   tbin_buf.begin() + static_cast<long>(header_len));
+                    tbin_header_skipped = true;
+                }
+            } else {
+                tbin_header_skipped = true;  // no header, treat as raw messages
+            }
+        }
+
+        // Extract complete messages
+        while (tbin_header_skipped && tbin_buf.size() >= 12) {
+            uint32_t msg_len;
+            memcpy(&msg_len, tbin_buf.data() + 8, 4);
+            if (tbin_buf.size() < 12 + msg_len) break;
+
+            uint8_t const* payload = tbin_buf.data() + 12;
+
+            // Auto-detect and route
+            if (msg_len >= 2 && payload[0] == 0xB5 && payload[1] == 0x62 && p.ubx) {
+                process_input(program, p, INPUT_FORMAT_UBX, payload, msg_len, tag);
+            } else if (msg_len >= 1 && payload[0] == 0xD3 && p.rtcm) {
+                process_input(program, p, INPUT_FORMAT_RTCM, payload, msg_len, tag);
+            } else if (msg_len >= 1 && p.lpp_uper) {
+                process_input(program, p, INPUT_FORMAT_LPP_UPER, payload, msg_len, tag);
+            }
+
+            tbin_buf.erase(tbin_buf.begin(), tbin_buf.begin() + 12 + static_cast<long>(msg_len));
+        }
+    }
 }
 
 static void create_io_from_config(Program& program) {
@@ -551,6 +595,13 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
         if ((input.format & INPUT_FORMAT_LPP_UPER) != 0) lpp_uper = new format::lpp::UperParser{};
         if ((input.format & INPUT_FORMAT_LPP_UPER_PAD) != 0)
             lpp_uper_pad = new format::lpp::UperParser{};
+
+        // TBIN format: create all parsers for auto-detection
+        if ((input.format & INPUT_FORMAT_TBIN) != 0) {
+            rtcm     = new format::rtcm::Parser{};
+            ubx      = new format::ubx::Parser{};
+            lpp_uper = new format::lpp::UperParser{};
+        }
 
         std::stringstream tag_stream;
         for (size_t i = 0; i < input.tags.size(); i++) {

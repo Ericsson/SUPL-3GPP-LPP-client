@@ -12,9 +12,9 @@ inline double geometric_distance(Float3 a, Float3 b, Float3* line_of_sight = nul
     auto delta    = a - b;
     auto distance = delta.length();
 
-    // correct for rotation ECEF
-    auto dot_omega_e = 7.2921151467e-5;
-    auto correction  = dot_omega_e * (a.x * b.y - a.y * b.x) / constant::SPEED_OF_LIGHT;
+    // Sagnac correction for Earth rotation (ECEF frame)
+    auto correction =
+        constant::EARTH_ANGULAR_VELOCITY * (a.x * b.y - a.y * b.x) / constant::SPEED_OF_LIGHT;
 
     if (line_of_sight) {
         *line_of_sight = delta / distance;

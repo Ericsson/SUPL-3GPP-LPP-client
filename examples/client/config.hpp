@@ -243,6 +243,7 @@ struct Lpp2RtcmConfig {
     MsmType     msm_type;
     size_t      max_conversions;
     std::string output_tag;
+    double      output_vrs_interval;  // seconds, 0 = disabled
 };
 
 struct Lpp2FrameRtcmConfig {
@@ -396,6 +397,7 @@ struct TokoroConfig {
     std::string antex_file;
     bool        ignore_bitmask;
     std::string output_tag;
+    double      output_cps_interval;  // seconds, 0 = disabled
 
     struct FakeCorrectionPointSet {
         uint16_t set_id;

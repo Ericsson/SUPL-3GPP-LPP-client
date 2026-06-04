@@ -77,6 +77,8 @@ private:
     std::unique_ptr<generator::tokoro::Generator>        mGenerator;
     std::shared_ptr<generator::tokoro::ReferenceStation> mReferenceStation;
     std::unique_ptr<scheduler::PeriodicTask>             mPeriodicTask;
+    std::unique_ptr<scheduler::PeriodicTask>             mCpsTask;
+    std::vector<uint8_t>                                 mCpsUperBytes;
     uint64_t                                             mOutputTag;
 #ifdef ENABLE_TOKORO_SNAPSHOT
     std::shared_ptr<TokoroSnapshot> mRecorder;

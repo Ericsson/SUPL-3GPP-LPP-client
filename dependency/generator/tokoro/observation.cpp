@@ -281,10 +281,10 @@ void Observation::compute_ranges() NOEXCEPT {
     auto clock0 = 0.0;
     auto clock1 = 0.0;
     if (mClockCorrection.valid) {
-        clock0 = mClockCorrection.correction;
-        clock1 = mClockCorrection.correction;  // TODO(ewasjon): This is not correct
+        clock0 = mCurrent->clock_correction;
+        clock1 = mNext->clock_correction;
         VERBOSEF("clock:        %+24.10f (%gs,%gm/s)", clock0,
-                 mClockCorrection.correction / constant::SPEED_OF_LIGHT,
+                 mCurrent->clock_correction / constant::SPEED_OF_LIGHT,
                  (clock1 - clock0) / time_delta);
 #ifdef DATA_TRACING
         dt_obs.clock = clock0;

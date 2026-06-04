@@ -178,6 +178,9 @@ static void parse_file(Options const& options, OutputsConfig& outputs) {
             cfg.truncate = false;
         }
     }
+    if (options.find("tbin") != options.end()) {
+        cfg.tbin = options.at("tbin") == "true" || options.at("tbin").empty();
+    }
 
     outputs.file.push_back(std::move(cfg));
 }
@@ -206,6 +209,10 @@ static void parse_tcp_server(Options const& options, OutputsConfig& outputs) {
         }
         cfg.listen = options.at("host");
         cfg.port   = static_cast<uint16_t>(std::stoul(options.at("port")));
+    }
+
+    if (options.find("tbin") != options.end()) {
+        cfg.tbin = options.at("tbin") == "true" || options.at("tbin").empty();
     }
 
     outputs.tcp_server.push_back(std::move(cfg));

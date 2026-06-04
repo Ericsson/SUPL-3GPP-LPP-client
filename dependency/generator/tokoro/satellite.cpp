@@ -81,6 +81,18 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
         return;
     }
 
+    // Evaluate SSR clock correction at both emission times for Doppler computation
+    {
+        auto ref_time_current = mCurrentState.emission_time;
+        auto ref_time_next    = mNextState.emission_time;
+        if (mGenerator.mUseReceptionTimeForOrbitAndClockCorrections) {
+            ref_time_current = mCurrentState.reception_time;
+            ref_time_next    = mNextState.reception_time;
+        }
+        mCurrentState.clock_correction = mClockCorrection.correction(ref_time_current);
+        mNextState.clock_correction    = mClockCorrection.correction(ref_time_next);
+    }
+
     mEnabled = true;
 }
 

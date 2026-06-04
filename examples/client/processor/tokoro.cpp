@@ -13,6 +13,15 @@
 #include <format/rtcm/datafields.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
+#include <lpp/session.hpp>
+
+#include <external_warnings.hpp>
+EXTERNAL_WARNINGS_PUSH
+#include <A-GNSS-ProvideAssistanceData.h>
+#include <GNSS-CommonAssistData.h>
+#include <GNSS-SSR-CorrectionPoints-r16.h>
+#include <ProvideAssistanceData-r9-IEs.h>
+EXTERNAL_WARNINGS_POP
 
 LOGLET_MODULE2(p, tkr);
 #undef LOGLET_CURRENT_MODULE
@@ -378,6 +387,24 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     } else {
         WARNF("unsupported generation strategy");
     }
+
+    // Setup periodic CPS re-emission
+    if (mConfig.output_cps_interval > 0.0) {
+        auto interval =
+            std::chrono::milliseconds(static_cast<int>(mConfig.output_cps_interval * 1000.0));
+        mCpsTask = std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
+        mCpsTask->callback = [this]() {
+            if (mCpsUperBytes.empty()) return;
+            for (auto const& output : mOutput.outputs) {
+                if (!output.lpp_uper_support()) continue;
+                output.stage->write(OUTPUT_FORMAT_LPP_UPER, mCpsUperBytes.data(),
+                                    mCpsUperBytes.size());
+            }
+        };
+        if (!mCpsTask->schedule(mScheduler)) {
+            WARNF("failed to schedule CPS output task");
+        }
+    }
 }
 
 Tokoro::~Tokoro() {
@@ -649,6 +676,25 @@ void Tokoro::inspect(streamline::System& system, DataType const& message, uint64
     auto process_ms =
         std::chrono::duration_cast<std::chrono::milliseconds>(process_end - process_start).count();
     VERBOSEF("process_lpp took %lld ms", process_ms);
+
+    // Cache CPS-only LPP message for periodic re-emission.
+    // Build a new minimal LPP_Message containing ONLY the CorrectionPointSet.
+    if (mCpsUperBytes.empty() && new_assistance_data && mConfig.output_cps_interval > 0.0) {
+        auto* pad = lpp::get_provide_assistance_data(message);
+        if (pad && pad->a_gnss_ProvideAssistanceData &&
+            pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData &&
+            pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData->ext2 &&
+            pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData->ext2
+                ->gnss_SSR_CorrectionPoints_r16) {
+            // Encode the full message. On replay, process_lpp will extract CPS and ignore
+            // any stale corrections (they get overwritten by newer data already in the store).
+            auto encoded = lpp::Session::encode_lpp_message(message);
+            if (!encoded.empty()) {
+                mCpsUperBytes = std::move(encoded);
+                INFOF("cached CPS message for periodic output (%zu bytes)", mCpsUperBytes.size());
+            }
+        }
+    }
 
     if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
         if (new_assistance_data) {

@@ -24,9 +24,11 @@ private:
     std::unique_ptr<generator::rtcm::Generator> mGenerator;
     generator::rtcm::MessageFilter              mFilter;
 
-    ProgramOutput const&  mOutput;
-    Lpp2RtcmConfig const& mConfig;
-    scheduler::Scheduler& mScheduler;
-    size_t                mConversionCount;
-    uint64_t              mOutputTag;
+    ProgramOutput const&                     mOutput;
+    Lpp2RtcmConfig const&                    mConfig;
+    scheduler::Scheduler&                    mScheduler;
+    size_t                                   mConversionCount;
+    uint64_t                                 mOutputTag;
+    std::unique_ptr<scheduler::PeriodicTask> mVrsTask;
+    std::vector<uint8_t>                     mVrsBytes;
 };

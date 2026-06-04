@@ -45,6 +45,9 @@ struct SatelliteState {
     Float3 orbit_cross_axis;
     double orbit_delta_t;
 
+    /// SSR clock correction evaluated at emission time
+    double clock_correction;
+
     PhaseWindup     phase_windup;
     Shapiro         shapiro;
     EarthSolidTides earth_solid_tides;

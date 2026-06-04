@@ -334,6 +334,13 @@ static args::ValueFlag<std::string> gOutputTag{
     {"tkr-output-tag"},
 };
 
+static args::ValueFlag<double> gOutputCps{
+    gGroup,
+    "seconds",
+    "Re-emit CorrectionPointSet every N seconds on LPP UPER output",
+    {"tkr-output-cps"},
+};
+
 #ifdef ENABLE_TOKORO_SNAPSHOT
 static args::Flag gRecordSnapshot{
     gGroup,
@@ -414,9 +421,10 @@ void parse(Config* config) {
     tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
     tokoro.time_step           = 1.0;
 
-    tokoro.antex_file     = "";
-    tokoro.ignore_bitmask = false;
-    tokoro.output_tag     = "";
+    tokoro.antex_file          = "";
+    tokoro.ignore_bitmask      = false;
+    tokoro.output_tag          = "";
+    tokoro.output_cps_interval = 0.0;
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     tokoro.record_snapshot      = false;
@@ -549,6 +557,7 @@ void parse(Config* config) {
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
     if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
+    if (gOutputCps) tokoro.output_cps_interval = gOutputCps.Get();
 
     {
         int provided = (gFakeCpsId ? 1 : 0) + (gFakeCpsLat ? 1 : 0) + (gFakeCpsLon ? 1 : 0) +

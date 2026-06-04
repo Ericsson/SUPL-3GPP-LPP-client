@@ -21,6 +21,7 @@
 #include <scheduler/socket.hpp>
 
 #include "processor/chunked_log.hpp"
+#include "processor/tbin_output.hpp"
 
 LOGLET_MODULE2(client, io);
 #undef LOGLET_CURRENT_MODULE
@@ -257,7 +258,7 @@ std::unique_ptr<io::Output> create_output(OutputStdoutConfig const&, io::StreamR
 
 std::unique_ptr<io::Output> create_output(OutputFileConfig const& cfg,
                                           io::StreamRegistry&     registry) {
-    DEBUGF("output: file=%s", cfg.path.c_str());
+    DEBUGF("output: file=%s tbin=%s", cfg.path.c_str(), cfg.tbin ? "true" : "false");
     auto           id = "file:" + cfg.path + ":" + generate_unique_id();
     io::FileConfig file_cfg;
     file_cfg.path     = cfg.path;
@@ -268,6 +269,11 @@ std::unique_ptr<io::Output> create_output(OutputFileConfig const& cfg,
     file_cfg.create   = true;
     auto stream       = std::make_shared<io::FileStream>(id, file_cfg);
     registry.add(id, stream);
+
+    if (cfg.tbin) {
+        return std::make_unique<TbinOutput>(std::make_unique<io::StreamOutputAdapter>(stream),
+                                            cfg.path);
+    }
     return std::make_unique<io::StreamOutputAdapter>(stream);
 }
 
@@ -277,11 +283,19 @@ std::unique_ptr<io::Output> create_output(OutputChunkedLogConfig const& cfg) {
 }
 
 std::unique_ptr<io::Output> create_output(OutputTcpServerConfig const& cfg) {
-    DEBUGF("output: tcp-server=%s:%u", cfg.listen.c_str(), cfg.port);
+    DEBUGF("output: tcp-server=%s:%u tbin=%s", cfg.listen.c_str(), cfg.port,
+           cfg.tbin ? "true" : "false");
+    std::unique_ptr<io::Output> inner;
     if (!cfg.path.empty()) {
-        return std::make_unique<io::TcpServerOutput>(cfg.path);
+        inner = std::make_unique<io::TcpServerOutput>(cfg.path);
+    } else {
+        inner = std::make_unique<io::TcpServerOutput>(cfg.listen, cfg.port);
     }
-    return std::make_unique<io::TcpServerOutput>(cfg.listen, cfg.port);
+    if (cfg.tbin) {
+        auto stream_name = std::to_string(cfg.port);
+        return std::make_unique<TbinOutput>(std::move(inner), stream_name);
+    }
+    return inner;
 }
 
 std::unique_ptr<io::Output> create_output(OutputSerialConfig const& cfg,

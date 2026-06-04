@@ -169,6 +169,7 @@ struct OutputFileConfig : OutputCommon {
     std::string path;
     bool        truncate = true;
     bool        append   = false;
+    bool        tbin     = false;
 };
 
 // Output: chunked-log
@@ -181,6 +182,7 @@ struct OutputTcpServerConfig : OutputCommon {
     std::string listen;
     uint16_t    port = 0;
     std::string path;
+    bool        tbin = false;
 };
 
 // Output: inline serial (creates stream)

@@ -7,6 +7,7 @@ add_subdirectory("nav")
 add_subdirectory("ctrl")
 add_subdirectory("at")
 add_subdirectory("lpp")
+add_subdirectory("tbin")
 
 if(INCLUDE_FORMAT_RINEX)
     add_subdirectory("rinex")

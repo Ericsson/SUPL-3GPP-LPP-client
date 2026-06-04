@@ -72,6 +72,13 @@ static args::ValueFlag<std::string> gOutputTag{
     {"l2r-output-tag"},
 };
 
+static args::ValueFlag<double> gOutputVrs{
+    gGroup,
+    "seconds",
+    "Re-emit MT1006 (VRS position) every N seconds on RTCM output",
+    {"l2r-output-vrs"},
+};
+
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gMsmType.HelpDefault("any");
@@ -80,15 +87,16 @@ void setup(args::ArgumentParser& parser) {
 }
 
 void parse(Config* config) {
-    auto& lpp2rtcm            = config->lpp2rtcm;
-    lpp2rtcm.enabled          = false;
-    lpp2rtcm.generate_gps     = true;
-    lpp2rtcm.generate_glonass = true;
-    lpp2rtcm.generate_galileo = true;
-    lpp2rtcm.generate_beidou  = true;
-    lpp2rtcm.msm_type         = Lpp2RtcmConfig::MsmType::ANY;
-    lpp2rtcm.max_conversions  = 0;
-    lpp2rtcm.output_tag       = "";
+    auto& lpp2rtcm               = config->lpp2rtcm;
+    lpp2rtcm.enabled             = false;
+    lpp2rtcm.generate_gps        = true;
+    lpp2rtcm.generate_glonass    = true;
+    lpp2rtcm.generate_galileo    = true;
+    lpp2rtcm.generate_beidou     = true;
+    lpp2rtcm.msm_type            = Lpp2RtcmConfig::MsmType::ANY;
+    lpp2rtcm.max_conversions     = 0;
+    lpp2rtcm.output_tag          = "";
+    lpp2rtcm.output_vrs_interval = 0.0;
 
     if (gEnable) lpp2rtcm.enabled = true;
     if (gNoGps) lpp2rtcm.generate_gps = false;
@@ -117,6 +125,9 @@ void parse(Config* config) {
     }
     if (gOutputTag) {
         lpp2rtcm.output_tag = gOutputTag.Get();
+    }
+    if (gOutputVrs) {
+        lpp2rtcm.output_vrs_interval = gOutputVrs.Get();
     }
 }
 

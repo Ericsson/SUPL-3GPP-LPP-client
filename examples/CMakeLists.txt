@@ -23,3 +23,6 @@ endif()
 if(BUILD_EXAMPLE_TRANSFORM)
     add_subdirectory("transform")
 endif()
+
+add_subdirectory("tbin-merge")
+add_subdirectory("tbin-parse")
