@@ -578,6 +578,25 @@ Generator::Generator() NOEXCEPT {
 
 Generator::~Generator() = default;
 
+void Generator::set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
+                                              double reference_point_longitude,
+                                              long   number_of_steps_latitude,
+                                              long   number_of_steps_longitude,
+                                              double step_of_latitude,
+                                              double step_of_longitude) NOEXCEPT {
+    CorrectionPointSet cps{};
+    cps.set_id                    = set_id;
+    cps.reference_point_latitude  = reference_point_latitude;
+    cps.reference_point_longitude = reference_point_longitude;
+    cps.number_of_steps_latitude  = number_of_steps_latitude;
+    cps.number_of_steps_longitude = number_of_steps_longitude;
+    cps.step_of_latitude          = step_of_latitude;
+    cps.step_of_longitude         = step_of_longitude;
+    cps.grid_point_count    = (number_of_steps_longitude + 1) * (number_of_steps_latitude + 1);
+    cps.bitmask             = 0xFFFFFFFFFFFFFFFF;
+    mFakeCorrectionPointSet = std::unique_ptr<CorrectionPointSet>(new CorrectionPointSet(cps));
+}
+
 std::shared_ptr<ReferenceStation>
 Generator::define_reference_station(ReferenceStationConfig const& config) NOEXCEPT {
     FUNCTION_SCOPE();
@@ -610,6 +629,13 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
 
     auto& message = pad.criticalExtensions.choice.c1.choice.provideAssistanceData_r9;
     find_correction_point_set(message);
+
+    if (!mCorrectionPointSet && mFakeCorrectionPointSet) {
+        WARNF("no correction point set found, using fake correction point set (id=%u)",
+              mFakeCorrectionPointSet->set_id);
+        mCorrectionPointSet =
+            std::unique_ptr<CorrectionPointSet>(new CorrectionPointSet(*mFakeCorrectionPointSet));
+    }
 
     if (!mCorrectionPointSet) {
         WARNF("no correction point set found");

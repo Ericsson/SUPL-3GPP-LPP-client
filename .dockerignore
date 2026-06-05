@@ -28,3 +28,10 @@ scripts
 *.swp
 .amazonq/
 docker/__pycache__/
+.git/
+igs_data/
+results/
+plans/
+docs/
+tokoro_verify/
+tests/data/

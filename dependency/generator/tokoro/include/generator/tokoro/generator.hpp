@@ -185,6 +185,11 @@ public:
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
     void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
+    void set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
+                                       double reference_point_longitude,
+                                       long   number_of_steps_latitude,
+                                       long number_of_steps_longitude, double step_of_latitude,
+                                       double step_of_longitude) NOEXCEPT;
 #ifdef INCLUDE_FORMAT_ANTEX
     void set_antex(std::unique_ptr<format::antex::Antex> antex) NOEXCEPT {
         mAntex = std::move(antex);
@@ -251,6 +256,7 @@ private:
     ts::Tai                             mLastCorrectionDataTime;
     std::unique_ptr<CorrectionData>     mCorrectionData;
     std::unique_ptr<CorrectionPointSet> mCorrectionPointSet;
+    std::unique_ptr<CorrectionPointSet> mFakeCorrectionPointSet;
 #ifdef INCLUDE_FORMAT_ANTEX
     std::unique_ptr<format::antex::Antex> mAntex;
 #endif

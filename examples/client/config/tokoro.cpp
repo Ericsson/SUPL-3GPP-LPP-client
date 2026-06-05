@@ -284,6 +284,49 @@ static args::Flag gIgnoreBitmask{
     {"tkr-ignore-bitmask"},
 };
 
+static args::ValueFlag<int> gFakeCpsId{
+    gGroup,
+    "id",
+    "Fake correction point set ID",
+    {"tkr-cps-id"},
+};
+static args::ValueFlag<double> gFakeCpsLat{
+    gGroup,
+    "deg",
+    "Fake CPS reference point latitude (degrees)",
+    {"tkr-cps-lat"},
+};
+static args::ValueFlag<double> gFakeCpsLon{
+    gGroup,
+    "deg",
+    "Fake CPS reference point longitude (degrees)",
+    {"tkr-cps-lon"},
+};
+static args::ValueFlag<int> gFakeCpsStepsLat{
+    gGroup,
+    "n",
+    "Fake CPS number of steps in latitude",
+    {"tkr-cps-steps-lat"},
+};
+static args::ValueFlag<int> gFakeCpsStepsLon{
+    gGroup,
+    "n",
+    "Fake CPS number of steps in longitude",
+    {"tkr-cps-steps-lon"},
+};
+static args::ValueFlag<double> gFakeCpsStepLat{
+    gGroup,
+    "deg",
+    "Fake CPS latitude step size (degrees)",
+    {"tkr-cps-step-lat"},
+};
+static args::ValueFlag<double> gFakeCpsStepLon{
+    gGroup,
+    "deg",
+    "Fake CPS longitude step size (degrees)",
+    {"tkr-cps-step-lon"},
+};
+
 static args::ValueFlag<std::string> gOutputTag{
     gGroup,
     "tag",
@@ -506,6 +549,30 @@ void parse(Config* config) {
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
     if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
+
+    {
+        int provided = (gFakeCpsId ? 1 : 0) + (gFakeCpsLat ? 1 : 0) + (gFakeCpsLon ? 1 : 0) +
+                       (gFakeCpsStepsLat ? 1 : 0) + (gFakeCpsStepsLon ? 1 : 0) +
+                       (gFakeCpsStepLat ? 1 : 0) + (gFakeCpsStepLon ? 1 : 0);
+        if (provided > 0 && provided < 7) {
+            throw args::ValidationError(
+                "all of --tkr-cps-id, --tkr-cps-lat, --tkr-cps-lon, --tkr-cps-steps-lat, "
+                "--tkr-cps-steps-lon, --tkr-cps-step-lat, --tkr-cps-step-lon must be provided "
+                "together");
+        }
+        if (provided == 7) {
+            auto cps                       = new TokoroConfig::FakeCorrectionPointSet{};
+            cps->set_id                    = static_cast<uint16_t>(gFakeCpsId.Get());
+            cps->reference_point_latitude  = gFakeCpsLat.Get();
+            cps->reference_point_longitude = gFakeCpsLon.Get();
+            cps->number_of_steps_latitude  = gFakeCpsStepsLat.Get();
+            cps->number_of_steps_longitude = gFakeCpsStepsLon.Get();
+            cps->step_of_latitude          = gFakeCpsStepLat.Get();
+            cps->step_of_longitude         = gFakeCpsStepLon.Get();
+            tokoro.fake_correction_point_set =
+                std::unique_ptr<TokoroConfig::FakeCorrectionPointSet>(cps);
+        }
+    }
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     if (gRecordSnapshot) tokoro.record_snapshot = true;

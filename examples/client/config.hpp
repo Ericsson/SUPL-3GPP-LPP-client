@@ -397,6 +397,17 @@ struct TokoroConfig {
     bool        ignore_bitmask;
     std::string output_tag;
 
+    struct FakeCorrectionPointSet {
+        uint16_t set_id;
+        double   reference_point_latitude;
+        double   reference_point_longitude;
+        long     number_of_steps_latitude;
+        long     number_of_steps_longitude;
+        double   step_of_latitude;
+        double   step_of_longitude;
+    };
+    std::unique_ptr<FakeCorrectionPointSet> fake_correction_point_set;
+
 #ifdef ENABLE_TOKORO_SNAPSHOT
     bool        record_snapshot;
     std::string record_snapshot_dir;

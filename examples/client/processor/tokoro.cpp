@@ -317,6 +317,14 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
 
+    if (mConfig.fake_correction_point_set) {
+        auto const& f = *mConfig.fake_correction_point_set;
+        mGenerator->set_fake_correction_point_set(
+            f.set_id, f.reference_point_latitude, f.reference_point_longitude,
+            f.number_of_steps_latitude, f.number_of_steps_longitude, f.step_of_latitude,
+            f.step_of_longitude);
+    }
+
 #ifdef INCLUDE_FORMAT_ANTEX
     if (!config.antex_file.empty()) {
         auto result = format::antex::Antex::from_file(config.antex_file);
