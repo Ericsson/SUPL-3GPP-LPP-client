@@ -515,7 +515,7 @@ void dump(IdentityConfig const& config);
 
 namespace input {
 void setup(args::ArgumentParser& parser);
-void parse(Config* config);
+void parse(InputsConfig& config);
 void dump(InputsConfig const& config);
 }  // namespace input
 
@@ -539,7 +539,7 @@ void dump(LoggingConfig const& config);
 
 namespace output {
 void setup(args::ArgumentParser& parser);
-void parse(Config* config);
+void parse(OutputsConfig& config);
 void dump(OutputsConfig const& config);
 }  // namespace output
 
@@ -621,7 +621,7 @@ void dump(UbxConfigConfig const& config);
 
 namespace stream {
 void setup(args::ArgumentParser& parser);
-void parse(Config* config);
+void parse(StreamsConfig& config);
 void dump(StreamsConfig const& config);
 }  // namespace stream
 

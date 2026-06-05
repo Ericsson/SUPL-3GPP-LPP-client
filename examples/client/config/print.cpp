@@ -1,5 +1,6 @@
 #include <core/string.hpp>
 #include <loglet/loglet.hpp>
+
 #include "../config.hpp"
 #include "../tag_registry.hpp"
 

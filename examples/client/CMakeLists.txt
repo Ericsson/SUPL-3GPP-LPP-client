@@ -2,22 +2,21 @@
 add_executable(example_client 
     "main.cpp" 
     "config.cpp"
-    "tag_registry.cpp"
     "config/assistance_data.cpp"
     "config/data_tracing.cpp"
     "config/gnss.cpp"
     "config/identity.cpp"
-    "config/input.cpp"
     "config/location_information.cpp"
     "config/location_server.cpp"
     "config/logging.cpp"
-    "config/output.cpp"
-    "config/parse.cpp"
     "config/print.cpp"
     "config/scheduler.cpp"
-    "config/stream.cpp"
+    "config/lpp2rtcm.cpp"
+    "config/lpp2frame_rtcm.cpp"
+    "config/lpp2eph.cpp"
+    "config/ubx2eph.cpp"
+    "config/rtcm2eph.cpp"
     "config/ubx_config.cpp"
-    "io.cpp"
     "processor/lpp.cpp"
     "processor/control.cpp"
     "processor/location_information.cpp"
@@ -35,6 +34,7 @@ add_executable(examples::client ALIAS example_client)
 
 target_include_directories(example_client PRIVATE "./")
 target_link_libraries(example_client PRIVATE args)
+target_link_libraries(example_client PRIVATE dependency::client-io)
 target_link_libraries(example_client PRIVATE dependency::streamline)
 target_link_libraries(example_client PRIVATE dependency::io)
 target_link_libraries(example_client PRIVATE dependency::format::ubx)

@@ -18,3 +18,5 @@ add_subdirectory("msgpack")
 if(DATA_TRACING)
     add_subdirectory("datatrace")
 endif()
+
+add_subdirectory("client-io")

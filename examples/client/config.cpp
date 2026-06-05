@@ -274,9 +274,9 @@ bool config_parse(int argc, char** argv, Config* config) {
         ::identity::parse(config);
         ::ad::parse(config);
         ::li::parse(config);
-        ::stream::parse(config);
-        ::input::parse(config);
-        ::output::parse(config);
+        ::stream::parse(config->streams_config);
+        ::input::parse(config->inputs_config);
+        ::output::parse(config->outputs_config);
         ::print::parse(config);
         ::gnss::parse(config);
         ::scheduler::parse(config);
