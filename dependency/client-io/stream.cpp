@@ -4,9 +4,9 @@
 #include <core/string.hpp>
 #include <loglet/loglet.hpp>
 
-LOGLET_MODULE2(client_io, stream);
+LOGLET_MODULE(client_io_stream);
 #undef LOGLET_CURRENT_MODULE
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client_io, stream)
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client_io_stream)
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH

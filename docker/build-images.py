@@ -36,7 +36,7 @@ PLATFORMS = {
         'cross': 'linux/arm-v7/armv8-rpi3-linux-gnueabihf.config',
         'toolchain': '/src/docker/linux/arm-v7/armv8-rpi3-linux-gnueabihf.toolchain.cmake',
         'runtime': 'linux/arm-v7/rpi3.runtime',
-        'cmake_args': '-DUSE_ASAN=OFF -DENABLE_TOKORO_SNAPSHOT=ON',
+        'cmake_args': '-DUSE_ASAN=OFF -DENABLE_TOKORO_SNAPSHOT=ON -DDATA_TRACING=ON',
     },
     'armv6-unknown-linux-gnueabihf': {
         'platform': 'linux/arm/v6',

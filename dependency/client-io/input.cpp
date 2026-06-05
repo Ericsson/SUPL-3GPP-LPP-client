@@ -6,9 +6,9 @@
 
 #include <client-io/program_io.hpp>
 
-LOGLET_MODULE2(client_io, input);
+LOGLET_MODULE(client_io_input);
 #undef LOGLET_CURRENT_MODULE
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client_io, input)
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client_io_input)
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH

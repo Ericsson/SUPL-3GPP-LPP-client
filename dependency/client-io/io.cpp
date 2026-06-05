@@ -23,9 +23,9 @@
 #include <client-io/chunked_log.hpp>
 #include <client-io/tbin_output.hpp>
 
-LOGLET_MODULE2(client, io);
+LOGLET_MODULE(client_io_wiring);
 #undef LOGLET_CURRENT_MODULE
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client, io)
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client_io_wiring)
 
 namespace {
 

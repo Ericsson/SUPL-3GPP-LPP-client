@@ -9,9 +9,9 @@
 #include <client-io/chunked_log.hpp>
 #include <client-io/program_io.hpp>
 
-LOGLET_MODULE2(client_io, output);
+LOGLET_MODULE(client_io_output);
 #undef LOGLET_CURRENT_MODULE
-#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(client_io, output)
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client_io_output)
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH

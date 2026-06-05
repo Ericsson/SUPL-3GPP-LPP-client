@@ -10,6 +10,16 @@ ARG GIT_DIRTY=0
 COPY . /src
 USER root
 RUN mkdir -p /build /artifacts && chown builder:builder /build /artifacts
+# Upgrade CMake if the installed version is too old (< 3.18 breaks mosquitto/DATA_TRACING)
+RUN cmake --version | grep -qE 'cmake version 3\.(1[89]|[2-9][0-9])' || \
+    (apt-get update -qq && apt-get install -y -qq gpg wget && \
+     wget -qO- https://apt.kitware.com/keys/kitware-archive-latest.asc | gpg --dearmor \
+       > /usr/share/keyrings/kitware-archive-keyring.gpg && \
+     . /etc/os-release && \
+     echo "deb [signed-by=/usr/share/keyrings/kitware-archive-keyring.gpg] https://apt.kitware.com/ubuntu/ ${UBUNTU_CODENAME} main" \
+       > /etc/apt/sources.list.d/kitware.list && \
+     apt-get update -qq && apt-get install -y -qq cmake && \
+     rm -rf /var/lib/apt/lists/*)
 USER builder
 WORKDIR /build
 ENV GIT_COMMIT_HASH=${GIT_COMMIT_HASH} GIT_BRANCH=${GIT_BRANCH} GIT_DIRTY=${GIT_DIRTY}
