@@ -55,6 +55,11 @@ APPS = {
         'dockerfile': 'Dockerfile.release.modem-ctrl',
         'target': 'example-modem-ctrl',
     },
+    'tools': {
+        'dockerfile': 'Dockerfile.tools',
+        'targets': ['example-client', 'example-relay', 'example-ntrip', 'example-modem-ctrl'],
+        'target': 'example-client',  # used for readelf lib detection (pick the largest)
+    },
 }
 
 BUILD_MODES = ['debug', 'release']
@@ -395,9 +400,18 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
         cmd_final.extend(['--platform', platform_config['platform']])
         cmd_final.extend([
             '--build-arg', f'RUNTIME_BASE={runtime_base}',
-            '--build-arg', f'TARGET={app_config["target"]}',
+        ])
+        # Single-target apps pass TARGET; multi-target apps (tools) pass each binary
+        if 'targets' in app_config:
+            for t in app_config['targets']:
+                cmd_final.extend(['--build-arg', f'TARGET_{t.upper().replace("-","_")}={t}'])
+            final_dockerfile = os.path.join(SCRIPT_DIR, app_config['dockerfile'])
+        else:
+            cmd_final.extend(['--build-arg', f'TARGET={app_config["target"]}'])
+            final_dockerfile = os.path.join(SCRIPT_DIR, 'Dockerfile.target')
+        cmd_final.extend([
             '--label', 'org.opencontainers.image.source=https://github.com/Ericsson/SUPL-3GPP-LPP-client',
-            '-f', os.path.join(SCRIPT_DIR, 'Dockerfile.target'),
+            '-f', final_dockerfile,
             '-t', image_name,
             artifact_dir
         ])

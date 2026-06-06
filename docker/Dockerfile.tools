@@ -1,0 +1,12 @@
+ARG RUNTIME_BASE
+FROM ${RUNTIME_BASE}
+
+COPY example-client     /usr/local/bin/example-client
+COPY example-relay      /usr/local/bin/example-relay
+COPY example-ntrip      /usr/local/bin/example-ntrip
+COPY example-modem-ctrl /usr/local/bin/example-modem-ctrl
+
+RUN printf '#!/bin/sh\ncase "$1" in\n  example-*) BIN="$1"; shift; exec "/usr/local/bin/$BIN" "$@" ;;\n  *) exec /usr/local/bin/example-client "$@" ;;\nesac\n' \
+    > /usr/local/bin/entrypoint && chmod +x /usr/local/bin/entrypoint
+
+ENTRYPOINT ["/usr/local/bin/entrypoint"]
