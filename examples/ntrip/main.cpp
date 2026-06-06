@@ -163,6 +163,7 @@ int main(int argc, char** argv) {
     io::StreamRegistry                       registry;
     std::vector<std::unique_ptr<io::Output>> outputs;
     scheduler::Scheduler                     scheduler;
+    scheduler::set_current(&scheduler);
 
     auto add = [&](std::unique_ptr<io::Output> o) {
         if (!o) return;

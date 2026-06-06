@@ -68,6 +68,7 @@ int main(int argc, char** argv) {
 
     std::vector<std::unique_ptr<io::Output>> outputs;
     scheduler::Scheduler                     scheduler;
+    scheduler::set_current(&scheduler);
 
     for (auto& entry : outputs_cfg.outputs) {
         auto out = create_output(entry, registry);
