@@ -414,27 +414,24 @@ static void create_io_from_config(Program& program) {
     }
 
     // Merge all tbin inputs into a single TbinInput so messages are delivered
-    // in strict timestamp order across all files, regardless of format.
+    // in strict timestamp order across all files. Each file retains its own format.
     {
-        std::vector<std::string> paths;
-        InputFormat              combined_format = INPUT_FORMAT_NONE;
-        InputEntry               representative;
-        bool                     realtime = false;
+        std::vector<TbinInput::Source> sources;
+        InputEntry                     representative;
+        bool                           realtime = false;
 
         for (auto const& entry : inputs_cfg.inputs) {
             if (entry.type != "tbin") continue;
-            if (paths.empty()) representative = entry;
             if (!entry.options.count("path")) continue;
-            paths.push_back(entry.options.at("path"));
-            combined_format |= entry.format;
+            if (sources.empty()) representative = entry;
+            sources.push_back({entry.options.at("path"), entry.format});
             if (entry.options.count("realtime") &&
                 (entry.options.at("realtime") == "true" || entry.options.at("realtime").empty()))
                 realtime = true;
         }
 
-        if (!paths.empty()) {
-            representative.format = combined_format;
-            auto           tbin   = std::make_unique<TbinInput>(paths, combined_format, realtime);
+        if (!sources.empty()) {
+            auto           tbin = std::make_unique<TbinInput>(sources, realtime);
             InputInterface iface;
             iface.entry     = representative;
             iface.interface = std::move(tbin);
@@ -1109,7 +1106,7 @@ int main(int argc, char** argv) {
 
     if (program.config.lpp_static_repeat.enabled) {
         program.stream.add_inspector<LppStaticDataRepeat>(
-            program.stream, program.lpp_tag,
+            program.stream, program.lpp_tag, program.scheduler,
             std::chrono::seconds{program.config.lpp_static_repeat.interval});
     }
 

@@ -11,52 +11,17 @@ EXTERNAL_WARNINGS_POP
 #include <loglet/loglet.hpp>
 #include <lpp/message.hpp>
 #include <lpp/session.hpp>
+#include <type_traits>
 
 LOGLET_MODULE2(p, lpp_static_repeat);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(p, lpp_static_repeat)
 
-void LppStaticDataRepeat::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
-    auto* pad = lpp::get_provide_assistance_data(message);
-    if (!pad || !pad->a_gnss_ProvideAssistanceData) return;
-
-    auto* common = pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData;
-    if (!common) return;
-
-    bool has_rtk = common->ext1 && common->ext1->gnss_RTK_ReferenceStationInfo_r15;
-    bool has_cps = common->ext2 && common->ext2->gnss_SSR_CorrectionPoints_r16;
-    if (!has_rtk && !has_cps) return;
-
-    // Shallow copy with only the two static fields
-    GNSS_CommonAssistData       tmp{};
-    GNSS_CommonAssistData__ext1 ext1{};
-    GNSS_CommonAssistData__ext2 ext2{};
-    if (has_rtk) {
-        ext1.gnss_RTK_ReferenceStationInfo_r15 = common->ext1->gnss_RTK_ReferenceStationInfo_r15;
-        tmp.ext1                               = &ext1;
-    }
-    if (has_cps) {
-        ext2.gnss_SSR_CorrectionPoints_r16 = common->ext2->gnss_SSR_CorrectionPoints_r16;
-        tmp.ext2                           = &ext2;
-    }
-
-    // Encode into mCachedUper, reusing existing capacity
-    mCachedUper.resize(4096);
-    asn_enc_rval_t rv = uper_encode_to_buffer(&asn_DEF_GNSS_CommonAssistData, nullptr, &tmp,
-                                              mCachedUper.data(), mCachedUper.size());
-    if (rv.encoded < 0) {
-        WARNF("failed to encode static GNSS_CommonAssistData");
-        mCachedUper.clear();
-        return;
-    }
-
-    size_t bytes = (static_cast<size_t>(rv.encoded) + 7) / 8;
-    mCachedUper.resize(bytes);
-    INFOF("cached static LPP data (%zu bytes, rtk=%d cps=%d)", bytes, has_rtk, has_cps);
-}
-
-bool LppStaticDataRepeat::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT {
-    mTimer = std::make_unique<scheduler::PeriodicTask>(mInterval);
+LppStaticDataRepeat::LppStaticDataRepeat(streamline::System& system, uint64_t tag,
+                                         scheduler::Scheduler& scheduler,
+                                         std::chrono::seconds  interval)
+    : mSystem(system), mTag(tag) {
+    mTimer = std::make_unique<scheduler::PeriodicTask>(interval);
     mTimer->set_event_name("lpp-static-repeat");
     mTimer->callback = [this]() {
         if (mCachedUper.empty()) return;
@@ -91,5 +56,46 @@ bool LppStaticDataRepeat::do_schedule(scheduler::Scheduler& scheduler) NOEXCEPT 
         DEBUGF("re-pushing cached static LPP data (%zu bytes)", mCachedUper.size());
         mSystem.push(lpp::Message{lpp_msg}, mTag);
     };
-    return mTimer->schedule(scheduler);
+
+    if (!mTimer->schedule(scheduler)) {
+        ERRORF("failed to schedule lpp-static-repeat timer");
+    }
+}
+
+void LppStaticDataRepeat::inspect(streamline::System&, DataType const& message, uint64_t) NOEXCEPT {
+    auto* pad = lpp::get_provide_assistance_data(message);
+    if (!pad || !pad->a_gnss_ProvideAssistanceData) return;
+
+    auto* common = pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData;
+    if (!common) return;
+
+    bool has_rtk = common->ext1 && common->ext1->gnss_RTK_ReferenceStationInfo_r15;
+    bool has_cps = common->ext2 && common->ext2->gnss_SSR_CorrectionPoints_r16;
+    if (!has_rtk && !has_cps) return;
+
+    // Shallow copy with only the two static fields — avoids deep copy of dynamic data
+    GNSS_CommonAssistData                             tmp{};
+    std::remove_pointer<decltype(common->ext1)>::type ext1{};
+    std::remove_pointer<decltype(common->ext2)>::type ext2{};
+    if (has_rtk) {
+        ext1.gnss_RTK_ReferenceStationInfo_r15 = common->ext1->gnss_RTK_ReferenceStationInfo_r15;
+        tmp.ext1                               = &ext1;
+    }
+    if (has_cps) {
+        ext2.gnss_SSR_CorrectionPoints_r16 = common->ext2->gnss_SSR_CorrectionPoints_r16;
+        tmp.ext2                           = &ext2;
+    }
+
+    mCachedUper.resize(4096);
+    asn_enc_rval_t rv = uper_encode_to_buffer(&asn_DEF_GNSS_CommonAssistData, nullptr, &tmp,
+                                              mCachedUper.data(), mCachedUper.size());
+    if (rv.encoded < 0) {
+        WARNF("failed to encode static GNSS_CommonAssistData");
+        mCachedUper.clear();
+        return;
+    }
+
+    mCachedUper.resize((static_cast<size_t>(rv.encoded) + 7) / 8);
+    INFOF("cached static LPP data (%zu bytes, rtk=%d cps=%d)", mCachedUper.size(), has_rtk,
+          has_cps);
 }
