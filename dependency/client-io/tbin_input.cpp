@@ -11,16 +11,17 @@ static int64_t now_us() {
     return duration_cast<microseconds>(steady_clock::now().time_since_epoch()).count();
 }
 
-TbinInput::TbinInput(std::vector<std::string> paths, InputFormat format_mask,
-                     bool replay_realtime) NOEXCEPT : mFormatMask(format_mask),
-                                                      mRealtimeMode(replay_realtime),
-                                                      mTask(std::chrono::milliseconds(0)) {
-    mReaders.resize(paths.size());
-    mPending.resize(paths.size());
+TbinInput::TbinInput(std::vector<Source> sources, bool replay_realtime) NOEXCEPT
+    : mRealtimeMode(replay_realtime),
+      mTask(std::chrono::milliseconds(0)) {
+    mReaders.resize(sources.size());
+    mPending.resize(sources.size());
+    mFormats.resize(sources.size());
 
-    for (size_t i = 0; i < paths.size(); i++) {
-        if (!mReaders[i].open(paths[i])) {
-            ERRORF("tbin: failed to open %s", paths[i].c_str());
+    for (size_t i = 0; i < sources.size(); i++) {
+        mFormats[i] = sources[i].format;
+        if (!mReaders[i].open(sources[i].path)) {
+            ERRORF("tbin: failed to open %s", sources[i].path.c_str());
             continue;
         }
         if (mReaders[i].next(mPending[i])) {
@@ -42,21 +43,6 @@ bool TbinInput::do_schedule(scheduler::Scheduler&) NOEXCEPT {
 bool TbinInput::do_cancel(scheduler::Scheduler&) NOEXCEPT {
     mTask.cancel();
     return true;
-}
-
-InputFormat TbinInput::detect_format(uint8_t const* data, size_t len, InputFormat mask) NOEXCEPT {
-    // If only one format registered, use it directly
-    auto bits = mask & (INPUT_FORMAT_UBX | INPUT_FORMAT_RTCM | INPUT_FORMAT_LPP_UPER |
-                        INPUT_FORMAT_NMEA | INPUT_FORMAT_RAW);
-    if (bits && (bits & (bits - 1)) == 0) return bits;  // single bit set
-
-    // Auto-detect from payload
-    if (len >= 2 && data[0] == 0xB5 && data[1] == 0x62 && (mask & INPUT_FORMAT_UBX))
-        return INPUT_FORMAT_UBX;
-    if (len >= 1 && data[0] == 0xD3 && (mask & INPUT_FORMAT_RTCM)) return INPUT_FORMAT_RTCM;
-    if (mask & INPUT_FORMAT_LPP_UPER) return INPUT_FORMAT_LPP_UPER;
-    if (mask & INPUT_FORMAT_RAW) return INPUT_FORMAT_RAW;
-    return INPUT_FORMAT_NONE;
 }
 
 void TbinInput::deliver_next() NOEXCEPT {
@@ -85,12 +71,11 @@ void TbinInput::deliver_next() NOEXCEPT {
     auto& msg = mPending[top.reader_index];
 
     if (!msg.data.empty()) {
-        if (format_callback) {
-            auto fmt = detect_format(msg.data.data(), msg.data.size(), mFormatMask);
+        InputFormat fmt = mFormats[top.reader_index];
+        if (format_callback)
             format_callback(*this, fmt, msg.data.data(), msg.data.size());
-        } else if (callback) {
+        else if (callback)
             callback(*this, msg.data.data(), msg.data.size());
-        }
     }
 
     if (mReaders[top.reader_index].next(mPending[top.reader_index])) {

@@ -289,9 +289,9 @@ io_registry::InputTypeHandler make_tbin_input_type() {
                 if (!o.count("path")) throw std::runtime_error("--input tbin: missing path");
                 bool realtime =
                     o.count("realtime") && (o.at("realtime") == "true" || o.at("realtime").empty());
-                // Format mask is set by the caller via InputEntry.format after creation
-                return std::make_unique<TbinInput>(std::vector<std::string>{o.at("path")},
-                                                   INPUT_FORMAT_RAW, realtime);
+                // Format is filled in by main.cpp when it merges all tbin entries.
+                return std::make_unique<TbinInput>(
+                    std::vector<TbinInput::Source>{{o.at("path"), INPUT_FORMAT_RAW}}, realtime);
             }};
 }
 
