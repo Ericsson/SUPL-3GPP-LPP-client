@@ -30,6 +30,7 @@ EXTERNAL_WARNINGS_POP
 #include "processor/interface_stages.hpp"
 #include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
+#include "processor/lpp_static_repeat.hpp"
 #include "processor/nmea.hpp"
 #include "processor/ntrip_source.hpp"
 #include "processor/raw.hpp"
@@ -585,14 +586,14 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
             (void)input.interface->schedule(program.scheduler);
             program.input_stages.push_back(nullptr);  // placeholder to keep indices aligned
         } else {
-        auto stage = std::unique_ptr<InputStage>(
-            new InterfaceInputStage(std::move(input.interface), input.entry.format));
+            auto stage = std::unique_ptr<InputStage>(
+                new InterfaceInputStage(std::move(input.interface), input.entry.format));
             stage->callback = [context_ptr, &program, tag](InputFormat    format,
                                                            uint8_t const* buffer, size_t length) {
-            process_input(program, *context_ptr, format, buffer, length, tag);
-        };
-        (void)stage->schedule(program.scheduler);
-        program.input_stages.push_back(std::move(stage));
+                process_input(program, *context_ptr, format, buffer, length, tag);
+            };
+            (void)stage->schedule(program.scheduler);
+            program.input_stages.push_back(std::move(stage));
         }
     }
 }
@@ -1105,6 +1106,12 @@ int main(int argc, char** argv) {
     initialize_inputs(program, program.input);
     initialize_outputs(program, program.output);
     setup_print_inspectors(program);
+
+    if (program.config.lpp_static_repeat.enabled) {
+        program.stream.add_inspector<LppStaticDataRepeat>(
+            program.stream, program.lpp_tag,
+            std::chrono::seconds{program.config.lpp_static_repeat.interval});
+    }
 
     // NTRIP source
     if (program.config.ntrip.enabled) {

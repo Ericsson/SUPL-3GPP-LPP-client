@@ -222,6 +222,7 @@ bool config_parse(int argc, char** argv, Config* config) {
     ::ubx_config::setup(parser);
     ::stream::setup(parser);
     ::ntrip::setup(parser);
+    ::lpp_static_repeat::setup(parser);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -278,6 +279,7 @@ bool config_parse(int argc, char** argv, Config* config) {
         ::input::parse(config->inputs_config);
         ::output::parse(config->outputs_config);
         ::ntrip::parse(config);
+        ::lpp_static_repeat::parse(config);
         ::print::parse(config);
         ::gnss::parse(config);
         ::scheduler::parse(config);

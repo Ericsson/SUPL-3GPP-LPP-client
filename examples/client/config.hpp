@@ -462,6 +462,11 @@ struct NtripConfig {
     int    timeout_s            = 30;
 };
 
+struct LppStaticRepeatConfig {
+    bool enabled  = false;
+    int  interval = 30;  // seconds
+};
+
 struct Config {
     LocationServerConfig      location_server;
     AGnssConfig               agnss;
@@ -497,8 +502,9 @@ struct Config {
 #ifdef DATA_TRACING
     DataTracingConfig data_tracing;
 #endif
-    UbxConfigConfig ubx_config;
-    NtripConfig     ntrip;
+    UbxConfigConfig       ubx_config;
+    NtripConfig           ntrip;
+    LppStaticRepeatConfig lpp_static_repeat;
 };
 
 LOGLET_MODULE_FORWARD_REF2(client, config);
@@ -653,6 +659,11 @@ namespace ntrip {
 void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 }  // namespace ntrip
+
+namespace lpp_static_repeat {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+}  // namespace lpp_static_repeat
 
 bool config_parse(int argc, char** argv, Config* config);
 void config_dump(Config* config);
