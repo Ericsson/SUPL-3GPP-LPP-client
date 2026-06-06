@@ -100,7 +100,6 @@ static InputFormat parse_format(std::string const& str) {
     if (str == "lpp-uper") return INPUT_FORMAT_LPP_UPER;
     if (str == "lpp-uper-pad") return INPUT_FORMAT_LPP_UPER_PAD;
     if (str == "raw") return INPUT_FORMAT_RAW;
-    if (str == "tbin") return INPUT_FORMAT_TBIN;
     throw args::ValidationError("--input format: invalid format, got `" + str + "`");
 }
 

@@ -19,6 +19,7 @@ io_registry::InputTypeHandler make_tcp_client_input_type();
 io_registry::InputTypeHandler make_tcp_server_input_type();
 io_registry::InputTypeHandler make_udp_server_input_type();
 io_registry::InputTypeHandler make_stream_ref_input_type();
+io_registry::InputTypeHandler make_tbin_input_type();
 
 // Output type handler factories — call before output::setup()
 io_registry::OutputTypeHandler make_stdout_output_type();

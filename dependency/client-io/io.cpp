@@ -1,6 +1,7 @@
 #include <client-io/io.hpp>
 #include <client-io/parse.hpp>
 #include <client-io/registry.hpp>
+#include <client-io/tbin_input.hpp>
 #include <client-io/tbin_output.hpp>
 
 #include <cxx11_compat.hpp>
@@ -277,6 +278,20 @@ io_registry::InputTypeHandler make_stream_ref_input_type() {
                     return nullptr;
                 }
                 return std::make_unique<io::StreamInputAdapter>(s);
+            }};
+}
+
+io_registry::InputTypeHandler make_tbin_input_type() {
+    return {"tbin",
+            "    path=<path>\n"
+            "    realtime=<bool> (default=false)\n",
+            [](Opts const& o, io::StreamRegistry&) -> std::unique_ptr<io::Input> {
+                if (!o.count("path")) throw std::runtime_error("--input tbin: missing path");
+                bool realtime =
+                    o.count("realtime") && (o.at("realtime") == "true" || o.at("realtime").empty());
+                // Format mask is set by the caller via InputEntry.format after creation
+                return std::make_unique<TbinInput>(std::vector<std::string>{o.at("path")},
+                                                   INPUT_FORMAT_RAW, realtime);
             }};
 }
 

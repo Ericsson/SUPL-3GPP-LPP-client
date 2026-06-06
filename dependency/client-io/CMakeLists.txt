@@ -7,6 +7,7 @@ add_library(client_io STATIC
     registry.cpp
     stage.cpp
     tag_registry.cpp
+    tbin_input.cpp
 )
 add_library(dependency::client-io ALIAS client_io)
 
