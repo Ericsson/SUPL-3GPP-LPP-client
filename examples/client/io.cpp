@@ -20,7 +20,6 @@
 #include <loglet/loglet.hpp>
 #include <scheduler/socket.hpp>
 
-#include "processor/chunked_log.hpp"
 #include "processor/tbin_output.hpp"
 
 LOGLET_MODULE2(client, io);
@@ -275,11 +274,6 @@ std::unique_ptr<io::Output> create_output(OutputFileConfig const& cfg,
                                             cfg.path);
     }
     return std::make_unique<io::StreamOutputAdapter>(stream);
-}
-
-std::unique_ptr<io::Output> create_output(OutputChunkedLogConfig const& cfg) {
-    DEBUGF("output: chunked-log=%s", cfg.path.c_str());
-    return std::make_unique<ChunkedLogOutput>(cfg.path);
 }
 
 std::unique_ptr<io::Output> create_output(OutputTcpServerConfig const& cfg) {

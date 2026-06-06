@@ -1,11 +1,12 @@
-add_executable(example_ntrip 
+add_executable(example_ntrip
     "main.cpp"
     "options.cpp"
 )
 add_executable(examples::ntrip ALIAS example_ntrip)
 
 target_include_directories(example_ntrip PRIVATE "./")
-target_link_libraries(example_ntrip PRIVATE args)
+target_link_libraries(example_ntrip PRIVATE dependency::client-io)
+target_link_libraries(example_ntrip PRIVATE dependency::scheduler)
 target_link_libraries(example_ntrip PRIVATE dependency::io)
 
 set_target_properties(example_ntrip PROPERTIES OUTPUT_NAME "example-ntrip")

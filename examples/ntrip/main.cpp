@@ -1,7 +1,10 @@
 #include <arpa/inet.h>
+#include <client-io/io.hpp>
+#include <client-io/registry.hpp>
 #include <cstring>
 #include <exception>
 #include <netdb.h>
+#include <scheduler/scheduler.hpp>
 #include <stdexcept>
 #include <unistd.h>
 #include "options.hpp"
@@ -144,9 +147,30 @@ private:
 };
 
 int main(int argc, char** argv) {
+    // Register output types before parse_configuration calls output::setup()
+    io_registry::register_output_type(make_stdout_output_type());
+    io_registry::register_output_type(make_file_output_type());
+    io_registry::register_output_type(make_tcp_server_output_type());
+    io_registry::register_output_type(make_serial_output_type());
+    io_registry::register_output_type(make_tcp_client_output_type());
+    io_registry::register_output_type(make_udp_client_output_type());
+    io_registry::register_output_type(make_stream_ref_output_type());
+
     auto  options = parse_configuration(argc, argv);
     auto& host    = options.host;
-    auto& output  = options.output;
+
+    // Build outputs
+    io::StreamRegistry                       registry;
+    std::vector<std::unique_ptr<io::Output>> outputs;
+    scheduler::Scheduler                     scheduler;
+
+    auto add = [&](std::unique_ptr<io::Output> o) {
+        if (!o) return;
+        (void)o->schedule(scheduler);
+        outputs.push_back(std::move(o));
+    };
+    for (auto& entry : options.outputs.outputs)
+        add(create_output(entry, registry));
 
     // resolve hostname
     auto addr = resolve(host.hostname, host.port);
@@ -179,9 +203,10 @@ int main(int argc, char** argv) {
             hexdump(temp, length);
         }
 
-        for (auto& out : output.outputs) {
+        for (auto& out : outputs) {
             out->write(reinterpret_cast<uint8_t*>(temp), length);
         }
+        (void)scheduler.execute_once();
     }
 
     return 0;

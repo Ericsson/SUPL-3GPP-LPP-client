@@ -439,6 +439,29 @@ struct IdokeidoConfig {
 };
 #endif
 
+struct NtripConfig {
+    bool        enabled = false;
+    std::string host;
+    uint16_t    port = 2101;
+    std::string mountpoint;
+    std::string username;
+    std::string password;
+    bool        tls = false;
+
+    enum class PositionMode { None, Fixed, Internal };
+    PositionMode position_mode = PositionMode::None;
+
+    double latitude  = 0.0;
+    double longitude = 0.0;
+    double altitude  = 0.0;
+
+    double position_round_deg   = 0.0;
+    double position_offset_m    = 0.0;
+    int    position_interval_s  = 10;
+    int    reconnect_interval_s = 5;
+    int    timeout_s            = 30;
+};
+
 struct Config {
     LocationServerConfig      location_server;
     AGnssConfig               agnss;
@@ -475,6 +498,7 @@ struct Config {
     DataTracingConfig data_tracing;
 #endif
     UbxConfigConfig ubx_config;
+    NtripConfig     ntrip;
 };
 
 LOGLET_MODULE_FORWARD_REF2(client, config);
@@ -624,6 +648,11 @@ void setup(args::ArgumentParser& parser);
 void parse(StreamsConfig& config);
 void dump(StreamsConfig const& config);
 }  // namespace stream
+
+namespace ntrip {
+void setup(args::ArgumentParser& parser);
+void parse(Config* config);
+}  // namespace ntrip
 
 bool config_parse(int argc, char** argv, Config* config);
 void config_dump(Config* config);

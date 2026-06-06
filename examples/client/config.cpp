@@ -9,7 +9,6 @@
 #include <io/udp.hpp>
 #include <loglet/loglet.hpp>
 #include <version.hpp>
-#include "processor/chunked_log.hpp"
 #include "tag_registry.hpp"
 
 #include <map>
@@ -222,6 +221,7 @@ bool config_parse(int argc, char** argv, Config* config) {
 #endif
     ::ubx_config::setup(parser);
     ::stream::setup(parser);
+    ::ntrip::setup(parser);
 
     try {
         parser.ParseCLI(argc, argv);
@@ -277,6 +277,7 @@ bool config_parse(int argc, char** argv, Config* config) {
         ::stream::parse(config->streams_config);
         ::input::parse(config->inputs_config);
         ::output::parse(config->outputs_config);
+        ::ntrip::parse(config);
         ::print::parse(config);
         ::gnss::parse(config);
         ::scheduler::parse(config);

@@ -1,4 +1,5 @@
 #include <client-io/parse.hpp>
+#include <client-io/transport_help.hpp>
 #include <client-io/types.hpp>
 
 #include <core/string.hpp>
@@ -20,50 +21,16 @@ static args::ValueFlagList<std::string> gArgs{
     gGroup,
     "stream",
     "Declare a bidirectional stream.\n"
-    "Usage: --stream <type>:<arguments>\n\n"
-    "Common arguments:\n"
-    "  id=<name>                  Required: unique identifier\n"
-    "  read_min_bytes=<N>         Read buffering: min bytes\n"
-    "  read_timeout_ms=<N>        Read buffering: flush interval\n\n"
-    "Types:\n"
-    "  serial:\n"
-    "    device=<device>\n"
-    "    baudrate=<baudrate>\n"
-    "    databits=<5|6|7|8>\n"
-    "    stopbits=<1|2>\n"
-    "    parity=<none|odd|even>\n"
-    "    raw=<bool>\n"
-    "  tcp-client:\n"
-    "    host=<host>\n"
-    "    port=<port>\n"
-    "    path=<path>\n"
-    "    reconnect=<bool>\n"
-    "  tcp-server:\n"
-    "    listen=<addr>\n"
-    "    port=<port>\n"
-    "    path=<path>\n"
-    "  udp-client:\n"
-    "    host=<host>\n"
-    "    port=<port>\n"
-    "    path=<path>\n"
-    "  udp-server:\n"
-    "    listen=<addr>\n"
-    "    port=<port>\n"
-    "    path=<path>\n"
-    "  pty:\n"
+    "Usage: --stream <type>:<id=name,...>\n\n"
+    "Required: id=<name>\n\n"
+    "Types:\n" TRANSPORT_HELP_SERIAL TRANSPORT_HELP_TCP_CLIENT TRANSPORT_HELP_TCP_SERVER
+        TRANSPORT_HELP_UDP_CLIENT TRANSPORT_HELP_UDP_SERVER "  pty:\n"
     "    link=<path>\n"
     "  stdio:\n"
-    "    stderr=<bool>\n"
     "  fd:\n"
     "    fd=<number>\n"
     "  file:\n"
-    "    path=<path>\n"
-    "    read=<bool>\n"
-    "    write=<bool>\n"
-    "    append=<bool>\n"
-    "    truncate=<bool>\n"
-    "    bytes_per_tick=<N>\n"
-    "    tick_interval_ms=<N>\n",
+    "    path=<path>\n",
     {"stream"},
 };
 

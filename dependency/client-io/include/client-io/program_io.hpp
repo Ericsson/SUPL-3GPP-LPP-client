@@ -6,6 +6,7 @@
 #include <client-io/output_format.hpp>
 #include <client-io/stage.hpp>
 #include <client-io/tag_registry.hpp>
+#include <client-io/types.hpp>
 
 #include <chrono>
 #include <memory>
@@ -13,56 +14,39 @@
 #include <vector>
 
 struct OutputInterface {
-    OutputFormat                 format;
+    OutputEntry                  entry;
     std::unique_ptr<io::Output>  initial_interface;
     std::unique_ptr<OutputStage> stage;
-    std::vector<std::string>     include_tags;
-    std::vector<std::string>     exclude_tags;
-    std::vector<std::string>     stages;
+    tags::TagMask                include_tag_mask;
+    tags::TagMask                exclude_tag_mask;
 
-    tags::TagMask include_tag_mask;
-    tags::TagMask exclude_tag_mask;
+    NODISCARD inline OutputFormat format() const { return entry.format; }
 
-    static OutputInterface create(OutputFormat format, std::unique_ptr<io::Output> interface,
-                                  std::vector<std::string> include_tags,
-                                  std::vector<std::string> exclude_tags,
-                                  std::vector<std::string> stages) {
-        return {
-            format,
-            std::move(interface),
-            nullptr,
-            std::move(include_tags),
-            std::move(exclude_tags),
-            std::move(stages),
-            tags::TagMask(0),
-            tags::TagMask(0),
-        };
+    NODISCARD inline bool ubx_support() const { return (entry.format & OUTPUT_FORMAT_UBX) != 0; }
+    NODISCARD inline bool nmea_support() const { return (entry.format & OUTPUT_FORMAT_NMEA) != 0; }
+    NODISCARD inline bool rtcm_support() const { return (entry.format & OUTPUT_FORMAT_RTCM) != 0; }
+    NODISCARD inline bool ctrl_support() const { return (entry.format & OUTPUT_FORMAT_CTRL) != 0; }
+    NODISCARD inline bool lpp_xer_support() const {
+        return (entry.format & OUTPUT_FORMAT_LPP_XER) != 0;
     }
-
-    NODISCARD inline bool ubx_support() const { return (format & OUTPUT_FORMAT_UBX) != 0; }
-    NODISCARD inline bool nmea_support() const { return (format & OUTPUT_FORMAT_NMEA) != 0; }
-    NODISCARD inline bool rtcm_support() const { return (format & OUTPUT_FORMAT_RTCM) != 0; }
-    NODISCARD inline bool ctrl_support() const { return (format & OUTPUT_FORMAT_CTRL) != 0; }
-    NODISCARD inline bool lpp_xer_support() const { return (format & OUTPUT_FORMAT_LPP_XER) != 0; }
     NODISCARD inline bool lpp_uper_support() const {
-        return (format & OUTPUT_FORMAT_LPP_UPER) != 0;
+        return (entry.format & OUTPUT_FORMAT_LPP_UPER) != 0;
     }
-    NODISCARD inline bool spartn_support() const { return (format & OUTPUT_FORMAT_SPARTN) != 0; }
-    NODISCARD inline bool lfr_support() const { return (format & OUTPUT_FORMAT_LFR) != 0; }
-    NODISCARD inline bool possib_support() const { return (format & OUTPUT_FORMAT_POSSIB) != 0; }
+    NODISCARD inline bool spartn_support() const {
+        return (entry.format & OUTPUT_FORMAT_SPARTN) != 0;
+    }
+    NODISCARD inline bool lfr_support() const { return (entry.format & OUTPUT_FORMAT_LFR) != 0; }
+    NODISCARD inline bool possib_support() const {
+        return (entry.format & OUTPUT_FORMAT_POSSIB) != 0;
+    }
     NODISCARD inline bool location_support() const {
-        return (format & OUTPUT_FORMAT_LOCATION) != 0;
+        return (entry.format & OUTPUT_FORMAT_LOCATION) != 0;
     }
-    NODISCARD inline bool raw_support() const { return (format & OUTPUT_FORMAT_RAW) != 0; }
-    NODISCARD inline bool test_support() const { return (format & OUTPUT_FORMAT_TEST) != 0; }
+    NODISCARD inline bool raw_support() const { return (entry.format & OUTPUT_FORMAT_RAW) != 0; }
+    NODISCARD inline bool test_support() const { return (entry.format & OUTPUT_FORMAT_TEST) != 0; }
 
     NODISCARD inline bool accept_tag(uint64_t tag) const {
         return tags::TagMask::filter(include_tag_mask, exclude_tag_mask, tags::Tag(tag));
-    }
-
-    NODISCARD inline std::string tag_name(uint64_t tag) const {
-        auto name = tags::to_string(tags::TagMask(tag));
-        return name.empty() ? "untagged" : name;
     }
 
     NODISCARD inline std::string reject_reason(uint64_t tag) const {
@@ -71,6 +55,11 @@ struct OutputInterface {
         if (exclude_tag_mask.value & tag) return "in otags=" + tags::to_string(exclude_tag_mask);
         return "unknown";
     }
+
+    NODISCARD inline std::string tag_name(uint64_t tag) const {
+        auto name = tags::to_string(tags::TagMask(tag));
+        return name.empty() ? "untagged" : name;
+    }
 };
 
 struct ProgramOutput {
@@ -78,15 +67,16 @@ struct ProgramOutput {
 };
 
 struct InputInterface {
-    InputFormat                format;
-    bool                       print;
+    InputEntry                 entry;
     std::unique_ptr<io::Input> interface;
-    std::vector<std::string>   tags;
-    std::vector<std::string>   stages;
-    bool                       nmea_lf_only;
-    bool                       discard_errors;
-    bool                       discard_unknowns;
-    bool                       exclude_from_shutdown;
+    tags::TagMask              tag_mask;
+
+    NODISCARD inline InputFormat format() const { return entry.format; }
+    NODISCARD inline bool        print() const { return entry.print; }
+    NODISCARD inline bool        nmea_lf_only() const { return entry.nmea_lf_only; }
+    NODISCARD inline bool        discard_errors() const { return entry.discard_errors; }
+    NODISCARD inline bool        discard_unknowns() const { return entry.discard_unknowns; }
+    NODISCARD inline bool exclude_from_shutdown() const { return entry.exclude_from_shutdown; }
 };
 
 struct ProgramInput {

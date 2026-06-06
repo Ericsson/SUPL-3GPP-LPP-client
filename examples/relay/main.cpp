@@ -1,5 +1,6 @@
 #include <client-io/config.hpp>
 #include <client-io/io.hpp>
+#include <client-io/registry.hpp>
 #include <client-io/types.hpp>
 #include <io/input.hpp>
 #include <io/registry.hpp>
@@ -18,8 +19,27 @@ EXTERNAL_WARNINGS_POP
 LOGLET_MODULE(relay);
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(relay)
 
+static void register_types() {
+    io_registry::register_input_type(make_stdin_input_type());
+    io_registry::register_input_type(make_file_input_type());
+    io_registry::register_input_type(make_serial_input_type());
+    io_registry::register_input_type(make_tcp_client_input_type());
+    io_registry::register_input_type(make_tcp_server_input_type());
+    io_registry::register_input_type(make_udp_server_input_type());
+    io_registry::register_input_type(make_stream_ref_input_type());
+
+    io_registry::register_output_type(make_stdout_output_type());
+    io_registry::register_output_type(make_file_output_type());
+    io_registry::register_output_type(make_tcp_server_output_type());
+    io_registry::register_output_type(make_serial_output_type());
+    io_registry::register_output_type(make_tcp_client_output_type());
+    io_registry::register_output_type(make_udp_client_output_type());
+    io_registry::register_output_type(make_stream_ref_output_type());
+}
+
 int main(int argc, char** argv) {
     loglet::initialize();
+    register_types();
 
     args::ArgumentParser parser{"example-relay — raw byte passthrough between streams"};
     stream::setup(parser);
@@ -45,35 +65,17 @@ int main(int argc, char** argv) {
 
     io::StreamRegistry registry;
     create_streams(streams_cfg, registry);
-    create_implicit_streams(inputs_cfg, outputs_cfg, registry);
 
-    // Build outputs
     std::vector<std::unique_ptr<io::Output>> outputs;
-    auto                                     add_out = [&](std::unique_ptr<io::Output> o) {
-        if (o) outputs.push_back(std::move(o));
-    };
-    for (auto& cfg : outputs_cfg.stream)
-        add_out(create_output(cfg, registry));
-    for (auto& cfg : outputs_cfg.stdout_outputs)
-        add_out(create_output(cfg, registry));
-    for (auto& cfg : outputs_cfg.file)
-        add_out(create_output(cfg, registry));
-    for (auto& cfg : outputs_cfg.tcp_server)
-        add_out(create_output(cfg));
-    for (auto& cfg : outputs_cfg.serial)
-        add_out(create_output(cfg, registry));
-    for (auto& cfg : outputs_cfg.tcp_client)
-        add_out(create_output(cfg, registry));
-    for (auto& cfg : outputs_cfg.udp_client)
-        add_out(create_output(cfg, registry));
+    scheduler::Scheduler                     scheduler;
 
-    scheduler::Scheduler scheduler;
-
-    // Schedule outputs
-    for (auto& out : outputs)
+    for (auto& entry : outputs_cfg.outputs) {
+        auto out = create_output(entry, registry);
+        if (!out) continue;
         (void)out->schedule(scheduler);
+        outputs.push_back(std::move(out));
+    }
 
-    // Build inputs, wire raw passthrough callback
     std::vector<std::unique_ptr<io::Input>> inputs;
     auto                                    add_in = [&](std::unique_ptr<io::Input> inp) {
         if (!inp) return;
@@ -84,20 +86,10 @@ int main(int argc, char** argv) {
         (void)inp->schedule(scheduler);
         inputs.push_back(std::move(inp));
     };
-    for (auto& cfg : inputs_cfg.stream)
-        add_in(create_input(cfg, registry));
-    for (auto& cfg : inputs_cfg.stdin_inputs)
-        add_in(create_input(cfg, registry));
-    for (auto& cfg : inputs_cfg.file)
-        add_in(create_input(cfg, registry));
-    for (auto& cfg : inputs_cfg.serial)
-        add_in(create_input(cfg, registry));
-    for (auto& cfg : inputs_cfg.tcp_client)
-        add_in(create_input(cfg, registry));
-    for (auto& cfg : inputs_cfg.tcp_server)
-        add_in(create_input(cfg, registry));
-    for (auto& cfg : inputs_cfg.udp_server)
-        add_in(create_input(cfg, registry));
+
+    for (auto& entry : inputs_cfg.inputs) {
+        add_in(create_input(entry, registry));
+    }
 
     INFOF("relay: %zu input(s), %zu output(s)", inputs.size(), outputs.size());
     scheduler.execute();

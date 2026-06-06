@@ -2,44 +2,25 @@
 #include <memory>
 #include <vector>
 
-#include <io/file.hpp>
+#include <client-io/config.hpp>
+#include <client-io/io.hpp>
+#include <client-io/types.hpp>
 #include <io/output.hpp>
-#include <io/serial.hpp>
-#include <io/stdout.hpp>
-#include <io/tcp.hpp>
-#include <io/udp.hpp>
 
 /// Host options.
 struct HostOptions {
-    /// Hostname to connect to.
-    std::string hostname;
-
-    /// Port to connect to.
-    uint16_t port;
-
-    /// Mountpoint to connect to.
+    std::string                  hostname;
+    uint16_t                     port;
     std::unique_ptr<std::string> mountpoint;
-
-    /// Username to connect with.
-    std::string username;
-
-    /// Password to connect with.
-    std::string password;
-
-    /// Nmea String
-    std::string nmea;
-
-    bool hexdump;
-};
-
-/// Output options.
-struct OutputOptions {
-    std::vector<std::unique_ptr<io::Output>> outputs;
+    std::string                  username;
+    std::string                  password;
+    std::string                  nmea;
+    bool                         hexdump;
 };
 
 struct Options {
     HostOptions   host;
-    OutputOptions output;
+    OutputsConfig outputs;
 };
 
 extern Options parse_configuration(int argc, char** argv);

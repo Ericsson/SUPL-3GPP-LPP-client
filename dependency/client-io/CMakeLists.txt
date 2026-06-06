@@ -4,8 +4,9 @@ add_library(client_io STATIC
     input.cpp
     output.cpp
     io.cpp
+    registry.cpp
+    stage.cpp
     tag_registry.cpp
-    chunked_log.cpp
 )
 add_library(dependency::client-io ALIAS client_io)
 

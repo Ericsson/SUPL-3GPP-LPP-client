@@ -9,6 +9,8 @@ add_executable(example_client
     "config/location_information.cpp"
     "config/location_server.cpp"
     "config/logging.cpp"
+    "config/ntrip.cpp"
+    "processor/ntrip_source.cpp"
     "config/print.cpp"
     "config/scheduler.cpp"
     "config/lpp2rtcm.cpp"
@@ -27,8 +29,6 @@ add_executable(example_client
     "processor/raw.cpp"
     "processor/test.cpp"
     "processor/possib_logger.cpp"
-    "processor/tlf.cpp"
-    "processor/chunked_log.cpp"
 )
 add_executable(examples::client ALIAS example_client)
 

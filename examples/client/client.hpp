@@ -20,6 +20,7 @@
 #include <lpp/session.hpp>
 #include <scheduler/periodic.hpp>
 #include <scheduler/timeout.hpp>
+#include "processor/ntrip_source.hpp"
 
 #include "config.hpp"
 #include "program_io.hpp"
@@ -53,14 +54,16 @@ struct Program {
     lpp::Optional<lpp::HaGnssMetrics>       latest_gnss_metrics;
     bool                                    latest_location_information_submitted{false};
 
-    std::unique_ptr<supl::Cell>     initial_cell;
-    std::unique_ptr<supl::Cell>     cell;
-    std::unique_ptr<supl::Identity> identity;
-    std::unique_ptr<supl::Identity> agnss_identity;
-    std::unique_ptr<lpp::Client>    client;
+    std::unique_ptr<supl::Cell>               initial_cell;
+    std::unique_ptr<supl::Cell>               cell;
+    std::unique_ptr<supl::Identity>           identity;
+    std::unique_ptr<supl::Identity>           agnss_identity;
+    std::vector<std::unique_ptr<lpp::Client>> lpp_clients;
 
     std::vector<std::unique_ptr<InputContext>> input_contexts;
     std::vector<std::unique_ptr<InputStage>>   input_stages;
+    std::unique_ptr<NtripSource>               ntrip_source;
+    std::unique_ptr<format::rtcm::Parser>      ntrip_parser;
 
     std::unique_ptr<scheduler::PeriodicTask> fake_location_task;
 

@@ -23,10 +23,14 @@ EXTERNAL_WARNINGS_POP
 #include <datatrace/datatrace.hpp>
 #endif
 
+#include <client-io/io.hpp>
+#include <client-io/registry.hpp>
 #include "processor/control.hpp"
+#include "processor/interface_stages.hpp"
 #include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
 #include "processor/nmea.hpp"
+#include "processor/ntrip_source.hpp"
 #include "processor/raw.hpp"
 #include "processor/rtcm.hpp"
 #include "processor/test.hpp"
@@ -60,7 +64,6 @@ EXTERNAL_WARNINGS_POP
 
 #include "client.hpp"
 #include "io.hpp"
-#include "processor/tlf.hpp"
 #include "raw_message.hpp"
 #include "tag_registry.hpp"
 
@@ -178,11 +181,11 @@ static void client_location_information(Program& program, lpp::Client& client) {
 }
 
 static void client_initialize(Program& program, lpp::Client&) {
-    program.client->on_connected = [](lpp::Client&) {
+    program.lpp_clients[0]->on_connected = [](lpp::Client&) {
         INFOF("connected to location server");
     };
 
-    program.client->on_disconnected = [&program](lpp::Client&) {
+    program.lpp_clients[0]->on_disconnected = [&program](lpp::Client&) {
         INFOF("disconnected from location server");
         program.is_disconnected               = true;
         program.assistance_data_request_count = 0;
@@ -193,15 +196,16 @@ static void client_initialize(Program& program, lpp::Client&) {
         }
     };
 
-    program.client->on_provide_capabilities = [&program](lpp::Client& client) {
+    program.lpp_clients[0]->on_provide_capabilities = [&program](lpp::Client& client) {
         INFOF("capabilities handshake completed");
         client_request(program, client);
         client_location_information(program, client);
     };
 
-    program.client->on_request_location_information = [&program](lpp::Client&,
-                                                                 lpp::TransactionHandle const&,
-                                                                 lpp::Message const&) {
+    program.lpp_clients[0]->on_request_location_information = [&program](
+                                                                  lpp::Client&,
+                                                                  lpp::TransactionHandle const&,
+                                                                  lpp::Message const&) {
         INFOF("request location information");
 
         if (program.config.location_information.unsolicited) {
@@ -218,7 +222,7 @@ static void client_initialize(Program& program, lpp::Client&) {
         return false;
     };
 
-    program.client->on_provide_location_information =
+    program.lpp_clients[0]->on_provide_location_information =
         [&program](lpp::Client&, lpp::LocationInformationDelivery const&,
                    lpp::messages::ProvideLocationInformation& data) {
             INFOF("provide location information");
@@ -240,7 +244,7 @@ static void client_initialize(Program& program, lpp::Client&) {
         };
 
     if (program.config.assistance_data.request_assisted_gnss) {
-        client_request_assisted_gnss(program, *program.client);
+        client_request_assisted_gnss(program, *program.lpp_clients[0]);
     }
 
     // Configure Capaiblities
@@ -257,12 +261,13 @@ static void client_initialize(Program& program, lpp::Client&) {
         capabilities.assistance_data.ssr = true;
     }
 
-    program.client->set_capabilities(capabilities);
+    program.lpp_clients[0]->set_capabilities(capabilities);
 
-    program.client->set_hack_bad_transaction_initiator(
+    program.lpp_clients[0]->set_hack_bad_transaction_initiator(
         program.config.location_server.hack_bad_transaction_initiator);
-    program.client->set_hack_never_send_abort(program.config.location_server.hack_never_send_abort);
-    program.client->set_hack_server_initiated_push(
+    program.lpp_clients[0]->set_hack_never_send_abort(
+        program.config.location_server.hack_never_send_abort);
+    program.lpp_clients[0]->set_hack_server_initiated_push(
         program.config.location_server.hack_server_initiated_push);
 }
 
@@ -304,12 +309,13 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         for (;;) {
             auto message = p.nmea->try_parse();
             if (!message) break;
-            if (p.input->discard_errors && dynamic_cast<format::nmea::ErrorMessage*>(message.get()))
+            if (p.input->entry.discard_errors &&
+                dynamic_cast<format::nmea::ErrorMessage*>(message.get()))
                 continue;
-            if (p.input->discard_unknowns &&
+            if (p.input->entry.discard_unknowns &&
                 dynamic_cast<format::nmea::UnsupportedMessage*>(message.get()))
                 continue;
-            if (p.input->print) message->print();
+            if (p.input->entry.print) message->print();
             program.stream.push(std::move(message), tag);
         }
     }
@@ -319,12 +325,13 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         for (;;) {
             auto message = p.rtcm->try_parse();
             if (!message) break;
-            if (p.input->discard_errors && dynamic_cast<format::rtcm::ErrorMessage*>(message.get()))
+            if (p.input->entry.discard_errors &&
+                dynamic_cast<format::rtcm::ErrorMessage*>(message.get()))
                 continue;
-            if (p.input->discard_unknowns &&
+            if (p.input->entry.discard_unknowns &&
                 dynamic_cast<format::rtcm::UnsupportedMessage*>(message.get()))
                 continue;
-            if (p.input->print) message->print();
+            if (p.input->entry.print) message->print();
             program.stream.push(std::move(message), tag);
         }
     }
@@ -334,10 +341,10 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         for (;;) {
             auto message = p.ubx->try_parse();
             if (!message) break;
-            if (p.input->discard_unknowns &&
+            if (p.input->entry.discard_unknowns &&
                 dynamic_cast<format::ubx::UnsupportedMessage*>(message.get()))
                 continue;
-            if (p.input->print) message->print();
+            if (p.input->entry.print) message->print();
             program.stream.push(std::move(message), tag);
         }
     }
@@ -347,7 +354,7 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
         for (;;) {
             auto message = p.ctrl->try_parse();
             if (!message) break;
-            if (p.input->print) message->print();
+            if (p.input->entry.print) message->print();
             program.stream.push(std::move(message), tag);
         }
     }
@@ -359,7 +366,7 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
             if (!message) break;
 
             auto lpp_message = lpp::Message{message};
-            if (p.input->print) {
+            if (p.input->entry.print) {
                 lpp::print(lpp_message);
             }
             program.stream.push(std::move(lpp_message), tag);
@@ -372,7 +379,7 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
             auto message = p.lpp_uper_pad->try_parse_provide_assistance_data();
             if (!message) break;
 
-            if (p.input->print) {
+            if (p.input->entry.print) {
                 lpp::print(message);
             }
 
@@ -431,130 +438,43 @@ static void process_input(Program& program, InputContext& p, InputFormat formats
 
 static void create_io_from_config(Program& program) {
     auto& config = program.config;
-    // Create explicit streams from --stream arguments
     create_streams(config.streams_config, program.stream_registry);
-    // Create implicit streams from --input/--output arguments
-    create_implicit_streams(config.inputs_config, config.outputs_config, program.stream_registry);
 
-    // Create inputs from parsed config
     auto& inputs_cfg                               = config.inputs_config;
     program.input.disable_pipe_buffer_optimization = inputs_cfg.disable_pipe_buffer_optimization;
     program.input.shutdown_on_complete             = inputs_cfg.shutdown_on_complete;
     program.input.shutdown_delay                   = inputs_cfg.shutdown_delay;
 
-    auto add_input = [&](InputInterface iface) {
+    for (auto const& entry : inputs_cfg.inputs) {
+        auto input = create_input(entry, program.stream_registry);
+        if (!input) continue;
+        InputInterface iface;
+        iface.entry     = entry;
+        iface.interface = std::move(input);
         program.input.inputs.push_back(std::move(iface));
-    };
-
-    for (auto const& cfg : inputs_cfg.stream) {
-        auto input = create_input(cfg, program.stream_registry);
-        if (!input) continue;
-        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
-                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
-    }
-    for (auto const& cfg : inputs_cfg.stdin_inputs) {
-        auto input = create_input(cfg, program.stream_registry);
-        if (!input) continue;
-        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
-                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
-    }
-    for (auto const& cfg : inputs_cfg.file) {
-        auto input = create_input(cfg, program.stream_registry);
-        if (!input) continue;
-        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
-                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
-    }
-    for (auto const& cfg : inputs_cfg.serial) {
-        auto input = create_input(cfg, program.stream_registry);
-        if (!input) continue;
-        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
-                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
-    }
-    for (auto const& cfg : inputs_cfg.tcp_client) {
-        auto input = create_input(cfg, program.stream_registry);
-        if (!input) continue;
-        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
-                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
-    }
-    for (auto const& cfg : inputs_cfg.tcp_server) {
-        auto input = create_input(cfg, program.stream_registry);
-        if (!input) continue;
-        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
-                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
-    }
-    for (auto const& cfg : inputs_cfg.udp_server) {
-        auto input = create_input(cfg, program.stream_registry);
-        if (!input) continue;
-        add_input({cfg.format, cfg.print, std::move(input), cfg.tags, cfg.stages, cfg.nmea_lf_only,
-                   cfg.discard_errors, cfg.discard_unknowns, cfg.exclude_from_shutdown});
     }
 
-    // Create outputs from parsed config
     auto& outputs_cfg = config.outputs_config;
-
-    for (auto const& cfg : outputs_cfg.stream) {
-        auto output = create_output(cfg, program.stream_registry);
+    for (auto const& entry : outputs_cfg.outputs) {
+        auto output = create_output(entry, program.stream_registry);
         if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    }
-    for (auto const& cfg : outputs_cfg.stdout_outputs) {
-        auto output = create_output(cfg, program.stream_registry);
-        if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    }
-    for (auto const& cfg : outputs_cfg.file) {
-        auto output = create_output(cfg, program.stream_registry);
-        if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    }
-    for (auto const& cfg : outputs_cfg.chunked_log) {
-        auto output = create_output(cfg);
-        if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    }
-    for (auto const& cfg : outputs_cfg.tcp_server) {
-        auto output = create_output(cfg);
-        if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    }
-    for (auto const& cfg : outputs_cfg.serial) {
-        auto output = create_output(cfg, program.stream_registry);
-        if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    }
-    for (auto const& cfg : outputs_cfg.tcp_client) {
-        auto output = create_output(cfg, program.stream_registry);
-        if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
-    }
-    for (auto const& cfg : outputs_cfg.udp_client) {
-        auto output = create_output(cfg, program.stream_registry);
-        if (!output) continue;
-        program.output.outputs.push_back(OutputInterface::create(
-            cfg.format, std::move(output), cfg.include_tags, cfg.exclude_tags, cfg.stages));
+        OutputInterface oface;
+        oface.entry             = entry;
+        oface.initial_interface = std::move(output);
+        program.output.outputs.push_back(std::move(oface));
     }
 
     // Register tags
     auto& registry = global_tag_registry();
     for (auto& input : program.input.inputs) {
-        for (auto& tag : input.tags) {
+        for (auto& tag : input.entry.tags)
             registry.register_tag(tag, "Custom input tag", "custom");
-        }
     }
     for (auto& output : program.output.outputs) {
-        for (auto const& tag : output.include_tags) {
+        for (auto const& tag : output.entry.include_tags)
             registry.register_tag(tag, "Custom output tag", "custom");
-        }
-        for (auto const& tag : output.exclude_tags) {
+        for (auto const& tag : output.entry.exclude_tags)
             registry.register_tag(tag, "Custom output tag", "custom");
-        }
     }
 #ifdef INCLUDE_GENERATOR_RTCM
     if (!config.lpp2rtcm.output_tag.empty())
@@ -587,50 +507,42 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
         format::lpp::UperParser* lpp_uper{};
         format::lpp::UperParser* lpp_uper_pad{};
 
-        if ((input.format & INPUT_FORMAT_NMEA) != 0)
-            nmea = new format::nmea::Parser{input.nmea_lf_only};
-        if ((input.format & INPUT_FORMAT_RTCM) != 0) rtcm = new format::rtcm::Parser{};
-        if ((input.format & INPUT_FORMAT_UBX) != 0) ubx = new format::ubx::Parser{};
-        if ((input.format & INPUT_FORMAT_CTRL) != 0) ctrl = new format::ctrl::Parser{};
-        if ((input.format & INPUT_FORMAT_LPP_UPER) != 0) lpp_uper = new format::lpp::UperParser{};
-        if ((input.format & INPUT_FORMAT_LPP_UPER_PAD) != 0)
+        if ((input.entry.format & INPUT_FORMAT_NMEA) != 0)
+            nmea = new format::nmea::Parser{input.entry.nmea_lf_only};
+        if ((input.entry.format & INPUT_FORMAT_RTCM) != 0) rtcm = new format::rtcm::Parser{};
+        if ((input.entry.format & INPUT_FORMAT_UBX) != 0) ubx = new format::ubx::Parser{};
+        if ((input.entry.format & INPUT_FORMAT_CTRL) != 0) ctrl = new format::ctrl::Parser{};
+        if ((input.entry.format & INPUT_FORMAT_LPP_UPER) != 0)
+            lpp_uper = new format::lpp::UperParser{};
+        if ((input.entry.format & INPUT_FORMAT_LPP_UPER_PAD) != 0)
             lpp_uper_pad = new format::lpp::UperParser{};
 
         // TBIN format: create all parsers for auto-detection
-        if ((input.format & INPUT_FORMAT_TBIN) != 0) {
+        if ((input.entry.format & INPUT_FORMAT_TBIN) != 0) {
             rtcm     = new format::rtcm::Parser{};
             ubx      = new format::ubx::Parser{};
             lpp_uper = new format::lpp::UperParser{};
         }
 
         std::stringstream tag_stream;
-        for (size_t i = 0; i < input.tags.size(); i++) {
+        for (size_t i = 0; i < input.entry.tags.size(); i++) {
             if (i > 0) tag_stream << ",";
-            tag_stream << input.tags[i];
+            tag_stream << input.entry.tags[i];
         }
 
         auto tag_str = tag_stream.str();
-        auto tag =
-            global_tag_registry().get_tag(input.tags) | global_tag_registry().get_tag("input");
+        auto tag     = global_tag_registry().get_tag(input.entry.tags) |
+                   global_tag_registry().get_tag("input");
+        bool raw = (input.entry.format & INPUT_FORMAT_RAW) != 0;
 
-        std::stringstream stage_stream;
-        for (size_t i = 0; i < input.stages.size(); i++) {
-            if (i > 0) stage_stream << "->";
-            stage_stream << input.stages[i];
-        }
-
-        auto stage_str = stage_stream.str();
-
-        bool raw = (input.format & INPUT_FORMAT_RAW) != 0;
-
-        DEBUGF("input  %p: %s%s%s%s%s%s%s %s[%" PRIu64 "] | stages=%s", input.interface.get(),
-               (input.format & INPUT_FORMAT_UBX) ? "ubx " : "",
-               (input.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
-               (input.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
-               (input.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (input.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "", raw ? "raw " : "",
-               tag_str.c_str(), tag, stage_str.c_str());
+        DEBUGF("input  %p: %s%s%s%s%s%s%s %s[%" PRIu64 "]", input.interface.get(),
+               (input.entry.format & INPUT_FORMAT_UBX) ? "ubx " : "",
+               (input.entry.format & INPUT_FORMAT_NMEA) ? "nmea " : "",
+               (input.entry.format & INPUT_FORMAT_RTCM) ? "rtcm " : "",
+               (input.entry.format & INPUT_FORMAT_CTRL) ? "ctrl " : "",
+               (input.entry.format & INPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
+               (input.entry.format & INPUT_FORMAT_LPP_UPER_PAD) ? "lpp-uper-pad " : "",
+               raw ? "raw " : "", tag_str.c_str(), tag);
 
         if (!nmea && !rtcm && !ubx && !ctrl && !lpp_uper && !lpp_uper_pad && !raw) {
             WARNF("skipping input '%s', no format specified",
@@ -649,7 +561,7 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
 
         input.interface->set_event_name(event_name);
 
-        if (program.input.shutdown_on_complete && !input.exclude_from_shutdown) {
+        if (program.input.shutdown_on_complete && !input.entry.exclude_from_shutdown) {
             program.active_inputs++;
             DEBUGF("registered input for shutdown tracking (active_inputs=%d)",
                    program.active_inputs.load());
@@ -685,22 +597,12 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
         program.input_contexts.push_back(std::move(context));
 
         auto stage = std::unique_ptr<InputStage>(
-            new InterfaceInputStage(std::move(input.interface), input.format));
+            new InterfaceInputStage(std::move(input.interface), input.entry.format));
         stage->callback = [context_ptr, &program, tag](InputFormat format, uint8_t const* buffer,
                                                        size_t length) {
             process_input(program, *context_ptr, format, buffer, length, tag);
         };
-
-        for (auto const& stage_name : input.stages) {
-            if (stage_name == "tlf") {
-                stage = std::unique_ptr<InputStage>(new TlfInputStage(std::move(stage)));
-            } else {
-                ERRORF("unsupported stage: %s", stage_name.c_str());
-            }
-        }
-
         (void)stage->schedule(program.scheduler);
-
         program.input_stages.push_back(std::move(stage));
     }
 }
@@ -725,47 +627,38 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
         if (!output.initial_interface) continue;
 
         std::stringstream itag_stream;
-        for (size_t i = 0; i < output.include_tags.size(); i++) {
+        for (size_t i = 0; i < output.entry.include_tags.size(); i++) {
             if (i > 0) itag_stream << ",";
-            itag_stream << output.include_tags[i];
+            itag_stream << output.entry.include_tags[i];
         }
 
         auto itag_str = itag_stream.str();
 
         std::stringstream otag_stream;
-        for (size_t i = 0; i < output.exclude_tags.size(); i++) {
+        for (size_t i = 0; i < output.entry.exclude_tags.size(); i++) {
             if (i > 0) otag_stream << ",";
-            otag_stream << output.exclude_tags[i];
+            otag_stream << output.entry.exclude_tags[i];
         }
 
         auto otag_str = otag_stream.str();
 
-        output.include_tag_mask = global_tag_registry().get_tag(output.include_tags);
-        output.exclude_tag_mask = global_tag_registry().get_tag(output.exclude_tags);
-
-        std::stringstream stage_stream;
-        for (size_t i = 0; i < output.stages.size(); i++) {
-            if (i > 0) stage_stream << "->";
-            stage_stream << output.stages[i];
-        }
-
-        auto stage_str = stage_stream.str();
-
+        output.include_tag_mask = global_tag_registry().get_tag(output.entry.include_tags);
+        output.exclude_tag_mask = global_tag_registry().get_tag(output.entry.exclude_tags);
         DEBUGF("output: %-14s %s%s%s%s%s%s%s%s%s%s%s | include=%s[%s] | exclude=%s[%s] | stages=%s",
                output.initial_interface.get()->name(),
-               (output.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
-               (output.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
-               (output.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
-               (output.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
-               (output.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
-               (output.format & OUTPUT_FORMAT_LPP_XER) ? "lpp-xer " : "",
-               (output.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
-               (output.format & OUTPUT_FORMAT_LFR) ? "lfr " : "",
-               (output.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
-               (output.format & OUTPUT_FORMAT_LOCATION) ? "location " : "",
-               (output.format & OUTPUT_FORMAT_TEST) ? "test " : "", itag_str.c_str(),
+               (output.entry.format & OUTPUT_FORMAT_UBX) ? "ubx " : "",
+               (output.entry.format & OUTPUT_FORMAT_NMEA) ? "nmea " : "",
+               (output.entry.format & OUTPUT_FORMAT_SPARTN) ? "spartn " : "",
+               (output.entry.format & OUTPUT_FORMAT_RTCM) ? "rtcm " : "",
+               (output.entry.format & OUTPUT_FORMAT_CTRL) ? "ctrl " : "",
+               (output.entry.format & OUTPUT_FORMAT_LPP_XER) ? "lpp-xer " : "",
+               (output.entry.format & OUTPUT_FORMAT_LPP_UPER) ? "lpp-uper " : "",
+               (output.entry.format & OUTPUT_FORMAT_LFR) ? "lfr " : "",
+               (output.entry.format & OUTPUT_FORMAT_POSSIB) ? "possib " : "",
+               (output.entry.format & OUTPUT_FORMAT_LOCATION) ? "location " : "",
+               (output.entry.format & OUTPUT_FORMAT_TEST) ? "test " : "", itag_str.c_str(),
                tags::to_string(output.include_tag_mask).c_str(), otag_str.c_str(),
-               tags::to_string(output.exclude_tag_mask).c_str(), stage_str.c_str());
+               tags::to_string(output.exclude_tag_mask).c_str());
 
         if (output.lpp_xer_support()) lpp_xer_output = true;
         if (output.lpp_uper_support()) lpp_uper_output = true;
@@ -783,18 +676,6 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
 
         auto last_stage = std::unique_ptr<OutputStage>(
             new InterfaceOutputStage(std::move(output.initial_interface)));
-        if (!output.stages.empty()) {
-            for (size_t i = output.stages.size(); i > 0; i--) {
-                auto& stage_name = output.stages[i - 1];
-                if (stage_name == "tlf") {
-                    last_stage = std::make_unique<TlfOutputStage>(std::move(last_stage));
-                } else if (stage_name == "hexdump") {
-                    last_stage = std::make_unique<HexdumpOutputStage>(std::move(last_stage));
-                } else {
-                    ERRORF("unsupported stage: %s", stage_name.c_str());
-                }
-            }
-        }
         output.stage = std::move(last_stage);
 
         ASSERT(output.stage, "stage is null");
@@ -920,13 +801,13 @@ static void setup_control_stream(Program& program) {
             if (!program.assistance_data_session.is_valid()) {
                 WARNF("cell id received, but no assistance data session is active");
                 return;
-            } else if (!program.client) {
+            } else if (program.lpp_clients.empty()) {
                 WARNF("cell id received, but no client is active (--ls-disable is set)");
                 return;
             }
 
-            if (!program.client->update_assistance_data(program.assistance_data_session,
-                                                        *program.cell.get())) {
+            if (!program.lpp_clients[0]->update_assistance_data(program.assistance_data_session,
+                                                                *program.cell.get())) {
                 WARNF("failed to update assistance data with new cell");
             }
         }
@@ -1118,6 +999,45 @@ int main(int argc, char** argv) {
     }
 
     Config config{};
+
+    // Register IO types and formats before config_parse calls setup()
+    io_registry::register_input_type(make_stdin_input_type());
+    io_registry::register_input_type(make_file_input_type());
+    io_registry::register_input_type(make_serial_input_type());
+    io_registry::register_input_type(make_tcp_client_input_type());
+    io_registry::register_input_type(make_tcp_server_input_type());
+    io_registry::register_input_type(make_udp_server_input_type());
+    io_registry::register_input_type(make_stream_ref_input_type());
+
+    io_registry::register_output_type(make_stdout_output_type());
+    io_registry::register_output_type(make_file_output_type());
+    io_registry::register_output_type(make_tcp_server_output_type());
+    io_registry::register_output_type(make_serial_output_type());
+    io_registry::register_output_type(make_tcp_client_output_type());
+    io_registry::register_output_type(make_udp_client_output_type());
+    io_registry::register_output_type(make_stream_ref_output_type());
+
+    io_registry::register_input_format({"ubx", INPUT_FORMAT_UBX, ""});
+    io_registry::register_input_format({"nmea", INPUT_FORMAT_NMEA, ""});
+    io_registry::register_input_format({"rtcm", INPUT_FORMAT_RTCM, ""});
+    io_registry::register_input_format({"ctrl", INPUT_FORMAT_CTRL, ""});
+    io_registry::register_input_format({"lpp-uper", INPUT_FORMAT_LPP_UPER, ""});
+    io_registry::register_input_format({"lpp-uper-pad", INPUT_FORMAT_LPP_UPER_PAD, ""});
+    io_registry::register_input_format({"raw", INPUT_FORMAT_RAW, ""});
+    io_registry::register_input_format({"tbin", INPUT_FORMAT_TBIN, ""});
+
+    io_registry::register_output_format({"ubx", OUTPUT_FORMAT_UBX});
+    io_registry::register_output_format({"nmea", OUTPUT_FORMAT_NMEA});
+    io_registry::register_output_format({"rtcm", OUTPUT_FORMAT_RTCM});
+    io_registry::register_output_format({"ctrl", OUTPUT_FORMAT_CTRL});
+    io_registry::register_output_format({"lpp-xer", OUTPUT_FORMAT_LPP_XER});
+    io_registry::register_output_format({"lpp-uper", OUTPUT_FORMAT_LPP_UPER});
+    io_registry::register_output_format({"spartn", OUTPUT_FORMAT_SPARTN});
+    io_registry::register_output_format({"lfr", OUTPUT_FORMAT_LFR});
+    io_registry::register_output_format({"possib", OUTPUT_FORMAT_POSSIB});
+    io_registry::register_output_format({"location", OUTPUT_FORMAT_LOCATION});
+    io_registry::register_output_format({"raw", OUTPUT_FORMAT_RAW});
+
     if (!config_parse(argc, argv, &config)) {
         return 1;
     }
@@ -1196,6 +1116,33 @@ int main(int argc, char** argv) {
     initialize_outputs(program, program.output);
     setup_print_inspectors(program);
 
+    // NTRIP source
+    if (program.config.ntrip.enabled) {
+        NtripSource::LocationProvider loc_provider;
+        if (program.config.ntrip.position_mode == NtripConfig::PositionMode::Internal) {
+            loc_provider = [&program]() {
+                return program.latest_location_information;
+            };
+        }
+        auto* rtcm_parser = new format::rtcm::Parser{};
+        auto  rtcm_tag =
+            global_tag_registry().get_tag("ntrip") | global_tag_registry().get_tag("input");
+        auto ntrip = std::make_unique<NtripSource>(
+            program.config.ntrip,
+            [&program, rtcm_parser, rtcm_tag](uint8_t const* data, size_t len) {
+                rtcm_parser->append(data, len);
+                for (;;) {
+                    auto msg = rtcm_parser->try_parse();
+                    if (!msg) break;
+                    program.stream.push(std::move(msg), rtcm_tag);
+                }
+            },
+            std::move(loc_provider));
+        (void)ntrip->schedule(program.scheduler);
+        program.ntrip_source = std::move(ntrip);
+        program.ntrip_parser = std::unique_ptr<format::rtcm::Parser>(rtcm_parser);
+    }
+
     apply_ubx_config(program);
 
     setup_location_stream(program);
@@ -1228,7 +1175,7 @@ int main(int argc, char** argv) {
         if (program.is_disconnected) {
             INFOF("reconnecting to LPP server");
             program.is_disconnected = false;
-            program.client->schedule(&program.scheduler);
+            program.lpp_clients[0]->schedule(&program.scheduler);
         }
     };
 
@@ -1341,7 +1288,7 @@ int main(int argc, char** argv) {
             client->set_interface(*program.config.location_server.interface);
         }
         client->set_tls(program.config.location_server.tls);
-        program.client.reset(client);
+        program.lpp_clients.push_back(std::unique_ptr<lpp::Client>(client));
 
         client_initialize(program, *client);
 
