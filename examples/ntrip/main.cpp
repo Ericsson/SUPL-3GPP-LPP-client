@@ -3,11 +3,15 @@
 #include <client-io/registry.hpp>
 #include <cstring>
 #include <exception>
+#include <loglet/loglet.hpp>
 #include <netdb.h>
 #include <scheduler/scheduler.hpp>
 #include <stdexcept>
 #include <unistd.h>
 #include "options.hpp"
+
+LOGLET_MODULE(ntrip);
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(ntrip)
 
 // resolve sockaddr from hostname
 static sockaddr_in resolve(std::string const& hostname, uint16_t port) {
@@ -156,8 +160,10 @@ int main(int argc, char** argv) {
     io_registry::register_output_type(make_udp_client_output_type());
     io_registry::register_output_type(make_stream_ref_output_type());
 
-    auto  options = parse_configuration(argc, argv);
-    auto& host    = options.host;
+    auto options = parse_configuration(argc, argv);
+    loglet::set_level(loglet::Level::Info);
+    loglet::set_always_flush(true);
+    auto& host = options.host;
 
     // Build outputs
     io::StreamRegistry                       registry;
@@ -177,10 +183,12 @@ int main(int argc, char** argv) {
     auto addr = resolve(host.hostname, host.port);
 
     // connect to host
+    INFOF("connecting to %s:%d", host.hostname.c_str(), host.port);
     Ntrip ntrip(addr);
     ntrip.authorize(host.username, host.password);
 
     if (host.mountpoint) {
+        INFOF("requesting mountpoint: %s", host.mountpoint->c_str());
         ntrip.request(*host.mountpoint);
     } else {
         ntrip.request("");
@@ -190,7 +198,9 @@ int main(int argc, char** argv) {
         ntrip.nmea_update(host.nmea);
     }
 
-    char temp[4096];
+    INFOF("streaming — %zu output(s)", outputs.size());
+    size_t total_bytes = 0;
+    char   temp[4096];
     for (;;) {
         auto bytes = ntrip.read(temp, sizeof(temp));
         if (bytes < 0) {
@@ -200,6 +210,7 @@ int main(int argc, char** argv) {
         }
 
         auto length = static_cast<size_t>(bytes);
+        total_bytes += length;
         if (host.hexdump) {
             hexdump(temp, length);
         }
@@ -210,5 +221,5 @@ int main(int argc, char** argv) {
         (void)scheduler.execute_once();
     }
 
-    return 0;
+    INFOF("done — %zu bytes total", total_bytes);
 }

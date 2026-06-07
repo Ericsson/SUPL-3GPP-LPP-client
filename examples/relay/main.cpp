@@ -39,6 +39,8 @@ static void register_types() {
 
 int main(int argc, char** argv) {
     loglet::initialize();
+    loglet::set_level(loglet::Level::Info);
+    loglet::set_always_flush(true);
     register_types();
 
     args::ArgumentParser parser{"example-relay — raw byte passthrough between streams"};
@@ -73,6 +75,7 @@ int main(int argc, char** argv) {
     for (auto& entry : outputs_cfg.outputs) {
         auto out = create_output(entry, registry);
         if (!out) continue;
+        INFOF("output: %s", out->name());
         (void)out->schedule(scheduler);
         outputs.push_back(std::move(out));
     }
@@ -80,6 +83,7 @@ int main(int argc, char** argv) {
     std::vector<std::unique_ptr<io::Input>> inputs;
     auto                                    add_in = [&](std::unique_ptr<io::Input> inp) {
         if (!inp) return;
+        INFOF("input scheduled");
         inp->callback = [&outputs](io::Input&, uint8_t* data, size_t len) {
             for (auto& out : outputs)
                 out->write(data, len);
@@ -92,7 +96,7 @@ int main(int argc, char** argv) {
         add_in(create_input(entry, registry));
     }
 
-    INFOF("relay: %zu input(s), %zu output(s)", inputs.size(), outputs.size());
+    INFOF("relay: %zu input(s), %zu output(s) — running", inputs.size(), outputs.size());
     scheduler.execute();
     return 0;
 }
