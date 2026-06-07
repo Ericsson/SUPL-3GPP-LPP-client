@@ -1,6 +1,11 @@
 #include <format/lpp/uper_parser.hpp>
 #include <format/tbin/reader.hpp>
 #include <format/tbin/writer.hpp>
+#include <time/bdt.hpp>
+#include <time/glo.hpp>
+#include <time/gps.hpp>
+#include <time/gst.hpp>
+#include <time/utc.hpp>
 
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH
@@ -26,14 +31,9 @@ static int64_t utc_to_us(int year, int month, int day, int hour, int min, int se
     return static_cast<int64_t>(epoch) * 1000000LL + nano / 1000;
 }
 
-static int64_t gps_week_tow_to_us(int gps_week, double tow_s) {
-    // GPS epoch: 1980-01-06 00:00:00 UTC
-    static constexpr int64_t GPS_EPOCH_UNIX_US = 315964800LL * 1000000LL;
-    static constexpr int64_t WEEK_US           = 7LL * 24 * 3600 * 1000000LL;
-    // Approximate: ignore leap seconds for now (GPS time ≈ UTC + 18s as of 2026)
-    int64_t gps_us = GPS_EPOCH_UNIX_US + static_cast<int64_t>(gps_week) * WEEK_US +
-                     static_cast<int64_t>(tow_s * 1e6);
-    return gps_us - 18LL * 1000000LL;  // GPS→UTC approximate
+static int64_t utc_us(ts::Utc const& utc) {
+    return static_cast<int64_t>(utc.timestamp().seconds()) * 1000000LL +
+           static_cast<int64_t>(utc.timestamp().fraction() * 1e6);
 }
 
 // --- UBX Parser ---
@@ -97,24 +97,50 @@ static bool find_rtcm_frame(uint8_t const* buf, size_t len, size_t& pos, size_t&
 }
 
 static int64_t extract_rtcm_timestamp(uint8_t const* buf, size_t frame_len, uint16_t msg_type,
-                                      int gps_week) {
+                                      int gps_week, ts::Gps const& reference) {
     if (frame_len < 10) return -1;
-    uint8_t const* payload = buf + 3;
+    uint8_t const* p = buf + 3;
 
-    // MSM messages (1071-1137): reference station (12 bits) + epoch (30 bits) starting at bit 24
-    if (msg_type >= 1071 && msg_type <= 1137) {
-        // Skip 12-bit MT + 12-bit ref station = 24 bits = 3 bytes into payload
-        uint32_t epoch_ms =
-            (static_cast<uint32_t>(payload[3]) << 22) | (static_cast<uint32_t>(payload[4]) << 14) |
-            (static_cast<uint32_t>(payload[5]) << 6) | (static_cast<uint32_t>(payload[6]) >> 2);
-        epoch_ms &= 0x3FFFFFFF;
+    // All MSM: bits 0-11 = MT, 12-23 = ref station, 24-53 = 30-bit epoch
+    auto epoch30 = [&]() -> int64_t {
+        uint64_t val = (static_cast<uint64_t>(p[3]) << 22) | (static_cast<uint64_t>(p[4]) << 14) |
+                       (static_cast<uint64_t>(p[5]) << 6) | (static_cast<uint64_t>(p[6]) >> 2);
+        return static_cast<int64_t>(val & 0x3FFFFFFF);
+    };
 
-        if (gps_week > 0) {
-            double tow_s = epoch_ms / 1000.0;
-            return gps_week_tow_to_us(gps_week, tow_s);
-        }
+    ts::Utc utc;
+    if (msg_type >= 1071 && msg_type <= 1077) {
+        // GPS: 30-bit TOW in ms
+        utc = ts::Utc(
+            ts::Gps::from_week_tow(gps_week, epoch30() / 1000LL, (epoch30() % 1000) / 1000.0));
+    } else if (msg_type >= 1081 && msg_type <= 1087) {
+        // GLONASS: 3-bit day-of-week + 27-bit ms-of-day
+        int64_t e   = epoch30();
+        int64_t day = (e >> 27) & 0x7;
+        double  tod = (e & 0x7FFFFFF) / 1000.0;
+        utc         = ts::Utc(ts::Glo::from_period_day_tod(day, tod, ts::Glo(reference)));
+    } else if (msg_type >= 1091 && msg_type <= 1097) {
+        // Galileo GST: 30-bit TOW in ms (GST week = GPS week - 1024)
+        int64_t gst_week = gps_week - 1024;
+        utc              = ts::Utc(
+            ts::Gst::from_week_tow(gst_week, epoch30() / 1000LL, (epoch30() % 1000) / 1000.0));
+    } else if (msg_type >= 1101 && msg_type <= 1107) {
+        // SBAS: GPS time
+        utc = ts::Utc(
+            ts::Gps::from_week_tow(gps_week, epoch30() / 1000LL, (epoch30() % 1000) / 1000.0));
+    } else if (msg_type >= 1111 && msg_type <= 1117) {
+        // QZSS: GPS time
+        utc = ts::Utc(
+            ts::Gps::from_week_tow(gps_week, epoch30() / 1000LL, (epoch30() % 1000) / 1000.0));
+    } else if (msg_type >= 1121 && msg_type <= 1127) {
+        // BeiDou: 30-bit TOW in ms (BDT week = GPS week - 1356)
+        int64_t bdt_week = gps_week - 1356;
+        int64_t e        = epoch30();
+        utc = ts::Utc(ts::Bdt::from_week_tow(bdt_week, e / 1000LL, (e % 1000) / 1000.0));
+    } else {
+        return -1;
     }
-    return -1;
+    return utc_us(utc);
 }
 
 // --- LPP UPER Parser ---
@@ -202,19 +228,35 @@ static void parse_rtcm(std::string const& input, std::string const& output, int 
         return;
     }
 
-    // Find non-periodic messages (MT1006 etc.) for resending
-    int64_t  current_ts = 0;
-    size_t   pos        = 0;
-    uint64_t count      = 0;
+    // GPS TOW rollover detection — GPS MSM only (1071-1077) for reliable reference
+    int64_t  current_ts  = 0;
+    int64_t  prev_tow_ms = -1;
+    int      week        = gps_week;
+    ts::Gps  reference   = ts::Gps::from_week_tow(gps_week, 0, 0);
+    size_t   pos         = 0;
+    uint64_t count       = 0;
 
-    pos = 0;
     while (pos < buf.size()) {
         size_t   frame_len;
         uint16_t msg_type;
         size_t   search_pos = pos;
         if (!find_rtcm_frame(buf.data(), buf.size(), search_pos, frame_len, msg_type)) break;
 
-        int64_t ts = extract_rtcm_timestamp(buf.data() + search_pos, frame_len, msg_type, gps_week);
+        if (msg_type >= 1071 && msg_type <= 1077 && frame_len >= 10) {
+            uint8_t const* p      = buf.data() + search_pos + 3;
+            int64_t        tow_ms = (static_cast<int64_t>(p[3]) << 22) |
+                             (static_cast<int64_t>(p[4]) << 14) |
+                             (static_cast<int64_t>(p[5]) << 6) | (static_cast<int64_t>(p[6]) >> 2);
+            tow_ms &= 0x3FFFFFFF;
+            if (prev_tow_ms >= 0 && prev_tow_ms - tow_ms > 302400000LL) {
+                week++;
+                reference = ts::Gps::from_week_tow(week, 0, 0);
+            }
+            prev_tow_ms = tow_ms;
+        }
+
+        int64_t ts =
+            extract_rtcm_timestamp(buf.data() + search_pos, frame_len, msg_type, week, reference);
         if (ts > 0) current_ts = ts;
 
         if (current_ts > 0) {

@@ -3,6 +3,7 @@ target_link_libraries(tbin_parse PRIVATE
     dependency::format::tbin
     dependency::format::lpp
     dependency::format::helper
+    dependency::time
     dependency::core
 )
 setup_target(tbin_parse)
