@@ -30,6 +30,8 @@ struct SatelliteState {
     double   eph_relativistic_correction;
     Float3   eph_line_of_sight;
     uint16_t eph_iod;
+    uint16_t eph_week;
+    double   eph_toe;
 
     /// True Parameters
     Float3 true_position;
@@ -75,6 +77,19 @@ public:
     NODISCARD bool enabled() const NOEXCEPT { return mEnabled; }
 
     void disable() NOEXCEPT { mEnabled = false; }
+    void disable(char const* reason) NOEXCEPT {
+        mEnabled       = false;
+        mDisableReason = reason;
+    }
+
+    NODISCARD const char* disable_reason() const NOEXCEPT { return mDisableReason; }
+
+    NODISCARD OrbitCorrection const& orbit_correction() const NOEXCEPT { return mOrbitCorrection; }
+    NODISCARD ClockCorrection const& clock_correction_data() const NOEXCEPT {
+        return mClockCorrection;
+    }
+    NODISCARD bool has_orbit_correction() const NOEXCEPT { return mHasOrbitCorrection; }
+    NODISCARD bool has_clock_correction() const NOEXCEPT { return mHasClockCorrection; }
 
     NODISCARD double average_code_range() const NOEXCEPT;
     NODISCARD double average_phase_range_rate() const NOEXCEPT;
@@ -121,6 +136,7 @@ private:
     Float3      mGroundPositionEcef;
     Float3      mGroundPositionLlh;
     bool        mEnabled;
+    char const* mDisableReason{nullptr};
 
     ts::Tai mLastGenerationTime;
 
@@ -129,6 +145,8 @@ private:
 
     OrbitCorrection mOrbitCorrection;
     ClockCorrection mClockCorrection;
+    bool            mHasOrbitCorrection{false};
+    bool            mHasClockCorrection{false};
 
     std::vector<Observation> mObservations;
 

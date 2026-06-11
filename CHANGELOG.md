@@ -15,6 +15,7 @@ All notable changes to this project will be documented in this file.
 - `scheduler`: `ScheduledEvent` methods guard against use outside a scheduler context; timer clamps zero-duration to 1 ns to prevent `timerfd_settime` disarm
 - `client-io`: `TbinInput` gains per-source timestamp shift, stop-time cutoff, non-realtime drain loop, and 60s progress logging; `InputsConfig` gains `sync_mode` / `--input-sync-mode`; tbin `shift=` and `stop=` options wired in
 - `tokoro`: per-satellite (`SatDiagFile`) and per-signal (`DiagFile`) diagnostic `.diag` file output, enabled via `set_diag_output(dir)`
+- `tokoro`: satellite tracks disable reason, orbit/clock correction availability flags, and `eph_week`/`eph_toe` in `SatelliteState`
 
 ### Added (pre-existing)
 - SPARTN generator: default bias mappings are now applied automatically in both `lpp2spartn` and `example-client` without requiring explicit `--bias-map` / `--l2s-bias-map` flags. Defaults: GPS 2X→2L, 5X→5Q; GAL 8X→5Q, 8X→7Q, 1X→1C, 6X→6C; BDS 5X→5P, 1X→1P. User-supplied entries are additive on top. Use `--no-default-bias-map` / `--l2s-no-default-bias-map` to disable all defaults.

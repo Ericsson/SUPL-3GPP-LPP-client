@@ -36,20 +36,33 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
     mEnabled            = false;
+    mDisableReason      = nullptr;
+    mHasOrbitCorrection = false;
+    mHasClockCorrection = false;
     mLastGenerationTime = generation_time;
     if (!mGenerator.mCorrectionData) {
         WARNF("no correction data available [sv=%s]", mId.name());
+        mDisableReason = "no_correction_data";
         return;
     }
 
     // Find orbit and clock corrections
-    if (!find_orbit_correction(*mGenerator.mCorrectionData)) return;
-    if (!find_clock_correction(*mGenerator.mCorrectionData)) return;
+    if (!find_orbit_correction(*mGenerator.mCorrectionData)) {
+        mDisableReason = "no_orbit_correction";
+        return;
+    }
+    mHasOrbitCorrection = true;
+    if (!find_clock_correction(*mGenerator.mCorrectionData)) {
+        mDisableReason = "no_clock_correction";
+        return;
+    }
+    mHasClockCorrection = true;
 
     // Find broadcast ephemeris
     ephemeris::Ephemeris eph{};
     if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iod, eph)) {
         DEBUGF("ephemeris not found [sv=%s,iod=%u]", mId.name(), mOrbitCorrection.iod);
+        mDisableReason = "no_ephemeris";
         return;
     }
 
@@ -61,6 +74,7 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
                                mGenerator.mUseReceptionTimeForOrbitAndClockCorrections,
                                mGenerator.mUseOrbitCorrectionInIteration)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
+        mDisableReason = "position_failed";
         return;
     }
 
@@ -68,16 +82,19 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
                                mNextState, mGenerator.mUseReceptionTimeForOrbitAndClockCorrections,
                                mGenerator.mUseOrbitCorrectionInIteration)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
+        mDisableReason = "position_failed";
         return;
     }
 
     if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mCurrentState)) {
         WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
+        mDisableReason = "elevation_failed";
         return;
     }
 
     if (!compute_azimuth_and_elevation(mId, mGroundPositionLlh, mNextState)) {
         WARNF("failed to compute azimuth and elevation [sv=%s]", mId.name());
+        mDisableReason = "elevation_failed";
         return;
     }
 
@@ -194,6 +211,8 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
 #endif
 
     state.eph_iod        = eph.iod();
+    state.eph_week       = eph.week();
+    state.eph_toe        = eph.toe();
     state.eph_position   = final_result.position;
     state.eph_velocity   = final_result.velocity;
     state.eph_clock_bias = final_result.clock;
