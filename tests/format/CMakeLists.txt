@@ -19,11 +19,17 @@ if(INCLUDE_FORMAT_ANTEX)
     target_link_libraries(format_tests PRIVATE dependency::format::antex)
 endif()
 
+target_sources(format_tests PRIVATE rinex/nav_reader.cpp)
+target_link_libraries(format_tests PRIVATE dependency::format::rinex)
+
 target_compile_options(format_tests PRIVATE -fsanitize=address -g)
 target_link_options(format_tests PRIVATE -fsanitize=address)
 
 add_test(NAME format_tests COMMAND format_tests --no-skip)
-set_tests_properties(format_tests PROPERTIES LABELS "format")
+set_tests_properties(format_tests PROPERTIES 
+    LABELS "format"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}"
+)
 
 if(ENABLE_FUZZING)
     add_executable(fuzz_nmea nmea/fuzz_target.cpp)

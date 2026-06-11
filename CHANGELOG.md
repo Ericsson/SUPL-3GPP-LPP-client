@@ -10,6 +10,7 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - `ephemeris`: `toe()` and `week()` accessors on the `Ephemeris` union type
+- `format/rinex`: RINEX 3/4 navigation file parser (`parse_nav_file`) supporting GPS, Galileo (I/NAV only), and BDS
 
 ### Added (pre-existing)
 - SPARTN generator: default bias mappings are now applied automatically in both `lpp2spartn` and `example-client` without requiring explicit `--bias-map` / `--l2s-bias-map` flags. Defaults: GPS 2X→2L, 5X→5Q; GAL 8X→5Q, 8X→7Q, 1X→1C, 6X→6C; BDS 5X→5P, 1X→1P. User-supplied entries are additive on top. Use `--no-default-bias-map` / `--l2s-no-default-bias-map` to disable all defaults.
