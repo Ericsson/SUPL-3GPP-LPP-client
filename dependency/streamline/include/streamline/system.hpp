@@ -18,8 +18,11 @@ LOGLET_MODULE_FORWARD_REF(streamline);
 namespace streamline {
 class System {
 public:
-    System() : mScheduler(nullptr) {}
-    System(scheduler::Scheduler& scheduler) : mScheduler(&scheduler) {}
+    System() : mScheduler(nullptr), mSyncMode(false) {}
+    System(scheduler::Scheduler& scheduler) : mScheduler(&scheduler), mSyncMode(false) {}
+
+    /// Enable synchronous mode: push() dispatches immediately instead of queuing.
+    void set_sync_mode(bool enabled) { mSyncMode = enabled; }
 
     ~System() { cancel(); }
 
@@ -43,7 +46,7 @@ public:
         using DataType = typename Consumer::DataType;
         VERBOSEF("add consumer %s (%s)", typeid(Consumer).name(), TypeName<DataType>::name());
 
-        if (!mScheduler) {
+        if (!mScheduler && !mSyncMode) {
             WARNF("invalid system state");
             return;
         }
@@ -61,7 +64,7 @@ public:
         using DataType = typename Inspector::DataType;
         VERBOSEF("add inspector %s (%s)", typeid(Inspector).name(), TypeName<DataType>::name());
 
-        if (!mScheduler) {
+        if (!mScheduler && !mSyncMode) {
             WARNF("invalid system state");
             return nullptr;
         }
@@ -79,6 +82,15 @@ public:
     void push(DataType&& data, uint64_t tag = 0) {
         FUNCTION_SCOPE();
         VERBOSEF("push %s", TypeName<typename std::decay<DataType>::type>::name());
+
+        if (mSyncMode) {
+            auto queue = get_queue<DataType>();
+            if (queue) {
+                queue->dispatch_sync(*this, std::forward<DataType>(data), tag);
+            }
+            return;
+        }
+
         if (!mScheduler) {
             WARNF("invalid system state");
             return;
@@ -107,7 +119,9 @@ protected:
         if (it == mQueues.end()) {
             VERBOSEF("created queue for %s", TypeName<DataType>::name());
             auto queue = std::shared_ptr<QueueTask<DataType>>(new QueueTask<DataType>(*this));
-            queue->schedule(mScheduler);
+            if (mScheduler && !mSyncMode) {
+                queue->schedule(mScheduler);
+            }
             mQueues[std::type_index(typeid(DataType))] = std::move(queue);
         }
 
@@ -128,6 +142,7 @@ protected:
 
 private:
     scheduler::Scheduler*                                      mScheduler;
+    bool                                                       mSyncMode;
     std::unordered_map<std::type_index, std::shared_ptr<void>> mQueues;
 };
 }  // namespace streamline

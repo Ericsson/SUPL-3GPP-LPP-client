@@ -132,6 +132,22 @@ public:
 
     void push(T&& value, uint64_t tag) { mQueue.push({tag, std::move(value)}); }
 
+    /// Synchronous dispatch — bypasses the queue entirely.
+    void dispatch_sync(System& system, T&& value, uint64_t tag) {
+        for (auto& inspector : mInspectors) {
+            if (inspector->accept(system, tag)) {
+                inspector->inspect(system, value, tag);
+            }
+        }
+
+        for (auto& consumer : mConsumers) {
+            if (consumer->accept(system, tag)) {
+                consumer->consume(system, std::move(value), tag);
+                break;  // only one consumer can take ownership
+            }
+        }
+    }
+
     template <typename Consumer>
     void add_consumer(std::unique_ptr<Consumer> consumer) {
         mConsumers.push_back(std::move(consumer));
