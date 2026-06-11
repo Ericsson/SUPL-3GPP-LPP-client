@@ -32,6 +32,7 @@ EXTERNAL_WARNINGS_POP
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <string>
 #include <unordered_map>
 
 #include <ephemeris/ephemeris.hpp>
@@ -142,7 +143,8 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
     }
 }
 
-void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT {
+void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id,
+                                              char const* diag_discard_reason) NOEXCEPT {
     FUNCTION_SCOPE();
 
     // Update lock tracking
@@ -158,7 +160,7 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
         lock_time.lost    = false;
     }
 
-    auto correction_data = *mGenerator.mCorrectionData;
+    auto const& correction_data = *mGenerator.mCorrectionData;
 #ifdef INCLUDE_FORMAT_ANTEX
     auto antex = mGenerator.mAntex.get();
 #endif
@@ -183,6 +185,26 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     observation.set_require_iono(mRequireIono);
     observation.set_use_tropospheric_model(mUseTroposphericModel);
     observation.set_use_ionospheric_height_correction(mUseIonosphericHeightCorrection);
+
+    if (mGenerateDiag) {
+        auto it = mDiagFiles.find(ss_id);
+        if (it == mDiagFiles.end()) {
+            auto sv_char = satellite.id().to_string()[0];
+            char prn_buf[8];
+            snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
+                     static_cast<int>(satellite.id().lpp_id().value) + 1);
+            auto sig_str = DiagFile::rtcm_signal_name(satellite.id(), signal_id);
+            auto path    = mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/" +
+                        sig_str + ".diag";
+            auto& df = mDiagFiles[ss_id];
+            df.open(path, satellite.id(), signal_id);
+            observation.set_diag_file(&mDiagFiles[ss_id]);
+        } else {
+            observation.set_diag_file(&it->second);
+        }
+    }
+
+    if (diag_discard_reason) observation.set_diag_discard_reason(diag_discard_reason);
     observation.compute_ranges();
 
     if (!observation.is_valid()) return;
@@ -206,7 +228,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         if (mSatelliteIncludeSet.size() > 0 &&
             mSatelliteIncludeSet.find(satellite.id()) == mSatelliteIncludeSet.end()) {
             WARNF("discarded: %s - not included", satellite.id().name());
-            satellite.disable();
+            satellite.disable("not_included");
             continue;
         }
 
@@ -232,21 +254,21 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         if (mSatelliteIncludeSet.size() > 0 &&
             mSatelliteIncludeSet.find(satellite.id()) == mSatelliteIncludeSet.end()) {
             WARNF("discarded: %s - not included", satellite.id().name());
-            satellite.disable();
+            satellite.disable("not_included");
             continue;
         }
 
+        bool elevation_masked = false;
         if (satellite.elevation() * constant::RAD2DEG < mElevationMask) {
             WARNF("discarded: %s - elevation mask (%.2f < %.2f)", satellite.id().name(),
                   satellite.elevation() * constant::RAD2DEG, mElevationMask);
-            satellite.disable();
-            continue;
+            elevation_masked = true;
         }
 
         auto signals = mGenerator.mCorrectionData->signals(satellite.id());
         if (!signals) {
             WARNF("discarded: %s - no signals", satellite.id().name());
-            satellite.disable();
+            satellite.disable("no_signals");
             continue;
         }
 
@@ -262,13 +284,19 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 continue;
             }
 
-            initialize_observation(satellite, signal);
+            initialize_observation(satellite, signal,
+                                   elevation_masked ? "elevation_mask" : nullptr);
             satellite.remove_discarded_observations();
+        }
+
+        if (elevation_masked) {
+            satellite.disable("elevation_mask");
+            continue;
         }
 
         if (satellite.observations().size() == 0) {
             WARNF("discarded: %s - no valid observations", satellite.id().name());
-            satellite.disable();
+            satellite.disable("no_valid_observations");
             continue;
         }
 
@@ -279,6 +307,95 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
         DEBUGF("satellite %s: %zu observations", satellite.id().name(),
                satellite.observations().size());
+    }
+
+    // Write per-satellite diagnostic
+    if (mGenerateDiag) {
+        for (auto const& satellite : mSatellites) {
+            auto it = mSatDiagFiles.find(satellite.id());
+            if (it == mSatDiagFiles.end()) {
+                auto sv_char = satellite.id().to_string()[0];
+                char prn_buf[8];
+                snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
+                         static_cast<int>(satellite.id().lpp_id().value) + 1);
+                auto path =
+                    mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/satellite.diag";
+                mSatDiagFiles[satellite.id()].open(path, satellite.id());
+                it = mSatDiagFiles.find(satellite.id());
+            }
+
+            SatDiagRow row{};
+            row.prn = satellite.id().lpp_id().valid ?
+                          static_cast<int>(satellite.id().lpp_id().value) + 1 :
+                          0;
+
+            // Orbit SSR
+            if (satellite.has_orbit_correction()) {
+                auto const& orb      = satellite.orbit_correction();
+                row.orbit_radial     = orb.delta.x;
+                row.orbit_along      = orb.delta.y;
+                row.orbit_cross      = orb.delta.z;
+                row.orbit_radial_dot = orb.dot_delta.x;
+                row.orbit_along_dot  = orb.dot_delta.y;
+                row.orbit_cross_dot  = orb.dot_delta.z;
+                row.orbit_iod        = orb.iod;
+                row.has_orbit_ssr    = true;
+            }
+
+            // Clock SSR
+            if (satellite.has_clock_correction()) {
+                auto const& clk   = satellite.clock_correction_data();
+                row.clock_c0      = clk.c0;
+                row.clock_c1      = clk.c1;
+                row.clock_c2      = clk.c2;
+                row.has_clock_ssr = true;
+            }
+
+            // Iono polynomial
+            auto iono_poly = mGenerator.mCorrectionData->ionospheric_polynomial(satellite.id());
+            if (iono_poly) {
+                row.iono_c00      = iono_poly->c00;
+                row.iono_c01      = iono_poly->c01;
+                row.iono_c10      = iono_poly->c10;
+                row.iono_c11      = iono_poly->c11;
+                row.iono_ref_lat  = iono_poly->reference_point_latitude;
+                row.iono_ref_lon  = iono_poly->reference_point_longitude;
+                row.has_iono_poly = true;
+            }
+
+            // Geometry + evaluated clock (available if update() completed successfully)
+            if (satellite.has_orbit_correction() && satellite.has_clock_correction() &&
+                satellite.current_state().true_range > 0.0) {
+                auto const& state    = satellite.current_state();
+                row.true_range       = state.true_range;
+                row.eph_range        = state.eph_range;
+                row.orbit            = state.true_range - state.eph_range;
+                row.elevation_deg    = state.true_elevation * constant::RAD2DEG;
+                row.azimuth_deg      = state.true_azimuth * constant::RAD2DEG;
+                row.nadir_deg        = state.true_nadir * constant::RAD2DEG;
+                row.eph_clock        = constant::SPEED_OF_LIGHT * -state.eph_clock_bias;
+                row.eph_week         = state.eph_week;
+                row.eph_toe          = state.eph_toe;
+                row.clock_correction = state.clock_correction;
+                row.has_geometry     = true;
+
+                if (state.shapiro.valid) {
+                    row.shapiro     = state.shapiro.correction;
+                    row.has_shapiro = true;
+                }
+                if (state.earth_solid_tides.valid) {
+                    row.solid_tides     = state.earth_solid_tides.displacement;
+                    row.has_solid_tides = true;
+                }
+            }
+
+            // Discard reason
+            if (!satellite.enabled() && satellite.disable_reason()) {
+                row.discard_reason = satellite.disable_reason();
+            }
+
+            it->second.write(mGenerationTime, row);
+        }
     }
 
     // Update the lock time
@@ -910,7 +1027,7 @@ void Generator::process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEX
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 10) {
+    if (list.size() >= mEphemerisMaxCache) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -943,7 +1060,7 @@ void Generator::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEX
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 10) {
+    if (list.size() >= mEphemerisMaxCache) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -976,7 +1093,7 @@ void Generator::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEX
     }
 
     // Remove the oldest ephemeris if the list is full
-    if (list.size() >= 10) {
+    if (list.size() >= mEphemerisMaxCache) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }
@@ -1007,7 +1124,7 @@ void Generator::process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEX
         }
     }
 
-    if (list.size() >= 10) {
+    if (list.size() >= mEphemerisMaxCache) {
         WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
         list.erase(list.begin());
     }

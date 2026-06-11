@@ -2,6 +2,7 @@
 #include <core/core.hpp>
 
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -17,6 +18,7 @@
 #ifdef INCLUDE_FORMAT_RINEX
 #include <format/rinex/builder.hpp>
 #endif
+#include <generator/tokoro/diag.hpp>
 #include <generator/tokoro/sv_id.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
@@ -101,6 +103,11 @@ public:
         mUseIonosphericHeightCorrection = enabled;
     }
 
+    void set_diag_output(std::string dir) NOEXCEPT {
+        mDiagOutputDir = std::move(dir);
+        mGenerateDiag  = true;
+    }
+
     NODISCARD Float3 const& ground_position() const NOEXCEPT { return mGroundPosition; }
     NODISCARD Float3 const& rtcm_ground_position() const NOEXCEPT { return mRtcmGroundPosition; }
     NODISCARD bool          generate_gps() const NOEXCEPT { return mGenerateGps; }
@@ -112,7 +119,8 @@ public:
 
 protected:
     void initialize_satellites() NOEXCEPT;
-    void initialize_observation(Satellite& satellite, SignalId signal_id) NOEXCEPT;
+    void initialize_observation(Satellite& satellite, SignalId signal_id,
+                                char const* diag_discard_reason = nullptr) NOEXCEPT;
     void build_rtcm_observation(Satellite const& satellite, Observation const& observation,
                                 RangeTimeDivision const& rtd, double reference_phase_range_rate,
                                 rtcm::Observations& observations) NOEXCEPT;
@@ -153,6 +161,11 @@ private:
     bool mUseTroposphericModel;
     bool mUseIonosphericHeightCorrection;
 
+    bool                                            mGenerateDiag{false};
+    std::string                                     mDiagOutputDir;
+    std::unordered_map<SatelliteSignalId, DiagFile> mDiagFiles;
+    std::unordered_map<SatelliteId, SatDiagFile>    mSatDiagFiles;
+
     std::vector<Satellite>          mSatellites;
     std::unordered_set<SatelliteId> mSatelliteIncludeSet;
     std::unordered_set<SignalId>    mSignalIncludeSet;
@@ -174,6 +187,8 @@ class Generator {
 public:
     Generator() NOEXCEPT;
     ~Generator();
+
+    void set_ephemeris_max_cache(size_t max) NOEXCEPT { mEphemerisMaxCache = max; }
 
     bool process_lpp(LPP_Message const& lpp_message) NOEXCEPT;
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;
@@ -252,6 +267,7 @@ private:
     std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::QzsEphemeris>> mQzsEphemeris;
+    size_t                                                                mEphemerisMaxCache = 10;
 
     ts::Tai                             mLastCorrectionDataTime;
     std::unique_ptr<CorrectionData>     mCorrectionData;
