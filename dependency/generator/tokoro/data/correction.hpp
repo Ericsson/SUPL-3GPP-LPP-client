@@ -55,6 +55,12 @@ struct CorrectionData {
         return nullptr;
     }
 
+    IonosphericPolynomial const* ionospheric_polynomial(SatelliteId id) const {
+        auto it = mIonosphericPolynomial.find(id);
+        if (it != mIonosphericPolynomial.end()) return &it->second;
+        return nullptr;
+    }
+
     bool tropospheric(SatelliteId sv_id, Float3 llh,
                       TroposphericCorrection& correction) const NOEXCEPT;
     bool ionospheric(SatelliteId sv_id, Float3 llh,

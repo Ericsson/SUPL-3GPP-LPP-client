@@ -209,21 +209,30 @@ void Observation::compute_ranges() NOEXCEPT {
 
     // Discard this observation if it is missing important corrections, however, we still want to
     // compute the ranges to report via DATA TRACING.
+    std::string discard_reason;
     if (mRequireCodeBias && !has_code_bias()) {
         WARNF("discarded: %s %s - no code bias", mSvId.name(), mSignalId.name());
+        if (!discard_reason.empty()) discard_reason += '+';
+        discard_reason += "no_code_bias";
         discard();
     }
     if (mRequirePhaseBias && !has_phase_bias()) {
         WARNF("discarded: %s %s - no phase bias", mSvId.name(), mSignalId.name());
+        if (!discard_reason.empty()) discard_reason += '+';
+        discard_reason += "no_phase_bias";
         discard();
     }
 
     if (mRequireTropospheric && !has_tropospheric()) {
         WARNF("discarded: %s %s - no tropospheric correction", mSvId.name(), mSignalId.name());
+        if (!discard_reason.empty()) discard_reason += '+';
+        discard_reason += "no_tropospheric";
         discard();
     }
     if (mRequireIonospheric && !has_ionospheric()) {
         WARNF("discarded: %s %s - no ionospheric correction", mSvId.name(), mSignalId.name());
+        if (!discard_reason.empty()) discard_reason += '+';
+        discard_reason += "no_ionospheric";
         discard();
     }
 
@@ -526,6 +535,67 @@ void Observation::compute_ranges() NOEXCEPT {
         mCodeRange      = code_result0;
         mPhaseRange     = phase_result0;
         mPhaseRangeRate = phase_rate;
+    }
+
+    if (mDiagFile) {
+        auto    msm_id = mSignalId.as_msm();
+        DiagRow row{};
+        row.prn        = mSvId.lpp_id().valid ? static_cast<int>(mSvId.lpp_id().value) + 1 : 0;
+        row.sig_id     = msm_id.valid ? static_cast<int>(msm_id.value) : 0;
+        row.clock      = clock0;
+        row.code_bias  = code_bias;
+        row.phase_bias = phase_bias;
+        row.stec_grid  = stec_grid;
+        row.stec_poly  = stec_poly;
+        row.stec_height_correction = stec_height_correction;
+        row.tropo_dry              = tropo_dry + tropo_model_dry;
+        row.tropo_wet              = tropo_wet + tropo_model_wet;
+        row.tropo_total            = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;
+        row.tropo_dry_mapping      = mTropospheric.mapping_hydrostatic;
+        row.tropo_wet_mapping      = mTropospheric.mapping_wet;
+        row.tropo_dry_zenith =
+            mTropospheric.valid ?
+                mTropospheric.hydrostatic :
+                (mTropospheric.valid_model ? mTropospheric.model_hydrostatic : 0.0);
+        row.tropo_wet_zenith = mTropospheric.valid ?
+                                   mTropospheric.wet :
+                                   (mTropospheric.valid_model ? mTropospheric.model_wet : 0.0);
+        row.phase_windup     = phase_windup0;
+        row.ant_phase        = antenna_phase_variation;
+        row.cnr              = mCarrierToNoiseRatio;
+        row.lock_time        = mLockTime.seconds;
+        row.frequency_mhz    = mFrequency * 1.0e-3;  // kHz → MHz
+        row.has_clock        = mClockCorrection.valid;
+        row.has_code_bias    = mCodeBias.valid;
+        row.has_phase_bias   = mPhaseBias.valid;
+        row.has_ionospheric  = mIonospheric.valid;
+        row.has_tropospheric =
+            mTropospheric.valid || (mUseTroposphericModel && mTropospheric.valid_model);
+        row.has_phase_windup = mCurrent->phase_windup.valid;
+        row.has_ant_phase    = mAntennaPhaseVariation.valid;
+        if (is_valid()) {
+            auto stec0 = stec_grid + stec_poly;
+            if (mUseIonosphericHeightCorrection) stec0 *= stec_height_correction;
+            row.stec_total = stec0;
+            auto tropo0    = row.tropo_total;
+            row.code_correction =
+                clock0 + code_bias + stec0 + tropo0 + shapiro0 + earth_solid_tides0;
+            row.phase_correction = clock0 + phase_bias - stec0 + tropo0 + shapiro0 +
+                                   earth_solid_tides0 + phase_windup0 + antenna_phase_variation;
+            row.code_range  = mCodeRange;
+            row.phase_range = mPhaseRange;
+            row.phase_rate  = mPhaseRangeRate;
+            if (mDiagDiscardReason) {
+                row.valid          = false;
+                row.discard_reason = mDiagDiscardReason;
+            } else {
+                row.valid = true;
+            }
+        } else {
+            row.valid          = false;
+            row.discard_reason = mDiagDiscardReason ? mDiagDiscardReason : discard_reason;
+        }
+        mDiagFile->write(mCurrent->reception_time, row);
     }
 
 #ifdef DATA_TRACING

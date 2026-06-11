@@ -1,4 +1,5 @@
 #pragma once
+#include <generator/tokoro/diag.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 #include "models/earth_solid_tides.hpp"
@@ -86,6 +87,9 @@ public:
         mUseIonosphericHeightCorrection = enabled;
     }
 
+    void set_diag_file(DiagFile* diag) NOEXCEPT { mDiagFile = diag; }
+    void set_diag_discard_reason(char const* reason) NOEXCEPT { mDiagDiscardReason = reason; }
+
     NODISCARD double code_range() const NOEXCEPT;
     NODISCARD double phase_range() const NOEXCEPT;
     NODISCARD double phase_range_rate() const NOEXCEPT { return mPhaseRangeRate; }
@@ -137,6 +141,9 @@ private:
     double mPhaseRange;
     double mPhaseRangeRate;
     double mCodeRange;
+
+    DiagFile*   mDiagFile{nullptr};
+    char const* mDiagDiscardReason{nullptr};
 };
 
 }  // namespace tokoro

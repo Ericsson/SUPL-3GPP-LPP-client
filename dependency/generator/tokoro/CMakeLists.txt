@@ -1,5 +1,6 @@
 
 add_library(dependency_generator_tokoro STATIC 
+    "diag.cpp"
     "generator.cpp"
     "satellite.cpp"
     "data.cpp"
