@@ -69,6 +69,28 @@ public:
         CORE_UNREACHABLE();
     }
 
+    NODISCARD double toe() const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0;
+        case Type::GPS: return gps_ephemeris.toe;
+        case Type::GAL: return gal_ephemeris.toe;
+        case Type::BDS: return bds_ephemeris.toe;
+        case Type::QZS: return qzs_ephemeris.toe;
+        }
+        CORE_UNREACHABLE();
+    }
+
+    NODISCARD uint16_t week() const NOEXCEPT {
+        switch (mType) {
+        case Type::NONE: return 0;
+        case Type::GPS: return gps_ephemeris.week_number;
+        case Type::GAL: return gal_ephemeris.week_number;
+        case Type::BDS: return bds_ephemeris.week_number;
+        case Type::QZS: return qzs_ephemeris.week_number;
+        }
+        CORE_UNREACHABLE();
+    }
+
     NODISCARD bool is_valid(ts::Tai const& time) const NOEXCEPT {
         switch (mType) {
         case Type::NONE: return false;

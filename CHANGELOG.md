@@ -9,6 +9,9 @@ All notable changes to this project will be documented in this file.
 - `ephemeris`: `is_valid()` for GPS/GAL/BDS now handles truncated broadcast week numbers (10/12/13-bit) and week-boundary crossover; an ephemeris from week N+1 queried in late week N is correctly accepted
 
 ### Added
+- `ephemeris`: `toe()` and `week()` accessors on the `Ephemeris` union type
+
+### Added (pre-existing)
 - SPARTN generator: default bias mappings are now applied automatically in both `lpp2spartn` and `example-client` without requiring explicit `--bias-map` / `--l2s-bias-map` flags. Defaults: GPS 2X→2L, 5X→5Q; GAL 8X→5Q, 8X→7Q, 1X→1C, 6X→6C; BDS 5X→5P, 1X→1P. User-supplied entries are additive on top. Use `--no-default-bias-map` / `--l2s-no-default-bias-map` to disable all defaults.
 - Tokoro: `--tkr-no-tropo-delta` flag to disable the hydrostatic delta correction in the Niell mapping function (re-enables pre-4.0.24 behaviour for comparison)
 - `--ls-hack-server-initiated-push`: new workaround flag for servers that push `ProvideAssistanceData` with `transactionID.initiator=targetDevice` and an unknown transaction ID but include a valid periodic session ID. When set, unknown `targetDevice`-initiated transactions are treated as server-initiated, allowing the message to reach `process_provide_assistance_data` where the periodic session ID routes it correctly.
