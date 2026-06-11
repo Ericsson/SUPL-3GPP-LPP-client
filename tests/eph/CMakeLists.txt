@@ -1,6 +1,7 @@
 add_executable(eph_tests
     main.cpp
     gps.cpp
+    gps_week_crossover.cpp
     gal.cpp
     bds.cpp
     qzss.cpp

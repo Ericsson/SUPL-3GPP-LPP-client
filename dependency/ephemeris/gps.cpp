@@ -16,19 +16,21 @@ CONSTEXPR static double GPS_CONSTANT_OMEGA_EARTH_DOT = 7.2921151467e-5;
 CONSTEXPR static double GPS_CONSTANT_C               = 2.99792458e8;
 
 bool GpsEphemeris::is_valid(ts::Gps const& time) const NOEXCEPT {
-    if ((time.week() % 1024) != (week_number % 1024)) {
-        VERBOSEF("week number mismatch (expected: %u, actual: %u)", week_number,
-                 time.week() % 1024);
-        return false;
-    }
-
     auto toe_tow  = static_cast<uint32_t>(toe);
     auto toe_frac = toe - toe_tow;
+
+    // Resolve week_number (may be truncated to 10 bits from broadcast nav) relative to query time.
+    // diff_mod==0: same week; diff_mod==1023: eph is one week ahead (week boundary crossover).
+    auto q_mod    = time.week() % 1024;
+    auto e_mod    = static_cast<int64_t>(week_number) % 1024;
+    auto diff_mod = (q_mod - e_mod + 1024) % 1024;
+    if (diff_mod != 0 && diff_mod != 1023) return false;
+    auto full_week = time.week() + (diff_mod == 1023 ? 1 : 0);
 
     // TODO: Verify GPS validity window is correctly symmetric ±2/4 hours
     // GPS ephemeris validity should be symmetric around TOE
     auto fit_interval = fit_interval_flag ? (2 * 3600) : (4 * 3600);
-    auto toe_ts       = ts::Gps::from_week_tow(time.week(), toe_tow, toe_frac).timestamp();
+    auto toe_ts       = ts::Gps::from_week_tow(full_week, toe_tow, toe_frac).timestamp();
     auto current_ts   = time.timestamp();
 
     auto difference = (current_ts - toe_ts).full_seconds();

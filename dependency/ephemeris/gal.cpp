@@ -16,21 +16,23 @@ CONSTEXPR static double GAL_CONSTANT_OMEGA_EARTH_DOT = 7.2921151467e-5;
 CONSTEXPR static double GAL_CONSTANT_C               = 2.99792458e8;
 
 bool GalEphemeris::is_valid(ts::Gst const& time) const NOEXCEPT {
-    if ((time.week() % 4096) != (week_number % 4096)) {
-        VERBOSEF("week number mismatch (expected: %u, actual: %u)", week_number,
-                 time.week() % 4096);
-        return false;
-    }
-
     auto toe_tow  = static_cast<uint32_t>(toe);
     auto toe_frac = toe - toe_tow;
+
+    // Resolve week_number (may be truncated to 12 bits from broadcast nav) relative to query time.
+    // diff_mod==0: same week; diff_mod==4095: eph is one week ahead (week boundary crossover).
+    auto q_mod    = time.week() % 4096;
+    auto e_mod    = static_cast<int64_t>(week_number) % 4096;
+    auto diff_mod = (q_mod - e_mod + 4096) % 4096;
+    if (diff_mod != 0 && diff_mod != 4095) return false;
+    auto full_week = time.week() + (diff_mod == 4095 ? 1 : 0);
 
     // TODO: Fix validity window - should be asymmetric for I/NAV and F/NAV
     // I/NAV (E1-B, E5b): Valid from TOE to TOE+7200s (2 hours forward)
     // F/NAV (E5a): Valid from TOE-10800s to TOE+10800s (±3 hours)
     // Current implementation uses symmetric ±4 hours which is incorrect
     auto fit_interval = 4 * 3600;
-    auto toe_ts       = ts::Gst::from_week_tow(time.week(), toe_tow, toe_frac).timestamp();
+    auto toe_ts       = ts::Gst::from_week_tow(full_week, toe_tow, toe_frac).timestamp();
     auto current_ts   = time.timestamp();
 
     auto difference = (current_ts - toe_ts).full_seconds();
