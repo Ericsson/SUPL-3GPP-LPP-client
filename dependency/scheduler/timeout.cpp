@@ -61,6 +61,10 @@ void Timer::arm(bool repeat) NOEXCEPT {
     struct itimerspec its{};
     its.it_value.tv_sec  = seconds;
     its.it_value.tv_nsec = nanoseconds;
+    // timerfd_settime with {0,0} disarms the timer — use 1ns minimum to fire immediately
+    if (its.it_value.tv_sec == 0 && its.it_value.tv_nsec == 0) {
+        its.it_value.tv_nsec = 1;
+    }
     if (repeat) {
         its.it_interval.tv_sec  = seconds;
         its.it_interval.tv_nsec = nanoseconds;

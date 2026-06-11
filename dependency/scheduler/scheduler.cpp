@@ -19,16 +19,18 @@ Scheduler* current_scheduler = nullptr;
 }
 
 void ScheduledEvent::interests(EventInterest interests) {
-    if (valid()) current().update_interests(*this, interests);
+    if (valid() && scheduler::has_current()) current().update_interests(*this, interests);
 }
 
 void ScheduledEvent::callback(std::function<void(EventInterest)> cb) {
-    if (valid()) current().update_callback(*this, std::move(cb));
+    if (valid() && scheduler::has_current()) current().update_callback(*this, std::move(cb));
 }
 
 void ScheduledEvent::unregister() {
     if (valid()) {
-        current().unregister(*this);
+        if (scheduler::has_current()) {
+            current().unregister(*this);
+        }
         invalidate();
     }
 }
