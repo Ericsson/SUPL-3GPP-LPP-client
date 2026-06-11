@@ -26,4 +26,5 @@ endif()
 
 add_subdirectory("tbin-merge")
 add_subdirectory("tbin-parse")
+add_subdirectory("tokoro-post")
 add_subdirectory("relay")
