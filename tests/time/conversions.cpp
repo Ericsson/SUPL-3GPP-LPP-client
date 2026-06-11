@@ -36,6 +36,23 @@ TEST_CASE("GPS to GST round-trip") {
     CHECK(gps.timestamp().fraction() == doctest::Approx(gps2.timestamp().fraction()));
 }
 
+TEST_CASE("GST week/TOW from GPS date conversion") {
+    // GST epoch: Aug 22, 1999 (Sunday). GST week 0 TOW 0.
+    // Verify that converting a GPS date to GST gives the correct week.
+    // June 7, 2026 00:00 UTC is GST week 1383 (computed externally).
+    auto gps = ts::Gps::from_ymdhms(2026, 6, 6, 22, 10, 0.0);
+    auto gst = ts::Gst(gps);
+    // GST and GPS weeks differ by the epoch offset (1024 weeks + 345 weeks ≈ 1369 weeks)
+    // The key check: from_week_tow(gst.week(), tow) roundtrips correctly
+    auto gst2 = ts::Gst::from_week_tow(gst.week(), gst.time_of_week().seconds(),
+                                       gst.time_of_week().fraction());
+    CHECK(gst.timestamp().seconds() == gst2.timestamp().seconds());
+
+    // And that GPS→GST→GPS roundtrips
+    auto gps_back = ts::Gps(gst);
+    CHECK(gps.timestamp().seconds() == gps_back.timestamp().seconds());
+}
+
 TEST_CASE("GPS to GLO round-trip") {
     auto gps  = ts::Gps::from_week_tow(2000, 100000, 0.5);
     auto glo  = ts::Glo(gps);

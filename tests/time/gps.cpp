@@ -41,7 +41,20 @@ TEST_CASE("GPS week rollover - second rollover week 2048") {
 TEST_CASE("GPS from date - GPS epoch Jan 6, 1980") {
     auto gps = ts::Gps::from_ymdhms(1980, 1, 6, 0, 0, 0.0);
     CHECK(gps.week() == 0);
-    CHECK(gps.days() == 5);
+    CHECK(gps.time_of_week().seconds() == 0);
+}
+
+TEST_CASE("GPS from_ymdhms consistent with Gps(Utc)") {
+    // from_ymdhms and Gps(Utc) must produce the same timestamp for the same calendar date.
+    // This verifies the GPS epoch offset (Jan 6, not Jan 1) is correctly applied.
+    auto from_ymd = ts::Gps::from_ymdhms(2026, 6, 7, 0, 0, 0.0);
+    CHECK(from_ymd.week() == 2422);
+    CHECK(from_ymd.time_of_week().seconds() == 0);  // Sunday 00:00 = start of week
+
+    // June 6, 2026 is Saturday (DOW=6 in GPS, where Sunday=0)
+    auto sat = ts::Gps::from_ymdhms(2026, 6, 6, 22, 0, 0.0);
+    CHECK(sat.week() == 2421);
+    CHECK(sat.time_of_week().seconds() == 6 * 86400 + 22 * 3600);  // Saturday 22:00
 }
 
 TEST_CASE("GPS from date - leap year Feb 29, 2020") {

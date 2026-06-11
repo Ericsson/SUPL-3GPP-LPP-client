@@ -168,7 +168,7 @@ Gps Gps::from_ymdhms(int64_t year, int64_t month, int64_t day, int64_t hour, int
     auto int_seconds = static_cast<int64_t>(seconds);
     auto fractions   = seconds - static_cast<double>(int_seconds);
 
-    auto days    = days_from_ymd(year, month, day);
+    auto days    = days_from_ymd(year, month, day) - 5;  // GPS epoch is Jan 6, not Jan 1
     auto week    = days / 7;
     auto weekday = days % 7;
     auto tod     = hour * HOUR_IN_SECONDS + min * MINUTE_IN_SECONDS + int_seconds;
