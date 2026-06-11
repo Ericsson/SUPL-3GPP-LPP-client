@@ -243,7 +243,6 @@ struct Lpp2RtcmConfig {
     MsmType     msm_type;
     size_t      max_conversions;
     std::string output_tag;
-    double      output_vrs_interval;  // seconds, 0 = disabled
 };
 
 struct Lpp2FrameRtcmConfig {
@@ -394,10 +393,13 @@ struct TokoroConfig {
     bool use_tropospheric_model;
     bool use_ionospheric_height_correction;
 
-    std::string antex_file;
-    bool        ignore_bitmask;
-    std::string output_tag;
-    double      output_cps_interval;  // seconds, 0 = disabled
+    std::string              antex_file;
+    std::vector<std::string> nav_files;
+    bool                     ignore_bitmask;
+    bool                     deduplicate_epochs;
+    std::string              output_tag;
+    std::string              diag_output_dir;
+    size_t                   ephemeris_max_cache;  // per-satellite ephemeris cache size
 
     struct FakeCorrectionPointSet {
         uint16_t set_id;

@@ -277,11 +277,25 @@ static args::ValueFlag<std::string> gAntexFile{
     {"tkr-antex-file"},
 };
 
+static args::ValueFlagList<std::string> gNavFile{
+    gGroup,
+    "file",
+    "RINEX navigation file for broadcast ephemeris (repeatable)",
+    {"tkr-nav-file"},
+};
+
 static args::Flag gIgnoreBitmask{
     gGroup,
     "ignore-bitmask",
     "Ignore GNSS-SSR-CorrectionPoints bitmask",
     {"tkr-ignore-bitmask"},
+};
+
+static args::Flag gDeduplicateEpochs{
+    gGroup,
+    "deduplicate-epochs",
+    "Skip generation if the epoch was already processed",
+    {"tkr-deduplicate-epochs"},
 };
 
 static args::ValueFlag<int> gFakeCpsId{
@@ -334,11 +348,19 @@ static args::ValueFlag<std::string> gOutputTag{
     {"tkr-output-tag"},
 };
 
-static args::ValueFlag<double> gOutputCps{
+static args::ValueFlag<std::string> gDiagOutputDir{
     gGroup,
-    "seconds",
-    "Re-emit CorrectionPointSet every N seconds on LPP UPER output",
-    {"tkr-output-cps"},
+    "directory",
+    "Output directory for per-satellite/signal .diag files",
+    {"tkr-diag-dir"},
+};
+
+static args::ValueFlag<int> gEphemerisMaxCache{
+    gGroup,
+    "count",
+    "Maximum cached ephemeris entries per satellite (default: 10)",
+    {"tkr-eph-cache"},
+    10,
 };
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
@@ -423,8 +445,9 @@ void parse(Config* config) {
 
     tokoro.antex_file          = "";
     tokoro.ignore_bitmask      = false;
+    tokoro.deduplicate_epochs  = false;
     tokoro.output_tag          = "";
-    tokoro.output_cps_interval = 0.0;
+    tokoro.ephemeris_max_cache = static_cast<size_t>(gEphemerisMaxCache.Get());
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     tokoro.record_snapshot      = false;
@@ -555,9 +578,11 @@ void parse(Config* config) {
     if (gUseTroposphericModel) tokoro.use_tropospheric_model = true;
     if (gUseIonosphericHeightCorrection) tokoro.use_ionospheric_height_correction = true;
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
+    if (gNavFile) tokoro.nav_files = gNavFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
+    if (gDeduplicateEpochs) tokoro.deduplicate_epochs = true;
     if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
-    if (gOutputCps) tokoro.output_cps_interval = gOutputCps.Get();
+    if (gDiagOutputDir) tokoro.diag_output_dir = gDiagOutputDir.Get();
 
     {
         int provided = (gFakeCpsId ? 1 : 0) + (gFakeCpsLat ? 1 : 0) + (gFakeCpsLon ? 1 : 0) +
@@ -661,6 +686,8 @@ void dump(TokoroConfig const& config) {
            config.use_ionospheric_height_correction ? "true" : "false");
 
     DEBUGF("antex file: \"%s\"", config.antex_file.c_str());
+    for (auto const& nf : config.nav_files)
+        DEBUGF("nav file:   \"%s\"", nf.c_str());
     DEBUGF("ignore bitmask: %s", config.ignore_bitmask ? "true" : "false");
 }
 

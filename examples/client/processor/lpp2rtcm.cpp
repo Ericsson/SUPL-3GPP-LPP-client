@@ -24,22 +24,6 @@ Lpp2Rtcm::Lpp2Rtcm(ProgramOutput const& output, Lpp2RtcmConfig const& config,
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM5) mFilter.msm.force_msm5 = true;
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM6) mFilter.msm.force_msm6 = true;
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM7) mFilter.msm.force_msm7 = true;
-
-    if (mConfig.output_vrs_interval > 0.0) {
-        auto interval =
-            std::chrono::milliseconds(static_cast<int>(mConfig.output_vrs_interval * 1000.0));
-        mVrsTask = std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
-        mVrsTask->callback = [this]() {
-            if (mVrsBytes.empty()) return;
-            for (auto const& output : mOutput.outputs) {
-                if (!output.rtcm_support()) continue;
-                output.stage->write(OUTPUT_FORMAT_RTCM, mVrsBytes.data(), mVrsBytes.size());
-            }
-        };
-        if (!mVrsTask->schedule(mScheduler)) {
-            WARNF("failed to schedule VRS output task");
-        }
-    }
 }
 
 Lpp2Rtcm::~Lpp2Rtcm() {
@@ -60,12 +44,6 @@ void Lpp2Rtcm::inspect(streamline::System&, DataType const& message, uint64_t /*
         auto buffer = submessage.data().data();
         auto size   = submessage.data().size();
         DEBUGF("message: %4u: %zu bytes", submessage.id(), size);
-
-        // Cache MT1006 for periodic VRS re-emission
-        if (mVrsBytes.empty() && (submessage.id() == 1006 || submessage.id() == 1005)) {
-            mVrsBytes.assign(buffer, buffer + size);
-            INFOF("cached MT%u for periodic VRS output (%zu bytes)", submessage.id(), size);
-        }
 
         // TODO(ewasjon): These message should be passed back into the system
         for (auto const& output : mOutput.outputs) {

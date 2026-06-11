@@ -92,6 +92,7 @@ if(INCLUDE_GENERATOR_TOKORO)
     if(INCLUDE_FORMAT_ANTEX)
         target_link_libraries(example_client PRIVATE dependency::format::antex)
     endif()
+    target_link_libraries(example_client PRIVATE dependency::format::rinex)
     target_link_libraries(example_client PRIVATE dependency::generator::tokoro)
     
     if(ENABLE_TOKORO_SNAPSHOT)

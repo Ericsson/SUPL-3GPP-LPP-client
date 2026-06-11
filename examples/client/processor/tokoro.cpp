@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdint>
+#include <time/utc.hpp>
 #include "ephemeris/bds.hpp"
 #include "ephemeris/gal.hpp"
 #include "time/bdt.hpp"
@@ -10,6 +11,7 @@
 #ifdef INCLUDE_FORMAT_ANTEX
 #include <format/antex/antex.hpp>
 #endif
+#include <format/rinex/nav_reader.hpp>
 #include <format/rtcm/datafields.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
@@ -85,7 +87,8 @@ void TokoroEphemerisUbx::handle_gal_inav(format::ubx::RxmSfrbx* sfrbx) {
 void TokoroEphemerisUbx::handle_gal(format::ubx::RxmSfrbx* sfrbx) {
     VSCOPE_FUNCTION();
     if (!mTokoro.is_gal_enabled()) return;
-    if (sfrbx->sig_id() == 5) {
+    // sig_id 1 = E1-B I/NAV (ZED-X20P), sig_id 5 = E5b-I I/NAV (older receivers)
+    if (sfrbx->sig_id() == 1 || sfrbx->sig_id() == 5) {
         handle_gal_inav(sfrbx);
     } else {
         VERBOSEF("unsupported GAL signal id %d", sfrbx->sig_id());
@@ -325,6 +328,7 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mGenerator->set_rtoc(mConfig.rtoc);
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
+    mGenerator->set_ephemeris_max_cache(mConfig.ephemeris_max_cache);
 
     if (mConfig.fake_correction_point_set) {
         auto const& f = *mConfig.fake_correction_point_set;
@@ -344,6 +348,18 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
         }
     }
 #endif
+
+    if (!config.nav_files.empty()) {
+        for (auto const& nav_file : config.nav_files) {
+            auto nav = format::rinex::parse_nav_file(nav_file);
+            for (auto& eph : nav.gps)
+                mGenerator->process_ephemeris(eph);
+            for (auto& eph : nav.gal)
+                mGenerator->process_ephemeris(eph);
+            for (auto& eph : nav.bds)
+                mGenerator->process_ephemeris(eph);
+        }
+    }
 
     if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
         // Nothing to do, the generator will generate when assistance data is received
@@ -386,24 +402,6 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
         }
     } else {
         WARNF("unsupported generation strategy");
-    }
-
-    // Setup periodic CPS re-emission
-    if (mConfig.output_cps_interval > 0.0) {
-        auto interval =
-            std::chrono::milliseconds(static_cast<int>(mConfig.output_cps_interval * 1000.0));
-        mCpsTask = std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
-        mCpsTask->callback = [this]() {
-            if (mCpsUperBytes.empty()) return;
-            for (auto const& output : mOutput.outputs) {
-                if (!output.lpp_uper_support()) continue;
-                output.stage->write(OUTPUT_FORMAT_LPP_UPER, mCpsUperBytes.data(),
-                                    mCpsUperBytes.size());
-            }
-        };
-        if (!mCpsTask->schedule(mScheduler)) {
-            WARNF("failed to schedule CPS output task");
-        }
     }
 }
 
@@ -578,6 +576,11 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
 
+    if (generation_time.timestamp().full_seconds() == 0) return;
+
+    if (mConfig.deduplicate_epochs && generation_time == mLastGenerationTime) return;
+    mLastGenerationTime = generation_time;
+
     auto vrs_start = std::chrono::steady_clock::now();
     if (mConfig.vrs_mode == TokoroConfig::VrsMode::Fixed) {
         vrs_mode_fixed();
@@ -620,6 +623,10 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_use_ionospheric_height_correction(
         mConfig.use_ionospheric_height_correction);
 
+    if (!mConfig.diag_output_dir.empty()) {
+        mReferenceStation->set_diag_output(mConfig.diag_output_dir);
+    }
+
 #if defined(ENABLE_TOKORO_SNAPSHOT)
     if (mRecorder && mRecorder->should_record()) {
         auto snapshot = mReferenceStation->snapshot(generation_time);
@@ -635,7 +642,15 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     VERBOSEF("reference station generate took %lld ms", gen_ms);
 
     auto messages = mReferenceStation->produce();
-    INFOF("generated %d RTCM messages", messages.size());
+    if (!messages.empty()) {
+        std::string ids;
+        for (auto& m : messages) {
+            if (!ids.empty()) ids += ',';
+            ids += std::to_string(m.id());
+        }
+        INFOF("generated %zu RTCM message(s) @ %s: [%s]", messages.size(),
+              ts::Utc(generation_time).rtklib_time_string().c_str(), ids.c_str());
+    }
     DEBUG_INDENT_SCOPE();
     for (auto& submessage : messages) {
         auto buffer = submessage.data().data();
@@ -676,25 +691,6 @@ void Tokoro::inspect(streamline::System& system, DataType const& message, uint64
     auto process_ms =
         std::chrono::duration_cast<std::chrono::milliseconds>(process_end - process_start).count();
     VERBOSEF("process_lpp took %lld ms", process_ms);
-
-    // Cache CPS-only LPP message for periodic re-emission.
-    // Build a new minimal LPP_Message containing ONLY the CorrectionPointSet.
-    if (mCpsUperBytes.empty() && new_assistance_data && mConfig.output_cps_interval > 0.0) {
-        auto* pad = lpp::get_provide_assistance_data(message);
-        if (pad && pad->a_gnss_ProvideAssistanceData &&
-            pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData &&
-            pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData->ext2 &&
-            pad->a_gnss_ProvideAssistanceData->gnss_CommonAssistData->ext2
-                ->gnss_SSR_CorrectionPoints_r16) {
-            // Encode the full message. On replay, process_lpp will extract CPS and ignore
-            // any stale corrections (they get overwritten by newer data already in the store).
-            auto encoded = lpp::Session::encode_lpp_message(message);
-            if (!encoded.empty()) {
-                mCpsUperBytes = std::move(encoded);
-                INFOF("cached CPS message for periodic output (%zu bytes)", mCpsUperBytes.size());
-            }
-        }
-    }
 
     if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::AssistanceData) {
         if (new_assistance_data) {

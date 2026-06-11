@@ -423,15 +423,30 @@ static void create_io_from_config(Program& program) {
         for (auto const& entry : inputs_cfg.inputs) {
             if (entry.type != "tbin") continue;
             if (!entry.options.count("path")) continue;
-            if (sources.empty()) representative = entry;
-            sources.push_back({entry.options.at("path"), entry.format});
+            if (sources.empty())
+                representative = entry;
+            else
+                representative.format |= entry.format;
+            int64_t shift_us = 0;
+            if (entry.options.count("shift"))
+                shift_us = static_cast<int64_t>(std::stod(entry.options.at("shift")) * 1000000.0);
+            sources.push_back({entry.options.at("path"), entry.format, shift_us});
             if (entry.options.count("realtime") &&
                 (entry.options.at("realtime") == "true" || entry.options.at("realtime").empty()))
                 realtime = true;
         }
 
         if (!sources.empty()) {
-            auto           tbin = std::make_unique<TbinInput>(sources, realtime);
+            auto tbin = std::make_unique<TbinInput>(sources, realtime);
+            // Apply stop time (ISO8601 or unix timestamp in seconds)
+            for (auto const& entry : inputs_cfg.inputs) {
+                if (entry.type != "tbin") continue;
+                if (entry.options.count("stop")) {
+                    auto stop_s = std::stod(entry.options.at("stop"));
+                    tbin->set_stop_time_us(static_cast<int64_t>(stop_s * 1000000.0));
+                    break;
+                }
+            }
             InputInterface iface;
             iface.entry     = representative;
             iface.interface = std::move(tbin);
@@ -548,13 +563,10 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
                 DEBUGF("input completed (active_inputs=%d)", remaining);
                 if (remaining == 0 && !program.shutdown_scheduled) {
                     program.shutdown_scheduled = true;
-                    INFOF("all inputs completed, scheduling shutdown in %ld ms",
-                          program.input.shutdown_delay.count());
-                    program.shutdown_task.reset(
-                        new scheduler::TimeoutTask(program.input.shutdown_delay, [&program]() {
-                            INFOF("shutdown timeout expired, interrupting scheduler");
-                            program.scheduler.interrupt();
-                        }));
+                    INFOF("all inputs completed, interrupting scheduler");
+                    program.scheduler.defer([&program](scheduler::Scheduler& s) {
+                        s.interrupt();
+                    });
                 }
             };
         }
@@ -1092,7 +1104,10 @@ int main(int argc, char** argv) {
     }
 #endif
 
-    program.stream          = streamline::System{program.scheduler};
+    program.stream = streamline::System{program.scheduler};
+    if (config.inputs_config.sync_mode) {
+        program.stream.set_sync_mode(true);
+    }
     program.is_disconnected = false;
 
     program.scheduler.set_max_events_per_wait(program.config.scheduler.max_events_per_wait);

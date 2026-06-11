@@ -50,7 +50,8 @@ void Ubx2Eph::handle_gal_inav(streamline::System& system, format::ubx::RxmSfrbx*
 void Ubx2Eph::handle_gal(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT {
     VSCOPE_FUNCTION();
     if (!mConfig.galileo) return;
-    if (sfrbx->sig_id() == 5) {
+    // sig_id 1 = E1-B I/NAV (ZED-X20P), sig_id 5 = E1-B I/NAV (older receivers)
+    if (sfrbx->sig_id() == 1 || sfrbx->sig_id() == 5) {
         handle_gal_inav(system, sfrbx);
     } else {
         VERBOSEF("unsupported GAL signal id %d", sfrbx->sig_id());

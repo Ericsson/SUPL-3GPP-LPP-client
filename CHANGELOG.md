@@ -17,6 +17,7 @@ All notable changes to this project will be documented in this file.
 - `tokoro`: per-satellite (`SatDiagFile`) and per-signal (`DiagFile`) diagnostic `.diag` file output, enabled via `set_diag_output(dir)`
 - `tokoro`: satellite tracks disable reason, orbit/clock correction availability flags, and `eph_week`/`eph_toe` in `SatelliteState`
 - `tokoro/generator`: configurable ephemeris cache size (`set_ephemeris_max_cache`); elevation-masked satellites are processed for diagnostics before exclusion; diag output integrated into `generate()`
+- `example-client`: remove periodic VRS/CPS re-emission; add `--tkr-nav-file`, `--tkr-deduplicate-epochs`, `--tkr-diag-dir`, `--tkr-eph-cache`; Galileo sig_id 1 (ZED-X20P E1-B) accepted; shutdown defers interrupt immediately
 
 ### Added (pre-existing)
 - SPARTN generator: default bias mappings are now applied automatically in both `lpp2spartn` and `example-client` without requiring explicit `--bias-map` / `--l2s-bias-map` flags. Defaults: GPS 2X→2L, 5X→5Q; GAL 8X→5Q, 8X→7Q, 1X→1C, 6X→6C; BDS 5X→5P, 1X→1P. User-supplied entries are additive on top. Use `--no-default-bias-map` / `--l2s-no-default-bias-map` to disable all defaults.
