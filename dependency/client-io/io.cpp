@@ -284,14 +284,19 @@ io_registry::InputTypeHandler make_stream_ref_input_type() {
 io_registry::InputTypeHandler make_tbin_input_type() {
     return {"tbin",
             "    path=<path>\n"
-            "    realtime=<bool> (default=false)\n",
+            "    realtime=<bool> (default=false)\n"
+            "    shift=<seconds> (default=0, shift timestamps)\n",
             [](Opts const& o, io::StreamRegistry&) -> std::unique_ptr<io::Input> {
                 if (!o.count("path")) throw std::runtime_error("--input tbin: missing path");
                 bool realtime =
                     o.count("realtime") && (o.at("realtime") == "true" || o.at("realtime").empty());
+                int64_t shift_us = 0;
+                if (o.count("shift"))
+                    shift_us = static_cast<int64_t>(std::stod(o.at("shift")) * 1000000.0);
                 // Format is filled in by main.cpp when it merges all tbin entries.
                 return std::make_unique<TbinInput>(
-                    std::vector<TbinInput::Source>{{o.at("path"), INPUT_FORMAT_RAW}}, realtime);
+                    std::vector<TbinInput::Source>{{o.at("path"), INPUT_FORMAT_RAW, shift_us}},
+                    realtime);
             }};
 }
 

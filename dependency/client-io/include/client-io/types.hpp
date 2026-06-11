@@ -98,6 +98,7 @@ struct InputEntry {
 struct InputsConfig {
     std::vector<InputEntry>   inputs;
     bool                      shutdown_on_complete             = false;
+    bool                      sync_mode                        = false;
     bool                      disable_pipe_buffer_optimization = false;
     std::chrono::milliseconds shutdown_delay                   = std::chrono::milliseconds(1000);
 };

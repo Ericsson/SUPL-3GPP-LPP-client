@@ -22,6 +22,7 @@ static args::Group*                      gGroup                         = nullpt
 static args::ValueFlagList<std::string>* gArgs                          = nullptr;
 static args::Flag*                       gDisablePipeBufferOptimization = nullptr;
 static args::Flag*                       gShutdownOnComplete            = nullptr;
+static args::Flag*                       gSyncMode                      = nullptr;
 static args::ValueFlag<int>*             gShutdownDelay                 = nullptr;
 
 void setup(args::ArgumentParser& parser) {
@@ -57,11 +58,13 @@ void setup(args::ArgumentParser& parser) {
                                          "shutdown-on-complete",
                                          "Shutdown when all inputs complete",
                                                     {"input-shutdown-on-complete"}};
-    gShutdownDelay                 = new args::ValueFlag<int>{*gGroup,
-                                                              "milliseconds",
-                                                              "Delay before shutdown (default: 1000ms)",
-                                                              {"input-shutdown-delay"},
-                                                              1000};
+    gSyncMode                      = new args::Flag{
+        *gGroup, "sync-mode", "Synchronous dispatch (faster post-processing)", {"input-sync-mode"}};
+    gShutdownDelay = new args::ValueFlag<int>{*gGroup,
+                                              "milliseconds",
+                                              "Delay before shutdown (default: 1000ms)",
+                                              {"input-shutdown-delay"},
+                                              1000};
 
     static args::GlobalOptions sGlobals{parser, *gGroup};
 }
@@ -71,6 +74,7 @@ void parse(InputsConfig& config) {
 
     config.disable_pipe_buffer_optimization = gDisablePipeBufferOptimization->Get();
     config.shutdown_on_complete             = gShutdownOnComplete->Get();
+    config.sync_mode                        = gSyncMode->Get();
     config.shutdown_delay                   = std::chrono::milliseconds(gShutdownDelay->Get());
 
     for (auto const& arg : gArgs->Get()) {
