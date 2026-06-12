@@ -1,0 +1,21 @@
+stages:
+  - build
+
+variables:
+  PLATFORM:
+    value: "aarch64-rpi4-linux-gnu"
+    description: "Target platform to build for. See docker/build-wip.sh for available platforms."
+
+build:
+  stage: build
+  image: docker:latest
+  tags:
+    - lsp-runner
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" "$CI_REGISTRY"
+  script:
+    - ./docker/build-wip.sh "$PLATFORM"
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+    - if: $CI_COMMIT_BRANCH =~ /^2026-summer-/
+      when: manual
