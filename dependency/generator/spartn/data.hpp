@@ -211,6 +211,11 @@ struct CorrectionData {
     std::unordered_map<uint16_t, HpacData>          hpac_data;
     std::unordered_map<long, RealTimeIntegrityData> real_time_integrity_data;
 
+    // Tropo/iono integrity service alert state:
+    // -1 = not present in LPP, 0 = present and ok, 1 = present and DNU
+    int troposphere_dnu{-1};
+    int ionosphere_dnu{-1};
+
     CorrectionData(bool group_by_epoch_time_param)
         : group_by_epoch_time(group_by_epoch_time_param) {}
 

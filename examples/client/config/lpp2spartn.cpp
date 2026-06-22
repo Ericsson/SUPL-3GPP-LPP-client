@@ -357,6 +357,7 @@ void parse(Config* config) {
     lpp2spartn.sign_flip_stec_residuals = false;
 
     lpp2spartn.do_not_use_satellite  = true;
+    lpp2spartn.do_not_use_atmosphere = true;
     lpp2spartn.output_tag            = "";
     lpp2spartn.crc_type              = generator::spartn::CrcType::CRC16;
     lpp2spartn.solution_id           = 0;
@@ -397,6 +398,7 @@ void parse(Config* config) {
     if (gHydrostaticInZenith) lpp2spartn.hydrostatic_in_zenith = true;
 
     if (gDisableDoNotUseSatellite) lpp2spartn.do_not_use_satellite = false;
+    if (gDisableDoNotUseSatellite) lpp2spartn.do_not_use_atmosphere = false;
 
     if (gStecMethod) {
         auto method = gStecMethod.Get();

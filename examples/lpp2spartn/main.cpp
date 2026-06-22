@@ -9,6 +9,7 @@
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
+#include <ctime>
 #include <fstream>
 #include <vector>
 
@@ -68,6 +69,7 @@ int main(int argc, char** argv) {
     args::ValueFlag<std::string> output_file(output_group, "file", "Output file (default: stdout)",
                                              {'o', "output"});
     args::Flag hex_output(output_group, "hex", "Output as hex instead of binary", {"hex"});
+    args::ValueFlag<std::string> dnu_log_file(output_group, "file", "DNU log file", {"dnu-log"});
 
     args::Group gnss_group(parser, "GNSS:");
     args::Flag  gps(gnss_group, "gps", "Enable GPS", {"gps"});
@@ -166,6 +168,7 @@ int main(int argc, char** argv) {
     gen.set_generate_hpac(!no_hpac);
     gen.set_generate_gad(!no_gad);
     gen.set_do_not_use_satellite(!no_dnu);
+    gen.set_do_not_use_atmosphere(!no_dnu);
     gen.set_continuity_indicator(320.0);
 
     {
@@ -271,6 +274,20 @@ int main(int argc, char** argv) {
         }
     }
 
+    // Open DNU log
+    FILE* dnu_out = nullptr;
+    if (dnu_log_file) {
+        dnu_out = fopen(args::get(dnu_log_file).c_str(), "w");
+        if (!dnu_out) {
+            fprintf(stderr, "error: cannot open DNU log file: %s\n",
+                    args::get(dnu_log_file).c_str());
+            return 1;
+        }
+        fprintf(dnu_out, "gps_week,gps_tow,utc,iono_dnu,tropo_dnu,iono_quality_avg,tropo_quality,"
+                         "dnu_count,dnu_satellites,available_satellites,iono_quality_per_sat\n");
+        gen.enable_epoch_log(true);
+    }
+
     // Process messages
     size_t offset       = 0;
     size_t msg_count    = 0;
@@ -315,6 +332,67 @@ int main(int argc, char** argv) {
         auto messages = gen.generate(lpp);
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, lpp);
 
+        // Write DNU log entry
+        if (dnu_out) {
+            auto const& el = gen.epoch_log();
+            if (el.epoch_time != 0) {
+                // Convert SPARTN time (seconds since 2010-01-01 GPS) to GPS week/TOW
+                constexpr uint32_t SPARTN_EPOCH_GPS_SECONDS = 10953U * 86400U;
+                uint32_t           gps_seconds = el.epoch_time + SPARTN_EPOCH_GPS_SECONDS;
+                uint32_t           gps_week    = gps_seconds / 604800U;
+                uint32_t           gps_tow     = gps_seconds % 604800U;
+
+                // Convert to UTC (RFC3339): 2010-01-01 00:00:00 GPS = Unix 1262304000 + 15
+                // GPS-UTC offset is 18s since Jan 2017
+                constexpr int64_t UNIX_2010_GPS  = 1262304000LL + 15LL;
+                constexpr int     GPS_UTC_OFFSET = 18;
+                int64_t           utc_unix =
+                    static_cast<int64_t>(el.epoch_time) + UNIX_2010_GPS - GPS_UTC_OFFSET;
+                time_t    tt = static_cast<time_t>(utc_unix);
+                struct tm utc_tm{};
+                gmtime_r(&tt, &utc_tm);
+                char time_buf[32];
+                strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", &utc_tm);
+
+                fprintf(dnu_out, "%u,%u,%s,%d,%d,%.4f,%.4f,", gps_week, gps_tow, time_buf,
+                        el.iono_dnu, el.tropo_dnu, el.iono_quality_avg, el.tropo_quality);
+                // Count DNU satellites
+                size_t dnu_count = 0;
+                for (auto const& [_, sats] : el.dnu_satellites)
+                    dnu_count += sats.size();
+                fprintf(dnu_out, "%zu,", dnu_count);
+                bool first = true;
+                for (auto const& [gnss_id, sats] : el.dnu_satellites) {
+                    for (auto prn : sats) {
+                        if (!first) fprintf(dnu_out, ";");
+                        fprintf(dnu_out, "%ld:%u", gnss_id, prn);
+                        first = false;
+                    }
+                }
+                fprintf(dnu_out, ",");
+                // Available satellites
+                first = true;
+                for (auto const& [gnss_id, sats] : el.available_satellites) {
+                    for (auto prn : sats) {
+                        if (!first) fprintf(dnu_out, ";");
+                        fprintf(dnu_out, "%ld:%u", gnss_id, prn);
+                        first = false;
+                    }
+                }
+                fprintf(dnu_out, ",");
+                // Per-satellite iono quality
+                first = true;
+                for (auto const& [gnss_id, sats] : el.iono_quality_per_sat) {
+                    for (auto const& [prn, q] : sats) {
+                        if (!first) fprintf(dnu_out, ";");
+                        fprintf(dnu_out, "%ld:%u:%.4f", gnss_id, prn, q);
+                        first = false;
+                    }
+                }
+                fprintf(dnu_out, "\n");
+            }
+        }
+
         for (auto& msg : messages) {
             msg.set_crc_type(resolved_crc_type);
             if (solution_id) msg.set_solution_id(static_cast<uint8_t>(args::get(solution_id)));
@@ -343,6 +421,9 @@ int main(int argc, char** argv) {
 
     if (out != stdout) {
         fclose(out);
+    }
+    if (dnu_out) {
+        fclose(dnu_out);
     }
 
     fprintf(stderr, "Processed %zu LPP messages, generated %zu SPARTN messages\n", msg_count,

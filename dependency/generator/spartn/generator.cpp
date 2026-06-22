@@ -19,6 +19,7 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-CommonAssistData.h>
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
+#include <GNSS-Integrity-ServiceAlert-r17.h>
 #include <GNSS-SSR-ClockCorrections-r15.h>
 #include <GNSS-SSR-CodeBias-r15.h>
 #include <GNSS-SSR-CorrectionPoints-r16.h>
@@ -56,9 +57,10 @@ Generator::Generator()
       mFlipGridBitmask(false), mFilterByResiduals(false), mFilterByOcb(false), mIgnoreL2L(false),
       mStecInvalidToZero(false), mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false),
       mSignFlipC11(false), mSignFlipStecResiduals(false), mFlipOrbitCorrection(false),
-      mDoNotUseSatellite(true), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
-      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
-      mBeidouSupported(false), mQzssSupported(false), mNavicSupported(false) {}
+      mDoNotUseSatellite(true), mDoNotUseAtmosphere(true), mEpochLogEnabled(false),
+      mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
+      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false),
+      mQzssSupported(false), mNavicSupported(false) {}
 
 Generator::~Generator() = default;
 
@@ -108,6 +110,44 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     find_hpac_corrections(message);
     find_rti_corrections(message);
 
+    // Parse tropo/iono integrity service alert from CommonAssistData
+    if (mDoNotUseAtmosphere && message->a_gnss_ProvideAssistanceData &&
+        message->a_gnss_ProvideAssistanceData->gnss_CommonAssistData) {
+        auto& cad = *message->a_gnss_ProvideAssistanceData->gnss_CommonAssistData;
+        if (cad.ext3 && cad.ext3->gnss_Integrity_ServiceAlert_r17) {
+            auto& alert                      = *cad.ext3->gnss_Integrity_ServiceAlert_r17;
+            mCorrectionData->troposphere_dnu = alert.troposphereDoNotUse_r17 ? 1 : 0;
+            mCorrectionData->ionosphere_dnu  = alert.ionosphereDoNotUse_r17 ? 1 : 0;
+            mStatistics.lpp_ie_counts["gnss_Integrity_ServiceAlert_r17"]++;
+        }
+    }
+
+    // Populate epoch log
+    if (mEpochLogEnabled) {
+        mEpochLog           = EpochLog{};
+        mEpochLog.iono_dnu  = mCorrectionData->ionosphere_dnu;
+        mEpochLog.tropo_dnu = mCorrectionData->troposphere_dnu;
+        if (mDoNotUseSatellite) {
+            for (auto& [gnss_id, rti] : mCorrectionData->real_time_integrity_data) {
+                for (auto& [sat_id, sat] : rti.bad_satellites) {
+                    mEpochLog.dnu_satellites[gnss_id].push_back(static_cast<uint32_t>(sat_id + 1));
+                }
+            }
+        }
+        // Set epoch time and available satellites from OCB data
+        for (auto& [iod, ocb] : mCorrectionData->ocb_data) {
+            for (auto& [key, corr] : ocb.keyed_corrections) {
+                if (corr.epoch_time.rounded_seconds > 0 && mEpochLog.epoch_time == 0) {
+                    mEpochLog.epoch_time = corr.epoch_time.rounded_seconds;
+                }
+                auto sats = corr.satellites();
+                for (auto& sat : sats) {
+                    mEpochLog.available_satellites[corr.gnss_id].push_back(sat.prn());
+                }
+            }
+        }
+    }
+
     auto iods = mCorrectionData->iods();
     for (auto iod : iods) {
         VERBOSEF("-- iod=%hu", iod);
@@ -147,6 +187,19 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
         if (ocb && mGenerateOcb) {
             generate_ocb(iod);
         }
+    }
+
+    // Compute average iono quality
+    if (mEpochLogEnabled) {
+        double sum   = 0.0;
+        size_t count = 0;
+        for (auto& [_, sats] : mEpochLog.iono_quality_per_sat) {
+            for (auto& [__, q] : sats) {
+                sum += q;
+                count++;
+            }
+        }
+        if (count > 0) mEpochLog.iono_quality_avg = sum / static_cast<double>(count);
     }
 
     // Increment generation index

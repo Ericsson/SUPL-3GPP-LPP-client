@@ -963,6 +963,32 @@ void Generator::generate_hpac(uint16_t iod) {
         auto ionosphere_block_type =
             compute_ionosphere_block_type(corrections.stec, corrections.gridded);
 
+        // Suppress blocks when integrity service alert indicates DNU
+        if (mCorrectionData->troposphere_dnu == 1) troposphere_block_type = 0;
+        if (mCorrectionData->ionosphere_dnu == 1) ionosphere_block_type = 0;
+
+        // Populate epoch log quality indicators (first valid value wins)
+        if (mEpochLogEnabled) {
+            if (mEpochLog.tropo_quality < 0.0 && corrections.gridded &&
+                corrections.gridded->troposphericDelayQualityIndicator_r16) {
+                auto q = decode::tropospheric_delay_quality_indicator_r16(
+                    *corrections.gridded->troposphericDelayQualityIndicator_r16);
+                if (!q.invalid) mEpochLog.tropo_quality = q.value;
+            }
+            if (corrections.stec) {
+                auto& list = corrections.stec->stec_SatList_r16.list;
+                for (int i = 0; i < list.count; i++) {
+                    if (!list.array[i]) continue;
+                    auto q =
+                        decode::stec_quality_indicator_r16(list.array[i]->stecQualityIndicator_r16);
+                    if (!q.invalid) {
+                        auto prn = static_cast<uint32_t>(list.array[i]->svID_r16.satellite_id + 1);
+                        mEpochLog.iono_quality_per_sat[gnss_id].emplace_back(prn, q.value);
+                    }
+                }
+            }
+        }
+
         auto siou = iod;
         if (mIncreasingSiou) {
             siou = mSiouIndex;

@@ -68,6 +68,20 @@ struct Statistics {
     }
 };
 
+struct EpochLog {
+    uint32_t epoch_time{0};
+    int      iono_dnu{-1};  // -1=not present, 0=ok, 1=DNU
+    int      tropo_dnu{-1};
+    double   tropo_quality{-1.0};  // -1 = not available
+    double   iono_quality_avg{-1.0};
+    // Per-satellite iono quality: gnss_id -> [(prn, quality)]
+    std::unordered_map<long, std::vector<std::pair<uint32_t, double>>> iono_quality_per_sat;
+    // Per-GNSS DNU satellite list (PRN numbers)
+    std::unordered_map<long, std::vector<uint32_t>> dnu_satellites;
+    // Per-GNSS available satellite list (PRN numbers from OCB)
+    std::unordered_map<long, std::vector<uint32_t>> available_satellites;
+};
+
 /// Generates SPARTN messages based on LPP SSR messages.
 class Generator {
 public:
@@ -138,6 +152,8 @@ public:
         mFlipOrbitCorrection = flip_orbit_correction;
     }
     void set_do_not_use_satellite(bool value) { mDoNotUseSatellite = value; }
+    void set_do_not_use_atmosphere(bool value) { mDoNotUseAtmosphere = value; }
+    void enable_epoch_log(bool value) { mEpochLogEnabled = value; }
 
     void set_bias_map(long gnss_id, generator::spartn::BiasMap const& map);
 
@@ -150,6 +166,7 @@ public:
     std::vector<Message> generate(LPP_Message const* lpp_message);
 
     NODISCARD Statistics const& statistics() const { return mStatistics; }
+    NODISCARD EpochLog const&   epoch_log() const { return mEpochLog; }
     void                        reset_statistics() { mStatistics.reset(); }
 
 private:
@@ -212,6 +229,8 @@ private:
     bool mSignFlipStecResiduals;
     bool mFlipOrbitCorrection;
     bool mDoNotUseSatellite;
+    bool mDoNotUseAtmosphere;
+    bool mEpochLogEnabled;
 
     bool mGenerateGad;
     bool mGenerateOcb;
@@ -224,6 +243,7 @@ private:
     bool mNavicSupported;
 
     Statistics mStatistics;
+    EpochLog   mEpochLog;
 
     generator::spartn::BiasMap mGpsBiasMap;
     generator::spartn::BiasMap mGloBiasMap;

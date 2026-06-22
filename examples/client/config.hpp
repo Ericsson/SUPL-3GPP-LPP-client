@@ -314,6 +314,7 @@ struct Lpp2SpartnConfig {
     bool                          flip_grid_bitmask;
     bool                          flip_orbit_correction;
     bool                          do_not_use_satellite;
+    bool                          do_not_use_atmosphere;
     std::string                   output_tag;
     generator::spartn::CrcType    crc_type;
     uint8_t                       solution_id;
