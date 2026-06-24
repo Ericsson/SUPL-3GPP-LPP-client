@@ -26,7 +26,7 @@
 
 struct LocationServerConfig {
     std::string                  host;
-    uint16_t                     port;
+    uint16_t                     port = 7275;  // SUPL well-known port
     std::unique_ptr<std::string> interface;
 
     bool                  enabled;

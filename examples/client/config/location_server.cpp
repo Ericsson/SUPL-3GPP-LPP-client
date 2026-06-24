@@ -42,13 +42,15 @@ static args::Flag gDisable{
 static args::Flag gSlpHostCell{
     gGroup,
     "slp-host-cell",
-    "Use host cell to resolve location server IP address",
+    "Use host cell to resolve location server IP address (defaults to port 7275, or 7276 with "
+    "--ls-tls; override with --ls-port)",
     {"slp-host-cell"},
 };
 static args::Flag gSlpHostImsi{
     gGroup,
     "slp-host-imsi",
-    "Use IMSI to resolve location server IP address",
+    "Use IMSI to resolve location server IP address (defaults to port 7275, or 7276 with "
+    "--ls-tls; override with --ls-port)",
     {"slp-host-imsi"},
 };
 static args::Flag gShutdownOnDisconnect{
@@ -128,6 +130,7 @@ void setup(args::ArgumentParser& parser) {
 void parse(Config* config) {
     auto& ls                          = config->location_server;
     ls.enabled                        = true;
+    ls.port                           = 7275;  // SUPL well-known port (plaintext)
     ls.shutdown_on_disconnect         = false;
     ls.interface                      = nullptr;
     ls.output_tag                     = "";
@@ -144,16 +147,20 @@ void parse(Config* config) {
         ls.interface = std::unique_ptr<std::string>(new std::string(gInterface.Get()));
     }
 
+    // SUPL well-known ports: 7275 for plaintext, 7276 for TLS. In SLP-host modes
+    // the port is derived from whether TLS is enabled, unless --ls-port overrides.
+    auto supl_default_port = static_cast<uint16_t>(gTls.Get() ? 7276 : 7275);
+
     if (gSlpHostCell) {
         ls.slp_host_cell = true;
 
         if (gHost) throw args::RequiredError("`--ls-host` cannot be used with `--slp-host-cell`");
-        if (gPort) throw args::RequiredError("`--ls-port` cannot be used with `--slp-host-cell`");
+        ls.port = gPort ? gPort.Get() : supl_default_port;
     } else if (gSlpHostImsi) {
         ls.slp_host_imsi = true;
 
         if (gHost) throw args::RequiredError("`--ls-host` cannot be used with `--slp-host-imsi`");
-        if (gPort) throw args::RequiredError("`--ls-port` cannot be used with `--slp-host-imsi`");
+        ls.port = gPort ? gPort.Get() : supl_default_port;
     } else {
         if (!gHost)
             throw args::RequiredError(
