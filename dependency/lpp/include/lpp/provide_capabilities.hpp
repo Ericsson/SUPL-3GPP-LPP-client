@@ -8,6 +8,7 @@ struct ProvideCapabilities {
     struct {
         bool osr;
         bool ssr;
+        bool unsolicited_periodic;
     } assistance_data;
 
     /// @brief The GNSS systems that are supported

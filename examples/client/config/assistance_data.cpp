@@ -148,6 +148,43 @@ static args::Flag gNoAntennaHeight{
     "Do not request antenna height",
     {"ad-no-antenna-height"},
 };
+static args::Flag gNoUpdateCapabilities{
+    gGroup,
+    "no-update-capabilities",
+    "Do not include updateCapabilities_r15 in the assistance data request",
+    {"ad-no-update-capabilities"},
+};
+static args::Flag gUnsolicitedPeriodic{
+    gGroup,
+    "unsolicited-periodic",
+    "Advertise unsolicited periodicAssistanceData-r15 support in ProvideCapabilities",
+    {"ad-unsolicited-periodic"},
+};
+static args::Group gSupportList{gGroup, "GNSS Support List:"};
+static args::Flag  gNoSupportGps{
+    gSupportList,
+    "no-support-gps",
+    "Exclude GPS from gnss_SupportList",
+     {"ad-no-support-gps"},
+};
+static args::Flag gNoSupportGlonass{
+    gSupportList,
+    "no-support-glo",
+    "Exclude GLONASS from gnss_SupportList",
+    {"ad-no-support-glo"},
+};
+static args::Flag gNoSupportGalileo{
+    gSupportList,
+    "no-support-gal",
+    "Exclude Galileo from gnss_SupportList",
+    {"ad-no-support-gal"},
+};
+static args::Flag gNoSupportBds{
+    gSupportList,
+    "no-support-bds",
+    "Exclude BDS from gnss_SupportList",
+    {"ad-no-support-bds"},
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
@@ -194,8 +231,14 @@ void parse(Config* config) {
     ad.ssr_ura               = 5;
     ad.ssr_correction_points = 1;
 
-    ad.delivery_amount = 32;
-    ad.antenna_height  = !gNoAntennaHeight;
+    ad.delivery_amount             = 32;
+    ad.antenna_height              = !gNoAntennaHeight;
+    ad.disable_update_capabilities = gNoUpdateCapabilities.Get();
+    ad.no_support_gps              = gNoSupportGps.Get();
+    ad.no_support_glonass          = gNoSupportGlonass.Get();
+    ad.no_support_galileo          = gNoSupportGalileo.Get();
+    ad.no_support_beidou           = gNoSupportBds.Get();
+    ad.unsolicited_periodic        = gUnsolicitedPeriodic.Get();
 
     if (gDisable) {
         ad.enabled = false;
@@ -323,6 +366,10 @@ void dump(AssistanceDataConfig const& config) {
     DEBUGF("glonass: %s", config.glonass ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.galileo ? "enabled" : "disabled");
     DEBUGF("beidou: %s", config.beidou ? "enabled" : "disabled");
+    DEBUGF("support-list: gps=%s glo=%s gal=%s bds=%s", config.no_support_gps ? "no" : "yes",
+           config.no_support_glonass ? "no" : "yes", config.no_support_galileo ? "no" : "yes",
+           config.no_support_beidou ? "no" : "yes");
+    DEBUGF("unsolicited-periodic: %s", config.unsolicited_periodic ? "true" : "false");
 
     DEBUGF("type: %s",
            config.type == lpp::PeriodicRequestAssistanceData::Type::OSR ? "OSR" : "SSR");

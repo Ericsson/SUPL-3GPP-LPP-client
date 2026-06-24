@@ -143,6 +143,12 @@ struct AssistanceDataConfig {
 
     long delivery_amount;
     bool antenna_height;
+    bool disable_update_capabilities;
+    bool no_support_gps;
+    bool no_support_glonass;
+    bool no_support_galileo;
+    bool no_support_beidou;
+    bool unsolicited_periodic;
 };
 
 struct FakeLocationInformationConfig {

@@ -36,6 +36,8 @@ struct PeriodicRequestAssistanceData {
         long delivery_amount;
         /// @brief If the reference station request should request the antenna height
         bool antenna_height;
+        /// @brief If true, updateCapabilities_r15 will not be included in the request
+        bool disable_update_capabilities;
     } config;
 
     /// @brief Callback for non-periodic assistance data.

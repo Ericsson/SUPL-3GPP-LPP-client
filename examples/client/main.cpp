@@ -111,6 +111,7 @@ static void client_request(Program& program, lpp::Client& client) {
         {
             program.config.assistance_data.delivery_amount,
             program.config.assistance_data.antenna_height,
+            program.config.assistance_data.disable_update_capabilities,
         },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("provide assistance data (non-periodic)");
@@ -251,10 +252,14 @@ static void client_initialize(Program& program, lpp::Client&) {
 
     // Configure Capaiblities
     lpp::ProvideCapabilities capabilities{};
-    capabilities.gnss.gps     = program.config.assistance_data.gps;
-    capabilities.gnss.glonass = program.config.assistance_data.glonass;
-    capabilities.gnss.galileo = program.config.assistance_data.galileo;
-    capabilities.gnss.beidou  = program.config.assistance_data.beidou;
+    capabilities.gnss.gps =
+        program.config.assistance_data.gps && !program.config.assistance_data.no_support_gps;
+    capabilities.gnss.glonass = program.config.assistance_data.glonass &&
+                                !program.config.assistance_data.no_support_glonass;
+    capabilities.gnss.galileo = program.config.assistance_data.galileo &&
+                                !program.config.assistance_data.no_support_galileo;
+    capabilities.gnss.beidou =
+        program.config.assistance_data.beidou && !program.config.assistance_data.no_support_beidou;
 
     if (program.config.assistance_data.type == lpp::PeriodicRequestAssistanceData::Type::OSR) {
         capabilities.assistance_data.osr = true;
@@ -262,6 +267,9 @@ static void client_initialize(Program& program, lpp::Client&) {
                lpp::PeriodicRequestAssistanceData::Type::SSR) {
         capabilities.assistance_data.ssr = true;
     }
+
+    capabilities.assistance_data.unsolicited_periodic =
+        program.config.assistance_data.unsolicited_periodic;
 
     program.lpp_clients[0]->set_capabilities(capabilities);
 

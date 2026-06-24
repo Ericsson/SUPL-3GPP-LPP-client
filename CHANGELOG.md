@@ -10,6 +10,9 @@ All notable changes to this project will be documented in this file.
 
 ### Added
 - `supl`: optional QoP `horacc` field in SUPL START; new `--ls-horacc` CLI flag to set horizontal accuracy (0-127)
+- `lpp`: `--ad-no-update-capabilities` flag to suppress `updateCapabilities_r15` in periodic assistance data requests
+- `lpp`: `--ad-unsolicited-periodic` flag to advertise unsolicited periodic assistance data support in ProvideCapabilities
+- `example-client`: `--ad-no-support-{gps,glo,gal,bds}` flags to exclude GNSS systems from `gnss_SupportList` in ProvideCapabilities
 - `ephemeris`: `toe()` and `week()` accessors on the `Ephemeris` union type
 - `format/rinex`: RINEX 3/4 navigation file parser (`parse_nav_file`) supporting GPS, Galileo (I/NAV only), and BDS
 - `streamline`: sync mode — `System::set_sync_mode(true)` dispatches directly on `push()` without queuing; `EVENT_QUEUE_SIZE` increased from 128 to 4096

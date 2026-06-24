@@ -272,12 +272,13 @@ assistance_data_support_list(ProvideCapabilities const& capabilities) {
 
 static A_GNSS_ProvideCapabilities*
 a_gnss_provide_capabilities(ProvideCapabilities const& capabilities) {
-    auto ext2 = ALLOC_ZERO(A_GNSS_ProvideCapabilities::A_GNSS_ProvideCapabilities__ext2);
-    ext2->periodicAssistanceData_r15 =
-        helper::BitStringBuilder{}
-            .set(A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_solicited)
-            .set(A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_unsolicited)
-            .to_bit_string(8);
+    auto ext2            = ALLOC_ZERO(A_GNSS_ProvideCapabilities::A_GNSS_ProvideCapabilities__ext2);
+    auto unsolicited_bit = capabilities.assistance_data.unsolicited_periodic;
+    auto builder         = helper::BitStringBuilder{}.set(
+        A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_solicited);
+    if (unsolicited_bit)
+        builder.set(A_GNSS_ProvideCapabilities__ext2__periodicAssistanceData_r15_unsolicited);
+    ext2->periodicAssistanceData_r15 = builder.to_bit_string(8);
 
     auto message                       = ALLOC_ZERO(A_GNSS_ProvideCapabilities);
     message->assistanceDataSupportList = assistance_data_support_list(capabilities);

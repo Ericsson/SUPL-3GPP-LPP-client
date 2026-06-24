@@ -54,15 +54,19 @@ namespace lpp {
 namespace messages {
 
 static PeriodicAssistanceDataControlParameters_r15*
-periodic_assistance_data_request(PeriodicSessionHandle const& periodic_session) {
+periodic_assistance_data_request(PeriodicSessionHandle const& periodic_session,
+                                 bool                         disable_update_capabilities) {
     if (!periodic_session.is_valid()) {
         return nullptr;
     }
 
     auto ext1 = ALLOC_ZERO(PeriodicAssistanceDataControlParameters_r15::
                                PeriodicAssistanceDataControlParameters_r15__ext1);
-    ext1->updateCapabilities_r15 =
-        helper::BitStringBuilder{}.set(UpdateCapabilities_r15_primaryCellID_r15).to_bit_string(1);
+    if (!disable_update_capabilities) {
+        ext1->updateCapabilities_r15 = helper::BitStringBuilder{}
+                                           .set(UpdateCapabilities_r15_primaryCellID_r15)
+                                           .to_bit_string(1);
+    }
 
     auto message  = ALLOC_ZERO(PeriodicAssistanceDataControlParameters_r15);
     message->ext1 = ext1;
@@ -148,9 +152,9 @@ static ECGI* ecgi_primary_cell_id(supl::Cell const& cell) {
 static CommonIEsRequestAssistanceData*
 common_request_assistance_data(RequestAssistanceData const& request) {
     auto ext2 = ALLOC_ZERO(CommonIEsRequestAssistanceData::CommonIEsRequestAssistanceData__ext2);
-    ext2->primaryCellID_r15 = ncgi_primary_cell_id(request.cell);
-    ext2->periodicAssistanceDataReq_r15 =
-        periodic_assistance_data_request(request.periodic_session);
+    ext2->primaryCellID_r15             = ncgi_primary_cell_id(request.cell);
+    ext2->periodicAssistanceDataReq_r15 = periodic_assistance_data_request(
+        request.periodic_session, request.disable_update_capabilities);
 
     auto message           = ALLOC_ZERO(CommonIEsRequestAssistanceData);
     message->primaryCellID = ecgi_primary_cell_id(request.cell);
@@ -553,7 +557,7 @@ common_request_assistance_data(RequestAssistanceData_Update const& request) {
     auto ext2 = ALLOC_ZERO(CommonIEsRequestAssistanceData::CommonIEsRequestAssistanceData__ext2);
     ext2->primaryCellID_r15 = ncgi_primary_cell_id(request.cell);
     ext2->periodicAssistanceDataReq_r15 =
-        periodic_assistance_data_request(request.periodic_session);
+        periodic_assistance_data_request(request.periodic_session, false);
 
     auto message           = ALLOC_ZERO(CommonIEsRequestAssistanceData);
     message->primaryCellID = ecgi_primary_cell_id(request.cell);

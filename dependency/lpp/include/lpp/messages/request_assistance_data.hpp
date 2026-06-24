@@ -16,6 +16,7 @@ struct RequestAssistanceData {
 
     long delivery_amount;
     bool rtk_antenna_height;
+    bool disable_update_capabilities;
 
     // The periodicity of each assistance data type. A value of 0 means that the assistance data is
     // not requested.
