@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- `example-client`: `--slp-host-cell`/`--slp-host-imsi` generated a malformed H-SLP FQDN (`h-slp.<mcc>.<mnc>.pub.3gppnetwork.org`). Per 3GPP TS 23.003 the labels are now `h-slp.mnc<MNC>.mcc<MCC>.pub.3gppnetwork.org` (MNC before MCC, with `mnc`/`mcc` prefixes); `--slp-host-cell` also reads MCC/MNC by cell type instead of assuming an NR cell
 - `time/gps`: `Gps::from_ymdhms` was computing days from Jan 1 instead of Jan 6 (the GPS epoch), producing incorrect week/TOW for all date-based conversions
 - `ephemeris`: `is_valid()` for GPS/GAL/BDS now handles truncated broadcast week numbers (10/12/13-bit) and week-boundary crossover; an ephemeris from week N+1 queried in late week N is correctly accepted
 

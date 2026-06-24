@@ -1260,11 +1260,32 @@ int main(int argc, char** argv) {
                 return 1;
             }
 
-            // h-slp.%03d.%03d.pub.3gppnetwork.org
+            // mcc/mnc are the first two members of every cell union variant, but
+            // select by type to stay correct and self-documenting.
+            uint64_t mcc;
+            uint64_t mnc;
+            switch (program.cell->type) {
+            case supl::Cell::Type::GSM:
+                mcc = program.cell->data.gsm.mcc;
+                mnc = program.cell->data.gsm.mnc;
+                break;
+            case supl::Cell::Type::LTE:
+                mcc = program.cell->data.lte.mcc;
+                mnc = program.cell->data.lte.mnc;
+                break;
+            case supl::Cell::Type::NR:
+                mcc = program.cell->data.nr.mcc;
+                mnc = program.cell->data.nr.mnc;
+                break;
+            default:
+                ERRORF("cell type is unknown, cannot generate host for --slp-host-cell");
+                return 1;
+            }
+
+            // h-slp.mnc%03d.mcc%03d.pub.3gppnetwork.org
             char buffer[256];
             snprintf(buffer, sizeof(buffer),
-                     "h-slp.%03" PRIu64 ".%03" PRIu64 ".pub.3gppnetwork.org",
-                     program.cell->data.nr.mcc, program.cell->data.nr.mnc);
+                     "h-slp.mnc%03" PRIu64 ".mcc%03" PRIu64 ".pub.3gppnetwork.org", mnc, mcc);
             program.config.location_server.host = buffer;
             INFOF("generated host: \"%s\"", program.config.location_server.host.c_str());
         } else if (program.config.location_server.slp_host_imsi) {
@@ -1285,10 +1306,10 @@ int main(int argc, char** argv) {
             uint64_t mcc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 3))) % 1000;
             uint64_t mnc = (imsi / static_cast<uint64_t>(std::pow(10, digits - 6))) % 1000;
 
-            // h-slp.%03d.%03d.pub.3gppnetwork.org
+            // h-slp.mnc%03d.mcc%03d.pub.3gppnetwork.org
             char buffer[256];
             snprintf(buffer, sizeof(buffer),
-                     "h-slp.%03" PRIu64 ".%03" PRIu64 ".pub.3gppnetwork.org", mcc, mnc);
+                     "h-slp.mnc%03" PRIu64 ".mcc%03" PRIu64 ".pub.3gppnetwork.org", mnc, mcc);
             program.config.location_server.host = buffer;
             INFOF("generated host: \"%s\"", program.config.location_server.host.c_str());
         }
