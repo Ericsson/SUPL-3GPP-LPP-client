@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - `ephemeris`: `is_valid()` for GPS/GAL/BDS now handles truncated broadcast week numbers (10/12/13-bit) and week-boundary crossover; an ephemeris from week N+1 queried in late week N is correctly accepted
 
 ### Added
+- `supl`: optional QoP `horacc` field in SUPL START; new `--ls-horacc` CLI flag to set horizontal accuracy (0-127)
 - `ephemeris`: `toe()` and `week()` accessors on the `Ephemeris` union type
 - `format/rinex`: RINEX 3/4 navigation file parser (`parse_nav_file`) supporting GPS, Galileo (I/NAV only), and BDS
 - `streamline`: sync mode — `System::set_sync_mode(true)` dispatches directly on `push()` without queuing; `EVENT_QUEUE_SIZE` increased from 128 to 4096

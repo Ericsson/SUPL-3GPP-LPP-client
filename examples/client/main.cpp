@@ -1297,6 +1297,8 @@ int main(int argc, char** argv) {
             client->set_interface(*program.config.location_server.interface);
         }
         client->set_tls(program.config.location_server.tls);
+        if (program.config.location_server.horacc)
+            client->set_horacc(*program.config.location_server.horacc);
         program.lpp_clients.push_back(std::unique_ptr<lpp::Client>(client));
 
         client_initialize(program, *client);

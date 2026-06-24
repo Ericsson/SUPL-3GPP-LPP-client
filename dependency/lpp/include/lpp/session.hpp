@@ -8,6 +8,7 @@
 #include <supl/tls.hpp>
 
 #include <functional>
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <vector>
@@ -154,6 +155,7 @@ public:
     std::function<void(Session&, TransactionHandle const&, Message)> on_message;
 
     void set_hack_server_initiated_push(bool value) { mHackServerInitiatedPush = value; }
+    void set_horacc(long horacc) { mHoracc.reset(new long(horacc)); }
 
     static Message              decode_lpp_message(uint8_t const* data, size_t size);
     static std::vector<uint8_t> encode_lpp_message(Message const& message);
@@ -221,6 +223,7 @@ private:
     State                 mNextWriteState;
     State                 mNextErrorState;
     bool                  mHackServerInitiatedPush;
+    std::unique_ptr<long> mHoracc;
 
     friend SessionTask;
 };

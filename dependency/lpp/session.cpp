@@ -358,6 +358,7 @@ NextState Session::state_handshake_send() {
     start.application_id.provider = "Ericsson";
     start.application_id.version  = CLIENT_VERSION;
     start.location_id.cell        = mInitialCell;
+    start.qop_horacc              = mHoracc.get();
 
     if (!mSession->handshake(start)) {
         ERRORF("failed to establish SUPL handshake");

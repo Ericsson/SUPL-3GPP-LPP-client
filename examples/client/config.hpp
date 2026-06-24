@@ -29,14 +29,15 @@ struct LocationServerConfig {
     uint16_t                     port;
     std::unique_ptr<std::string> interface;
 
-    bool        enabled;
-    bool        slp_host_cell;
-    bool        slp_host_imsi;
-    bool        shutdown_on_disconnect;
-    bool        hack_bad_transaction_initiator;
-    bool        hack_never_send_abort;
-    bool        hack_server_initiated_push;
-    std::string output_tag;
+    bool                  enabled;
+    bool                  slp_host_cell;
+    bool                  slp_host_imsi;
+    bool                  shutdown_on_disconnect;
+    bool                  hack_bad_transaction_initiator;
+    bool                  hack_never_send_abort;
+    bool                  hack_server_initiated_push;
+    std::string           output_tag;
+    std::unique_ptr<long> horacc;
 
     supl::TlsConfig tls;
 };

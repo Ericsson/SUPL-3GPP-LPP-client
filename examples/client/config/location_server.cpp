@@ -83,6 +83,12 @@ static args::ValueFlag<std::string> gOutputTag{
     "Tag to apply to LPP messages from the location server",
     {"ls-output-tag"},
 };
+static args::ValueFlag<long> gHoracc{
+    gGroup,
+    "horacc",
+    "SUPL QoP horizontal accuracy encoded value (horacc, 0-127). Default 87 (~3000 m)",
+    {"ls-horacc"},
+};
 static args::Flag gTls{
     gGroup,
     "tls",
@@ -161,6 +167,7 @@ void parse(Config* config) {
 
     if (gShutdownOnDisconnect) ls.shutdown_on_disconnect = true;
     if (gOutputTag) ls.output_tag = gOutputTag.Get();
+    if (gHoracc) ls.horacc.reset(new long(gHoracc.Get()));
 
     ls.tls.enabled     = gTls.Get();
     ls.tls.skip_verify = gTlsSkipVerify.Get();
@@ -193,6 +200,7 @@ void dump(LocationServerConfig const& config) {
            config.hack_bad_transaction_initiator ? "true" : "false");
     DEBUGF("hack-server-initiated-push:     %s",
            config.hack_server_initiated_push ? "true" : "false");
+    DEBUGF("horacc: %s", config.horacc ? std::to_string(*config.horacc).c_str() : "<not set>");
     DEBUGF("tls: %s", config.tls.enabled ? "enabled" : "disabled");
     if (config.tls.enabled) {
         DEBUGF("  skip-verify: %s", config.tls.skip_verify ? "true" : "false");

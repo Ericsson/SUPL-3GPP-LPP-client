@@ -100,6 +100,7 @@ public:
         mHackServerInitiatedPush = value;
         mSession.set_hack_server_initiated_push(value);
     }
+    void set_horacc(long horacc) { mSession.set_horacc(horacc); }
 
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;

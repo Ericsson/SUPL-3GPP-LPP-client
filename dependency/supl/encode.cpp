@@ -13,6 +13,7 @@ EXTERNAL_WARNINGS_PUSH
 #include <OCTET_STRING.h>
 #include <PosProtocolVersion3GPP.h>
 #include <PosProtocolVersion3GPP2.h>
+#include <QoP.h>
 #include <SETId.h>
 #include <ServCellNR.h>
 #include <SessionID.h>
@@ -502,6 +503,12 @@ EncodedMessage encode(Version version, Session::SET& set, Session::SLP& slp, con
     pdu_message.sETCapabilities           = encode_setcapabilities(message.set_capabilities);
     pdu_message.locationId                = encode_locationid(message.location_id);
     pdu_message.ver2_SUPL_START_extension = encode_start_extension(message);
+
+    if (message.qop_horacc) {
+        auto qop        = helper::asn1_allocate<QoP>();
+        qop->horacc     = *message.qop_horacc;
+        pdu_message.qoP = qop;
+    }
 
     print(loglet::Level::Trace, ulp_pdu);
     return encode_uper(ulp_pdu);
