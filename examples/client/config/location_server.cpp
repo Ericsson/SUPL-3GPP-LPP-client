@@ -174,7 +174,13 @@ void parse(Config* config) {
 
     if (gShutdownOnDisconnect) ls.shutdown_on_disconnect = true;
     if (gOutputTag) ls.output_tag = gOutputTag.Get();
-    if (gHoracc) ls.horacc.reset(new long(gHoracc.Get()));
+    if (gHoracc) {
+        auto horacc = gHoracc.Get();
+        if (horacc < 0 || horacc > 127) {
+            throw args::ValidationError("`--ls-horacc` must be in range 0-127");
+        }
+        ls.horacc.reset(new long(horacc));
+    }
 
     ls.tls.enabled     = gTls.Get();
     ls.tls.skip_verify = gTlsSkipVerify.Get();
