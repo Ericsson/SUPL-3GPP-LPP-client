@@ -31,20 +31,6 @@ if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
     exit 1
 fi
 
-# Fail fast if builder image is not available locally and cannot be pulled
-BUILDER_IMAGE="s3lc-builder:${PLATFORM}"
-if ! docker image inspect "$BUILDER_IMAGE" > /dev/null 2>&1; then
-    echo "Builder image '$BUILDER_IMAGE' not found locally. Trying to pull..."
-    REMOTE_BUILDER="${REGISTRY}/builder:${PLATFORM}"
-    if ! docker pull "$REMOTE_BUILDER" 2>/dev/null; then
-        echo ""
-        echo "ERROR: Builder image for '$PLATFORM' is not available locally or in the registry." >&2
-        echo "Contact your supervisor to get the builder images set up." >&2
-        exit 1
-    fi
-    docker tag "$REMOTE_BUILDER" "$BUILDER_IMAGE"
-fi
-
 echo "Building for platform: $PLATFORM"
 echo "Image tag:             $BRANCH"
 echo "Registry:              $REGISTRY"
