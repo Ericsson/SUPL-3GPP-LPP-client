@@ -390,7 +390,7 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
                 run_cmd(['docker', 'push', remote_runtime])
         
         if registry:
-            image_name = f'{registry}/supl-3gpp-lpp-client/{app}/{platform}:{tag}'
+            image_name = f'{registry}/{app}/{platform}:{tag}'
         else:
             image_name = f's3lc/{app}/{platform}:{tag}'
         
@@ -603,8 +603,8 @@ def main():
                         help='Build mode (can specify multiple, default: release)')
     parser.add_argument('--push', action='store_true', help='Push images after building')
     parser.add_argument('--dry-run', action='store_true', help='Show what would be pushed without actually pushing')
-    parser.add_argument('--registry', '-r', default='ghcr.io/ericsson',
-                        help='Container registry (default: ghcr.io/ericsson)')
+    parser.add_argument('--registry', '-r', default='ghcr.io/ericsson/supl-3gpp-lpp-client',
+                        help='Container registry (default: ghcr.io/ericsson/supl-3gpp-lpp-client)')
     parser.add_argument('--tag', '-t', help='Image tag (default: auto-generated)')
     parser.add_argument('--latest', action='store_true', help='Also push as latest (only works with version tags)')
     parser.add_argument('--wip', action='store_true', help='Push as wip tag (cannot be used with version tags or --latest)')

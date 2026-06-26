@@ -2,7 +2,7 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REGISTRY="registry.rosetta.ericssondevops.com/ewasjon/supl-3gpp-lpp-client"
+REGISTRY="${CI_REGISTRY_IMAGE:-registry.rosetta.ericssondevops.com/ewasjon/supl-3gpp-lpp-client}"
 
 PLATFORM="${1:-}"
 if [ -z "$PLATFORM" ]; then
