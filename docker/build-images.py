@@ -211,7 +211,7 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
     if build_mode == 'debug':
         tag += '-debug'
     
-    builder_base = f's3lc-builder:{platform}'
+    builder_base = builder_image_name(builder_registry, platform) if builder_registry else f's3lc-builder:{platform}'
     artifact_image = f's3lc-artifact:{tag}-{platform}'
     
     if built_artifacts is None:
@@ -245,7 +245,7 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
             cmd_artifact.extend(['--platform', platform_config['platform']])
         cmd_artifact.extend([
             '--build-arg', f'BUILDER_IMAGE={builder_base}',
-            '--build-arg', f'BUILD_CACHE_ID=s3lc-cache-{build_mode}-{platform}-{git_branch}-{git_commit}',
+            '--build-arg', f'BUILD_CACHE_ID=s3lc-cache-{build_mode}-{platform}',
             '--build-arg', f'GIT_COMMIT_HASH={git_commit}',
             '--build-arg', f'GIT_BRANCH={git_branch}',
             '--build-arg', f'GIT_DIRTY={git_dirty}',
