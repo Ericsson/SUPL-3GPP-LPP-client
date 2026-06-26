@@ -73,6 +73,7 @@ def runtime_image_name(registry, platform):
     return f'{registry}/runtime:{platform}'
 
 NETWORK_HOST = False
+PROVENANCE_OFF = False
 class Colors:
     GREEN = '\033[92m'
     RED = '\033[91m'
@@ -238,6 +239,8 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
         cmd_artifact = ['docker', 'build']
         if NETWORK_HOST:
             cmd_artifact.extend(['--network=host'])
+        if PROVENANCE_OFF:
+            cmd_artifact.extend(['--provenance=false'])
         if not platform_config.get('cross'):
             cmd_artifact.extend(['--platform', platform_config['platform']])
         cmd_artifact.extend([
@@ -397,6 +400,8 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
         cmd_final = ['docker', 'build']
         if NETWORK_HOST:
             cmd_final.extend(['--network=host'])
+        if PROVENANCE_OFF:
+            cmd_final.extend(['--provenance=false'])
         cmd_final.extend(['--platform', platform_config['platform']])
         cmd_final.extend([
             '--build-arg', f'RUNTIME_BASE={runtime_base}',
@@ -591,6 +596,7 @@ def validate_platforms():
 
 def main():
     global NETWORK_HOST
+    global PROVENANCE_OFF
     
     validate_platforms()
     
@@ -616,9 +622,12 @@ def main():
                         help=f'Build and push builder/runtime images to {INTERNAL_REGISTRY}')
     parser.add_argument('--no-pull-builders', action='store_true',
                         help=f'Build builder/runtime images locally instead of pulling from {INTERNAL_REGISTRY}')
+    parser.add_argument('--no-provenance', action='store_true',
+                        help='Disable BuildKit provenance attestations (needed for some registries)')
     args = parser.parse_args()
     
     NETWORK_HOST = args.network_host
+    PROVENANCE_OFF = args.no_provenance
     
     # Validate --latest flag
     if args.latest and (not args.tag or not args.tag.startswith('v')):
