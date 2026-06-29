@@ -74,8 +74,11 @@ struct EpochLog {
     int      tropo_dnu{-1};
     double   tropo_quality{-1.0};  // -1 = not available
     double   iono_quality_avg{-1.0};
+    double   sf055_avg{-1.0};
     // Per-satellite iono quality: gnss_id -> [(prn, quality)]
     std::unordered_map<long, std::vector<std::pair<uint32_t, double>>> iono_quality_per_sat;
+    // Per-satellite encoded SF055 value: gnss_id -> [(prn, sf055_raw)]
+    std::unordered_map<long, std::vector<std::pair<uint32_t, uint8_t>>> sf055_per_sat;
     // Per-GNSS DNU satellite list (PRN numbers)
     std::unordered_map<long, std::vector<uint32_t>> dnu_satellites;
     // Per-GNSS available satellite list (PRN numbers from OCB)
@@ -153,6 +156,7 @@ public:
     }
     void set_do_not_use_satellite(bool value) { mDoNotUseSatellite = value; }
     void set_do_not_use_atmosphere(bool value) { mDoNotUseAtmosphere = value; }
+    void set_iono_quality_threshold(double value) { mIonoQualityThreshold = value; }
     void enable_epoch_log(bool value) { mEpochLogEnabled = value; }
 
     void set_bias_map(long gnss_id, generator::spartn::BiasMap const& map);
@@ -218,19 +222,20 @@ private:
     bool                               mStecTranform;
     bool                               mFlipGridBitmask;
 
-    bool mFilterByResiduals;
-    bool mFilterByOcb;
-    bool mIgnoreL2L;
-    bool mStecInvalidToZero;
-    bool mSignFlipC00;
-    bool mSignFlipC01;
-    bool mSignFlipC10;
-    bool mSignFlipC11;
-    bool mSignFlipStecResiduals;
-    bool mFlipOrbitCorrection;
-    bool mDoNotUseSatellite;
-    bool mDoNotUseAtmosphere;
-    bool mEpochLogEnabled;
+    bool   mFilterByResiduals;
+    bool   mFilterByOcb;
+    bool   mIgnoreL2L;
+    bool   mStecInvalidToZero;
+    bool   mSignFlipC00;
+    bool   mSignFlipC01;
+    bool   mSignFlipC10;
+    bool   mSignFlipC11;
+    bool   mSignFlipStecResiduals;
+    bool   mFlipOrbitCorrection;
+    bool   mDoNotUseSatellite;
+    bool   mDoNotUseAtmosphere;
+    bool   mEpochLogEnabled;
+    double mIonoQualityThreshold;  // <0 = disabled
 
     bool mGenerateGad;
     bool mGenerateOcb;

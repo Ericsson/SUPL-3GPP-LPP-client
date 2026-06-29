@@ -90,6 +90,10 @@ int main(int argc, char** argv) {
     args::Flag  no_hpac(msg_group, "no-hpac", "Disable HPAC generation", {"no-hpac"});
     args::Flag  no_gad(msg_group, "no-gad", "Disable GAD generation", {"no-gad"});
     args::Flag  no_dnu(msg_group, "no-dnu", "Disable Do-Not-Use satellite flag", {"no-dnu"});
+    args::ValueFlag<double> iono_quality_threshold(
+        msg_group, "threshold",
+        "Set SF013 DNU for STEC when iono quality (meters) exceeds this value (e.g. 1.0)",
+        {"iono-quality-threshold"});
 
     args::Group                  transport_group(parser, "Transport:");
     args::ValueFlag<std::string> crc_type(transport_group, "crc8|crc16|crc24q",
@@ -169,6 +173,7 @@ int main(int argc, char** argv) {
     gen.set_generate_gad(!no_gad);
     gen.set_do_not_use_satellite(!no_dnu);
     gen.set_do_not_use_atmosphere(!no_dnu);
+    if (iono_quality_threshold) gen.set_iono_quality_threshold(args::get(iono_quality_threshold));
     gen.set_continuity_indicator(320.0);
 
     {
@@ -283,8 +288,10 @@ int main(int argc, char** argv) {
                     args::get(dnu_log_file).c_str());
             return 1;
         }
-        fprintf(dnu_out, "gps_week,gps_tow,utc,iono_dnu,tropo_dnu,iono_quality_avg,tropo_quality,"
-                         "dnu_count,dnu_satellites,available_satellites,iono_quality_per_sat\n");
+        fprintf(dnu_out,
+                "gps_week,gps_tow,utc,iono_dnu,tropo_dnu,iono_quality_avg,sf055_avg,tropo_quality,"
+                "dnu_count,dnu_satellites,available_satellites,iono_quality_per_sat,"
+                "sf055_per_sat\n");
         gen.enable_epoch_log(true);
     }
 
@@ -354,8 +361,9 @@ int main(int argc, char** argv) {
                 char time_buf[32];
                 strftime(time_buf, sizeof(time_buf), "%Y-%m-%dT%H:%M:%SZ", &utc_tm);
 
-                fprintf(dnu_out, "%u,%u,%s,%d,%d,%.4f,%.4f,", gps_week, gps_tow, time_buf,
-                        el.iono_dnu, el.tropo_dnu, el.iono_quality_avg, el.tropo_quality);
+                fprintf(dnu_out, "%u,%u,%s,%d,%d,%.4f,%.4f,%.4f,", gps_week, gps_tow, time_buf,
+                        el.iono_dnu, el.tropo_dnu, el.iono_quality_avg, el.sf055_avg,
+                        el.tropo_quality);
                 // Count DNU satellites
                 size_t dnu_count = 0;
                 for (auto const& [_, sats] : el.dnu_satellites)
@@ -386,6 +394,16 @@ int main(int argc, char** argv) {
                     for (auto const& [prn, q] : sats) {
                         if (!first) fprintf(dnu_out, ";");
                         fprintf(dnu_out, "%ld:%u:%.4f", gnss_id, prn, q);
+                        first = false;
+                    }
+                }
+                fprintf(dnu_out, ",");
+                // Per-satellite SF055 raw value
+                first = true;
+                for (auto const& [gnss_id, sats] : el.sf055_per_sat) {
+                    for (auto const& [prn, sf055] : sats) {
+                        if (!first) fprintf(dnu_out, ";");
+                        fprintf(dnu_out, "%ld:%u:%u", gnss_id, prn, static_cast<unsigned>(sf055));
                         first = false;
                     }
                 }

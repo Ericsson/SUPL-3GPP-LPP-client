@@ -177,6 +177,13 @@ static args::Flag gDisableDoNotUseSatellite{
     {"l2s-disable-dnu"},
 };
 
+static args::ValueFlag<double> gIonoQualityThreshold{
+    gGroup,
+    "threshold",
+    "Set SF013 DNU for STEC when iono quality (meters) exceeds this value (e.g. 1.0)",
+    {"l2s-iono-quality-threshold"},
+};
+
 static args::Group gSignalGroup{gGroup, "Signal:"};
 static args::Flag  gIgnoreL2L{
     gSignalGroup,
@@ -356,12 +363,13 @@ void parse(Config* config) {
     lpp2spartn.sign_flip_c11            = false;
     lpp2spartn.sign_flip_stec_residuals = false;
 
-    lpp2spartn.do_not_use_satellite  = true;
-    lpp2spartn.do_not_use_atmosphere = true;
-    lpp2spartn.output_tag            = "";
-    lpp2spartn.crc_type              = generator::spartn::CrcType::CRC16;
-    lpp2spartn.solution_id           = 0;
-    lpp2spartn.solution_processor_id = 0;
+    lpp2spartn.do_not_use_satellite   = true;
+    lpp2spartn.do_not_use_atmosphere  = true;
+    lpp2spartn.iono_quality_threshold = -1.0;
+    lpp2spartn.output_tag             = "";
+    lpp2spartn.crc_type               = generator::spartn::CrcType::CRC16;
+    lpp2spartn.solution_id            = 0;
+    lpp2spartn.solution_processor_id  = 0;
 
     if (gEnable) lpp2spartn.enabled = true;
     if (gNoGPS) lpp2spartn.generate_gps = false;
@@ -399,6 +407,7 @@ void parse(Config* config) {
 
     if (gDisableDoNotUseSatellite) lpp2spartn.do_not_use_satellite = false;
     if (gDisableDoNotUseSatellite) lpp2spartn.do_not_use_atmosphere = false;
+    if (gIonoQualityThreshold) lpp2spartn.iono_quality_threshold = gIonoQualityThreshold.Get();
 
     if (gStecMethod) {
         auto method = gStecMethod.Get();

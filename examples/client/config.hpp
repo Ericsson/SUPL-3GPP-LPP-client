@@ -322,6 +322,7 @@ struct Lpp2SpartnConfig {
     bool                          flip_orbit_correction;
     bool                          do_not_use_satellite;
     bool                          do_not_use_atmosphere;
+    double                        iono_quality_threshold;  // <0 = disabled
     std::string                   output_tag;
     generator::spartn::CrcType    crc_type;
     uint8_t                       solution_id;

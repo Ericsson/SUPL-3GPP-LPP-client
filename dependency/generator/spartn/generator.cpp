@@ -58,9 +58,9 @@ Generator::Generator()
       mStecInvalidToZero(false), mSignFlipC00(false), mSignFlipC01(false), mSignFlipC10(false),
       mSignFlipC11(false), mSignFlipStecResiduals(false), mFlipOrbitCorrection(false),
       mDoNotUseSatellite(true), mDoNotUseAtmosphere(true), mEpochLogEnabled(false),
-      mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true), mGpsSupported(true),
-      mGlonassSupported(true), mGalileoSupported(true), mBeidouSupported(false),
-      mQzssSupported(false), mNavicSupported(false) {}
+      mIonoQualityThreshold(-1.0), mGenerateGad(true), mGenerateOcb(true), mGenerateHpac(true),
+      mGpsSupported(true), mGlonassSupported(true), mGalileoSupported(true),
+      mBeidouSupported(false), mQzssSupported(false), mNavicSupported(false) {}
 
 Generator::~Generator() = default;
 
@@ -189,7 +189,7 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
         }
     }
 
-    // Compute average iono quality
+    // Compute average iono quality; also merge threshold-DNU into epoch log dnu_satellites
     if (mEpochLogEnabled) {
         double sum   = 0.0;
         size_t count = 0;
@@ -200,6 +200,24 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
             }
         }
         if (count > 0) mEpochLog.iono_quality_avg = sum / static_cast<double>(count);
+
+        double sf055_sum   = 0.0;
+        size_t sf055_count = 0;
+        for (auto& [_, sats] : mEpochLog.sf055_per_sat) {
+            for (auto& [__, v] : sats) {
+                sf055_sum += static_cast<double>(v);
+                sf055_count++;
+            }
+        }
+        if (sf055_count > 0) mEpochLog.sf055_avg = sf055_sum / static_cast<double>(sf055_count);
+
+        if (mDoNotUseSatellite) {
+            for (auto& [gnss_id, sat_ids] : mCorrectionData->stec_dnu_satellites) {
+                for (auto sat_id : sat_ids) {
+                    mEpochLog.dnu_satellites[gnss_id].push_back(static_cast<uint32_t>(sat_id + 1));
+                }
+            }
+        }
     }
 
     // Increment generation index

@@ -611,6 +611,16 @@ void Generator::generate_ocb(uint16_t iod) {
                 VERBOSEF("  CAN USE SATELLITE: %ld: %ld: %s %u", gnss_id, satellite.id,
                          do_use_satellite ? "YES" : " NO", do_use_satellite);
             }
+            if (do_use_satellite && mDoNotUseSatellite) {
+                auto it = mCorrectionData->stec_dnu_satellites.find(gnss_id);
+                if (it != mCorrectionData->stec_dnu_satellites.end()) {
+                    if (it->second.count(satellite.id) > 0) {
+                        do_use_satellite = false;
+                        VERBOSEF("  CAN USE SATELLITE: %ld: %ld:  NO [iono quality threshold]",
+                                 gnss_id, satellite.id);
+                    }
+                }
+            }
 
             builder.sf013(!do_use_satellite);
             builder.sf014(satellite.orbit != nullptr, satellite.clock != nullptr,

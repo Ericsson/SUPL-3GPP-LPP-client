@@ -968,8 +968,9 @@ void Generator::generate_hpac(uint16_t iod) {
         if (mCorrectionData->ionosphere_dnu == 1) ionosphere_block_type = 0;
 
         // Populate epoch log quality indicators (first valid value wins)
-        if (mEpochLogEnabled) {
-            if (mEpochLog.tropo_quality < 0.0 && corrections.gridded &&
+        // Also populate stec_dnu_satellites when threshold is configured (independent of log)
+        if (mEpochLogEnabled || mIonoQualityThreshold >= 0.0) {
+            if (mEpochLogEnabled && mEpochLog.tropo_quality < 0.0 && corrections.gridded &&
                 corrections.gridded->troposphericDelayQualityIndicator_r16) {
                 auto q = decode::tropospheric_delay_quality_indicator_r16(
                     *corrections.gridded->troposphericDelayQualityIndicator_r16);
@@ -982,8 +983,37 @@ void Generator::generate_hpac(uint16_t iod) {
                     auto q =
                         decode::stec_quality_indicator_r16(list.array[i]->stecQualityIndicator_r16);
                     if (!q.invalid) {
-                        auto prn = static_cast<uint32_t>(list.array[i]->svID_r16.satellite_id + 1);
-                        mEpochLog.iono_quality_per_sat[gnss_id].emplace_back(prn, q.value);
+                        auto sat_id = list.array[i]->svID_r16.satellite_id;
+                        auto prn    = static_cast<uint32_t>(sat_id + 1);
+
+                        if (mEpochLogEnabled) {
+                            mEpochLog.iono_quality_per_sat[gnss_id].emplace_back(prn, q.value);
+
+                            // Compute SF055 raw value (same logic as MessageBuilder::sf055)
+                            static constexpr double sf055_values[] = {
+                                0.03, 0.05, 0.07,  0.14,  0.28,  0.56,   1.12,  2.24,
+                                4.48, 8.96, 17.92, 35.84, 71.68, 143.36, 287.52};
+                            uint8_t sf055_raw = 0;
+                            if (q.value >= 0.0) {
+                                double  best  = 1e18;
+                                uint8_t found = 0;
+                                for (uint8_t k = 0; k < 15; k++) {
+                                    double d = q.value - sf055_values[k];
+                                    if (d < 0) d = -d;
+                                    if (d < best) {
+                                        best  = d;
+                                        found = k;
+                                    }
+                                }
+                                sf055_raw = static_cast<uint8_t>(found + 1);
+                            }
+                            mEpochLog.sf055_per_sat[gnss_id].emplace_back(prn, sf055_raw);
+                        }
+
+                        // Flag satellite DNU if quality exceeds threshold
+                        if (mIonoQualityThreshold >= 0.0 && q.value > mIonoQualityThreshold) {
+                            mCorrectionData->stec_dnu_satellites[gnss_id].insert(sat_id);
+                        }
                     }
                 }
             }

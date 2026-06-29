@@ -216,6 +216,9 @@ struct CorrectionData {
     int troposphere_dnu{-1};
     int ionosphere_dnu{-1};
 
+    // Per-GNSS set of satellite IDs (0-based) flagged DNU due to iono quality threshold
+    std::unordered_map<long, std::unordered_set<long>> stec_dnu_satellites;
+
     CorrectionData(bool group_by_epoch_time_param)
         : group_by_epoch_time(group_by_epoch_time_param) {}
 

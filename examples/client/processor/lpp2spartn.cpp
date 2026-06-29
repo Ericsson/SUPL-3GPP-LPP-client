@@ -58,6 +58,8 @@ Lpp2Spartn::Lpp2Spartn(ProgramOutput const& output, Lpp2SpartnConfig const& conf
     mGenerator->set_flip_orbit_correction(mConfig.flip_orbit_correction);
     mGenerator->set_do_not_use_satellite(mConfig.do_not_use_satellite);
     mGenerator->set_do_not_use_atmosphere(mConfig.do_not_use_atmosphere);
+    if (mConfig.iono_quality_threshold >= 0.0)
+        mGenerator->set_iono_quality_threshold(mConfig.iono_quality_threshold);
 
     mGenerator->set_generate_gad(mConfig.generate_gad);
     mGenerator->set_generate_ocb(mConfig.generate_ocb);
