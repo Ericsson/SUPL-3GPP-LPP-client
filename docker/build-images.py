@@ -88,7 +88,12 @@ def colorize(text, color):
 
 def run_cmd(cmd, check=True):
     print(f"Running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=check)
+    result = subprocess.run(cmd, capture_output=True, text=True)
+    sys.stdout.write(result.stdout)
+    sys.stderr.write(result.stderr)
+    if result.returncode != 0 and check:
+        print(f"\n{colorize('Command failed with exit code ' + str(result.returncode), Colors.RED)}")
+        raise subprocess.CalledProcessError(result.returncode, cmd)
     return result.returncode == 0
 
 def image_exists(image_name):
@@ -211,7 +216,7 @@ def build_image(app, platform, build_mode, registry=None, tag=None, built_artifa
     if build_mode == 'debug':
         tag += '-debug'
     
-    builder_base = builder_image_name(builder_registry, platform) if builder_registry else f's3lc-builder:{platform}'
+    builder_base = f's3lc-builder:{platform}'
     artifact_image = f's3lc-artifact:{tag}-{platform}'
     
     if built_artifacts is None:
