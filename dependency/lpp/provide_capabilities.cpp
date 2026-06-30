@@ -16,6 +16,7 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-RTK-ObservationsSupport-r15.h>
 #include <GNSS-RTK-ReferenceStationInfoSupport-r15.h>
 #include <GNSS-RTK-ResidualsSupport-r15.h>
+#include <GNSS-ReferenceLocationSupport.h>
 #include <GNSS-SSR-ClockCorrectionsSupport-r15.h>
 #include <GNSS-SSR-CodeBiasSupport-r15.h>
 #include <GNSS-SSR-GriddedCorrectionSupport-r16.h>
@@ -27,9 +28,11 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-SupportList.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
+#include <LocationCoordinateTypes.h>
 #include <PositioningModes.h>
 #include <ProvideCapabilities-r9-IEs.h>
 #include <ProvideCapabilities.h>
+#include <VelocityTypes.h>
 EXTERNAL_WARNINGS_POP
 
 #include <asn.1/bit_string.hpp>
@@ -55,28 +58,33 @@ static CommonIEsProvideCapabilities* common_ies_provide_capabilities(ProvideCapa
     return message;
 }
 
-static GNSS_SupportElement* gnss_support_element(long gnss_id) {
-    auto ha_gnss_modes_r15 = ALLOC_ZERO(PositioningModes);
-    helper::BitStringBuilder{}
-        .set(PositioningModes__posModes_ue_based)
-        .into_bit_string(8, &ha_gnss_modes_r15->posModes);
-
-    auto ext1               = ALLOC_ZERO(GNSS_SupportElement::GNSS_SupportElement__ext1);
-    ext1->ha_gnss_Modes_r15 = ha_gnss_modes_r15;
-
+static GNSS_SupportElement* gnss_support_element(long gnss_id, GnssCapability const& cap,
+                                                 bool velocity) {
     auto message             = ALLOC_ZERO(GNSS_SupportElement);
     message->gnss_ID.gnss_id = gnss_id;
-    message->ext1            = ext1;
 
-    // TODO(ewasjon): Are these needed?
-    helper::BitStringBuilder{}
-        .set(PositioningModes__posModes_ue_based)
-        .set(PositioningModes__posModes_ue_assisted)
-        .into_bit_string(8, &message->agnss_Modes.posModes);
+    auto modes_builder = helper::BitStringBuilder{};
+    if (cap.standalone) modes_builder.set(PositioningModes__posModes_standalone);
+    if (cap.ue_based) modes_builder.set(PositioningModes__posModes_ue_based);
+    if (cap.ue_assisted) modes_builder.set(PositioningModes__posModes_ue_assisted);
+    modes_builder.into_bit_string(8, &message->agnss_Modes.posModes);
 
     helper::BitStringBuilder{}
         .integer(0, 8, 0xFF)
         .into_bit_string(8, &message->gnss_Signals.gnss_SignalIDs);
+
+    message->velocityMeasurementSupport = velocity;
+
+    if (cap.ha_modes) {
+        auto ha_gnss_modes_r15 = ALLOC_ZERO(PositioningModes);
+        helper::BitStringBuilder{}
+            .set(PositioningModes__posModes_ue_based)
+            .into_bit_string(8, &ha_gnss_modes_r15->posModes);
+
+        auto ext1               = ALLOC_ZERO(GNSS_SupportElement::GNSS_SupportElement__ext1);
+        ext1->ha_gnss_Modes_r15 = ha_gnss_modes_r15;
+        message->ext1           = ext1;
+    }
 
     return message;
 }
@@ -84,14 +92,22 @@ static GNSS_SupportElement* gnss_support_element(long gnss_id) {
 static GNSS_SupportList* gnss_support_list(ProvideCapabilities const& capabilities) {
     auto message = ALLOC_ZERO(GNSS_SupportList);
     asn_sequence_empty(&message->list);
+    bool velocity = capabilities.common.velocity;
     if (capabilities.gnss.gps)
-        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_gps));
+        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_gps,
+                                                              capabilities.gnss.gps_cap, velocity));
     if (capabilities.gnss.glonass)
-        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_glonass));
+        asn_sequence_add(&message->list,
+                         gnss_support_element(GNSS_ID__gnss_id_glonass,
+                                              capabilities.gnss.glonass_cap, velocity));
     if (capabilities.gnss.galileo)
-        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_galileo));
+        asn_sequence_add(&message->list,
+                         gnss_support_element(GNSS_ID__gnss_id_galileo,
+                                              capabilities.gnss.galileo_cap, velocity));
     if (capabilities.gnss.beidou)
-        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_bds));
+        asn_sequence_add(
+            &message->list,
+            gnss_support_element(GNSS_ID__gnss_id_bds, capabilities.gnss.beidou_cap, velocity));
     return message;
 }
 
@@ -103,6 +119,10 @@ gnss_rtk_reference_station_info_support_r15(ProvideCapabilities const&) {
 static GNSS_CommonAssistanceDataSupport
 gnss_common_assistance_data_support(ProvideCapabilities const& capabilities) {
     GNSS_CommonAssistanceDataSupport message{};
+
+    if (capabilities.common.reference_location) {
+        message.gnss_ReferenceLocationSupport = ALLOC_ZERO(GNSS_ReferenceLocationSupport);
+    }
 
     if (capabilities.assistance_data.osr) {
         if (!message.ext1)
@@ -284,6 +304,22 @@ a_gnss_provide_capabilities(ProvideCapabilities const& capabilities) {
     message->assistanceDataSupportList = assistance_data_support_list(capabilities);
     message->gnss_SupportList          = gnss_support_list(capabilities);
     message->ext2                      = ext2;
+
+    if (capabilities.common.velocity) {
+        auto vt                                          = ALLOC_ZERO(VelocityTypes);
+        vt->horizontalVelocity                           = true;
+        vt->horizontalWithVerticalVelocity               = true;
+        vt->horizontalVelocityWithUncertainty            = true;
+        vt->horizontalWithVerticalVelocityAndUncertainty = true;
+        message->velocityTypes                           = vt;
+    }
+
+    if (capabilities.common.location_coord_types) {
+        auto lct = ALLOC_ZERO(LocationCoordinateTypes);
+        lct->ellipsoidPointWithAltitudeAndUncertaintyEllipsoid = true;
+        message->locationCoordinateTypes                       = lct;
+    }
+
     return message;
 }
 
@@ -305,7 +341,9 @@ static void provide_capabilities_r9(ProvideCapabilities_r9_IEs& message,
                                     ProvideCapabilities const&  capabilities) {
     message.commonIEsProvideCapabilities = common_ies_provide_capabilities(capabilities);
     message.a_gnss_ProvideCapabilities   = a_gnss_provide_capabilities(capabilities);
-    message.ecid_ProvideCapabilities     = ecid_provide_capabilities(capabilities);
+    if (!capabilities.common.no_ecid) {
+        message.ecid_ProvideCapabilities = ecid_provide_capabilities(capabilities);
+    }
 }
 
 Message create_provide_capabilities(ProvideCapabilities const& capabilities) {

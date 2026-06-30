@@ -149,6 +149,22 @@ struct AssistanceDataConfig {
     bool no_support_galileo;
     bool no_support_beidou;
     bool unsolicited_periodic;
+
+    // ProvideCapabilities options
+    bool cap_gps_standalone;
+    bool cap_glo_ue_based_only;
+    bool cap_gal_ue_based_only;
+    bool cap_gps_no_ha_modes;
+    bool cap_velocity;
+    bool cap_ref_location;
+    bool cap_location_coord_types;
+    bool cap_no_ecid;
+
+    // Additional assistance data request options
+    bool ad_ref_location;
+    bool ad_rti;
+    bool ad_almanac;
+    bool ad_aux_info;
 };
 
 struct FakeLocationInformationConfig {

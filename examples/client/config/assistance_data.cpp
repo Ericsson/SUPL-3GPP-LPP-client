@@ -186,6 +186,82 @@ static args::Flag gNoSupportBds{
     {"ad-no-support-bds"},
 };
 
+static args::Group gCapabilities{gGroup, "Capabilities (ProvideCapabilities):"};
+static args::Flag  gCapGpsStandalone{
+    gCapabilities,
+    "cap-gps-standalone",
+    "Add standalone mode to GPS agnss-Modes",
+     {"cap-gps-standalone"},
+};
+static args::Flag gCapGloUeBasedOnly{
+    gCapabilities,
+    "cap-glo-ue-based-only",
+    "Set GLONASS agnss-Modes to ue-based only (drop ue-assisted)",
+    {"cap-glo-ue-based-only"},
+};
+static args::Flag gCapGalUeBasedOnly{
+    gCapabilities,
+    "cap-gal-ue-based-only",
+    "Set Galileo agnss-Modes to ue-based only (drop ue-assisted)",
+    {"cap-gal-ue-based-only"},
+};
+static args::Flag gCapGpsNoHaModes{
+    gCapabilities,
+    "cap-gps-no-ha-modes",
+    "Suppress ha-gnss-Modes-r15 for GPS",
+    {"cap-gps-no-ha-modes"},
+};
+static args::Flag gCapVelocity{
+    gCapabilities,
+    "cap-velocity",
+    "Include velocityMeasurementSupport and all velocityTypes",
+    {"cap-velocity"},
+};
+static args::Flag gCapRefLocation{
+    gCapabilities,
+    "cap-ref-location",
+    "Include gnss-ReferenceLocationSupport in common assistance data support",
+    {"cap-ref-location"},
+};
+static args::Flag gCapLocationCoordTypes{
+    gCapabilities,
+    "cap-location-coord-types",
+    "Include locationCoordinateTypes (ellipsoidPointWithAltitudeAndUncertaintyEllipsoid)",
+    {"cap-location-coord-types"},
+};
+static args::Flag gCapNoEcid{
+    gCapabilities,
+    "cap-no-ecid",
+    "Omit ecid-ProvideCapabilities",
+    {"cap-no-ecid"},
+};
+
+static args::Group gExtraRequests{gGroup, "Extra Assistance Data Requests:"};
+static args::Flag  gAdRefLocation{
+    gExtraRequests,
+    "ad-ref-location",
+    "Include gnss-ReferenceLocationReq in common assistance data request",
+     {"ad-ref-location"},
+};
+static args::Flag gAdRti{
+    gExtraRequests,
+    "ad-rti",
+    "Include gnss-RealTimeIntegrityReq for GLONASS and Galileo",
+    {"ad-rti"},
+};
+static args::Flag gAdAlmanac{
+    gExtraRequests,
+    "ad-almanac",
+    "Include gnss-AlmanacReq for GLONASS and Galileo",
+    {"ad-almanac"},
+};
+static args::Flag gAdAuxInfo{
+    gExtraRequests,
+    "ad-aux-info",
+    "Include gnss-AuxiliaryInformationReq for all GNSS",
+    {"ad-aux-info"},
+};
+
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gType.HelpChoices({"osr", "ssr"});
@@ -239,6 +315,20 @@ void parse(Config* config) {
     ad.no_support_galileo          = gNoSupportGalileo.Get();
     ad.no_support_beidou           = gNoSupportBds.Get();
     ad.unsolicited_periodic        = gUnsolicitedPeriodic.Get();
+
+    ad.cap_gps_standalone       = gCapGpsStandalone.Get();
+    ad.cap_glo_ue_based_only    = gCapGloUeBasedOnly.Get();
+    ad.cap_gal_ue_based_only    = gCapGalUeBasedOnly.Get();
+    ad.cap_gps_no_ha_modes      = gCapGpsNoHaModes.Get();
+    ad.cap_velocity             = gCapVelocity.Get();
+    ad.cap_ref_location         = gCapRefLocation.Get();
+    ad.cap_location_coord_types = gCapLocationCoordTypes.Get();
+    ad.cap_no_ecid              = gCapNoEcid.Get();
+
+    ad.ad_ref_location = gAdRefLocation.Get();
+    ad.ad_rti          = gAdRti.Get();
+    ad.ad_almanac      = gAdAlmanac.Get();
+    ad.ad_aux_info     = gAdAuxInfo.Get();
 
     if (gDisable) {
         ad.enabled = false;

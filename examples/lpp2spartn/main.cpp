@@ -288,10 +288,10 @@ int main(int argc, char** argv) {
                     args::get(dnu_log_file).c_str());
             return 1;
         }
-        fprintf(dnu_out,
-                "gps_week,gps_tow,utc,iono_dnu,tropo_dnu,iono_quality_avg,sf055_avg,tropo_quality,"
-                "dnu_count,dnu_satellites,available_satellites,iono_quality_per_sat,"
-                "sf055_per_sat\n");
+        fprintf(dnu_out, "gps_week,gps_tow,utc,iono_dnu,tropo_dnu,"
+                         "iono_quality_avg_tecu,sf055_avg_tecu,tropo_quality_m,"
+                         "dnu_count,dnu_satellites,available_satellites,"
+                         "iono_quality_per_sat_tecu,sf055_encoded_per_sat_tecu\n");
         gen.enable_epoch_log(true);
     }
 

@@ -37,6 +37,11 @@ struct RequestAssistanceData {
     long ssr_gridded;
     long ssr_ura;
     long ssr_correction_points;
+
+    bool reference_location_req;  // gnss-ReferenceLocationReq in common
+    bool real_time_integrity;     // gnss-RealTimeIntegrityReq per non-GPS GNSS
+    bool almanac_req;             // gnss-AlmanacReq per non-GPS GNSS
+    bool aux_info_req;            // gnss-AuxiliaryInformationReq unconditionally
 };
 
 struct RequestAssistanceData_Update {

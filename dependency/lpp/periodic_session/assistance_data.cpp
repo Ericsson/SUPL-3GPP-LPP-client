@@ -77,23 +77,28 @@ bool AssistanceDataHandler::request_assistance_data() {
     message_description.disable_update_capabilities = mData.config.disable_update_capabilities;
 
     if (mData.type == PeriodicRequestAssistanceData::Type::OSR) {
-        message_description.rtk_observations           = 1;
-        message_description.rtk_residuals              = 1;
-        message_description.rtk_bias_information       = 1;
+        message_description.rtk_observations           = mData.config.osr_observations;
+        message_description.rtk_residuals              = mData.config.osr_residuals;
+        message_description.rtk_bias_information       = mData.config.osr_bias_information;
         message_description.rtk_reference_station_info = 1;
     } else if (mData.type == PeriodicRequestAssistanceData::Type::SSR) {
-        message_description.ssr_clock             = 5;
-        message_description.ssr_orbit             = 5;
-        message_description.ssr_code_bias         = 5;
-        message_description.ssr_phase_bias        = 5;
-        message_description.ssr_stec              = 5;
-        message_description.ssr_gridded           = 5;
-        message_description.ssr_ura               = 5;
+        message_description.ssr_clock             = mData.config.ssr_clock;
+        message_description.ssr_orbit             = mData.config.ssr_orbit;
+        message_description.ssr_code_bias         = mData.config.ssr_code_bias;
+        message_description.ssr_phase_bias        = mData.config.ssr_phase_bias;
+        message_description.ssr_stec              = mData.config.ssr_stec;
+        message_description.ssr_gridded           = mData.config.ssr_gridded;
+        message_description.ssr_ura               = mData.config.ssr_ura;
         message_description.ssr_correction_points = 1;
     } else {
         WARNF("unknown RequestAssistanceData type");
         return false;
     }
+
+    message_description.reference_location_req = mData.config.reference_location_req;
+    message_description.real_time_integrity    = mData.config.real_time_integrity;
+    message_description.almanac_req            = mData.config.almanac_req;
+    message_description.aux_info_req           = mData.config.aux_info_req;
 
     auto message = messages::create_request_assistance_data(message_description);
     if (!message) {
@@ -120,23 +125,28 @@ bool AssistanceDataHandler::update_assistance_data(supl::Cell cell) {
     message_description.disable_update_capabilities = mData.config.disable_update_capabilities;
 
     if (mData.type == PeriodicRequestAssistanceData::Type::OSR) {
-        message_description.rtk_observations           = 1;
-        message_description.rtk_residuals              = 1;
-        message_description.rtk_bias_information       = 1;
+        message_description.rtk_observations           = mData.config.osr_observations;
+        message_description.rtk_residuals              = mData.config.osr_residuals;
+        message_description.rtk_bias_information       = mData.config.osr_bias_information;
         message_description.rtk_reference_station_info = 1;
     } else if (mData.type == PeriodicRequestAssistanceData::Type::SSR) {
-        message_description.ssr_clock             = 5;
-        message_description.ssr_orbit             = 5;
-        message_description.ssr_code_bias         = 5;
-        message_description.ssr_phase_bias        = 5;
-        message_description.ssr_stec              = 5;
-        message_description.ssr_gridded           = 5;
-        message_description.ssr_ura               = 5;
+        message_description.ssr_clock             = mData.config.ssr_clock;
+        message_description.ssr_orbit             = mData.config.ssr_orbit;
+        message_description.ssr_code_bias         = mData.config.ssr_code_bias;
+        message_description.ssr_phase_bias        = mData.config.ssr_phase_bias;
+        message_description.ssr_stec              = mData.config.ssr_stec;
+        message_description.ssr_gridded           = mData.config.ssr_gridded;
+        message_description.ssr_ura               = mData.config.ssr_ura;
         message_description.ssr_correction_points = 1;
     } else {
         WARNF("unknown RequestAssistanceData type");
         return false;
     }
+
+    message_description.reference_location_req = mData.config.reference_location_req;
+    message_description.real_time_integrity    = mData.config.real_time_integrity;
+    message_description.almanac_req            = mData.config.almanac_req;
+    message_description.aux_info_req           = mData.config.aux_info_req;
 
     auto message = messages::create_request_assistance_data(message_description);
     if (!message) {

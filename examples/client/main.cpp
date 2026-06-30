@@ -112,6 +112,20 @@ static void client_request(Program& program, lpp::Client& client) {
             program.config.assistance_data.delivery_amount,
             program.config.assistance_data.antenna_height,
             program.config.assistance_data.disable_update_capabilities,
+            program.config.assistance_data.rtk_observations,
+            program.config.assistance_data.rtk_residuals,
+            program.config.assistance_data.rtk_bias_information,
+            program.config.assistance_data.ssr_clock,
+            program.config.assistance_data.ssr_orbit,
+            program.config.assistance_data.ssr_code_bias,
+            program.config.assistance_data.ssr_phase_bias,
+            program.config.assistance_data.ssr_stec,
+            program.config.assistance_data.ssr_gridded,
+            program.config.assistance_data.ssr_ura,
+            program.config.assistance_data.ad_ref_location,
+            program.config.assistance_data.ad_rti,
+            program.config.assistance_data.ad_almanac,
+            program.config.assistance_data.ad_aux_info,
         },
         [&program](lpp::Client&, lpp::Message message) {
             INFOF("provide assistance data (non-periodic)");
@@ -260,6 +274,22 @@ static void client_initialize(Program& program, lpp::Client&) {
                                 !program.config.assistance_data.no_support_galileo;
     capabilities.gnss.beidou =
         program.config.assistance_data.beidou && !program.config.assistance_data.no_support_beidou;
+
+    capabilities.gnss.gps_cap     = lpp::default_gnss_capability();
+    capabilities.gnss.glonass_cap = lpp::default_gnss_capability();
+    capabilities.gnss.galileo_cap = lpp::default_gnss_capability();
+    capabilities.gnss.beidou_cap  = lpp::default_gnss_capability();
+
+    auto const& ad = program.config.assistance_data;
+    if (ad.cap_gps_standalone) capabilities.gnss.gps_cap.standalone = true;
+    if (ad.cap_glo_ue_based_only) capabilities.gnss.glonass_cap.ue_assisted = false;
+    if (ad.cap_gal_ue_based_only) capabilities.gnss.galileo_cap.ue_assisted = false;
+    if (ad.cap_gps_no_ha_modes) capabilities.gnss.gps_cap.ha_modes = false;
+
+    capabilities.common.velocity             = ad.cap_velocity;
+    capabilities.common.reference_location   = ad.cap_ref_location;
+    capabilities.common.location_coord_types = ad.cap_location_coord_types;
+    capabilities.common.no_ecid              = ad.cap_no_ecid;
 
     if (program.config.assistance_data.type == lpp::PeriodicRequestAssistanceData::Type::OSR) {
         capabilities.assistance_data.osr = true;

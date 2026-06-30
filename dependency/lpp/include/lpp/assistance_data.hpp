@@ -38,6 +38,23 @@ struct PeriodicRequestAssistanceData {
         bool antenna_height;
         /// @brief If true, updateCapabilities_r15 will not be included in the request
         bool disable_update_capabilities;
+        // OSR rates (seconds)
+        long osr_observations;
+        long osr_residuals;
+        long osr_bias_information;
+        // SSR rates (seconds)
+        long ssr_clock;
+        long ssr_orbit;
+        long ssr_code_bias;
+        long ssr_phase_bias;
+        long ssr_stec;
+        long ssr_gridded;
+        long ssr_ura;
+
+        bool reference_location_req;
+        bool real_time_integrity;
+        bool almanac_req;
+        bool aux_info_req;
     } config;
 
     /// @brief Callback for non-periodic assistance data.

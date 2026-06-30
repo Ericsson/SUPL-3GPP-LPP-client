@@ -8,6 +8,7 @@ EXTERNAL_WARNINGS_PUSH
 #include <CommonIEsRequestAssistanceData.h>
 #include <ECGI.h>
 #include <GLO-RTK-BiasInformationReq-r15.h>
+#include <GNSS-AlmanacReq.h>
 #include <GNSS-AuxiliaryInformationReq.h>
 #include <GNSS-CommonAssistDataReq.h>
 #include <GNSS-GenericAssistDataReq.h>
@@ -20,6 +21,8 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-RTK-ObservationsReq-r15.h>
 #include <GNSS-RTK-ReferenceStationInfoReq-r15.h>
 #include <GNSS-RTK-ResidualsReq-r15.h>
+#include <GNSS-RealTimeIntegrityReq.h>
+#include <GNSS-ReferenceLocationReq.h>
 #include <GNSS-ReferenceTimeReq.h>
 #include <GNSS-SSR-ClockCorrectionsReq-r15.h>
 #include <GNSS-SSR-CodeBiasReq-r15.h>
@@ -276,6 +279,10 @@ static GNSS_CommonAssistDataReq* gnss_common_assist_data_req(RequestAssistanceDa
     message->gnss_ReferenceTimeReq    = gnss_reference_time_req(request);
     message->gnss_IonosphericModelReq = gnss_ionospheric_model_req(request);
 
+    if (request.reference_location_req) {
+        message->gnss_ReferenceLocationReq = ALLOC_ZERO(GNSS_ReferenceLocationReq);
+    }
+
     auto reference_station = gnss_rtk_reference_station_info_req(request);
     if (reference_station) {
         auto ext1 = ALLOC_ZERO(GNSS_CommonAssistDataReq::GNSS_CommonAssistDataReq__ext1);
@@ -295,7 +302,7 @@ static GNSS_CommonAssistDataReq* gnss_common_assist_data_req(RequestAssistanceDa
 
 static GNSS_AuxiliaryInformationReq* gnss_auxiliary_info_req(RequestAssistanceData const& request,
                                                              long) {
-    if (request.rtk_observations > 0) {
+    if (request.aux_info_req || request.rtk_observations > 0) {
         auto message = ALLOC_ZERO(GNSS_AuxiliaryInformationReq);
         return message;
     }
@@ -439,6 +446,14 @@ gnss_generic_assist_data_req_element(RequestAssistanceData const& request, long 
     message->gnss_ID.gnss_id              = gnss_id;
     message->gnss_AuxiliaryInformationReq = gnss_auxiliary_info_req(request, gnss_id);
     message->gnss_NavigationModelReq      = gnss_navigation_model_req(request);
+
+    if (request.real_time_integrity && gnss_id != GNSS_ID__gnss_id_gps) {
+        message->gnss_RealTimeIntegrityReq = ALLOC_ZERO(GNSS_RealTimeIntegrityReq);
+    }
+
+    if (request.almanac_req && gnss_id != GNSS_ID__gnss_id_gps) {
+        message->gnss_AlmanacReq = ALLOC_ZERO(GNSS_AlmanacReq);
+    }
 
     auto rtk_observations = gnss_rtk_observations_req(request);
     auto rtk_bias_info    = glo_rtk_bias_information_req(request, gnss_id);

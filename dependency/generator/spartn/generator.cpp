@@ -201,11 +201,14 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
         }
         if (count > 0) mEpochLog.iono_quality_avg = sum / static_cast<double>(count);
 
-        double sf055_sum   = 0.0;
-        size_t sf055_count = 0;
+        static constexpr double SF055_METERS[] = {0.03,  0.05,  0.07,  0.14,   0.28,
+                                                  0.56,  1.12,  2.24,  4.48,   8.96,
+                                                  17.92, 35.84, 71.68, 143.36, 287.52};
+        double                  sf055_sum      = 0.0;
+        size_t                  sf055_count    = 0;
         for (auto& [_, sats] : mEpochLog.sf055_per_sat) {
             for (auto& [__, v] : sats) {
-                sf055_sum += static_cast<double>(v);
+                if (v > 0 && v <= 15) sf055_sum += SF055_METERS[static_cast<size_t>(v) - 1];
                 sf055_count++;
             }
         }
