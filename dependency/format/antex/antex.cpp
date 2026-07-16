@@ -417,6 +417,15 @@ std::unique_ptr<Antex> Antex::from_string(std::string const& data) {
                     auto east_str  = trim(line.substr(10, 10));
                     auto up_str    = trim(line.substr(20, 10));
 
+                    // Store the phase-center offset (mm -> m). For satellites the
+                    // NORTH/EAST/UP columns hold the body-frame X/Y/Z components.
+                    double pco_n = 0.0, pco_e = 0.0, pco_u = 0.0;
+                    parse_float(north_str, pco_n);
+                    parse_float(east_str, pco_e);
+                    parse_float(up_str, pco_u);
+                    frequency->eccentricities =
+                        Float3{pco_n * MM_TO_M, pco_e * MM_TO_M, pco_u * MM_TO_M};
+
                     if (!std::getline(stream, line)) {
                         ERRORF("failed to read no azimuth");
                         return nullptr;
@@ -663,6 +672,27 @@ bool Antex::phase_variation(SatelliteId const& satellite_id, SignalId const& sig
         return antenna->phase_variation(signal_id, azimuth_rad, nadir_rad, phase_variation);
     }
 
+    return false;
+}
+
+bool Antenna::pco(FrequencyType type, Float3& out) const {
+    auto it = frequencies.find(type);
+    if (it == frequencies.end()) return false;
+    out = it->second->eccentricities;
+    return true;
+}
+
+bool Antex::pco(SatelliteId const& satellite_id, FrequencyType type, ts::Tai const& time,
+                Float3& out) const {
+    auto it = antennas.find(satellite_id);
+    if (it == antennas.end()) return false;
+
+    auto gps_time = ts::Gps{time};
+    for (auto& antenna : it->second) {
+        if (antenna->valid_from_set && gps_time < antenna->valid_from) continue;
+        if (antenna->valid_until_set && gps_time > antenna->valid_until) continue;
+        return antenna->pco(type, out);
+    }
     return false;
 }
 

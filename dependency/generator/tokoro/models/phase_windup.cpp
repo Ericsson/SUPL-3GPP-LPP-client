@@ -291,6 +291,9 @@ PhaseWindup model_phase_windup(ts::Tai const& time, SatelliteState const& satell
     result.correction_velocity = phw_velocity;
     result.correction_angle    = phw_yaw;
     result.valid               = true;
+    result.sat_x               = sx_angle;
+    result.sat_y               = sy_angle;
+    result.sat_z               = sz_angle;
     return result;
 }
 

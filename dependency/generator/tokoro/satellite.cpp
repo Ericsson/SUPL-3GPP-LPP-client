@@ -110,6 +110,34 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
         mNextState.clock_correction    = mClockCorrection.correction(ref_time_next);
     }
 
+    // Broadcast APC reference (iono-free pair the ephemeris orbit/clock refers
+    // to). Depends on GNSS (and, in future, the nav message type).
+    auto set_apc_reference = [](ephemeris::Ephemeris::Type type, SatelliteState& state) {
+        switch (type) {
+        case ephemeris::Ephemeris::Type::GPS:
+        case ephemeris::Ephemeris::Type::QZS:
+            state.apc_ref_a     = FrequencyType::L1;
+            state.apc_ref_fa    = 1575.42e6;
+            state.apc_ref_b     = FrequencyType::L2;
+            state.apc_ref_fb    = 1227.60e6;
+            state.apc_ref_valid = true;
+            break;
+        case ephemeris::Ephemeris::Type::GAL:
+            state.apc_ref_a     = FrequencyType::E1;
+            state.apc_ref_fa    = 1575.42e6;
+            state.apc_ref_b     = FrequencyType::E5b;
+            state.apc_ref_fb    = 1207.140e6;
+            state.apc_ref_valid = true;
+            break;
+        default:
+            // BeiDou/other: reference is ambiguous, apply PCV only.
+            state.apc_ref_valid = false;
+            break;
+        }
+    };
+    set_apc_reference(eph.mType, mCurrentState);
+    set_apc_reference(eph.mType, mNextState);
+
     mEnabled = true;
 }
 

@@ -189,15 +189,17 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
 void Observation::compute_antenna_phase_variation(format::antex::Antex const& antex) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
     mAntennaPhaseVariation.valid = false;
+    mAntennaPcoRange             = 0.0;  // PCO intentionally not applied (PCV only)
 
-    format::antex::PhaseVariation phase_variation{};
+    // Phase-variation pattern (nadir/azimuth dependent), phase only.
+    format::antex::PhaseVariation pv{};
     if (!antex.phase_variation(mSvId, mSignalId, mCurrent->reception_time, mCurrent->true_azimuth,
-                               mCurrent->true_nadir, phase_variation)) {
+                               mCurrent->true_nadir, pv)) {
         VERBOSEF("antenna phase variation not found");
         return;
     }
 
-    mAntennaPhaseVariation.correction = phase_variation.value;
+    mAntennaPhaseVariation.correction = pv.value;
     mAntennaPhaseVariation.valid      = true;
 }
 #endif
@@ -467,13 +469,15 @@ void Observation::compute_ranges() NOEXCEPT {
         VERBOSEF("phase_windup: ---");
     }
 
-    auto antenna_phase_variation = 0.0;
+    auto antenna_pco = 0.0;  // geometric PCO offset on LOS: code + phase
+    auto antenna_pcv = 0.0;  // phase-variation pattern: phase only
     if (mAntennaPhaseVariation.valid) {
-        antenna_phase_variation = mAntennaPhaseVariation.correction;
-        VERBOSEF("ant_phase:    %+24.10f (%gm)", antenna_phase_variation,
-                 mAntennaPhaseVariation.correction);
+        antenna_pco = mAntennaPcoRange;
+        antenna_pcv = mAntennaPhaseVariation.correction;
+        VERBOSEF("ant_pco:      %+24.10f (%gm)", antenna_pco, antenna_pco);
+        VERBOSEF("ant_pcv:      %+24.10f (%gm)", antenna_pcv, antenna_pcv);
 #ifdef DATA_TRACING
-        dt_obs.antenna_phase_variation = antenna_phase_variation;
+        dt_obs.antenna_phase_variation = antenna_pco + antenna_pcv;
 #endif
     } else {
         VERBOSEF("ant_phase:    ---");
@@ -497,13 +501,13 @@ void Observation::compute_ranges() NOEXCEPT {
         auto phase_correction0 = clock0 + phase_bias - stec0 + tropo0;
         auto phase_correction1 = clock1 + phase_bias - stec1 + tropo1;
 
-        auto final_code_correction0 = shapiro0 + earth_solid_tides0;
-        auto final_code_correction1 = shapiro1 + earth_solid_tides1;
+        auto final_code_correction0 = shapiro0 + earth_solid_tides0 + antenna_pco;
+        auto final_code_correction1 = shapiro1 + earth_solid_tides1 + antenna_pco;
 
         auto final_phase_correction0 =
-            shapiro0 + earth_solid_tides0 + phase_windup0 + antenna_phase_variation;
+            shapiro0 + earth_solid_tides0 + phase_windup0 + antenna_pco + antenna_pcv;
         auto final_phase_correction1 =
-            shapiro1 + earth_solid_tides1 + phase_windup1 + antenna_phase_variation;
+            shapiro1 + earth_solid_tides1 + phase_windup1 + antenna_pco + antenna_pcv;
 
         auto code_result0 = true_range0 + clock_bias0 + code_correction0 + final_code_correction0;
         auto code_result1 = true_range1 + clock_bias1 + code_correction1 + final_code_correction1;
@@ -561,7 +565,7 @@ void Observation::compute_ranges() NOEXCEPT {
                                    mTropospheric.wet :
                                    (mTropospheric.valid_model ? mTropospheric.model_wet : 0.0);
         row.phase_windup     = phase_windup0;
-        row.ant_phase        = antenna_phase_variation;
+        row.ant_phase        = antenna_pco + antenna_pcv;
         row.cnr              = mCarrierToNoiseRatio;
         row.lock_time        = mLockTime.seconds;
         row.frequency_mhz    = mFrequency * 1.0e-3;  // kHz → MHz
@@ -579,9 +583,9 @@ void Observation::compute_ranges() NOEXCEPT {
             row.stec_total = stec0;
             auto tropo0    = row.tropo_total;
             row.code_correction =
-                clock0 + code_bias + stec0 + tropo0 + shapiro0 + earth_solid_tides0;
+                clock0 + code_bias + stec0 + tropo0 + shapiro0 + earth_solid_tides0 + antenna_pco;
             row.phase_correction = clock0 + phase_bias - stec0 + tropo0 + shapiro0 +
-                                   earth_solid_tides0 + phase_windup0 + antenna_phase_variation;
+                                   earth_solid_tides0 + phase_windup0 + antenna_pco + antenna_pcv;
             row.code_range  = mCodeRange;
             row.phase_range = mPhaseRange;
             row.phase_rate  = mPhaseRangeRate;

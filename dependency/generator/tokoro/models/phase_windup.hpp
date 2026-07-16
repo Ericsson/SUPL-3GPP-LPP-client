@@ -12,6 +12,11 @@ struct PhaseWindup {
     double correction_velocity;  // cycles
     double correction_angle;     // cycles
     bool   valid;
+
+    // Satellite antenna (yaw-steering) body basis in ECEF, for PCO projection.
+    Float3 sat_x;
+    Float3 sat_y;
+    Float3 sat_z;
 };
 
 struct SatelliteState;

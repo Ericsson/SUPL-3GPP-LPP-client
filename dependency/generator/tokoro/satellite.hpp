@@ -10,6 +10,7 @@
 
 #include <ephemeris/ephemeris.hpp>
 #include <gnss/satellite_id.hpp>
+#include <gnss/signal_id.hpp>
 #include <maths/float3.hpp>
 #include <time/gps.hpp>
 #include <time/tai.hpp>
@@ -49,6 +50,14 @@ struct SatelliteState {
 
     /// SSR clock correction evaluated at emission time
     double clock_correction;
+
+    /// Broadcast APC reference for the antenna PCO combination (from the
+    /// ephemeris GNSS/nav type). apc_ref_valid=false means PCV only.
+    FrequencyType apc_ref_a{FrequencyType::UNKNOWN};
+    FrequencyType apc_ref_b{FrequencyType::UNKNOWN};
+    double        apc_ref_fa{0.0};
+    double        apc_ref_fb{0.0};
+    bool          apc_ref_valid{false};
 
     PhaseWindup     phase_windup;
     Shapiro         shapiro;

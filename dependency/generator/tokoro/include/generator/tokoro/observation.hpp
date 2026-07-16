@@ -136,7 +136,8 @@ private:
     Correction        mPhaseBias;
     TroposphericDelay mTropospheric;
     IonosphericDelay  mIonospheric;
-    Correction        mAntennaPhaseVariation;
+    Correction        mAntennaPhaseVariation;  // PCV pattern (phase only), metres
+    double            mAntennaPcoRange{0.0};   // PCO projected on LOS (code+phase), metres
 
     double mPhaseRange;
     double mPhaseRangeRate;

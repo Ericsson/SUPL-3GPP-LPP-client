@@ -54,6 +54,7 @@ struct Config {
     bool                     no_gps    = false;
     bool                     no_gal    = false;
     bool                     no_bds    = false;
+    bool                     antenna   = false;  // enable ANTEX PCO/PCV correction
 };
 
 static Config parse_args(int argc, char** argv) {
@@ -110,6 +111,8 @@ static Config parse_args(int argc, char** argv) {
             cfg.no_gal = true;
         else if (arg == "--no-bds")
             cfg.no_bds = true;
+        else if (arg == "--antenna" || arg == "--antenna-pcv")
+            cfg.antenna = true;
         else {
             fprintf(stderr, "Unknown argument: %s\n", arg.c_str());
             exit(1);
@@ -189,6 +192,7 @@ int main(int argc, char** argv) {
     ref_station->set_shapiro_correction(true);
     ref_station->set_earth_solid_tides_correction(true);
     ref_station->set_phase_windup_correction(true);
+    ref_station->set_antenna_phase_variation_correction(cfg.antenna);
     if (!cfg.diag_dir.empty()) ref_station->set_diag_output(cfg.diag_dir);
 
     // Open output

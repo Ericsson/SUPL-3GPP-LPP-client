@@ -77,6 +77,7 @@ struct Antenna {
 
     bool phase_variation(SignalId const& signal_id, double azimuth, double elevation,
                          PhaseVariation& phase_variation) const;
+    bool pco(FrequencyType type, Float3& out) const;
 };
 
 class Antex {
@@ -87,6 +88,11 @@ public:
     bool phase_variation(SatelliteId const& satellite_id, SignalId const& signal_id,
                          ts::Tai const& time, double azimuth, double elevation,
                          PhaseVariation& phase_variation) const;
+
+    // Phase-center offset (metres, satellite body frame X/Y/Z stored in N/E/U)
+    // for the given signal frequency, valid at the given time.
+    bool pco(SatelliteId const& satellite_id, FrequencyType type, ts::Tai const& time,
+             Float3& out) const;
 
     static std::unique_ptr<Antex> from_file(std::string const& path);
     static std::unique_ptr<Antex> from_string(std::string const& data);
