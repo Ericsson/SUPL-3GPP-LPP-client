@@ -37,23 +37,9 @@ struct SnapshotIonosphericPolynomial;
 struct CorrectionData {
     ts::Tai const& latest_correction_time() const { return mLatestCorrectionTime; }
 
-    SignalCorrection const* signal_corrections(SatelliteId id) const {
-        auto it = mSignal.find(id);
-        if (it != mSignal.end()) return &it->second;
-        return nullptr;
-    }
-
-    OrbitCorrection const* orbit_correction(SatelliteId id) const {
-        auto it = mOrbit.find(id);
-        if (it != mOrbit.end()) return &it->second;
-        return nullptr;
-    }
-
-    ClockCorrection const* clock_correction(SatelliteId id) const {
-        auto it = mClock.find(id);
-        if (it != mClock.end()) return &it->second;
-        return nullptr;
-    }
+    SignalCorrection const* signal_corrections(SatelliteId id) const NOEXCEPT;
+    OrbitCorrection const*  orbit_correction(SatelliteId id) const NOEXCEPT;
+    ClockCorrection const*  clock_correction(SatelliteId id) const NOEXCEPT;
 
     IonosphericPolynomial const* ionospheric_polynomial(SatelliteId id) const {
         auto it = mIonosphericPolynomial.find(id);
@@ -98,6 +84,16 @@ struct CorrectionData {
 #endif
 
     CorrectionPointSet const* correction_point_set;
+
+    // Maximum age (seconds) for each SSR correction component, measured as
+    // latest_correction_time - component.epoch_time. Negative or zero disables
+    // the check (default) and preserves legacy behaviour of applying the last-known
+    // correction indefinitely.
+    double max_orbit_age = -1.0;
+    double max_clock_age = -1.0;
+    double max_bias_age  = -1.0;  // shared for code bias and phase bias
+    double max_iono_age  = -1.0;
+    double max_tropo_age = -1.0;
 
 private:
     ts::Tai mLatestCorrectionTime;

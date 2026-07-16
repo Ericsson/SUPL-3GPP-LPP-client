@@ -42,8 +42,13 @@ struct Config {
     std::string              diag_dir;
     std::string              antex_file;
     std::vector<std::string> nav_files;
-    double                   ubx_shift = -72000.0;
-    double                   stop_time = 0.0;
+    double                   ubx_shift     = -72000.0;
+    double                   stop_time     = 0.0;
+    double                   max_orbit_age = 15.0;
+    double                   max_clock_age = 15.0;
+    double                   max_bias_age  = 15.0;
+    double                   max_iono_age  = 90.0;
+    double                   max_tropo_age = 90.0;
     double                   pos_x = 0, pos_y = 0, pos_z = 0;
     int                      eph_cache = 512;
     bool                     no_gps    = false;
@@ -74,6 +79,23 @@ static Config parse_args(int argc, char** argv) {
             cfg.ubx_shift = std::stod(next());
         else if (arg == "--stop-time")
             cfg.stop_time = std::stod(next());
+        else if (arg == "--max-age") {
+            double v          = std::stod(next());
+            cfg.max_orbit_age = v;
+            cfg.max_clock_age = v;
+            cfg.max_bias_age  = v;
+            cfg.max_iono_age  = v;
+            cfg.max_tropo_age = v;
+        } else if (arg == "--max-orbit-age")
+            cfg.max_orbit_age = std::stod(next());
+        else if (arg == "--max-clock-age")
+            cfg.max_clock_age = std::stod(next());
+        else if (arg == "--max-bias-age")
+            cfg.max_bias_age = std::stod(next());
+        else if (arg == "--max-iono-age")
+            cfg.max_iono_age = std::stod(next());
+        else if (arg == "--max-tropo-age")
+            cfg.max_tropo_age = std::stod(next());
         else if (arg == "--pos-x")
             cfg.pos_x = std::stod(next());
         else if (arg == "--pos-y")
@@ -127,6 +149,11 @@ int main(int argc, char** argv) {
     auto generator = std::make_unique<generator::tokoro::Generator>();
     generator->set_iod_consistency_check(true);
     generator->set_ephemeris_max_cache(static_cast<size_t>(cfg.eph_cache));
+    generator->set_max_orbit_age(cfg.max_orbit_age);
+    generator->set_max_clock_age(cfg.max_clock_age);
+    generator->set_max_bias_age(cfg.max_bias_age);
+    generator->set_max_iono_age(cfg.max_iono_age);
+    generator->set_max_tropo_age(cfg.max_tropo_age);
 
     // Load nav files
     for (auto& nav_path : cfg.nav_files) {

@@ -59,8 +59,16 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
         return false;
     }
 
-    auto& grid   = grid_it->second;
-    auto  status = grid.tropospheric(llh, correction);
+    auto& grid = grid_it->second;
+    if (max_tropo_age > 0.0) {
+        auto age = mLatestCorrectionTime - grid.epoch_time;
+        if (age > max_tropo_age) {
+            WARNF("tropospheric grid correction is too old (%.1fs > %.1fs limit) - dropping", age,
+                  max_tropo_age);
+            return false;
+        }
+    }
+    auto status = grid.tropospheric(llh, correction);
     if (status == GridData::GridStatus::PositionOutsideGrid) {
         WARNF("tropospheric correction not available: position outside grid");
         return false;

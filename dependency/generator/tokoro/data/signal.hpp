@@ -27,11 +27,13 @@ namespace tokoro {
 struct CodeBiasCorrection {
     uint16_t ssr_iod;
     double   bias;
+    ts::Tai  epoch_time;
 };
 
 struct PhaseBiasCorrection {
     uint16_t ssr_iod;
     double   bias;
+    ts::Tai  epoch_time;
 };
 
 struct SignalCorrection {

@@ -197,6 +197,18 @@ public:
     void process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
 
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
+    void set_max_orbit_age(double seconds) NOEXCEPT { mMaxOrbitAge = seconds; }
+    void set_max_clock_age(double seconds) NOEXCEPT { mMaxClockAge = seconds; }
+    void set_max_bias_age(double seconds) NOEXCEPT { mMaxBiasAge = seconds; }
+    void set_max_iono_age(double seconds) NOEXCEPT { mMaxIonoAge = seconds; }
+    void set_max_tropo_age(double seconds) NOEXCEPT { mMaxTropoAge = seconds; }
+    void set_max_all_age(double seconds) NOEXCEPT {
+        mMaxOrbitAge = seconds;
+        mMaxClockAge = seconds;
+        mMaxBiasAge  = seconds;
+        mMaxIonoAge  = seconds;
+        mMaxTropoAge = seconds;
+    }
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
     void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
@@ -277,10 +289,15 @@ private:
     std::unique_ptr<format::antex::Antex> mAntex;
 #endif
 
-    bool mIodConsistencyCheck;
-    bool mUseReceptionTimeForOrbitAndClockCorrections;
-    bool mUseOrbitCorrectionInIteration;
-    bool mIgnoreBitmask;
+    bool   mIodConsistencyCheck;
+    double mMaxOrbitAge = -1.0;
+    double mMaxClockAge = -1.0;
+    double mMaxBiasAge  = -1.0;
+    double mMaxIonoAge  = -1.0;
+    double mMaxTropoAge = -1.0;
+    bool   mUseReceptionTimeForOrbitAndClockCorrections;
+    bool   mUseOrbitCorrectionInIteration;
+    bool   mIgnoreBitmask;
 
     mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;
 

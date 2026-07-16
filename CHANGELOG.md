@@ -12,6 +12,7 @@ All notable changes to this project will be documented in this file.
 - `ephemeris`: `is_valid()` for GPS/GAL/BDS now handles truncated broadcast week numbers (10/12/13-bit) and week-boundary crossover; an ephemeris from week N+1 queried in late week N is correctly accepted
 
 ### Added
+- `tokoro`: per-component SSR correction max-age enforcement across all five correction types (orbit, clock, code/phase bias, STEC polynomial, gridded tropo/iono). Each component has an independent limit measured as `latest_correction_time − component.epoch_time`; exceeding the limit causes the component — and therefore the satellite — to be withheld. `Generator` exposes `set_max_orbit_age`, `set_max_clock_age`, `set_max_bias_age`, `set_max_iono_age`, `set_max_tropo_age`, and `set_max_all_age`. `example-client` defaults to 15 s (orbit/clock/bias) and 90 s (iono/tropo) via `--tkr-max-orbit-age`, `--tkr-max-clock-age`, `--tkr-max-bias-age`, `--tkr-max-iono-age`, `--tkr-max-tropo-age`, and `--tkr-max-age` (all at once). `tokoro-post` uses the same defaults via `--max-orbit-age`, `--max-clock-age`, `--max-bias-age`, `--max-iono-age`, `--max-tropo-age`, and `--max-age`. Negative or zero disables the check. Replaces the previous iono-only `set_max_ionospheric_staleness` / `--tkr-max-iono-staleness` API.
 - `supl`: optional QoP `horacc` field in SUPL START; new `--ls-horacc` CLI flag to set horizontal accuracy (0-127)
 - `lpp`: `--ad-no-update-capabilities` flag to suppress `updateCapabilities_r15` in periodic assistance data requests
 - `lpp`: `--ad-unsolicited-periodic` flag to advertise unsolicited periodic assistance data support in ProvideCapabilities
@@ -22,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - `scheduler`: `ScheduledEvent` methods guard against use outside a scheduler context; timer clamps zero-duration to 1 ns to prevent `timerfd_settime` disarm
 - `client-io`: `TbinInput` gains per-source timestamp shift, stop-time cutoff, non-realtime drain loop, and 60s progress logging; `InputsConfig` gains `sync_mode` / `--input-sync-mode`; tbin `shift=` and `stop=` options wired in
 - `tokoro`: per-satellite (`SatDiagFile`) and per-signal (`DiagFile`) diagnostic `.diag` file output, enabled via `set_diag_output(dir)`
+- `tokoro`: `IONO_QUAL` and `IONO_EPOCH` columns in the per-satellite `satellite.diag` exposing the SSR STEC quality indicator (1-sigma, TECU) and the STEC message epoch (assistance-data update time, TAI seconds) alongside the ionospheric polynomial coefficients
 - `tokoro`: satellite tracks disable reason, orbit/clock correction availability flags, and `eph_week`/`eph_toe` in `SatelliteState`
 - `tokoro/generator`: configurable ephemeris cache size (`set_ephemeris_max_cache`); elevation-masked satellites are processed for diagnostics before exclusion; diag output integrated into `generate()`
 - `example-client`: remove periodic VRS/CPS re-emission; add `--tkr-nav-file`, `--tkr-deduplicate-epochs`, `--tkr-diag-dir`, `--tkr-eph-cache`; Galileo sig_id 1 (ZED-X20P E1-B) accepted; shutdown defers interrupt immediately

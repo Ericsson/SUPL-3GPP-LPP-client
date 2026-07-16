@@ -361,6 +361,12 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.iono_ref_lat  = iono_poly->reference_point_latitude;
                 row.iono_ref_lon  = iono_poly->reference_point_longitude;
                 row.has_iono_poly = true;
+                if (iono_poly->quality_indicator_valid) {
+                    row.iono_quality     = iono_poly->quality_indicator;
+                    row.has_iono_quality = true;
+                }
+                row.iono_epoch_sec = iono_poly->epoch_time.timestamp().full_seconds();
+                row.has_iono_epoch = true;
             }
 
             // Geometry + evaluated clock (available if update() completed successfully)
@@ -763,6 +769,11 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
         mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
     }
     mCorrectionData->correction_point_set = mCorrectionPointSet.get();
+    mCorrectionData->max_orbit_age        = mMaxOrbitAge;
+    mCorrectionData->max_clock_age        = mMaxClockAge;
+    mCorrectionData->max_bias_age         = mMaxBiasAge;
+    mCorrectionData->max_iono_age         = mMaxIonoAge;
+    mCorrectionData->max_tropo_age        = mMaxTropoAge;
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
@@ -1309,6 +1320,11 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
             input.correction_point_set.number_of_steps_longitude;
         mCorrectionPointSet->bitmask          = input.correction_point_set.bitmask;
         mCorrectionData->correction_point_set = mCorrectionPointSet.get();
+        mCorrectionData->max_orbit_age        = mMaxOrbitAge;
+        mCorrectionData->max_clock_age        = mMaxClockAge;
+        mCorrectionData->max_bias_age         = mMaxBiasAge;
+        mCorrectionData->max_iono_age         = mMaxIonoAge;
+        mCorrectionData->max_tropo_age        = mMaxTropoAge;
     }
 
     TRACEF("load correction data");

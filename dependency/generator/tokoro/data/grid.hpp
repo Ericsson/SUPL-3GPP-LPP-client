@@ -128,6 +128,7 @@ struct GridData {
     long                   number_of_steps_latitude;
     long                   number_of_steps_longitude;
     std::vector<GridPoint> grid_points;
+    ts::Tai                epoch_time;
 };
 
 }  // namespace tokoro

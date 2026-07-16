@@ -329,6 +329,11 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
     mGenerator->set_ephemeris_max_cache(mConfig.ephemeris_max_cache);
+    mGenerator->set_max_orbit_age(mConfig.max_orbit_age);
+    mGenerator->set_max_clock_age(mConfig.max_clock_age);
+    mGenerator->set_max_bias_age(mConfig.max_bias_age);
+    mGenerator->set_max_iono_age(mConfig.max_iono_age);
+    mGenerator->set_max_tropo_age(mConfig.max_tropo_age);
 
     if (mConfig.fake_correction_point_set) {
         auto const& f = *mConfig.fake_correction_point_set;

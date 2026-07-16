@@ -363,6 +363,56 @@ static args::ValueFlag<int> gEphemerisMaxCache{
     10,
 };
 
+static args::ValueFlag<double> gMaxAge{
+    gGroup,
+    "seconds",
+    "Set maximum correction age for all components at once. Per-component flags override this. "
+    "Negative or zero disables (default: disabled).",
+    {"tkr-max-age"},
+    -1.0,
+};
+
+static args::ValueFlag<double> gMaxOrbitAge{
+    gGroup,
+    "seconds",
+    "Maximum age for orbit corrections (default: 15.0s). Negative or zero disables.",
+    {"tkr-max-orbit-age"},
+    15.0,
+};
+
+static args::ValueFlag<double> gMaxClockAge{
+    gGroup,
+    "seconds",
+    "Maximum age for clock corrections (default: 15.0s). Negative or zero disables.",
+    {"tkr-max-clock-age"},
+    15.0,
+};
+
+static args::ValueFlag<double> gMaxBiasAge{
+    gGroup,
+    "seconds",
+    "Maximum age for code and phase bias corrections (default: 15.0s). Negative or zero disables.",
+    {"tkr-max-bias-age"},
+    15.0,
+};
+
+static args::ValueFlag<double> gMaxIonoAge{
+    gGroup,
+    "seconds",
+    "Maximum age for ionospheric (STEC polynomial and grid) corrections (default: 90.0s). "
+    "Negative or zero disables.",
+    {"tkr-max-iono-age"},
+    90.0,
+};
+
+static args::ValueFlag<double> gMaxTropoAge{
+    gGroup,
+    "seconds",
+    "Maximum age for tropospheric grid corrections (default: 90.0s). Negative or zero disables.",
+    {"tkr-max-tropo-age"},
+    90.0,
+};
+
 #ifdef ENABLE_TOKORO_SNAPSHOT
 static args::Flag gRecordSnapshot{
     gGroup,
@@ -448,6 +498,27 @@ void parse(Config* config) {
     tokoro.deduplicate_epochs  = false;
     tokoro.output_tag          = "";
     tokoro.ephemeris_max_cache = static_cast<size_t>(gEphemerisMaxCache.Get());
+
+    // Per-component max correction age: start from per-component defaults, then apply
+    // --tkr-max-age as an override for all, then per-component flags override individually.
+    tokoro.max_orbit_age = gMaxOrbitAge.Get();
+    tokoro.max_clock_age = gMaxClockAge.Get();
+    tokoro.max_bias_age  = gMaxBiasAge.Get();
+    tokoro.max_iono_age  = gMaxIonoAge.Get();
+    tokoro.max_tropo_age = gMaxTropoAge.Get();
+    if (gMaxAge) {
+        auto all             = gMaxAge.Get();
+        tokoro.max_orbit_age = all;
+        tokoro.max_clock_age = all;
+        tokoro.max_bias_age  = all;
+        tokoro.max_iono_age  = all;
+        tokoro.max_tropo_age = all;
+    }
+    if (gMaxOrbitAge) tokoro.max_orbit_age = gMaxOrbitAge.Get();
+    if (gMaxClockAge) tokoro.max_clock_age = gMaxClockAge.Get();
+    if (gMaxBiasAge) tokoro.max_bias_age = gMaxBiasAge.Get();
+    if (gMaxIonoAge) tokoro.max_iono_age = gMaxIonoAge.Get();
+    if (gMaxTropoAge) tokoro.max_tropo_age = gMaxTropoAge.Get();
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     tokoro.record_snapshot      = false;

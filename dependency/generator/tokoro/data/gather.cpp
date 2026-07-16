@@ -228,6 +228,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
             CodeBiasCorrection correction{};
             correction.ssr_iod                      = static_cast<uint16_t>(ssr_iod);
             correction.bias                         = decode::code_bias_r15(signal->codeBias_r15);
+            correction.epoch_time                   = epoch_time;
             signal_corrections.code_bias[signal_id] = correction;
 
             VERBOSEF("code bias: %3s %-16s %+f", satellite_id.name(), signal_id.name(),
@@ -276,8 +277,9 @@ void CorrectionData::add_correction(long                          gnss_id,
             mSignals[satellite_id].insert(signal_id);
 
             PhaseBiasCorrection correction{};
-            correction.ssr_iod = static_cast<uint16_t>(ssr_iod);
-            correction.bias    = decode::phase_bias_r16(signal->phaseBias_r16);
+            correction.ssr_iod    = static_cast<uint16_t>(ssr_iod);
+            correction.bias       = decode::phase_bias_r16(signal->phaseBias_r16);
+            correction.epoch_time = epoch_time;
             signal_corrections.phase_bias[signal_id] = correction;
 
             VERBOSEF("phase bias: %3s %-16s %+f", satellite_id.name(), signal_id.name(),
@@ -340,6 +342,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
 
         poly.quality_indicator_valid = !stec_quality_indicator.invalid;
         poly.quality_indicator       = stec_quality_indicator.value;
+        poly.epoch_time              = epoch_time;
 
 #ifdef DATA_TRACING
         datatrace::Option<long>   quality_indiciator_class{};
@@ -417,7 +420,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
         }
     }
 
-    auto& grid_data = mGrid[satellite_gnss];
+    auto& grid_data      = mGrid[satellite_gnss];
+    grid_data.epoch_time = epoch_time;
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
         if (!element) continue;

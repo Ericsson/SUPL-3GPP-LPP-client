@@ -28,6 +28,7 @@ add_library(dependency_generator_tokoro STATIC
 
     "data/orbit.cpp"
     "data/clock.cpp"
+    "data/correction.cpp"
     "data/grid.cpp"
     "data/set.cpp"
     "data/ionosphere.cpp"

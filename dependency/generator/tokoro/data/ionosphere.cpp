@@ -46,62 +46,93 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
                                  IonosphericCorrection& correction) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    auto has_polynomial = false;
-    auto has_gridded    = false;
+    auto has_polynomial   = false;
+    auto has_gridded      = false;
+    auto polynomial_stale = false;
 
     correction = {};
 
     auto it = mIonosphericPolynomial.find(sv_id);
     if (it != mIonosphericPolynomial.end()) {
         auto& polynomial = it->second;
-        auto  latitude   = (llh.x * constant::RAD2DEG) - polynomial.reference_point_latitude;
-        auto  longitude  = (llh.y * constant::RAD2DEG) - polynomial.reference_point_longitude;
 
-        VERBOSEF("polynomial:");
-        VERBOSEF("  c00: %.14f", polynomial.c00);
-        VERBOSEF("  c01: %.14f", polynomial.c01);
-        VERBOSEF("  c10: %.14f", polynomial.c10);
-        VERBOSEF("  c11: %.14f", polynomial.c11);
-
-        VERBOSEF("  px: %.14f", llh.x * constant::RAD2DEG);
-        VERBOSEF("  rx: %.14f", polynomial.reference_point_latitude);
-        VERBOSEF("  dx: %.14f", latitude);
-
-        VERBOSEF("  py: %.14f", llh.y * constant::RAD2DEG);
-        VERBOSEF("  ry: %.14f", polynomial.reference_point_longitude);
-        VERBOSEF("  dy: %.14f", longitude);
-
-        auto c00 = polynomial.c00;
-        auto c01 = polynomial.c01 * latitude;
-        auto c10 = polynomial.c10 * longitude;
-        auto c11 = polynomial.c11 * latitude * longitude;
-
-        VERBOSEF("    c00: %.14f", c00);
-        VERBOSEF("    c01: %.14f", c01);
-        VERBOSEF("    c10: %.14f", c10);
-        VERBOSEF("    c11: %.14f", c11);
-
-        has_polynomial                 = true;
-        correction.polynomial_residual = c00 + c01 + c10 + c11;
-
-        if (polynomial.quality_indicator_valid) {
-            correction.quality_valid = true;
-            correction.quality       = polynomial.quality_indicator;
+        if (max_iono_age > 0.0) {
+            auto age = mLatestCorrectionTime - polynomial.epoch_time;
+            if (age > max_iono_age) {
+                WARNF("ionospheric polynomial for %s is too old (%.1fs > %.1fs limit) - dropping",
+                      sv_id.name(), age, max_iono_age);
+                polynomial_stale = true;
+            }
         }
+
+        if (!polynomial_stale) {
+            auto latitude  = (llh.x * constant::RAD2DEG) - polynomial.reference_point_latitude;
+            auto longitude = (llh.y * constant::RAD2DEG) - polynomial.reference_point_longitude;
+
+            VERBOSEF("polynomial:");
+            VERBOSEF("  c00: %.14f", polynomial.c00);
+            VERBOSEF("  c01: %.14f", polynomial.c01);
+            VERBOSEF("  c10: %.14f", polynomial.c10);
+            VERBOSEF("  c11: %.14f", polynomial.c11);
+
+            VERBOSEF("  px: %.14f", llh.x * constant::RAD2DEG);
+            VERBOSEF("  rx: %.14f", polynomial.reference_point_latitude);
+            VERBOSEF("  dx: %.14f", latitude);
+
+            VERBOSEF("  py: %.14f", llh.y * constant::RAD2DEG);
+            VERBOSEF("  ry: %.14f", polynomial.reference_point_longitude);
+            VERBOSEF("  dy: %.14f", longitude);
+
+            auto c00 = polynomial.c00;
+            auto c01 = polynomial.c01 * latitude;
+            auto c10 = polynomial.c10 * longitude;
+            auto c11 = polynomial.c11 * latitude * longitude;
+
+            VERBOSEF("    c00: %.14f", c00);
+            VERBOSEF("    c01: %.14f", c01);
+            VERBOSEF("    c10: %.14f", c10);
+            VERBOSEF("    c11: %.14f", c11);
+
+            has_polynomial                 = true;
+            correction.polynomial_residual = c00 + c01 + c10 + c11;
+
+            if (polynomial.quality_indicator_valid) {
+                correction.quality_valid = true;
+                correction.quality       = polynomial.quality_indicator;
+            }
+        }  // !polynomial_stale
+    }
+
+    if (polynomial_stale) {
+        // The polynomial is the dominant STEC term; without a fresh one the grid
+        // residual alone is not a valid correction, so treat the whole ionospheric
+        // correction as unavailable (the satellite is withheld when iono is required).
+        return false;
     }
 
     auto grid_it = mGrid.find(sv_id.gnss());
     if (grid_it != mGrid.end()) {
-        auto status = grid_it->second.ionospheric(sv_id, llh, correction.grid_residual);
-        if (status == GridData::GridStatus::Success) {
-            has_gridded = true;
-        } else if (status == GridData::GridStatus::PositionOutsideGrid) {
-            WARNF("ionospheric correction not available for %s: position outside grid",
-                  sv_id.name());
-        } else if (status == GridData::GridStatus::MissingSatelliteData) {
-            WARNF("ionospheric correction not available for %s: satellite data missing from grid "
-                  "points",
-                  sv_id.name());
+        bool grid_stale = false;
+        if (max_iono_age > 0.0) {
+            auto age = mLatestCorrectionTime - grid_it->second.epoch_time;
+            if (age > max_iono_age) {
+                WARNF("ionospheric grid for %s is too old (%.1fs > %.1fs limit) - dropping",
+                      sv_id.name(), age, max_iono_age);
+                grid_stale = true;
+            }
+        }
+        if (!grid_stale) {
+            auto status = grid_it->second.ionospheric(sv_id, llh, correction.grid_residual);
+            if (status == GridData::GridStatus::Success) {
+                has_gridded = true;
+            } else if (status == GridData::GridStatus::PositionOutsideGrid) {
+                WARNF("ionospheric correction not available for %s: position outside grid",
+                      sv_id.name());
+            } else if (status == GridData::GridStatus::MissingSatelliteData) {
+                WARNF("ionospheric correction not available for %s: satellite data missing from "
+                      "grid points",
+                      sv_id.name());
+            }
         }
     } else if (!has_polynomial) {
         WARNF("ionospheric correction not available: no grid for GNSS (missing assistance data)");

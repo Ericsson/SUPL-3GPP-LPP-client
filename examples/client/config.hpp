@@ -424,7 +424,12 @@ struct TokoroConfig {
     bool                     deduplicate_epochs;
     std::string              output_tag;
     std::string              diag_output_dir;
-    size_t                   ephemeris_max_cache;  // per-satellite ephemeris cache size
+    size_t                   ephemeris_max_cache;   // per-satellite ephemeris cache size
+    double                   max_orbit_age = -1.0;  // s; <0 or 0 disables
+    double                   max_clock_age = -1.0;
+    double                   max_bias_age  = -1.0;  // shared for code bias and phase bias
+    double                   max_iono_age  = -1.0;
+    double                   max_tropo_age = -1.0;
 
     struct FakeCorrectionPointSet {
         uint16_t set_id;

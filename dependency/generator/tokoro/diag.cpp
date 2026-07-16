@@ -339,6 +339,9 @@ void SatDiagFile::write_header() noexcept {
     fprintf(mFile, "IONO_C11              Ionospheric polynomial C11, TECU/deg^2\n");
     fprintf(mFile, "IONO_REF_LAT          Ionospheric polynomial reference latitude, degrees\n");
     fprintf(mFile, "IONO_REF_LON          Ionospheric polynomial reference longitude, degrees\n");
+    fprintf(mFile, "IONO_QUAL             SSR STEC quality indicator (1-sigma), TECU\n");
+    fprintf(mFile,
+            "IONO_EPOCH            SSR STEC message epoch (assistance-data update), TAI seconds\n");
     fprintf(mFile, "SHAPIRO               Shapiro relativistic delay, meters\n");
     fprintf(mFile, "SOLID_TIDES           Earth solid tides displacement, meters\n");
     fprintf(mFile, "DISCARD_REASON        Reason for discard (- if valid)\n");
@@ -371,6 +374,8 @@ void SatDiagFile::write_header() noexcept {
     hdr(mFile, "IONO_C11", 9);
     hdr(mFile, "IONO_REF_LAT", 12);
     hdr(mFile, "IONO_REF_LON", 12);
+    hdr(mFile, "IONO_QUAL", 9);
+    hdr(mFile, "IONO_EPOCH", 16);
     hdr(mFile, "SHAPIRO", 10);
     hdr(mFile, "SOLID_TIDES", 11);
     fprintf(mFile, "  DISCARD_REASON\n");
@@ -448,7 +453,7 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
     }
 
     // Iono polynomial
-    char ic00[16], ic01[16], ic10[16], ic11[16], irlat[16], irlon[16];
+    char ic00[16], ic01[16], ic10[16], ic11[16], irlat[16], irlon[16], iqual[16];
     if (row.has_iono_poly) {
         snprintf(ic00, sizeof(ic00), "%+9.4f", row.iono_c00);
         snprintf(ic01, sizeof(ic01), "%+9.4f", row.iono_c01);
@@ -464,6 +469,15 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
         snprintf(irlat, sizeof(irlat), "%12s", "-");
         snprintf(irlon, sizeof(irlon), "%12s", "-");
     }
+    if (row.has_iono_quality)
+        snprintf(iqual, sizeof(iqual), "%9.4f", row.iono_quality);
+    else
+        snprintf(iqual, sizeof(iqual), "%9s", "-");
+    char iepoch[24];
+    if (row.has_iono_epoch)
+        snprintf(iepoch, sizeof(iepoch), "%16.3f", row.iono_epoch_sec);
+    else
+        snprintf(iepoch, sizeof(iepoch), "%16s", "-");
 
     // Shapiro & solid tides
     char shapiro_s[16], solid_tides_s[16];
@@ -482,12 +496,12 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
             "  %s  %s  %s"
             "  %s  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s  %s"
-            "  %s  %s  %s  %s  %s  %s"
+            "  %s  %s  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s\n",
             prefix, ts.c_str(), row.prn, true_range_s, eph_range_s, orbit_s, elev_s, azim_s,
             nadir_s, eph_clock_s, eph_week_s, eph_toe_s, orb_r, orb_a, orb_c, orb_rd, orb_ad,
             orb_cd, orb_iod, clk_c0, clk_c1, clk_c2, clk_corr, ic00, ic01, ic10, ic11, irlat, irlon,
-            shapiro_s, solid_tides_s,
+            iqual, iepoch, shapiro_s, solid_tides_s,
             row.discard_reason.empty() ? "-" : row.discard_reason.c_str());
 }
 

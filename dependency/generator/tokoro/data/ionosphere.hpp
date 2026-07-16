@@ -35,14 +35,15 @@ struct IonosphericCorrection {
 };
 
 struct IonosphericPolynomial {
-    double c00;
-    double c01;
-    double c10;
-    double c11;
-    double reference_point_latitude;
-    double reference_point_longitude;
-    double quality_indicator;
-    bool   quality_indicator_valid;
+    double  c00;
+    double  c01;
+    double  c10;
+    double  c11;
+    double  reference_point_latitude;
+    double  reference_point_longitude;
+    double  quality_indicator;
+    bool    quality_indicator_valid;
+    ts::Tai epoch_time;  // SSR STEC message epoch (assistance-data update time)
 };
 
 struct IonosphereGridPoint {
