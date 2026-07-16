@@ -26,6 +26,7 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-SSR-URA-Support-r16.h>
 #include <GNSS-SupportElement.h>
 #include <GNSS-SupportList.h>
+#include <GNSS-TimeModelListSupport.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
 #include <LocationCoordinateTypes.h>
@@ -59,7 +60,7 @@ static CommonIEsProvideCapabilities* common_ies_provide_capabilities(ProvideCapa
 }
 
 static GNSS_SupportElement* gnss_support_element(long gnss_id, GnssCapability const& cap,
-                                                 bool velocity) {
+                                                 bool velocity, bool limited_signals) {
     auto message             = ALLOC_ZERO(GNSS_SupportElement);
     message->gnss_ID.gnss_id = gnss_id;
 
@@ -69,8 +70,9 @@ static GNSS_SupportElement* gnss_support_element(long gnss_id, GnssCapability co
     if (cap.ue_assisted) modes_builder.set(PositioningModes__posModes_ue_assisted);
     modes_builder.into_bit_string(8, &message->agnss_Modes.posModes);
 
+    uint8_t signal_ids = limited_signals ? 0x80 : 0xFF;
     helper::BitStringBuilder{}
-        .integer(0, 8, 0xFF)
+        .integer(0, 8, signal_ids)
         .into_bit_string(8, &message->gnss_Signals.gnss_SignalIDs);
 
     message->velocityMeasurementSupport = velocity;
@@ -92,22 +94,24 @@ static GNSS_SupportElement* gnss_support_element(long gnss_id, GnssCapability co
 static GNSS_SupportList* gnss_support_list(ProvideCapabilities const& capabilities) {
     auto message = ALLOC_ZERO(GNSS_SupportList);
     asn_sequence_empty(&message->list);
-    bool velocity = capabilities.common.velocity;
+    bool velocity        = capabilities.common.velocity;
+    bool limited_signals = capabilities.gnss.limited_signals;
     if (capabilities.gnss.gps)
-        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_gps,
-                                                              capabilities.gnss.gps_cap, velocity));
+        asn_sequence_add(&message->list,
+                         gnss_support_element(GNSS_ID__gnss_id_gps, capabilities.gnss.gps_cap,
+                                              velocity, limited_signals));
     if (capabilities.gnss.glonass)
-        asn_sequence_add(&message->list,
-                         gnss_support_element(GNSS_ID__gnss_id_glonass,
-                                              capabilities.gnss.glonass_cap, velocity));
+        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_glonass,
+                                                              capabilities.gnss.glonass_cap,
+                                                              velocity, limited_signals));
     if (capabilities.gnss.galileo)
-        asn_sequence_add(&message->list,
-                         gnss_support_element(GNSS_ID__gnss_id_galileo,
-                                              capabilities.gnss.galileo_cap, velocity));
+        asn_sequence_add(&message->list, gnss_support_element(GNSS_ID__gnss_id_galileo,
+                                                              capabilities.gnss.galileo_cap,
+                                                              velocity, limited_signals));
     if (capabilities.gnss.beidou)
-        asn_sequence_add(
-            &message->list,
-            gnss_support_element(GNSS_ID__gnss_id_bds, capabilities.gnss.beidou_cap, velocity));
+        asn_sequence_add(&message->list,
+                         gnss_support_element(GNSS_ID__gnss_id_bds, capabilities.gnss.beidou_cap,
+                                              velocity, limited_signals));
     return message;
 }
 
@@ -139,21 +143,24 @@ gnss_common_assistance_data_support(ProvideCapabilities const& capabilities) {
     return message;
 }
 
-static void gnss_signal_ids_fill(GNSS_SignalIDs& signals) {
-    helper::BitStringBuilder{}.integer(0, 8, 0xFF).into_bit_string(8, &signals.gnss_SignalIDs);
+static void gnss_signal_ids_fill(GNSS_SignalIDs& signals, bool limited) {
+    uint8_t value = limited ? 0xF8 : 0xFF;
+    helper::BitStringBuilder{}.integer(0, 8, value).into_bit_string(8, &signals.gnss_SignalIDs);
 
-    if (!signals.ext1) signals.ext1 = ALLOC_ZERO(GNSS_SignalIDs::GNSS_SignalIDs__ext1);
-    signals.ext1->gnss_SignalIDs_Ext_r15 = ALLOC_ZERO(BIT_STRING_t);
+    if (!limited) {
+        if (!signals.ext1) signals.ext1 = ALLOC_ZERO(GNSS_SignalIDs::GNSS_SignalIDs__ext1);
+        signals.ext1->gnss_SignalIDs_Ext_r15 = ALLOC_ZERO(BIT_STRING_t);
 
-    helper::BitStringBuilder{}
-        .integer(0, 8, 0xFF)
-        .into_bit_string(8, signals.ext1->gnss_SignalIDs_Ext_r15);
+        helper::BitStringBuilder{}
+            .integer(0, 8, 0xFF)
+            .into_bit_string(8, signals.ext1->gnss_SignalIDs_Ext_r15);
+    }
 }
 
 static GNSS_RTK_ObservationsSupport_r15*
 gnss_rtk_observations_support_r15(ProvideCapabilities const&) {
     auto message = ALLOC_ZERO(GNSS_RTK_ObservationsSupport_r15);
-    gnss_signal_ids_fill(message->gnssSignalIDs_r15);
+    gnss_signal_ids_fill(message->gnssSignalIDs_r15, false);
     return message;
 }
 
@@ -190,15 +197,19 @@ gnss_ssr_orbit_corrections_support_r15(ProvideCapabilities const&) {
     return message;
 }
 
-static GNSS_SSR_CodeBiasSupport_r15* gnss_ssr_code_bias_support_r15(ProvideCapabilities const&) {
+static GNSS_SSR_CodeBiasSupport_r15*
+gnss_ssr_code_bias_support_r15(ProvideCapabilities const& capabilities) {
     auto message = ALLOC_ZERO(GNSS_SSR_CodeBiasSupport_r15);
-    gnss_signal_ids_fill(message->signal_and_tracking_mode_ID_Sup_r15);
+    gnss_signal_ids_fill(message->signal_and_tracking_mode_ID_Sup_r15,
+                         capabilities.assistance_data.limited_bias_signals);
     return message;
 }
 
-static GNSS_SSR_PhaseBiasSupport_r16* gnss_ssr_phase_bias_support_r16(ProvideCapabilities const&) {
+static GNSS_SSR_PhaseBiasSupport_r16*
+gnss_ssr_phase_bias_support_r16(ProvideCapabilities const& capabilities) {
     auto message = ALLOC_ZERO(GNSS_SSR_PhaseBiasSupport_r16);
-    gnss_signal_ids_fill(message->signal_and_tracking_mode_ID_Sup_r16);
+    gnss_signal_ids_fill(message->signal_and_tracking_mode_ID_Sup_r16,
+                         capabilities.assistance_data.limited_bias_signals);
     return message;
 }
 
@@ -224,7 +235,14 @@ gnss_generic_assist_data_support_element(long gnss_id, ProvideCapabilities const
     auto message             = ALLOC_ZERO(GNSS_GenericAssistDataSupportElement);
     message->gnss_ID.gnss_id = gnss_id;
 
-    if (capabilities.assistance_data.osr) {
+    bool suppress_ssr =
+        (gnss_id == GNSS_ID__gnss_id_gps && capabilities.assistance_data.gps_no_ssr);
+
+    if (suppress_ssr) {
+        message->gnss_TimeModelsSupport = ALLOC_ZERO(GNSS_TimeModelListSupport);
+    }
+
+    if (capabilities.assistance_data.osr && !suppress_ssr) {
         if (!message->ext2)
             message->ext2 = ALLOC_ZERO(
                 GNSS_GenericAssistDataSupportElement::GNSS_GenericAssistDataSupportElement__ext2);
@@ -236,7 +254,7 @@ gnss_generic_assist_data_support_element(long gnss_id, ProvideCapabilities const
             glo_rtk_bias_information_support_r15(gnss_id, capabilities);
     }
 
-    if (capabilities.assistance_data.ssr) {
+    if (capabilities.assistance_data.ssr && !suppress_ssr) {
         if (!message->ext2)
             message->ext2 = ALLOC_ZERO(
                 GNSS_GenericAssistDataSupportElement::GNSS_GenericAssistDataSupportElement__ext2);

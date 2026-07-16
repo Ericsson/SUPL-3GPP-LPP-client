@@ -160,6 +160,9 @@ struct AssistanceDataConfig {
     bool cap_ref_location;
     bool cap_location_coord_types;
     bool cap_no_ecid;
+    bool cap_limited_signals;
+    bool cap_gps_no_ssr;
+    bool cap_limited_bias_signals;
 
     // Additional assistance data request options
     bool ad_ref_location;

@@ -16,6 +16,8 @@ struct ProvideCapabilities {
         bool osr;
         bool ssr;
         bool unsolicited_periodic;
+        bool gps_no_ssr;            // suppress SSR for GPS in generic assist, add TimeModel only
+        bool limited_bias_signals;  // code/phase bias SignalIDs → 0xF8, no Ext
     } assistance_data;
 
     /// @brief The GNSS systems that are supported
@@ -24,6 +26,7 @@ struct ProvideCapabilities {
         bool           glonass;
         bool           galileo;
         bool           beidou;
+        bool           limited_signals;  // gnss-SignalIDs → 0x80 (1 signal) in support list
         GnssCapability gps_cap;
         GnssCapability glonass_cap;
         GnssCapability galileo_cap;

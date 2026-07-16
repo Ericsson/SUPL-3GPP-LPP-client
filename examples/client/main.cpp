@@ -286,6 +286,8 @@ static void client_initialize(Program& program, lpp::Client&) {
     if (ad.cap_gal_ue_based_only) capabilities.gnss.galileo_cap.ue_assisted = false;
     if (ad.cap_gps_no_ha_modes) capabilities.gnss.gps_cap.ha_modes = false;
 
+    capabilities.gnss.limited_signals = ad.cap_limited_signals;
+
     capabilities.common.velocity             = ad.cap_velocity;
     capabilities.common.reference_location   = ad.cap_ref_location;
     capabilities.common.location_coord_types = ad.cap_location_coord_types;
@@ -300,6 +302,8 @@ static void client_initialize(Program& program, lpp::Client&) {
 
     capabilities.assistance_data.unsolicited_periodic =
         program.config.assistance_data.unsolicited_periodic;
+    capabilities.assistance_data.gps_no_ssr           = ad.cap_gps_no_ssr;
+    capabilities.assistance_data.limited_bias_signals = ad.cap_limited_bias_signals;
 
     program.lpp_clients[0]->set_capabilities(capabilities);
 

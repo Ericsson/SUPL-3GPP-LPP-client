@@ -235,6 +235,24 @@ static args::Flag gCapNoEcid{
     "Omit ecid-ProvideCapabilities",
     {"cap-no-ecid"},
 };
+static args::Flag gCapLimitedSignals{
+    gCapabilities,
+    "cap-limited-signals",
+    "Reduce gnss-SignalIDs to 0x80 (1 signal) in GNSS support list",
+    {"cap-limited-signals"},
+};
+static args::Flag gCapGpsNoSsr{
+    gCapabilities,
+    "cap-gps-no-ssr",
+    "Suppress SSR support for GPS in generic assist (include TimeModel only)",
+    {"cap-gps-no-ssr"},
+};
+static args::Flag gCapLimitedBiasSignals{
+    gCapabilities,
+    "cap-limited-bias-signals",
+    "Reduce code/phase bias SignalIDs to 0xF8 (5 signals, no Ext)",
+    {"cap-limited-bias-signals"},
+};
 
 static args::Group gExtraRequests{gGroup, "Extra Assistance Data Requests:"};
 static args::Flag  gAdRefLocation{
@@ -324,6 +342,9 @@ void parse(Config* config) {
     ad.cap_ref_location         = gCapRefLocation.Get();
     ad.cap_location_coord_types = gCapLocationCoordTypes.Get();
     ad.cap_no_ecid              = gCapNoEcid.Get();
+    ad.cap_limited_signals      = gCapLimitedSignals.Get();
+    ad.cap_gps_no_ssr           = gCapGpsNoSsr.Get();
+    ad.cap_limited_bias_signals = gCapLimitedBiasSignals.Get();
 
     ad.ad_ref_location = gAdRefLocation.Get();
     ad.ad_rti          = gAdRti.Get();
