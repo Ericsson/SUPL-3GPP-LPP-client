@@ -79,6 +79,12 @@ static args::Flag gHackServerInitiatedPush{
     "push ProvideAssistanceData with wrong initiator flag)",
     {"ls-hack-server-initiated-push"},
 };
+static args::Flag gDisableSequenceNumber{
+    gGroup,
+    "disable-sequence-number",
+    "Omit the 'sequenceNumber' field from all outgoing LPP messages",
+    {"ls-disable-sequence-number"},
+};
 static args::ValueFlag<std::string> gOutputTag{
     gGroup,
     "tag",
@@ -137,6 +143,7 @@ void parse(Config* config) {
     ls.hack_bad_transaction_initiator = gHackBadTransactionInitiator.Get();
     ls.hack_never_send_abort          = gHackNeverSendAbort.Get();
     ls.hack_server_initiated_push     = gHackServerInitiatedPush.Get();
+    ls.disable_sequence_number        = gDisableSequenceNumber.Get();
 
     if (gDisable) {
         ls.enabled = false;
@@ -213,6 +220,7 @@ void dump(LocationServerConfig const& config) {
            config.hack_bad_transaction_initiator ? "true" : "false");
     DEBUGF("hack-server-initiated-push:     %s",
            config.hack_server_initiated_push ? "true" : "false");
+    DEBUGF("disable-sequence-number:        %s", config.disable_sequence_number ? "true" : "false");
     DEBUGF("horacc: %s", config.horacc ? std::to_string(*config.horacc).c_str() : "<not set>");
     DEBUGF("tls: %s", config.tls.enabled ? "enabled" : "disabled");
     if (config.tls.enabled) {

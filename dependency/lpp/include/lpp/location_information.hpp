@@ -440,6 +440,10 @@ struct PeriodicLocationInformationDeliveryDescription {
 
     CoordinateType coordinate_type;
     VelocityType   velocity_type;
+
+    // If set, every ProvideLocationInformation message sent for this delivery uses this fixed
+    // value for the LPP 'sequenceNumber' field instead of the session's auto-incrementing counter.
+    Optional<long> fixed_sequence_number;
 };
 
 }  // namespace lpp

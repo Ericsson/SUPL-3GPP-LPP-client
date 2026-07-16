@@ -21,6 +21,7 @@ LocationInformationDelivery::LocationInformationDelivery(
       mReportingInterval(description.reporting_interval),
       mReportingAmount(description.reporting_amount),
       mReportingAmountUnlimited(description.reporting_amount_unlimited),
+      mFixedSequenceNumber(description.fixed_sequence_number),
       mPeriodicTask(description.reporting_interval) {
     mPeriodicTask.callback = [this]() {
         deliver();
@@ -49,12 +50,15 @@ void LocationInformationDelivery::deliver() {
         }
     }
 
+    auto const* fixed_sequence_number =
+        mFixedSequenceNumber.has_value() ? &mFixedSequenceNumber.const_value() : nullptr;
+
     if (mClient->on_provide_location_information) {
         messages::ProvideLocationInformation data{};
         if (mClient->on_provide_location_information(*mClient, *this, data)) {
             VERBOSEF("location information delivered (handled by client)");
             auto message = messages::create_provide_location_information(data);
-            mTransaction.send(message);
+            mTransaction.send(message, fixed_sequence_number);
             return;
         }
     }
@@ -62,7 +66,7 @@ void LocationInformationDelivery::deliver() {
     DEBUGF("location information not handled");
     messages::ProvideLocationInformation empty{};
     auto message = messages::create_provide_location_information(empty);
-    mTransaction.send(message);
+    mTransaction.send(message, fixed_sequence_number);
 }
 
 }  // namespace lpp

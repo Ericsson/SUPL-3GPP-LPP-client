@@ -134,7 +134,7 @@ Session::Session(Version version, supl::Identity identity, supl::Cell cell)
       mInitialCell(std::move(cell)), mSession(nullptr), mTransactionId(1), mGenerationId(1),
       mSequenceNumber(0), mScheduler(nullptr), mTask(this, -1), mNextReadState(State::UNKNOWN),
       mNextWriteState(State::UNKNOWN), mNextErrorState(State::UNKNOWN),
-      mHackServerInitiatedPush(false) {
+      mHackServerInitiatedPush(false), mDisableSequenceNumber(false) {
     VSCOPE_FUNCTION();
 }
 
@@ -629,7 +629,8 @@ TransactionHandle Session::allocate_transaction() {
     return TransactionHandle::invalid();
 }
 
-void Session::send(TransactionHandle const& handle, Message& message) {
+void Session::send(TransactionHandle const& handle, Message& message,
+                   long const* fixed_sequence_number) {
     VSCOPE_FUNCTION();
 
     DEBUGF("send message %s", handle.to_string().c_str());
@@ -668,10 +669,16 @@ void Session::send(TransactionHandle const& handle, Message& message) {
     transaction_id->transactionNumber = handle.id();
     message->transactionID            = transaction_id;
     message->endTransaction           = transaction->client_should_send_end;
-    message->sequenceNumber =
-        reinterpret_cast<SequenceNumber_t*>(calloc(1, sizeof(SequenceNumber_t)));
-    *message->sequenceNumber = (mSequenceNumber % 255);
-    mSequenceNumber += 1;
+    if (!mDisableSequenceNumber) {
+        message->sequenceNumber =
+            reinterpret_cast<SequenceNumber_t*>(calloc(1, sizeof(SequenceNumber_t)));
+        if (fixed_sequence_number) {
+            *message->sequenceNumber = *fixed_sequence_number;
+        } else {
+            *message->sequenceNumber = (mSequenceNumber % 255);
+            mSequenceNumber += 1;
+        }
+    }
 
     auto lpp_message = encode_lpp_message(message);
     if (lpp_message.size() <= 0) {

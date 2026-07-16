@@ -36,6 +36,7 @@ struct LocationServerConfig {
     bool                  hack_bad_transaction_initiator;
     bool                  hack_never_send_abort;
     bool                  hack_server_initiated_push;
+    bool                  disable_sequence_number;
     std::string           output_tag;
     std::unique_ptr<long> horacc;
 
@@ -192,6 +193,8 @@ struct LocationInformationConfig {
 
     std::vector<std::string> nmea_order;
     bool                     nmea_order_strict;
+
+    std::unique_ptr<long> fixed_sequence_number;
 
     FakeLocationInformationConfig fake;
 };

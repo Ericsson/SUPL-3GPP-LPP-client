@@ -101,6 +101,13 @@ public:
         mSession.set_hack_server_initiated_push(value);
     }
     void set_horacc(long horacc) { mSession.set_horacc(horacc); }
+    void set_disable_sequence_number(bool value) { mSession.set_disable_sequence_number(value); }
+
+    // Use a fixed value for the 'sequenceNumber' field of every ProvideLocationInformation
+    // message, instead of the session's auto-incrementing counter. Applies to both unsolicited and
+    // server-requested location information delivery, unless overridden per-delivery via
+    // 'PeriodicLocationInformationDeliveryDescription::fixed_sequence_number'.
+    void set_fixed_sequence_number(long value) { mFixedSequenceNumber.reset(new long(value)); }
 
 protected:
     using Pah = std::shared_ptr<PeriodicSession>;
@@ -150,6 +157,8 @@ private:
     bool mHackBadTransactionInitiator;
     bool mHackNeverSendAbort;
     bool mHackServerInitiatedPush;
+
+    std::unique_ptr<long> mFixedSequenceNumber;
 
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mRequestTransactions;
     std::unordered_map<TransactionHandle, PeriodicSessionHandle> mPeriodicTransactions;

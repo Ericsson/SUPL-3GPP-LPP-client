@@ -11,10 +11,10 @@ LOGLET_MODULE2(lpp, tx);
 
 namespace lpp {
 
-void TransactionHandle::send(Message& message) {
+void TransactionHandle::send(Message& message, long const* fixed_sequence_number) {
     VSCOPE_FUNCTION();
     if (mSession != nullptr) {
-        mSession->send(*this, message);
+        mSession->send(*this, message, fixed_sequence_number);
     }
 }
 

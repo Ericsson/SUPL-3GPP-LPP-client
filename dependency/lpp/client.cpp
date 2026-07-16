@@ -602,8 +602,13 @@ bool Client::start_periodic_location_information(
         return false;
     }
 
-    auto delivery =
-        std::make_shared<LocationInformationDelivery>(this, &mSession, transaction, description);
+    auto effective_description = description;
+    if (mFixedSequenceNumber && !effective_description.fixed_sequence_number.has_value()) {
+        effective_description.fixed_sequence_number = *mFixedSequenceNumber;
+    }
+
+    auto delivery = std::make_shared<LocationInformationDelivery>(this, &mSession, transaction,
+                                                                  effective_description);
     // TODO(ewasjon): Should we deliver the location information directly or wait for the next
     // interval?
     delivery->deliver();

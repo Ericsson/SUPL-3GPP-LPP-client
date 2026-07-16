@@ -32,6 +32,7 @@ protected:
     std::chrono::steady_clock::duration mReportingInterval;
     long                                mReportingAmount;
     bool                                mReportingAmountUnlimited;
+    Optional<long>                      mFixedSequenceNumber;
     scheduler::PeriodicTask             mPeriodicTask;
 };
 

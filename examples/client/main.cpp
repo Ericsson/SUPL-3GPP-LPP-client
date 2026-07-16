@@ -309,6 +309,12 @@ static void client_initialize(Program& program, lpp::Client&) {
         program.config.location_server.hack_never_send_abort);
     program.lpp_clients[0]->set_hack_server_initiated_push(
         program.config.location_server.hack_server_initiated_push);
+    program.lpp_clients[0]->set_disable_sequence_number(
+        program.config.location_server.disable_sequence_number);
+    if (program.config.location_information.fixed_sequence_number) {
+        program.lpp_clients[0]->set_fixed_sequence_number(
+            *program.config.location_information.fixed_sequence_number);
+    }
 }
 
 static void process_input(Program& program, InputContext& p, InputFormat formats,

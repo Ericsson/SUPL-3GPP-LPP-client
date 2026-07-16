@@ -55,7 +55,7 @@ public:
 
     NODISCARD bool is_valid() const { return mSession != nullptr; }
 
-    void send(Message& message);
+    void send(Message& message, long const* fixed_sequence_number = nullptr);
     void send_with_end(Message& message);
     void abort();
 

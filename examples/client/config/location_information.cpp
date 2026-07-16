@@ -93,6 +93,13 @@ static args::Flag gNmeaOrderStrict{
     "Strict NMEA order mode: no other messages allowed between ordered messages",
     {"li-nmea-order-strict"},
 };
+static args::ValueFlag<long> gFixedSequenceNumber{
+    gGroup,
+    "0-255",
+    "Use a fixed value for the 'sequenceNumber' field in ProvideLocationInformation messages "
+    "instead of incrementing it",
+    {"li-fixed-sequence-number"},
+};
 
 static args::Group gFakeLocationGroup{gGroup, "Fake Location:"};
 static args::Flag  gFakeLocation{
@@ -134,10 +141,11 @@ void parse(Config* config) {
     li.nmea_require_vtg               = false;
     li.nmea_order.clear();
     li.nmea_order_strict = false;
-    li.fake.enabled      = false;
-    li.fake.latitude     = 69.06;
-    li.fake.longitude    = 20.55;
-    li.fake.altitude     = 0.0;
+    li.fixed_sequence_number.reset();
+    li.fake.enabled   = false;
+    li.fake.latitude  = 69.06;
+    li.fake.longitude = 20.55;
+    li.fake.altitude  = 0.0;
 
     if (gDisable) {
         li.enable = false;
@@ -186,6 +194,14 @@ void parse(Config* config) {
         li.nmea_order_strict = true;
     }
 
+    if (gFixedSequenceNumber) {
+        auto fixed_sequence_number = gFixedSequenceNumber.Get();
+        if (fixed_sequence_number < 0 || fixed_sequence_number > 255) {
+            throw args::ValidationError("`--li-fixed-sequence-number` must be in range 0-255");
+        }
+        li.fixed_sequence_number.reset(new long(fixed_sequence_number));
+    }
+
     if (gFakeLocation) {
         li.fake.enabled = true;
         if (gLatitude) li.fake.latitude = gLatitude.Get();
@@ -215,6 +231,9 @@ void dump(LocationInformationConfig const& config) {
         DEBUGF("nmea_order: %s", order_str.c_str());
     }
     DEBUGF("nmea_order_strict: %s", config.nmea_order_strict ? "true" : "false");
+    DEBUGF("fixed_sequence_number: %s", config.fixed_sequence_number ?
+                                            std::to_string(*config.fixed_sequence_number).c_str() :
+                                            "<not set>");
     DEBUGF("fake.enabled: %s", config.fake.enabled ? "true" : "false");
     DEBUGF("fake.latitude: %.8f", config.fake.latitude);
     DEBUGF("fake.longitude: %.8f", config.fake.longitude);

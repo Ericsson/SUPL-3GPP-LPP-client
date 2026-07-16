@@ -125,7 +125,11 @@ public:
     TransactionHandle create_transaction(bool single_side_endable = true);
     void              delete_transaction(TransactionHandle const& transaction);
 
-    void send(TransactionHandle const& handle, Message& message);
+    // If 'fixed_sequence_number' is non-null, it's used for the 'sequenceNumber' field instead of
+    // the auto-incrementing counter (and the counter is left untouched). Ignored if sequence
+    // numbers are disabled with 'set_disable_sequence_number'.
+    void send(TransactionHandle const& handle, Message& message,
+              long const* fixed_sequence_number = nullptr);
 
     // Send message with endTransaction. Only sends the message if the transaction is alive by both
     // parties.
@@ -156,6 +160,8 @@ public:
 
     void set_hack_server_initiated_push(bool value) { mHackServerInitiatedPush = value; }
     void set_horacc(long horacc) { mHoracc.reset(new long(horacc)); }
+    // If disabled, the 'sequenceNumber' field is omitted from every outgoing LPP message.
+    void set_disable_sequence_number(bool value) { mDisableSequenceNumber = value; }
 
     static Message              decode_lpp_message(uint8_t const* data, size_t size);
     static std::vector<uint8_t> encode_lpp_message(Message const& message);
@@ -224,6 +230,7 @@ private:
     State                 mNextErrorState;
     bool                  mHackServerInitiatedPush;
     std::unique_ptr<long> mHoracc;
+    bool                  mDisableSequenceNumber;
 
     friend SessionTask;
 };
