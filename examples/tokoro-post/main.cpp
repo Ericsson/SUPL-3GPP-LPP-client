@@ -50,11 +50,13 @@ struct Config {
     double                   max_iono_age  = 90.0;
     double                   max_tropo_age = 90.0;
     double                   pos_x = 0, pos_y = 0, pos_z = 0;
-    int                      eph_cache = 512;
-    bool                     no_gps    = false;
-    bool                     no_gal    = false;
-    bool                     no_bds    = false;
-    bool                     antenna   = false;  // enable ANTEX PCO/PCV correction
+    int                      eph_cache                = 512;
+    bool                     no_gps                   = false;
+    bool                     no_gal                   = false;
+    bool                     no_bds                   = false;
+    bool                     antenna                  = false;  // enable ANTEX PCO/PCV correction
+    bool                     iono_height_correction   = false;
+    bool                     no_iod_consistency_check = false;
 };
 
 static Config parse_args(int argc, char** argv) {
@@ -113,6 +115,10 @@ static Config parse_args(int argc, char** argv) {
             cfg.no_bds = true;
         else if (arg == "--antenna" || arg == "--antenna-pcv")
             cfg.antenna = true;
+        else if (arg == "--use-ionospheric-height-correction")
+            cfg.iono_height_correction = true;
+        else if (arg == "--no-iod-consistency-check")
+            cfg.no_iod_consistency_check = true;
         else {
             fprintf(stderr, "Unknown argument: %s\n", arg.c_str());
             exit(1);
@@ -150,7 +156,7 @@ int main(int argc, char** argv) {
 
     // Setup generator
     auto generator = std::make_unique<generator::tokoro::Generator>();
-    generator->set_iod_consistency_check(true);
+    generator->set_iod_consistency_check(!cfg.no_iod_consistency_check);
     generator->set_ephemeris_max_cache(static_cast<size_t>(cfg.eph_cache));
     generator->set_max_orbit_age(cfg.max_orbit_age);
     generator->set_max_clock_age(cfg.max_clock_age);
@@ -193,6 +199,7 @@ int main(int argc, char** argv) {
     ref_station->set_earth_solid_tides_correction(true);
     ref_station->set_phase_windup_correction(true);
     ref_station->set_antenna_phase_variation_correction(cfg.antenna);
+    ref_station->set_use_ionospheric_height_correction(cfg.iono_height_correction);
     if (!cfg.diag_dir.empty()) ref_station->set_diag_output(cfg.diag_dir);
 
     // Open output

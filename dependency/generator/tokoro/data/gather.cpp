@@ -34,6 +34,9 @@ EXTERNAL_WARNINGS_POP
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
+#include <cstdio>
+#include <cstdlib>
+
 #ifdef DATA_TRACING
 #include <datatrace/datatrace.hpp>
 #endif
@@ -72,6 +75,17 @@ static SignalId signal_id_from(SignalId::Gnss gnss, GNSS_SignalID_t& signal_id) 
     }
 
     return SignalId::from_lpp(gnss, id);
+}
+
+static char const* gnss_name_for_dump(SatelliteId::Gnss gnss) {
+    switch (gnss) {
+    case SatelliteId::GPS: return "G";
+    case SatelliteId::GALILEO: return "E";
+    case SatelliteId::BEIDOU: return "C";
+    case SatelliteId::GLONASS: return "R";
+    case SatelliteId::QZSS: return "J";
+    default: return "?";
+    }
 }
 
 void CorrectionData::add_correction(long                                 gnss_id,
@@ -472,6 +486,19 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
                 grid_point->ionospheric_valid                  = true;
                 grid_point->ionospheric_residual[satellite_id] = ionospheric;
+
+                if (auto* dump_path = std::getenv("TOKORO_GRID_DUMP")) {
+                    static FILE* dump_file = std::fopen(dump_path, "a");
+                    if (dump_file) {
+                        auto utc = ts::Utc{epoch_time};
+                        auto ts  = utc.rfc3339();
+                        std::fprintf(dump_file, "%s,%s,%ld,%ld,%.10f,%.10f,%s,%+.10f\n", ts.c_str(),
+                                     gnss_name_for_dump(satellite_gnss), grid_point->latitude_index,
+                                     grid_point->longitude_index, grid_point->position.x,
+                                     grid_point->position.y, satellite_id.name(), ionospheric);
+                        std::fflush(dump_file);
+                    }
+                }
 
 #ifdef DATA_TRACING
                 datatrace::report_ssr_ionospheric_grid(epoch_time, grid_point->absolute_index,
