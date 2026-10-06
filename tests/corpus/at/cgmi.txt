@@ -1,0 +1,3 @@
+AT+CGMI
+Manufacturer
+OK

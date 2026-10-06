@@ -1,9 +1,33 @@
-# Track seed inputs but ignore fuzzer-generated files
+# Track hand-written seed inputs, ignore fuzzer-generated files.
+#
+# libFuzzer names the inputs it discovers after their SHA-1, so seeds are distinguished by
+# having a real file extension. Seeds must be valid, parseable inputs: a corpus whose seeds the
+# parser rejects gives the fuzzer nothing to mutate from.
 *
 !.gitignore
+
 !nmea/
 nmea/*
 !nmea/*.txt
+!nmea/*.bin
+
+!rtcm/
+rtcm/*
+!rtcm/*.bin
+
+!ubx/
+ubx/*
+!ubx/*.bin
+
+!at/
+at/*
+!at/*.txt
+
+# Required by tests/format/rinex/nav_reader.cpp, not just fuzzing.
+!rinex/
+rinex/*
+!rinex/*.nav
+
 !antex/
 antex/*
 !antex/download.sh
