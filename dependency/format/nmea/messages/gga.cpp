@@ -11,25 +11,44 @@ LOGLET_MODULE3(format, nmea, gga);
 namespace format {
 namespace nmea {
 
-// parse UTC time of day from string "hhmmss.sss"
+// parse UTC time of day from string "hhmmss" or "hhmmss.s[ss...]"
+//
+// [NMEA 0183]: the decimal fraction of the seconds field is optional, and its number of digits
+// is not fixed. The fraction must therefore be scaled by its digit count rather than assumed to
+// be milliseconds.
 static bool parse_utc(std::string const& utc, ts::Tai& time_of_day) {
     FUNCTION_SCOPEF("'%s'", utc.c_str());
     try {
         auto tokens = split(utc, '.');
-        if (tokens.size() != 2) {
-            VERBOSEF("invalid UTC format: expected 2 tokens, got %zu", tokens.size());
+        if (tokens.size() < 1 || tokens.size() > 2) {
+            VERBOSEF("invalid UTC format: expected 1 or 2 tokens, got %zu", tokens.size());
             return false;
         }
 
-        auto hours        = std::stoi(tokens[0].substr(0, 2));
-        auto minutes      = std::stoi(tokens[0].substr(2, 2));
-        auto seconds      = std::stoi(tokens[0].substr(4, 2));
-        auto milliseconds = std::stoi(tokens[1]);
+        if (tokens[0].size() != 6) {
+            VERBOSEF("invalid UTC format: expected 'hhmmss', got '%s'", tokens[0].c_str());
+            return false;
+        }
 
-        VERBOSEF("parsed time: %02d:%02d:%02d.%03d", hours, minutes, seconds, milliseconds);
+        auto hours   = std::stoi(tokens[0].substr(0, 2));
+        auto minutes = std::stoi(tokens[0].substr(2, 2));
+        auto seconds = std::stoi(tokens[0].substr(4, 2));
 
-        auto tod = hours * ts::HOUR_IN_SECONDS + minutes * ts::MINUTE_IN_SECONDS + seconds +
-                   milliseconds * 1e-3;
+        auto fraction = 0.0;
+        if (tokens.size() == 2 && !tokens[1].empty()) {
+            // "0." + digits scales by the digit count, so ".5" is 500 ms and ".300" is 300 ms.
+            fraction = std::stod("0." + tokens[1]);
+        }
+
+        if (hours > 23 || minutes > 59 || seconds > 60 /* leap second */) {
+            VERBOSEF("invalid UTC value: %02d:%02d:%02d", hours, minutes, seconds);
+            return false;
+        }
+
+        VERBOSEF("parsed time: %02d:%02d:%02d%+.6f", hours, minutes, seconds, fraction);
+
+        auto tod =
+            hours * ts::HOUR_IN_SECONDS + minutes * ts::MINUTE_IN_SECONDS + seconds + fraction;
         auto utc_now  = ts::Utc::now();
         auto utc_then = ts::Utc::from_day_tod(utc_now.days(), tod);
         time_of_day   = ts::Tai{utc_then};
