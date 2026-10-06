@@ -17,78 +17,100 @@ NODISCARD char const* Parser::name() const NOEXCEPT {
     return "CTRL";
 }
 
+// Upper bound to guarantee forward progress when the buffer contains a '/' followed by data
+// that never terminates with a line ending.
+static CONSTEXPR uint32_t MAX_LINE_LENGTH = 128;
+
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     FUNCTION_SCOPE();
 
-    // search for '/'
     for (;;) {
-        if (buffer_length() < 1) {
-            // not enough data to search for '/'
-            VERBOSEF("not enough data to search for '/'");
-            return nullptr;
+        // search for '/'
+        for (;;) {
+            if (buffer_length() < 1) {
+                // not enough data to search for '/'
+                VERBOSEF("not enough data to search for '/'");
+                return nullptr;
+            }
+
+            if (peek(0) == '/') {
+                // found '/'
+                VERBOSEF("found '/'");
+                break;
+            }
+
+            // skip one byte and try again
+            discard(1u);
         }
 
-        if (peek(0) == '/') {
-            // found '/'
-            VERBOSEF("found '/'");
-            break;
+        // search for '\r\n'
+        auto length        = 1u;
+        auto suffix        = 0u;
+        auto resynchronize = false;
+        for (;;) {
+            if (buffer_length() < length + 1) {
+                // not enough data to search for '\r\n'
+                VERBOSEF("not enough data to search for '\\r\\n' (available: %zu)",
+                         buffer_length());
+                return nullptr;
+            }
+
+            if (peek(length + 0) == '\r' && peek(length + 1) == '\n') {
+                // found '\r\n'
+                VERBOSEF("found '\\r\\n'");
+                suffix = 2;
+                break;
+            } else if (peek(length + 0) == '\n') {
+                // found '\n' without '\r'
+                VERBOSEF("found '\\n' without '\\r'");
+                suffix = 1;
+                break;
+            }
+
+            // skip one byte and try again
+            length++;
+
+            // check if message is too long
+            if (length > MAX_LINE_LENGTH) {
+                VERBOSEF("message is too long");
+                record_frame_error();
+                discard(length);
+                resynchronize = true;
+                break;
+            }
         }
 
-        // skip one byte and try again
-        skip(1u);
+        if (resynchronize) continue;
+
+        // copy message to buffer
+        std::string payload;
+        payload.resize(length);
+        copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length);
+        skip(length + suffix);
+
+        VERBOSEF("parsed message: \"%s\"", payload.c_str());
+
+        auto tokens = split(payload, ',');
+        if (tokens.size() < 1) {
+            continue;
+        }
+
+        // The line was consumed. If it does not produce a message, keep draining instead of
+        // reporting "no data available" to the caller.
+        if (tokens[0] == "/CID") {
+            auto message = parse_cid(payload, tokens);
+            if (message) return message;
+            continue;
+        }
+
+        if (tokens[0] == "/IDENTITY") {
+            auto message = parse_identity(payload, tokens);
+            if (message) return message;
+            continue;
+        }
+
+        VERBOSEF("unknown command: \"%s\"", tokens[0].c_str());
     }
-
-    // search for '\r\n'
-    auto length = 1u;
-    auto suffix = 0u;
-    for (;;) {
-        if (buffer_length() < length + 1) {
-            // not enough data to search for '\r\n'
-            VERBOSEF("not enough data to search for '\\r\\n' (available: %zu)", buffer_length());
-            return nullptr;
-        }
-
-        if (peek(length + 0) == '\r' && peek(length + 1) == '\n') {
-            // found '\r\n'
-            VERBOSEF("found '\\r\\n'");
-            suffix = 2;
-            break;
-        } else if (peek(length + 0) == '\n') {
-            // found '\n' without '\r'
-            VERBOSEF("found '\\n' without '\\r'");
-            suffix = 1;
-            break;
-        }
-
-        // skip one byte and try again
-        length++;
-
-        // check if message is too long
-        if (length > 128) {
-            VERBOSEF("message is too long");
-            skip(length);
-            return nullptr;
-        }
-    }
-
-    // copy message to buffer
-    std::string payload;
-    payload.resize(length);
-    copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length);
-    skip(length + suffix);
-
-    VERBOSEF("parsed message: \"%s\"", payload.c_str());
-
-    auto tokens = split(payload, ',');
-    if (tokens.size() < 1) {
-        return nullptr;
-    }
-
-    if (tokens[0] == "/CID") return parse_cid(payload, tokens);
-    if (tokens[0] == "/IDENTITY") return parse_identity(payload, tokens);
-
-    VERBOSEF("unknown command: \"%s\"", tokens[0].c_str());
-    return nullptr;
 }
 
 std::unique_ptr<Message> Parser::parse_cid(std::string const&              message,

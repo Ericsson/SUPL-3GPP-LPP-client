@@ -20,125 +20,155 @@ NODISCARD char const* Parser::name() const NOEXCEPT {
     return "NMEA";
 }
 
+// NMEA sentences are 82 characters at most by specification, but proprietary sentences can be
+// longer. This is only an upper bound to guarantee the parser makes forward progress when the
+// buffer contains a '$' followed by data that never terminates.
+static CONSTEXPR uint32_t MAX_SENTENCE_LENGTH = 4096;
+
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     FUNCTION_SCOPE();
 
-    // search for '$'
     for (;;) {
-        if (buffer_length() < 1) {
-            VERBOSEF("not enough data to search for '$'");
-            return nullptr;
+        // search for '$'
+        for (;;) {
+            if (buffer_length() < 1) {
+                VERBOSEF("not enough data to search for '$'");
+                return nullptr;
+            }
+
+            if (peek(0) == '$') {
+                VERBOSEF("found '$'");
+                break;
+            }
+
+            // skip one byte and try again
+            discard(1u);
         }
 
-        if (peek(0) == '$') {
-            VERBOSEF("found '$'");
-            break;
+        auto length             = 1u;
+        auto line_ending_length = mLfOnly ? 1u : 2u;
+        auto resynchronize      = false;
+
+        for (;;) {
+            if (buffer_length() < length + line_ending_length) {
+                VERBOSEF("not enough data to search for line ending");
+                return nullptr;
+            }
+
+            bool found_ending = false;
+            if (mLfOnly) {
+                if (peek(length) == '\n') {
+                    VERBOSEF("found '\\n'");
+                    found_ending = true;
+                }
+            } else {
+                if (peek(length) == '\r' && peek(length + 1) == '\n') {
+                    VERBOSEF("found '\\r\\n'");
+                    found_ending = true;
+                }
+            }
+
+            if (found_ending) break;
+
+            if (peek(length) == '$') {
+                // The sentence was truncated, resynchronize on the new '$'.
+                VERBOSEF("found '$' while looking for line ending");
+                record_frame_error();
+                discard(length);
+                resynchronize = true;
+                break;
+            }
+
+            length++;
+
+            if (length > MAX_SENTENCE_LENGTH) {
+                VERBOSEF("sentence is too long");
+                record_frame_error();
+                discard(1u);
+                resynchronize = true;
+                break;
+            }
         }
 
-        // skip one byte and try again
-        skip(1u);
-    }
+        if (resynchronize) continue;
 
-    auto length             = 1u;
-    auto line_ending_length = mLfOnly ? 1u : 2u;
+        std::string payload;
+        payload.resize(length + line_ending_length);
+        copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length + line_ending_length);
 
-    for (;;) {
-        if (buffer_length() < length + line_ending_length) {
-            VERBOSEF("not enough data to search for line ending");
-            return nullptr;
+        auto result = checksum(payload);
+        if (result != ChecksumResult::Ok) {
+            // Either a false '$' sync or a corrupted sentence. Keep searching from the next
+            // byte.
+            DEBUGF("checksum failed: \"%s\"", payload.c_str());
+            record_frame_error();
+            discard(1u);
+            continue;
+        }
+        skip(length + line_ending_length);
+
+        auto length_with_clrf = length + line_ending_length;
+        auto prefix =
+            parse_prefix(reinterpret_cast<uint8_t const*>(payload.data()), length_with_clrf);
+        if (prefix.empty()) {
+            // invalid prefix
+            VERBOSEF("invalid prefix");
+            continue;
         }
 
-        bool found_ending = false;
-        if (mLfOnly) {
-            if (peek(length) == '\n') {
-                VERBOSEF("found '\\n'");
-                found_ending = true;
+        // '$XXXXX,' [data] '*XY\r\n'
+        auto data_start = prefix.size() + 1 /* $ */ + 1 /* , */;
+        auto data_end   = length_with_clrf - 5;
+        if (data_start >= data_end) {
+            // no data
+            VERBOSEF("no data");
+            continue;
+        }
+
+        auto data_length   = data_end - data_start;
+        auto data_payload  = payload.substr(data_start, data_length);
+        auto data_checksum = payload.substr(data_end + 1, data_end + 3);
+        DEBUGF("nmea: %s, data: %s", prefix.c_str(), data_payload.c_str());
+
+        // parse message
+        if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {
+            auto message = GgaMessage::parse(prefix, data_payload, data_checksum);
+            if (message) {
+                return message;
+            } else {
+                return std::unique_ptr<Message>(
+                    new ErrorMessage(prefix, data_payload, data_checksum));
+            }
+        } else if (prefix == "GPVTG" || prefix == "GLVTG" || prefix == "GAVTG" ||
+                   prefix == "GNVTG") {
+            auto message = VtgMessage::parse(prefix, data_payload, data_checksum);
+            if (message) {
+                return message;
+            } else {
+                return std::unique_ptr<Message>(
+                    new ErrorMessage(prefix, data_payload, data_checksum));
+            }
+        } else if (prefix == "GPGST" || prefix == "GLGST" || prefix == "GAGST" ||
+                   prefix == "GNGST") {
+            auto message = GstMessage::parse(prefix, data_payload, data_checksum);
+            if (message) {
+                return message;
+            } else {
+                return std::unique_ptr<Message>(
+                    new ErrorMessage(prefix, data_payload, data_checksum));
+            }
+        } else if (prefix == "PQTMEPE") {
+            auto message = EpeMessage::parse(prefix, data_payload, data_checksum);
+            if (message) {
+                return message;
+            } else {
+                return std::unique_ptr<ErrorMessage>(
+                    new ErrorMessage(prefix, data_payload, data_checksum));
             }
         } else {
-            if (peek(length) == '\r' && peek(length + 1) == '\n') {
-                VERBOSEF("found '\\r\\n'");
-                found_ending = true;
-            }
+            return std::unique_ptr<Message>(
+                new UnsupportedMessage(prefix, data_payload, data_checksum));
         }
-
-        if (found_ending) break;
-
-        if (peek(length) == '$') {
-            VERBOSEF("found '$' while looking for line ending");
-            skip(length);
-            return nullptr;
-        }
-
-        length++;
-    }
-
-    std::string payload;
-    payload.resize(length + line_ending_length);
-    copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length + line_ending_length);
-
-    auto result = checksum(payload);
-    if (result != ChecksumResult::Ok) {
-        DEBUGF("checksum failed: \"%s\"", payload.c_str());
-        skip(1u);
-        return nullptr;
-    }
-    skip(length + line_ending_length);
-
-    auto length_with_clrf = length + line_ending_length;
-    auto prefix = parse_prefix(reinterpret_cast<uint8_t const*>(payload.data()), length_with_clrf);
-    if (prefix.empty()) {
-        // invalid prefix
-        VERBOSEF("invalid prefix");
-        return nullptr;
-    }
-
-    // '$XXXXX,' [data] '*XY\r\n'
-    auto data_start = prefix.size() + 1 /* $ */ + 1 /* , */;
-    auto data_end   = length_with_clrf - 5;
-    if (data_start >= data_end) {
-        // no data
-        VERBOSEF("no data");
-        return nullptr;
-    }
-
-    auto data_length   = data_end - data_start;
-    auto data_payload  = payload.substr(data_start, data_length);
-    auto data_checksum = payload.substr(data_end + 1, data_end + 3);
-    DEBUGF("nmea: %s, data: %s", prefix.c_str(), data_payload.c_str());
-
-    // parse message
-    if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {
-        auto message = GgaMessage::parse(prefix, data_payload, data_checksum);
-        if (message) {
-            return message;
-        } else {
-            return std::unique_ptr<Message>(new ErrorMessage(prefix, data_payload, data_checksum));
-        }
-    } else if (prefix == "GPVTG" || prefix == "GLVTG" || prefix == "GAVTG" || prefix == "GNVTG") {
-        auto message = VtgMessage::parse(prefix, data_payload, data_checksum);
-        if (message) {
-            return message;
-        } else {
-            return std::unique_ptr<Message>(new ErrorMessage(prefix, data_payload, data_checksum));
-        }
-    } else if (prefix == "GPGST" || prefix == "GLGST" || prefix == "GAGST" || prefix == "GNGST") {
-        auto message = GstMessage::parse(prefix, data_payload, data_checksum);
-        if (message) {
-            return message;
-        } else {
-            return std::unique_ptr<Message>(new ErrorMessage(prefix, data_payload, data_checksum));
-        }
-    } else if (prefix == "PQTMEPE") {
-        auto message = EpeMessage::parse(prefix, data_payload, data_checksum);
-        if (message) {
-            return message;
-        } else {
-            return std::unique_ptr<ErrorMessage>(
-                new ErrorMessage(prefix, data_payload, data_checksum));
-        }
-    } else {
-        return std::unique_ptr<Message>(
-            new UnsupportedMessage(prefix, data_payload, data_checksum));
     }
 }
 

@@ -4,12 +4,14 @@ add_executable(format_tests
     ubx/parser.cpp
     rtcm/parser.cpp
     at/parser.cpp
+    resync.cpp
 )
 target_link_libraries(format_tests PRIVATE 
     dependency::format::nmea 
     dependency::format::ubx 
     dependency::format::rtcm
     dependency::format::at
+    dependency::format::ctrl
     dependency::core 
     doctest::doctest
 )

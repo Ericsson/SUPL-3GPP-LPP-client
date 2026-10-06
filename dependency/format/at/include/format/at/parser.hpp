@@ -26,7 +26,13 @@ public:
     NODISCARD std::string const& peek_line() const NOEXCEPT;
 
 private:
-    NODISCARD bool process_line(std::string& line) NOEXCEPT;
+    enum class LineResult {
+        Ok,            ///< A complete line was extracted.
+        NeedMoreData,  ///< Nothing was consumed, wait for more data.
+        Discarded,     ///< Data was consumed but did not form a line, keep going.
+    };
+
+    NODISCARD LineResult process_line(std::string& line) NOEXCEPT;
 
     std::vector<std::string> mLines;
 };

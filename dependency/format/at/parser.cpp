@@ -38,6 +38,9 @@ std::string Parser::skip_line() NOEXCEPT {
     return line;
 }
 
+// Upper bound to guarantee forward progress when a line never terminates.
+static CONSTEXPR uint32_t MAX_LINE_LENGTH = 120;
+
 void Parser::process() NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -45,15 +48,18 @@ void Parser::process() NOEXCEPT {
         VERBOSEF("trying to parse next line");
 
         std::string line;
-        if (!process_line(line)) {
+        auto        result = process_line(line);
+        if (result == LineResult::NeedMoreData) {
             break;
+        } else if (result == LineResult::Discarded) {
+            continue;
         }
 
         mLines.push_back(std::move(line));
     }
 }
 
-bool Parser::process_line(std::string& line) NOEXCEPT {
+Parser::LineResult Parser::process_line(std::string& line) NOEXCEPT {
     FUNCTION_SCOPE();
 
     line.clear();
@@ -63,7 +69,7 @@ bool Parser::process_line(std::string& line) NOEXCEPT {
         if (buffer_length() < index + 1) {
             // not enough data to find <CR><LF>
             VERBOSEF("not enough data to find <CR><LF>");
-            return false;
+            return LineResult::NeedMoreData;
         }
 
         if (peek(index + 0) == '\r') {
@@ -82,11 +88,12 @@ bool Parser::process_line(std::string& line) NOEXCEPT {
             break;
         }
 
-        if (index > 120) {
+        if (index > MAX_LINE_LENGTH) {
             // message is too long
             VERBOSEF("message is too long");
-            skip(index);
-            return false;
+            record_frame_error();
+            discard(index);
+            return LineResult::Discarded;
         }
 
         auto ch = static_cast<char>(peek(index));
@@ -95,7 +102,7 @@ bool Parser::process_line(std::string& line) NOEXCEPT {
     }
 
     skip(index + 2);
-    return true;
+    return LineResult::Ok;
 }
 
 }  // namespace at

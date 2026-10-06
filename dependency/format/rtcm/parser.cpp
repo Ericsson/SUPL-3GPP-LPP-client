@@ -33,66 +33,74 @@ NODISCARD char const* Parser::name() const NOEXCEPT {
  * +--------+--------+---------+---------+----------------+---------+ */
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     FUNCTION_SCOPE();
-    // search for '0xD3'
     for (;;) {
-        if (buffer_length() < 1) {
-            VERBOSEF("not enough data to search for '0xD3'");
+        // search for '0xD3'
+        for (;;) {
+            if (buffer_length() < 1) {
+                VERBOSEF("not enough data to search for '0xD3'");
+                return nullptr;
+            }
+
+            if (peek(0) == 0xD3) {
+                VERBOSEF("found '0xD3'");
+                break;
+            }
+
+            // skip one byte and try again
+            discard(1u);
+        }
+
+        if (buffer_length() < 3) {
+            VERBOSEF("not enough data to extract message length");
             return nullptr;
         }
 
-        if (peek(0) == 0xD3) {
-            VERBOSEF("found '0xD3'");
-            break;
+        if ((peek(1) & 0xFC) != 0) {
+            // Not a message header, this was a '0xD3' inside a payload or in interleaved
+            // non-RTCM data. Step over it and keep searching.
+            VERBOSEF("invalid padding bits: '%06b'", (peek(1) & 0xFC) >> 2);
+            discard(1u);
+            continue;
         }
 
-        // skip one byte and try again
-        skip(1u);
-    }
+        auto payload_length = static_cast<unsigned>((peek(1) & 0x03) << 8 | (peek(2)));
+        VERBOSEF("payload length: %d", payload_length);
+        auto message_length = 1 /*PREAMBLE*/ + 2 /*LENGTH*/ + payload_length + 3 /*CRC*/;
+        VERBOSEF("message length: %d", message_length);
 
-    if (buffer_length() < 3) {
-        VERBOSEF("not enough data to extract message length");
-        return nullptr;
-    }
+        if (buffer_length() < message_length) {
+            VERBOSEF("not enough data to extract message");
+            return nullptr;
+        }
 
-    if ((peek(1) & 0xFC) != 0) {
-        VERBOSEF("invalid padding bits: '%06b'", (peek(1) & 0xFC) >> 2);
-        skip(1u);
-        return nullptr;
-    }
+        // copy message to buffer
+        std::vector<uint8_t> message;
+        message.resize(message_length);
+        copy_to_buffer(message.data(), message_length);
 
-    auto payload_length = static_cast<unsigned>((peek(1) & 0x03) << 8 | (peek(2)));
-    VERBOSEF("payload length: %d", payload_length);
-    auto message_length = 1 /*PREAMBLE*/ + 2 /*LENGTH*/ + payload_length + 3 /*CRC*/;
-    VERBOSEF("message length: %d", message_length);
+        // check crc
+        auto result = crc(message);
+        if (result != CRCResult::Ok) {
+            // Either a false '0xD3' sync or a truncated/corrupted message. Step over the
+            // preamble and keep searching from the next byte.
+            DEBUGF("checksum failed");
+            record_frame_error();
+            discard(1u);
+            continue;
+        }
 
-    if (buffer_length() < message_length) {
-        VERBOSEF("not enough data to extract message");
-        return nullptr;
-    }
+        skip(message_length);
 
-    // copy message to buffer
-    std::vector<uint8_t> message;
-    message.resize(message_length);
-    copy_to_buffer(message.data(), message_length);
+        DF002 type =
+            static_cast<uint16_t>(message[3] << 4) | static_cast<uint16_t>(message[4] >> 4);
 
-    // check crc
-    auto result = crc(message);
-    if (result != CRCResult::Ok) {
-        skip(1u);
-        DEBUGF("checksum failed");
-        return nullptr;
-    }
-
-    skip(message_length);
-
-    DF002 type = static_cast<uint16_t>(message[3] << 4) | static_cast<uint16_t>(message[4] >> 4);
-
-    DEBUGF("rtcm: %04d, data: %zu bytes", type.value(), message.size());
-    switch (type) {
-    case 1019: return Rtcm1019::parse(message);
-    case 1042: return Rtcm1042::parse(message);
-    case 1046: return Rtcm1046::parse(message);
-    default: return std::make_unique<UnsupportedMessage>(type, message);
+        DEBUGF("rtcm: %04d, data: %zu bytes", type.value(), message.size());
+        switch (type) {
+        case 1019: return Rtcm1019::parse(message);
+        case 1042: return Rtcm1042::parse(message);
+        case 1046: return Rtcm1046::parse(message);
+        default: return std::make_unique<UnsupportedMessage>(type, message);
+        }
     }
 }
 

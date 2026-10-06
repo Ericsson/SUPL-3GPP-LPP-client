@@ -26,99 +26,112 @@ char const* Parser::name() const NOEXCEPT {
     return "UBX";
 }
 
+// Largest UBX payload accepted. Longer messages are treated as a false sync.
+static CONSTEXPR uint32_t MAX_PAYLOAD_LENGTH = 8192;
+// Frame boundary (2) + header (4) + payload + checksum (2).
+static CONSTEXPR uint32_t MAX_FRAME_LENGTH = MAX_PAYLOAD_LENGTH + 8;
+
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     FUNCTION_SCOPEF("%u bytes", buffer_length());
 
-    // search for frame boundary
-    bool did_skip_anything = false;
+    uint8_t buffer[MAX_FRAME_LENGTH];
+
     for (;;) {
-        if (buffer_length() < 8) {
-            // not enough data to search for frame boundary
-            TRACEF("not enough data to search for frame boundary: %u", buffer_length());
+        // search for frame boundary
+        bool did_skip_anything = false;
+        for (;;) {
+            if (buffer_length() < 8) {
+                // not enough data to search for frame boundary
+                TRACEF("not enough data to search for frame boundary: %u", buffer_length());
+                return nullptr;
+            }
+
+            if (is_frame_boundary()) {
+                if (did_skip_anything) {
+                    // found frame boundary (only print once)
+                    VERBOSEF("found frame boundary");
+                }
+                break;
+            }
+
+            // skip one byte and try again
+            discard(1u);
+            did_skip_anything = true;
+        }
+
+        // read header
+        copy_to_buffer(buffer, 6u);
+
+        Decoder header_decoder(buffer, 6);
+        header_decoder.skip(2);  // skip frame boundary
+        auto message_class = header_decoder.u1();
+        auto message_id    = header_decoder.u1();
+        auto length        = static_cast<uint32_t>(header_decoder.u2());
+
+        auto type = (static_cast<uint16_t>(message_class) << 8) | static_cast<uint16_t>(message_id);
+        if (length > MAX_PAYLOAD_LENGTH) {
+            // Not a valid header, this was a false sync. Step over one byte of the frame
+            // boundary so a real boundary starting one byte later is still found.
+            VERBOSEF("invalid length");
+            record_frame_error();
+            discard(1u);
+            continue;
+        } else if (buffer_length() < length + 8) {
+            // not enough data for payload
+            TRACEF("not enough data for payload: %u of %u", buffer_length(), length + 8);
             return nullptr;
         }
 
-        if (is_frame_boundary()) {
-            if (did_skip_anything) {
-                // found frame boundary (only print once)
-                VERBOSEF("found frame boundary");
-            }
+        copy_to_buffer(buffer, length + 8);
+
+        // check checksum
+        auto calculated_checksum = checksum_message(buffer, length + 8);
+        auto expected_checksum   = (static_cast<uint16_t>(buffer[length + 7]) << 8) |
+                                 static_cast<uint16_t>(buffer[length + 6]);
+        if (calculated_checksum != expected_checksum) {
+            // Either a false sync or a truncated/corrupted message. Keep searching from the
+            // next byte.
+            VERBOSEF("checksum failed");
+            record_frame_error();
+            discard(1u);
+            continue;
+        }
+
+        skip(length + 8);
+
+        // parse payload
+        Decoder              decoder(buffer + 6, length);
+        std::vector<uint8_t> data(buffer, buffer + length + 8);
+
+        std::unique_ptr<Message> result;
+        switch (type) {
+        case 0x0107: result = UbxNavPvt::parse(decoder, std::move(data)); break;
+        case 0x0A04: result = UbxMonVer::parse(decoder, std::move(data)); break;
+        case 0x068B: result = UbxCfgValget::parse(decoder, std::move(data)); break;
+        case 0x0501: result = UbxAckAck::parse(decoder, std::move(data)); break;
+        case 0x0500: result = UbxAckNak::parse(decoder, std::move(data)); break;
+        case 0x0213: result = RxmSfrbx::parse(decoder, std::move(data)); break;
+        case 0x0215: result = UbxRxmRawx::parse(decoder, std::move(data)); break;
+        case 0x0232: result = UbxRxmRtcm::parse(decoder, std::move(data)); break;
+        case 0x0233: result = UbxRxmSpartn::parse(decoder, std::move(data)); break;
+        default:
+            result = std::unique_ptr<Message>{
+                new UnsupportedMessage(message_class, message_id, std::move(data))};
             break;
         }
 
-        // skip one byte and try again
-        skip(1u);
-        did_skip_anything = true;
+        DEBUGF("ubx: %02X-%02X, length: %u, %s", message_class, message_id, length,
+               result ? "success" : "error");
+
+        if (!result) {
+            // The frame was consumed but the payload could not be decoded. Keep draining
+            // instead of reporting "no data available" to the caller.
+            record_frame_error();
+            continue;
+        }
+
+        return result;
     }
-
-    // check that we have enough data for the header
-    if (buffer_length() < 8) {
-        // not enough data for header
-        VERBOSEF("not enough data for header: %u", buffer_length());
-        return nullptr;
-    }
-
-    // read header
-    uint8_t buffer[8192];
-    copy_to_buffer(buffer, 6u);
-
-    Decoder header_decoder(buffer, 6);
-    header_decoder.skip(2);  // skip frame boundary
-    auto message_class = header_decoder.u1();
-    auto message_id    = header_decoder.u1();
-    auto length        = static_cast<uint32_t>(header_decoder.u2());
-
-    auto type = (static_cast<uint16_t>(message_class) << 8) | static_cast<uint16_t>(message_id);
-    if (length > 8192) {
-        // invalid length
-        skip(2u);
-        VERBOSEF("invalid length");
-        return nullptr;
-    } else if (buffer_length() < length + 8) {
-        // not enough data for payload
-        TRACEF("not enough data for payload: %u of %u", buffer_length(), length + 8);
-        return nullptr;
-    }
-
-    copy_to_buffer(buffer, length + 8);
-
-    // check checksum
-    auto calculated_checksum = checksum_message(buffer, length + 8);
-    auto expected_checksum   = (static_cast<uint16_t>(buffer[length + 7]) << 8) |
-                             static_cast<uint16_t>(buffer[length + 6]);
-    if (calculated_checksum != expected_checksum) {
-        // checksum failed
-        skip(2u);
-        VERBOSEF("checksum failed");
-        return nullptr;
-    }
-
-    skip(length + 8);
-
-    // parse payload
-    Decoder              decoder(buffer + 6, length);
-    std::vector<uint8_t> data(buffer, buffer + length + 8);
-
-    std::unique_ptr<Message> result;
-    switch (type) {
-    case 0x0107: result = UbxNavPvt::parse(decoder, std::move(data)); break;
-    case 0x0A04: result = UbxMonVer::parse(decoder, std::move(data)); break;
-    case 0x068B: result = UbxCfgValget::parse(decoder, std::move(data)); break;
-    case 0x0501: result = UbxAckAck::parse(decoder, std::move(data)); break;
-    case 0x0500: result = UbxAckNak::parse(decoder, std::move(data)); break;
-    case 0x0213: result = RxmSfrbx::parse(decoder, std::move(data)); break;
-    case 0x0215: result = UbxRxmRawx::parse(decoder, std::move(data)); break;
-    case 0x0232: result = UbxRxmRtcm::parse(decoder, std::move(data)); break;
-    case 0x0233: result = UbxRxmSpartn::parse(decoder, std::move(data)); break;
-    default:
-        result = std::unique_ptr<Message>{
-            new UnsupportedMessage(message_class, message_id, std::move(data))};
-        break;
-    }
-
-    DEBUGF("ubx: %02X-%02X, length: %u, %s", message_class, message_id, length,
-           result ? "success" : "error");
-    return result;
 }
 
 bool Parser::is_frame_boundary() const NOEXCEPT {

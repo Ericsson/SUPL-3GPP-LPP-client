@@ -48,7 +48,15 @@ LPP_Message* UperParser::try_parse() NOEXCEPT {
     if (result.code == RC_FAIL) {
         VERBOSEF("failed to decode uper: %zd bytes consumed (buffer %u)", result.consumed,
                  buffer_length());
-        skip(result.consumed);
+        // Guarantee forward progress: if the decoder rejected the data without consuming
+        // anything, step over one byte. Otherwise the buffer never advances and this input
+        // stalls permanently.
+        record_frame_error();
+        if (result.consumed > 0) {
+            skip(result.consumed);
+        } else {
+            discard(1u);
+        }
         ASN_STRUCT_FREE(asn_DEF_LPP_Message, message);
         return nullptr;
     } else if (result.code == RC_WMORE) {
@@ -86,7 +94,13 @@ A_GNSS_ProvideAssistanceData* UperParser::try_parse_provide_assistance_data() NO
     if (result.code == RC_FAIL) {
         VERBOSEF("failed to decode uper: %zd bytes consumed (buffer %u)", result.consumed,
                  buffer_length());
-        skip(result.consumed);
+        // Guarantee forward progress, see try_parse().
+        record_frame_error();
+        if (result.consumed > 0) {
+            skip(result.consumed);
+        } else {
+            discard(1u);
+        }
         ASN_STRUCT_FREE(asn_DEF_A_GNSS_ProvideAssistanceData, message);
         return nullptr;
     } else if (result.code == RC_WMORE) {
