@@ -25,6 +25,28 @@ NODISCARD char const* Parser::name() const NOEXCEPT {
 // buffer contains a '$' followed by data that never terminates.
 static CONSTEXPR uint32_t MAX_SENTENCE_LENGTH = 4096;
 
+static char const* checksum_result_name(ChecksumResult result) NOEXCEPT {
+    switch (result) {
+    case ChecksumResult::Ok: return "ok";
+    case ChecksumResult::InvalidStringNostar: return "no '*' delimiter";
+    case ChecksumResult::InvalidStringLength: return "truncated";
+    case ChecksumResult::InvalidValue: return "checksum mismatch";
+    default: return "unknown";
+    }
+}
+
+/// Replace non-printable characters so a false '$' sync inside binary data cannot inject
+/// control or escape sequences into the log.
+static std::string sanitize(std::string const& input) NOEXCEPT {
+    std::string output;
+    output.reserve(input.size());
+    for (auto c : input) {
+        auto uc = static_cast<unsigned char>(c);
+        output += (uc >= 0x20 && uc < 0x7F) ? c : '.';
+    }
+    return output;
+}
+
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -100,7 +122,8 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         if (result != ChecksumResult::Ok) {
             // Either a false '$' sync or a corrupted sentence. Keep searching from the next
             // byte.
-            DEBUGF("checksum failed: \"%s\"", payload.c_str());
+            DEBUGF("rejected sentence (%s): \"%s\"", checksum_result_name(result),
+                   sanitize(payload).c_str());
             record_frame_error();
             discard(1u);
             continue;
@@ -116,9 +139,9 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
             continue;
         }
 
-        // '$XXXXX,' [data] '*XY\r\n'
+        // '$XXXXX,' [data] '*XY' [line ending]
         auto data_start = prefix.size() + 1 /* $ */ + 1 /* , */;
-        auto data_end   = length_with_clrf - 5;
+        auto data_end   = length_with_clrf - line_ending_length - 3 /* *XY */;
         if (data_start >= data_end) {
             // no data
             VERBOSEF("no data");
@@ -127,7 +150,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
 
         auto data_length   = data_end - data_start;
         auto data_payload  = payload.substr(data_start, data_length);
-        auto data_checksum = payload.substr(data_end + 1, data_end + 3);
+        auto data_checksum = payload.substr(data_end + 1, 2);
         DEBUGF("nmea: %s, data: %s", prefix.c_str(), data_payload.c_str());
 
         // parse message
@@ -190,7 +213,7 @@ ChecksumResult Parser::checksum(std::string const& buffer) const {
     auto fmt_string = buffer.substr(1, fmt_end - 1);
 
     try {
-        auto expected_checksum_hex = buffer.substr(fmt_end + 1, fmt_end + 3);
+        auto expected_checksum_hex = buffer.substr(fmt_end + 1, 2);
         auto expected_checksum     = std::stoull(std::string{expected_checksum_hex}, nullptr, 16);
 
         auto calculated_checksum = 0ULL;

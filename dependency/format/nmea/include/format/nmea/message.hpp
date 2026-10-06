@@ -19,15 +19,18 @@ public:
     Message& operator=(Message const&) = delete;
     Message& operator=(Message&&)      = delete;
 
-    /// Get the message prefix, e.g. "$GPGGA".
+    /// Get the message prefix without the leading '$', e.g. "GPGGA".
     NODISCARD const std::string& prefix() const NOEXCEPT { return mPrefix; }
 
     /// Get the message payload.
     NODISCARD const std::string& payload() const NOEXCEPT { return mPayload; }
 
-    /// Get the reconstructed sentence.
+    /// Get the two-character checksum, without the '*' or the line ending.
+    NODISCARD const std::string& checksum() const NOEXCEPT { return mChecksum; }
+
+    /// Get the reconstructed sentence, including the leading '$' and a CRLF line ending.
     NODISCARD std::string sentence() const NOEXCEPT {
-        return mPrefix + "," + mPayload + "*" + mChecksum + "\r\n";
+        return "$" + mPrefix + "," + mPayload + "*" + mChecksum + "\r\n";
     }
 
     /// Print the message to stdout.

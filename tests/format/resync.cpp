@@ -415,6 +415,74 @@ TEST_CASE("NMEA parser - unsupported sentence does not stop the drain") {
     CHECK(drain(parser) == 2);
 }
 
+TEST_CASE("NMEA parser - payload and checksum are split correctly") {
+    auto body     = std::string("GPGST,172814.0,0.006,0.023,0.020,273.6,0.023,0.020,0.031");
+    auto sentence = nmea_sentence(body);
+
+    SUBCASE("CRLF line ending") {
+        format::nmea::Parser parser;
+        REQUIRE(parser.append(reinterpret_cast<uint8_t const*>(sentence.data()), sentence.size()));
+        auto message = parser.try_parse();
+        REQUIRE(message != nullptr);
+        CHECK(message->prefix() == "GPGST");
+        // The last data character must not be lost, and the checksum must not carry the line
+        // ending.
+        CHECK(message->payload() == body.substr(body.find(',') + 1));
+        CHECK(message->checksum().size() == 2);
+        CHECK(message->sentence() == sentence);
+    }
+
+    SUBCASE("LF-only line ending") {
+        auto                 lf_sentence = sentence.substr(0, sentence.size() - 2) + "\n";
+        format::nmea::Parser parser{true};
+        REQUIRE(parser.append(reinterpret_cast<uint8_t const*>(lf_sentence.data()),
+                              lf_sentence.size()));
+        auto message = parser.try_parse();
+        REQUIRE(message != nullptr);
+        CHECK(message->prefix() == "GPGST");
+        CHECK(message->payload() == body.substr(body.find(',') + 1));
+        CHECK(message->checksum().size() == 2);
+        // sentence() always reconstructs with CRLF.
+        CHECK(message->sentence() == sentence);
+    }
+}
+
+TEST_CASE("NMEA parser - reconstructed sentence round-trips with a valid checksum") {
+    char const* bodies[] = {
+        "GPGGA,123519,4807.038,N,01131.000,E,1,08,0.9,545.4,M,46.9,M,",
+        "GPVTG,054.7,T,034.4,M,005.5,N,010.2,K",
+        "GPGST,172814.0,0.006,0.023,0.020,273.6,0.023,0.020,0.031",
+        "GPZDA,201530.00,04,07,2002,00,00",
+    };
+
+    for (auto body : bodies) {
+        auto                 expected = nmea_sentence(body);
+        std::vector<uint8_t> stream;
+        append_nmea(stream, body);
+
+        format::nmea::Parser parser;
+        REQUIRE(parser.append(stream.data(), stream.size()));
+        auto message = parser.try_parse();
+        REQUIRE(message != nullptr);
+
+        // The reconstruction must be byte-identical to the input: leading '$', single
+        // checksum, single line ending.
+        auto rebuilt = message->sentence();
+        CHECK(rebuilt == expected);
+
+        // And it must independently verify.
+        auto star = rebuilt.rfind('*');
+        REQUIRE(star != std::string::npos);
+        REQUIRE(rebuilt[0] == '$');
+        unsigned computed = 0;
+        for (size_t i = 1; i < star; i++) {
+            computed ^= static_cast<unsigned char>(rebuilt[i]);
+        }
+        auto declared = std::stoul(rebuilt.substr(star + 1, 2), nullptr, 16);
+        CHECK(computed == declared);
+    }
+}
+
 //
 // CTRL
 //
