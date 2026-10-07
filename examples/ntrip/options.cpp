@@ -1,4 +1,5 @@
 #include "options.hpp"
+#include <cxx11_compat.hpp>
 #include <version.hpp>
 
 #include <external_warnings.hpp>

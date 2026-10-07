@@ -18,9 +18,9 @@ TEST_CASE("StreamRegistry - add and get") {
     registry.add("test", stream);
 
     CHECK(registry.has("test"));
-    CHECK(registry.get("test") == stream);
+    CHECK((registry.get("test") == stream));
     CHECK_FALSE(registry.has("nonexistent"));
-    CHECK(registry.get("nonexistent") == nullptr);
+    CHECK((registry.get("nonexistent") == nullptr));
 
     ::close(fds[1]);
 }

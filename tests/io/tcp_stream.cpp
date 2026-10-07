@@ -1,4 +1,6 @@
 #include <doctest/doctest.h>
+
+#include <cxx11_compat.hpp>
 #include <io/stream/tcp_client.hpp>
 #include <io/stream/tcp_server.hpp>
 #include <scheduler/periodic.hpp>
@@ -7,6 +9,7 @@
 
 #include "test_helper.hpp"
 
+#include <algorithm>
 #include <cstring>
 
 TEST_CASE("TcpServerStream + TcpClientStream - loopback") {
@@ -184,9 +187,10 @@ TEST_CASE("TcpServerStream - connection churn") {
         run_until_or_timeout(
             scheduler,
             [&] {
-                return std::all_of(clients.begin(), clients.end(), [](auto& c) {
-                    return c->state() == io::Stream::State::Connected;
-                });
+                return std::all_of(clients.begin(), clients.end(),
+                                   [](std::unique_ptr<io::TcpClientStream> const& c) {
+                                       return c->state() == io::Stream::State::Connected;
+                                   });
             },
             std::chrono::milliseconds(2000));
 

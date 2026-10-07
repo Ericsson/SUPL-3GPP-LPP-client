@@ -35,12 +35,29 @@ struct BiasSlots {
 };
 
 // Intermediate per-signal entry used between stage 1 and stage 3.
+//
+// The constructors are explicit rather than relying on aggregate initialization: a default
+// member initializer makes a struct a non-aggregate in C++11, so `RinexBias{a, b, c, d}` would
+// not compile in C++11 compatibility mode.
 struct RinexBias {
     uint8_t rinex_idx;
     double  correction;
     double  continuity_indicator;
     bool    fix_flag;
-    int     mapped_from{-1};  // rinex_idx of source signal if mapped, -1 if original
+    int     mapped_from;  // rinex_idx of source signal if mapped, -1 if original
+
+    RinexBias() NOEXCEPT : rinex_idx(0),
+                           correction(0.0),
+                           continuity_indicator(0.0),
+                           fix_flag(false),
+                           mapped_from(-1) {}
+
+    RinexBias(uint8_t idx, double corr, double continuity, bool fix, int from = -1) NOEXCEPT
+        : rinex_idx(idx),
+          correction(corr),
+          continuity_indicator(continuity),
+          fix_flag(fix),
+          mapped_from(from) {}
 };
 
 // Working set of RINEX biases for one satellite (code or phase).

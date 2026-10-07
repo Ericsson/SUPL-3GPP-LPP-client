@@ -1,4 +1,6 @@
 #include <doctest/doctest.h>
+
+#include <cxx11_compat.hpp>
 #include <io/stream/udp_client.hpp>
 #include <io/stream/udp_server.hpp>
 #include <scheduler/scheduler.hpp>

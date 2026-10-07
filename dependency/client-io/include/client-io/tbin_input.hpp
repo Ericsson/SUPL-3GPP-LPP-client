@@ -16,10 +16,19 @@
 // format_callback delivers each message with the format of the file it came from.
 class TbinInput : public io::Input {
 public:
+    // The constructors are explicit rather than relying on aggregate initialization: a default
+    // member initializer makes a struct a non-aggregate in C++11, so `{path, format, shift}`
+    // would not compile in C++11 compatibility mode.
     struct Source {
         std::string path;
-        InputFormat format   = INPUT_FORMAT_RAW;
-        int64_t     shift_us = 0;
+        InputFormat format;
+        int64_t     shift_us;
+
+        Source() NOEXCEPT : path(), format(INPUT_FORMAT_RAW), shift_us(0) {}
+        Source(std::string p, InputFormat f = INPUT_FORMAT_RAW, int64_t shift = 0) NOEXCEPT
+            : path(std::move(p)),
+              format(f),
+              shift_us(shift) {}
     };
 
     std::function<void(TbinInput&, InputFormat, uint8_t*, size_t)> format_callback;

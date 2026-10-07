@@ -8,6 +8,7 @@ EXTERNAL_WARNINGS_PUSH
 #include <LPP-MessageBody.h>
 EXTERNAL_WARNINGS_POP
 
+#include <cxx11_compat.hpp>
 #include <loglet/loglet.hpp>
 #include <lpp/message.hpp>
 #include <lpp/session.hpp>

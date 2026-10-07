@@ -3,6 +3,10 @@
 #include "bias_map.hpp"
 
 #include <memory>
+// <string> must precede <unordered_map>: the maps below are keyed by std::string, and in C++11
+// mode libstdc++ does not pull <string> in from <unordered_map>, so the hash machinery would be
+// instantiated before <string> provides the std::hash<std::string> specialization.
+#include <string>
 #include <unordered_map>
 #include <vector>
 

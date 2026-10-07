@@ -1,4 +1,6 @@
 #include <chrono>
+
+#include <cxx11_compat.hpp>
 #include <doctest/doctest.h>
 #include <scheduler/file_descriptor.hpp>
 #include <scheduler/periodic.hpp>

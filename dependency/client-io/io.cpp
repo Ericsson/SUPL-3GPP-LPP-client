@@ -22,6 +22,8 @@
 #include <loglet/loglet.hpp>
 #include <scheduler/socket.hpp>
 
+#include <stdexcept>
+
 LOGLET_MODULE(client_io_wiring);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(client_io_wiring)

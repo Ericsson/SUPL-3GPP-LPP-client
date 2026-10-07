@@ -10,6 +10,8 @@
 #include <string>
 #include <vector>
 
+#include <cxx11_compat.hpp>
+
 #include <ephemeris/bds.hpp>
 #include <ephemeris/gal.hpp>
 #include <ephemeris/gps.hpp>
