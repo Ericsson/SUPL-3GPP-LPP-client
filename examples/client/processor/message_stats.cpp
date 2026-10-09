@@ -54,9 +54,9 @@ void MessageStats::print_report() const {
         tag_widths.push_back(static_cast<int>(tag_labels.back().size()));
     }
 
-    INFOF("message statistics (total and per stream):");
+    INFOF("message statistics:");
     for (size_t i = 0; i < tag_names.size(); i++) {
-        INFOF("  %s = %s", tag_labels[i].c_str(), tag_names[i].c_str());
+        INFOF("  %s = tags(%s)", tag_labels[i].c_str(), tag_names[i].c_str());
     }
 
     for (auto const& category_entry : mCategories) {
