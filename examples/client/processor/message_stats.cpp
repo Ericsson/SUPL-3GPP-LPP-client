@@ -38,28 +38,38 @@ void MessageStats::print_report() const {
     }
 
     std::vector<std::string> tag_names;
+    std::vector<std::string> tag_labels;
     std::vector<int>         tag_widths;
     tag_names.reserve(mTagOrder.size());
+    tag_labels.reserve(mTagOrder.size());
     tag_widths.reserve(mTagOrder.size());
-    for (auto tag : mTagOrder) {
-        auto name = tags::to_string(tags::TagMask(tag));
+    for (size_t i = 0; i < mTagOrder.size(); i++) {
+        auto name = tags::to_string(tags::TagMask(mTagOrder[i]));
         if (name.empty()) name = "-";
-        tag_widths.push_back(static_cast<int>(name.size()) < 5 ? 5 : static_cast<int>(name.size()));
         tag_names.push_back(std::move(name));
+
+        char label[16];
+        snprintf(label, sizeof(label), "s%zu", i + 1);
+        tag_labels.emplace_back(label);
+        tag_widths.push_back(static_cast<int>(tag_labels.back().size()));
     }
 
-    INFOF("message statistics:");
+    INFOF("message statistics (total and per stream):");
+    for (size_t i = 0; i < tag_names.size(); i++) {
+        INFOF("  %s = %s", tag_labels[i].c_str(), tag_names[i].c_str());
+    }
+
     for (auto const& category_entry : mCategories) {
         auto const& category = category_entry.first;
         auto const& names    = category_entry.second;
 
-        char header[256];
-        int  offset = snprintf(header, sizeof(header), "%-8s %5s", "name", "total");
-        for (size_t i = 0; i < tag_names.size(); i++) {
+        char        header[256];
+        std::string name_column = "[" + category + "]";
+        int offset = snprintf(header, sizeof(header), "%-8s %5s", name_column.c_str(), "total");
+        for (size_t i = 0; i < tag_labels.size(); i++) {
             offset += snprintf(header + offset, sizeof(header) - static_cast<size_t>(offset),
-                               " %*s", tag_widths[i], tag_names[i].c_str());
+                               " %*s", tag_widths[i], tag_labels[i].c_str());
         }
-        INFOF("%s:", category.c_str());
         INFOF("  %s", header);
 
         uint64_t              grand_total = 0;
