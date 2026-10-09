@@ -167,6 +167,24 @@ void config_dump(Config* config) {
     }
 }
 
+// `--reset-args` discards every argument that came before it, as if the
+// command line had started fresh from this point. If the flag appears
+// multiple times, only the arguments after the last occurrence are kept.
+static std::vector<std::string> filter_reset_args(int argc, char** argv) {
+    std::vector<std::string> args(argv + 1, argv + argc);
+
+    auto last_reset = args.end();
+    for (auto it = args.begin(); it != args.end(); ++it) {
+        if (*it == "--reset-args") last_reset = it;
+    }
+
+    if (last_reset != args.end()) {
+        args.erase(args.begin(), last_reset + 1);
+    }
+
+    return args;
+}
+
 bool config_parse(int argc, char** argv, Config* config) {
     // Register standard tags before parsing so --list-tags works
     auto& registry = global_tag_registry();
@@ -186,6 +204,10 @@ bool config_parse(int argc, char** argv, Config* config) {
     args::HelpFlag help{parser, "help", "Display this help menu", {'?', "help"}};
     args::Flag     version{parser, "version", "Display version information", {'v', "version"}};
     args::Flag     list_tags{parser, "list-tags", "List all available tags", {"list-tags"}};
+    args::Flag     reset_args{parser,
+                          "reset-args",
+                          "Discard all arguments before this flag, as if they were never given",
+                              {"reset-args"}};
 
     ::ls::setup(parser);
 #ifdef INCLUDE_GENERATOR_TOKORO
@@ -225,7 +247,9 @@ bool config_parse(int argc, char** argv, Config* config) {
     ::lpp_static_repeat::setup(parser);
 
     try {
-        parser.ParseCLI(argc, argv);
+        auto filtered_args = filter_reset_args(argc, argv);
+        parser.Prog(argv[0]);
+        parser.ParseCLI(filtered_args);
         if (version) {
             printf("S3LC Client %s\n", CLIENT_VERSION);
             printf("  Commit: %s%s (%s)\n", GIT_COMMIT_HASH, GIT_DIRTY ? "-dirty" : "", GIT_BRANCH);
