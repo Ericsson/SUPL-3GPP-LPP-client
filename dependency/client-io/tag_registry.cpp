@@ -45,6 +45,8 @@ std::string TagRegistry::resolve_alias(std::string const& name) const {
 }
 
 Tag TagRegistry::get_tag(std::string const& name) const {
+    if (name.empty()) return Tag(0);
+
     auto resolved = resolve_alias(name);
     auto it       = mNameToMask.find(resolved);
 
