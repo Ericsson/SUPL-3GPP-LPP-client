@@ -29,7 +29,7 @@ class Scheduler;
 
 /// Tracks how many messages have been received, broken down by a category
 /// (e.g. "nmea", "rtcm", "eph"), a name within that category (e.g. "GGA",
-/// "1019", "G01"), and the tag of the stream the message arrived on.
+/// "1019", "G01"), and the exact tag mask the message carried.
 ///
 /// Single-threaded by design: all recording and reporting happens on the
 /// scheduler thread, since inspectors are dispatched from the scheduler's
@@ -40,18 +40,19 @@ public:
 
     void record(std::string const& category, std::string const& name, uint64_t tag);
 
-    /// Print a table of total and per-stream (tag) counts to stdout.
+    /// Print a table of total and per-tag counts to stdout. Each column is
+    /// one registered tag; a message contributes to every column whose bit
+    /// is set in its tag mask (no merging of combined masks into one column).
     void print_report() const;
 
 private:
     struct Counter {
         uint64_t                     total = 0;
-        std::map<uint64_t, uint64_t> per_tag;
+        std::map<uint64_t, uint64_t> per_tag;  // raw tag mask -> message count
     };
 
     // category -> name -> counter
     std::map<std::string, std::map<std::string, Counter>> mCategories;
-    std::vector<uint64_t>                                 mTagOrder;
 };
 
 class NmeaMessageStats : public streamline::Inspector<NmeaMessage> {

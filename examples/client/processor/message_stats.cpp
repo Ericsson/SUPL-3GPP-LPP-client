@@ -1,6 +1,5 @@
 #include "message_stats.hpp"
 
-#include <algorithm>
 #include <cstdio>
 
 #include <loglet/loglet.hpp>
@@ -25,10 +24,6 @@ void MessageStats::record(std::string const& category, std::string const& name, 
     auto& counter = mCategories[category][name];
     counter.total++;
     counter.per_tag[tag]++;
-
-    if (std::find(mTagOrder.begin(), mTagOrder.end(), tag) == mTagOrder.end()) {
-        mTagOrder.push_back(tag);
-    }
 }
 
 void MessageStats::print_report() const {
@@ -37,27 +32,38 @@ void MessageStats::print_report() const {
         return;
     }
 
-    std::vector<std::string> tag_names;
-    std::vector<std::string> tag_labels;
-    std::vector<int>         tag_widths;
-    tag_names.reserve(mTagOrder.size());
-    tag_labels.reserve(mTagOrder.size());
-    tag_widths.reserve(mTagOrder.size());
-    for (size_t i = 0; i < mTagOrder.size(); i++) {
-        auto name = tags::to_string(tags::TagMask(mTagOrder[i]));
-        if (name.empty()) name = "-";
-        tag_names.push_back(std::move(name));
+    // Decompose every raw tag mask seen so far into its individual
+    // registered tag bits, so e.g. a message tagged `receiver1+input`
+    // increments the `receiver1` and `input` columns separately instead of
+    // needing its own combined column.
+    uint64_t seen_bits = 0;
+    for (auto const& category_entry : mCategories) {
+        for (auto const& name_entry : category_entry.second) {
+            for (auto const& tag_entry : name_entry.second.per_tag) {
+                seen_bits |= tag_entry.first;
+            }
+        }
+    }
 
-        char label[16];
-        snprintf(label, sizeof(label), "s%zu", i + 1);
-        tag_labels.emplace_back(label);
-        tag_widths.push_back(static_cast<int>(tag_labels.back().size()));
+    std::vector<uint64_t>    tag_bits;
+    std::vector<std::string> tag_names;
+    std::vector<int>         tag_widths;
+    for (auto const& info : global_tag_registry().list_tags()) {
+        if ((seen_bits & info.mask.value) == 0) continue;
+        tag_bits.push_back(info.mask.value);
+        tag_names.push_back(info.name);
+        tag_widths.push_back(static_cast<int>(info.name.size()));
+    }
+    auto unnamed_bits = seen_bits;
+    for (auto bit : tag_bits)
+        unnamed_bits &= ~bit;
+    if (unnamed_bits != 0) {
+        tag_bits.push_back(unnamed_bits);
+        tag_names.push_back("?");
+        tag_widths.push_back(1);
     }
 
     INFOF("message statistics:");
-    for (size_t i = 0; i < tag_names.size(); i++) {
-        INFOF("  %s = tags(%s)", tag_labels[i].c_str(), tag_names[i].c_str());
-    }
 
     for (auto const& category_entry : mCategories) {
         auto const& category = category_entry.first;
@@ -65,30 +71,37 @@ void MessageStats::print_report() const {
 
         char        header[256];
         std::string name_column = "[" + category + "]";
-        int offset = snprintf(header, sizeof(header), "%-8s %5s", name_column.c_str(), "total");
-        for (size_t i = 0; i < tag_labels.size(); i++) {
+        int offset = snprintf(header, sizeof(header), "%-8s %5s", name_column.c_str(), "\xCE\xA3");
+        for (size_t i = 0; i < tag_names.size(); i++) {
             offset += snprintf(header + offset, sizeof(header) - static_cast<size_t>(offset),
-                               " %*s", tag_widths[i], tag_labels[i].c_str());
+                               " %*s", tag_widths[i], tag_names[i].c_str());
         }
         INFOF("  %s", header);
 
         uint64_t              grand_total = 0;
-        std::vector<uint64_t> per_tag_totals(mTagOrder.size(), 0);
+        std::vector<uint64_t> per_tag_totals(tag_bits.size(), 0);
 
         for (auto const& name_entry : names) {
             auto const& name    = name_entry.first;
             auto const& counter = name_entry.second;
 
+            std::vector<uint64_t> counts(tag_bits.size(), 0);
+            for (auto const& tag_entry : counter.per_tag) {
+                auto mask  = tag_entry.first;
+                auto count = tag_entry.second;
+                for (size_t i = 0; i < tag_bits.size(); i++) {
+                    if (mask & tag_bits[i]) counts[i] += count;
+                }
+            }
+
             char line[256];
             int  line_offset = snprintf(line, sizeof(line), "  %-8s %5llu", name.c_str(),
                                         static_cast<unsigned long long>(counter.total));
-            for (size_t i = 0; i < mTagOrder.size(); i++) {
-                auto it    = counter.per_tag.find(mTagOrder[i]);
-                auto count = it != counter.per_tag.end() ? it->second : 0;
+            for (size_t i = 0; i < tag_bits.size(); i++) {
                 line_offset +=
                     snprintf(line + line_offset, sizeof(line) - static_cast<size_t>(line_offset),
-                             " %*llu", tag_widths[i], static_cast<unsigned long long>(count));
-                per_tag_totals[i] += count;
+                             " %*llu", tag_widths[i], static_cast<unsigned long long>(counts[i]));
+                per_tag_totals[i] += counts[i];
             }
             INFOF("%s", line);
 
