@@ -33,28 +33,34 @@ void MessageStats::record(std::string const& category, std::string const& name, 
 
 void MessageStats::print_report() const {
     if (mCategories.empty()) {
-        printf("\nMessage statistics: no messages received yet\n\n");
+        INFOF("message statistics: no messages received yet");
         return;
     }
 
     std::vector<std::string> tag_names;
+    std::vector<int>         tag_widths;
     tag_names.reserve(mTagOrder.size());
+    tag_widths.reserve(mTagOrder.size());
     for (auto tag : mTagOrder) {
         auto name = tags::to_string(tags::TagMask(tag));
-        tag_names.push_back(name.empty() ? "-" : name);
+        if (name.empty()) name = "-";
+        tag_widths.push_back(static_cast<int>(name.size()) < 5 ? 5 : static_cast<int>(name.size()));
+        tag_names.push_back(std::move(name));
     }
 
-    printf("\nMessage statistics:\n");
+    INFOF("message statistics:");
     for (auto const& category_entry : mCategories) {
         auto const& category = category_entry.first;
         auto const& names    = category_entry.second;
 
-        printf("\n  %s:\n", category.c_str());
-        printf("    %-12s %10s", "name", "total");
-        for (auto const& tag_name : tag_names) {
-            printf(" %10s", tag_name.c_str());
+        char header[256];
+        int  offset = snprintf(header, sizeof(header), "%-8s %5s", "name", "total");
+        for (size_t i = 0; i < tag_names.size(); i++) {
+            offset += snprintf(header + offset, sizeof(header) - static_cast<size_t>(offset),
+                               " %*s", tag_widths[i], tag_names[i].c_str());
         }
-        printf("\n");
+        INFOF("%s:", category.c_str());
+        INFOF("  %s", header);
 
         uint64_t              grand_total = 0;
         std::vector<uint64_t> per_tag_totals(mTagOrder.size(), 0);
@@ -63,26 +69,32 @@ void MessageStats::print_report() const {
             auto const& name    = name_entry.first;
             auto const& counter = name_entry.second;
 
-            printf("    %-12s %10llu", name.c_str(),
-                   static_cast<unsigned long long>(counter.total));
+            char line[256];
+            int  line_offset = snprintf(line, sizeof(line), "  %-8s %5llu", name.c_str(),
+                                        static_cast<unsigned long long>(counter.total));
             for (size_t i = 0; i < mTagOrder.size(); i++) {
                 auto it    = counter.per_tag.find(mTagOrder[i]);
                 auto count = it != counter.per_tag.end() ? it->second : 0;
-                printf(" %10llu", static_cast<unsigned long long>(count));
+                line_offset +=
+                    snprintf(line + line_offset, sizeof(line) - static_cast<size_t>(line_offset),
+                             " %*llu", tag_widths[i], static_cast<unsigned long long>(count));
                 per_tag_totals[i] += count;
             }
-            printf("\n");
+            INFOF("%s", line);
 
             grand_total += counter.total;
         }
 
-        printf("    %-12s %10llu", "total", static_cast<unsigned long long>(grand_total));
-        for (auto total : per_tag_totals) {
-            printf(" %10llu", static_cast<unsigned long long>(total));
+        char total_line[256];
+        int  total_offset = snprintf(total_line, sizeof(total_line), "  %-8s %5llu", "total",
+                                     static_cast<unsigned long long>(grand_total));
+        for (size_t i = 0; i < per_tag_totals.size(); i++) {
+            total_offset += snprintf(
+                total_line + total_offset, sizeof(total_line) - static_cast<size_t>(total_offset),
+                " %*llu", tag_widths[i], static_cast<unsigned long long>(per_tag_totals[i]));
         }
-        printf("\n");
+        INFOF("%s", total_line);
     }
-    printf("\n");
 }
 
 void NmeaMessageStats::inspect(streamline::System&, DataType const& message,
