@@ -25,6 +25,7 @@ All notable changes to this project will be documented in this file.
 - `ephemeris`: `is_valid()` for GPS/GAL/BDS now handles truncated broadcast week numbers (10/12/13-bit) and week-boundary crossover; an ephemeris from week N+1 queried in late week N is correctly accepted
 
 ### Added
+- `example-client`: `--stats-interval=<seconds>` periodically prints a table of received message counts — in total and per stream — covering NMEA (by sentence prefix), RTCM (by message type), UBX (by class/id), CTRL, LPP, and decoded ephemeris (by satellite, e.g. `G24`/`E12`/`C03`). Disabled by default; intended to make it easy to see which messages (notably EPH, which can be slow to arrive) have and have not been received
 - `example-client`: `--reset-args` flag to discard all preceding command-line arguments as if they had never been given; if given multiple times, only arguments after the last occurrence are kept
 - `tokoro-post`: `--use-ionospheric-height-correction` flag to enable the existing ionospheric height correction on the reference station (previously only reachable via `example-client`); `--no-iod-consistency-check` flag to disable the generator's IOD consistency check (previously always on)
 - `tokoro`: `TOKORO_GRID_DUMP=<path>` environment variable dumps gridded ionospheric correction points (timestamp, GNSS, latitude/longitude grid index, position, satellite, ionospheric residual) to a CSV file for debugging

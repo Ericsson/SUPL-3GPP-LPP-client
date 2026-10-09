@@ -165,6 +165,8 @@ void config_dump(Config* config) {
         DEBUG_INDENT_SCOPE();
         ::ubx_config::dump(config->ubx_config);
     }
+
+    DEBUGF("message stats interval: %d", config->message_stats_interval);
 }
 
 // `--reset-args` discards every argument that came before it, as if the
@@ -208,6 +210,13 @@ bool config_parse(int argc, char** argv, Config* config) {
                           "reset-args",
                           "Discard all arguments before this flag, as if they were never given",
                               {"reset-args"}};
+    args::ValueFlag<int> stats_interval{
+        parser,
+        "seconds",
+        "Periodically print a table of received message counts, in total and per stream "
+        "(default: disabled)",
+        {"stats-interval"},
+    };
 
     ::ls::setup(parser);
 #ifdef INCLUDE_GENERATOR_TOKORO
@@ -307,6 +316,8 @@ bool config_parse(int argc, char** argv, Config* config) {
         ::print::parse(config);
         ::gnss::parse(config);
         ::scheduler::parse(config);
+
+        config->message_stats_interval = stats_interval ? args::get(stats_interval) : 0;
 #ifdef INCLUDE_GENERATOR_RTCM
         ::lpp2rtcm::parse(config);
         ::lpp2frame_rtcm::parse(config);

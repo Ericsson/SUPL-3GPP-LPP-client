@@ -543,6 +543,8 @@ struct Config {
     UbxConfigConfig       ubx_config;
     NtripConfig           ntrip;
     LppStaticRepeatConfig lpp_static_repeat;
+
+    int message_stats_interval = 0;  // seconds; <= 0 disables periodic reporting
 };
 
 LOGLET_MODULE_FORWARD_REF2(client, config);

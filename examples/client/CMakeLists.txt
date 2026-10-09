@@ -31,6 +31,7 @@ add_executable(example_client
     "processor/raw.cpp"
     "processor/test.cpp"
     "processor/possib_logger.cpp"
+    "processor/message_stats.cpp"
 )
 add_executable(examples::client ALIAS example_client)
 

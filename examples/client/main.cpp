@@ -31,6 +31,7 @@ EXTERNAL_WARNINGS_POP
 #include "processor/location_information.hpp"
 #include "processor/lpp.hpp"
 #include "processor/lpp_static_repeat.hpp"
+#include "processor/message_stats.hpp"
 #include "processor/nmea.hpp"
 #include "processor/ntrip_source.hpp"
 #include "processor/raw.hpp"
@@ -1166,6 +1167,8 @@ int main(int argc, char** argv) {
     initialize_inputs(program, program.input);
     initialize_outputs(program, program.output);
     setup_print_inspectors(program);
+
+    message_stats_start(program.stream, program.scheduler, program.config.message_stats_interval);
 
     if (program.config.lpp_static_repeat.enabled) {
         program.stream.add_inspector<LppStaticDataRepeat>(
