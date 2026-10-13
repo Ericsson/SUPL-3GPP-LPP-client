@@ -524,23 +524,6 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     reference_station.is_physical_reference_station = false;
     reference_station.antenna_height                = 0.0;
 
-    messages.push_back(
-        rtcm::generate_1006(reference_station, mGenerateGps, mGenerateGlo, mGenerateGal));
-
-    if (mRtcmPhysicalGroundPositionSet) {
-        auto physical_reference_station_id = 4095u;
-        if (mRtcmReferenceStationId > 1) {
-            physical_reference_station_id = mRtcmReferenceStationId - 1;
-        }
-
-        rtcm::PhysicalReferenceStation physical_reference_station{};
-        physical_reference_station.reference_station_id = physical_reference_station_id;
-        physical_reference_station.x                    = mRtcmPhysicalGroundPosition.x;
-        physical_reference_station.y                    = mRtcmPhysicalGroundPosition.y;
-        physical_reference_station.z                    = mRtcmPhysicalGroundPosition.z;
-        messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
-    }
-
     rtcm::CommonObservationInfo common{};
     common.reference_station_id = mRtcmReferenceStationId;
     common.clock_steering       = 1;
@@ -656,6 +639,27 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         mGenerateGal && msm_gal.satellites.size() > 0 && msm_gal.signals.size() > 0;
     auto will_generate_bds =
         mGenerateBds && msm_bds.satellites.size() > 0 && msm_bds.signals.size() > 0;
+
+    // The GNSS indicator bits in 1005/1006 must reflect what is actually being delivered this
+    // epoch, not merely what was requested. Advertising a system that has no observations (e.g.
+    // GLONASS requested but not yet supported/no satellites available) misleads receivers that
+    // expect a corresponding MSM to follow.
+    messages.push_back(rtcm::generate_1006(reference_station, will_generate_gps, will_generate_glo,
+                                           will_generate_gal));
+
+    if (mRtcmPhysicalGroundPositionSet) {
+        auto physical_reference_station_id = 4095u;
+        if (mRtcmReferenceStationId > 1) {
+            physical_reference_station_id = mRtcmReferenceStationId - 1;
+        }
+
+        rtcm::PhysicalReferenceStation physical_reference_station{};
+        physical_reference_station.reference_station_id = physical_reference_station_id;
+        physical_reference_station.x                    = mRtcmPhysicalGroundPosition.x;
+        physical_reference_station.y                    = mRtcmPhysicalGroundPosition.y;
+        physical_reference_station.z                    = mRtcmPhysicalGroundPosition.z;
+        messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
+    }
 
     if (will_generate_gps) {
         auto last_msm = !will_generate_glo && !will_generate_gal && !will_generate_bds;
