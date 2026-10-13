@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [4.0.26] - 2026-10-13
 
 ### Fixed
 - `client-io`: `TagRegistry::get_tag` logged `Unknown tag ''` on every run — any config with an unset (empty) output tag (default for `location_server`, `lpp2rtcm`, `lpp2spartn`, `tokoro`, `idokeido`) hit this path, since an empty name was looked up without being registered. An empty name is the documented "no tag" sentinel and is now returned without a warning; a genuinely unresolvable non-empty name still warns
