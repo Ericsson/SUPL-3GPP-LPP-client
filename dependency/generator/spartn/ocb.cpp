@@ -623,6 +623,13 @@ void Generator::generate_ocb(uint16_t iod) {
             }
 
             builder.sf013(!do_use_satellite);
+            if (!do_use_satellite) {
+                // NOTE(ewasjon): Per SPARTN SF013, when the DNU flag is set, the remaining
+                // fields of this satellite's block (SF014, SF015, orbit, clock, bias) shall
+                // not be present.
+                continue;
+            }
+
             builder.sf014(satellite.orbit != nullptr, satellite.clock != nullptr,
                           satellite.code_bias != nullptr || satellite.phase_bias != nullptr);
             if (mContinuityIndicator >= 0.0) {

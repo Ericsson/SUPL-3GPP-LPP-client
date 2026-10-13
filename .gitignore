@@ -8,7 +8,8 @@ generated_files
 .vscode
 compile_commands.json
 *Zone.Identifier
-scripts
+scripts/.venv
+scripts/__pycache__
 .cache
 *.swp
 .amazonq/
