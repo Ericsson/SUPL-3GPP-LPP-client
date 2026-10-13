@@ -27,7 +27,7 @@ dependency/          # Library modules (each is a CMake static lib)
   maths/             # mat3, float3
   msgpack/           # MessagePack serialization
   datatrace/         # Optional data tracing (DATA_TRACING=ON)
-examples/            # Binaries: client · ntrip · transform · lpp2spartn · modem_ctrl · crs · ctrl_toggle
+examples/            # Binaries: client · ntrip · transform · lpp2spartn · modem_ctrl · crs · ctrl_toggle · relay · tbin-merge · tbin-parse · tokoro-post
 external/            # Vendored: asn.1 (lpp_generated, supl_generated) · args (CLI) · eigen3 (CPM)
 tests/               # doctest unit tests + libFuzzer fuzz targets
 cmake/               # CMake modules, toolchains, setup_target()
