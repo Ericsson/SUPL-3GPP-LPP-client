@@ -743,7 +743,7 @@ static void initialize_outputs(Program& program, ProgramOutput& config) {
 #ifdef DATA_TRACING
     if (possib_output) program.stream.add_inspector<PossibOutput>(config);
 #endif
-    if (location_output) program.stream.add_inspector<LocationOutput>(config);
+    if (location_output) program.stream.add_inspector<LocationOutput>(program);
     if (test_output)
         test_outputer(program.scheduler, config, global_tag_registry().get_tag("test"));
 }
