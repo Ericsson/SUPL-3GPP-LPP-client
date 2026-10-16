@@ -34,11 +34,11 @@ private:
 
 class LocationOutput : public streamline::Inspector<lpp::LocationInformation> {
 public:
-    LocationOutput(ProgramOutput const& output) : mOutput(output) {}
+    LocationOutput(Program const& program) : mProgram(program) {}
 
     NODISCARD char const* name() const NOEXCEPT override { return "LocationOutput"; }
     void inspect(streamline::System&, DataType const& location, uint64_t tag) NOEXCEPT override;
 
 private:
-    ProgramOutput const& mOutput;
+    Program const& mProgram;
 };
