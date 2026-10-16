@@ -1,4 +1,5 @@
 #pragma once
+#include <chrono>
 #include <memory>
 #include <vector>
 
@@ -19,8 +20,9 @@ struct HostOptions {
 };
 
 struct Options {
-    HostOptions   host;
-    OutputsConfig outputs;
+    HostOptions               host;
+    OutputsConfig             outputs;
+    std::chrono::milliseconds delay{0};
 };
 
 extern Options parse_configuration(int argc, char** argv);
