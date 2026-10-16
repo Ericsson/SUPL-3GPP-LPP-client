@@ -1,13 +1,17 @@
 #include <arpa/inet.h>
+#include <chrono>
 #include <client-io/io.hpp>
 #include <client-io/registry.hpp>
 #include <cstring>
+#include <deque>
 #include <exception>
 #include <loglet/loglet.hpp>
 #include <netdb.h>
+#include <poll.h>
 #include <scheduler/scheduler.hpp>
 #include <stdexcept>
 #include <unistd.h>
+#include <vector>
 #include "options.hpp"
 
 LOGLET_MODULE(ntrip);
@@ -144,10 +148,65 @@ public:
 
     ssize_t read(void* buffer, size_t size) { return ::read(mSocket, buffer, size); }
 
+    NODISCARD int fd() const NOEXCEPT { return mSocket; }
+
 private:
     int         mSocket;
     std::string mUsername;
     std::string mPassword;
+};
+
+// Buffers incoming chunks and releases them to the outputs once they are
+// older than the configured delay, preserving arrival order.
+class DelayBuffer {
+public:
+    EXPLICIT DelayBuffer(std::chrono::milliseconds delay) NOEXCEPT : mDelay(delay) {}
+
+    void push(uint8_t const* data, size_t length) {
+        mChunks.push_back(
+            Chunk{std::vector<uint8_t>(data, data + length), std::chrono::steady_clock::now()});
+    }
+
+    // Invokes `emit` for every chunk that has aged past the configured delay.
+    template <typename Emit>
+    void flush_due(Emit&& emit) {
+        auto now = std::chrono::steady_clock::now();
+        while (!mChunks.empty() && now - mChunks.front().arrival >= mDelay) {
+            emit(mChunks.front().data.data(), mChunks.front().data.size());
+            mChunks.pop_front();
+        }
+    }
+
+    // Invokes `emit` for every remaining chunk, regardless of age (used to
+    // drain the buffer once the upstream connection ends).
+    template <typename Emit>
+    void flush_all(Emit&& emit) {
+        while (!mChunks.empty()) {
+            emit(mChunks.front().data.data(), mChunks.front().data.size());
+            mChunks.pop_front();
+        }
+    }
+
+    NODISCARD bool empty() const NOEXCEPT { return mChunks.empty(); }
+
+    // Time until the oldest buffered chunk becomes due, or zero if none are
+    // buffered or one is already due.
+    NODISCARD std::chrono::milliseconds time_until_next() const NOEXCEPT {
+        if (mChunks.empty()) return std::chrono::milliseconds(0);
+        auto age       = std::chrono::steady_clock::now() - mChunks.front().arrival;
+        auto remaining = mDelay - age;
+        if (remaining < std::chrono::milliseconds(0)) return std::chrono::milliseconds(0);
+        return std::chrono::duration_cast<std::chrono::milliseconds>(remaining);
+    }
+
+private:
+    struct Chunk {
+        std::vector<uint8_t>                  data;
+        std::chrono::steady_clock::time_point arrival;
+    };
+
+    std::chrono::milliseconds mDelay;
+    std::deque<Chunk>         mChunks;
 };
 
 int main(int argc, char** argv) {
@@ -199,27 +258,61 @@ int main(int argc, char** argv) {
     }
 
     INFOF("streaming — %zu output(s)", outputs.size());
+    if (options.delay.count() > 0) {
+        INFOF("delaying forwarded data by %lld ms", static_cast<long long>(options.delay.count()));
+    }
+
+    DelayBuffer delay_buffer(options.delay);
+    auto        emit = [&](uint8_t const* data, size_t length) {
+        for (auto& out : outputs) {
+            out->write(data, length);
+        }
+    };
+
     size_t total_bytes = 0;
     char   temp[4096];
     for (;;) {
-        auto bytes = ntrip.read(temp, sizeof(temp));
-        if (bytes < 0) {
-            throw std::runtime_error("Failed to read from NTRIP");
-        } else if (bytes == 0) {
-            break;
+        // Wait for incoming data, but wake up early if a delayed chunk is due
+        // to be flushed even when no new data arrives.
+        struct pollfd pfd{};
+        pfd.fd     = ntrip.fd();
+        pfd.events = POLLIN;
+
+        auto wait_ms     = delay_buffer.time_until_next();
+        auto timeout_ms  = options.delay.count() > 0 ? static_cast<int>(wait_ms.count()) : -1;
+        auto poll_result = ::poll(&pfd, 1, timeout_ms);
+        if (poll_result < 0) {
+            if (errno == EINTR) continue;
+            throw std::runtime_error("Failed to poll NTRIP socket");
         }
 
-        auto length = static_cast<size_t>(bytes);
-        total_bytes += length;
-        if (host.hexdump) {
-            hexdump(temp, length);
+        if (poll_result > 0 && (pfd.revents & (POLLIN | POLLERR | POLLHUP))) {
+            auto bytes = ntrip.read(temp, sizeof(temp));
+            if (bytes < 0) {
+                throw std::runtime_error("Failed to read from NTRIP");
+            } else if (bytes == 0) {
+                break;
+            }
+
+            auto length = static_cast<size_t>(bytes);
+            total_bytes += length;
+            if (host.hexdump) {
+                hexdump(temp, length);
+            }
+
+            if (options.delay.count() > 0) {
+                delay_buffer.push(reinterpret_cast<uint8_t*>(temp), length);
+            } else {
+                emit(reinterpret_cast<uint8_t*>(temp), length);
+            }
         }
 
-        for (auto& out : outputs) {
-            out->write(reinterpret_cast<uint8_t*>(temp), length);
-        }
+        delay_buffer.flush_due(emit);
         (void)scheduler.execute_once();
     }
+
+    // Drain any remaining delayed data before exiting.
+    delay_buffer.flush_all(emit);
 
     INFOF("done — %zu bytes total", total_bytes);
 }

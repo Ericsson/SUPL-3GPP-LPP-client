@@ -25,7 +25,13 @@ static args::ValueFlag<std::string> gNtripPassword{
     gNtrip, "password", "Password", {"password"}, args::Options::Single};
 static args::ValueFlag<std::string> gNmeaString{
     gNtrip, "nmea", "NMEA string to send", {"nmea"}, args::Options::Single};
-static args::Flag gHexdump{gNtrip, "hexdump", "Hexdump received data", {"hexdump"}};
+static args::Flag              gHexdump{gNtrip, "hexdump", "Hexdump received data", {"hexdump"}};
+static args::ValueFlag<double> gDelay{
+    gNtrip,
+    "seconds",
+    "Delay before forwarding received RTCM data, in seconds (default: 0)",
+    {"delay"},
+    args::Options::Single};
 
 static HostOptions parse_host() {
     if (!gNtripHostname) throw args::RequiredError("--host");
@@ -64,5 +70,15 @@ Options parse_configuration(int argc, char** argv) {
     Options opts;
     opts.host = parse_host();
     output::parse(opts.outputs);
+
+    if (gDelay) {
+        auto seconds = gDelay.Get();
+        if (seconds < 0.0) {
+            std::cerr << "Error: --delay must not be negative\n";
+            exit(1);
+        }
+        opts.delay = std::chrono::milliseconds(static_cast<int64_t>(seconds * 1000.0));
+    }
+
     return opts;
 }
