@@ -239,6 +239,20 @@ static args::Flag gPhaseAlignment{
     {"tkr-phase-alignment"},
 };
 
+static args::ValueFlag<std::string> gAntennaDescriptor{
+    gGroup,
+    "string",
+    "Antenna descriptor string for RTCM MT1033 (empty = unknown)",
+    {"tkr-antenna-descriptor"},
+};
+
+static args::ValueFlag<std::string> gReceiverDescriptor{
+    gGroup,
+    "string",
+    "Receiver type descriptor string for RTCM MT1033 (empty = unknown)",
+    {"tkr-receiver-descriptor"},
+};
+
 #ifdef INCLUDE_RINEX_FORMAT
 static args::Flag gGenerateRinex{
     gGroup,
@@ -491,6 +505,8 @@ void parse(Config* config) {
     tokoro.ocit                               = false;
     tokoro.negative_phase_windup              = false;
     tokoro.phase_alignment                    = false;
+    tokoro.antenna_descriptor                 = "";
+    tokoro.receiver_descriptor                = "";
 #ifdef INCLUDE_RINEX_FORMAT
     tokoro.generate_rinex = false;
 #endif
@@ -678,6 +694,8 @@ void parse(Config* config) {
     if (gOcit) tokoro.ocit = true;
     if (gNegativePhaseWindup) tokoro.negative_phase_windup = true;
     if (gPhaseAlignment) tokoro.phase_alignment = true;
+    if (gAntennaDescriptor) tokoro.antenna_descriptor = gAntennaDescriptor.Get();
+    if (gReceiverDescriptor) tokoro.receiver_descriptor = gReceiverDescriptor.Get();
 
 #ifdef INCLUDE_RINEX_FORMAT
     if (gGenerateRinex) tokoro.generate_rinex = true;
@@ -790,6 +808,8 @@ void dump(TokoroConfig const& config) {
     DEBUGF("rtoc:                    %s", config.rtoc ? "true" : "false");
     DEBUGF("ocit:                    %s", config.ocit ? "true" : "false");
     DEBUGF("negative phase windup:   %s", config.negative_phase_windup ? "true" : "false");
+    DEBUGF("antenna descriptor:  \"%s\"", config.antenna_descriptor.c_str());
+    DEBUGF("receiver descriptor: \"%s\"", config.receiver_descriptor.c_str());
 #ifdef INCLUDE_RINEX_FORMAT
     DEBUGF("generate rinex:          %s", config.generate_rinex ? "true" : "false");
 #endif

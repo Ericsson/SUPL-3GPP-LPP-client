@@ -15,6 +15,7 @@ add_library(dependency_generator_rtcm STATIC
     "messages/1230.cpp"
     "messages/residuals.cpp"
     "messages/reference_station.cpp"
+    "messages/antenna_descriptor.cpp"
 )
 add_library(dependency::generator::rtcm ALIAS dependency_generator_rtcm)
 

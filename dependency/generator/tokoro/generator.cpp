@@ -71,6 +71,8 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
       mPhaseAlignment(false),
+      mAntennaDescriptor(),
+      mReceiverDescriptor(),
 #ifdef INCLUDE_FORMAT_RINEX
       mGenerateRinex(false),
 #endif
@@ -646,6 +648,15 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     // expect a corresponding MSM to follow.
     messages.push_back(rtcm::generate_1006(reference_station, will_generate_gps, will_generate_glo,
                                            will_generate_gal));
+
+    rtcm::AntennaDescriptor antenna_descriptor{};
+    antenna_descriptor.antenna_descriptor        = mAntennaDescriptor;
+    antenna_descriptor.antenna_setup_id          = 0;
+    antenna_descriptor.antenna_serial_number     = "";
+    antenna_descriptor.receiver_type_descriptor  = mReceiverDescriptor;
+    antenna_descriptor.receiver_firmware_version = "";
+    antenna_descriptor.receiver_serial_number    = "";
+    messages.push_back(rtcm::generate_1033(reference_station, antenna_descriptor));
 
     if (mRtcmPhysicalGroundPositionSet) {
         auto physical_reference_station_id = 4095u;

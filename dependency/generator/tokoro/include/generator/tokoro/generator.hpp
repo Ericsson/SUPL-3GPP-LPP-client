@@ -91,6 +91,12 @@ public:
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
     void set_phase_alignment(bool enabled) { mPhaseAlignment = enabled; }
+    void set_antenna_descriptor(std::string descriptor) NOEXCEPT {
+        mAntennaDescriptor = std::move(descriptor);
+    }
+    void set_receiver_descriptor(std::string descriptor) NOEXCEPT {
+        mReceiverDescriptor = std::move(descriptor);
+    }
 #ifdef INCLUDE_FORMAT_RINEX
     void set_generate_rinex(bool enabled) { mGenerateRinex = enabled; }
 #endif
@@ -133,23 +139,25 @@ private:
     Float3 mRtcmPhysicalGroundPosition;
     bool   mRtcmPhysicalGroundPositionSet;
 
-    bool     mGenerateGps;
-    bool     mGenerateGlo;
-    bool     mGenerateGal;
-    bool     mGenerateBds;
-    bool     mGenerateQzs;
-    bool     mShapiroCorrection;
-    bool     mEarthSolidTidesCorrection;
-    bool     mPhaseWindupCorrection;
-    bool     mAntennaPhaseVariation;
-    bool     mTropoHeightCorrection;
-    bool     mTropoHydrostaticDelta;
-    double   mElevationMask;
-    bool     mPhaseRangeRate;
-    uint32_t mRtcmReferenceStationId;
-    uint32_t mRtcmMsmType;
-    bool     mNegativePhaseWindup;
-    bool     mPhaseAlignment;
+    bool        mGenerateGps;
+    bool        mGenerateGlo;
+    bool        mGenerateGal;
+    bool        mGenerateBds;
+    bool        mGenerateQzs;
+    bool        mShapiroCorrection;
+    bool        mEarthSolidTidesCorrection;
+    bool        mPhaseWindupCorrection;
+    bool        mAntennaPhaseVariation;
+    bool        mTropoHeightCorrection;
+    bool        mTropoHydrostaticDelta;
+    double      mElevationMask;
+    bool        mPhaseRangeRate;
+    uint32_t    mRtcmReferenceStationId;
+    uint32_t    mRtcmMsmType;
+    bool        mNegativePhaseWindup;
+    bool        mPhaseAlignment;
+    std::string mAntennaDescriptor;
+    std::string mReceiverDescriptor;
 #ifdef INCLUDE_FORMAT_RINEX
     bool mGenerateRinex;
 #endif

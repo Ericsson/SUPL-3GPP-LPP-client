@@ -94,6 +94,7 @@ private:
 
 struct ReferenceStation;
 struct PhysicalReferenceStation;
+struct AntennaDescriptor;
 
 /// Generates RTCM messages based on LPP RTK messages.
 class Generator {
@@ -137,6 +138,9 @@ extern Message generate_1006(ReferenceStation const& reference_station, bool gps
 
 extern Message generate_1032(ReferenceStation const&         reference_station,
                              PhysicalReferenceStation const& physical_reference_station);
+
+extern Message generate_1033(ReferenceStation const&  reference_station,
+                             AntennaDescriptor const& antenna_descriptor);
 
 }  // namespace rtcm
 }  // namespace generator
