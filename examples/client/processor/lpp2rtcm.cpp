@@ -24,6 +24,7 @@ Lpp2Rtcm::Lpp2Rtcm(ProgramOutput const& output, Lpp2RtcmConfig const& config,
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM5) mFilter.msm.force_msm5 = true;
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM6) mFilter.msm.force_msm6 = true;
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM7) mFilter.msm.force_msm7 = true;
+    mFilter.signals.ignore_cnr = mConfig.ignore_cnr;
 }
 
 Lpp2Rtcm::~Lpp2Rtcm() {

@@ -174,6 +174,9 @@
         --l2r-msm=[type]                  Which MSM type to generate
                                           One of: any, 4, 5, 6, 7
                                           Default: any
+        --l2r-ignore-cnr                  Ignore the carrier-to-noise ratio
+                                          (CNR) of signals, encoding it as not
+                                          included
       LPP to framed RTCM:
         --lpp2fr                          Enable wrapping LPP messages in RTCM
                                           messages

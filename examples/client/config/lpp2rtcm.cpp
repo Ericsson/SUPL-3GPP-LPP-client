@@ -58,6 +58,13 @@ static args::ValueFlag<std::string> gMsmType{
     {"l2r-msm"},
 };
 
+static args::Flag gIgnoreCnr{
+    gGroup,
+    "ignore-cnr",
+    "Ignore the carrier-to-noise ratio (CNR) of signals, encoding it as not included",
+    {"l2r-ignore-cnr"},
+};
+
 static args::ValueFlag<size_t> gMaxConversions{
     gGroup,
     "max-conversions",
@@ -87,6 +94,7 @@ void parse(Config* config) {
     lpp2rtcm.generate_galileo = true;
     lpp2rtcm.generate_beidou  = true;
     lpp2rtcm.msm_type         = Lpp2RtcmConfig::MsmType::ANY;
+    lpp2rtcm.ignore_cnr       = false;
     lpp2rtcm.max_conversions  = 0;
     lpp2rtcm.output_tag       = "";
 
@@ -95,6 +103,7 @@ void parse(Config* config) {
     if (gNoGlonass) lpp2rtcm.generate_glonass = false;
     if (gNoGalileo) lpp2rtcm.generate_galileo = false;
     if (gNoBeidou) lpp2rtcm.generate_beidou = false;
+    if (gIgnoreCnr) lpp2rtcm.ignore_cnr = true;
 
     if (gMsmType) {
         auto type = gMsmType.Get();
@@ -128,6 +137,7 @@ void dump(Lpp2RtcmConfig const& config) {
     DEBUGF("glonass: %s", config.generate_glonass ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.generate_galileo ? "enabled" : "disabled");
     DEBUGF("beidou:  %s", config.generate_beidou ? "enabled" : "disabled");
+    DEBUGF("ignore cnr: %s", config.ignore_cnr ? "enabled" : "disabled");
 
     DEBUGF("msm type: %s", [&]() {
         switch (config.msm_type) {
