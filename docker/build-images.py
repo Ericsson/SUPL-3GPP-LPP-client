@@ -55,6 +55,10 @@ APPS = {
         'dockerfile': 'Dockerfile.release.modem-ctrl',
         'target': 'example-modem-ctrl',
     },
+    'ntrip-caster': {
+        'dockerfile': 'Dockerfile.release.ntrip-caster',
+        'target': 'example-ntrip-caster',
+    },
     'tools': {
         'dockerfile': 'Dockerfile.tools',
         'targets': ['example-client', 'example-relay', 'example-ntrip', 'example-modem-ctrl'],
