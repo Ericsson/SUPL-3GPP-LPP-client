@@ -14,6 +14,7 @@ add_library(dependency_generator_rtcm STATIC
     "messages/msm.cpp"
     "messages/1230.cpp"
     "messages/residuals.cpp"
+    "messages/residuals_bds_gal.cpp"
     "messages/reference_station.cpp"
     "messages/antenna_descriptor.cpp"
 )

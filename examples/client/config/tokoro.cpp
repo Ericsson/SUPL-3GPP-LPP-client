@@ -305,6 +305,16 @@ static args::Flag gUseIonosphericHeightCorrection{
     {"tkr-use-ionospheric-height-correction"},
 };
 
+static args::Flag gGenerateResiduals{
+    gGroup,
+    "residuals",
+    "Generate RTCM Network RTK Residual messages (1030/1303/1304) for GPS/BDS/Galileo. The "
+    "ocs/Ics fields carry point tropospheric/ionospheric corrections (not interpolation-residual "
+    "standard deviations as documented by RTCM 10403.4); ods/ohs/Ids are always zero. Default off "
+    "to avoid silently changing the wire format for existing deployments.",
+    {"tkr-residuals"},
+};
+
 static args::ValueFlag<std::string> gAntexFile{
     gGroup,
     "file",
@@ -517,6 +527,7 @@ void parse(Config* config) {
     tokoro.require_iono                      = true;
     tokoro.use_tropospheric_model            = false;
     tokoro.use_ionospheric_height_correction = false;
+    tokoro.generate_residuals                = false;
 
     tokoro.vrs_mode                   = TokoroConfig::VrsMode::Dynamic;
     tokoro.dynamic_distance_threshold = 5.0;
@@ -707,6 +718,7 @@ void parse(Config* config) {
     if (gIonoOptional) tokoro.require_iono = false;
     if (gUseTroposphericModel) tokoro.use_tropospheric_model = true;
     if (gUseIonosphericHeightCorrection) tokoro.use_ionospheric_height_correction = true;
+    if (gGenerateResiduals) tokoro.generate_residuals = true;
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
     if (gNavFile) tokoro.nav_files = gNavFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
@@ -820,6 +832,7 @@ void dump(TokoroConfig const& config) {
     DEBUGF("use tropospheric model:  %s", config.use_tropospheric_model ? "true" : "false");
     DEBUGF("use ionospheric height:  %s",
            config.use_ionospheric_height_correction ? "true" : "false");
+    DEBUGF("generate residuals:      %s", config.generate_residuals ? "true" : "false");
 
     DEBUGF("antex file: \"%s\"", config.antex_file.c_str());
     for (auto const& nf : config.nav_files)

@@ -31,6 +31,7 @@ namespace generator {
 namespace rtcm {
 class Message;
 struct Observations;
+struct Residuals;
 }  // namespace rtcm
 
 namespace tokoro {
@@ -108,6 +109,7 @@ public:
     void set_use_ionospheric_height_correction(bool enabled) {
         mUseIonosphericHeightCorrection = enabled;
     }
+    void set_generate_residuals(bool enabled) { mGenerateResiduals = enabled; }
 
     void set_diag_output(std::string dir) NOEXCEPT {
         mDiagOutputDir = std::move(dir);
@@ -132,6 +134,8 @@ protected:
                                 rtcm::Observations& observations) NOEXCEPT;
     void build_rtcm_satellite(Satellite const&    satellite,
                               rtcm::Observations& observations) NOEXCEPT;
+    void build_rtcm_residual(Satellite const& satellite, Float3 const& vrs_llh,
+                             rtcm::Residuals& residuals) NOEXCEPT;
 
 private:
     Float3 mGroundPosition;
@@ -168,6 +172,7 @@ private:
     bool mRequireIono;
     bool mUseTroposphericModel;
     bool mUseIonosphericHeightCorrection;
+    bool mGenerateResiduals{false};
 
     bool                                            mGenerateDiag{false};
     std::string                                     mDiagOutputDir;

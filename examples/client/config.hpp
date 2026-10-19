@@ -432,6 +432,8 @@ struct TokoroConfig {
     bool use_tropospheric_model;
     bool use_ionospheric_height_correction;
 
+    bool generate_residuals;
+
     std::string              antex_file;
     std::vector<std::string> nav_files;
     bool                     ignore_bitmask;
