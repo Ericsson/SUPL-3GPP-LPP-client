@@ -513,6 +513,53 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
     }
 }
 
+// Point corrections (not interpolation-residual standard deviations as documented for
+// DF218-222) are encoded in `ocs`/`Ics`, following observed real-world network practice rather
+// than the strict RTCM 10403.4 field definitions, because Tokoro has no model of
+// interpolation-uncertainty growth with distance/height. `ods`/`ohs`/`Ids` are left at zero to
+// avoid fabricating a gradient model that does not exist.
+void ReferenceStation::build_rtcm_residual(Satellite const& satellite, Float3 const& vrs_llh,
+                                           rtcm::Residuals& residuals) NOEXCEPT {
+    FUNCTION_SCOPEF("%s", satellite.id().name());
+
+    auto const& correction_data = *mGenerator.mCorrectionData;
+
+    TroposphericCorrection tropo{};
+    auto                   has_tropo = correction_data.tropospheric(satellite.id(), vrs_llh, tropo);
+
+    IonosphericCorrection iono{};
+    auto                  has_iono = correction_data.ionospheric(satellite.id(), vrs_llh, iono);
+
+    if (!has_tropo && !has_iono) return;
+
+    double frequency = 0.0;
+    switch (satellite.id().gnss()) {
+    case SatelliteId::Gnss::GPS: frequency = SignalId::GPS_L1_CA.frequency(); break;
+    case SatelliteId::Gnss::GALILEO: frequency = SignalId::GALILEO_E1.frequency(); break;
+    case SatelliteId::Gnss::BEIDOU: frequency = SignalId::BEIDOU_B1_I.frequency(); break;
+    default: return;
+    }
+
+    rtcm::Residuals::Satellite rtcm_satellite{};
+    rtcm_satellite.id = satellite.id();
+
+    // DF218 (ocs) and DF221 (Ics) are encoded as unsigned fields with ranges 0-0.127m and
+    // 0-0.511m respectively; clamp since the point corrections used here can be negative or
+    // exceed those ranges (unlike the documented non-negative standard-deviation semantics).
+    auto oc = has_tropo ? (tropo.dry + tropo.wet) : 0.0;
+    auto lc =
+        has_iono ?
+            (40.3e10 * (iono.polynomial_residual + iono.grid_residual) / (frequency * frequency)) :
+            0.0;
+    rtcm_satellite.s_oc = std::min(std::max(oc, 0.0), 0.1275);
+    rtcm_satellite.s_od = 0.0;
+    rtcm_satellite.s_oh = 0.0;
+    rtcm_satellite.s_lc = std::min(std::max(lc, 0.0), 0.5115);
+    rtcm_satellite.s_ld = 0.0;
+
+    residuals.satellites.push_back(rtcm_satellite);
+}
+
 std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -626,6 +673,49 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
             if (!satellite.enabled()) continue;
             if (satellite.id().gnss() != SatelliteId::Gnss::BEIDOU) continue;
             build_rtcm_satellite(satellite, msm_bds);
+        }
+    }
+
+    if (mGenerateResiduals) {
+        auto vrs_llh = ecef_to_llh(mGroundPosition, ellipsoid::gWgs84);
+
+        rtcm::Residuals gps_residuals{};
+        rtcm::Residuals gal_residuals{};
+        rtcm::Residuals bds_residuals{};
+        gps_residuals.time                 = mGenerationTime;
+        gps_residuals.reference_station_id = mRtcmReferenceStationId;
+        gps_residuals.n_refs               = 1;
+        gal_residuals.time                 = mGenerationTime;
+        gal_residuals.reference_station_id = mRtcmReferenceStationId;
+        gal_residuals.n_refs               = 1;
+        bds_residuals.time                 = mGenerationTime;
+        bds_residuals.reference_station_id = mRtcmReferenceStationId;
+        bds_residuals.n_refs               = 1;
+
+        for (auto& satellite : mSatellites) {
+            if (!satellite.enabled()) continue;
+            switch (satellite.id().gnss()) {
+            case SatelliteId::Gnss::GPS:
+                if (mGenerateGps) build_rtcm_residual(satellite, vrs_llh, gps_residuals);
+                break;
+            case SatelliteId::Gnss::GALILEO:
+                if (mGenerateGal) build_rtcm_residual(satellite, vrs_llh, gal_residuals);
+                break;
+            case SatelliteId::Gnss::BEIDOU:
+                if (mGenerateBds) build_rtcm_residual(satellite, vrs_llh, bds_residuals);
+                break;
+            default: break;
+            }
+        }
+
+        if (!gps_residuals.satellites.empty()) {
+            messages.push_back(rtcm::generate_1030(gps_residuals));
+        }
+        if (!bds_residuals.satellites.empty()) {
+            messages.push_back(rtcm::generate_1303(bds_residuals));
+        }
+        if (!gal_residuals.satellites.empty()) {
+            messages.push_back(rtcm::generate_1304(gal_residuals));
         }
     }
 

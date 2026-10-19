@@ -635,6 +635,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_use_tropospheric_model(mConfig.use_tropospheric_model);
     mReferenceStation->set_use_ionospheric_height_correction(
         mConfig.use_ionospheric_height_correction);
+    mReferenceStation->set_generate_residuals(mConfig.generate_residuals);
 
     if (!mConfig.diag_output_dir.empty()) {
         mReferenceStation->set_diag_output(mConfig.diag_output_dir);

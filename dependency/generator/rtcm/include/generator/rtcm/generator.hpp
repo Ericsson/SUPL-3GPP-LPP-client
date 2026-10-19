@@ -142,5 +142,10 @@ extern Message generate_1032(ReferenceStation const&         reference_station,
 extern Message generate_1033(ReferenceStation const&  reference_station,
                              AntennaDescriptor const& antenna_descriptor);
 
+extern Message generate_1030(Residuals const& residuals);
+extern Message generate_1031(Residuals const& residuals);
+extern Message generate_1303(Residuals const& residuals);
+extern Message generate_1304(Residuals const& residuals);
+
 }  // namespace rtcm
 }  // namespace generator
