@@ -14,6 +14,7 @@
 #include <cerrno>
 #include <cstdio>
 #include <cstring>
+#include <ctime>
 #include <memory>
 #include <string>
 #include <unistd.h>
@@ -109,12 +110,37 @@ std::string build_sourcetable(CasterOptions const& opts) {
     return table;
 }
 
+// RFC 1123 date, e.g. "Mon, 19 Oct 2026 13:05:03 UTC".
+std::string http_date() {
+    auto    now = std::time(nullptr);
+    std::tm tm{};
+    gmtime_r(&now, &tm);
+    char buf[40];
+    std::strftime(buf, sizeof(buf), "%a, %d %b %Y %H:%M:%S UTC", &tm);
+    return std::string(buf);
+}
+
 std::string http_response(std::string const& status, std::string const& body) {
     std::string response = "HTTP/1.1 " + status + "\r\n";
     response += "Server: SUPL-3GPP-LPP-client/ntrip-caster\r\n";
     response += "Content-Type: text/plain\r\n";
     response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+    response += "Date: " + http_date() + "\r\n";
     response += "Connection: close\r\n";
+    response += "\r\n";
+    response += body;
+    return response;
+}
+
+// NTRIP sourcetable responses use a "SOURCETABLE <status>" status line
+// instead of "HTTP/1.1 <status>", per the NTRIP 1.0/2.0 convention used by
+// real casters (e.g. "SOURCETABLE 200 OK").
+std::string sourcetable_response(std::string const& body) {
+    std::string response = "SOURCETABLE 200 OK\r\n";
+    response += "Server: SUPL-3GPP-LPP-client/ntrip-caster\r\n";
+    response += "Content-Type: text/plain\r\n";
+    response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+    response += "Date: " + http_date() + "\r\n";
     response += "\r\n";
     response += body;
     return response;
@@ -318,7 +344,7 @@ private:
         if (path.empty()) {
             // Sourcetable request.
             auto body = build_sourcetable(mOptions);
-            send_raw(http_response("200 OK", body));
+            send_raw(sourcetable_response(body));
             fail();  // close after sending the sourcetable
             return;
         }

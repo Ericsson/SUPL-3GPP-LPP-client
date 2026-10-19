@@ -57,7 +57,7 @@ curl --ntrip-version ntrip1 http://alice:secret@127.0.0.1:2101/STREAM
 - `--format-details` — Format details field
 - `--carrier` — Carrier field (default: `2`)
 - `--nav-system` — Navigation system field
-- `--network` — Network field
+- `--network` — Network field (default: empty)
 - `--country` — Country field (default: `SWE`)
 - `--latitude` / `--longitude` — Approximate reference position
 - `--nmea` — Mark the mountpoint as requiring an NMEA GGA sentence from the
