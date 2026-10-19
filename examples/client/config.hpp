@@ -400,6 +400,11 @@ struct TokoroConfig {
     double fixed_rtcm_y;
     double fixed_rtcm_z;
 
+    bool   fixed_physical_station_set;  // physical reference station position (RTCM 1032)
+    double fixed_physical_x;
+    double fixed_physical_y;
+    double fixed_physical_z;
+
     double time_step;
 
     bool shapiro_correction;

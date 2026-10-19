@@ -291,6 +291,15 @@
                                           VRS mode
         --tkr-fixed-rtcm-z=[meter]        Z coordinate for RTCM system in Fixed
                                           VRS mode
+        --tkr-fixed-physical-x=[meter]    X coordinate (RTCM/ECEF) of the
+                                          physical reference station in Fixed
+                                          VRS mode
+        --tkr-fixed-physical-y=[meter]    Y coordinate (RTCM/ECEF) of the
+                                          physical reference station in Fixed
+                                          VRS mode
+        --tkr-fixed-physical-z=[meter]    Z coordinate (RTCM/ECEF) of the
+                                          physical reference station in Fixed
+                                          VRS mode
         --tkr-time-step=[seconds]         Time between each generated message,
                                           used with
                                           `--tkr-gen time-step` or
