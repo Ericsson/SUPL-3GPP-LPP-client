@@ -133,14 +133,30 @@ std::string http_response(std::string const& status, std::string const& body) {
 }
 
 // NTRIP sourcetable responses use a "SOURCETABLE <status>" status line
-// instead of "HTTP/1.1 <status>", per the NTRIP 1.0/2.0 convention used by
-// real casters (e.g. "SOURCETABLE 200 OK").
-std::string sourcetable_response(std::string const& body) {
-    std::string response = "SOURCETABLE 200 OK\r\n";
-    response += "Server: SUPL-3GPP-LPP-client/ntrip-caster\r\n";
-    response += "Content-Type: text/plain\r\n";
-    response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
-    response += "Date: " + http_date() + "\r\n";
+// instead of "HTTP/1.1 <status>", per the NTRIP 1.0 convention used by real
+// casters (e.g. "SOURCETABLE 200 OK"). NTRIP 2.0 clients (those sending
+// "Ntrip-Version: Ntrip/2.0") instead expect a standard HTTP status line
+// with an "Ntrip-Version" header and a "gnss/sourcetable" content type —
+// without this, HTTP-style clients that parse a numeric status code from
+// the response fail to find one in "SOURCETABLE 200 OK" and treat the
+// request as failed.
+std::string sourcetable_response(std::string const& body, bool is_ntrip2) {
+    std::string response;
+    if (is_ntrip2) {
+        response += "HTTP/1.1 200 OK\r\n";
+        response += "Ntrip-Version: Ntrip/2.0\r\n";
+        response += "Server: SUPL-3GPP-LPP-client/ntrip-caster\r\n";
+        response += "Content-Type: gnss/sourcetable\r\n";
+        response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+        response += "Date: " + http_date() + "\r\n";
+        response += "Connection: close\r\n";
+    } else {
+        response += "SOURCETABLE 200 OK\r\n";
+        response += "Server: SUPL-3GPP-LPP-client/ntrip-caster\r\n";
+        response += "Content-Type: text/plain\r\n";
+        response += "Content-Length: " + std::to_string(body.size()) + "\r\n";
+        response += "Date: " + http_date() + "\r\n";
+    }
     response += "\r\n";
     response += body;
     return response;
@@ -301,9 +317,11 @@ private:
         }
 
         std::string username, password;
-        bool        has_auth = false;
+        bool        has_auth  = false;
+        bool        is_ntrip2 = false;
         if (!is_ntrip1) {
-            // Parse headers up to header_end for Authorization.
+            // Parse headers up to header_end for Authorization and
+            // Ntrip-Version.
             auto   headers_block = mRequestBuffer.substr(line_end + 2, header_end - (line_end + 2));
             size_t pos           = 0;
             while (pos < headers_block.size()) {
@@ -326,6 +344,8 @@ private:
                                 has_auth = true;
                             }
                         }
+                    } else if (name == "ntrip-version") {
+                        if (value.find("2.0") != std::string::npos) is_ntrip2 = true;
                     }
                 }
                 if (next == std::string::npos) break;
@@ -333,18 +353,18 @@ private:
             }
         }
 
-        handle_target(target, has_auth, username, password);
+        handle_target(target, has_auth, username, password, is_ntrip2);
     }
 
     void handle_target(std::string const& target, bool has_auth, std::string const& username,
-                       std::string const& password) NOEXCEPT {
+                       std::string const& password, bool is_ntrip2) NOEXCEPT {
         auto path = target;
         if (!path.empty() && path[0] == '/') path = path.substr(1);
 
         if (path.empty()) {
             // Sourcetable request.
             auto body = build_sourcetable(mOptions);
-            send_raw(sourcetable_response(body));
+            send_raw(sourcetable_response(body, is_ntrip2));
             fail();  // close after sending the sourcetable
             return;
         }
