@@ -153,12 +153,13 @@ void Observation::compute_tropospheric(CorrectionData const& correction_data) NO
 }
 
 static double compute_vtec_mapping(double altitude, double elevation) {
-    auto r       = ellipsoid::gWgs84.semi_major_axis + altitude;
-    auto h       = 506.7e3;
-    auto alpha   = 0.9782;
-    auto sin     = std::sin(alpha * (constant::PI / 2.0 - elevation));
-    auto height  = r / (r + h);
-    auto mapping = std::sqrt(1 - height * height * sin * sin);
+    auto r          = ellipsoid::gWgs84.semi_major_axis + altitude;
+    auto h          = 506.7e3;
+    auto alpha      = 0.9782;
+    auto sin        = std::sin(alpha * (constant::PI / 2.0 - elevation));
+    auto height     = r / (r + h);
+    auto cos_zenith = std::sqrt(1 - height * height * sin * sin);
+    auto mapping    = 1.0 / cos_zenith;
     return mapping;
 }
 

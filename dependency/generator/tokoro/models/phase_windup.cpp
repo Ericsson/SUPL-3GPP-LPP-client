@@ -65,7 +65,7 @@ static bool compute_satellite_antenna_basis_velocity(Float3 ground_position,
 
     // unit vector of velocity to satellite position considering Earth rotation
     auto e = satellite_velocity + constant::EARTH_ANGULAR_VELOCITY *
-                                      Float3{-satellite_position.x, satellite_position.y, 0.0};
+                                      Float3{-satellite_position.y, satellite_position.x, 0.0};
     if (!e.normalize()) return false;
     VERBOSEF("e:   %+.4f, %+.4f, %+.4f", e.x, e.y, e.z);
 
@@ -117,7 +117,7 @@ static bool compute_satellite_antenna_basis_yaw(ts::Tai const& emission_time,
 
     auto velocity =
         satellite_velocity +
-        constant::EARTH_ANGULAR_VELOCITY * Float3{-satellite_position.x, satellite_position.y, 0.0};
+        constant::EARTH_ANGULAR_VELOCITY * Float3{-satellite_position.y, satellite_position.x, 0.0};
 
     // normal of the plane formed by the satellite position (from the earth center) and the velocity
     auto n = cross_product(satellite_position, velocity);

@@ -90,12 +90,12 @@ bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
     return true;
 }
 
+// `latitude` is in radians (matches every caller in this file); cos(2*latitude) must not be
+// passed a degrees-converted value.
 static double hydrostatic_function(double latitude, double ellipsoidal_height, double pressure) {
     VSCOPE_FUNCTIONF("%+.8f, %+.8f, %+.8f", latitude * constant::RAD2DEG, ellipsoidal_height,
                      pressure);
-    return 2.2768 /
-           (1.0 - 0.00266 * cos(2.0 * latitude * constant::RAD2DEG) -
-            (2.8e-7) * ellipsoidal_height) *
+    return 2.2768 / (1.0 - 0.00266 * cos(2.0 * latitude) - (2.8e-7) * ellipsoidal_height) *
            pressure * 0.001;
 }
 
