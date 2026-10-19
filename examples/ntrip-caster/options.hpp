@@ -10,9 +10,9 @@ struct MountpointOptions {
     std::string identifier = "SUPL-3GPP-LPP-client";
     std::string format     = "RTCM 3.3";
     std::string format_details;
-    std::string carrier     = "2";
-    std::string nav_system  = "GPS+GLO+GAL+BDS";
-    std::string network     = "SUPL-3GPP-LPP-client";
+    std::string carrier    = "2";
+    std::string nav_system = "GPS+GLO+GAL+BDS";
+    std::string network;
     std::string country     = "SWE";
     double      latitude    = 0.0;
     double      longitude   = 0.0;
