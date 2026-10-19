@@ -6,8 +6,14 @@ and broadcasts the raw bytes to every connected NTRIP client.
 
 Supports both NTRIP 1.0 (bare `GET /mountpoint` request, `ICY 200 OK`
 response) and NTRIP 2.0 (HTTP/1.1 request with headers). Serves a
-sourcetable when a client requests `/`, and optionally requires a
-username/password (HTTP Basic authentication) to access the mountpoint.
+sourcetable when a client requests `/`, choosing the response format based
+on the client's declared protocol version: NTRIP 1.0 clients (or any client
+that omits `Ntrip-Version`) get a `SOURCETABLE 200 OK` status line with a
+`text/plain` body, while NTRIP 2.0 clients (`Ntrip-Version: Ntrip/2.0`) get
+a standard `HTTP/1.1 200 OK` response with an `Ntrip-Version` header and a
+`gnss/sourcetable` content type — matching the behavior of common casters
+(e.g. Trimble Pivot). Optionally requires a username/password (HTTP Basic
+authentication) to access the mountpoint.
 
 ## Usage
 
@@ -29,16 +35,26 @@ Example — require authentication:
     --mountpoint STREAM --username alice --password secret
 ```
 
-Connect with curl to fetch the sourcetable:
+Connect with curl to fetch the sourcetable. An NTRIP 1.0 client (no
+`Ntrip-Version` header) gets a `SOURCETABLE 200 OK` status line, which curl
+rejects by default — use `--http0.9`:
 
 ```
-curl http://127.0.0.1:2101/
+curl --http0.9 http://127.0.0.1:2101/
 ```
 
-Connect with curl to stream the mountpoint:
+An NTRIP 2.0 client (sending `Ntrip-Version: Ntrip/2.0`) gets a standard
+`HTTP/1.1 200 OK` response instead, which plain curl can parse normally:
 
 ```
-curl --ntrip-version ntrip1 http://alice:secret@127.0.0.1:2101/STREAM
+curl -H "Ntrip-Version: Ntrip/2.0" http://127.0.0.1:2101/
+```
+
+Connect with curl to stream the mountpoint (curl rejects the non-HTTP/1.1
+`ICY 200 OK` response line by default, so `--http0.9` is required):
+
+```
+curl --http0.9 http://alice:secret@127.0.0.1:2101/STREAM
 ```
 
 ## Options
