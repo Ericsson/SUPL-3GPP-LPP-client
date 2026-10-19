@@ -84,7 +84,7 @@ void eci_to_ecef_matrix(ts::Tai const& time, EciEarthParameters const& earth_par
     // Calculate GMST and GAST
     auto gmst = ts::Utc{time}.gmst(ut1_utc);
     auto gast = gmst + nutation.d_psi * cos(eps);
-    gast += (0.00264 * sin(args.d) + 0.000063 * sin(2.0 * args.d)) * constant::ARCSEC2RAD;
+    gast += (0.00264 * sin(args.omega) + 0.000063 * sin(2.0 * args.omega)) * constant::ARCSEC2RAD;
 
     VERBOSEF("gmst: %f", gmst);
     VERBOSEF("gast: %f", gast);
