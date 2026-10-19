@@ -71,6 +71,12 @@ struct MessageFilter {
         /// Generate MT1230 - Glonass bias information.
         bool mt1230 = true;
     } bias;
+
+    struct {
+        /// Ignore the carrier-to-noise ratio (CNR/C-N0) of signals, encoding it as not
+        /// included (DF403/DF408) instead of its received value.
+        bool ignore_cnr = false;
+    } signals;
 };
 
 class Message {

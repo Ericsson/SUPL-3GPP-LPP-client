@@ -196,6 +196,15 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         }
     }
 
+    // Ignore carrier-to-noise ratio, encode as not included instead.
+    if (filter.signals.ignore_cnr) {
+        for (auto& kvp : rtk_data->observations) {
+            for (auto& signal : kvp.second->signals) {
+                signal.carrier_to_noise_ratio = Maybe<double>();
+            }
+        }
+    }
+
     // Purge data that should not be used
     if (!filter.systems.gps) rtk_data->observations.erase(GenericGnssId::GPS);
     if (!filter.systems.glonass) rtk_data->observations.erase(GenericGnssId::GLONASS);

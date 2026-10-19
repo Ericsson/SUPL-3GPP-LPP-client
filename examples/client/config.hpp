@@ -270,6 +270,7 @@ struct Lpp2RtcmConfig {
     bool        generate_galileo;
     bool        generate_beidou;
     MsmType     msm_type;
+    bool        ignore_cnr;
     size_t      max_conversions;
     std::string output_tag;
 };
