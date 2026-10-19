@@ -5,6 +5,7 @@
 
 #include <functional>
 #include <memory>
+#include <string>
 #include <unordered_map>
 #include <vector>
 
@@ -60,6 +61,15 @@ struct PhysicalReferenceStation {
     double   x;
     double   y;
     double   z;
+};
+
+struct AntennaDescriptor {
+    std::string antenna_descriptor;
+    uint8_t     antenna_setup_id;
+    std::string antenna_serial_number;
+    std::string receiver_type_descriptor;
+    std::string receiver_firmware_version;
+    std::string receiver_serial_number;
 };
 
 struct Signal {

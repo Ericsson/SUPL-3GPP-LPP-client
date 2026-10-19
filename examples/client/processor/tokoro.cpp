@@ -617,6 +617,8 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_msm_type(tokoro_rtcm_msm_type(mConfig.msm_type));
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
+    mReferenceStation->set_antenna_descriptor(mConfig.antenna_descriptor);
+    mReferenceStation->set_receiver_descriptor(mConfig.receiver_descriptor);
 #ifdef INCLUDE_FORMAT_RINEX
     mReferenceStation->set_generate_rinex(mConfig.generate_rinex);
 #endif

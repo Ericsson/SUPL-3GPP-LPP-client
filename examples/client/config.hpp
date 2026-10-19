@@ -402,17 +402,19 @@ struct TokoroConfig {
 
     double time_step;
 
-    bool shapiro_correction;
-    bool phase_windup_correction;
-    bool earth_solid_tides_correction;
-    bool antenna_phase_variation_correction;
-    bool tropospheric_height_correction;
-    bool tropospheric_hydrostatic_delta;
-    bool iod_consistency_check;
-    bool rtoc;
-    bool ocit;
-    bool negative_phase_windup;
-    bool phase_alignment;
+    bool        shapiro_correction;
+    bool        phase_windup_correction;
+    bool        earth_solid_tides_correction;
+    bool        antenna_phase_variation_correction;
+    bool        tropospheric_height_correction;
+    bool        tropospheric_hydrostatic_delta;
+    bool        iod_consistency_check;
+    bool        rtoc;
+    bool        ocit;
+    bool        negative_phase_windup;
+    bool        phase_alignment;
+    std::string antenna_descriptor;
+    std::string receiver_descriptor;
 #ifdef INCLUDE_FORMAT_RINEX
     bool generate_rinex;
 #endif
