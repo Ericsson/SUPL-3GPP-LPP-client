@@ -133,6 +133,27 @@ static args::ValueFlag<double> gFixedRtcmZ{
     {"tkr-fixed-rtcm-z"},
 };
 
+static args::ValueFlag<double> gFixedPhysicalX{
+    gGroup,
+    "meter",
+    "X coordinate (RTCM/ECEF) of the physical reference station in Fixed VRS mode",
+    {"tkr-fixed-physical-x"},
+};
+
+static args::ValueFlag<double> gFixedPhysicalY{
+    gGroup,
+    "meter",
+    "Y coordinate (RTCM/ECEF) of the physical reference station in Fixed VRS mode",
+    {"tkr-fixed-physical-y"},
+};
+
+static args::ValueFlag<double> gFixedPhysicalZ{
+    gGroup,
+    "meter",
+    "Z coordinate (RTCM/ECEF) of the physical reference station in Fixed VRS mode",
+    {"tkr-fixed-physical-z"},
+};
+
 static args::ValueFlag<double> gTimeStep{
     gGroup,
     "seconds",
@@ -489,6 +510,10 @@ void parse(Config* config) {
     tokoro.fixed_rtcm_x               = 0.0;
     tokoro.fixed_rtcm_y               = 0.0;
     tokoro.fixed_rtcm_z               = 0.0;
+    tokoro.fixed_physical_station_set = false;
+    tokoro.fixed_physical_x           = 0.0;
+    tokoro.fixed_physical_y           = 0.0;
+    tokoro.fixed_physical_z           = 0.0;
 
     tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
     tokoro.time_step           = 1.0;
@@ -624,6 +649,22 @@ void parse(Config* config) {
         tokoro.fixed_rtcm_x = gFixedRtcmX ? gFixedRtcmX.Get() : tokoro.fixed_itrf_x;
         tokoro.fixed_rtcm_y = gFixedRtcmY ? gFixedRtcmY.Get() : tokoro.fixed_itrf_y;
         tokoro.fixed_rtcm_z = gFixedRtcmZ ? gFixedRtcmZ.Get() : tokoro.fixed_itrf_z;
+
+        if (gFixedPhysicalX || gFixedPhysicalY || gFixedPhysicalZ) {
+            if (!gFixedPhysicalX || !gFixedPhysicalY || !gFixedPhysicalZ) {
+                throw args::RequiredError("--tkr-fixed-physical-x, --tkr-fixed-physical-y, and "
+                                          "--tkr-fixed-physical-z must all be given together");
+            }
+
+            tokoro.fixed_physical_station_set = true;
+            tokoro.fixed_physical_x           = gFixedPhysicalX.Get();
+            tokoro.fixed_physical_y           = gFixedPhysicalY.Get();
+            tokoro.fixed_physical_z           = gFixedPhysicalZ.Get();
+        }
+    } else if (gFixedPhysicalX || gFixedPhysicalY || gFixedPhysicalZ) {
+        throw args::ValidationError(
+            "--tkr-fixed-physical-x, --tkr-fixed-physical-y, and --tkr-fixed-physical-z are "
+            "only used in fixed VRS mode");
     }
 
     if (gShapiroCorrection) tokoro.shapiro_correction = false;
@@ -730,6 +771,10 @@ void dump(TokoroConfig const& config) {
                config.fixed_itrf_z);
         DEBUGF("fixed RTCM: (%f, %f, %f)", config.fixed_rtcm_x, config.fixed_rtcm_y,
                config.fixed_rtcm_z);
+        if (config.fixed_physical_station_set) {
+            DEBUGF("fixed physical reference station: (%f, %f, %f)", config.fixed_physical_x,
+                   config.fixed_physical_y, config.fixed_physical_z);
+        }
     } else {
         DEBUGF("time step: %f seconds", config.time_step);
     }

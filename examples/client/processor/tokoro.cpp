@@ -466,6 +466,12 @@ void Tokoro::vrs_mode_fixed() {
                 mConfig.generate_beidou,
                 false,
             });
+
+        if (mConfig.fixed_physical_station_set) {
+            Float3 physical_position{mConfig.fixed_physical_x, mConfig.fixed_physical_y,
+                                     mConfig.fixed_physical_z};
+            mReferenceStation->set_physical_ground_position(physical_position);
+        }
     }
 }
 
