@@ -22,25 +22,38 @@ static void epoch_time(Encoder& encoder, ts::Tai const& time, GenericGnssId gnss
     switch (gnss) {
     case GenericGnssId::GPS: {
         auto tow          = ts::Gps(time).time_of_week();
-        auto milliseconds = tow.full_seconds() * 1000;
+        auto milliseconds = rtcm_round(tow.full_seconds() * 1000.0);
+        // Rounding can carry the value up to (or past) the one-week period boundary;
+        // wrap back to the start of the (next) week rather than encoding an
+        // out-of-range/garbage epoch.
+        if (milliseconds >= 604800000.0) milliseconds -= 604800000.0;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::GLONASS: {
         auto glo          = ts::Glo(time);
         auto dow          = glo.day_of_week();
         auto tow          = glo.time_of_day();
-        auto milliseconds = tow.full_seconds() * 1000;
+        auto milliseconds = rtcm_round(tow.full_seconds() * 1000.0);
+        // Rounding can carry the value up to (or past) the one-day period boundary;
+        // wrap back to the start of the next day and advance the day-of-week field
+        // so the two remain consistent.
+        if (milliseconds >= 86400000.0) {
+            milliseconds -= 86400000.0;
+            dow = (dow + 1) % 7;
+        }
         encoder.u8(3, static_cast<uint8_t>(dow));
         encoder.u32(27, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::GALILEO: {
         auto tow          = ts::Gst(time).time_of_week();
-        auto milliseconds = tow.full_seconds() * 1000;
+        auto milliseconds = rtcm_round(tow.full_seconds() * 1000.0);
+        if (milliseconds >= 604800000.0) milliseconds -= 604800000.0;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
     case GenericGnssId::BEIDOU: {
         auto tow          = ts::Bdt(time).time_of_week();
-        auto milliseconds = tow.full_seconds() * 1000;
+        auto milliseconds = rtcm_round(tow.full_seconds() * 1000.0);
+        if (milliseconds >= 604800000.0) milliseconds -= 604800000.0;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
     }

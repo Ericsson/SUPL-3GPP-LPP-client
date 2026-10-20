@@ -166,6 +166,8 @@ public:
     std::unique_ptr<BiasInformation>      bias_information;
     std::unique_ptr<Residuals>            gps_residuals;
     std::unique_ptr<Residuals>            glonass_residuals;
+    std::unique_ptr<Residuals>            galileo_residuals;
+    std::unique_ptr<Residuals>            beidou_residuals;
     std::unique_ptr<AuxiliaryInformation> auxiliary_information;
 
 private:

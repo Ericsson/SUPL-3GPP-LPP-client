@@ -83,6 +83,10 @@ extern void extract_residuals(RtkData& data, GenericGnssId gnss_id,
         data.gps_residuals = extract_any_residuas(gnss_id, src_residuals);
     } else if (gnss_id == GenericGnssId::GLONASS) {
         data.glonass_residuals = extract_any_residuas(gnss_id, src_residuals);
+    } else if (gnss_id == GenericGnssId::GALILEO) {
+        data.galileo_residuals = extract_any_residuas(gnss_id, src_residuals);
+    } else if (gnss_id == GenericGnssId::BEIDOU) {
+        data.beidou_residuals = extract_any_residuas(gnss_id, src_residuals);
     }
 }
 

@@ -65,6 +65,10 @@ struct MessageFilter {
         bool mt1030 = true;
         /// Generate MT1031 - GLONASS residuals.
         bool mt1031 = true;
+        /// Generate MT1303 - BeiDou residuals.
+        bool mt1303 = true;
+        /// Generate MT1304 - Galileo residuals.
+        bool mt1304 = true;
     } residuals;
 
     struct {
