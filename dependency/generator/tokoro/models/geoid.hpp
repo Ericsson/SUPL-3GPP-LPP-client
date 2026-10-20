@@ -9,6 +9,8 @@ struct Geoid {
         EMBEDDED,
     };
 
+    /// @param latitude Latitude in radians.
+    /// @param longitude Longitude in radians.
     static double height(double latitude, double longitude, Model model = Model::EMBEDDED);
 };
 
