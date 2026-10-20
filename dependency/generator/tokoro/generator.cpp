@@ -150,20 +150,42 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
                                               char const* diag_discard_reason) NOEXCEPT {
     FUNCTION_SCOPE();
 
+    auto const& correction_data = *mGenerator.mCorrectionData;
+
     // Update lock tracking
     SatelliteSignalId ss_id{satellite.id(), signal_id};
-    LockTime          lock_time{};
-    if (mLockTime.find(ss_id) == mLockTime.end()) {
+
+    // A changed phaseDiscontinuityIndicator_r16 from the SSR provider means the phase
+    // ambiguity/lock arc is no longer continuous, even though the signal never left
+    // the active set - restart the lock the same way a freshly (re)acquired signal
+    // would be treated.
+    auto discontinuity_changed = false;
+    if (auto* signals = correction_data.signal_corrections(satellite.id())) {
+        auto it = signals->phase_bias.find(signal_id);
+        if (it != signals->phase_bias.end()) {
+            auto counter_it = mLastPhaseDiscontinuityCounter.find(ss_id);
+            if (counter_it != mLastPhaseDiscontinuityCounter.end() &&
+                counter_it->second != it->second.discontinuity) {
+                discontinuity_changed = true;
+            }
+            mLastPhaseDiscontinuityCounter[ss_id] = it->second.discontinuity;
+        }
+    }
+
+    LockTime lock_time{};
+    if (discontinuity_changed || mLockTime.find(ss_id) == mLockTime.end()) {
         lock_time.time    = mGenerationTime;
         lock_time.seconds = 0;
         lock_time.lost    = true;
+        // Persist the reset immediately so later generations compute elapsed lock
+        // time relative to the discontinuity, not the stale pre-discontinuity start.
+        mLockTime[ss_id] = mGenerationTime;
     } else {
         lock_time.time    = mLockTime[ss_id];
         lock_time.seconds = mGenerationTime.difference_seconds(lock_time.time);
         lock_time.lost    = false;
     }
 
-    auto const& correction_data = *mGenerator.mCorrectionData;
 #ifdef INCLUDE_FORMAT_ANTEX
     auto antex = mGenerator.mAntex.get();
 #endif

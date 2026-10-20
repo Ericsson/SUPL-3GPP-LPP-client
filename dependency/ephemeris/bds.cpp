@@ -20,12 +20,14 @@ bool BdsEphemeris::is_valid(ts::Bdt const& time) const NOEXCEPT {
     auto toe_frac = toe - toe_tow;
 
     // Resolve week_number (may be truncated to 13 bits from broadcast nav) relative to query time.
-    // diff_mod==0: same week; diff_mod==8191: eph is one week ahead (week boundary crossover).
+    // diff_mod==0: same week; diff_mod==8191: eph is one week ahead (week boundary crossover);
+    // diff_mod==1: eph is one week behind (query crossed into the next week while the
+    // ephemeris is still within its fit interval from the previous week).
     auto q_mod    = time.week() % 8192;
     auto e_mod    = static_cast<int64_t>(week_number) % 8192;
     auto diff_mod = (q_mod - e_mod + 8192) % 8192;
-    if (diff_mod != 0 && diff_mod != 8191) return false;
-    auto full_week = time.week() + (diff_mod == 8191 ? 1 : 0);
+    if (diff_mod != 0 && diff_mod != 1 && diff_mod != 8191) return false;
+    auto full_week = time.week() + (diff_mod == 8191 ? 1 : (diff_mod == 1 ? -1 : 0));
 
     // TODO: Verify BDS validity window - may need to be asymmetric
     // BeiDou ephemeris validity should be checked against specification
