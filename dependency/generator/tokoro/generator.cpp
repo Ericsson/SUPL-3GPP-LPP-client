@@ -795,29 +795,37 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 
     if (will_generate_gps) {
         auto last_msm = !will_generate_glo && !will_generate_gal && !will_generate_bds;
-        auto message =
+        auto msm_messages =
             rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GPS, common, msm_gps);
-        messages.push_back(std::move(message));
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_glo) {
-        auto last_msm = !will_generate_gal && !will_generate_bds;
-        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
-                                           common, msm_glo);
-        messages.push_back(std::move(message));
+        auto last_msm     = !will_generate_gal && !will_generate_bds;
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
+                                               common, msm_glo);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_gal) {
-        auto last_msm = !will_generate_bds;
-        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
-                                           common, msm_gal);
-        messages.push_back(std::move(message));
+        auto last_msm     = !will_generate_bds;
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
+                                               common, msm_gal);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_bds) {
-        auto message =
+        auto msm_messages =
             rtcm::generate_msm(mRtcmMsmType, true, rtcm::GenericGnssId::BEIDOU, common, msm_bds);
-        messages.push_back(std::move(message));
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     return messages;

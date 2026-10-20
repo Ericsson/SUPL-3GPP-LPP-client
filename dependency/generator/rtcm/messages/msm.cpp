@@ -104,7 +104,7 @@ static void df_ext(Encoder& encoder, Satellite const& satellite) {
 
 static void df400(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(rtcm_round(signal.fine_pseudo_range.value * RTCM_P2_24));
-    if (signal.fine_phase_range.valid) {
+    if (signal.fine_phase_range.valid && value >= -16384 && value <= 16383) {
         encoder.i16(15, static_cast<int16_t>(value));
     } else {
         encoder.u16(15, 0x4000);
@@ -113,7 +113,7 @@ static void df400(Encoder& encoder, Signal const& signal) {
 
 static void df401(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range.value * RTCM_P2_29));
-    if (signal.fine_pseudo_range.valid) {
+    if (signal.fine_pseudo_range.valid && value >= -2097152 && value <= 2097151) {
         encoder.i32(22, static_cast<int32_t>(value));
     } else {
         encoder.u32(22, 0x200000);
@@ -149,7 +149,7 @@ static void df404(Encoder& encoder, Signal const& signal) {
 
 static void df405(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(rtcm_round(signal.fine_pseudo_range.value * RTCM_P2_29));
-    if (signal.fine_phase_range.valid) {
+    if (signal.fine_phase_range.valid && value >= -524288 && value <= 524287) {
         encoder.i32(20, static_cast<int32_t>(value));
     } else {
         encoder.u32(20, 0x80000);
@@ -158,7 +158,7 @@ static void df405(Encoder& encoder, Signal const& signal) {
 
 static void df406(Encoder& encoder, Signal const& signal) {
     auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range.value * RTCM_P2_31));
-    if (signal.fine_phase_range.valid) {
+    if (signal.fine_phase_range.valid && value >= -8388608 && value <= 8388607) {
         encoder.i32(24, static_cast<int32_t>(value));
     } else {
         encoder.u32(24, 0x800000);
@@ -295,51 +295,28 @@ static void generate_msm_signals(uint32_t msm, Encoder& encoder,
 // Header
 //
 
-generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
-                                      CommonObservationInfo const& common,
-                                      Observations const&          observations) {
+// Encodes one MSM message for the given (already partitioned) satellite/signal subset.
+// The caller guarantees satellite_subset.size() * union-of-signal-ids-count <= 64, so the
+// cell mask can represent every selected cell without truncation.
+static generator::rtcm::Message generate_msm_single(uint32_t msm, bool more_messages_follow,
+                                                    GenericGnssId                        gnss,
+                                                    CommonObservationInfo const&         common,
+                                                    ts::Tai const&                       time,
+                                                    std::vector<Satellite const*> const& satellites,
+                                                    std::vector<Signal const*> const&    signals) {
     auto message_id = msm_message_id(msm, gnss);
 
     auto encoder = Encoder();
     encoder.u16(12, message_id);
     encoder.u16(12, static_cast<uint16_t>(common.reference_station_id));
-    epoch_time(encoder, observations.time, gnss);
-    encoder.b(!last_msm /* multiple message bit */);
+    epoch_time(encoder, time, gnss);
+    encoder.b(more_messages_follow /* multiple message bit */);
     encoder.u8(3, 0u /* iod */);
     encoder.reserve(7);
     encoder.u8(2, static_cast<uint8_t>(common.clock_steering));
     encoder.u8(2, static_cast<uint8_t>(common.external_clock));
     encoder.u8(1, static_cast<uint8_t>(common.smooth_indicator));
     encoder.u8(3, static_cast<uint8_t>(common.smooth_interval));
-
-    std::vector<Satellite const*> satellites;
-    std::vector<Signal const*>    signals;
-
-    for (auto& satellite : observations.satellites) {
-        auto id = satellite.id.as_msm();
-        if (id.valid && id.value >= 1 && id.value <= 64) {
-            satellites.push_back(&satellite);
-        }
-    }
-
-    std::sort(satellites.begin(), satellites.end(), [](Satellite const* a, Satellite const* b) {
-        return a->id.as_msm().value < b->id.as_msm().value;
-    });
-
-    for (auto& signal : observations.signals) {
-        auto signal_id = signal.id.as_msm();
-        if (!(signal_id.valid && signal_id.value >= 1 && signal_id.value <= 32)) continue;
-
-        auto satellite_id = signal.satellite.as_msm();
-        if (!(satellite_id.valid && satellite_id.value >= 1 && satellite_id.value <= 64)) continue;
-        signals.push_back(&signal);
-    }
-
-    std::sort(signals.begin(), signals.end(), [](Signal const* a, Signal const* b) {
-        if (a->satellite.as_msm().value < b->satellite.as_msm().value) return true;
-        if (a->satellite.as_msm().value > b->satellite.as_msm().value) return false;
-        return a->id.as_msm().value < b->id.as_msm().value;
-    });
 
     uint64_t satellite_ids = 0;
     for (auto satellite : satellites) {
@@ -378,11 +355,10 @@ generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId
     encoder.u64(64, satellite_ids);
     encoder.u32(32, signal_ids);
 
+    // Partitioning guarantees this, but assert defensively rather than silently
+    // truncating the mask/record data if a future caller violates the precondition.
     auto cell_count = satellite_count * signal_count;
-    if (cell_count > 64) {
-        // TODO: How do we report this?
-        cell_count = 64;
-    }
+    assert(cell_count <= 64 && "MSM cell count exceeds 64 - partition before calling");
 
     bool cell_data[64] = {0};
     for (auto& signal : signals) {
@@ -393,13 +369,6 @@ generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId
         auto cell_index      = satellite_index * signal_count + signal_index;
         if (cell_index >= 64) continue;
         cell_data[cell_index] = true;
-    }
-
-    for (size_t i = 0; i < satellite_count; i++) {
-        for (size_t j = 0; j < signal_count; j++) {
-            auto cell_index = i * signal_count + j;
-            if (cell_index >= 64) continue;
-        }
     }
 
     for (size_t i = 0; i < cell_count; i++) {
@@ -419,6 +388,124 @@ generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId
     frame_encoder.checksum();
 
     return generator::rtcm::Message(message_id, frame_encoder.buffer());
+}
+
+// Partitions satellites (with their associated signals) into groups whose
+// satellite_count * signal_count never exceeds 64, the maximum number of cells a
+// single MSM cell mask can represent. All satellites share the same partition as
+// long as adding the next satellite would not overflow the 64-cell limit for the
+// union of signal types seen so far; once it would, a new partition starts.
+std::vector<generator::rtcm::Message> generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
+                                                   CommonObservationInfo const& common,
+                                                   Observations const&          observations) {
+    std::vector<Satellite const*> satellites;
+    std::vector<Signal const*>    signals;
+
+    for (auto& satellite : observations.satellites) {
+        auto id = satellite.id.as_msm();
+        if (id.valid && id.value >= 1 && id.value <= 64) {
+            satellites.push_back(&satellite);
+        }
+    }
+
+    std::sort(satellites.begin(), satellites.end(), [](Satellite const* a, Satellite const* b) {
+        return a->id.as_msm().value < b->id.as_msm().value;
+    });
+
+    for (auto& signal : observations.signals) {
+        auto signal_id = signal.id.as_msm();
+        if (!(signal_id.valid && signal_id.value >= 1 && signal_id.value <= 32)) continue;
+
+        auto satellite_id = signal.satellite.as_msm();
+        if (!(satellite_id.valid && satellite_id.value >= 1 && satellite_id.value <= 64)) continue;
+        signals.push_back(&signal);
+    }
+
+    std::sort(signals.begin(), signals.end(), [](Signal const* a, Signal const* b) {
+        if (a->satellite.as_msm().value < b->satellite.as_msm().value) return true;
+        if (a->satellite.as_msm().value > b->satellite.as_msm().value) return false;
+        return a->id.as_msm().value < b->id.as_msm().value;
+    });
+
+    std::vector<std::vector<Satellite const*>> partitions;
+    {
+        std::vector<Satellite const*> current_satellites;
+        uint32_t                      current_signal_ids   = 0;
+        size_t                        current_signal_count = 0;
+
+        auto signal_ids_for_satellite = [&](Satellite const* satellite) {
+            uint32_t ids = 0;
+            for (auto signal : signals) {
+                if (signal->satellite != satellite->id) continue;
+                auto rtcm_id = signal->id.as_msm().value;
+                ids |= 1u << (31 - (rtcm_id - 1));
+            }
+            return ids;
+        };
+
+        for (auto satellite : satellites) {
+            auto satellite_signal_ids = signal_ids_for_satellite(satellite);
+            auto union_signal_ids     = current_signal_ids | satellite_signal_ids;
+
+            size_t union_signal_count = 0;
+            for (auto i = 0; i < 32; i++) {
+                if (union_signal_ids & (1u << (31 - i))) union_signal_count++;
+            }
+
+            auto candidate_satellite_count = current_satellites.size() + 1;
+            if (!current_satellites.empty() &&
+                candidate_satellite_count * union_signal_count > 64) {
+                // Starting a new partition: finalize the current one first.
+                partitions.push_back(std::move(current_satellites));
+                current_satellites.clear();
+                current_signal_ids = 0;
+                union_signal_ids   = satellite_signal_ids;
+                union_signal_count = 0;
+                for (auto i = 0; i < 32; i++) {
+                    if (union_signal_ids & (1u << (31 - i))) union_signal_count++;
+                }
+            }
+
+            current_satellites.push_back(satellite);
+            current_signal_ids   = union_signal_ids;
+            current_signal_count = union_signal_count;
+        }
+
+        if (!current_satellites.empty()) {
+            partitions.push_back(std::move(current_satellites));
+        }
+        (void)current_signal_count;
+    }
+
+    if (partitions.empty()) {
+        // No satellites to encode; preserve previous behaviour of emitting a single,
+        // empty MSM message rather than silently producing no output.
+        partitions.emplace_back();
+    }
+
+    std::vector<generator::rtcm::Message> messages;
+    messages.reserve(partitions.size());
+    for (size_t p = 0; p < partitions.size(); p++) {
+        auto& partition_satellites = partitions[p];
+
+        std::vector<Signal const*> partition_signals;
+        for (auto signal : signals) {
+            for (auto satellite : partition_satellites) {
+                if (signal->satellite == satellite->id) {
+                    partition_signals.push_back(signal);
+                    break;
+                }
+            }
+        }
+
+        auto is_last_partition    = (p + 1 == partitions.size());
+        auto more_messages_follow = !(is_last_partition && last_msm);
+        messages.push_back(generate_msm_single(msm, more_messages_follow, gnss, common,
+                                               observations.time, partition_satellites,
+                                               partition_signals));
+    }
+
+    return messages;
 }
 
 }  // namespace rtcm
