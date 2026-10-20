@@ -187,6 +187,10 @@ private:
 
     std::unordered_map<SatelliteSignalId, ts::Tai> mLockTime;
     std::unordered_map<SatelliteSignalId, uint8_t> mPhaseDiscontinuity;
+    // Last-seen phaseDiscontinuityIndicator_r16 per signal; a change (relative to the
+    // previously observed value) means the SSR provider has flagged a phase
+    // discontinuity, so the output lock/ambiguity arc must restart.
+    std::unordered_map<SatelliteSignalId, uint8_t> mLastPhaseDiscontinuityCounter;
 
     ts::Tai mGenerationTime;
 #ifdef INCLUDE_FORMAT_RINEX
