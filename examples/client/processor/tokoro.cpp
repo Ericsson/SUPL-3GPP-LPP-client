@@ -325,6 +325,7 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mOutputTag        = tags::get(mConfig.output_tag).value;
 
     mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
+    mGenerator->set_ssr_generation_consistency_check(mConfig.ssr_generation_consistency_check);
     mGenerator->set_rtoc(mConfig.rtoc);
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
@@ -623,6 +624,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_elevation_mask(mConfig.elevation_mask);
     mReferenceStation->set_msm_type(tokoro_rtcm_msm_type(mConfig.msm_type));
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
+    mReferenceStation->set_negative_correction_sign(mConfig.negative_correction_sign);
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
     mReferenceStation->set_antenna_descriptor(mConfig.antenna_descriptor);
     mReferenceStation->set_receiver_descriptor(mConfig.receiver_descriptor);

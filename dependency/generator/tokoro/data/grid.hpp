@@ -61,9 +61,11 @@ struct GridPoint {
     long latitude_index;
     long longitude_index;
 
-    std::unordered_map<SatelliteId, double> ionospheric_residual;
-    double                                  tropospheric_wet;
-    double                                  tropospheric_dry;
+    std::unordered_map<SatelliteId, double>  ionospheric_residual;
+    std::unordered_map<SatelliteId, ts::Tai> ionospheric_residual_epoch;
+    double                                   tropospheric_wet;
+    double                                   tropospheric_dry;
+    ts::Tai                                  tropospheric_epoch;
 
     bool has_ionospheric_residual(SatelliteId sv_id) const {
         return ionospheric_residual.find(sv_id) != ionospheric_residual.end();
@@ -78,6 +80,7 @@ struct GridData {
         Success,
         PositionOutsideGrid,
         MissingSatelliteData,
+        StaleData,
     };
 
     NODISCARD GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
@@ -85,9 +88,10 @@ struct GridData {
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
                        GridPoint const*& br) const NOEXCEPT;
 
-    GridStatus ionospheric(SatelliteId sv_id, Float3 llh,
+    GridStatus ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now, double max_age,
                            double& ionospheric_residual) const NOEXCEPT;
-    GridStatus tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
+    GridStatus tropospheric(Float3 llh, ts::Tai const& now, double max_age,
+                            TroposphericCorrection& correction) const NOEXCEPT;
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
         correction_point_set_id   = correction_point_set.set_id;

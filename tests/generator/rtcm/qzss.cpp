@@ -87,11 +87,11 @@ TEST_CASE("QZSS SignalId frequencies") {
 TEST_CASE("QZSS SignalId wavelengths") {
     SUBCASE("L1 wavelength") {
         double wavelength = SignalId::QZSS_L1_CA.wavelength();
-        CHECK(wavelength == doctest::Approx(190.29).epsilon(0.01));
+        CHECK(wavelength == doctest::Approx(0.19029).epsilon(0.01));
     }
 
     SUBCASE("L5 wavelength") {
         double wavelength = SignalId::QZSS_L5_I.wavelength();
-        CHECK(wavelength == doctest::Approx(254.83).epsilon(0.01));
+        CHECK(wavelength == doctest::Approx(0.25483).epsilon(0.01));
     }
 }

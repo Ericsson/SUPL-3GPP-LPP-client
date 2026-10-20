@@ -112,27 +112,20 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
 
     auto grid_it = mGrid.find(sv_id.gnss());
     if (grid_it != mGrid.end()) {
-        bool grid_stale = false;
-        if (max_iono_age > 0.0) {
-            auto age = mLatestCorrectionTime - grid_it->second.epoch_time;
-            if (age > max_iono_age) {
-                WARNF("ionospheric grid for %s is too old (%.1fs > %.1fs limit) - dropping",
-                      sv_id.name(), age, max_iono_age);
-                grid_stale = true;
-            }
-        }
-        if (!grid_stale) {
-            auto status = grid_it->second.ionospheric(sv_id, llh, correction.grid_residual);
-            if (status == GridData::GridStatus::Success) {
-                has_gridded = true;
-            } else if (status == GridData::GridStatus::PositionOutsideGrid) {
-                WARNF("ionospheric correction not available for %s: position outside grid",
-                      sv_id.name());
-            } else if (status == GridData::GridStatus::MissingSatelliteData) {
-                WARNF("ionospheric correction not available for %s: satellite data missing from "
-                      "grid points",
-                      sv_id.name());
-            }
+        auto status = grid_it->second.ionospheric(sv_id, llh, mLatestCorrectionTime, max_iono_age,
+                                                  correction.grid_residual);
+        if (status == GridData::GridStatus::Success) {
+            has_gridded = true;
+        } else if (status == GridData::GridStatus::PositionOutsideGrid) {
+            WARNF("ionospheric correction not available for %s: position outside grid",
+                  sv_id.name());
+        } else if (status == GridData::GridStatus::MissingSatelliteData) {
+            WARNF("ionospheric correction not available for %s: satellite data missing from "
+                  "grid points",
+                  sv_id.name());
+        } else if (status == GridData::GridStatus::StaleData) {
+            WARNF("ionospheric correction not available for %s: grid point data too old",
+                  sv_id.name());
         }
     } else if (!has_polynomial) {
         WARNF("ionospheric correction not available: no grid for GNSS (missing assistance data)");

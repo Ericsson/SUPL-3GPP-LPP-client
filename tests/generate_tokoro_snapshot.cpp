@@ -174,6 +174,7 @@ int main(int argc, char** argv) {
         station->set_elevation_mask(input.config.elevation_mask);
         station->set_phase_range_rate(input.config.phase_range_rate);
         station->set_negative_phase_windup(input.config.negative_phase_windup);
+        station->set_negative_correction_sign(input.config.negative_correction_sign);
         station->set_require_code_bias(input.config.require_code_bias);
         station->set_require_phase_bias(input.config.require_phase_bias);
         station->set_require_tropo(input.config.require_tropo);

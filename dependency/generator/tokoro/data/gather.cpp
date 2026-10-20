@@ -466,9 +466,10 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
             auto wet =
                 decode::tropo_wet_vertical_delay_r16(tropo.tropoWetVerticalDelay_r16) + 0.252;
 
-            grid_point->tropspheric_valid = true;
-            grid_point->tropospheric_wet  = wet;
-            grid_point->tropospheric_dry  = dry;
+            grid_point->tropspheric_valid  = true;
+            grid_point->tropospheric_wet   = wet;
+            grid_point->tropospheric_dry   = dry;
+            grid_point->tropospheric_epoch = epoch_time;
 
 #ifdef DATA_TRACING
             datatrace::report_ssr_tropospheric_grid(epoch_time, grid_point->absolute_index,
@@ -493,8 +494,9 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
                 auto ionospheric = decode::stec_residual_correction_r16(*satellite);
 
-                grid_point->ionospheric_valid                  = true;
-                grid_point->ionospheric_residual[satellite_id] = ionospheric;
+                grid_point->ionospheric_valid                        = true;
+                grid_point->ionospheric_residual[satellite_id]       = ionospheric;
+                grid_point->ionospheric_residual_epoch[satellite_id] = epoch_time;
 
                 if (auto* dump_path = std::getenv("TOKORO_GRID_DUMP")) {
                     static FILE* dump_file = std::fopen(dump_path, "a");

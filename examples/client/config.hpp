@@ -414,9 +414,11 @@ struct TokoroConfig {
     bool        tropospheric_height_correction;
     bool        tropospheric_hydrostatic_delta;
     bool        iod_consistency_check;
+    bool        ssr_generation_consistency_check;
     bool        rtoc;
     bool        ocit;
     bool        negative_phase_windup;
+    bool        negative_correction_sign;
     bool        phase_alignment;
     std::string antenna_descriptor;
     std::string receiver_descriptor;

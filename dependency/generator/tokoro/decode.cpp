@@ -124,7 +124,7 @@ double delta_cross_track_r15(long value) {
 
 double dot_delta_radial_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_RADIAL_RESOLUTION * ORBIT_DOT_MM_TO_M;
+        return static_cast<double>(*value) * ORBIT_DOT_RADIAL_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }
@@ -132,7 +132,7 @@ double dot_delta_radial_r15(long* value) {
 
 double dot_delta_along_track_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_ALONG_RESOLUTION * ORBIT_DOT_MM_TO_M;
+        return static_cast<double>(*value) * ORBIT_DOT_ALONG_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }
@@ -140,7 +140,7 @@ double dot_delta_along_track_r15(long* value) {
 
 double dot_delta_cross_track_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_CROSS_RESOLUTION * ORBIT_DOT_MM_TO_M;
+        return static_cast<double>(*value) * ORBIT_DOT_CROSS_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }

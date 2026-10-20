@@ -78,6 +78,10 @@ public:
     void           discard() NOEXCEPT { mIsValid = false; }
 
     void set_negative_phase_windup(bool enabled) NOEXCEPT { mNegativePhaseWindup = enabled; }
+    void set_negative_correction_sign(bool enabled) NOEXCEPT { mNegativeCorrectionSign = enabled; }
+    void set_ssr_generation_consistency_check(bool enabled) NOEXCEPT {
+        mSsrGenerationConsistencyCheck = enabled;
+    }
     void set_require_code_bias(bool enabled) NOEXCEPT { mRequireCodeBias = enabled; }
     void set_require_phase_bias(bool enabled) NOEXCEPT { mRequirePhaseBias = enabled; }
     void set_require_tropo(bool enabled) NOEXCEPT { mRequireTropospheric = enabled; }
@@ -132,6 +136,9 @@ private:
     double   mCarrierToNoiseRatio;
     LockTime mLockTime;
     bool     mNegativePhaseWindup;
+    bool     mNegativeCorrectionSign;
+    bool     mSsrGenerationConsistencyCheck;
+    uint16_t mOrbitClockSsrIod;
 
     bool mRequireCodeBias;
     bool mRequirePhaseBias;
