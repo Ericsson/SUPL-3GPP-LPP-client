@@ -425,6 +425,14 @@ bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOE
         return false;
     }
 
+    if (mGenerator.mSsrGenerationConsistencyCheck &&
+        correction->ssr_iod != mOrbitCorrection.ssr_iod) {
+        VERBOSEF("clock correction belongs to a different SSR generation than the orbit "
+                 "correction [sv=%s,orbit_iod=%u,clock_iod=%u]",
+                 mId.name(), mOrbitCorrection.ssr_iod, correction->ssr_iod);
+        return false;
+    }
+
     mClockCorrection = *correction;
     return true;
 }

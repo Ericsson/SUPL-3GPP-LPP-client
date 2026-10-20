@@ -52,6 +52,7 @@ struct SnapshotConfig {
     double elevation_mask;
     bool   phase_range_rate;
     bool   negative_phase_windup;
+    bool   negative_correction_sign{false};  // not persisted; see MSGPACK_DEFINE below
     bool   require_code_bias;
     bool   require_phase_bias;
     bool   require_tropo;
@@ -59,6 +60,8 @@ struct SnapshotConfig {
     bool   use_tropospheric_model;
     bool   use_ionospheric_height_correction;
 
+    // negative_correction_sign is intentionally excluded to preserve binary
+    // compatibility with existing recorded snapshots (defaults to false on load).
     MSGPACK_DEFINE(itrf_position, rtcm_position, gps, glo, gal, bds, qzs, shapiro_correction,
                    earth_solid_tides_correction, phase_windup_correction,
                    antenna_phase_variation_correction, tropospheric_height_correction,

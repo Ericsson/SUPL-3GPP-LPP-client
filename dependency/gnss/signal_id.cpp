@@ -765,7 +765,7 @@ FrequencyType SignalId::frequency_type() const {
 }
 
 double SignalId::wavelength() const {
-    return 299792458.0 / frequency();
+    return 299792458.0 / (frequency() * 1.0e3);
 }
 
 Maybe<long> SignalId::as_msm() const {

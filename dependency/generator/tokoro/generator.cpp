@@ -70,6 +70,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmReferenceStationId(1902),
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
+      mNegativeCorrectionSign(false),
       mPhaseAlignment(false),
       mAntennaDescriptor(),
       mReceiverDescriptor(),
@@ -181,6 +182,8 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
     observation.set_negative_phase_windup(mNegativePhaseWindup);
+    observation.set_negative_correction_sign(mNegativeCorrectionSign);
+    observation.set_ssr_generation_consistency_check(mGenerator.mSsrGenerationConsistencyCheck);
     observation.set_require_code_bias(mRequireCodeBias);
     observation.set_require_phase_bias(mRequirePhaseBias);
     observation.set_require_tropo(mRequireTropo);
@@ -827,6 +830,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 Generator::Generator() NOEXCEPT {
     FUNCTION_SCOPE();
     mIodConsistencyCheck                         = false;
+    mSsrGenerationConsistencyCheck               = false;
     mUseReceptionTimeForOrbitAndClockCorrections = false;
     mUseOrbitCorrectionInIteration               = false;
     mIgnoreBitmask                               = false;
@@ -1323,6 +1327,7 @@ SnapshotInput ReferenceStation::snapshot(ts::Tai const& time) const NOEXCEPT {
     input.config.elevation_mask                     = mElevationMask;
     input.config.phase_range_rate                   = mPhaseRangeRate;
     input.config.negative_phase_windup              = mNegativePhaseWindup;
+    input.config.negative_correction_sign           = mNegativeCorrectionSign;
     input.config.require_code_bias                  = mRequireCodeBias;
     input.config.require_phase_bias                 = mRequirePhaseBias;
     input.config.require_tropo                      = mRequireTropo;

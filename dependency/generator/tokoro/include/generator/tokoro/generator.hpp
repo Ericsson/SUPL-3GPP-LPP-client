@@ -91,6 +91,7 @@ public:
     void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
+    void set_negative_correction_sign(bool enabled) { mNegativeCorrectionSign = enabled; }
     void set_phase_alignment(bool enabled) { mPhaseAlignment = enabled; }
     void set_antenna_descriptor(std::string descriptor) NOEXCEPT {
         mAntennaDescriptor = std::move(descriptor);
@@ -159,6 +160,7 @@ private:
     uint32_t    mRtcmReferenceStationId;
     uint32_t    mRtcmMsmType;
     bool        mNegativePhaseWindup;
+    bool        mNegativeCorrectionSign;
     bool        mPhaseAlignment;
     std::string mAntennaDescriptor;
     std::string mReceiverDescriptor;
@@ -211,6 +213,9 @@ public:
     void process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
 
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
+    void set_ssr_generation_consistency_check(bool enabled) NOEXCEPT {
+        mSsrGenerationConsistencyCheck = enabled;
+    }
     void set_max_orbit_age(double seconds) NOEXCEPT { mMaxOrbitAge = seconds; }
     void set_max_clock_age(double seconds) NOEXCEPT { mMaxClockAge = seconds; }
     void set_max_bias_age(double seconds) NOEXCEPT { mMaxBiasAge = seconds; }
@@ -304,6 +309,7 @@ private:
 #endif
 
     bool   mIodConsistencyCheck;
+    bool   mSsrGenerationConsistencyCheck;
     double mMaxOrbitAge = -1.0;
     double mMaxClockAge = -1.0;
     double mMaxBiasAge  = -1.0;
