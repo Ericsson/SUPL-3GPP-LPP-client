@@ -36,10 +36,12 @@ extern generator::rtcm::Message generate_1230(BiasInformation const& bias_inform
     encoder.reserve(3);
 
     encoder.u8(4, bias_information.mask);
-    df423(encoder, 0x1, bias_information.mask, bias_information.l1_ca.value);
-    df424(encoder, 0x2, bias_information.mask, bias_information.l1_p.value);
-    df425(encoder, 0x4, bias_information.mask, bias_information.l2_ca.value);
-    df426(encoder, 0x8, bias_information.mask, bias_information.l2_p.value);
+    // Encode in the same MSB-first order as the mask: L1 C/A (bit 8), L1 P (bit 4),
+    // L2 C/A (bit 2), L2 P (bit 1).
+    df423(encoder, 0x8, bias_information.mask, bias_information.l1_ca.value);
+    df424(encoder, 0x4, bias_information.mask, bias_information.l1_p.value);
+    df425(encoder, 0x2, bias_information.mask, bias_information.l2_ca.value);
+    df426(encoder, 0x1, bias_information.mask, bias_information.l2_p.value);
     auto length = static_cast<uint16_t>(encoder.byte_count());
 
     auto frame_encoder = Encoder();
