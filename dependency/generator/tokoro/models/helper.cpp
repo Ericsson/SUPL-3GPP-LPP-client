@@ -30,19 +30,26 @@ static CONSTEXPR double MAP_COEF[][5] = {
     {4.3472961E-2, 4.6729510E-2, 4.3908931E-2, 4.4626982E-2, 5.4736038E-2},
 };
 
+// Table columns correspond to latitudes 15, 30, 45, 60, 75 degrees (Niell/Collins).
+static CONSTEXPR double MAP_COEF_LAT_MIN_DEG  = 15.0;
+static CONSTEXPR double MAP_COEF_LAT_MAX_DEG  = 75.0;
+static CONSTEXPR double MAP_COEF_LAT_STEP_DEG = 15.0;
+
 static double interpolate_coef(double lat_deg, double const coef[5]) {
     auto lat_abs = std::fabs(lat_deg);
-    auto index   = static_cast<int>(lat_abs / 15.0);
 
-    if (index < 0) {
+    if (lat_abs <= MAP_COEF_LAT_MIN_DEG) {
         return coef[0];
-    } else if (index >= 4) {
+    } else if (lat_abs >= MAP_COEF_LAT_MAX_DEG) {
         return coef[4];
     }
 
+    auto offset = (lat_abs - MAP_COEF_LAT_MIN_DEG) / MAP_COEF_LAT_STEP_DEG;
+    auto index  = static_cast<int>(offset);
+    auto frac   = offset - index;
+
     auto coef0 = coef[index];
     auto coef1 = coef[index + 1];
-    auto frac  = lat_abs / 15.0 - index;
     return coef0 * (1.0 - frac) + coef1 * frac;
 }
 

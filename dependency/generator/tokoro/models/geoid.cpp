@@ -1,6 +1,7 @@
 #include "geoid.hpp"
 #include "constant.hpp"
 
+#include <cmath>
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(tokoro, geoid);
@@ -7616,20 +7617,30 @@ static float const gGeoid[361][181] = {
      13.606f}};
 }  // namespace embedded
 
+// Takes latitude/longitude in radians and converts to the degree-scale grid
+// internally, rather than requiring the caller to pre-convert.
 static double embedded_geoid_height(double latitude, double longitude) {
     VSCOPE_FUNCTIONF("%+.8f, %+.8f", latitude * constant::RAD2DEG, longitude * constant::RAD2DEG);
     double const dlon = 1.0, dlat = 1.0;
     double       a, b, y[4];
     int          i1, i2, j1, j2;
 
-    if (longitude < embedded::gRange[0] || embedded::gRange[1] < longitude ||
-        latitude < embedded::gRange[2] || embedded::gRange[3] < latitude) {
-        VERBOSEF("out of range: %+.8f, %+.8f", latitude * constant::RAD2DEG,
-                 longitude * constant::RAD2DEG);
+    auto latitude_deg  = latitude * constant::RAD2DEG;
+    auto longitude_deg = longitude * constant::RAD2DEG;
+
+    // Normalize longitude into the grid's [0,360) convention; the grid wraps at the
+    // prime meridian/antimeridian seam, so a negative (western) longitude must be
+    // shifted by a full turn rather than rejected outright.
+    longitude_deg = std::fmod(longitude_deg, 360.0);
+    if (longitude_deg < 0.0) longitude_deg += 360.0;
+
+    if (longitude_deg < embedded::gRange[0] || embedded::gRange[1] < longitude_deg ||
+        latitude_deg < embedded::gRange[2] || embedded::gRange[3] < latitude_deg) {
+        VERBOSEF("out of range: %+.8f, %+.8f", latitude_deg, longitude_deg);
         return 0.0;
     }
-    a  = (longitude - embedded::gRange[0]) / dlon;
-    b  = (latitude - embedded::gRange[2]) / dlat;
+    a  = (longitude_deg - embedded::gRange[0]) / dlon;
+    b  = (latitude_deg - embedded::gRange[2]) / dlat;
     i1 = static_cast<int>(a);
     a -= i1;
     i2 = i1 < 360 ? i1 + 1 : i1;
