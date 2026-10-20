@@ -2,10 +2,21 @@
 #include "generator.hpp"
 #include "rtk_data.hpp"
 
-extern generator::rtcm::Message generate_msm(uint32_t msm, bool last_msm,
-                                             generator::rtcm::GenericGnssId                gnss,
-                                             generator::rtcm::CommonObservationInfo const& common,
-                                             generator::rtcm::Observations const& observations);
+extern std::vector<generator::rtcm::Message>
+generate_msm(uint32_t msm, bool last_msm, generator::rtcm::GenericGnssId gnss,
+             generator::rtcm::CommonObservationInfo const& common,
+             generator::rtcm::Observations const&          observations);
+
+namespace generator {
+namespace rtcm {
+
+// MSM versions form a 2x2 capability matrix (resolution x extended-info/rate), not a
+// total order. Combine requirements across every contributing GNSS/entity using this
+// function rather than taking a numeric max of independently-resolved versions.
+NODISCARD uint32_t msm_version_from_requirements(bool needs_high_resolution, bool needs_extended);
+
+}  // namespace rtcm
+}  // namespace generator
 
 CONSTEXPR static int      K_MLT_SIZE                    = 22;
 CONSTEXPR static uint64_t K_MLT_COEFFICIENT[K_MLT_SIZE] = {

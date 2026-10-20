@@ -218,11 +218,25 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         rtk_data->observations.clear();
     }
 
-    // Calculate lowest MSM version that can be used.
-    uint32_t lowest_msm = 0;
+    // Calculate lowest MSM version that can be used. The resolution and extended-info/rate
+    // requirements are independent axes (see msm_version_from_requirements), so they must be
+    // combined across every GNSS before resolving a single final MSM version - taking the
+    // numeric max of per-GNSS resolved versions would incorrectly treat e.g. MSM5 and MSM6
+    // as comparable when they are not.
+    auto needs_high_resolution = false;
+    auto needs_extended        = false;
+    auto any_possible          = false;
     for (auto& kvp : rtk_data->observations) {
-        auto gnss_msm = kvp.second->lowest_msm_version();
-        if (gnss_msm > lowest_msm) lowest_msm = gnss_msm;
+        auto requirements = kvp.second->msm_requirements();
+        if (!requirements.possible) continue;
+        any_possible = true;
+        if (requirements.needs_high_resolution) needs_high_resolution = true;
+        if (requirements.needs_extended) needs_extended = true;
+    }
+
+    uint32_t lowest_msm = 0;
+    if (any_possible) {
+        lowest_msm = msm_version_from_requirements(needs_high_resolution, needs_extended);
     }
 
     if (lowest_msm == 4 && !filter.msm.msm4) lowest_msm = 5;
@@ -300,9 +314,11 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         }
 
         for (auto i = 0; i < count; i++) {
-            auto message =
+            auto msm_messages =
                 generate_msm(lowest_msm, i + 1 == count, gnss[i], common, *observations[i]);
-            messages.emplace_back(std::move(message));
+            for (auto& message : msm_messages) {
+                messages.emplace_back(std::move(message));
+            }
         }
     }
 

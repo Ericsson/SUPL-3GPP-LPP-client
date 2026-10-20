@@ -127,8 +127,9 @@ private:
     std::unique_ptr<PhysicalReferenceStation> mPhysicalReferenceStation;
 };
 
-extern Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
-                            CommonObservationInfo const& common, Observations const& observations);
+extern std::vector<Message> generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
+                                         CommonObservationInfo const& common,
+                                         Observations const&          observations);
 
 extern Message generate_1005(ReferenceStation const& reference_station, bool gps_indicator,
                              bool glonass_indicator, bool galileo_indicator);
