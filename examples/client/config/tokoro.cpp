@@ -458,6 +458,14 @@ static args::ValueFlag<double> gMaxTropoAge{
     90.0,
 };
 
+static args::ValueFlag<double> gElevationMask{
+    gGroup,
+    "degrees",
+    "Minimum satellite elevation angle to generate corrections for (default: 10.0)",
+    {"tkr-elevation-mask"},
+    10.0,
+};
+
 #ifdef ENABLE_TOKORO_SNAPSHOT
 static args::Flag gRecordSnapshot{
     gGroup,
@@ -550,6 +558,7 @@ void parse(Config* config) {
     tokoro.deduplicate_epochs  = false;
     tokoro.output_tag          = "";
     tokoro.ephemeris_max_cache = static_cast<size_t>(gEphemerisMaxCache.Get());
+    tokoro.elevation_mask      = gElevationMask.Get();
 
     // Per-component max correction age: start from per-component defaults, then apply
     // --tkr-max-age as an override for all, then per-component flags override individually.
@@ -838,6 +847,7 @@ void dump(TokoroConfig const& config) {
     for (auto const& nf : config.nav_files)
         DEBUGF("nav file:   \"%s\"", nf.c_str());
     DEBUGF("ignore bitmask: %s", config.ignore_bitmask ? "true" : "false");
+    DEBUGF("elevation mask: %f degrees", config.elevation_mask);
 }
 
 }  // namespace tokoro
