@@ -246,23 +246,41 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         if (requirements.needs_extended) needs_extended = true;
     }
 
+    // Pick the lowest enabled MSM version that can carry everything required. MSM versions are
+    // not a chain: 5 (rate, low resolution) and 6 (high resolution, no rate) are siblings, so
+    // the usable versions are the supersets of the requirement (4 -> 4..7, 5 -> 5,7, 6 -> 6,7,
+    // 7 -> 7) and never "the next number up".
+    auto msm_enabled = [&](uint32_t v) {
+        switch (v) {
+        case 4: return filter.msm.msm4;
+        case 5: return filter.msm.msm5;
+        case 6: return filter.msm.msm6;
+        case 7: return filter.msm.msm7;
+        }
+        return false;
+    };
+
     uint32_t lowest_msm = 0;
-    if (any_possible) {
-        lowest_msm = msm_version_from_requirements(needs_high_resolution, needs_extended);
+    for (uint32_t v = 4; v <= 7; v++) {
+        if (!msm_enabled(v)) continue;
+        auto is_high_resolution = v >= 6;
+        auto is_extended        = v == 5 || v == 7;
+        if (any_possible && needs_high_resolution && !is_high_resolution) continue;
+        if (any_possible && needs_extended && !is_extended) continue;
+        lowest_msm = v;
+        break;
     }
 
-    if (lowest_msm == 4 && !filter.msm.msm4) lowest_msm = 5;
-    if (lowest_msm == 5 && !filter.msm.msm5) lowest_msm = 6;
-    if (lowest_msm == 6 && !filter.msm.msm6) lowest_msm = 7;
-    if (lowest_msm == 7 && !filter.msm.msm7) lowest_msm = 0;
-
+    // Explicit force flags may be lossy, by design.
     if (filter.msm.force_msm4) lowest_msm = 4;
     if (filter.msm.force_msm5) lowest_msm = 5;
     if (filter.msm.force_msm6) lowest_msm = 6;
     if (filter.msm.force_msm7) lowest_msm = 7;
 
+    // No enabled version can represent the data without loss and nothing is forced: emit no
+    // observations rather than silently downgrading to a disabled, lossy MSM.
     if (lowest_msm == 0) {
-        lowest_msm = 4;  // TODO: What should we do here?
+        rtk_data->observations.clear();
     }
 
     auto should_include_reference_station = false;
