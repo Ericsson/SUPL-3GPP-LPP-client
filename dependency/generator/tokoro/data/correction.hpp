@@ -38,8 +38,12 @@ struct CorrectionData {
     ts::Tai const& latest_correction_time() const { return mLatestCorrectionTime; }
 
     SignalCorrection const* signal_corrections(SatelliteId id) const NOEXCEPT;
-    OrbitCorrection const*  orbit_correction(SatelliteId id) const NOEXCEPT;
-    ClockCorrection const*  clock_correction(SatelliteId id) const NOEXCEPT;
+    // Per-signal lookups. Freshness (max_bias_age) is checked against the requested entry's own
+    // epoch, since code and phase biases arrive in separate messages and accumulate per signal.
+    CodeBiasCorrection const*  code_bias(SatelliteId id, SignalId signal) const NOEXCEPT;
+    PhaseBiasCorrection const* phase_bias(SatelliteId id, SignalId signal) const NOEXCEPT;
+    OrbitCorrection const*     orbit_correction(SatelliteId id) const NOEXCEPT;
+    ClockCorrection const*     clock_correction(SatelliteId id) const NOEXCEPT;
 
     IonosphericPolynomial const* ionospheric_polynomial(SatelliteId id) const {
         auto it = mIonosphericPolynomial.find(id);

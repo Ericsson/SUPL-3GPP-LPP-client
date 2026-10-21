@@ -117,40 +117,36 @@ void Observation::update_lock_time(LockTime const& lock_time) NOEXCEPT {
 void Observation::compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-    auto signals = correction_data.signal_corrections(mSvId);
-    if (!signals) return;
+    auto bias = correction_data.phase_bias(mSvId, mSignalId);
+    if (!bias) return;
 
-    auto it = signals->phase_bias.find(mSignalId);
-    if (it == signals->phase_bias.end()) return;
-    if (mSsrGenerationConsistencyCheck && it->second.ssr_iod != mOrbitClockSsrIod) {
+    auto it = bias;
+    if (mSsrGenerationConsistencyCheck && it->ssr_iod != mOrbitClockSsrIod) {
         VERBOSEF("phase bias belongs to a different SSR generation than the orbit/clock "
                  "correction [sv=%s,signal=%s,orbit_iod=%u,bias_iod=%u]",
-                 mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->second.ssr_iod);
+                 mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->ssr_iod);
         return;
     }
-    mPhaseBias                = Correction{it->second.bias, true};
-    mPhaseBiasEpoch           = it->second.epoch_time;
-    mPhaseDiscontinuity       = it->second.discontinuity;
-    mHasPhaseIntegerIndicator = it->second.integer_indicator_valid;
-    mPhaseIntegerIndicator    = it->second.integer_indicator;
+    mPhaseBias                = Correction{it->bias, true};
+    mPhaseBiasEpoch           = it->epoch_time;
+    mPhaseDiscontinuity       = it->discontinuity;
+    mHasPhaseIntegerIndicator = it->integer_indicator_valid;
+    mPhaseIntegerIndicator    = it->integer_indicator;
 }
 
 void Observation::compute_code_bias(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-    auto signals = correction_data.signal_corrections(mSvId);
-    if (!signals) return;
-
-    auto it = signals->code_bias.find(mSignalId);
-    if (it == signals->code_bias.end()) return;
-    if (mSsrGenerationConsistencyCheck && it->second.ssr_iod != mOrbitClockSsrIod) {
+    auto it = correction_data.code_bias(mSvId, mSignalId);
+    if (!it) return;
+    if (mSsrGenerationConsistencyCheck && it->ssr_iod != mOrbitClockSsrIod) {
         VERBOSEF("code bias belongs to a different SSR generation than the orbit/clock "
                  "correction [sv=%s,signal=%s,orbit_iod=%u,bias_iod=%u]",
-                 mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->second.ssr_iod);
+                 mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->ssr_iod);
         return;
     }
-    mCodeBias      = Correction{it->second.bias, true};
-    mCodeBiasEpoch = it->second.epoch_time;
+    mCodeBias      = Correction{it->bias, true};
+    mCodeBiasEpoch = it->epoch_time;
 }
 
 void Observation::compute_tropospheric(CorrectionData const& correction_data) NOEXCEPT {
