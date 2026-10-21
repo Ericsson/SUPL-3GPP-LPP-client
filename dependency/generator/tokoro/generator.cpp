@@ -399,6 +399,9 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.true_range       = state.true_range;
                 row.eph_range        = state.eph_range;
                 row.orbit            = state.true_range - state.eph_range;
+                row.orbit_x          = state.true_position.x - state.eph_position.x;
+                row.orbit_y          = state.true_position.y - state.eph_position.y;
+                row.orbit_z          = state.true_position.z - state.eph_position.z;
                 row.elevation_deg    = state.true_elevation * constant::RAD2DEG;
                 row.azimuth_deg      = state.true_azimuth * constant::RAD2DEG;
                 row.nadir_deg        = state.true_nadir * constant::RAD2DEG;
@@ -414,6 +417,9 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 }
                 if (state.earth_solid_tides.valid) {
                     row.solid_tides     = state.earth_solid_tides.displacement;
+                    row.solid_tides_x   = state.earth_solid_tides.displacement_vector.x;
+                    row.solid_tides_y   = state.earth_solid_tides.displacement_vector.y;
+                    row.solid_tides_z   = state.earth_solid_tides.displacement_vector.z;
                     row.has_solid_tides = true;
                 }
             }

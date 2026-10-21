@@ -123,6 +123,9 @@ struct SatDiagRow {
     double   true_range{};
     double   eph_range{};
     double   orbit{};
+    double   orbit_x{};
+    double   orbit_y{};
+    double   orbit_z{};
     double   elevation_deg{};
     double   azimuth_deg{};
     double   nadir_deg{};
@@ -165,6 +168,9 @@ struct SatDiagRow {
     // Shapiro & solid tides
     double shapiro{};
     double solid_tides{};
+    double solid_tides_x{};
+    double solid_tides_y{};
+    double solid_tides_z{};
 
     // Flags
     bool has_geometry{false};
