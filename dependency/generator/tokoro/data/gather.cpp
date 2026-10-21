@@ -363,6 +363,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         poly.reference_point_latitude  = correction_point_set->reference_point_latitude;
         poly.reference_point_longitude = correction_point_set->reference_point_longitude;
 
+        poly.set_id                  = cps.set_id;
         poly.quality_indicator_valid = !stec_quality_indicator.invalid;
         poly.quality_indicator       = stec_quality_indicator.value;
         poly.epoch_time              = epoch_time;
@@ -727,6 +728,7 @@ void CorrectionData::load_snapshot(
             poly.reference_point_longitude = sip.reference_point_longitude;
             poly.quality_indicator         = sip.quality_indicator;
             poly.quality_indicator_valid   = sip.quality_indicator_valid;
+            poly.set_id = correction_point_set ? correction_point_set->set_id : 0;
 
             VERBOSEF("%3s c00=%+f c01=%+f c10=%+f c11=%+f ref=(%.6f,%.6f)", sat_id.name(), poly.c00,
                      poly.c01, poly.c10, poly.c11, poly.reference_point_latitude,

@@ -68,7 +68,7 @@ struct GridPoint {
     ts::Tai                                  tropospheric_epoch;
 
     bool has_ionospheric_residual(SatelliteId sv_id) const {
-        return ionospheric_residual.find(sv_id) != ionospheric_residual.end();
+        return ionospheric_valid && ionospheric_residual.find(sv_id) != ionospheric_residual.end();
     }
 
     bool has_tropospheric_data() const { return tropspheric_valid; }
@@ -100,6 +100,9 @@ struct GridData {
         number_of_steps_latitude  = correction_point_set.number_of_steps_latitude;
         number_of_steps_longitude = correction_point_set.number_of_steps_longitude;
         auto grid_point_count = (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
+        // Start from empty storage: resizing in place would keep the old set's points (and
+        // their residuals/epochs) wherever the old and new grids overlap.
+        grid_points.clear();
         grid_points.resize(static_cast<size_t>(grid_point_count));
     }
 
@@ -113,8 +116,10 @@ struct GridData {
         grid_point.absolute_index    = info.absolute_index;
         grid_point.tropspheric_valid = false;
         grid_point.ionospheric_valid = false;
-        grid_point.latitude_index    = info.latitude_index;
-        grid_point.longitude_index   = info.longitude_index;
+        grid_point.ionospheric_residual.clear();
+        grid_point.ionospheric_residual_epoch.clear();
+        grid_point.latitude_index  = info.latitude_index;
+        grid_point.longitude_index = info.longitude_index;
     }
 
     GridPoint* point_from_array_index(long array_index) {
