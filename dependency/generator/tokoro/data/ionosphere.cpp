@@ -47,7 +47,6 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
     FUNCTION_SCOPE();
 
     auto has_polynomial   = false;
-    auto has_gridded      = false;
     auto polynomial_stale = false;
 
     correction = {};
@@ -103,10 +102,16 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
         }  // !polynomial_stale
     }
 
-    if (polynomial_stale) {
-        // The polynomial is the dominant STEC term; without a fresh one the grid
-        // residual alone is not a valid correction, so treat the whole ionospheric
-        // correction as unavailable (the satellite is withheld when iono is required).
+    if (!has_polynomial) {
+        // The polynomial is the dominant STEC term; without a fresh one (stale or never
+        // received) the grid residual alone is not a valid correction, so treat the whole
+        // ionospheric correction as unavailable (the satellite is withheld when iono is
+        // required).
+        if (!polynomial_stale) {
+            WARNF("ionospheric correction not available for %s: no STEC polynomial (grid "
+                  "residual alone is not a complete correction)",
+                  sv_id.name());
+        }
         return false;
     }
 
@@ -114,9 +119,7 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
     if (grid_it != mGrid.end()) {
         auto status = grid_it->second.ionospheric(sv_id, llh, mLatestCorrectionTime, max_iono_age,
                                                   correction.grid_residual);
-        if (status == GridData::GridStatus::Success) {
-            has_gridded = true;
-        } else if (status == GridData::GridStatus::PositionOutsideGrid) {
+        if (status == GridData::GridStatus::PositionOutsideGrid) {
             WARNF("ionospheric correction not available for %s: position outside grid",
                   sv_id.name());
         } else if (status == GridData::GridStatus::MissingSatelliteData) {
@@ -127,11 +130,9 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
             WARNF("ionospheric correction not available for %s: grid point data too old",
                   sv_id.name());
         }
-    } else if (!has_polynomial) {
-        WARNF("ionospheric correction not available: no grid for GNSS (missing assistance data)");
     }
 
-    return has_polynomial || has_gridded;
+    return true;
 }
 
 }  // namespace tokoro

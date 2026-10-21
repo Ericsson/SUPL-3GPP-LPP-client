@@ -760,7 +760,9 @@ void CorrectionData::load_snapshot(
                 point.tropspheric_valid = sgp.has_troposphere;
                 point.tropospheric_wet  = sgp.troposphere_wet;
                 point.tropospheric_dry  = sgp.troposphere_dry;
-                point.ionospheric_valid = !sgp.ionosphere_residuals.empty();
+                // Snapshots carry no component epochs; treat restored data as current.
+                point.tropospheric_epoch = mLatestCorrectionTime;
+                point.ionospheric_valid  = !sgp.ionosphere_residuals.empty();
 
                 // Calculate absolute index: row * width + col
                 point.absolute_index =
@@ -776,7 +778,8 @@ void CorrectionData::load_snapshot(
                     auto sat_id =
                         SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(sir.gnss), sir.prn);
                     VERBOSEF("    %3s %+f", sat_id.name(), sir.residual);
-                    point.ionospheric_residual[sat_id] = sir.residual;
+                    point.ionospheric_residual[sat_id]       = sir.residual;
+                    point.ionospheric_residual_epoch[sat_id] = mLatestCorrectionTime;
                 }
 
                 // Place at correct index instead of push_back
