@@ -4,9 +4,10 @@ target_link_libraries(tokoro-post PRIVATE
     dependency::generator::rtcm
     dependency::format::tbin
     dependency::format::ubx
+    dependency::format::rtcm
+    dependency::format::nav
     dependency::format::lpp
     dependency::format::rinex
-    dependency::format::nav
     dependency::ephemeris
     dependency::time
     dependency::loglet
