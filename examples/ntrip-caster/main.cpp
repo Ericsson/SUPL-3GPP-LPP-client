@@ -2,6 +2,7 @@
 
 #include <client-io/io.hpp>
 #include <client-io/registry.hpp>
+#include <cxx11_compat.hpp>
 #include <io/output.hpp>
 #include <io/write_buffer.hpp>
 #include <loglet/loglet.hpp>
