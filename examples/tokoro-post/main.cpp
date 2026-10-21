@@ -52,6 +52,8 @@ struct Config {
     std::string              output_path;
     std::string              diag_dir;
     std::string              antex_file;
+    std::string              antenna_descriptor;
+    std::string              receiver_descriptor;
     std::vector<std::string> nav_files;
     double                   ubx_shift      = -72000.0;
     double                   rtcm_shift     = 0.0;
@@ -63,13 +65,43 @@ struct Config {
     double                   max_tropo_age  = 90.0;
     double                   elevation_mask = 10.0;
     double                   pos_x = 0, pos_y = 0, pos_z = 0;
-    int                      eph_cache                = 512;
-    bool                     no_gps                   = false;
-    bool                     no_gal                   = false;
-    bool                     no_bds                   = false;
-    bool                     antenna                  = false;  // enable ANTEX PCO/PCV correction
-    bool                     iono_height_correction   = false;
-    bool                     no_iod_consistency_check = false;
+    bool                     physical_pos_set = false;
+    double                   physical_pos_x = 0, physical_pos_y = 0, physical_pos_z = 0;
+    int                      eph_cache                  = 512;
+    uint32_t                 msm_type                   = 5;
+    uint32_t                 reference_station_id       = 1902;
+    bool                     no_gps                     = false;
+    bool                     no_gal                     = false;
+    bool                     no_bds                     = false;
+    bool                     no_qzs                     = false;
+    bool                     antenna                    = false;  // enable ANTEX PCO/PCV correction
+    bool                     iono_height_correction     = false;
+    bool                     no_iod_consistency_check   = false;
+    bool                     code_bias_optional         = false;
+    bool                     phase_bias_optional        = false;
+    bool                     tropo_optional             = false;
+    bool                     iono_optional              = false;
+    bool                     use_tropospheric_model     = false;
+    bool                     no_shapiro_correction      = false;
+    bool                     no_phase_windup_correction = false;
+    bool                     no_earth_solid_tides_correction   = false;
+    bool                     no_tropospheric_height_correction = false;
+    bool                     no_tropo_hydrostatic_delta        = false;
+    bool                     negative_phase_windup             = false;
+    bool                     no_phase_alignment                = false;
+    bool                     generate_rinex                    = false;
+    bool                     generate_residuals                = false;
+    bool                     ocit                              = false;
+    bool                     rtoc                              = false;
+    bool                     ignore_bitmask                    = false;
+    bool                     fake_cps_set                      = false;
+    uint16_t                 fake_cps_id                       = 0;
+    double                   fake_cps_lat                      = 0;
+    double                   fake_cps_lon                      = 0;
+    long                     fake_cps_steps_lat                = 0;
+    long                     fake_cps_steps_lon                = 0;
+    double                   fake_cps_step_lat                 = 0;
+    double                   fake_cps_step_lon                 = 0;
 };
 
 static Config parse_args(int argc, char** argv) {
@@ -132,13 +164,87 @@ static Config parse_args(int argc, char** argv) {
             cfg.no_gal = true;
         else if (arg == "--no-bds")
             cfg.no_bds = true;
+        else if (arg == "--no-qzs")
+            cfg.no_qzs = true;
         else if (arg == "--antenna" || arg == "--antenna-pcv")
             cfg.antenna = true;
         else if (arg == "--use-ionospheric-height-correction")
             cfg.iono_height_correction = true;
         else if (arg == "--no-iod-consistency-check")
             cfg.no_iod_consistency_check = true;
-        else {
+        else if (arg == "--code-bias-optional")
+            cfg.code_bias_optional = true;
+        else if (arg == "--phase-bias-optional")
+            cfg.phase_bias_optional = true;
+        else if (arg == "--tropo-optional")
+            cfg.tropo_optional = true;
+        else if (arg == "--iono-optional")
+            cfg.iono_optional = true;
+        else if (arg == "--use-tropospheric-model")
+            cfg.use_tropospheric_model = true;
+        else if (arg == "--no-shapiro-correction")
+            cfg.no_shapiro_correction = true;
+        else if (arg == "--no-phase-windup-correction")
+            cfg.no_phase_windup_correction = true;
+        else if (arg == "--no-earth-solid-tides-correction")
+            cfg.no_earth_solid_tides_correction = true;
+        else if (arg == "--no-tropospheric-height-correction")
+            cfg.no_tropospheric_height_correction = true;
+        else if (arg == "--no-tropo-hydrostatic-delta")
+            cfg.no_tropo_hydrostatic_delta = true;
+        else if (arg == "--msm-type")
+            cfg.msm_type = static_cast<uint32_t>(std::stoul(next()));
+        else if (arg == "--negative-phase-windup")
+            cfg.negative_phase_windup = true;
+        else if (arg == "--no-phase-alignment")
+            cfg.no_phase_alignment = true;
+        else if (arg == "--antenna-descriptor")
+            cfg.antenna_descriptor = next();
+        else if (arg == "--receiver-descriptor")
+            cfg.receiver_descriptor = next();
+        else if (arg == "--generate-rinex")
+            cfg.generate_rinex = true;
+        else if (arg == "--residuals")
+            cfg.generate_residuals = true;
+        else if (arg == "--reference-station-id")
+            cfg.reference_station_id = static_cast<uint32_t>(std::stoul(next()));
+        else if (arg == "--physical-x") {
+            cfg.physical_pos_x   = std::stod(next());
+            cfg.physical_pos_set = true;
+        } else if (arg == "--physical-y") {
+            cfg.physical_pos_y   = std::stod(next());
+            cfg.physical_pos_set = true;
+        } else if (arg == "--physical-z") {
+            cfg.physical_pos_z   = std::stod(next());
+            cfg.physical_pos_set = true;
+        } else if (arg == "--ocit")
+            cfg.ocit = true;
+        else if (arg == "--rtoc")
+            cfg.rtoc = true;
+        else if (arg == "--ignore-bitmask")
+            cfg.ignore_bitmask = true;
+        else if (arg == "--cps-id") {
+            cfg.fake_cps_id  = static_cast<uint16_t>(std::stoi(next()));
+            cfg.fake_cps_set = true;
+        } else if (arg == "--cps-lat") {
+            cfg.fake_cps_lat = std::stod(next());
+            cfg.fake_cps_set = true;
+        } else if (arg == "--cps-lon") {
+            cfg.fake_cps_lon = std::stod(next());
+            cfg.fake_cps_set = true;
+        } else if (arg == "--cps-steps-lat") {
+            cfg.fake_cps_steps_lat = std::stol(next());
+            cfg.fake_cps_set       = true;
+        } else if (arg == "--cps-steps-lon") {
+            cfg.fake_cps_steps_lon = std::stol(next());
+            cfg.fake_cps_set       = true;
+        } else if (arg == "--cps-step-lat") {
+            cfg.fake_cps_step_lat = std::stod(next());
+            cfg.fake_cps_set      = true;
+        } else if (arg == "--cps-step-lon") {
+            cfg.fake_cps_step_lon = std::stod(next());
+            cfg.fake_cps_set      = true;
+        } else {
             fprintf(stderr, "Unknown argument: %s\n", arg.c_str());
             exit(1);
         }
@@ -146,7 +252,17 @@ static Config parse_args(int argc, char** argv) {
     if (cfg.ssr_path.empty() || cfg.output_path.empty()) {
         fprintf(stderr, "Usage: tokoro-post --ssr <tbin> --output <rtcm> --pos-x X --pos-y Y "
                         "--pos-z Z [--ubx <tbin>] [--rtcm <tbin>] [--nav <file>...] "
-                        "[--elevation-mask <degrees>]\n");
+                        "[--elevation-mask <degrees>] [--msm-type 4|5|6|7] "
+                        "[--reference-station-id <id>] [--physical-x/y/z <meter>] "
+                        "[--no-gps|--no-gal|--no-bds|--no-qzs] "
+                        "[--code-bias-optional] [--phase-bias-optional] [--tropo-optional] "
+                        "[--iono-optional] [--use-tropospheric-model] "
+                        "[--no-shapiro-correction] [--no-phase-windup-correction] "
+                        "[--no-earth-solid-tides-correction] [--no-tropospheric-height-correction] "
+                        "[--no-tropo-hydrostatic-delta] [--negative-phase-windup] "
+                        "[--no-phase-alignment] [--antenna-descriptor <string>] "
+                        "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
+                        "[--ocit] [--rtoc] [--ignore-bitmask]\n");
         exit(1);
     }
     return cfg;
@@ -342,6 +458,14 @@ int main(int argc, char** argv) {
     generator->set_max_bias_age(cfg.max_bias_age);
     generator->set_max_iono_age(cfg.max_iono_age);
     generator->set_max_tropo_age(cfg.max_tropo_age);
+    generator->set_ocit(cfg.ocit);
+    generator->set_rtoc(cfg.rtoc);
+    generator->set_ignore_bitmask(cfg.ignore_bitmask);
+    if (cfg.fake_cps_set) {
+        generator->set_fake_correction_point_set(
+            cfg.fake_cps_id, cfg.fake_cps_lat, cfg.fake_cps_lon, cfg.fake_cps_steps_lat,
+            cfg.fake_cps_steps_lon, cfg.fake_cps_step_lat, cfg.fake_cps_step_lon);
+    }
 
     // Load nav files
     for (auto& nav_path : cfg.nav_files) {
@@ -370,16 +494,35 @@ int main(int argc, char** argv) {
     rs_cfg.generate_gal         = !cfg.no_gal;
     rs_cfg.generate_bds         = !cfg.no_bds;
     rs_cfg.generate_glo         = false;
-    rs_cfg.generate_qzs         = false;
+    rs_cfg.generate_qzs         = !cfg.no_qzs;
     auto ref_station = std::make_shared<generator::tokoro::ReferenceStation>(*generator, rs_cfg);
-    ref_station->set_msm_type(5);
-    ref_station->set_phase_alignment(true);
-    ref_station->set_shapiro_correction(true);
-    ref_station->set_earth_solid_tides_correction(true);
-    ref_station->set_phase_windup_correction(true);
+    ref_station->set_msm_type(cfg.msm_type);
+    ref_station->set_reference_station_id(cfg.reference_station_id);
+    ref_station->set_phase_alignment(!cfg.no_phase_alignment);
+    ref_station->set_shapiro_correction(!cfg.no_shapiro_correction);
+    ref_station->set_earth_solid_tides_correction(!cfg.no_earth_solid_tides_correction);
+    ref_station->set_phase_windup_correction(!cfg.no_phase_windup_correction);
+    ref_station->set_tropospheric_height_correction(!cfg.no_tropospheric_height_correction);
+    ref_station->set_tropospheric_hydrostatic_delta(!cfg.no_tropo_hydrostatic_delta);
     ref_station->set_antenna_phase_variation_correction(cfg.antenna);
     ref_station->set_use_ionospheric_height_correction(cfg.iono_height_correction);
     ref_station->set_elevation_mask(cfg.elevation_mask);
+    ref_station->set_negative_phase_windup(cfg.negative_phase_windup);
+    ref_station->set_antenna_descriptor(cfg.antenna_descriptor);
+    ref_station->set_receiver_descriptor(cfg.receiver_descriptor);
+    ref_station->set_require_code_bias(!cfg.code_bias_optional);
+    ref_station->set_require_phase_bias(!cfg.phase_bias_optional);
+    ref_station->set_require_tropo(!cfg.tropo_optional);
+    ref_station->set_require_iono(!cfg.iono_optional);
+    ref_station->set_use_tropospheric_model(cfg.use_tropospheric_model);
+    ref_station->set_generate_residuals(cfg.generate_residuals);
+    if (cfg.physical_pos_set) {
+        ref_station->set_physical_ground_position(
+            {cfg.physical_pos_x, cfg.physical_pos_y, cfg.physical_pos_z});
+    }
+#ifdef INCLUDE_FORMAT_RINEX
+    ref_station->set_generate_rinex(cfg.generate_rinex);
+#endif
     if (!cfg.diag_dir.empty()) ref_station->set_diag_output(cfg.diag_dir);
 
     // Open output
