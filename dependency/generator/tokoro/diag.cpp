@@ -386,6 +386,12 @@ void SatDiagFile::write_header() noexcept {
     fprintf(mFile, "TRUE_RANGE            Geometric range to satellite, meters\n");
     fprintf(mFile, "EPH_RANGE             Ephemeris-only range (no SSR orbit), meters\n");
     fprintf(mFile, "ORBIT                 SSR orbit correction (TRUE_RANGE - EPH_RANGE), meters\n");
+    fprintf(mFile, "ORBIT_X               SSR orbit correction, ECEF X (true - eph position), "
+                   "meters\n");
+    fprintf(mFile, "ORBIT_Y               SSR orbit correction, ECEF Y (true - eph position), "
+                   "meters\n");
+    fprintf(mFile, "ORBIT_Z               SSR orbit correction, ECEF Z (true - eph position), "
+                   "meters\n");
     fprintf(mFile, "ELEVATION             Satellite elevation angle, degrees\n");
     fprintf(mFile, "AZIMUTH               Satellite azimuth angle, degrees\n");
     fprintf(mFile, "NADIR                 Satellite nadir angle, degrees\n");
@@ -427,7 +433,11 @@ void SatDiagFile::write_header() noexcept {
     fprintf(mFile, "GRID_AGE              SSR gridded assistance data age (TIMESTAMP - epoch), "
                    "seconds\n");
     fprintf(mFile, "SHAPIRO               Shapiro relativistic delay, meters\n");
-    fprintf(mFile, "SOLID_TIDES           Earth solid tides displacement, meters\n");
+    fprintf(mFile,
+            "SOLID_TIDES           Earth solid tides displacement (line-of-sight), meters\n");
+    fprintf(mFile, "SOLID_TIDES_X         Earth solid tides displacement, ECEF X, meters\n");
+    fprintf(mFile, "SOLID_TIDES_Y         Earth solid tides displacement, ECEF Y, meters\n");
+    fprintf(mFile, "SOLID_TIDES_Z         Earth solid tides displacement, ECEF Z, meters\n");
     fprintf(mFile, "DISCARD_REASON        Reason for discard (- if valid)\n");
     fprintf(mFile, "End Field Description\n");
     // Column header — widths match data format exactly (2-space separator between each)
@@ -435,6 +445,9 @@ void SatDiagFile::write_header() noexcept {
     hdr(mFile, "TRUE_RANGE", 15);
     hdr(mFile, "EPH_RANGE", 15);
     hdr(mFile, "ORBIT", 13);
+    hdr(mFile, "ORBIT_X", 12);
+    hdr(mFile, "ORBIT_Y", 12);
+    hdr(mFile, "ORBIT_Z", 12);
     hdr(mFile, "ELEV", 6);
     hdr(mFile, "AZIM", 7);
     hdr(mFile, "NADIR", 7);
@@ -469,6 +482,9 @@ void SatDiagFile::write_header() noexcept {
     hdr(mFile, "GRID_AGE", 9);
     hdr(mFile, "SHAPIRO", 10);
     hdr(mFile, "SOLID_TIDES", 11);
+    hdr(mFile, "SOLID_TIDES_X", 13);
+    hdr(mFile, "SOLID_TIDES_Y", 13);
+    hdr(mFile, "SOLID_TIDES_Z", 13);
     fprintf(mFile, "  DISCARD_REASON\n");
     mHeaderWritten = true;
 }
@@ -484,13 +500,16 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
     auto prefix = row.discard_reason.empty() ? ' ' : '#';
 
     // Geometry
-    char true_range_s[20], eph_range_s[20], orbit_s[16], elev_s[10], azim_s[10], nadir_s[10],
-        eph_clock_s[16];
+    char true_range_s[20], eph_range_s[20], orbit_s[16], orbit_x_s[16], orbit_y_s[16],
+        orbit_z_s[16], elev_s[10], azim_s[10], nadir_s[10], eph_clock_s[16];
     char eph_week_s[10], eph_toe_s[12];
     if (row.has_geometry) {
         snprintf(true_range_s, sizeof(true_range_s), "%+15.5f", row.true_range);
         snprintf(eph_range_s, sizeof(eph_range_s), "%+15.5f", row.eph_range);
         snprintf(orbit_s, sizeof(orbit_s), "%+13.5f", row.orbit);
+        snprintf(orbit_x_s, sizeof(orbit_x_s), "%+12.5f", row.orbit_x);
+        snprintf(orbit_y_s, sizeof(orbit_y_s), "%+12.5f", row.orbit_y);
+        snprintf(orbit_z_s, sizeof(orbit_z_s), "%+12.5f", row.orbit_z);
         snprintf(elev_s, sizeof(elev_s), "%+6.2f", row.elevation_deg);
         snprintf(azim_s, sizeof(azim_s), "%+7.2f", row.azimuth_deg);
         snprintf(nadir_s, sizeof(nadir_s), "%+7.3f", row.nadir_deg);
@@ -501,6 +520,9 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
         snprintf(true_range_s, sizeof(true_range_s), "%15s", "-");
         snprintf(eph_range_s, sizeof(eph_range_s), "%15s", "-");
         snprintf(orbit_s, sizeof(orbit_s), "%13s", "-");
+        snprintf(orbit_x_s, sizeof(orbit_x_s), "%12s", "-");
+        snprintf(orbit_y_s, sizeof(orbit_y_s), "%12s", "-");
+        snprintf(orbit_z_s, sizeof(orbit_z_s), "%12s", "-");
         snprintf(elev_s, sizeof(elev_s), "%6s", "-");
         snprintf(azim_s, sizeof(azim_s), "%7s", "-");
         snprintf(nadir_s, sizeof(nadir_s), "%7s", "-");
@@ -577,29 +599,38 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
     fmt_age(cage, sizeof(cage), row.clock_epoch, 9);
 
     // Shapiro & solid tides
-    char shapiro_s[16], solid_tides_s[16];
+    char shapiro_s[16], solid_tides_s[16], solid_tides_x_s[16], solid_tides_y_s[16],
+        solid_tides_z_s[16];
     if (row.has_shapiro)
         snprintf(shapiro_s, sizeof(shapiro_s), "%+10.5f", row.shapiro);
     else
         snprintf(shapiro_s, sizeof(shapiro_s), "%10s", "-");
-    if (row.has_solid_tides)
+    if (row.has_solid_tides) {
         snprintf(solid_tides_s, sizeof(solid_tides_s), "%+11.5f", row.solid_tides);
-    else
+        snprintf(solid_tides_x_s, sizeof(solid_tides_x_s), "%+13.6f", row.solid_tides_x);
+        snprintf(solid_tides_y_s, sizeof(solid_tides_y_s), "%+13.6f", row.solid_tides_y);
+        snprintf(solid_tides_z_s, sizeof(solid_tides_z_s), "%+13.6f", row.solid_tides_z);
+    } else {
         snprintf(solid_tides_s, sizeof(solid_tides_s), "%11s", "-");
+        snprintf(solid_tides_x_s, sizeof(solid_tides_x_s), "%13s", "-");
+        snprintf(solid_tides_y_s, sizeof(solid_tides_y_s), "%13s", "-");
+        snprintf(solid_tides_z_s, sizeof(solid_tides_z_s), "%13s", "-");
+    }
 
     fprintf(mFile,
             "%c%s  %3d"
-            "  %s  %s  %s  %s  %s  %s"
+            "  %s  %s  %s  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s"
             "  %s  %s  %s  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s"
-            "  %s  %s  %s\n",
-            prefix, ts.c_str(), row.prn, true_range_s, eph_range_s, orbit_s, elev_s, azim_s,
-            nadir_s, eph_clock_s, eph_week_s, eph_toe_s, orb_r, orb_a, orb_c, orb_rd, orb_ad,
-            orb_cd, orb_iod, oepoch, oage, clk_c0, clk_c1, clk_c2, clk_corr, cepoch, cage, ic00,
-            ic01, ic10, ic11, irlat, irlon, iqual, iepoch, iage, gepoch, gage, shapiro_s,
-            solid_tides_s, row.discard_reason.empty() ? "-" : row.discard_reason.c_str());
+            "  %s  %s  %s  %s  %s  %s\n",
+            prefix, ts.c_str(), row.prn, true_range_s, eph_range_s, orbit_s, orbit_x_s, orbit_y_s,
+            orbit_z_s, elev_s, azim_s, nadir_s, eph_clock_s, eph_week_s, eph_toe_s, orb_r, orb_a,
+            orb_c, orb_rd, orb_ad, orb_cd, orb_iod, oepoch, oage, clk_c0, clk_c1, clk_c2, clk_corr,
+            cepoch, cage, ic00, ic01, ic10, ic11, irlat, irlon, iqual, iepoch, iage, gepoch, gage,
+            shapiro_s, solid_tides_s, solid_tides_x_s, solid_tides_y_s, solid_tides_z_s,
+            row.discard_reason.empty() ? "-" : row.discard_reason.c_str());
 }
 
 }  // namespace tokoro
