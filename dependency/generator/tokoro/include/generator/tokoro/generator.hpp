@@ -191,6 +191,9 @@ private:
     // previously observed value) means the SSR provider has flagged a phase
     // discontinuity, so the output lock/ambiguity arc must restart.
     std::unordered_map<SatelliteSignalId, uint8_t> mLastPhaseDiscontinuityCounter;
+    // Integer phase ambiguity N (cycles) per signal; incremented by one on every detected
+    // phase discontinuity (cycle slip) and added to the synthesized carrier phase.
+    std::unordered_map<SatelliteSignalId, int64_t> mPhaseAmbiguity;
 
     ts::Tai mGenerationTime;
 #ifdef INCLUDE_FORMAT_RINEX

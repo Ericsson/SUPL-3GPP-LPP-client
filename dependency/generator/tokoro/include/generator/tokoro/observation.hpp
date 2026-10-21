@@ -58,7 +58,9 @@ struct Observation {
 public:
     EXPLICIT Observation(Satellite const& satellite, SignalId signal_id, Float3 location) NOEXCEPT;
 
-    void update_lock_time(LockTime const& lock_time) NOEXCEPT;
+    void              update_lock_time(LockTime const& lock_time) NOEXCEPT;
+    void              set_phase_ambiguity(int64_t cycles) NOEXCEPT { mPhaseAmbiguity = cycles; }
+    NODISCARD int64_t phase_ambiguity() const NOEXCEPT { return mPhaseAmbiguity; }
 
     void compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT;
     void compute_code_bias(CorrectionData const& correction_data) NOEXCEPT;
@@ -135,6 +137,7 @@ private:
     double   mWavelength;
     double   mCarrierToNoiseRatio;
     LockTime mLockTime;
+    int64_t  mPhaseAmbiguity{0};
     bool     mNegativePhaseWindup;
     bool     mNegativeCorrectionSign;
     bool     mSsrGenerationConsistencyCheck;

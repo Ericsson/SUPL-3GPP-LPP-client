@@ -545,10 +545,11 @@ void Observation::compute_ranges() NOEXCEPT {
         auto code_result0 = true_range0 + clock_bias0 + code_correction0 + final_code_correction0;
         auto code_result1 = true_range1 + clock_bias1 + code_correction1 + final_code_correction1;
 
-        auto phase_result0 =
-            true_range0 + clock_bias0 + phase_correction0 + final_phase_correction0;
-        auto phase_result1 =
-            true_range1 + clock_bias1 + phase_correction1 + final_phase_correction1;
+        auto ambiguity_range = static_cast<double>(mPhaseAmbiguity) * mWavelength;
+        auto phase_result0   = true_range0 + clock_bias0 + phase_correction0 +
+                             final_phase_correction0 + ambiguity_range;
+        auto phase_result1 = true_range1 + clock_bias1 + phase_correction1 +
+                             final_phase_correction1 + ambiguity_range;
 
         auto phase_delta = phase_result1 - phase_result0;
         auto phase_rate  = phase_delta / time_delta;
