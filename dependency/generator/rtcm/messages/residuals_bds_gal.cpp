@@ -1,4 +1,5 @@
 #include "encoder.hpp"
+#include "helper.hpp"
 #include "residuals.hpp"
 
 #include <time/bdt.hpp>
@@ -31,11 +32,11 @@ Message generate_1303(Residuals const& residuals) {
         if (!satellite.id.as_msm().valid) continue;
 
         encoder.u8(6, static_cast<uint8_t>(satellite.id.as_msm().value));
-        encoder.u32(8, static_cast<uint32_t>(satellite.s_oc / 0.5));
-        encoder.u32(9, static_cast<uint32_t>(satellite.s_od / 0.01));
-        encoder.u32(6, static_cast<uint32_t>(satellite.s_oh / 0.1));
-        encoder.u32(10, static_cast<uint32_t>(satellite.s_lc / 0.5));
-        encoder.u32(10, static_cast<uint32_t>(satellite.s_ld / 0.01));
+        encoder.u32(8, rtcm_quantize_unsigned(satellite.s_oc, 0.5, 8));
+        encoder.u32(9, rtcm_quantize_unsigned(satellite.s_od, 0.01, 9));
+        encoder.u32(6, rtcm_quantize_unsigned(satellite.s_oh, 0.1, 6));
+        encoder.u32(10, rtcm_quantize_unsigned(satellite.s_lc, 0.5, 10));
+        encoder.u32(10, rtcm_quantize_unsigned(satellite.s_ld, 0.01, 10));
     }
 
     auto length = static_cast<uint16_t>(encoder.byte_count());
@@ -74,11 +75,11 @@ Message generate_1304(Residuals const& residuals) {
         if (!satellite.id.as_msm().valid) continue;
 
         encoder.u8(6, static_cast<uint8_t>(satellite.id.as_msm().value));
-        encoder.u32(8, static_cast<uint32_t>(satellite.s_oc / 0.5));
-        encoder.u32(9, static_cast<uint32_t>(satellite.s_od / 0.01));
-        encoder.u32(6, static_cast<uint32_t>(satellite.s_oh / 0.1));
-        encoder.u32(10, static_cast<uint32_t>(satellite.s_lc / 0.5));
-        encoder.u32(10, static_cast<uint32_t>(satellite.s_ld / 0.01));
+        encoder.u32(8, rtcm_quantize_unsigned(satellite.s_oc, 0.5, 8));
+        encoder.u32(9, rtcm_quantize_unsigned(satellite.s_od, 0.01, 9));
+        encoder.u32(6, rtcm_quantize_unsigned(satellite.s_oh, 0.1, 6));
+        encoder.u32(10, rtcm_quantize_unsigned(satellite.s_lc, 0.5, 10));
+        encoder.u32(10, rtcm_quantize_unsigned(satellite.s_ld, 0.01, 10));
     }
 
     auto length = static_cast<uint16_t>(encoder.byte_count());
