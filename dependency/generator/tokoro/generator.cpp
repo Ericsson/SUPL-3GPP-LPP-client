@@ -146,6 +146,8 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
     }
 }
 
+static CONSTEXPR int64_t PHASE_AMBIGUITY_LIMIT = 1000;
+
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id,
                                               char const* diag_discard_reason) NOEXCEPT {
     FUNCTION_SCOPE();
@@ -172,6 +174,17 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
         }
     }
 
+    if (discontinuity_changed) {
+        // Keep N within +-PHASE_AMBIGUITY_LIMIT cycles. The carrier phase is encoded relative
+        // to the rough range in a +-2^-8 ms (~1171 m) field (DF401/DF406); the limit leaves
+        // ample room below that for N*wavelength (<= ~0.26 m/cycle, so <= ~260 m) on top of
+        // the code remainder (<~150 m) and phase-code differences. Wrapping is still an
+        // integer-cycle jump, i.e. indistinguishable from another slip.
+        auto& ambiguity = mPhaseAmbiguity[ss_id];
+        ambiguity += 1;
+        if (ambiguity > PHASE_AMBIGUITY_LIMIT) ambiguity = -PHASE_AMBIGUITY_LIMIT;
+    }
+
     LockTime lock_time{};
     if (discontinuity_changed || mLockTime.find(ss_id) == mLockTime.end()) {
         lock_time.time    = mGenerationTime;
@@ -193,6 +206,11 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     auto& observation = satellite.initialize_observation(signal_id);
     observation.recompute_mapping_hydrostatic(mTropoHydrostaticDelta);
     observation.update_lock_time(lock_time);
+    {
+        auto ambiguity_it = mPhaseAmbiguity.find(ss_id);
+        observation.set_phase_ambiguity(
+            ambiguity_it != mPhaseAmbiguity.end() ? ambiguity_it->second : 0);
+    }
     observation.compute_phase_bias(correction_data);
     observation.compute_code_bias(correction_data);
     observation.compute_tropospheric(correction_data);
