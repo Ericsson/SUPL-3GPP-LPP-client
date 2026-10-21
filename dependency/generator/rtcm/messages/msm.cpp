@@ -115,9 +115,24 @@ static void df_ext(Encoder& encoder, Satellite const& satellite) {
     }
 }
 
+// Quantizes an optional fine range to a signed field. The field's most negative value is the
+// reserved "invalid" pattern, so it is excluded from the usable range. Validity is decided by
+// the field's own Maybe only, and the value is checked before any float-to-integer cast.
+static bool quantize_fine_range(Maybe<double> const& range, double scale, int64_t min_exclusive,
+                                int64_t max_inclusive, int64_t& result) {
+    if (!range.valid || !std::isfinite(range.value)) return false;
+    auto scaled = rtcm_round(range.value * scale);
+    if (!(scaled > static_cast<double>(min_exclusive) &&
+          scaled <= static_cast<double>(max_inclusive))) {
+        return false;
+    }
+    result = static_cast<int64_t>(scaled);
+    return true;
+}
+
 static void df400(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(rtcm_round(signal.fine_pseudo_range.value * RTCM_P2_24));
-    if (signal.fine_phase_range.valid && value >= -16384 && value <= 16383) {
+    int64_t value = 0;
+    if (quantize_fine_range(signal.fine_pseudo_range, RTCM_P2_24, -16384, 16383, value)) {
         encoder.i16(15, static_cast<int16_t>(value));
     } else {
         encoder.u16(15, 0x4000);
@@ -125,8 +140,8 @@ static void df400(Encoder& encoder, Signal const& signal) {
 }
 
 static void df401(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range.value * RTCM_P2_29));
-    if (signal.fine_pseudo_range.valid && value >= -2097152 && value <= 2097151) {
+    int64_t value = 0;
+    if (quantize_fine_range(signal.fine_phase_range, RTCM_P2_29, -2097152, 2097151, value)) {
         encoder.i32(22, static_cast<int32_t>(value));
     } else {
         encoder.u32(22, 0x200000);
@@ -161,8 +176,8 @@ static void df404(Encoder& encoder, Signal const& signal) {
 }
 
 static void df405(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(rtcm_round(signal.fine_pseudo_range.value * RTCM_P2_29));
-    if (signal.fine_phase_range.valid && value >= -524288 && value <= 524287) {
+    int64_t value = 0;
+    if (quantize_fine_range(signal.fine_pseudo_range, RTCM_P2_29, -524288, 524287, value)) {
         encoder.i32(20, static_cast<int32_t>(value));
     } else {
         encoder.u32(20, 0x80000);
@@ -170,8 +185,8 @@ static void df405(Encoder& encoder, Signal const& signal) {
 }
 
 static void df406(Encoder& encoder, Signal const& signal) {
-    auto value = static_cast<int64_t>(rtcm_round(signal.fine_phase_range.value * RTCM_P2_31));
-    if (signal.fine_phase_range.valid && value >= -8388608 && value <= 8388607) {
+    int64_t value = 0;
+    if (quantize_fine_range(signal.fine_phase_range, RTCM_P2_31, -8388608, 8388607, value)) {
         encoder.i32(24, static_cast<int32_t>(value));
     } else {
         encoder.u32(24, 0x800000);
