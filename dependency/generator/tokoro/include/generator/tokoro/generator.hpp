@@ -184,6 +184,7 @@ private:
     std::unordered_set<SignalId>    mSignalIncludeSet;
 
     std::unordered_map<SatelliteSignalId, ts::Tai> mLockTime;
+    std::unordered_map<SatelliteSignalId, uint8_t> mPhaseDiscontinuity;
 
     ts::Tai mGenerationTime;
 #ifdef INCLUDE_FORMAT_RINEX

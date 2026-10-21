@@ -34,6 +34,9 @@ struct PhaseBiasCorrection {
     uint16_t ssr_iod;
     double   bias;
     ts::Tai  epoch_time;
+    uint8_t  discontinuity;  // SSR phase discontinuity indicator (0..3)
+    bool     integer_indicator_valid;
+    uint8_t  integer_indicator;  // SSR phase bias integer indicator (0..3)
 };
 
 struct SignalCorrection {

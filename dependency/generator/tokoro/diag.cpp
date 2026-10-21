@@ -13,6 +13,28 @@ static void hdr(FILE* f, char const* name, int width) {
     fprintf(f, "  %*s", width, name);
 }
 
+static std::string utc_string(ts::Tai const& time) {
+    auto s = ts::Utc{time}.rfc3339();
+    if (!s.empty() && s.back() == 'Z') s.pop_back();
+    return s;
+}
+
+// Absolute assistance-data time as UTC date/time, same format/width as TIMESTAMP
+static void fmt_epoch(char* buf, size_t size, DiagEpoch const& epoch) {
+    if (epoch.valid)
+        snprintf(buf, size, "%23s", utc_string(epoch.time).c_str());
+    else
+        snprintf(buf, size, "%23s", "-");
+}
+
+// Assistance-data age in seconds, right-aligned to the column header width
+static void fmt_age(char* buf, size_t size, DiagEpoch const& epoch, int width) {
+    if (epoch.valid)
+        snprintf(buf, size, "%*.3f", width, epoch.age);
+    else
+        snprintf(buf, size, "%*s", width, "-");
+}
+
 static void mkdirs(std::string const& path) {
     for (size_t i = 1; i < path.size(); ++i) {
         if (path[i] == '/') {
@@ -159,6 +181,23 @@ void DiagFile::write_header() noexcept {
     fprintf(mFile, "CNR                   Carrier-to-noise ratio, dB-Hz\n");
     fprintf(mFile, "LOCK_TIME             Phase lock time, seconds\n");
     fprintf(mFile, "FREQ_MHZ              Signal frequency, MHz\n");
+    fprintf(
+        mFile,
+        "CODE_BIAS_EPOCH       Code bias assistance data epoch (message time), UTC date/time\n");
+    fprintf(mFile,
+            "CODE_BIAS_AGE         Code bias assistance data age (TIMESTAMP - epoch), seconds\n");
+    fprintf(mFile, "PHASE_BIAS_EPOCH      Phase bias assistance data epoch (message time), UTC "
+                   "date/time\n");
+    fprintf(mFile,
+            "PHASE_BIAS_AGE        Phase bias assistance data age (TIMESTAMP - epoch), seconds\n");
+    fprintf(mFile, "PHASE_DISC            SSR phase discontinuity indicator (0-3) of the phase "
+                   "bias in use\n");
+    fprintf(mFile, "PHASE_INT             SSR phase bias integer indicator (0-3) of the phase "
+                   "bias in use\n");
+    fprintf(mFile, "INT_CYCLES            Whole cycles added to PHASE_RANGE (N * wavelength), "
+                   "currently always 0 (integer support not implemented)\n");
+    fprintf(mFile, "CYCLE_SLIP            1 if PHASE_DISC changed since the previous epoch (cycle "
+                   "slip), 0 if not, - if unknown\n");
     fprintf(mFile, "DISCARD_REASON        Reason for discard (- if valid)\n");
     fprintf(mFile, "End Field Description\n");
     // Column header — widths match data format exactly (2-space separator between each)
@@ -187,6 +226,14 @@ void DiagFile::write_header() noexcept {
     hdr(mFile, "CNR", 6);
     hdr(mFile, "LOCK_TIME", 9);
     hdr(mFile, "FREQ_MHZ", 11);
+    hdr(mFile, "CODE_BIAS_EPOCH", 23);
+    hdr(mFile, "CODE_BIAS_AGE", 13);
+    hdr(mFile, "PHASE_BIAS_EPOCH", 23);
+    hdr(mFile, "PHASE_BIAS_AGE", 14);
+    hdr(mFile, "PHASE_DISC", 10);
+    hdr(mFile, "PHASE_INT", 9);
+    hdr(mFile, "INT_CYCLES", 10);
+    hdr(mFile, "CYCLE_SLIP", 10);
     fprintf(mFile, "  DISCARD_REASON\n");
     mHeaderWritten = true;
 }
@@ -209,6 +256,26 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
     char phase_windup_s[16], ant_phase_s[16];
     char code_corr_s[20], phase_corr_s[20], code_range_s[20], phase_range_s[20];
     char phase_rate_s[16];
+    char code_bias_epoch_s[32], code_bias_age_s[24], phase_bias_epoch_s[32], phase_bias_age_s[24];
+    char phase_disc_s[24], phase_int_s[24], int_cycles_s[24], cycle_slip_s[24];
+    snprintf(int_cycles_s, sizeof(int_cycles_s), "%+10ld", row.integer_cycles);
+
+    fmt_epoch(code_bias_epoch_s, sizeof(code_bias_epoch_s), row.code_bias_epoch);
+    fmt_age(code_bias_age_s, sizeof(code_bias_age_s), row.code_bias_epoch, 13);
+    fmt_epoch(phase_bias_epoch_s, sizeof(phase_bias_epoch_s), row.phase_bias_epoch);
+    fmt_age(phase_bias_age_s, sizeof(phase_bias_age_s), row.phase_bias_epoch, 14);
+    if (row.has_phase_discontinuity)
+        snprintf(phase_disc_s, sizeof(phase_disc_s), "%10d", row.phase_discontinuity);
+    else
+        snprintf(phase_disc_s, sizeof(phase_disc_s), "%10s", "-");
+    if (row.has_phase_integer)
+        snprintf(phase_int_s, sizeof(phase_int_s), "%9d", row.phase_integer);
+    else
+        snprintf(phase_int_s, sizeof(phase_int_s), "%9s", "-");
+    if (row.has_cycle_slip)
+        snprintf(cycle_slip_s, sizeof(cycle_slip_s), "%10d", row.cycle_slip ? 1 : 0);
+    else
+        snprintf(cycle_slip_s, sizeof(cycle_slip_s), "%10s", "-");
 
     if (row.has_clock)
         snprintf(clock_s, sizeof(clock_s), "%+10.5f", row.clock);
@@ -286,13 +353,16 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
             "  %s  %s  %s  %s  %s  %s  %s"
             "  %s  %s"
             "  %s  %s  %s  %s"
-            "  %s  %+6.2f  %+9.3f  %+11.4f  %s\n",
+            "  %s  %+6.2f  %+9.3f  %+11.4f"
+            "  %s  %s  %s  %s  %s  %s  %s  %s"
+            "  %s\n",
             prefix, ts.c_str(), row.prn, mMsmSigName.c_str(), row.sig_id, clock_s, code_bias_s,
             phase_bias_s, stec_grid_s, stec_poly_s, stec_total_s, stec_hcorr_s, tropo_dry_s,
             tropo_wet_s, tropo_total_s, tropo_dmap_s, tropo_wmap_s, tropo_dzen_s, tropo_wzen_s,
             phase_windup_s, ant_phase_s, code_corr_s, phase_corr_s, code_range_s, phase_range_s,
-            phase_rate_s, row.cnr, row.lock_time, row.frequency_mhz,
-            row.valid ? "-" : row.discard_reason.c_str());
+            phase_rate_s, row.cnr, row.lock_time, row.frequency_mhz, code_bias_epoch_s,
+            code_bias_age_s, phase_bias_epoch_s, phase_bias_age_s, phase_disc_s, phase_int_s,
+            int_cycles_s, cycle_slip_s, row.valid ? "-" : row.discard_reason.c_str());
 }
 
 SatDiagFile::~SatDiagFile() {
@@ -329,10 +399,18 @@ void SatDiagFile::write_header() noexcept {
     fprintf(mFile, "ORB_ALONG_DOT         SSR orbit along-track rate, meters/second\n");
     fprintf(mFile, "ORB_CROSS_DOT         SSR orbit cross-track rate, meters/second\n");
     fprintf(mFile, "ORB_IOD               SSR orbit IOD\n");
+    fprintf(mFile, "ORB_EPOCH             SSR orbit assistance data epoch (message time), UTC "
+                   "date/time\n");
+    fprintf(mFile,
+            "ORB_AGE               SSR orbit assistance data age (TIMESTAMP - epoch), seconds\n");
     fprintf(mFile, "CLK_C0                SSR clock C0 coefficient, meters\n");
     fprintf(mFile, "CLK_C1                SSR clock C1 coefficient, meters/second\n");
     fprintf(mFile, "CLK_C2                SSR clock C2 coefficient, meters/second^2\n");
     fprintf(mFile, "CLK_CORR              Evaluated SSR clock correction, meters\n");
+    fprintf(mFile, "CLK_EPOCH             SSR clock assistance data epoch (message time), UTC "
+                   "date/time\n");
+    fprintf(mFile,
+            "CLK_AGE               SSR clock assistance data age (TIMESTAMP - epoch), seconds\n");
     fprintf(mFile, "IONO_C00              Ionospheric polynomial C00, TECU\n");
     fprintf(mFile, "IONO_C01              Ionospheric polynomial C01, TECU/deg\n");
     fprintf(mFile, "IONO_C10              Ionospheric polynomial C10, TECU/deg\n");
@@ -340,8 +418,14 @@ void SatDiagFile::write_header() noexcept {
     fprintf(mFile, "IONO_REF_LAT          Ionospheric polynomial reference latitude, degrees\n");
     fprintf(mFile, "IONO_REF_LON          Ionospheric polynomial reference longitude, degrees\n");
     fprintf(mFile, "IONO_QUAL             SSR STEC quality indicator (1-sigma), TECU\n");
+    fprintf(mFile, "IONO_EPOCH            SSR STEC assistance data epoch (message time), UTC "
+                   "date/time\n");
     fprintf(mFile,
-            "IONO_EPOCH            SSR STEC message epoch (assistance-data update), TAI seconds\n");
+            "IONO_AGE              SSR STEC assistance data age (TIMESTAMP - epoch), seconds\n");
+    fprintf(mFile, "GRID_EPOCH            SSR gridded (troposphere/ionosphere residual) assistance "
+                   "data epoch (message time), UTC date/time\n");
+    fprintf(mFile, "GRID_AGE              SSR gridded assistance data age (TIMESTAMP - epoch), "
+                   "seconds\n");
     fprintf(mFile, "SHAPIRO               Shapiro relativistic delay, meters\n");
     fprintf(mFile, "SOLID_TIDES           Earth solid tides displacement, meters\n");
     fprintf(mFile, "DISCARD_REASON        Reason for discard (- if valid)\n");
@@ -364,10 +448,14 @@ void SatDiagFile::write_header() noexcept {
     hdr(mFile, "ORB_ALG_DOT", 11);
     hdr(mFile, "ORB_CRS_DOT", 11);
     hdr(mFile, "ORB_IOD", 7);
+    hdr(mFile, "ORB_EPOCH", 23);
+    hdr(mFile, "ORB_AGE", 9);
     hdr(mFile, "CLK_C0", 12);
     hdr(mFile, "CLK_C1", 12);
     hdr(mFile, "CLK_C2", 12);
     hdr(mFile, "CLK_CORR", 10);
+    hdr(mFile, "CLK_EPOCH", 23);
+    hdr(mFile, "CLK_AGE", 9);
     hdr(mFile, "IONO_C00", 9);
     hdr(mFile, "IONO_C01", 9);
     hdr(mFile, "IONO_C10", 9);
@@ -375,7 +463,10 @@ void SatDiagFile::write_header() noexcept {
     hdr(mFile, "IONO_REF_LAT", 12);
     hdr(mFile, "IONO_REF_LON", 12);
     hdr(mFile, "IONO_QUAL", 9);
-    hdr(mFile, "IONO_EPOCH", 16);
+    hdr(mFile, "IONO_EPOCH", 23);
+    hdr(mFile, "IONO_AGE", 9);
+    hdr(mFile, "GRID_EPOCH", 23);
+    hdr(mFile, "GRID_AGE", 9);
     hdr(mFile, "SHAPIRO", 10);
     hdr(mFile, "SOLID_TIDES", 11);
     fprintf(mFile, "  DISCARD_REASON\n");
@@ -473,11 +564,17 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
         snprintf(iqual, sizeof(iqual), "%9.4f", row.iono_quality);
     else
         snprintf(iqual, sizeof(iqual), "%9s", "-");
-    char iepoch[24];
-    if (row.has_iono_epoch)
-        snprintf(iepoch, sizeof(iepoch), "%16.3f", row.iono_epoch_sec);
-    else
-        snprintf(iepoch, sizeof(iepoch), "%16s", "-");
+    char iepoch[32], iage[16], gepoch[32], gage[16];
+    fmt_epoch(iepoch, sizeof(iepoch), row.iono_epoch);
+    fmt_age(iage, sizeof(iage), row.iono_epoch, 9);
+    fmt_epoch(gepoch, sizeof(gepoch), row.grid_epoch);
+    fmt_age(gage, sizeof(gage), row.grid_epoch, 9);
+
+    char oepoch[32], oage[16], cepoch[32], cage[16];
+    fmt_epoch(oepoch, sizeof(oepoch), row.orbit_epoch);
+    fmt_age(oage, sizeof(oage), row.orbit_epoch, 9);
+    fmt_epoch(cepoch, sizeof(cepoch), row.clock_epoch);
+    fmt_age(cage, sizeof(cage), row.clock_epoch, 9);
 
     // Shapiro & solid tides
     char shapiro_s[16], solid_tides_s[16];
@@ -494,15 +591,15 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
             "%c%s  %3d"
             "  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s"
-            "  %s  %s  %s  %s  %s  %s  %s"
-            "  %s  %s  %s  %s"
-            "  %s  %s  %s  %s  %s  %s  %s  %s"
+            "  %s  %s  %s  %s  %s  %s  %s  %s  %s"
+            "  %s  %s  %s  %s  %s  %s"
+            "  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s\n",
             prefix, ts.c_str(), row.prn, true_range_s, eph_range_s, orbit_s, elev_s, azim_s,
             nadir_s, eph_clock_s, eph_week_s, eph_toe_s, orb_r, orb_a, orb_c, orb_rd, orb_ad,
-            orb_cd, orb_iod, clk_c0, clk_c1, clk_c2, clk_corr, ic00, ic01, ic10, ic11, irlat, irlon,
-            iqual, iepoch, shapiro_s, solid_tides_s,
-            row.discard_reason.empty() ? "-" : row.discard_reason.c_str());
+            orb_cd, orb_iod, oepoch, oage, clk_c0, clk_c1, clk_c2, clk_corr, cepoch, cage, ic00,
+            ic01, ic10, ic11, irlat, irlon, iqual, iepoch, iage, gepoch, gage, shapiro_s,
+            solid_tides_s, row.discard_reason.empty() ? "-" : row.discard_reason.c_str());
 }
 
 }  // namespace tokoro
