@@ -30,3 +30,6 @@ static inline int32_t rtcm_quantize_signed(double value, double scale, unsigned 
     if (steps <= -max_value) return static_cast<int32_t>(-max_value);
     return static_cast<int32_t>(steps);
 }
+
+// The residual messages (MT1030/1031/1303/1304) carry the satellite count in a 5-bit field.
+static constexpr int RTCM_RESIDUAL_MAX_SATELLITES = 31;

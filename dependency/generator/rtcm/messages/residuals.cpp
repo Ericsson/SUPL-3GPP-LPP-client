@@ -22,14 +22,18 @@ Message generate_1030(Residuals const& residuals) {
     for (auto& satellite : residuals.satellites) {
         if (satellite.id.gnss() != SatelliteId::Gnss::GPS) continue;
         if (!satellite.id.as_df009().valid) continue;
+        if (satellite_count >= RTCM_RESIDUAL_MAX_SATELLITES) break;
         satellite_count++;
     }
 
     encoder.u8(5, static_cast<uint8_t>(satellite_count));
 
+    auto written = 0;
     for (auto& satellite : residuals.satellites) {
         if (satellite.id.gnss() != SatelliteId::Gnss::GPS) continue;
         if (!satellite.id.as_df009().valid) continue;
+        if (written >= satellite_count) break;
+        written++;
 
         encoder.u8(6, static_cast<uint8_t>(satellite.id.as_df009().value));
         encoder.u32(8, rtcm_quantize_unsigned(satellite.s_oc, 0.5, 8));
@@ -65,14 +69,18 @@ Message generate_1031(Residuals const& residuals) {
     for (auto& satellite : residuals.satellites) {
         if (satellite.id.gnss() != SatelliteId::Gnss::GLONASS) continue;
         if (!satellite.id.as_df038().valid) continue;
+        if (satellite_count >= RTCM_RESIDUAL_MAX_SATELLITES) break;
         satellite_count++;
     }
 
     encoder.u8(5, static_cast<uint8_t>(satellite_count));
 
+    auto written = 0;
     for (auto& satellite : residuals.satellites) {
         if (satellite.id.gnss() != SatelliteId::Gnss::GLONASS) continue;
         if (!satellite.id.as_df038().valid) continue;
+        if (written >= satellite_count) break;
+        written++;
 
         encoder.u8(6, static_cast<uint8_t>(satellite.id.as_df038().value));
         encoder.u32(8, rtcm_quantize_unsigned(satellite.s_oc, 0.5, 8));
