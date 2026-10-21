@@ -162,16 +162,13 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     // the active set - restart the lock the same way a freshly (re)acquired signal
     // would be treated.
     auto discontinuity_changed = false;
-    if (auto* signals = correction_data.signal_corrections(satellite.id())) {
-        auto it = signals->phase_bias.find(signal_id);
-        if (it != signals->phase_bias.end()) {
-            auto counter_it = mLastPhaseDiscontinuityCounter.find(ss_id);
-            if (counter_it != mLastPhaseDiscontinuityCounter.end() &&
-                counter_it->second != it->second.discontinuity) {
-                discontinuity_changed = true;
-            }
-            mLastPhaseDiscontinuityCounter[ss_id] = it->second.discontinuity;
+    if (auto* phase_bias = correction_data.phase_bias(satellite.id(), signal_id)) {
+        auto counter_it = mLastPhaseDiscontinuityCounter.find(ss_id);
+        if (counter_it != mLastPhaseDiscontinuityCounter.end() &&
+            counter_it->second != phase_bias->discontinuity) {
+            discontinuity_changed = true;
         }
+        mLastPhaseDiscontinuityCounter[ss_id] = phase_bias->discontinuity;
     }
 
     if (discontinuity_changed) {
