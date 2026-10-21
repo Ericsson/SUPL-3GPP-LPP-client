@@ -9,6 +9,18 @@
 namespace generator {
 namespace tokoro {
 
+struct DiagEpoch {
+    ts::Tai time{};
+    double  age{};
+    bool    valid{false};
+
+    void set(ts::Tai const& epoch, ts::Tai const& now) noexcept {
+        time  = epoch;
+        age   = now - epoch;
+        valid = true;
+    }
+};
+
 struct DiagRow {
     int prn;
     int sig_id;  // MSM mask position
@@ -19,6 +31,22 @@ struct DiagRow {
     // Biases
     double code_bias{};
     double phase_bias{};
+
+    // Assistance data time of the biases
+    DiagEpoch code_bias_epoch;
+    DiagEpoch phase_bias_epoch;
+
+    // SSR phase discontinuity / integer indicators (0..3) of the phase bias in use, and whether
+    // the discontinuity indicator changed since the previous epoch (cycle slip).
+    int phase_discontinuity{};
+    // TODO(ewasjon): Whole cycles added to the phase range (N * wavelength) per satellite/signal.
+    // Integer support is not implemented yet, so this is always 0.
+    long integer_cycles{0};
+    int  phase_integer{};
+    bool cycle_slip{false};
+    bool has_phase_discontinuity{false};
+    bool has_phase_integer{false};
+    bool has_cycle_slip{false};
 
     // Ionosphere
     double stec_grid{};
@@ -126,8 +154,13 @@ struct SatDiagRow {
     double iono_c11{};
     double iono_ref_lat{};
     double iono_ref_lon{};
-    double iono_quality{};    // SSR STEC quality indicator, TECU (1-sigma)
-    double iono_epoch_sec{};  // SSR STEC message epoch, TAI full seconds
+    double iono_quality{};  // SSR STEC quality indicator, TECU (1-sigma)
+
+    // Assistance data time (message epoch and age at the row time)
+    DiagEpoch orbit_epoch;
+    DiagEpoch clock_epoch;
+    DiagEpoch iono_epoch;  // SSR STEC message epoch
+    DiagEpoch grid_epoch;  // SSR gridded (troposphere/ionosphere residual) message epoch
 
     // Shapiro & solid tides
     double shapiro{};
@@ -139,7 +172,6 @@ struct SatDiagRow {
     bool has_clock_ssr{false};
     bool has_iono_poly{false};
     bool has_iono_quality{false};
-    bool has_iono_epoch{false};
     bool has_shapiro{false};
     bool has_solid_tides{false};
 

@@ -47,6 +47,13 @@ struct CorrectionData {
         return nullptr;
     }
 
+    NODISCARD bool grid_epoch_time(SatelliteId::Gnss gnss, ts::Tai& epoch_time) const NOEXCEPT {
+        auto it = mGrid.find(gnss);
+        if (it == mGrid.end()) return false;
+        epoch_time = it->second.epoch_time;
+        return true;
+    }
+
     bool tropospheric(SatelliteId sv_id, Float3 llh,
                       TroposphericCorrection& correction) const NOEXCEPT;
     bool ionospheric(SatelliteId sv_id, Float3 llh,

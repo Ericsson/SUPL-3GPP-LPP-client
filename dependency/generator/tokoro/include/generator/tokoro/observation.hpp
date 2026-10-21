@@ -89,6 +89,15 @@ public:
 
     void set_diag_file(DiagFile* diag) NOEXCEPT { mDiagFile = diag; }
     void set_diag_discard_reason(char const* reason) NOEXCEPT { mDiagDiscardReason = reason; }
+    void set_previous_phase_discontinuity(uint8_t value) NOEXCEPT {
+        mPreviousPhaseDiscontinuity    = value;
+        mHasPreviousPhaseDiscontinuity = true;
+    }
+
+    // SSR phase discontinuity indicator (0..3) of the phase bias in use.
+    NODISCARD uint8_t phase_discontinuity() const NOEXCEPT { return mPhaseDiscontinuity; }
+    // True if the SSR phase discontinuity indicator changed since the previous epoch.
+    NODISCARD bool cycle_slip() const NOEXCEPT { return mCycleSlip; }
 
     NODISCARD double code_range() const NOEXCEPT;
     NODISCARD double phase_range() const NOEXCEPT;
@@ -142,6 +151,17 @@ private:
     double mPhaseRange;
     double mPhaseRangeRate;
     double mCodeRange;
+
+    ts::Tai mCodeBiasEpoch{};
+    ts::Tai mPhaseBiasEpoch{};
+
+    uint8_t mPhaseDiscontinuity{0};
+    bool    mHasPhaseIntegerIndicator{false};
+    uint8_t mPhaseIntegerIndicator{0};
+    uint8_t mPreviousPhaseDiscontinuity{0};
+    bool    mHasPreviousPhaseDiscontinuity{false};
+    bool    mCycleSlipChecked{false};
+    bool    mCycleSlip{false};
 
     DiagFile*   mDiagFile{nullptr};
     char const* mDiagDiscardReason{nullptr};

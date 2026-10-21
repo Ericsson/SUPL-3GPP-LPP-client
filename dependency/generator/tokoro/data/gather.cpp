@@ -134,6 +134,7 @@ void CorrectionData::add_correction(long                                 gnss_id
         auto& correction          = mOrbit[satellite_id];
         correction.ssr_iod        = static_cast<uint16_t>(ssr_iod);
         correction.iod            = iod;
+        correction.epoch_time     = epoch_time;
         correction.reference_time = reference_time;
         correction.delta          = {radial, along_track, cross_track};
         correction.dot_delta      = {dot_radial, dot_along, dot_cross};
@@ -186,6 +187,7 @@ void CorrectionData::add_correction(long                                 gnss_id
         auto c2 = decode::delta_clock_c2_r15(satellite->delta_Clock_C2_r15);
 
         auto& clock_correction          = mClock[satellite_id];
+        clock_correction.epoch_time     = epoch_time;
         clock_correction.reference_time = reference_time;
         clock_correction.ssr_iod        = static_cast<uint16_t>(ssr_iod);
         clock_correction.c0             = c0;
@@ -294,6 +296,13 @@ void CorrectionData::add_correction(long                          gnss_id,
             correction.ssr_iod    = static_cast<uint16_t>(ssr_iod);
             correction.bias       = decode::phase_bias_r16(signal->phaseBias_r16);
             correction.epoch_time = epoch_time;
+            correction.discontinuity =
+                static_cast<uint8_t>(signal->phaseDiscontinuityIndicator_r16);
+            correction.integer_indicator_valid = signal->phaseBiasIntegerIndicator_r16 != nullptr;
+            correction.integer_indicator =
+                correction.integer_indicator_valid ?
+                    static_cast<uint8_t>(*signal->phaseBiasIntegerIndicator_r16) :
+                    0;
             signal_corrections.phase_bias[signal_id] = correction;
 
             VERBOSEF("phase bias: %3s %-16s %+f", satellite_id.name(), signal_id.name(),

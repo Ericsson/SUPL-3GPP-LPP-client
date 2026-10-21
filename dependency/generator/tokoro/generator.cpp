@@ -207,7 +207,21 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     }
 
     if (diag_discard_reason) observation.set_diag_discard_reason(diag_discard_reason);
+
+    if (mGenerateDiag) {
+        auto previous = mPhaseDiscontinuity.find(ss_id);
+        if (previous != mPhaseDiscontinuity.end())
+            observation.set_previous_phase_discontinuity(previous->second);
+    }
+
     observation.compute_ranges();
+
+    if (mGenerateDiag) {
+        if (observation.has_phase_bias())
+            mPhaseDiscontinuity[ss_id] = observation.phase_discontinuity();
+        else
+            mPhaseDiscontinuity.erase(ss_id);
+    }
 
     if (!observation.is_valid()) return;
     VERBOSEF("observation: c=%f, p=%f", observation.code_range(), observation.phase_range());
@@ -342,6 +356,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.orbit_cross_dot  = orb.dot_delta.z;
                 row.orbit_iod        = orb.iod;
                 row.has_orbit_ssr    = true;
+                row.orbit_epoch.set(orb.epoch_time, mGenerationTime);
             }
 
             // Clock SSR
@@ -351,6 +366,13 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.clock_c1      = clk.c1;
                 row.clock_c2      = clk.c2;
                 row.has_clock_ssr = true;
+                row.clock_epoch.set(clk.epoch_time, mGenerationTime);
+            }
+
+            // Gridded (troposphere / ionosphere residual) assistance data time
+            ts::Tai grid_epoch;
+            if (mGenerator.mCorrectionData->grid_epoch_time(satellite.id().gnss(), grid_epoch)) {
+                row.grid_epoch.set(grid_epoch, mGenerationTime);
             }
 
             // Iono polynomial
@@ -367,8 +389,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                     row.iono_quality     = iono_poly->quality_indicator;
                     row.has_iono_quality = true;
                 }
-                row.iono_epoch_sec = iono_poly->epoch_time.timestamp().full_seconds();
-                row.has_iono_epoch = true;
+                row.iono_epoch.set(iono_poly->epoch_time, mGenerationTime);
             }
 
             // Geometry + evaluated clock (available if update() completed successfully)
@@ -419,6 +440,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     for (auto& id : lost_lock) {
         VERBOSEF("lli -%s", id.to_string().c_str());
         mLockTime.erase(id);
+        mPhaseDiscontinuity.erase(id);
     }
 
     for (auto& id : active_signals) {

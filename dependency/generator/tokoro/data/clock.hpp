@@ -25,6 +25,7 @@ namespace generator {
 namespace tokoro {
 
 struct ClockCorrection {
+    ts::Tai  epoch_time;  // SSR message epoch (assistance-data time)
     ts::Tai  reference_time;
     uint16_t ssr_iod;
     double   c0;

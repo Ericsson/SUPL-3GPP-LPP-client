@@ -119,7 +119,11 @@ void Observation::compute_phase_bias(CorrectionData const& correction_data) NOEX
 
     auto it = signals->phase_bias.find(mSignalId);
     if (it == signals->phase_bias.end()) return;
-    mPhaseBias = Correction{it->second.bias, true};
+    mPhaseBias                = Correction{it->second.bias, true};
+    mPhaseBiasEpoch           = it->second.epoch_time;
+    mPhaseDiscontinuity       = it->second.discontinuity;
+    mHasPhaseIntegerIndicator = it->second.integer_indicator_valid;
+    mPhaseIntegerIndicator    = it->second.integer_indicator;
 }
 
 void Observation::compute_code_bias(CorrectionData const& correction_data) NOEXCEPT {
@@ -130,7 +134,8 @@ void Observation::compute_code_bias(CorrectionData const& correction_data) NOEXC
 
     auto it = signals->code_bias.find(mSignalId);
     if (it == signals->code_bias.end()) return;
-    mCodeBias = Correction{it->second.bias, true};
+    mCodeBias      = Correction{it->second.bias, true};
+    mCodeBiasEpoch = it->second.epoch_time;
 }
 
 void Observation::compute_tropospheric(CorrectionData const& correction_data) NOEXCEPT {
@@ -542,6 +547,18 @@ void Observation::compute_ranges() NOEXCEPT {
         mPhaseRangeRate = phase_rate;
     }
 
+    // The SSR phase discontinuity indicator is incremented by the provider whenever the phase
+    // bias of this signal has a discontinuity, i.e. a cycle slip.
+    if (mPhaseBias.valid && mHasPreviousPhaseDiscontinuity) {
+        mCycleSlipChecked = true;
+        if (mPhaseDiscontinuity != mPreviousPhaseDiscontinuity) {
+            mCycleSlip = true;
+            WARNF("cycle slip: %s %s phase discontinuity indicator %u -> %u", mSvId.name(),
+                  mSignalId.name(), static_cast<unsigned>(mPreviousPhaseDiscontinuity),
+                  static_cast<unsigned>(mPhaseDiscontinuity));
+        }
+    }
+
     if (mDiagFile) {
         auto    msm_id = mSignalId.as_msm();
         DiagRow row{};
@@ -570,10 +587,20 @@ void Observation::compute_ranges() NOEXCEPT {
         row.cnr              = mCarrierToNoiseRatio;
         row.lock_time        = mLockTime.seconds;
         row.frequency_mhz    = mFrequency * 1.0e-3;  // kHz → MHz
-        row.has_clock        = mClockCorrection.valid;
-        row.has_code_bias    = mCodeBias.valid;
-        row.has_phase_bias   = mPhaseBias.valid;
-        row.has_ionospheric  = mIonospheric.valid;
+        if (mCodeBias.valid) row.code_bias_epoch.set(mCodeBiasEpoch, mCurrent->reception_time);
+        if (mPhaseBias.valid) row.phase_bias_epoch.set(mPhaseBiasEpoch, mCurrent->reception_time);
+        row.has_phase_discontinuity = mPhaseBias.valid;
+        row.phase_discontinuity     = mPhaseDiscontinuity;
+        // TODO(ewasjon): report the real per satellite/signal integer cycles once integer support
+        // is added (row.integer_cycles defaults to 0).
+        row.has_phase_integer = mPhaseBias.valid && mHasPhaseIntegerIndicator;
+        row.phase_integer     = mPhaseIntegerIndicator;
+        row.has_cycle_slip    = mCycleSlipChecked;
+        row.cycle_slip        = mCycleSlip;
+        row.has_clock         = mClockCorrection.valid;
+        row.has_code_bias     = mCodeBias.valid;
+        row.has_phase_bias    = mPhaseBias.valid;
+        row.has_ionospheric   = mIonospheric.valid;
         row.has_tropospheric =
             mTropospheric.valid || (mUseTroposphericModel && mTropospheric.valid_model);
         row.has_phase_windup = mCurrent->phase_windup.valid;
