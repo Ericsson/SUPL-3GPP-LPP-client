@@ -55,7 +55,16 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
     if (it != mIonosphericPolynomial.end()) {
         auto& polynomial = it->second;
 
-        if (max_iono_age > 0.0) {
+        // A polynomial is only meaningful together with the correction point set it was
+        // received for; after a set change, polynomials from the old set must not combine
+        // with the new set's grid (or be evaluated around the new reference point).
+        if (correction_point_set && polynomial.set_id != correction_point_set->set_id) {
+            VERBOSEF("ionospheric polynomial for %s belongs to set %u, current set is %u",
+                     sv_id.name(), polynomial.set_id, correction_point_set->set_id);
+            polynomial_stale = true;
+        }
+
+        if (!polynomial_stale && max_iono_age > 0.0) {
             auto age = mLatestCorrectionTime - polynomial.epoch_time;
             if (age > max_iono_age) {
                 WARNF("ionospheric polynomial for %s is too old (%.1fs > %.1fs limit) - dropping",
