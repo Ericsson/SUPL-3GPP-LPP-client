@@ -1,13 +1,13 @@
 #include "1230.hpp"
 #include "encoder.hpp"
+#include "helper.hpp"
 
 namespace generator {
 namespace rtcm {
 
 static void df42x(Encoder& encoder, uint8_t bit, uint8_t mask, Maybe<double> value) {
     if ((bit & mask) == 0) return;
-    auto integer_value = static_cast<int64_t>(value.value / 0.02);
-    encoder.i16(16, static_cast<int16_t>(integer_value));
+    encoder.i16(16, static_cast<int16_t>(rtcm_quantize_signed(value.value, 0.02, 16)));
 }
 
 static void df423(Encoder& encoder, uint8_t bit, uint8_t mask, Maybe<double> value) {
