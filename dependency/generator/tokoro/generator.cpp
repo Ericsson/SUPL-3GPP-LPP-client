@@ -148,6 +148,29 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
 
 static CONSTEXPR int64_t PHASE_AMBIGUITY_LIMIT = 1000;
 
+// Lock time [s] at which both the MSM4/5 (DF402, >= 524.288 s) and MSM6/7 (DF407, >= 67108.864 s)
+// lock time indicators are saturated.
+static CONSTEXPR double LOCK_TIME_MAX_SECONDS = 67108.864;
+
+static uint64_t splitmix64(uint64_t x) NOEXCEPT {
+    x += 0x9E3779B97F4A7C15ULL;
+    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+    return x ^ (x >> 31);
+}
+
+// Deterministic for a given seed, signal and loss count (independent of iteration order), so a
+// run can be reproduced and a recreated reference station draws the same ambiguity.
+int64_t ReferenceStation::random_phase_ambiguity(SatelliteSignalId ss_id) const NOEXCEPT {
+    auto key = (static_cast<uint64_t>(ss_id.satellite().absolute_id()) << 32) ^
+               static_cast<uint64_t>(ss_id.signal().absolute_id());
+    auto count_it = mLossCount.find(ss_id);
+    auto count    = count_it != mLossCount.end() ? count_it->second : 0u;
+    auto hash     = splitmix64(mAmbiguitySeed ^ splitmix64(key) ^ splitmix64(count + 1ULL));
+    auto range    = static_cast<uint64_t>(2 * PHASE_AMBIGUITY_LIMIT + 1);
+    return static_cast<int64_t>(hash % range) - PHASE_AMBIGUITY_LIMIT;
+}
+
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id,
                                               char const* diag_discard_reason) NOEXCEPT {
     FUNCTION_SCOPE();
@@ -182,8 +205,32 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
         if (ambiguity > PHASE_AMBIGUITY_LIMIT) ambiguity = -PHASE_AMBIGUITY_LIMIT;
     }
 
+    // A signal without a lock entry has just appeared: at startup (first epoch with
+    // observations) or as a rise (rising satellite, or a signal that was lost earlier).
+    auto is_new     = mLockTime.find(ss_id) == mLockTime.end();
+    auto start_mode = mStarted ? mLockRise : mLockStart;
+    if (is_new) {
+        auto mode = mAmbiguityRandomization;
+        auto randomize =
+            mStarted ?
+                (mode == AmbiguityRandomization::Rise || mode == AmbiguityRandomization::Both) :
+                (mode == AmbiguityRandomization::Startup || mode == AmbiguityRandomization::Both);
+        if (randomize) {
+            auto ambiguity         = random_phase_ambiguity(ss_id);
+            mPhaseAmbiguity[ss_id] = ambiguity;
+            VERBOSEF("ambiguity %s %s: %+lld", mStarted ? "rise" : "startup",
+                     ss_id.to_string().c_str(), static_cast<long long>(ambiguity));
+        }
+    }
+
     LockTime lock_time{};
-    if (discontinuity_changed || mLockTime.find(ss_id) == mLockTime.end()) {
+    if (is_new && !discontinuity_changed && start_mode == LockStart::Max) {
+        lock_time.time    = mGenerationTime + ts::Timestamp{-LOCK_TIME_MAX_SECONDS};
+        lock_time.seconds = LOCK_TIME_MAX_SECONDS;
+        lock_time.lost    = false;
+        mLockTime[ss_id]  = lock_time.time;
+        VERBOSEF("lock %s %s: max", mStarted ? "rise" : "startup", ss_id.to_string().c_str());
+    } else if (discontinuity_changed || is_new) {
         lock_time.time    = mGenerationTime;
         lock_time.seconds = 0;
         lock_time.lost    = true;
@@ -487,6 +534,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         VERBOSEF("lli -%s", id.to_string().c_str());
         mLockTime.erase(id);
         mPhaseDiscontinuity.erase(id);
+        mLossCount[id] += 1;
     }
 
     for (auto& id : active_signals) {
@@ -495,6 +543,8 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             mLockTime[id] = mGenerationTime;
         }
     }
+
+    if (!active_signals.empty()) mStarted = true;
 
     return true;
 }
