@@ -371,6 +371,18 @@ struct TokoroConfig {
         Grid,
     };
 
+    enum class LockStart {
+        Reset,  // lock time starts at zero (loss of lock)
+        Max,    // lock time starts saturated (in lock)
+    };
+
+    enum class AmbiguityRandomization {
+        Off,
+        Startup,
+        Rise,
+        Both,
+    };
+
     enum class GenerationStrategy {
         AssistanceData,   // Generate when assistance data is received
         TimeStep,         // Generate every time step, using the current time
@@ -407,19 +419,25 @@ struct TokoroConfig {
 
     double time_step;
 
-    bool        shapiro_correction;
-    bool        phase_windup_correction;
-    bool        earth_solid_tides_correction;
-    bool        antenna_phase_variation_correction;
-    bool        tropospheric_height_correction;
-    bool        tropospheric_hydrostatic_delta;
-    bool        iod_consistency_check;
-    bool        rtoc;
-    bool        ocit;
-    bool        negative_phase_windup;
-    bool        phase_alignment;
-    std::string antenna_descriptor;
-    std::string receiver_descriptor;
+    bool                   shapiro_correction;
+    bool                   phase_windup_correction;
+    bool                   earth_solid_tides_correction;
+    bool                   antenna_phase_variation_correction;
+    bool                   tropospheric_height_correction;
+    bool                   tropospheric_hydrostatic_delta;
+    bool                   iod_consistency_check;
+    bool                   ssr_generation_consistency_check;
+    bool                   rtoc;
+    bool                   ocit;
+    bool                   negative_phase_windup;
+    bool                   negative_correction_sign;
+    bool                   phase_alignment;
+    LockStart              lock_start;
+    LockStart              lock_rise;
+    AmbiguityRandomization ambiguity_randomization;
+    uint64_t               ambiguity_seed;
+    std::string            antenna_descriptor;
+    std::string            receiver_descriptor;
 #ifdef INCLUDE_FORMAT_RINEX
     bool generate_rinex;
 #endif

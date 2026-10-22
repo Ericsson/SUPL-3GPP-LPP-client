@@ -363,6 +363,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         poly.reference_point_latitude  = correction_point_set->reference_point_latitude;
         poly.reference_point_longitude = correction_point_set->reference_point_longitude;
 
+        poly.set_id                  = cps.set_id;
         poly.quality_indicator_valid = !stec_quality_indicator.invalid;
         poly.quality_indicator       = stec_quality_indicator.value;
         poly.epoch_time              = epoch_time;
@@ -466,9 +467,10 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
             auto wet =
                 decode::tropo_wet_vertical_delay_r16(tropo.tropoWetVerticalDelay_r16) + 0.252;
 
-            grid_point->tropspheric_valid = true;
-            grid_point->tropospheric_wet  = wet;
-            grid_point->tropospheric_dry  = dry;
+            grid_point->tropspheric_valid  = true;
+            grid_point->tropospheric_wet   = wet;
+            grid_point->tropospheric_dry   = dry;
+            grid_point->tropospheric_epoch = epoch_time;
 
 #ifdef DATA_TRACING
             datatrace::report_ssr_tropospheric_grid(epoch_time, grid_point->absolute_index,
@@ -493,8 +495,9 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
                 auto ionospheric = decode::stec_residual_correction_r16(*satellite);
 
-                grid_point->ionospheric_valid                  = true;
-                grid_point->ionospheric_residual[satellite_id] = ionospheric;
+                grid_point->ionospheric_valid                        = true;
+                grid_point->ionospheric_residual[satellite_id]       = ionospheric;
+                grid_point->ionospheric_residual_epoch[satellite_id] = epoch_time;
 
                 if (auto* dump_path = std::getenv("TOKORO_GRID_DUMP")) {
                     static FILE* dump_file = std::fopen(dump_path, "a");
@@ -725,6 +728,7 @@ void CorrectionData::load_snapshot(
             poly.reference_point_longitude = sip.reference_point_longitude;
             poly.quality_indicator         = sip.quality_indicator;
             poly.quality_indicator_valid   = sip.quality_indicator_valid;
+            poly.set_id = correction_point_set ? correction_point_set->set_id : 0;
 
             VERBOSEF("%3s c00=%+f c01=%+f c10=%+f c11=%+f ref=(%.6f,%.6f)", sat_id.name(), poly.c00,
                      poly.c01, poly.c10, poly.c11, poly.reference_point_latitude,
@@ -758,7 +762,9 @@ void CorrectionData::load_snapshot(
                 point.tropspheric_valid = sgp.has_troposphere;
                 point.tropospheric_wet  = sgp.troposphere_wet;
                 point.tropospheric_dry  = sgp.troposphere_dry;
-                point.ionospheric_valid = !sgp.ionosphere_residuals.empty();
+                // Snapshots carry no component epochs; treat restored data as current.
+                point.tropospheric_epoch = mLatestCorrectionTime;
+                point.ionospheric_valid  = !sgp.ionosphere_residuals.empty();
 
                 // Calculate absolute index: row * width + col
                 point.absolute_index =
@@ -774,7 +780,8 @@ void CorrectionData::load_snapshot(
                     auto sat_id =
                         SatelliteId::from_lpp(static_cast<SatelliteId::Gnss>(sir.gnss), sir.prn);
                     VERBOSEF("    %3s %+f", sat_id.name(), sir.residual);
-                    point.ionospheric_residual[sat_id] = sir.residual;
+                    point.ionospheric_residual[sat_id]       = sir.residual;
+                    point.ionospheric_residual_epoch[sat_id] = mLatestCorrectionTime;
                 }
 
                 // Place at correct index instead of push_back

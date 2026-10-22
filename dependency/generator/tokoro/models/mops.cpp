@@ -27,10 +27,11 @@ static double interpolate(double const* x, double const* y, int nx, int, double 
 bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
     VSCOPE_FUNCTIONF("%s, %+.8f", time.rtklib_time_string().c_str(), latitude * constant::RAD2DEG);
 
-    auto         latdeg = latitude * constant::RAD2DEG;
-    double const dmin_n = 28;
-    double const dmin_s = 211; /* 28@north hemisphere, 211@south hemisphere */
-    (void)dmin_s;
+    auto         latdeg     = latitude * constant::RAD2DEG;
+    auto         latabs     = std::fabs(latdeg);
+    double const dmin_n     = 28;
+    double const dmin_s     = 211; /* 28@north hemisphere, 211@south hemisphere */
+    auto         dmin       = latdeg >= 0.0 ? dmin_n : dmin_s;
     double const interval[] = {15.0, 30.0, 45.0, 60.0, 75.0};
 
     /*Meteorological parameter Average table */
@@ -51,7 +52,7 @@ bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
 
     auto doy = ts::Utc{time}.day_of_year();
     for (auto i = 0; i < 5; i++) {
-        auto cos_val  = std::cos(2.0 * constant::PI * (doy - dmin_n) / 365.25);
+        auto cos_val  = std::cos(2.0 * constant::PI * (doy - dmin) / 365.25);
         calc_psta[i]  = p_tave[i] - p_table_s[i] * cos_val;
         calc_tsta[i]  = t_tave[i] - t_table_s[i] * cos_val;
         calc_wsta[i]  = w_tave[i] - w_table_s[i] * cos_val;
@@ -59,25 +60,26 @@ bool evaluate_mops(ts::Tai const& time, double latitude, Mops& result) {
         calc_wlsta[i] = wl_tave[i] - wl_table_s[i] * cos_val;
     }
 
-    /* interpolation */
-    if (75.0 <= latdeg) {
+    /* interpolation; the table is symmetric about the equator by magnitude, with the
+       hemisphere-specific seasonal phase already applied above via dmin */
+    if (75.0 <= latabs) {
         result.pressure          = calc_psta[4];
         result.temperature       = calc_tsta[4];
         result.water_pressure    = calc_wsta[4];
         result.lapse_temperature = calc_tlsta[4];
         result.water_vapor       = calc_wlsta[4];
-    } else if (latdeg <= 15.0) {
+    } else if (latabs <= 15.0) {
         result.pressure          = calc_psta[0];
         result.temperature       = calc_tsta[0];
         result.water_pressure    = calc_wsta[0];
         result.lapse_temperature = calc_tlsta[0];
         result.water_vapor       = calc_wlsta[0];
-    } else if (15.0 < latdeg && latdeg < 75.0) {
-        result.pressure          = interpolate(interval, calc_psta, 5, 5, latdeg);
-        result.temperature       = interpolate(interval, calc_tsta, 5, 5, latdeg);
-        result.water_pressure    = interpolate(interval, calc_wsta, 5, 5, latdeg);
-        result.lapse_temperature = interpolate(interval, calc_tlsta, 5, 5, latdeg);
-        result.water_vapor       = interpolate(interval, calc_wlsta, 5, 5, latdeg);
+    } else if (15.0 < latabs && latabs < 75.0) {
+        result.pressure          = interpolate(interval, calc_psta, 5, 5, latabs);
+        result.temperature       = interpolate(interval, calc_tsta, 5, 5, latabs);
+        result.water_pressure    = interpolate(interval, calc_wsta, 5, 5, latabs);
+        result.lapse_temperature = interpolate(interval, calc_tlsta, 5, 5, latabs);
+        result.water_vapor       = interpolate(interval, calc_wlsta, 5, 5, latabs);
     } else {
         return false;
     }

@@ -124,7 +124,7 @@ double delta_cross_track_r15(long value) {
 
 double dot_delta_radial_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_RADIAL_RESOLUTION * ORBIT_DOT_MM_TO_M;
+        return static_cast<double>(*value) * ORBIT_DOT_RADIAL_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }
@@ -132,7 +132,7 @@ double dot_delta_radial_r15(long* value) {
 
 double dot_delta_along_track_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_ALONG_RESOLUTION * ORBIT_DOT_MM_TO_M;
+        return static_cast<double>(*value) * ORBIT_DOT_ALONG_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }
@@ -140,7 +140,7 @@ double dot_delta_along_track_r15(long* value) {
 
 double dot_delta_cross_track_r15(long* value) {
     if (value) {
-        return static_cast<double>(*value) * ORBIT_CROSS_RESOLUTION * ORBIT_DOT_MM_TO_M;
+        return static_cast<double>(*value) * ORBIT_DOT_CROSS_RESOLUTION * ORBIT_DOT_MM_TO_M;
     } else {
         return 0.0;
     }
@@ -191,14 +191,19 @@ double stec_residual_correction_r16(STEC_ResidualSatElement_r16 const& element) 
 }
 
 StecQualityIndicator stec_quality_indicator_r16(BIT_STRING_s& bit_string) {
-    static CONSTEXPR double QUALITY_INDICATOR[64] = {
-        33.6664, 30.2992, 26.9319, 23.5647, 20.1974, 16.8301, 13.4629, 12.3405, 11.2180,
-        10.0956, 8.9732,  7.8508,  6.7284,  5.6059,  4.4835,  4.1094,  3.7352,  3.3611,
-        2.9870,  2.6128,  2.2387,  1.8645,  1.4904,  1.3657,  1.2410,  1.1163,  0.9915,
-        0.8668,  0.7421,  0.6174,  0.4927,  0.4511,  0.4096,  0.3680,  0.3264,  0.2848,
-        0.2433,  0.2017,  0.1601,  0.1463,  0.1324,  0.1186,  0.1047,  0.0908,  0.0770,
-        0.0631,  0.0493,  0.0447,  0.0400,  0.0354,  0.0308,  0.0262,  0.0216,  0.0169,
-        0.0123,  0.0108,  0.0092,  0.0077,  0.0062,  0.0046,  0.0031,  0.0015,  0,
+    // Indexed by the quality index (3 MSB class, 3 LSB value), TS 37.355 table "Relationship
+    // between SSR STEC quality indicator and physical quantity". Entries 1..62 are the upper
+    // bound [TECU] of the index' interval. Index 0 means unknown (no bound). Index 63 means the
+    // quality is worse than the largest bound, so it has no upper bound; its entry is the
+    // interval's lower bound (33.6664) as the best finite representative.
+    static CONSTEXPR double QUALITY_UPPER_BOUND[64] = {
+        0,       0.0015,  0.0031,  0.0046,  0.0062,  0.0077,  0.0092,  0.0108,  0.0123,  0.0169,
+        0.0216,  0.0262,  0.0308,  0.0354,  0.0400,  0.0447,  0.0493,  0.0631,  0.0770,  0.0908,
+        0.1047,  0.1186,  0.1324,  0.1463,  0.1601,  0.2017,  0.2433,  0.2848,  0.3264,  0.3680,
+        0.4096,  0.4511,  0.4927,  0.6174,  0.7421,  0.8668,  0.9915,  1.1163,  1.2410,  1.3657,
+        1.4904,  1.8645,  2.2387,  2.6128,  2.9870,  3.3611,  3.7352,  4.1094,  4.4835,  5.6059,
+        6.7284,  7.8508,  8.9732,  10.0956, 11.2180, 12.3405, 13.4629, 16.8301, 20.1974, 23.5647,
+        26.9319, 30.2992, 33.6664, 33.6664,
     };
 
     auto value = bit_string.buf[0];
@@ -208,10 +213,7 @@ StecQualityIndicator stec_quality_indicator_r16(BIT_STRING_s& bit_string) {
 
     assert(index < 64);
     return StecQualityIndicator{
-        index == 0,
-        QUALITY_INDICATOR[63 - index],
-        cls,
-        val,
+        index == 0, QUALITY_UPPER_BOUND[index], cls, val, index == 63,
     };
 }
 

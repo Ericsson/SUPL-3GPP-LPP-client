@@ -70,6 +70,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmReferenceStationId(1902),
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
+      mNegativeCorrectionSign(false),
       mPhaseAlignment(false),
       mAntennaDescriptor(),
       mReceiverDescriptor(),
@@ -145,24 +146,103 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
     }
 }
 
+static CONSTEXPR int64_t PHASE_AMBIGUITY_LIMIT = 1000;
+
+// Lock time [s] at which both the MSM4/5 (DF402, >= 524.288 s) and MSM6/7 (DF407, >= 67108.864 s)
+// lock time indicators are saturated.
+static CONSTEXPR double LOCK_TIME_MAX_SECONDS = 67108.864;
+
+static uint64_t splitmix64(uint64_t x) NOEXCEPT {
+    x += 0x9E3779B97F4A7C15ULL;
+    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+    return x ^ (x >> 31);
+}
+
+// Deterministic for a given seed, signal and loss count (independent of iteration order), so a
+// run can be reproduced and a recreated reference station draws the same ambiguity.
+int64_t ReferenceStation::random_phase_ambiguity(SatelliteSignalId ss_id) const NOEXCEPT {
+    auto key = (static_cast<uint64_t>(ss_id.satellite().absolute_id()) << 32) ^
+               static_cast<uint64_t>(ss_id.signal().absolute_id());
+    auto count_it = mLossCount.find(ss_id);
+    auto count    = count_it != mLossCount.end() ? count_it->second : 0u;
+    auto hash     = splitmix64(mAmbiguitySeed ^ splitmix64(key) ^ splitmix64(count + 1ULL));
+    auto range    = static_cast<uint64_t>(2 * PHASE_AMBIGUITY_LIMIT + 1);
+    return static_cast<int64_t>(hash % range) - PHASE_AMBIGUITY_LIMIT;
+}
+
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id,
                                               char const* diag_discard_reason) NOEXCEPT {
     FUNCTION_SCOPE();
 
+    auto const& correction_data = *mGenerator.mCorrectionData;
+
     // Update lock tracking
     SatelliteSignalId ss_id{satellite.id(), signal_id};
-    LockTime          lock_time{};
-    if (mLockTime.find(ss_id) == mLockTime.end()) {
+
+    // A changed phaseDiscontinuityIndicator_r16 from the SSR provider means the phase
+    // ambiguity/lock arc is no longer continuous, even though the signal never left
+    // the active set - restart the lock the same way a freshly (re)acquired signal
+    // would be treated.
+    auto discontinuity_changed = false;
+    if (auto* phase_bias = correction_data.phase_bias(satellite.id(), signal_id)) {
+        auto counter_it = mLastPhaseDiscontinuityCounter.find(ss_id);
+        if (counter_it != mLastPhaseDiscontinuityCounter.end() &&
+            counter_it->second != phase_bias->discontinuity) {
+            discontinuity_changed = true;
+        }
+        mLastPhaseDiscontinuityCounter[ss_id] = phase_bias->discontinuity;
+    }
+
+    if (discontinuity_changed) {
+        // Keep N within +-PHASE_AMBIGUITY_LIMIT cycles. The carrier phase is encoded relative
+        // to the rough range in a +-2^-8 ms (~1171 m) field (DF401/DF406); the limit leaves
+        // ample room below that for N*wavelength (<= ~0.26 m/cycle, so <= ~260 m) on top of
+        // the code remainder (<~150 m) and phase-code differences. Wrapping is still an
+        // integer-cycle jump, i.e. indistinguishable from another slip.
+        auto& ambiguity = mPhaseAmbiguity[ss_id];
+        ambiguity += 1;
+        if (ambiguity > PHASE_AMBIGUITY_LIMIT) ambiguity = -PHASE_AMBIGUITY_LIMIT;
+    }
+
+    // A signal without a lock entry has just appeared: at startup (first epoch with
+    // observations) or as a rise (rising satellite, or a signal that was lost earlier).
+    auto is_new     = mLockTime.find(ss_id) == mLockTime.end();
+    auto start_mode = mStarted ? mLockRise : mLockStart;
+    if (is_new) {
+        auto mode = mAmbiguityRandomization;
+        auto randomize =
+            mStarted ?
+                (mode == AmbiguityRandomization::Rise || mode == AmbiguityRandomization::Both) :
+                (mode == AmbiguityRandomization::Startup || mode == AmbiguityRandomization::Both);
+        if (randomize) {
+            auto ambiguity         = random_phase_ambiguity(ss_id);
+            mPhaseAmbiguity[ss_id] = ambiguity;
+            VERBOSEF("ambiguity %s %s: %+lld", mStarted ? "rise" : "startup",
+                     ss_id.to_string().c_str(), static_cast<long long>(ambiguity));
+        }
+    }
+
+    LockTime lock_time{};
+    if (is_new && !discontinuity_changed && start_mode == LockStart::Max) {
+        lock_time.time    = mGenerationTime + ts::Timestamp{-LOCK_TIME_MAX_SECONDS};
+        lock_time.seconds = LOCK_TIME_MAX_SECONDS;
+        lock_time.lost    = false;
+        mLockTime[ss_id]  = lock_time.time;
+        VERBOSEF("lock %s %s: max", mStarted ? "rise" : "startup", ss_id.to_string().c_str());
+    } else if (discontinuity_changed || is_new) {
         lock_time.time    = mGenerationTime;
         lock_time.seconds = 0;
         lock_time.lost    = true;
+        // Persist the reset immediately so later generations compute elapsed lock
+        // time relative to the discontinuity, not the stale pre-discontinuity start.
+        mLockTime[ss_id] = mGenerationTime;
     } else {
         lock_time.time    = mLockTime[ss_id];
         lock_time.seconds = mGenerationTime.difference_seconds(lock_time.time);
         lock_time.lost    = false;
     }
 
-    auto const& correction_data = *mGenerator.mCorrectionData;
 #ifdef INCLUDE_FORMAT_ANTEX
     auto antex = mGenerator.mAntex.get();
 #endif
@@ -170,6 +250,11 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     auto& observation = satellite.initialize_observation(signal_id);
     observation.recompute_mapping_hydrostatic(mTropoHydrostaticDelta);
     observation.update_lock_time(lock_time);
+    {
+        auto ambiguity_it = mPhaseAmbiguity.find(ss_id);
+        observation.set_phase_ambiguity(
+            ambiguity_it != mPhaseAmbiguity.end() ? ambiguity_it->second : 0);
+    }
     observation.compute_phase_bias(correction_data);
     observation.compute_code_bias(correction_data);
     observation.compute_tropospheric(correction_data);
@@ -181,6 +266,8 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
     observation.set_negative_phase_windup(mNegativePhaseWindup);
+    observation.set_negative_correction_sign(mNegativeCorrectionSign);
+    observation.set_ssr_generation_consistency_check(mGenerator.mSsrGenerationConsistencyCheck);
     observation.set_require_code_bias(mRequireCodeBias);
     observation.set_require_phase_bias(mRequirePhaseBias);
     observation.set_require_tropo(mRequireTropo);
@@ -447,6 +534,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         VERBOSEF("lli -%s", id.to_string().c_str());
         mLockTime.erase(id);
         mPhaseDiscontinuity.erase(id);
+        mLossCount[id] += 1;
     }
 
     for (auto& id : active_signals) {
@@ -455,6 +543,8 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             mLockTime[id] = mGenerationTime;
         }
     }
+
+    if (!active_signals.empty()) mStarted = true;
 
     return true;
 }
@@ -792,29 +882,37 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 
     if (will_generate_gps) {
         auto last_msm = !will_generate_glo && !will_generate_gal && !will_generate_bds;
-        auto message =
+        auto msm_messages =
             rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GPS, common, msm_gps);
-        messages.push_back(std::move(message));
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_glo) {
-        auto last_msm = !will_generate_gal && !will_generate_bds;
-        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
-                                           common, msm_glo);
-        messages.push_back(std::move(message));
+        auto last_msm     = !will_generate_gal && !will_generate_bds;
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
+                                               common, msm_glo);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_gal) {
-        auto last_msm = !will_generate_bds;
-        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
-                                           common, msm_gal);
-        messages.push_back(std::move(message));
+        auto last_msm     = !will_generate_bds;
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
+                                               common, msm_gal);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_bds) {
-        auto message =
+        auto msm_messages =
             rtcm::generate_msm(mRtcmMsmType, true, rtcm::GenericGnssId::BEIDOU, common, msm_bds);
-        messages.push_back(std::move(message));
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     return messages;
@@ -827,6 +925,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 Generator::Generator() NOEXCEPT {
     FUNCTION_SCOPE();
     mIodConsistencyCheck                         = false;
+    mSsrGenerationConsistencyCheck               = false;
     mUseReceptionTimeForOrbitAndClockCorrections = false;
     mUseOrbitCorrectionInIteration               = false;
     mIgnoreBitmask                               = false;
@@ -1323,6 +1422,7 @@ SnapshotInput ReferenceStation::snapshot(ts::Tai const& time) const NOEXCEPT {
     input.config.elevation_mask                     = mElevationMask;
     input.config.phase_range_rate                   = mPhaseRangeRate;
     input.config.negative_phase_windup              = mNegativePhaseWindup;
+    input.config.negative_correction_sign           = mNegativeCorrectionSign;
     input.config.require_code_bias                  = mRequireCodeBias;
     input.config.require_phase_bias                 = mRequirePhaseBias;
     input.config.require_tropo                      = mRequireTropo;

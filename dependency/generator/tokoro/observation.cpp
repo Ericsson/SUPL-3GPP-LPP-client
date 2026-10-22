@@ -46,7 +46,10 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
         0.0,
         true,
     };
-    mNegativePhaseWindup = false;
+    mNegativePhaseWindup           = false;
+    mNegativeCorrectionSign        = false;
+    mSsrGenerationConsistencyCheck = false;
+    mOrbitClockSsrIod              = satellite.orbit_correction().ssr_iod;
 
     mRequirePhaseBias               = true;
     mRequireCodeBias                = true;
@@ -114,28 +117,36 @@ void Observation::update_lock_time(LockTime const& lock_time) NOEXCEPT {
 void Observation::compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-    auto signals = correction_data.signal_corrections(mSvId);
-    if (!signals) return;
+    auto bias = correction_data.phase_bias(mSvId, mSignalId);
+    if (!bias) return;
 
-    auto it = signals->phase_bias.find(mSignalId);
-    if (it == signals->phase_bias.end()) return;
-    mPhaseBias                = Correction{it->second.bias, true};
-    mPhaseBiasEpoch           = it->second.epoch_time;
-    mPhaseDiscontinuity       = it->second.discontinuity;
-    mHasPhaseIntegerIndicator = it->second.integer_indicator_valid;
-    mPhaseIntegerIndicator    = it->second.integer_indicator;
+    auto it = bias;
+    if (mSsrGenerationConsistencyCheck && it->ssr_iod != mOrbitClockSsrIod) {
+        VERBOSEF("phase bias belongs to a different SSR generation than the orbit/clock "
+                 "correction [sv=%s,signal=%s,orbit_iod=%u,bias_iod=%u]",
+                 mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->ssr_iod);
+        return;
+    }
+    mPhaseBias                = Correction{it->bias, true};
+    mPhaseBiasEpoch           = it->epoch_time;
+    mPhaseDiscontinuity       = it->discontinuity;
+    mHasPhaseIntegerIndicator = it->integer_indicator_valid;
+    mPhaseIntegerIndicator    = it->integer_indicator;
 }
 
 void Observation::compute_code_bias(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-    auto signals = correction_data.signal_corrections(mSvId);
-    if (!signals) return;
-
-    auto it = signals->code_bias.find(mSignalId);
-    if (it == signals->code_bias.end()) return;
-    mCodeBias      = Correction{it->second.bias, true};
-    mCodeBiasEpoch = it->second.epoch_time;
+    auto it = correction_data.code_bias(mSvId, mSignalId);
+    if (!it) return;
+    if (mSsrGenerationConsistencyCheck && it->ssr_iod != mOrbitClockSsrIod) {
+        VERBOSEF("code bias belongs to a different SSR generation than the orbit/clock "
+                 "correction [sv=%s,signal=%s,orbit_iod=%u,bias_iod=%u]",
+                 mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->ssr_iod);
+        return;
+    }
+    mCodeBias      = Correction{it->bias, true};
+    mCodeBiasEpoch = it->epoch_time;
 }
 
 void Observation::compute_tropospheric(CorrectionData const& correction_data) NOEXCEPT {
@@ -300,6 +311,10 @@ void Observation::compute_ranges() NOEXCEPT {
     if (mClockCorrection.valid) {
         clock0 = mCurrent->clock_correction;
         clock1 = mNext->clock_correction;
+        if (mNegativeCorrectionSign) {
+            clock0 = -clock0;
+            clock1 = -clock1;
+        }
         VERBOSEF("clock:        %+24.10f (%gs,%gm/s)", clock0,
                  mCurrent->clock_correction / constant::SPEED_OF_LIGHT,
                  (clock1 - clock0) / time_delta);
@@ -313,6 +328,7 @@ void Observation::compute_ranges() NOEXCEPT {
     auto code_bias = 0.0;
     if (mCodeBias.valid) {
         code_bias = mCodeBias.correction;
+        if (mNegativeCorrectionSign) code_bias = -code_bias;
         VERBOSEF("code_bias:    %+24.10f (%gm)", code_bias, mCodeBias.correction);
 #ifdef DATA_TRACING
         dt_obs.code_bias = code_bias;
@@ -324,6 +340,7 @@ void Observation::compute_ranges() NOEXCEPT {
     auto phase_bias = 0.0;
     if (mPhaseBias.valid) {
         phase_bias = mPhaseBias.correction;
+        if (mNegativeCorrectionSign) phase_bias = -phase_bias;
         VERBOSEF("phase_bias:   %+24.10f (%gm)", phase_bias, mPhaseBias.correction);
 #ifdef DATA_TRACING
         dt_obs.phase_bias = phase_bias;
@@ -524,10 +541,11 @@ void Observation::compute_ranges() NOEXCEPT {
         auto code_result0 = true_range0 + clock_bias0 + code_correction0 + final_code_correction0;
         auto code_result1 = true_range1 + clock_bias1 + code_correction1 + final_code_correction1;
 
-        auto phase_result0 =
-            true_range0 + clock_bias0 + phase_correction0 + final_phase_correction0;
-        auto phase_result1 =
-            true_range1 + clock_bias1 + phase_correction1 + final_phase_correction1;
+        auto ambiguity_range = static_cast<double>(mPhaseAmbiguity) * mWavelength;
+        auto phase_result0   = true_range0 + clock_bias0 + phase_correction0 +
+                             final_phase_correction0 + ambiguity_range;
+        auto phase_result1 = true_range1 + clock_bias1 + phase_correction1 +
+                             final_phase_correction1 + ambiguity_range;
 
         auto phase_delta = phase_result1 - phase_result0;
         auto phase_rate  = phase_delta / time_delta;

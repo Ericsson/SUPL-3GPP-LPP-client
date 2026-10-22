@@ -102,6 +102,18 @@ struct Observations {
     std::vector<Signal>    signals;
     std::vector<Satellite> satellites;
 
+    struct MsmRequirements {
+        bool possible;
+        bool needs_high_resolution;
+        bool needs_extended;
+    };
+
+    // Determine the MSM capability requirements (resolution and extended info/rate)
+    // for this GNSS's observations. These two axes are independent and must be
+    // combined across GNSS systems before resolving a final MSM version - see
+    // msm_version_from_requirements() in lowest_msm.cpp.
+    NODISCARD MsmRequirements msm_requirements() const;
+
     NODISCARD uint32_t lowest_msm_version() const;
 };
 
@@ -154,6 +166,8 @@ public:
     std::unique_ptr<BiasInformation>      bias_information;
     std::unique_ptr<Residuals>            gps_residuals;
     std::unique_ptr<Residuals>            glonass_residuals;
+    std::unique_ptr<Residuals>            galileo_residuals;
+    std::unique_ptr<Residuals>            beidou_residuals;
     std::unique_ptr<AuxiliaryInformation> auxiliary_information;
 
 private:

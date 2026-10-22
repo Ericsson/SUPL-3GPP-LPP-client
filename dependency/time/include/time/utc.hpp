@@ -22,7 +22,9 @@ public:
     EXPLICIT Utc(Bdt const& time);
 
     NODISCARD int64_t days() const;
-    NODISCARD double  day_of_year() const;
+    /// Fractional day of the year, one-based: January 1st 00:00:00 UTC is 1.0 and December 31st
+    /// 12:00:00 of a non-leap year is 365.5.
+    NODISCARD double day_of_year() const;
 
     NODISCARD Timestamp ut1(double ut1_utc) const;
     NODISCARD double    gmst(double ut1_utc) const;

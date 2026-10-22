@@ -46,6 +46,23 @@ struct ReferenceStationConfig {
     bool   generate_qzs;
 };
 
+// Lock time of a signal when it first appears. `Reset` starts at zero and flags a loss of lock;
+// `Max` starts at the largest lock time that RTCM can express (saturated) without a loss of lock.
+enum class LockStart {
+    Reset,
+    Max,
+};
+
+// When to give a signal a random integer carrier phase ambiguity N instead of N = 0.
+// `Startup` is the first epoch that produces observations, `Rise` is every later appearance of
+// a signal (rising satellite, or a signal that was lost).
+enum class AmbiguityRandomization {
+    Off,
+    Startup,
+    Rise,
+    Both,
+};
+
 struct CorrectionData;
 struct CorrectionPointSet;
 struct Satellite;
@@ -91,7 +108,14 @@ public:
     void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
+    void set_negative_correction_sign(bool enabled) { mNegativeCorrectionSign = enabled; }
     void set_phase_alignment(bool enabled) { mPhaseAlignment = enabled; }
+    void set_lock_start(LockStart start) { mLockStart = start; }
+    void set_lock_rise(LockStart start) { mLockRise = start; }
+    void set_ambiguity_randomization(AmbiguityRandomization mode) {
+        mAmbiguityRandomization = mode;
+    }
+    void set_ambiguity_seed(uint64_t seed) { mAmbiguitySeed = seed; }
     void set_antenna_descriptor(std::string descriptor) NOEXCEPT {
         mAntennaDescriptor = std::move(descriptor);
     }
@@ -159,6 +183,7 @@ private:
     uint32_t    mRtcmReferenceStationId;
     uint32_t    mRtcmMsmType;
     bool        mNegativePhaseWindup;
+    bool        mNegativeCorrectionSign;
     bool        mPhaseAlignment;
     std::string mAntennaDescriptor;
     std::string mReceiverDescriptor;
@@ -185,6 +210,24 @@ private:
 
     std::unordered_map<SatelliteSignalId, ts::Tai> mLockTime;
     std::unordered_map<SatelliteSignalId, uint8_t> mPhaseDiscontinuity;
+    // Last-seen phaseDiscontinuityIndicator_r16 per signal; a change (relative to the
+    // previously observed value) means the SSR provider has flagged a phase
+    // discontinuity, so the output lock/ambiguity arc must restart.
+    std::unordered_map<SatelliteSignalId, uint8_t> mLastPhaseDiscontinuityCounter;
+    // Integer phase ambiguity N (cycles) per signal; incremented by one on every detected
+    // phase discontinuity (cycle slip) and added to the synthesized carrier phase.
+    std::unordered_map<SatelliteSignalId, int64_t> mPhaseAmbiguity;
+
+    LockStart              mLockStart{LockStart::Reset};
+    LockStart              mLockRise{LockStart::Reset};
+    AmbiguityRandomization mAmbiguityRandomization{AmbiguityRandomization::Off};
+    uint64_t               mAmbiguitySeed{0};
+    // True once an epoch with observations has been generated; later new signals are "rises".
+    bool mStarted{false};
+    // Number of times a signal's lock was lost, used so that every rise draws a new ambiguity.
+    std::unordered_map<SatelliteSignalId, uint32_t> mLossCount;
+
+    NODISCARD int64_t random_phase_ambiguity(SatelliteSignalId ss_id) const NOEXCEPT;
 
     ts::Tai mGenerationTime;
 #ifdef INCLUDE_FORMAT_RINEX
@@ -211,6 +254,9 @@ public:
     void process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
 
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
+    void set_ssr_generation_consistency_check(bool enabled) NOEXCEPT {
+        mSsrGenerationConsistencyCheck = enabled;
+    }
     void set_max_orbit_age(double seconds) NOEXCEPT { mMaxOrbitAge = seconds; }
     void set_max_clock_age(double seconds) NOEXCEPT { mMaxClockAge = seconds; }
     void set_max_bias_age(double seconds) NOEXCEPT { mMaxBiasAge = seconds; }
@@ -304,6 +350,7 @@ private:
 #endif
 
     bool   mIodConsistencyCheck;
+    bool   mSsrGenerationConsistencyCheck;
     double mMaxOrbitAge = -1.0;
     double mMaxClockAge = -1.0;
     double mMaxBiasAge  = -1.0;

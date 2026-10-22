@@ -49,24 +49,25 @@ bool CorrectionPointSet::array_to_index(long                 array_index,
             auto bit      = 1ULL << (64 - 1 - i);
             auto is_valid = (bitmask & bit) != 0;
 
-            if (array_count == array_index) {
-                if (result) {
-                    result->array_index     = array_index;
-                    result->absolute_index  = absolute_index;
-                    result->is_valid        = is_valid;
-                    result->latitude_index  = y;
-                    result->longitude_index = x;
-                    result->position.x =
-                        reference_point_latitude - static_cast<double>(y) * step_of_latitude;
-                    result->position.y =
-                        reference_point_longitude + static_cast<double>(x) * step_of_longitude;
-                    result->position.z = 0;
-                }
-                return true;
-            }
-
-            // only valid grid points are included in the array
+            // only valid grid points are included in the compact array, so disabled
+            // points must be skipped before comparing against the requested index
             if (is_valid) {
+                if (array_count == array_index) {
+                    if (result) {
+                        result->array_index     = array_index;
+                        result->absolute_index  = absolute_index;
+                        result->is_valid        = is_valid;
+                        result->latitude_index  = y;
+                        result->longitude_index = x;
+                        result->position.x =
+                            reference_point_latitude - static_cast<double>(y) * step_of_latitude;
+                        result->position.y =
+                            reference_point_longitude + static_cast<double>(x) * step_of_longitude;
+                        result->position.z = 0;
+                    }
+                    return true;
+                }
+
                 array_count++;
             }
             absolute_index++;

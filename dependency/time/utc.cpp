@@ -132,7 +132,9 @@ double Utc::day_of_year() const {
     auto ts    = timestamp();
     auto epoch = date_from_utc(ts);
     auto start = utc_from_date(epoch.year, 1, 1, 0, 0, 0);
-    return (ts - start).full_seconds() / DAY_IN_SECONDS;
+    // One-based: January 1st 00:00:00 is day 1.0 (the convention used by the seasonal
+    // troposphere models, RTKLIB's time2doy and GNSS day-of-year in general).
+    return (ts - start).full_seconds() / DAY_IN_SECONDS + 1.0;
 }
 
 Timestamp Utc::ut1(double ut1_utc) const {

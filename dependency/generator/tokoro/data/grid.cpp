@@ -58,6 +58,13 @@ GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
             continue;
         }
 
+        // a top-left cell origin must have a point below (next latitude row) and to
+        // its right (next longitude column); the last row/column cannot start a cell
+        if (grid_point.latitude_index >= number_of_steps_latitude ||
+            grid_point.longitude_index >= number_of_steps_longitude) {
+            continue;
+        }
+
         auto x0 = grid_point.position.x;
         auto y0 = grid_point.position.y;
         auto x1 = x0 - delta_latitude;
@@ -112,6 +119,19 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
         return false;
     }
 
+    // verify the four points actually form a rectangle adjacent to top_left; this
+    // guards against any residual grid-layout inconsistency beyond find_top_left's
+    // own row/column bound check
+    if (top_right->latitude_index != top_left->latitude_index ||
+        top_right->longitude_index != top_left->longitude_index + 1 ||
+        bottom_left->latitude_index != top_left->latitude_index + 1 ||
+        bottom_left->longitude_index != top_left->longitude_index ||
+        bottom_right->latitude_index != top_left->latitude_index + 1 ||
+        bottom_right->longitude_index != top_left->longitude_index + 1) {
+        VERBOSEF("4 points do not form a rectangle");
+        return false;
+    }
+
     tl = top_left;
     tr = top_right;
     bl = bottom_left;
@@ -119,7 +139,8 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
     return true;
 }
 
-GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
+GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now,
+                                           double  max_age,
                                            double& ionospheric_residual) const NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -137,6 +158,17 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
         !bl->has_ionospheric_residual(sv_id) || !br->has_ionospheric_residual(sv_id)) {
         VERBOSEF("ionospheric correction not found");
         return GridStatus::MissingSatelliteData;
+    }
+
+    if (max_age > 0.0) {
+        for (auto* corner : {tl, tr, bl, br}) {
+            auto age = now - corner->ionospheric_residual_epoch.at(sv_id);
+            if (age > max_age) {
+                VERBOSEF("ionospheric grid point residual is too old (%.1fs > %.1fs limit)", age,
+                         max_age);
+                return GridStatus::StaleData;
+            }
+        }
     }
 
     auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
@@ -161,7 +193,7 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
     return GridStatus::Success;
 }
 
-GridData::GridStatus GridData::tropospheric(Float3                  llh,
+GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, double max_age,
                                             TroposphericCorrection& correction) const NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -177,6 +209,17 @@ GridData::GridStatus GridData::tropospheric(Float3                  llh,
             !bl->has_tropospheric_data() || !br->has_tropospheric_data()) {
             VERBOSEF("tropospheric correction not found");
             return GridStatus::MissingSatelliteData;
+        }
+
+        if (max_age > 0.0) {
+            for (auto* corner : {tl, tr, bl, br}) {
+                auto age = now - corner->tropospheric_epoch;
+                if (age > max_age) {
+                    VERBOSEF("tropospheric grid point is too old (%.1fs > %.1fs limit)", age,
+                             max_age);
+                    return GridStatus::StaleData;
+                }
+            }
         }
 
         auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);

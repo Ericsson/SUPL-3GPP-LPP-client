@@ -15,6 +15,7 @@
 #pragma GCC diagnostic ignored "-Wshadow-field"
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #include <args.hxx>
+#include <random>
 #pragma GCC diagnostic pop
 
 namespace tokoro {
@@ -211,6 +212,14 @@ static args::Flag gIodConsistencyCheck{
     {"tkr-no-icc"},
 };
 
+static args::Flag gSsrGenerationConsistencyCheck{
+    gGroup,
+    "ssr-generation-consistency-check",
+    "Reject orbit/clock/bias corrections that belong to different SSR generations (IOD "
+    "mismatch) instead of silently combining them",
+    {"tkr-ssr-gcc"},
+};
+
 static args::Flag gRtOC{
     gGroup,
     "rtoc",
@@ -230,6 +239,44 @@ static args::Flag gNegativePhaseWindup{
     "negative-phase-windup",
     "Enable negative phase windup correction",
     {"tkr-npw"},
+};
+
+static args::Flag gNegativeCorrectionSign{
+    gGroup,
+    "negative-correction-sign",
+    "Flip the sign of SSR clock, code-bias and phase-bias corrections",
+    {"tkr-negative-correction-sign"},
+};
+
+static args::ValueFlag<std::string> gLockStart{
+    gGroup,
+    "reset|max",
+    "Lock time of the signals present at startup: `reset` starts at zero (default), `max` starts\n"
+    "saturated and in lock",
+    {"tkr-lock-start"},
+};
+
+static args::ValueFlag<std::string> gLockRise{
+    gGroup,
+    "reset|max",
+    "Lock time of a signal that appears after startup (rising satellite or regained signal):\n"
+    "`reset` starts at zero with loss of lock (default), `max` starts saturated and in lock",
+    {"tkr-lock-rise"},
+};
+
+static args::ValueFlag<std::string> gAmbiguityRandomize{
+    gGroup,
+    "off|startup|rise|both",
+    "Start signals with a random integer carrier phase ambiguity (+-1000 cycles) instead of 0,\n"
+    "at startup, when a signal appears after startup, or both (default: off)",
+    {"tkr-ambiguity-randomize"},
+};
+
+static args::ValueFlag<uint64_t> gAmbiguitySeed{
+    gGroup,
+    "seed",
+    "Seed for `--tkr-ambiguity-randomize` (default: random, logged at info level)",
+    {"tkr-ambiguity-seed"},
 };
 
 static args::Flag gPhaseAlignment{
@@ -519,10 +566,16 @@ void parse(Config* config) {
     tokoro.tropospheric_height_correction     = true;
     tokoro.tropospheric_hydrostatic_delta     = true;
     tokoro.iod_consistency_check              = true;
+    tokoro.ssr_generation_consistency_check   = false;
     tokoro.rtoc                               = false;
     tokoro.ocit                               = false;
+    tokoro.negative_correction_sign           = false;
     tokoro.negative_phase_windup              = false;
     tokoro.phase_alignment                    = false;
+    tokoro.lock_start                         = TokoroConfig::LockStart::Reset;
+    tokoro.lock_rise                          = TokoroConfig::LockStart::Reset;
+    tokoro.ambiguity_randomization            = TokoroConfig::AmbiguityRandomization::Off;
+    tokoro.ambiguity_seed                     = 0;
     tokoro.antenna_descriptor                 = "";
     tokoro.receiver_descriptor                = "";
 #ifdef INCLUDE_RINEX_FORMAT
@@ -710,10 +763,52 @@ void parse(Config* config) {
     if (gTroposphericHeightCorrection) tokoro.tropospheric_height_correction = false;
     if (gNoTropoHydrostaticDelta) tokoro.tropospheric_hydrostatic_delta = false;
     if (gIodConsistencyCheck) tokoro.iod_consistency_check = false;
+    if (gSsrGenerationConsistencyCheck) tokoro.ssr_generation_consistency_check = true;
     if (gRtOC) tokoro.rtoc = true;
     if (gOcit) tokoro.ocit = true;
     if (gNegativePhaseWindup) tokoro.negative_phase_windup = true;
+    if (gNegativeCorrectionSign) tokoro.negative_correction_sign = true;
     if (gPhaseAlignment) tokoro.phase_alignment = true;
+
+    auto parse_lock_start = [](args::ValueFlag<std::string>& flag, char const* name,
+                               TokoroConfig::LockStart& out) {
+        if (!flag) return;
+        auto v = flag.Get();
+        if (v == "reset") {
+            out = TokoroConfig::LockStart::Reset;
+        } else if (v == "max") {
+            out = TokoroConfig::LockStart::Max;
+        } else {
+            throw args::ValidationError(std::string(name) + " must be 'reset' or 'max', got `" + v +
+                                        "`");
+        }
+    };
+    parse_lock_start(gLockStart, "--tkr-lock-start", tokoro.lock_start);
+    parse_lock_start(gLockRise, "--tkr-lock-rise", tokoro.lock_rise);
+
+    if (gAmbiguityRandomize) {
+        auto v = gAmbiguityRandomize.Get();
+        if (v == "off") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Off;
+        } else if (v == "startup") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Startup;
+        } else if (v == "rise") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Rise;
+        } else if (v == "both") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Both;
+        } else {
+            throw args::ValidationError(
+                "--tkr-ambiguity-randomize must be 'off', 'startup', 'rise', or 'both', got `" + v +
+                "`");
+        }
+    }
+    if (gAmbiguitySeed) {
+        tokoro.ambiguity_seed = gAmbiguitySeed.Get();
+    } else if (tokoro.ambiguity_randomization != TokoroConfig::AmbiguityRandomization::Off) {
+        std::random_device device;
+        tokoro.ambiguity_seed = (static_cast<uint64_t>(device()) << 32) ^ device();
+        INFOF("ambiguity seed: %llu", static_cast<unsigned long long>(tokoro.ambiguity_seed));
+    }
     if (gAntennaDescriptor) tokoro.antenna_descriptor = gAntennaDescriptor.Get();
     if (gReceiverDescriptor) tokoro.receiver_descriptor = gReceiverDescriptor.Get();
 
@@ -826,9 +921,19 @@ void dump(TokoroConfig const& config) {
 
     DEBUGF("tropospheric height:     %s", config.tropospheric_height_correction ? "true" : "false");
     DEBUGF("iod consistency check:   %s", config.iod_consistency_check ? "true" : "false");
+    DEBUGF("ssr generation consistency check: %s",
+           config.ssr_generation_consistency_check ? "true" : "false");
     DEBUGF("rtoc:                    %s", config.rtoc ? "true" : "false");
     DEBUGF("ocit:                    %s", config.ocit ? "true" : "false");
     DEBUGF("negative phase windup:   %s", config.negative_phase_windup ? "true" : "false");
+    DEBUGF("negative correction sign: %s", config.negative_correction_sign ? "true" : "false");
+    DEBUGF("lock start:              %s",
+           config.lock_start == TokoroConfig::LockStart::Max ? "max" : "reset");
+    DEBUGF("lock rise:               %s",
+           config.lock_rise == TokoroConfig::LockStart::Max ? "max" : "reset");
+    DEBUGF("ambiguity randomization: %d (seed %llu)",
+           static_cast<int>(config.ambiguity_randomization),
+           static_cast<unsigned long long>(config.ambiguity_seed));
     DEBUGF("antenna descriptor:  \"%s\"", config.antenna_descriptor.c_str());
     DEBUGF("receiver descriptor: \"%s\"", config.receiver_descriptor.c_str());
 #ifdef INCLUDE_RINEX_FORMAT

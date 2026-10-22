@@ -61,12 +61,14 @@ struct GridPoint {
     long latitude_index;
     long longitude_index;
 
-    std::unordered_map<SatelliteId, double> ionospheric_residual;
-    double                                  tropospheric_wet;
-    double                                  tropospheric_dry;
+    std::unordered_map<SatelliteId, double>  ionospheric_residual;
+    std::unordered_map<SatelliteId, ts::Tai> ionospheric_residual_epoch;
+    double                                   tropospheric_wet;
+    double                                   tropospheric_dry;
+    ts::Tai                                  tropospheric_epoch;
 
     bool has_ionospheric_residual(SatelliteId sv_id) const {
-        return ionospheric_residual.find(sv_id) != ionospheric_residual.end();
+        return ionospheric_valid && ionospheric_residual.find(sv_id) != ionospheric_residual.end();
     }
 
     bool has_tropospheric_data() const { return tropspheric_valid; }
@@ -78,6 +80,7 @@ struct GridData {
         Success,
         PositionOutsideGrid,
         MissingSatelliteData,
+        StaleData,
     };
 
     NODISCARD GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
@@ -85,9 +88,10 @@ struct GridData {
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
                        GridPoint const*& br) const NOEXCEPT;
 
-    GridStatus ionospheric(SatelliteId sv_id, Float3 llh,
+    GridStatus ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now, double max_age,
                            double& ionospheric_residual) const NOEXCEPT;
-    GridStatus tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
+    GridStatus tropospheric(Float3 llh, ts::Tai const& now, double max_age,
+                            TroposphericCorrection& correction) const NOEXCEPT;
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
         correction_point_set_id   = correction_point_set.set_id;
@@ -96,6 +100,9 @@ struct GridData {
         number_of_steps_latitude  = correction_point_set.number_of_steps_latitude;
         number_of_steps_longitude = correction_point_set.number_of_steps_longitude;
         auto grid_point_count = (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
+        // Start from empty storage: resizing in place would keep the old set's points (and
+        // their residuals/epochs) wherever the old and new grids overlap.
+        grid_points.clear();
         grid_points.resize(static_cast<size_t>(grid_point_count));
     }
 
@@ -109,8 +116,10 @@ struct GridData {
         grid_point.absolute_index    = info.absolute_index;
         grid_point.tropspheric_valid = false;
         grid_point.ionospheric_valid = false;
-        grid_point.latitude_index    = info.latitude_index;
-        grid_point.longitude_index   = info.longitude_index;
+        grid_point.ionospheric_residual.clear();
+        grid_point.ionospheric_residual_epoch.clear();
+        grid_point.latitude_index  = info.latitude_index;
+        grid_point.longitude_index = info.longitude_index;
     }
 
     GridPoint* point_from_array_index(long array_index) {

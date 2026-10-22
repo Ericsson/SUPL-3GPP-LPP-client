@@ -206,10 +206,22 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
     }
 
     // Purge data that should not be used
-    if (!filter.systems.gps) rtk_data->observations.erase(GenericGnssId::GPS);
-    if (!filter.systems.glonass) rtk_data->observations.erase(GenericGnssId::GLONASS);
-    if (!filter.systems.galileo) rtk_data->observations.erase(GenericGnssId::GALILEO);
-    if (!filter.systems.beidou) rtk_data->observations.erase(GenericGnssId::BEIDOU);
+    if (!filter.systems.gps) {
+        rtk_data->observations.erase(GenericGnssId::GPS);
+        rtk_data->gps_residuals.reset();
+    }
+    if (!filter.systems.glonass) {
+        rtk_data->observations.erase(GenericGnssId::GLONASS);
+        rtk_data->glonass_residuals.reset();
+    }
+    if (!filter.systems.galileo) {
+        rtk_data->observations.erase(GenericGnssId::GALILEO);
+        rtk_data->galileo_residuals.reset();
+    }
+    if (!filter.systems.beidou) {
+        rtk_data->observations.erase(GenericGnssId::BEIDOU);
+        rtk_data->beidou_residuals.reset();
+    }
 
     auto any_msm       = filter.msm.msm4 || filter.msm.msm5 || filter.msm.msm6 || filter.msm.msm7;
     auto any_force_msm = filter.msm.force_msm4 || filter.msm.force_msm5 || filter.msm.force_msm6 ||
@@ -218,25 +230,57 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         rtk_data->observations.clear();
     }
 
-    // Calculate lowest MSM version that can be used.
-    uint32_t lowest_msm = 0;
+    // Calculate lowest MSM version that can be used. The resolution and extended-info/rate
+    // requirements are independent axes (see msm_version_from_requirements), so they must be
+    // combined across every GNSS before resolving a single final MSM version - taking the
+    // numeric max of per-GNSS resolved versions would incorrectly treat e.g. MSM5 and MSM6
+    // as comparable when they are not.
+    auto needs_high_resolution = false;
+    auto needs_extended        = false;
+    auto any_possible          = false;
     for (auto& kvp : rtk_data->observations) {
-        auto gnss_msm = kvp.second->lowest_msm_version();
-        if (gnss_msm > lowest_msm) lowest_msm = gnss_msm;
+        auto requirements = kvp.second->msm_requirements();
+        if (!requirements.possible) continue;
+        any_possible = true;
+        if (requirements.needs_high_resolution) needs_high_resolution = true;
+        if (requirements.needs_extended) needs_extended = true;
     }
 
-    if (lowest_msm == 4 && !filter.msm.msm4) lowest_msm = 5;
-    if (lowest_msm == 5 && !filter.msm.msm5) lowest_msm = 6;
-    if (lowest_msm == 6 && !filter.msm.msm6) lowest_msm = 7;
-    if (lowest_msm == 7 && !filter.msm.msm7) lowest_msm = 0;
+    // Pick the lowest enabled MSM version that can carry everything required. MSM versions are
+    // not a chain: 5 (rate, low resolution) and 6 (high resolution, no rate) are siblings, so
+    // the usable versions are the supersets of the requirement (4 -> 4..7, 5 -> 5,7, 6 -> 6,7,
+    // 7 -> 7) and never "the next number up".
+    auto msm_enabled = [&](uint32_t v) {
+        switch (v) {
+        case 4: return filter.msm.msm4;
+        case 5: return filter.msm.msm5;
+        case 6: return filter.msm.msm6;
+        case 7: return filter.msm.msm7;
+        }
+        return false;
+    };
 
+    uint32_t lowest_msm = 0;
+    for (uint32_t v = 4; v <= 7; v++) {
+        if (!msm_enabled(v)) continue;
+        auto is_high_resolution = v >= 6;
+        auto is_extended        = v == 5 || v == 7;
+        if (any_possible && needs_high_resolution && !is_high_resolution) continue;
+        if (any_possible && needs_extended && !is_extended) continue;
+        lowest_msm = v;
+        break;
+    }
+
+    // Explicit force flags may be lossy, by design.
     if (filter.msm.force_msm4) lowest_msm = 4;
     if (filter.msm.force_msm5) lowest_msm = 5;
     if (filter.msm.force_msm6) lowest_msm = 6;
     if (filter.msm.force_msm7) lowest_msm = 7;
 
+    // No enabled version can represent the data without loss and nothing is forced: emit no
+    // observations rather than silently downgrading to a disabled, lossy MSM.
     if (lowest_msm == 0) {
-        lowest_msm = 4;  // TODO: What should we do here?
+        rtk_data->observations.clear();
     }
 
     auto should_include_reference_station = false;
@@ -256,9 +300,21 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
     if (should_include_reference_station) {
         auto reference_station_ptr          = mReferenceStation.get();
         auto physical_reference_station_ptr = mPhysicalReferenceStation.get();
-        if (rtk_data->reference_station) reference_station_ptr = rtk_data->reference_station.get();
-        if (rtk_data->physical_reference_station)
+        if (rtk_data->reference_station) {
+            // The reference station and its physical-reference pairing arrive together
+            // in the same LPP element (see extract_reference_station_info): a new
+            // reference station with no accompanying physical-reference update means
+            // that station genuinely has no baseline, not that the previous cached
+            // pairing still applies. Replace both halves atomically so a new station
+            // never inherits a stale physical-reference relationship from a different,
+            // previously cached station.
+            reference_station_ptr          = rtk_data->reference_station.get();
             physical_reference_station_ptr = rtk_data->physical_reference_station.get();
+        } else if (rtk_data->physical_reference_station) {
+            // A physical-reference update without a new reference station still
+            // belongs to the currently cached reference station.
+            physical_reference_station_ptr = rtk_data->physical_reference_station.get();
+        }
 
         // Generate Reference Station message
         if (reference_station_ptr) {
@@ -300,34 +356,53 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         }
 
         for (auto i = 0; i < count; i++) {
-            auto message =
+            auto msm_messages =
                 generate_msm(lowest_msm, i + 1 == count, gnss[i], common, *observations[i]);
-            messages.emplace_back(std::move(message));
+            for (auto& message : msm_messages) {
+                messages.emplace_back(std::move(message));
+            }
         }
     }
 
     // Generate GLONASS bias information message
-    if (rtk_data->bias_information) {
+    if (rtk_data->bias_information && filter.bias.mt1230) {
         auto message = generate_1230(*rtk_data->bias_information.get());
         messages.emplace_back(std::move(message));
     }
 
     // Generate residuals messages
-    if (rtk_data->gps_residuals) {
+    if (rtk_data->gps_residuals && filter.residuals.mt1030) {
         auto message = generate_1030(*rtk_data->gps_residuals.get());
         messages.emplace_back(std::move(message));
     }
 
-    if (rtk_data->glonass_residuals) {
+    if (rtk_data->glonass_residuals && filter.residuals.mt1031) {
         auto message = generate_1031(*rtk_data->glonass_residuals.get());
         messages.emplace_back(std::move(message));
     }
 
-    // Update reference station
-    if (rtk_data->reference_station) {
-        mReferenceStation = std::move(rtk_data->reference_station);
+    if (rtk_data->beidou_residuals && filter.residuals.mt1303) {
+        auto message = generate_1303(*rtk_data->beidou_residuals.get());
+        messages.emplace_back(std::move(message));
     }
-    if (rtk_data->physical_reference_station) {
+
+    if (rtk_data->galileo_residuals && filter.residuals.mt1304) {
+        auto message = generate_1304(*rtk_data->galileo_residuals.get());
+        messages.emplace_back(std::move(message));
+    }
+
+    // Update reference station
+    //
+    // The reference station and its physical-reference pairing arrive together in the
+    // same LPP element: a new reference station update always replaces the cached
+    // physical-reference pairing too (clearing it if the new update has none), so a
+    // stale baseline from a previously cached, unrelated station can never leak into
+    // a later physical-only station. A physical-reference update with no accompanying
+    // reference station still refers to the currently cached reference station.
+    if (rtk_data->reference_station) {
+        mReferenceStation         = std::move(rtk_data->reference_station);
+        mPhysicalReferenceStation = std::move(rtk_data->physical_reference_station);
+    } else if (rtk_data->physical_reference_station) {
         mPhysicalReferenceStation = std::move(rtk_data->physical_reference_station);
     }
 

@@ -325,6 +325,7 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mOutputTag        = tags::get(mConfig.output_tag).value;
 
     mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
+    mGenerator->set_ssr_generation_consistency_check(mConfig.ssr_generation_consistency_check);
     mGenerator->set_rtoc(mConfig.rtoc);
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
@@ -623,7 +624,33 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_elevation_mask(mConfig.elevation_mask);
     mReferenceStation->set_msm_type(tokoro_rtcm_msm_type(mConfig.msm_type));
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
+    mReferenceStation->set_negative_correction_sign(mConfig.negative_correction_sign);
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
+    mReferenceStation->set_lock_start(mConfig.lock_start == TokoroConfig::LockStart::Max ?
+                                          generator::tokoro::LockStart::Max :
+                                          generator::tokoro::LockStart::Reset);
+    mReferenceStation->set_lock_rise(mConfig.lock_rise == TokoroConfig::LockStart::Max ?
+                                         generator::tokoro::LockStart::Max :
+                                         generator::tokoro::LockStart::Reset);
+    switch (mConfig.ambiguity_randomization) {
+    case TokoroConfig::AmbiguityRandomization::Off:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Off);
+        break;
+    case TokoroConfig::AmbiguityRandomization::Startup:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Startup);
+        break;
+    case TokoroConfig::AmbiguityRandomization::Rise:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Rise);
+        break;
+    case TokoroConfig::AmbiguityRandomization::Both:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Both);
+        break;
+    }
+    mReferenceStation->set_ambiguity_seed(mConfig.ambiguity_seed);
     mReferenceStation->set_antenna_descriptor(mConfig.antenna_descriptor);
     mReferenceStation->set_receiver_descriptor(mConfig.receiver_descriptor);
 #ifdef INCLUDE_FORMAT_RINEX

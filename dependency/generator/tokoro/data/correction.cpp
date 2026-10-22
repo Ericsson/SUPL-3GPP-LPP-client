@@ -40,33 +40,42 @@ ClockCorrection const* CorrectionData::clock_correction(SatelliteId id) const NO
 SignalCorrection const* CorrectionData::signal_corrections(SatelliteId id) const NOEXCEPT {
     auto it = mSignal.find(id);
     if (it == mSignal.end()) return nullptr;
-    if (max_bias_age > 0.0) {
-        // Code bias and phase bias share the same epoch per satellite message; check either.
-        // Prefer code bias entry; fall back to phase bias if code bias is absent.
-        bool checked = false;
-        for (auto const& cb : it->second.code_bias) {
-            auto age = mLatestCorrectionTime - cb.second.epoch_time;
-            if (age > max_bias_age) {
-                WARNF("bias correction for %s is too old (%.1fs > %.1fs limit) - dropping",
-                      id.name(), age, max_bias_age);
-                return nullptr;
-            }
-            checked = true;
-            break;
-        }
-        if (!checked) {
-            for (auto const& pb : it->second.phase_bias) {
-                auto age = mLatestCorrectionTime - pb.second.epoch_time;
-                if (age > max_bias_age) {
-                    WARNF("bias correction for %s is too old (%.1fs > %.1fs limit) - dropping",
-                          id.name(), age, max_bias_age);
-                    return nullptr;
-                }
-                break;
-            }
-        }
-    }
     return &it->second;
+}
+
+template <typename T>
+static bool bias_is_fresh(char const* kind, SatelliteId id, SignalId signal, T const& entry,
+                          ts::Tai const& latest, double max_age) {
+    if (max_age <= 0.0) return true;
+    auto age = latest - entry.epoch_time;
+    if (age > max_age) {
+        WARNF("%s bias for %s %s is too old (%.1fs > %.1fs limit) - dropping", kind, id.name(),
+              signal.name(), age, max_age);
+        return false;
+    }
+    return true;
+}
+
+CodeBiasCorrection const* CorrectionData::code_bias(SatelliteId id,
+                                                    SignalId    signal) const NOEXCEPT {
+    auto it = mSignal.find(id);
+    if (it == mSignal.end()) return nullptr;
+    auto bias = it->second.code_bias.find(signal);
+    if (bias == it->second.code_bias.end()) return nullptr;
+    if (!bias_is_fresh("code", id, signal, bias->second, mLatestCorrectionTime, max_bias_age))
+        return nullptr;
+    return &bias->second;
+}
+
+PhaseBiasCorrection const* CorrectionData::phase_bias(SatelliteId id,
+                                                      SignalId    signal) const NOEXCEPT {
+    auto it = mSignal.find(id);
+    if (it == mSignal.end()) return nullptr;
+    auto bias = it->second.phase_bias.find(signal);
+    if (bias == it->second.phase_bias.end()) return nullptr;
+    if (!bias_is_fresh("phase", id, signal, bias->second, mLatestCorrectionTime, max_bias_age))
+        return nullptr;
+    return &bias->second;
 }
 
 }  // namespace tokoro
