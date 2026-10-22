@@ -73,6 +73,7 @@ struct StecQualityIndicator {
     double value;
     int    cls;
     int    val;
+    bool   exceeds_table;  // quality is worse than the largest tabulated bound (index 63)
 };
 
 StecQualityIndicator stec_quality_indicator_r16(BIT_STRING_s& bit_string);
