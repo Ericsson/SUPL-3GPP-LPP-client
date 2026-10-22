@@ -18,11 +18,8 @@ static void compute_sun_and_moon_position_eci(ts::Tai const& time, Float3& sun,
                                               Float3& moon) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
 
-    // TODO(ewasjon): Need UT1-UTC correction term, usually given by Earth Orientation Parameters
-    // (EOP). However, UTC is by definition maintained to be within +-0.9s of UT1, so it probably
-    // doesn't matter for our purposes.
-    auto ut1_utc = 0.0;
-    auto t_jc    = ts::Utc{time}.j2000_century(ut1_utc);
+    // The series are functions of dynamical time (TT).
+    auto t_jc = terrestrial_time_century(time);
 
     // Get astronomical arguments
     auto args = AstronomicalArguments::evaluate(t_jc);
@@ -82,10 +79,14 @@ SunMoonPosition sun_and_moon_position_ecef(ts::Tai const& time) NOEXCEPT {
     Float3 moon_eci{};
     compute_sun_and_moon_position_eci(time, sun_eci, moon_eci);
 
+    // The analytic Sun/Moon vectors use the ecliptic longitude and obliquity of the date, i.e.
+    // they are already referred to the mean equator and equinox of date; applying the J2000
+    // precession again would rotate them by the accumulated precession a second time.
+    // UT1-UTC and polar motion are neglected (EOP unavailable here; |UT1-UTC| < 0.9 s).
     EciEarthParameters earth_params{};
     Mat3               transform{};
     SunMoonPosition    result{};
-    eci_to_ecef_matrix(time, earth_params, &transform, &result.gmst);
+    eci_to_ecef_matrix(time, earth_params, &transform, &result.gmst, EciFrame::MeanOfDate);
 
     result.sun  = transform * sun_eci;
     result.moon = transform * moon_eci;

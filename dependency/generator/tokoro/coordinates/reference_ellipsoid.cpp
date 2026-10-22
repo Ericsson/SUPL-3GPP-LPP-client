@@ -22,7 +22,7 @@ ReferenceEllipsoid ReferenceEllipsoid::create(double semi_major_axis, double fla
 namespace ellipsoid {
 ReferenceEllipsoid const gWgs84  = ReferenceEllipsoid::create(6378137.0, 1.0 / 298.257223563);
 ReferenceEllipsoid const gGrs80  = ReferenceEllipsoid::create(6378137.0, 1.0 / 298.257222101);
-ReferenceEllipsoid const gPz90   = ReferenceEllipsoid::create(6378136.0, 1.0 / 298.25);
+ReferenceEllipsoid const gPz90   = ReferenceEllipsoid::create(6378136.0, 1.0 / 298.257839303);
 ReferenceEllipsoid const gPz9011 = ReferenceEllipsoid::create(6378136.0, 1.0 / 298.257839303);
 }  // namespace ellipsoid
 }  // namespace tokoro

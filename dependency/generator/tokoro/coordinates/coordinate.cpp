@@ -33,7 +33,12 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
         if (std::fabs(phi_n - phi) < tolerance) {
             phi = phi_n;
 
-            auto h = p / std::cos(phi) - n;
+            // p / cos(phi) - n is undefined on the polar axis (p = 0, cos(phi) = 0) and loses
+            // precision near it; this form is well conditioned for every latitude.
+            auto sin_phi_n = std::sin(phi);
+            auto cos_phi_n = std::cos(phi);
+            auto h =
+                p * cos_phi_n + z * sin_phi_n - a * std::sqrt(1.0 - e2 * sin_phi_n * sin_phi_n);
             return Float3{phi, lon, h};
         }
 
