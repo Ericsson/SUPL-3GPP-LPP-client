@@ -477,8 +477,8 @@ void Satellite::compute_earth_solid_tides(SatelliteState& state) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mId.name(), state.reception_time.rtklib_time_string().c_str());
 
     // TODO(ewasjon): Use sun_moon_position in model_earth_solid_tides instead of re-computing it
-    state.earth_solid_tides = model_earth_solid_tides(state.reception_time, state,
-                                                      mGroundPositionEcef, mGroundPositionLlh);
+    state.earth_solid_tides =
+        model_earth_solid_tides(state.reception_time, state, mGroundPositionEcef);
 
     VERBOSEF("disp x: %+.14f * %+.14f = %+.14f", state.earth_solid_tides.displacement_vector.x,
              state.true_line_of_sight.x,

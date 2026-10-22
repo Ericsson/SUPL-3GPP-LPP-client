@@ -46,6 +46,23 @@ struct ReferenceStationConfig {
     bool   generate_qzs;
 };
 
+// Lock time of a signal when it first appears. `Reset` starts at zero and flags a loss of lock;
+// `Max` starts at the largest lock time that RTCM can express (saturated) without a loss of lock.
+enum class LockStart {
+    Reset,
+    Max,
+};
+
+// When to give a signal a random integer carrier phase ambiguity N instead of N = 0.
+// `Startup` is the first epoch that produces observations, `Rise` is every later appearance of
+// a signal (rising satellite, or a signal that was lost).
+enum class AmbiguityRandomization {
+    Off,
+    Startup,
+    Rise,
+    Both,
+};
+
 struct CorrectionData;
 struct CorrectionPointSet;
 struct Satellite;
@@ -93,6 +110,12 @@ public:
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
     void set_negative_correction_sign(bool enabled) { mNegativeCorrectionSign = enabled; }
     void set_phase_alignment(bool enabled) { mPhaseAlignment = enabled; }
+    void set_lock_start(LockStart start) { mLockStart = start; }
+    void set_lock_rise(LockStart start) { mLockRise = start; }
+    void set_ambiguity_randomization(AmbiguityRandomization mode) {
+        mAmbiguityRandomization = mode;
+    }
+    void set_ambiguity_seed(uint64_t seed) { mAmbiguitySeed = seed; }
     void set_antenna_descriptor(std::string descriptor) NOEXCEPT {
         mAntennaDescriptor = std::move(descriptor);
     }
@@ -194,6 +217,17 @@ private:
     // Integer phase ambiguity N (cycles) per signal; incremented by one on every detected
     // phase discontinuity (cycle slip) and added to the synthesized carrier phase.
     std::unordered_map<SatelliteSignalId, int64_t> mPhaseAmbiguity;
+
+    LockStart              mLockStart{LockStart::Reset};
+    LockStart              mLockRise{LockStart::Reset};
+    AmbiguityRandomization mAmbiguityRandomization{AmbiguityRandomization::Off};
+    uint64_t               mAmbiguitySeed{0};
+    // True once an epoch with observations has been generated; later new signals are "rises".
+    bool mStarted{false};
+    // Number of times a signal's lock was lost, used so that every rise draws a new ambiguity.
+    std::unordered_map<SatelliteSignalId, uint32_t> mLossCount;
+
+    NODISCARD int64_t random_phase_ambiguity(SatelliteSignalId ss_id) const NOEXCEPT;
 
     ts::Tai mGenerationTime;
 #ifdef INCLUDE_FORMAT_RINEX

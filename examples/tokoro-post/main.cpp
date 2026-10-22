@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <queue>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -113,6 +114,13 @@ struct Config {
     long                     fake_cps_steps_lon                = 0;
     double                   fake_cps_step_lat                 = 0;
     double                   fake_cps_step_lon                 = 0;
+
+    generator::tokoro::LockStart              lock_start = generator::tokoro::LockStart::Reset;
+    generator::tokoro::LockStart              lock_rise  = generator::tokoro::LockStart::Reset;
+    generator::tokoro::AmbiguityRandomization ambiguity_randomization =
+        generator::tokoro::AmbiguityRandomization::Off;
+    uint64_t ambiguity_seed     = 0;
+    bool     ambiguity_seed_set = false;
 };
 
 static Config parse_args(int argc, char** argv) {
@@ -225,7 +233,38 @@ static Config parse_args(int argc, char** argv) {
             cfg.negative_phase_windup = true;
         else if (arg == "--no-phase-alignment")
             cfg.no_phase_alignment = true;
-        else if (arg == "--antenna-descriptor")
+        else if (arg == "--lock-start" || arg == "--lock-rise") {
+            auto value = next();
+            auto mode  = generator::tokoro::LockStart::Reset;
+            if (value == "max") {
+                mode = generator::tokoro::LockStart::Max;
+            } else if (value != "reset") {
+                fprintf(stderr, "%s must be 'reset' or 'max', got `%s`\n", arg.c_str(),
+                        value.c_str());
+                exit(1);
+            }
+            (arg == "--lock-start" ? cfg.lock_start : cfg.lock_rise) = mode;
+        } else if (arg == "--ambiguity-randomize") {
+            auto value = next();
+            if (value == "off") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Off;
+            } else if (value == "startup") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Startup;
+            } else if (value == "rise") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Rise;
+            } else if (value == "both") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Both;
+            } else {
+                fprintf(stderr,
+                        "--ambiguity-randomize must be 'off', 'startup', 'rise', or 'both', got "
+                        "`%s`\n",
+                        value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--ambiguity-seed") {
+            cfg.ambiguity_seed     = std::stoull(next());
+            cfg.ambiguity_seed_set = true;
+        } else if (arg == "--antenna-descriptor")
             cfg.antenna_descriptor = next();
         else if (arg == "--receiver-descriptor")
             cfg.receiver_descriptor = next();
@@ -291,7 +330,10 @@ static Config parse_args(int argc, char** argv) {
                         "[--no-shapiro-correction] [--no-phase-windup-correction] "
                         "[--no-earth-solid-tides-correction] [--no-tropospheric-height-correction] "
                         "[--no-tropo-hydrostatic-delta] [--negative-phase-windup] "
-                        "[--no-phase-alignment] [--antenna-descriptor <string>] "
+                        "[--no-phase-alignment] [--lock-start reset|max] "
+                        "[--lock-rise reset|max] "
+                        "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
+                        "[--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
                         "[--ocit] [--rtoc] [--ignore-bitmask] "
                         "[--gen assistance|time-step|time-step-aligned|time-step-last] "
@@ -552,6 +594,19 @@ int main(int argc, char** argv) {
     ref_station->set_use_ionospheric_height_correction(cfg.iono_height_correction);
     ref_station->set_elevation_mask(cfg.elevation_mask);
     ref_station->set_negative_phase_windup(cfg.negative_phase_windup);
+    ref_station->set_lock_start(cfg.lock_start);
+    ref_station->set_lock_rise(cfg.lock_rise);
+    ref_station->set_ambiguity_randomization(cfg.ambiguity_randomization);
+    {
+        auto seed = cfg.ambiguity_seed;
+        if (!cfg.ambiguity_seed_set &&
+            cfg.ambiguity_randomization != generator::tokoro::AmbiguityRandomization::Off) {
+            std::random_device device;
+            seed = (static_cast<uint64_t>(device()) << 32) ^ device();
+            INFOF("ambiguity seed: %llu", static_cast<unsigned long long>(seed));
+        }
+        ref_station->set_ambiguity_seed(seed);
+    }
     ref_station->set_antenna_descriptor(cfg.antenna_descriptor);
     ref_station->set_receiver_descriptor(cfg.receiver_descriptor);
     ref_station->set_require_code_bias(!cfg.code_bias_optional);
