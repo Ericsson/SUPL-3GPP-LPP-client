@@ -171,7 +171,14 @@ void DiagFile::write_header() noexcept {
     fprintf(mFile, "TROPO_WET_MAP         Wet mapping function value\n");
     fprintf(mFile, "TROPO_DRY_ZEN         Zenith hydrostatic delay (before mapping), meters\n");
     fprintf(mFile, "TROPO_WET_ZEN         Zenith wet delay (before mapping), meters\n");
-    fprintf(mFile, "PHASE_WINDUP          Phase windup correction, meters\n");
+    fprintf(mFile, "PHASE_WINDUP          Phase windup correction in use (velocity-based "
+                   "satellite attitude), meters\n");
+    fprintf(mFile, "PHASE_WINDUP_SUN      Phase windup, sun-pointing satellite attitude, "
+                   "meters\n");
+    fprintf(mFile, "PHASE_WINDUP_VEL      Phase windup, velocity-based satellite attitude, "
+                   "meters\n");
+    fprintf(mFile, "PHASE_WINDUP_YAW      Phase windup, yaw-steering satellite attitude, "
+                   "meters\n");
     fprintf(mFile, "ANT_PHASE             Satellite antenna phase variation, meters\n");
     fprintf(mFile, "CODE_CORRECTION       Total code correction, meters\n");
     fprintf(mFile, "PHASE_CORRECTION      Total phase correction, meters\n");
@@ -217,6 +224,9 @@ void DiagFile::write_header() noexcept {
     hdr(mFile, "TROPO_D_ZEN", 11);
     hdr(mFile, "TROPO_W_ZEN", 11);
     hdr(mFile, "PHASE_WINDUP", 12);
+    hdr(mFile, "PHASE_WINDUP_SUN", 16);
+    hdr(mFile, "PHASE_WINDUP_VEL", 16);
+    hdr(mFile, "PHASE_WINDUP_YAW", 16);
     hdr(mFile, "ANT_PHASE", 10);
     hdr(mFile, "CODE_CORRECTION", 16);
     hdr(mFile, "PHASE_CORRECTION", 16);
@@ -254,6 +264,7 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
     char tropo_dry_s[16], tropo_wet_s[16], tropo_total_s[16];
     char tropo_dmap_s[16], tropo_wmap_s[16], tropo_dzen_s[16], tropo_wzen_s[16];
     char phase_windup_s[16], ant_phase_s[16];
+    char phase_windup_sun_s[20], phase_windup_vel_s[20], phase_windup_yaw_s[20];
     char code_corr_s[20], phase_corr_s[20], code_range_s[20], phase_range_s[20];
     char phase_rate_s[16];
     char code_bias_epoch_s[32], code_bias_age_s[24], phase_bias_epoch_s[32], phase_bias_age_s[24];
@@ -320,10 +331,18 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
         snprintf(tropo_wzen_s, sizeof(tropo_wzen_s), "%11s", "-");
     }
 
-    if (row.has_phase_windup)
+    if (row.has_phase_windup) {
         snprintf(phase_windup_s, sizeof(phase_windup_s), "%+12.5f", row.phase_windup);
-    else
+        snprintf(phase_windup_sun_s, sizeof(phase_windup_sun_s), "%+16.5f", row.phase_windup_sun);
+        snprintf(phase_windup_vel_s, sizeof(phase_windup_vel_s), "%+16.5f",
+                 row.phase_windup_velocity);
+        snprintf(phase_windup_yaw_s, sizeof(phase_windup_yaw_s), "%+16.5f", row.phase_windup_yaw);
+    } else {
         snprintf(phase_windup_s, sizeof(phase_windup_s), "%12s", "-");
+        snprintf(phase_windup_sun_s, sizeof(phase_windup_sun_s), "%16s", "-");
+        snprintf(phase_windup_vel_s, sizeof(phase_windup_vel_s), "%16s", "-");
+        snprintf(phase_windup_yaw_s, sizeof(phase_windup_yaw_s), "%16s", "-");
+    }
 
     if (row.has_ant_phase)
         snprintf(ant_phase_s, sizeof(ant_phase_s), "%+10.5f", row.ant_phase);
@@ -351,7 +370,7 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
             "  %s  %s  %s"
             "  %s  %s  %s  %s"
             "  %s  %s  %s  %s  %s  %s  %s"
-            "  %s  %s"
+            "  %s  %s  %s  %s  %s"
             "  %s  %s  %s  %s"
             "  %s  %+6.2f  %+9.3f  %+11.4f"
             "  %s  %s  %s  %s  %s  %s  %s  %s"
@@ -359,10 +378,11 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
             prefix, ts.c_str(), row.prn, mMsmSigName.c_str(), row.sig_id, clock_s, code_bias_s,
             phase_bias_s, stec_grid_s, stec_poly_s, stec_total_s, stec_hcorr_s, tropo_dry_s,
             tropo_wet_s, tropo_total_s, tropo_dmap_s, tropo_wmap_s, tropo_dzen_s, tropo_wzen_s,
-            phase_windup_s, ant_phase_s, code_corr_s, phase_corr_s, code_range_s, phase_range_s,
-            phase_rate_s, row.cnr, row.lock_time, row.frequency_mhz, code_bias_epoch_s,
-            code_bias_age_s, phase_bias_epoch_s, phase_bias_age_s, phase_disc_s, phase_int_s,
-            int_cycles_s, cycle_slip_s, row.valid ? "-" : row.discard_reason.c_str());
+            phase_windup_s, phase_windup_sun_s, phase_windup_vel_s, phase_windup_yaw_s, ant_phase_s,
+            code_corr_s, phase_corr_s, code_range_s, phase_range_s, phase_rate_s, row.cnr,
+            row.lock_time, row.frequency_mhz, code_bias_epoch_s, code_bias_age_s,
+            phase_bias_epoch_s, phase_bias_age_s, phase_disc_s, phase_int_s, int_cycles_s,
+            cycle_slip_s, row.valid ? "-" : row.discard_reason.c_str());
 }
 
 SatDiagFile::~SatDiagFile() {

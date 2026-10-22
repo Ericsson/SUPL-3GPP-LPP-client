@@ -443,8 +443,11 @@ void Observation::compute_ranges() NOEXCEPT {
         VERBOSEF("solid_tides:  ---");
     }
 
-    auto phase_windup0 = 0.0;
-    auto phase_windup1 = 0.0;
+    auto phase_windup0         = 0.0;
+    auto phase_windup1         = 0.0;
+    auto phase_windup_sun      = 0.0;
+    auto phase_windup_velocity = 0.0;
+    auto phase_windup_yaw      = 0.0;
     if (mCurrent->phase_windup.valid) {
         phase_windup0 = mCurrent->phase_windup.correction_velocity * mWavelength;
         phase_windup1 = mCurrent->phase_windup.correction_velocity * mWavelength;
@@ -461,15 +464,18 @@ void Observation::compute_ranges() NOEXCEPT {
         phase_windup0 *= negative_factor;
         phase_windup1 *= negative_factor;
 
+        phase_windup_sun = negative_factor * mCurrent->phase_windup.correction_sun * mWavelength;
+        phase_windup_velocity =
+            negative_factor * mCurrent->phase_windup.correction_velocity * mWavelength;
+        phase_windup_yaw = negative_factor * mCurrent->phase_windup.correction_angle * mWavelength;
+
         VERBOSEF("phase_windup: %+24.10f (%gc x %gm,%gm/s)", phase_windup0,
                  mCurrent->phase_windup.correction_velocity, mWavelength,
                  (phase_windup1 - phase_windup0) / time_delta);
 #ifdef DATA_TRACING
-        dt_obs.phase_windup = negative_factor * mCurrent->phase_windup.correction_sun * mWavelength;
-        dt_obs.phase_windup_velocity =
-            negative_factor * mCurrent->phase_windup.correction_velocity * mWavelength;
-        dt_obs.phase_windup_angle =
-            negative_factor * mCurrent->phase_windup.correction_angle * mWavelength;
+        dt_obs.phase_windup          = phase_windup_sun;
+        dt_obs.phase_windup_velocity = phase_windup_velocity;
+        dt_obs.phase_windup_angle    = phase_windup_yaw;
 #endif
     } else {
         VERBOSEF("phase_windup: ---");
@@ -579,14 +585,17 @@ void Observation::compute_ranges() NOEXCEPT {
             mTropospheric.valid ?
                 mTropospheric.hydrostatic :
                 (mTropospheric.valid_model ? mTropospheric.model_hydrostatic : 0.0);
-        row.tropo_wet_zenith = mTropospheric.valid ?
-                                   mTropospheric.wet :
-                                   (mTropospheric.valid_model ? mTropospheric.model_wet : 0.0);
-        row.phase_windup     = phase_windup0;
-        row.ant_phase        = antenna_pco + antenna_pcv;
-        row.cnr              = mCarrierToNoiseRatio;
-        row.lock_time        = mLockTime.seconds;
-        row.frequency_mhz    = mFrequency * 1.0e-3;  // kHz → MHz
+        row.tropo_wet_zenith      = mTropospheric.valid ?
+                                        mTropospheric.wet :
+                                        (mTropospheric.valid_model ? mTropospheric.model_wet : 0.0);
+        row.phase_windup          = phase_windup0;
+        row.phase_windup_sun      = phase_windup_sun;
+        row.phase_windup_velocity = phase_windup_velocity;
+        row.phase_windup_yaw      = phase_windup_yaw;
+        row.ant_phase             = antenna_pco + antenna_pcv;
+        row.cnr                   = mCarrierToNoiseRatio;
+        row.lock_time             = mLockTime.seconds;
+        row.frequency_mhz         = mFrequency * 1.0e-3;  // kHz → MHz
         if (mCodeBias.valid) row.code_bias_epoch.set(mCodeBiasEpoch, mCurrent->reception_time);
         if (mPhaseBias.valid) row.phase_bias_epoch.set(mPhaseBiasEpoch, mCurrent->reception_time);
         row.has_phase_discontinuity = mPhaseBias.valid;

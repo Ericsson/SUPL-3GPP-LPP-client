@@ -65,6 +65,9 @@ struct DiagRow {
 
     // Signal-level corrections
     double phase_windup{};
+    double phase_windup_sun{};
+    double phase_windup_velocity{};
+    double phase_windup_yaw{};
     double ant_phase{};
 
     // Combined corrections and final ranges
