@@ -3,7 +3,9 @@
  * Reads UBX tbin + SSR tbin + RINEX nav, produces RTCM output.
  * No streamline, no scheduler, no event queue — pure sequential processing.
  */
+#include <algorithm>
 #include <chrono>
+#include <cmath>
 #include <cstdio>
 #include <cstdlib>
 #include <queue>
@@ -45,6 +47,13 @@ LOGLET_MODULE(tokoro_post);
 #undef LOGLET_CURRENT_MODULE
 #define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF(tokoro_post)
 
+enum class GenStrategy {
+    Assistance,
+    TimeStep,
+    TimeStepAligned,
+    TimeStepLast,
+};
+
 struct Config {
     std::string              ubx_path;
     std::string              rtcm_path;
@@ -55,6 +64,8 @@ struct Config {
     std::string              antenna_descriptor;
     std::string              receiver_descriptor;
     std::vector<std::string> nav_files;
+    GenStrategy              gen_strategy   = GenStrategy::Assistance;
+    double                   time_step      = 1.0;
     double                   ubx_shift      = -72000.0;
     double                   rtcm_shift     = 0.0;
     double                   stop_time      = 0.0;
@@ -125,6 +136,22 @@ static Config parse_args(int argc, char** argv) {
             cfg.diag_dir = next();
         else if (arg == "--antex")
             cfg.antex_file = next();
+        else if (arg == "--gen") {
+            auto v = next();
+            if (v == "assistance")
+                cfg.gen_strategy = GenStrategy::Assistance;
+            else if (v == "time-step")
+                cfg.gen_strategy = GenStrategy::TimeStep;
+            else if (v == "time-step-aligned")
+                cfg.gen_strategy = GenStrategy::TimeStepAligned;
+            else if (v == "time-step-last")
+                cfg.gen_strategy = GenStrategy::TimeStepLast;
+            else {
+                fprintf(stderr, "Invalid --gen value: %s\n", v.c_str());
+                exit(1);
+            }
+        } else if (arg == "--time-step")
+            cfg.time_step = std::stod(next());
         else if (arg == "--ubx-shift")
             cfg.ubx_shift = std::stod(next());
         else if (arg == "--rtcm-shift")
@@ -249,6 +276,10 @@ static Config parse_args(int argc, char** argv) {
             exit(1);
         }
     }
+    if (cfg.time_step <= 0.0) {
+        fprintf(stderr, "--time-step must be greater than zero\n");
+        exit(1);
+    }
     if (cfg.ssr_path.empty() || cfg.output_path.empty()) {
         fprintf(stderr, "Usage: tokoro-post --ssr <tbin> --output <rtcm> --pos-x X --pos-y Y "
                         "--pos-z Z [--ubx <tbin>] [--rtcm <tbin>] [--nav <file>...] "
@@ -262,7 +293,9 @@ static Config parse_args(int argc, char** argv) {
                         "[--no-tropo-hydrostatic-delta] [--negative-phase-windup] "
                         "[--no-phase-alignment] [--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
-                        "[--ocit] [--rtoc] [--ignore-bitmask]\n");
+                        "[--ocit] [--rtoc] [--ignore-bitmask] "
+                        "[--gen assistance|time-step|time-step-aligned|time-step-last] "
+                        "[--time-step <seconds>]\n");
         exit(1);
     }
     return cfg;
@@ -274,6 +307,17 @@ struct MergeEntry {
     uint32_t source;  // 0=ubx, 1=ssr, 2=rtcm
     bool     operator>(MergeEntry const& o) const { return timestamp_us > o.timestamp_us; }
 };
+
+static ts::Tai unix_us_to_tai(int64_t us) {
+    auto seconds  = us / 1000000LL;
+    auto fraction = static_cast<double>(us % 1000000LL) / 1e6;
+    return ts::Tai{ts::Utc{ts::Timestamp{seconds, fraction}}};
+}
+
+static int64_t tai_to_us(ts::Tai const& tai) {
+    auto tm = tai.timestamp();
+    return tm.seconds() * 1000000LL + static_cast<int64_t>(std::llround(tm.fraction() * 1e6));
+}
 
 static void rtcm_to_ephemeris(generator::tokoro::Generator& generator,
                               format::rtcm::Rtcm1019 const* rtcm) {
@@ -560,12 +604,53 @@ int main(int argc, char** argv) {
     size_t  msg_count     = 0;
     auto    wall_start    = std::chrono::steady_clock::now();
 
+    auto generate_at = [&](ts::Tai const& gen_time) {
+        ref_station->generate(gen_time);
+        auto messages = ref_station->produce();
+        for (auto& m : messages) {
+            fwrite(m.data().data(), 1, m.data().size(), out_file);
+        }
+        msg_count += messages.size();
+    };
+
+    bool    time_step_mode = cfg.gen_strategy != GenStrategy::Assistance;
+    int64_t step_us        = std::max<int64_t>(1, std::llround(cfg.time_step * 1e6));
+    bool    tick_started   = false;
+    int64_t next_tick_us   = 0;
+
+    // Emit every time step tick that has elapsed up to the given data time.
+    auto emit_ticks = [&](int64_t unix_us) {
+        if (generator->last_correction_data_time().timestamp().seconds() == 0) return;
+
+        auto now_us = tai_to_us(unix_us_to_tai(unix_us));
+        if (!tick_started) {
+            tick_started = true;
+            next_tick_us = now_us;
+            if (cfg.gen_strategy == GenStrategy::TimeStepAligned) {
+                next_tick_us = ((now_us + step_us - 1) / step_us) * step_us;
+            }
+        }
+
+        while (next_tick_us <= now_us) {
+            if (cfg.gen_strategy == GenStrategy::TimeStepLast) {
+                generate_at(generator->last_correction_data_time());
+            } else {
+                auto tick = ts::Tai{ts::Timestamp{
+                    next_tick_us / 1000000LL, static_cast<double>(next_tick_us % 1000000LL) / 1e6}};
+                generate_at(tick);
+            }
+            next_tick_us += step_us;
+        }
+    };
+
     // Main loop
     while (!heap.empty()) {
         auto top = heap.top();
         heap.pop();
 
         if (top.timestamp_us > stop_us) break;
+
+        if (time_step_mode) emit_ticks(top.timestamp_us);
 
         if (first_data_us == 0) first_data_us = top.timestamp_us;
 
@@ -619,16 +704,11 @@ int main(int argc, char** argv) {
             lpp_parser.append(ssr_msg.data.data(), ssr_msg.data.size());
             while (auto lpp_msg = lpp_parser.try_parse()) {
                 auto new_data = generator->process_lpp(*lpp_msg);
-                if (new_data) {
+                if (new_data && !time_step_mode) {
                     auto gen_time = generator->last_correction_data_time();
                     if (gen_time != last_gen_time) {
                         last_gen_time = gen_time;
-                        ref_station->generate(gen_time);
-                        auto messages = ref_station->produce();
-                        for (auto& m : messages) {
-                            fwrite(m.data().data(), 1, m.data().size(), out_file);
-                        }
-                        msg_count += messages.size();
+                        generate_at(gen_time);
                     }
                 }
                 ASN_STRUCT_FREE(asn_DEF_LPP_Message, lpp_msg);
