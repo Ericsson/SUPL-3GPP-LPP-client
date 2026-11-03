@@ -280,6 +280,9 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     observation.set_require_iono(mRequireIono);
     observation.set_use_tropospheric_model(mUseTroposphericModel);
     observation.compute_tropospheric_model();
+    observation.set_tropospheric_gradient(mGradientSource, mGradientMapping, mGradientConstantSet,
+                                          mGradientConstantNorth, mGradientConstantEast);
+    observation.compute_tropospheric_gradient();
     observation.set_use_ionospheric_height_correction(mUseIonosphericHeightCorrection);
 
     if (mGenerateDiag) {
@@ -342,6 +345,16 @@ void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXC
     for (auto mapping : mappings) {
         mapping_names.push_back(mapping_function_name(mapping));
     }
+    auto                     gradient_sources  = all_gradient_sources();
+    auto                     gradient_mappings = all_gradient_mappings();
+    std::vector<std::string> gradient_source_names;
+    for (auto source : gradient_sources) {
+        gradient_source_names.push_back(gradient_source_name(source));
+    }
+    std::vector<std::string> gradient_mapping_names;
+    for (auto mapping : gradient_mappings) {
+        gradient_mapping_names.push_back(gradient_mapping_name(mapping));
+    }
 
     auto it = mTropoDiagFiles.find(satellite.id());
     if (it == mTropoDiagFiles.end()) {
@@ -350,7 +363,8 @@ void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXC
         snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
                  static_cast<int>(satellite.id().lpp_id().value) + 1);
         auto path = mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/tropo.diag";
-        mTropoDiagFiles[satellite.id()].open(path, satellite.id(), zenith_names, mapping_names);
+        mTropoDiagFiles[satellite.id()].open(path, satellite.id(), zenith_names, mapping_names,
+                                             gradient_source_names, gradient_mapping_names);
         it = mTropoDiagFiles.find(satellite.id());
     }
 
@@ -363,9 +377,16 @@ void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXC
     row.prn =
         satellite.id().lpp_id().valid ? static_cast<int>(satellite.id().lpp_id().value) + 1 : 0;
     row.elevation_deg = state.true_elevation * constant::RAD2DEG;
+    row.azimuth_deg   = state.true_azimuth * constant::RAD2DEG;
 
     // zenith delays, source 0 is SSR
     row.zenith.resize(zenith_names.size());
+    row.gradient.resize(gradient_sources.size());
+    for (size_t i = 0; i < gradient_sources.size(); i++) {
+        if (gradient_sources[i] == GradientSource::Constant && mGradientConstantSet) {
+            row.gradient[i] = {true, mGradientConstantNorth, mGradientConstantEast};
+        }
+    }
     {
         TroposphericCorrection ssr{};
         if (mGenerator.mCorrectionData->tropospheric(satellite.id(), llh, ssr)) {
@@ -379,6 +400,16 @@ void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXC
                 row.zenith[0].valid       = true;
                 row.zenith[0].hydrostatic = ssr.dry * hydrostatic_scale;
                 row.zenith[0].wet         = ssr.wet * wet_scale;
+
+                double north = 0.0;
+                double east  = 0.0;
+                if (ssr_grid_gradient(ssr, hydrostatic_scale, wet_scale, north, east)) {
+                    for (size_t i = 0; i < gradient_sources.size(); i++) {
+                        if (gradient_sources[i] == GradientSource::SsrGrid) {
+                            row.gradient[i] = {true, north, east};
+                        }
+                    }
+                }
             }
         }
     }
@@ -422,11 +453,46 @@ void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXC
             if (models[i] == mTroposphereModel) source_index = i + 1;
         }
     }
+
+    // gradient mapping functions, `macmillan` uses m_h of the selected mapping function
+    row.gradient_mapping.resize(gradient_mappings.size());
+    for (size_t g = 0; g < gradient_mappings.size(); g++) {
+        auto const& selected = row.mapping[mapping_index];
+        if (gradient_mappings[g] == GradientMapping::MacMillan && !selected.valid) continue;
+        row.gradient_mapping[g] = {
+            true, gradient_mapping_value(gradient_mappings[g], state.true_elevation,
+                                         selected.valid ? selected.hydrostatic : 0.0)};
+    }
+
+    // gradient term of every combination of source and mapping function
+    row.gradient_delay.resize(gradient_sources.size() * gradient_mappings.size());
+    for (size_t s = 0; s < gradient_sources.size(); s++) {
+        for (size_t g = 0; g < gradient_mappings.size(); g++) {
+            if (!row.gradient[s].valid || !row.gradient_mapping[g].valid) continue;
+            auto& term = row.gradient_delay[s * gradient_mappings.size() + g];
+            term.valid = true;
+            term.value = gradient_delay(row.gradient_mapping[g].value, state.true_azimuth,
+                                        row.gradient[s].north, row.gradient[s].east);
+        }
+    }
+
     if (source_index != 0 || row.zenith[0].valid) {
         auto const& applied = row.slant[source_index * mappings.size() + mapping_index];
         if (applied.valid) {
             row.has_applied = true;
             row.applied     = applied.value;
+
+            // the gradient of the selected source and mapping function
+            for (size_t s = 0; s < gradient_sources.size(); s++) {
+                for (size_t g = 0; g < gradient_mappings.size(); g++) {
+                    auto const& term = row.gradient_delay[s * gradient_mappings.size() + g];
+                    if (gradient_sources[s] == mGradientSource &&
+                        gradient_mappings[g] == mGradientMapping && term.valid) {
+                        row.applied_gradient = term.value;
+                        row.applied += term.value;
+                    }
+                }
+            }
         }
     }
 

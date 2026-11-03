@@ -437,6 +437,11 @@ struct TokoroConfig {
     bool                                phase_alignment;
     generator::tokoro::TroposphereModel tropospheric_model;
     generator::tokoro::MappingFunction  tropospheric_mapping;
+    generator::tokoro::GradientSource   tropospheric_gradient;
+    generator::tokoro::GradientMapping  tropospheric_gradient_mapping;
+    bool                                tropospheric_gradient_constant_set;
+    double                              tropospheric_gradient_north;  // m
+    double                              tropospheric_gradient_east;   // m
     bool                                diag_tropospheric_all;
     std::string                         gpt2_grid;
     std::vector<std::string>            vmf3_grids;

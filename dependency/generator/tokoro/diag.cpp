@@ -166,7 +166,8 @@ void DiagFile::write_header() noexcept {
     fprintf(mFile, "STEC_H_CORR           Ionospheric height correction factor\n");
     fprintf(mFile, "TROPO_DRY             Dry (hydrostatic) tropospheric delay, meters\n");
     fprintf(mFile, "TROPO_WET             Wet tropospheric delay, meters\n");
-    fprintf(mFile, "TROPO_TOTAL           Total tropospheric delay, meters\n");
+    fprintf(mFile, "TROPO_TOTAL           Total tropospheric delay, including the gradient term, "
+                   "meters\n");
     fprintf(mFile, "TROPO_DRY_MAP         Hydrostatic mapping function value\n");
     fprintf(mFile, "TROPO_WET_MAP         Wet mapping function value\n");
     fprintf(mFile, "TROPO_DRY_ZEN         Zenith hydrostatic delay (before mapping), meters\n");
@@ -667,10 +668,14 @@ TropoDiagFile::~TropoDiagFile() {
 
 void TropoDiagFile::open(std::string const& path, SatelliteId sv_id,
                          std::vector<std::string> zenith_names,
-                         std::vector<std::string> mapping_names) noexcept {
-    mSvId         = sv_id;
-    mZenithNames  = std::move(zenith_names);
-    mMappingNames = std::move(mapping_names);
+                         std::vector<std::string> mapping_names,
+                         std::vector<std::string> gradient_source_names,
+                         std::vector<std::string> gradient_mapping_names) noexcept {
+    mSvId                 = sv_id;
+    mZenithNames          = std::move(zenith_names);
+    mMappingNames         = std::move(mapping_names);
+    mGradientSourceNames  = std::move(gradient_source_names);
+    mGradientMappingNames = std::move(gradient_mapping_names);
     if (path.empty()) return;
     mkdirs(path);
     mFile = fopen(path.c_str(), "w");
@@ -684,8 +689,10 @@ void TropoDiagFile::write_header() noexcept {
     fprintf(mFile, "TIMESTAMP             UTC date/time\n");
     fprintf(mFile, "PRN                   Satellite PRN number\n");
     fprintf(mFile, "ELEV                  Satellite elevation angle, degrees\n");
+    fprintf(mFile, "AZIM                  Satellite azimuth angle (east from north), degrees\n");
     fprintf(mFile, "APPLIED               Tropospheric slant delay applied to the observations, "
-                   "meters\n");
+                   "including the gradient term, meters\n");
+    fprintf(mFile, "APPLIED_GRAD          Gradient term of APPLIED (0 without gradient), meters\n");
     fprintf(mFile, "ZHD_<SOURCE>          Zenith hydrostatic delay, meters\n");
     fprintf(mFile, "ZWD_<SOURCE>          Zenith wet delay, meters\n");
     fprintf(mFile, "                      SOURCE is SSR (the SSR delays interpolated to the "
@@ -694,21 +701,41 @@ void TropoDiagFile::write_header() noexcept {
         fprintf(mFile, "%s%s", i > 1 ? ", " : "", mZenithNames[i].c_str());
     }
     fprintf(mFile, ")\n");
-    fprintf(mFile, "MH_<MAPPING>         Hydrostatic mapping function value\n");
-    fprintf(mFile, "MW_<MAPPING>         Wet mapping function value\n");
+    fprintf(mFile, "MH_<MAPPING>          Hydrostatic mapping function value\n");
+    fprintf(mFile, "MW_<MAPPING>          Wet mapping function value\n");
     fprintf(mFile, "                      MAPPING is one of (");
     for (size_t i = 0; i < mMappingNames.size(); i++) {
         fprintf(mFile, "%s%s", i > 0 ? ", " : "", mMappingNames[i].c_str());
     }
     fprintf(mFile, ")\n");
-    fprintf(mFile, "SLANT_<SOURCE>_<MAPPING>  Slant delay: ZHD * MH + ZWD * MW, meters\n");
-    fprintf(mFile, "DIFF_<SOURCE>_<MAPPING>   SLANT - APPLIED, meters\n");
+    fprintf(mFile, "GN_<GSOURCE>          Gradient G_N (south-north), meters\n");
+    fprintf(mFile, "GE_<GSOURCE>          Gradient G_E (west-east), meters\n");
+    fprintf(mFile, "                      GSOURCE is one of (");
+    for (size_t i = 0; i < mGradientSourceNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 0 ? ", " : "", mGradientSourceNames[i].c_str());
+    }
+    fprintf(mFile, "); ssr-grid is the slope of the SSR zenith delays across the grid cell\n");
+    fprintf(mFile, "MG_<GMAPPING>         Gradient mapping function value m_g\n");
+    fprintf(mFile, "                      GMAPPING is one of (");
+    for (size_t i = 0; i < mGradientMappingNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 0 ? ", " : "", mGradientMappingNames[i].c_str());
+    }
+    fprintf(mFile, "); macmillan uses the hydrostatic mapping of the selected mapping function\n");
+    fprintf(mFile, "SLANT_<SOURCE>_<MAPPING>   Slant delay without gradient: ZHD * MH + ZWD * MW, "
+                   "meters\n");
+    fprintf(mFile, "GRAD_<GSOURCE>_<GMAPPING>  Gradient term: MG * (GN * cos(AZIM) + GE * "
+                   "sin(AZIM)), meters\n");
+    fprintf(mFile, "DIFF_<SOURCE>_<MAPPING>    SLANT - (APPLIED - APPLIED_GRAD), meters\n");
+    fprintf(mFile, "                      A range with another source and mapping function is "
+                   "the range + DIFF, with another gradient also + (GRAD - APPLIED_GRAD)\n");
     fprintf(mFile, "End Field Description\n");
 
     // Column header, widths match the data format (2-space separator between each)
     fprintf(mFile, "*%-23s  %3s", "TIMESTAMP", "PRN");
     hdr(mFile, "ELEV", 6);
+    hdr(mFile, "AZIM", 6);
     hdr(mFile, "APPLIED", 11);
+    hdr(mFile, "APPLIED_GRAD", 11);
     for (auto const& name : mZenithNames) {
         auto column = diag_column_name(name);
         hdr(mFile, ("ZHD_" + column).c_str(), 11);
@@ -719,10 +746,24 @@ void TropoDiagFile::write_header() noexcept {
         hdr(mFile, ("MH_" + column).c_str(), 11);
         hdr(mFile, ("MW_" + column).c_str(), 11);
     }
+    for (auto const& name : mGradientSourceNames) {
+        auto column = diag_column_name(name);
+        hdr(mFile, ("GN_" + column).c_str(), 11);
+        hdr(mFile, ("GE_" + column).c_str(), 11);
+    }
+    for (auto const& name : mGradientMappingNames) {
+        hdr(mFile, ("MG_" + diag_column_name(name)).c_str(), 11);
+    }
     for (auto const& source : mZenithNames) {
         for (auto const& mapping : mMappingNames) {
             auto column = diag_column_name(source) + "_" + diag_column_name(mapping);
             hdr(mFile, ("SLANT_" + column).c_str(), 11);
+        }
+    }
+    for (auto const& source : mGradientSourceNames) {
+        for (auto const& mapping : mGradientMappingNames) {
+            auto column = diag_column_name(source) + "_" + diag_column_name(mapping);
+            hdr(mFile, ("GRAD_" + column).c_str(), 11);
         }
     }
     for (auto const& source : mZenithNames) {
@@ -740,7 +781,7 @@ void TropoDiagFile::write(ts::Tai const& time, TropoDiagRow const& row) noexcept
     if (!mHeaderWritten) write_header();
 
     fprintf(mFile, " %-23s  %3d", utc_string(time).c_str(), row.prn);
-    fprintf(mFile, "  %6.2f", row.elevation_deg);
+    fprintf(mFile, "  %6.2f  %6.2f", row.elevation_deg, row.azimuth_deg);
 
     // every column is 11 characters wide, like the column header
     auto number = [&](bool valid, double value, int precision) {
@@ -751,6 +792,7 @@ void TropoDiagFile::write(ts::Tai const& time, TropoDiagRow const& row) noexcept
     };
 
     number(row.has_applied, row.applied, 5);
+    number(row.has_applied, row.applied_gradient, 6);
     for (size_t i = 0; i < mZenithNames.size(); i++) {
         auto valid = i < row.zenith.size() && row.zenith[i].valid;
         number(valid, valid ? row.zenith[i].hydrostatic : 0.0, 5);
@@ -761,12 +803,24 @@ void TropoDiagFile::write(ts::Tai const& time, TropoDiagRow const& row) noexcept
         number(valid, valid ? row.mapping[i].hydrostatic : 0.0, 6);
         number(valid, valid ? row.mapping[i].wet : 0.0, 6);
     }
+    for (size_t i = 0; i < mGradientSourceNames.size(); i++) {
+        auto valid = i < row.gradient.size() && row.gradient[i].valid;
+        number(valid, valid ? row.gradient[i].north : 0.0, 6);
+        number(valid, valid ? row.gradient[i].east : 0.0, 6);
+    }
+    for (size_t i = 0; i < mGradientMappingNames.size(); i++) {
+        auto valid = i < row.gradient_mapping.size() && row.gradient_mapping[i].valid;
+        number(valid, valid ? row.gradient_mapping[i].value : 0.0, 6);
+    }
     for (size_t i = 0; i < row.slant.size(); i++) {
         number(row.slant[i].valid, row.slant[i].value, 5);
     }
+    for (size_t i = 0; i < row.gradient_delay.size(); i++) {
+        number(row.gradient_delay[i].valid, row.gradient_delay[i].value, 6);
+    }
     for (size_t i = 0; i < row.slant.size(); i++) {
         auto valid = row.slant[i].valid && row.has_applied;
-        number(valid, valid ? row.slant[i].value - row.applied : 0.0, 5);
+        number(valid, valid ? row.slant[i].value - (row.applied - row.applied_gradient) : 0.0, 5);
     }
     fprintf(mFile, "\n");
 }

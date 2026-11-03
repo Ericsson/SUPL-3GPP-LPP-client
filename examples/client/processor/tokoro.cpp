@@ -644,6 +644,12 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
     mReferenceStation->set_tropospheric_model(mConfig.tropospheric_model);
     mReferenceStation->set_tropospheric_mapping(mConfig.tropospheric_mapping);
+    mReferenceStation->set_tropospheric_gradient(mConfig.tropospheric_gradient,
+                                                 mConfig.tropospheric_gradient_mapping);
+    if (mConfig.tropospheric_gradient_constant_set) {
+        mReferenceStation->set_tropospheric_gradient_constant(mConfig.tropospheric_gradient_north,
+                                                              mConfig.tropospheric_gradient_east);
+    }
     mReferenceStation->set_lock_start(mConfig.lock_start == TokoroConfig::LockStart::Max ?
                                           generator::tokoro::LockStart::Max :
                                           generator::tokoro::LockStart::Reset);

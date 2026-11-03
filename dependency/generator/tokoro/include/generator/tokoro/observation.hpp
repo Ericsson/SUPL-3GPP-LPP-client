@@ -35,6 +35,23 @@ struct TroposphericDelay {
     bool   mapping_valid;
 };
 
+// Horizontal gradient of the troposphere, m_g(el) * (G_N * cos(az) + G_E * sin(az))
+struct TroposphericGradient {
+    // Slope of the SSR zenith delays across the grid cell [m/m]
+    bool   ssr_valid{false};
+    double ssr_dry_north{0.0};
+    double ssr_dry_east{0.0};
+    double ssr_wet_north{0.0};
+    double ssr_wet_east{0.0};
+
+    // The gradient of the selected source
+    bool   valid{false};
+    double north{0.0};    // G_N [m]
+    double east{0.0};     // G_E [m]
+    double mapping{0.0};  // m_g
+    double delay{0.0};    // slant delay [m]
+};
+
 struct IonosphericDelay {
     double grid_residual;
     double poly_residual;
@@ -73,6 +90,17 @@ public:
     void compute_tropospheric_height() NOEXCEPT;
     // Mapping function of the tropospheric delays
     void compute_tropospheric_mapping() NOEXCEPT;
+    // Gradient term of the selected source, after the mapping function and the height scaling
+    void compute_tropospheric_gradient() NOEXCEPT;
+    void set_tropospheric_gradient(GradientSource source, GradientMapping mapping,
+                                   bool constant_set, double constant_north,
+                                   double constant_east) NOEXCEPT {
+        mGradientSource        = source;
+        mGradientMapping       = mapping;
+        mGradientConstantSet   = constant_set;
+        mGradientConstantNorth = constant_north;
+        mGradientConstantEast  = constant_east;
+    }
     // Zenith delays of the a-priori model, used if there is no SSR tropospheric correction
     void compute_tropospheric_model() NOEXCEPT;
     void set_tropospheric_selection(TroposphereModel model, MappingFunction mapping,
@@ -169,6 +197,12 @@ private:
     TroposphericDelay mTropospheric;
     IonosphericDelay  mIonospheric;
 
+    TroposphericGradient   mGradient;
+    GradientSource         mGradientSource{GradientSource::None};
+    GradientMapping        mGradientMapping{GradientMapping::ChenHerring};
+    bool                   mGradientConstantSet{false};
+    double                 mGradientConstantNorth{0.0};
+    double                 mGradientConstantEast{0.0};
     TroposphereModel       mTroposphereModel{TroposphereModel::Mops};
     MappingFunction        mMappingFunction{MappingFunction::Niell};
     bool                   mTropoHydrostaticDelta{true};

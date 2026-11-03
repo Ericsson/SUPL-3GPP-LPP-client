@@ -51,6 +51,96 @@ static MappingName const MAPPING_NAMES[] = {
     {MappingFunction::Vmf3, "vmf3"},
 };
 
+namespace {
+struct GradientSourceName {
+    GradientSource source;
+    char const*    name;
+};
+struct GradientMappingName {
+    GradientMapping mapping;
+    char const*     name;
+};
+}  // namespace
+
+static GradientSourceName const GRADIENT_SOURCE_NAMES[] = {
+    {GradientSource::None, "none"},
+    {GradientSource::SsrGrid, "ssr-grid"},
+    {GradientSource::Constant, "constant"},
+};
+
+static GradientMappingName const GRADIENT_MAPPING_NAMES[] = {
+    {GradientMapping::ChenHerring, "chen-herring"},
+    {GradientMapping::MacMillan, "macmillan"},
+};
+
+char const* gradient_source_name(GradientSource source) NOEXCEPT {
+    for (auto const& entry : GRADIENT_SOURCE_NAMES) {
+        if (entry.source == source) return entry.name;
+    }
+    return "unknown";
+}
+
+char const* gradient_mapping_name(GradientMapping mapping) NOEXCEPT {
+    for (auto const& entry : GRADIENT_MAPPING_NAMES) {
+        if (entry.mapping == mapping) return entry.name;
+    }
+    return "unknown";
+}
+
+bool parse_gradient_source(std::string const& name, GradientSource& source) NOEXCEPT {
+    for (auto const& entry : GRADIENT_SOURCE_NAMES) {
+        if (name == entry.name) {
+            source = entry.source;
+            return true;
+        }
+    }
+    return false;
+}
+
+bool parse_gradient_mapping(std::string const& name, GradientMapping& mapping) NOEXCEPT {
+    for (auto const& entry : GRADIENT_MAPPING_NAMES) {
+        if (name == entry.name) {
+            mapping = entry.mapping;
+            return true;
+        }
+    }
+    return false;
+}
+
+std::vector<GradientSource> all_gradient_sources() {
+    std::vector<GradientSource> sources;
+    for (auto const& entry : GRADIENT_SOURCE_NAMES) {
+        if (entry.source != GradientSource::None) sources.push_back(entry.source);
+    }
+    return sources;
+}
+
+std::vector<GradientMapping> all_gradient_mappings() {
+    std::vector<GradientMapping> mappings;
+    for (auto const& entry : GRADIENT_MAPPING_NAMES) {
+        mappings.push_back(entry.mapping);
+    }
+    return mappings;
+}
+
+std::string gradient_source_names() {
+    std::string names;
+    for (auto const& entry : GRADIENT_SOURCE_NAMES) {
+        if (!names.empty()) names += '|';
+        names += entry.name;
+    }
+    return names;
+}
+
+std::string gradient_mapping_names() {
+    std::string names;
+    for (auto const& entry : GRADIENT_MAPPING_NAMES) {
+        if (!names.empty()) names += '|';
+        names += entry.name;
+    }
+    return names;
+}
+
 char const* troposphere_model_name(TroposphereModel model) NOEXCEPT {
     for (auto const& entry : MODEL_NAMES) {
         if (entry.model == model) return entry.name;
@@ -169,6 +259,44 @@ bool height_scaling(TroposphereSite const& site, double& hydrostatic, double& we
 
     hydrostatic = alt_eh.hydrostatic / alt_0.hydrostatic;
     wet         = alt_eh.wet / alt_0.wet;
+    return true;
+}
+
+// Chen and Herring (1997), as given in IERS Conventions 2010 section 9.2
+static constexpr double CHEN_HERRING_C = 0.0032;
+
+// Scale heights of the hydrostatic (1 / (5.225 * 2.26e-5), the VMF3 height reduction) and the wet
+// (the VMF3 height reduction) delays
+static constexpr double HYDROSTATIC_SCALE_HEIGHT = 8470.0;
+static constexpr double WET_SCALE_HEIGHT         = 2000.0;
+
+double gradient_mapping_value(GradientMapping mapping, double elevation,
+                              double hydrostatic_mapping) NOEXCEPT {
+    if (elevation <= 0.0) return 0.0;
+    auto sine   = std::sin(elevation);
+    auto cosine = std::cos(elevation);
+    if (cosine < 1e-12) return 0.0;  // zenith
+
+    switch (mapping) {
+    case GradientMapping::ChenHerring: return 1.0 / (sine * (sine / cosine) + CHEN_HERRING_C);
+    case GradientMapping::MacMillan:
+        if (sine < 1e-6) sine = 1e-6;
+        return hydrostatic_mapping * (cosine / sine);
+    }
+    return 0.0;
+}
+
+double gradient_delay(double gradient_mapping, double azimuth, double north, double east) NOEXCEPT {
+    return gradient_mapping * (north * std::cos(azimuth) + east * std::sin(azimuth));
+}
+
+bool ssr_grid_gradient(TroposphericCorrection const& ssr, double hydrostatic_scale,
+                       double wet_scale, double& north, double& east) NOEXCEPT {
+    if (!ssr.has_gradient) return false;
+    north = HYDROSTATIC_SCALE_HEIGHT * hydrostatic_scale * ssr.dry_north +
+            WET_SCALE_HEIGHT * wet_scale * ssr.wet_north;
+    east = HYDROSTATIC_SCALE_HEIGHT * hydrostatic_scale * ssr.dry_east +
+           WET_SCALE_HEIGHT * wet_scale * ssr.wet_east;
     return true;
 }
 
