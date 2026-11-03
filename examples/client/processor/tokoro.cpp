@@ -344,6 +344,22 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
             f.step_of_longitude);
     }
 
+    if (!config.gpt2_grid.empty()) {
+        if (!mGenerator->troposphere_data().load_gpt2_grid(config.gpt2_grid)) {
+            ERRORF("failed to load GPT2 grid file: \"%s\"", config.gpt2_grid.c_str());
+        }
+    }
+    for (auto const& file : config.vmf3_grids) {
+        if (!mGenerator->troposphere_data().load_vmf3_grid(file)) {
+            ERRORF("failed to load VMF3 grid file: \"%s\"", file.c_str());
+        }
+    }
+    if (!config.vmf3_orography.empty()) {
+        if (!mGenerator->troposphere_data().load_vmf3_orography(config.vmf3_orography)) {
+            ERRORF("failed to load VMF3 orography file: \"%s\"", config.vmf3_orography.c_str());
+        }
+    }
+
 #ifdef INCLUDE_FORMAT_ANTEX
     if (!config.antex_file.empty()) {
         auto result = format::antex::Antex::from_file(config.antex_file);
@@ -626,6 +642,8 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
     mReferenceStation->set_negative_correction_sign(mConfig.negative_correction_sign);
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
+    mReferenceStation->set_tropospheric_model(mConfig.tropospheric_model);
+    mReferenceStation->set_tropospheric_mapping(mConfig.tropospheric_mapping);
     mReferenceStation->set_lock_start(mConfig.lock_start == TokoroConfig::LockStart::Max ?
                                           generator::tokoro::LockStart::Max :
                                           generator::tokoro::LockStart::Reset);
@@ -667,6 +685,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
 
     if (!mConfig.diag_output_dir.empty()) {
         mReferenceStation->set_diag_output(mConfig.diag_output_dir);
+        mReferenceStation->set_diag_tropospheric_all(mConfig.diag_tropospheric_all);
     }
 
 #if defined(ENABLE_TOKORO_SNAPSHOT)

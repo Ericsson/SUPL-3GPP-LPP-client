@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdio>
 #include <string>
+#include <vector>
 
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
@@ -204,6 +205,60 @@ private:
     FILE*       mFile{nullptr};
     SatelliteId mSvId{};
     bool        mHeaderWritten{false};
+
+    void write_header() noexcept;
+};
+
+// Tropospheric delays of every combination of zenith delay source (the SSR delays and every
+// a-priori model) and mapping function, for comparison
+struct TropoDiagValue {
+    bool   valid{false};
+    double hydrostatic{};  // zenith delay / mapping function value
+    double wet{};
+};
+
+struct TropoDiagSlant {
+    bool   valid{false};
+    double value{};
+};
+
+struct TropoDiagRow {
+    int    prn{};
+    double elevation_deg{};
+
+    // [source], same order as the names given to TropoDiagFile::open; source 0 is the SSR
+    // tropospheric delays scaled to the height of the station
+    std::vector<TropoDiagValue> zenith;
+    // [mapping function]
+    std::vector<TropoDiagValue> mapping;
+    // slant delay [source * mapping count + mapping function], hydrostatic + wet, meters
+    std::vector<TropoDiagSlant> slant;
+
+    // The slant delay that is applied to the observations
+    bool   has_applied{false};
+    double applied{};
+};
+
+class TropoDiagFile {
+public:
+    TropoDiagFile() = default;
+    ~TropoDiagFile();
+
+    TropoDiagFile(TropoDiagFile const&)            = delete;
+    TropoDiagFile& operator=(TropoDiagFile const&) = delete;
+    TropoDiagFile(TropoDiagFile&&)                 = default;
+    TropoDiagFile& operator=(TropoDiagFile&&)      = default;
+
+    void open(std::string const& path, SatelliteId sv_id, std::vector<std::string> zenith_names,
+              std::vector<std::string> mapping_names) noexcept;
+    void write(ts::Tai const& time, TropoDiagRow const& row) noexcept;
+
+private:
+    FILE*                    mFile{nullptr};
+    SatelliteId              mSvId{};
+    std::vector<std::string> mZenithNames;
+    std::vector<std::string> mMappingNames;
+    bool                     mHeaderWritten{false};
 
     void write_header() noexcept;
 };

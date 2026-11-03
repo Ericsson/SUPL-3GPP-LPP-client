@@ -13,6 +13,9 @@
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
 #include <generator/idokeido/idokeido.hpp>
 #endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+#include <generator/tokoro/troposphere.hpp>
+#endif
 
 #include "config/types.hpp"
 
@@ -419,25 +422,31 @@ struct TokoroConfig {
 
     double time_step;
 
-    bool                   shapiro_correction;
-    bool                   phase_windup_correction;
-    bool                   earth_solid_tides_correction;
-    bool                   antenna_phase_variation_correction;
-    bool                   tropospheric_height_correction;
-    bool                   tropospheric_hydrostatic_delta;
-    bool                   iod_consistency_check;
-    bool                   ssr_generation_consistency_check;
-    bool                   rtoc;
-    bool                   ocit;
-    bool                   negative_phase_windup;
-    bool                   negative_correction_sign;
-    bool                   phase_alignment;
-    LockStart              lock_start;
-    LockStart              lock_rise;
-    AmbiguityRandomization ambiguity_randomization;
-    uint64_t               ambiguity_seed;
-    std::string            antenna_descriptor;
-    std::string            receiver_descriptor;
+    bool                                shapiro_correction;
+    bool                                phase_windup_correction;
+    bool                                earth_solid_tides_correction;
+    bool                                antenna_phase_variation_correction;
+    bool                                tropospheric_height_correction;
+    bool                                tropospheric_hydrostatic_delta;
+    bool                                iod_consistency_check;
+    bool                                ssr_generation_consistency_check;
+    bool                                rtoc;
+    bool                                ocit;
+    bool                                negative_phase_windup;
+    bool                                negative_correction_sign;
+    bool                                phase_alignment;
+    generator::tokoro::TroposphereModel tropospheric_model;
+    generator::tokoro::MappingFunction  tropospheric_mapping;
+    bool                                diag_tropospheric_all;
+    std::string                         gpt2_grid;
+    std::vector<std::string>            vmf3_grids;
+    std::string                         vmf3_orography;
+    LockStart                           lock_start;
+    LockStart                           lock_rise;
+    AmbiguityRandomization              ambiguity_randomization;
+    uint64_t                            ambiguity_seed;
+    std::string                         antenna_descriptor;
+    std::string                         receiver_descriptor;
 #ifdef INCLUDE_FORMAT_RINEX
     bool generate_rinex;
 #endif

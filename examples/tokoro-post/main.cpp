@@ -121,6 +121,15 @@ struct Config {
         generator::tokoro::AmbiguityRandomization::Off;
     uint64_t ambiguity_seed     = 0;
     bool     ambiguity_seed_set = false;
+
+    generator::tokoro::TroposphereModel tropospheric_model =
+        generator::tokoro::TroposphereModel::Mops;
+    generator::tokoro::MappingFunction tropospheric_mapping =
+        generator::tokoro::MappingFunction::Niell;
+    bool                     diag_tropospheric_all = false;
+    std::string              gpt2_grid;
+    std::vector<std::string> vmf3_grids;
+    std::string              vmf3_orography;
 };
 
 static Config parse_args(int argc, char** argv) {
@@ -261,6 +270,28 @@ static Config parse_args(int argc, char** argv) {
                         value.c_str());
                 exit(1);
             }
+        } else if (arg == "--tropo-model") {
+            auto value = next();
+            if (!generator::tokoro::parse_troposphere_model(value, cfg.tropospheric_model)) {
+                fprintf(stderr, "--tropo-model must be one of %s, got `%s`\n",
+                        generator::tokoro::troposphere_model_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-mapping") {
+            auto value = next();
+            if (!generator::tokoro::parse_mapping_function(value, cfg.tropospheric_mapping)) {
+                fprintf(stderr, "--tropo-mapping must be one of %s, got `%s`\n",
+                        generator::tokoro::mapping_function_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--diag-tropo-all") {
+            cfg.diag_tropospheric_all = true;
+        } else if (arg == "--gpt2-grid") {
+            cfg.gpt2_grid = next();
+        } else if (arg == "--vmf3-grid") {
+            cfg.vmf3_grids.push_back(next());
+        } else if (arg == "--vmf3-orography") {
+            cfg.vmf3_orography = next();
         } else if (arg == "--ambiguity-seed") {
             cfg.ambiguity_seed     = std::stoull(next());
             cfg.ambiguity_seed_set = true;
@@ -319,6 +350,26 @@ static Config parse_args(int argc, char** argv) {
         fprintf(stderr, "--time-step must be greater than zero\n");
         exit(1);
     }
+    {
+        auto needs_gpt2 = cfg.tropospheric_model == generator::tokoro::TroposphereModel::Gpt2 ||
+                          cfg.tropospheric_mapping == generator::tokoro::MappingFunction::Gpt2;
+        auto needs_vmf3 = cfg.tropospheric_model == generator::tokoro::TroposphereModel::Vmf3 ||
+                          cfg.tropospheric_mapping == generator::tokoro::MappingFunction::Vmf3;
+        if (needs_gpt2 && cfg.gpt2_grid.empty()) {
+            fprintf(stderr, "the tropospheric model or mapping function `gpt2` requires "
+                            "--gpt2-grid\n");
+            exit(1);
+        }
+        if (needs_vmf3 && (cfg.vmf3_grids.empty() || cfg.vmf3_orography.empty())) {
+            fprintf(stderr, "the tropospheric model or mapping function `vmf3` requires "
+                            "--vmf3-grid and --vmf3-orography\n");
+            exit(1);
+        }
+        if (cfg.diag_tropospheric_all && cfg.diag_dir.empty()) {
+            fprintf(stderr, "--diag-tropo-all requires --diag-dir\n");
+            exit(1);
+        }
+    }
     if (cfg.ssr_path.empty() || cfg.output_path.empty()) {
         fprintf(stderr, "Usage: tokoro-post --ssr <tbin> --output <rtcm> --pos-x X --pos-y Y "
                         "--pos-z Z [--ubx <tbin>] [--rtcm <tbin>] [--nav <file>...] "
@@ -332,6 +383,9 @@ static Config parse_args(int argc, char** argv) {
                         "[--no-tropo-hydrostatic-delta] [--negative-phase-windup] "
                         "[--no-phase-alignment] [--lock-start reset|max] "
                         "[--lock-rise reset|max] "
+                        "[--tropo-model mops|saastamoinen|saastamoinen-gpt|gpt2|vmf3] "
+                        "[--tropo-mapping niell|simple|gmf|gpt2|vmf3] [--diag-tropo-all] "
+                        "[--gpt2-grid <file>] [--vmf3-grid <file>...] [--vmf3-orography <file>] "
                         "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
                         "[--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
@@ -566,6 +620,22 @@ int main(int argc, char** argv) {
 
     // Load antex
 #ifdef INCLUDE_FORMAT_ANTEX
+    if (!cfg.gpt2_grid.empty() && !generator->troposphere_data().load_gpt2_grid(cfg.gpt2_grid)) {
+        fprintf(stderr, "Cannot load GPT2 grid file %s\n", cfg.gpt2_grid.c_str());
+        return 1;
+    }
+    for (auto const& file : cfg.vmf3_grids) {
+        if (!generator->troposphere_data().load_vmf3_grid(file)) {
+            fprintf(stderr, "Cannot load VMF3 grid file %s\n", file.c_str());
+            return 1;
+        }
+    }
+    if (!cfg.vmf3_orography.empty() &&
+        !generator->troposphere_data().load_vmf3_orography(cfg.vmf3_orography)) {
+        fprintf(stderr, "Cannot load VMF3 orography file %s\n", cfg.vmf3_orography.c_str());
+        return 1;
+    }
+
     if (!cfg.antex_file.empty()) {
         auto antex = format::antex::Antex::from_file(cfg.antex_file);
         if (antex) generator->set_antex(std::move(antex));
@@ -622,7 +692,12 @@ int main(int argc, char** argv) {
 #ifdef INCLUDE_FORMAT_RINEX
     ref_station->set_generate_rinex(cfg.generate_rinex);
 #endif
-    if (!cfg.diag_dir.empty()) ref_station->set_diag_output(cfg.diag_dir);
+    ref_station->set_tropospheric_model(cfg.tropospheric_model);
+    ref_station->set_tropospheric_mapping(cfg.tropospheric_mapping);
+    if (!cfg.diag_dir.empty()) {
+        ref_station->set_diag_output(cfg.diag_dir);
+        ref_station->set_diag_tropospheric_all(cfg.diag_tropospheric_all);
+    }
 
     // Open output
     FILE* out_file = fopen(cfg.output_path.c_str(), "wb");

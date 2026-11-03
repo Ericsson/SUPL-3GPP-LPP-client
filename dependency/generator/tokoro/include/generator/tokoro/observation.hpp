@@ -1,5 +1,6 @@
 #pragma once
 #include <generator/tokoro/diag.hpp>
+#include <generator/tokoro/troposphere.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 #include "models/earth_solid_tides.hpp"
@@ -31,6 +32,7 @@ struct TroposphericDelay {
     bool   valid;
     bool   valid_height_mapping;
     bool   valid_model;
+    bool   mapping_valid;
 };
 
 struct IonosphericDelay {
@@ -67,8 +69,19 @@ public:
     void compute_tropospheric(CorrectionData const& correction_data) NOEXCEPT;
     void compute_ionospheric(CorrectionData const& correction_data) NOEXCEPT;
 
+    // Scaling of the SSR tropospheric delays to the height of the station (MOPS)
     void compute_tropospheric_height() NOEXCEPT;
-    void recompute_mapping_hydrostatic(bool apply_hydrostatic_delta) NOEXCEPT;
+    // Mapping function of the tropospheric delays
+    void compute_tropospheric_mapping() NOEXCEPT;
+    // Zenith delays of the a-priori model, used if there is no SSR tropospheric correction
+    void compute_tropospheric_model() NOEXCEPT;
+    void set_tropospheric_selection(TroposphereModel model, MappingFunction mapping,
+                                    bool hydrostatic_delta, TroposphereData const* data) NOEXCEPT {
+        mTroposphereModel      = model;
+        mMappingFunction       = mapping;
+        mTropoHydrostaticDelta = hydrostatic_delta;
+        mTroposphereData       = data;
+    }
 
 #ifdef INCLUDE_FORMAT_ANTEX
     void compute_antenna_phase_variation(format::antex::Antex const& antex) NOEXCEPT;
@@ -155,8 +168,13 @@ private:
     Correction        mPhaseBias;
     TroposphericDelay mTropospheric;
     IonosphericDelay  mIonospheric;
-    Correction        mAntennaPhaseVariation;  // PCV pattern (phase only), metres
-    double            mAntennaPcoRange{0.0};   // PCO projected on LOS (code+phase), metres
+
+    TroposphereModel       mTroposphereModel{TroposphereModel::Mops};
+    MappingFunction        mMappingFunction{MappingFunction::Niell};
+    bool                   mTropoHydrostaticDelta{true};
+    TroposphereData const* mTroposphereData{nullptr};
+    Correction             mAntennaPhaseVariation;  // PCV pattern (phase only), metres
+    double                 mAntennaPcoRange{0.0};   // PCO projected on LOS (code+phase), metres
 
     double mPhaseRange;
     double mPhaseRangeRate;

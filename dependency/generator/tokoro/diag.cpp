@@ -653,5 +653,123 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
             row.discard_reason.empty() ? "-" : row.discard_reason.c_str());
 }
 
+static std::string diag_column_name(std::string name) {
+    for (auto& c : name) {
+        if (c == '-') c = '_';
+        if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
+    }
+    return name;
+}
+
+TropoDiagFile::~TropoDiagFile() {
+    if (mFile) fclose(mFile);
+}
+
+void TropoDiagFile::open(std::string const& path, SatelliteId sv_id,
+                         std::vector<std::string> zenith_names,
+                         std::vector<std::string> mapping_names) noexcept {
+    mSvId         = sv_id;
+    mZenithNames  = std::move(zenith_names);
+    mMappingNames = std::move(mapping_names);
+    if (path.empty()) return;
+    mkdirs(path);
+    mFile = fopen(path.c_str(), "w");
+}
+
+void TropoDiagFile::write_header() noexcept {
+    if (!mFile) return;
+    fprintf(mFile, "Tokoro Tropospheric Model Diagnostic. Satellite: %s\n", mSvId.name());
+    fprintf(mFile, "GNSS          : %s\n", gnss_name(mSvId));
+    fprintf(mFile, "Start Field Description\n");
+    fprintf(mFile, "TIMESTAMP             UTC date/time\n");
+    fprintf(mFile, "PRN                   Satellite PRN number\n");
+    fprintf(mFile, "ELEV                  Satellite elevation angle, degrees\n");
+    fprintf(mFile, "APPLIED               Tropospheric slant delay applied to the observations, "
+                   "meters\n");
+    fprintf(mFile, "ZHD_<SOURCE>          Zenith hydrostatic delay, meters\n");
+    fprintf(mFile, "ZWD_<SOURCE>          Zenith wet delay, meters\n");
+    fprintf(mFile, "                      SOURCE is SSR (the SSR delays interpolated to the "
+                   "station and scaled to its height) or a model (");
+    for (size_t i = 1; i < mZenithNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 1 ? ", " : "", mZenithNames[i].c_str());
+    }
+    fprintf(mFile, ")\n");
+    fprintf(mFile, "MH_<MAPPING>         Hydrostatic mapping function value\n");
+    fprintf(mFile, "MW_<MAPPING>         Wet mapping function value\n");
+    fprintf(mFile, "                      MAPPING is one of (");
+    for (size_t i = 0; i < mMappingNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 0 ? ", " : "", mMappingNames[i].c_str());
+    }
+    fprintf(mFile, ")\n");
+    fprintf(mFile, "SLANT_<SOURCE>_<MAPPING>  Slant delay: ZHD * MH + ZWD * MW, meters\n");
+    fprintf(mFile, "DIFF_<SOURCE>_<MAPPING>   SLANT - APPLIED, meters\n");
+    fprintf(mFile, "End Field Description\n");
+
+    // Column header, widths match the data format (2-space separator between each)
+    fprintf(mFile, "*%-23s  %3s", "TIMESTAMP", "PRN");
+    hdr(mFile, "ELEV", 6);
+    hdr(mFile, "APPLIED", 11);
+    for (auto const& name : mZenithNames) {
+        auto column = diag_column_name(name);
+        hdr(mFile, ("ZHD_" + column).c_str(), 11);
+        hdr(mFile, ("ZWD_" + column).c_str(), 11);
+    }
+    for (auto const& name : mMappingNames) {
+        auto column = diag_column_name(name);
+        hdr(mFile, ("MH_" + column).c_str(), 11);
+        hdr(mFile, ("MW_" + column).c_str(), 11);
+    }
+    for (auto const& source : mZenithNames) {
+        for (auto const& mapping : mMappingNames) {
+            auto column = diag_column_name(source) + "_" + diag_column_name(mapping);
+            hdr(mFile, ("SLANT_" + column).c_str(), 11);
+        }
+    }
+    for (auto const& source : mZenithNames) {
+        for (auto const& mapping : mMappingNames) {
+            auto column = diag_column_name(source) + "_" + diag_column_name(mapping);
+            hdr(mFile, ("DIFF_" + column).c_str(), 11);
+        }
+    }
+    fprintf(mFile, "\n");
+    mHeaderWritten = true;
+}
+
+void TropoDiagFile::write(ts::Tai const& time, TropoDiagRow const& row) noexcept {
+    if (!mFile) return;
+    if (!mHeaderWritten) write_header();
+
+    fprintf(mFile, " %-23s  %3d", utc_string(time).c_str(), row.prn);
+    fprintf(mFile, "  %6.2f", row.elevation_deg);
+
+    // every column is 11 characters wide, like the column header
+    auto number = [&](bool valid, double value, int precision) {
+        if (valid)
+            fprintf(mFile, "  %+11.*f", precision, value);
+        else
+            fprintf(mFile, "  %11s", "-");
+    };
+
+    number(row.has_applied, row.applied, 5);
+    for (size_t i = 0; i < mZenithNames.size(); i++) {
+        auto valid = i < row.zenith.size() && row.zenith[i].valid;
+        number(valid, valid ? row.zenith[i].hydrostatic : 0.0, 5);
+        number(valid, valid ? row.zenith[i].wet : 0.0, 5);
+    }
+    for (size_t i = 0; i < mMappingNames.size(); i++) {
+        auto valid = i < row.mapping.size() && row.mapping[i].valid;
+        number(valid, valid ? row.mapping[i].hydrostatic : 0.0, 6);
+        number(valid, valid ? row.mapping[i].wet : 0.0, 6);
+    }
+    for (size_t i = 0; i < row.slant.size(); i++) {
+        number(row.slant[i].valid, row.slant[i].value, 5);
+    }
+    for (size_t i = 0; i < row.slant.size(); i++) {
+        auto valid = row.slant[i].valid && row.has_applied;
+        number(valid, valid ? row.slant[i].value - row.applied : 0.0, 5);
+    }
+    fprintf(mFile, "\n");
+}
+
 }  // namespace tokoro
 }  // namespace generator

@@ -135,8 +135,9 @@ GlobalPressureTempature gpt(double dmjd, double dlat, double dlon, double h_ell)
     int n_max = 9;
     int m_max = 9;
 
-    // Compute factorial values
-    std::vector<double> dfac(static_cast<size_t>(2 * n_max + 2), 1.0);
+    // Compute factorial values, shifted by one: dfac[i + 1] = i!. The recursion below writes
+    // dfac[2 * n_max + 2], so the array needs 2 * n_max + 3 elements.
+    std::vector<double> dfac(static_cast<size_t>(2 * n_max + 3), 1.0);
     for (size_t i = 1; i <= static_cast<size_t>(2 * n_max + 1); ++i) {
         dfac[i + 1] = dfac[i] * static_cast<double>(i);
     }
