@@ -11,6 +11,7 @@
 #include "models/phase_windup.hpp"
 #include "models/shapiro.hpp"
 #include "models/sun_moon.hpp"
+#include "models/troposphere_models.hpp"
 #include "satellite.hpp"
 
 #include <cmath>
@@ -61,8 +62,9 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mClockCorrection = Correction{satellite.clock_correction(), true};
     mCodeBias        = Correction{0.0, false};
     mPhaseBias       = Correction{0.0, false};
-    mTropospheric = TroposphericDelay{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false};
-    mIonospheric  = IonosphericDelay{0.0, 0.0, false, 0.0, 0.0, 0.0, false};
+    mTropospheric =
+        TroposphericDelay{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, true};
+    mIonospheric           = IonosphericDelay{0.0, 0.0, false, 0.0, 0.0, 0.0, false};
     mAntennaPhaseVariation = Correction{0.0, false};
 
     mGroundPosition = location;
@@ -74,39 +76,62 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mTropospheric.mapping_wet         = mapping.wet;
 }
 
-void Observation::recompute_mapping_hydrostatic(bool apply_hydrostatic_delta) NOEXCEPT {
-    auto mapping = hydrostatic_mapping_function(mCurrent->reception_time, mGroundLlh,
-                                                mCurrent->true_elevation, apply_hydrostatic_delta);
-    mTropospheric.mapping_hydrostatic = mapping.hydrostatic;
+void Observation::compute_tropospheric_mapping() NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    // the geoid height is only needed by the zenith delay models
+    TroposphereSite site{mCurrent->reception_time, mGroundLlh, 0.0};
+
+    MappingValues values{};
+    if (!mapping_values(mMappingFunction, mTroposphereData, site, mCurrent->true_elevation,
+                        mTropoHydrostaticDelta, values)) {
+        WARNF("failed to compute the %s mapping function (missing or out of range data)",
+              mapping_function_name(mMappingFunction));
+        mTropospheric.mapping_valid = false;
+        return;
+    }
+
+    mTropospheric.mapping_hydrostatic = values.hydrostatic;
+    mTropospheric.mapping_wet         = values.wet;
+    mTropospheric.mapping_valid       = true;
+}
+
+void Observation::compute_tropospheric_model() NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    mTropospheric.valid_model = false;
+    if (!mUseTroposphericModel) return;
+
+    auto geoid_height = Geoid::height(mGroundLlh.x, mGroundLlh.y, Geoid::Model::EMBEDDED);
+
+    TroposphereSite site{mCurrent->reception_time, mGroundLlh, geoid_height};
+    ZenithDelays    delays{};
+    if (!zenith_delays(mTroposphereModel, mTroposphereData, site, delays)) {
+        WARNF("failed to compute the %s tropospheric model (missing or out of range data)",
+              troposphere_model_name(mTroposphereModel));
+        return;
+    }
+
+    mTropospheric.model_hydrostatic = delays.hydrostatic;
+    mTropospheric.model_wet         = delays.wet;
+    mTropospheric.valid_model       = true;
 }
 
 void Observation::compute_tropospheric_height() NOEXCEPT {
     VSCOPE_FUNCTION();
 
-    auto ellipsoidal_height = mGroundLlh.z;
-    auto geoid_height       = Geoid::height(mGroundLlh.x, mGroundLlh.y, Geoid::Model::EMBEDDED);
+    auto geoid_height = Geoid::height(mGroundLlh.x, mGroundLlh.y, Geoid::Model::EMBEDDED);
 
-    HydrostaticAndWetDelay alt_0{};
-    HydrostaticAndWetDelay alt_eh{};
-    auto                   mops_0 =
-        mops_tropospheric_delay(mCurrent->reception_time, mGroundLlh.x, 0.0, geoid_height, alt_0);
-    auto mops_eh = mops_tropospheric_delay(mCurrent->reception_time, mGroundLlh.x,
-                                           ellipsoidal_height, geoid_height, alt_eh);
-    if (mops_0 && mops_eh) {
-        mTropospheric.height_mapping_hydrostatic = alt_eh.hydrostatic / alt_0.hydrostatic;
-        mTropospheric.height_mapping_wet         = alt_eh.wet / alt_0.wet;
+    TroposphereSite site{mCurrent->reception_time, mGroundLlh, geoid_height};
+    double          hydrostatic = 0.0;
+    double          wet         = 0.0;
+    if (height_scaling(site, hydrostatic, wet)) {
+        mTropospheric.height_mapping_hydrostatic = hydrostatic;
+        mTropospheric.height_mapping_wet         = wet;
         mTropospheric.valid_height_mapping       = true;
     } else {
         WARNF("failed to compute tropospheric height correction");
         mTropospheric.valid_height_mapping = false;
-    }
-
-    if (mops_eh) {
-        mTropospheric.model_hydrostatic = alt_eh.hydrostatic;
-        mTropospheric.model_wet         = alt_eh.wet;
-        mTropospheric.valid_model       = true;
-    } else {
-        mTropospheric.valid_model = false;
     }
 }
 
@@ -246,6 +271,14 @@ void Observation::compute_ranges() NOEXCEPT {
         WARNF("discarded: %s %s - no tropospheric correction", mSvId.name(), mSignalId.name());
         if (!discard_reason.empty()) discard_reason += '+';
         discard_reason += "no_tropospheric";
+        discard();
+    }
+    if (!mTropospheric.mapping_valid &&
+        (mTropospheric.valid || (mUseTroposphericModel && mTropospheric.valid_model))) {
+        WARNF("discarded: %s %s - no tropospheric mapping function", mSvId.name(),
+              mSignalId.name());
+        if (!discard_reason.empty()) discard_reason += '+';
+        discard_reason += "no_tropospheric_mapping";
         discard();
     }
     if (mRequireIonospheric && !has_ionospheric()) {

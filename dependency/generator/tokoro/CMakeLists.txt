@@ -18,6 +18,13 @@ add_library(dependency_generator_tokoro STATIC
     "models/nutation.cpp"
     "models/sun_moon.cpp"
     "models/gpt.cpp"
+    "models/saastamoinen.cpp"
+    "models/gmf.cpp"
+    "models/vienna.cpp"
+    "models/gpt2.cpp"
+    "models/vmf3.cpp"
+    "models/vmf3_coefficients.cpp"
+    "models/troposphere_models.cpp"
     
     "coordinates/coordinate.cpp"
     "coordinates/reference_ellipsoid.cpp"

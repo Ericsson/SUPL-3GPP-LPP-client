@@ -3,8 +3,11 @@
 #include "coordinate.hpp"
 #include "data/correction.hpp"
 #include "decode.hpp"
+#include "models/geoid.hpp"
 #include "models/helper.hpp"
+#include "models/troposphere_models.hpp"
 #include "observation.hpp"
+#include "reference_ellipsoid.hpp"
 #include "satellite.hpp"
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
@@ -248,7 +251,10 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 #endif
 
     auto& observation = satellite.initialize_observation(signal_id);
-    observation.recompute_mapping_hydrostatic(mTropoHydrostaticDelta);
+    observation.set_tropospheric_selection(mTroposphereModel, mMappingFunction,
+                                           mTropoHydrostaticDelta,
+                                           mGenerator.mTroposphereData.get());
+    observation.compute_tropospheric_mapping();
     observation.update_lock_time(lock_time);
     {
         auto ambiguity_it = mPhaseAmbiguity.find(ss_id);
@@ -273,6 +279,7 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     observation.set_require_tropo(mRequireTropo);
     observation.set_require_iono(mRequireIono);
     observation.set_use_tropospheric_model(mUseTroposphericModel);
+    observation.compute_tropospheric_model();
     observation.set_use_ionospheric_height_correction(mUseIonosphericHeightCorrection);
 
     if (mGenerateDiag) {
@@ -312,6 +319,118 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
 
     if (!observation.is_valid()) return;
     VERBOSEF("observation: c=%f, p=%f", observation.code_range(), observation.phase_range());
+}
+
+void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXCEPT {
+    FUNCTION_SCOPE();
+
+    // only satellites above the horizon with a position
+    if (!satellite.has_orbit_correction() || !satellite.has_clock_correction()) return;
+    auto const& state = satellite.current_state();
+    if (!(state.true_range > 0.0) || !(state.true_elevation > 0.0)) return;
+
+    auto models   = all_troposphere_models();
+    auto mappings = all_mapping_functions();
+
+    // the sources of the zenith delays: the SSR delays and every model
+    std::vector<std::string> zenith_names;
+    zenith_names.push_back("ssr");
+    for (auto model : models) {
+        zenith_names.push_back(troposphere_model_name(model));
+    }
+    std::vector<std::string> mapping_names;
+    for (auto mapping : mappings) {
+        mapping_names.push_back(mapping_function_name(mapping));
+    }
+
+    auto it = mTropoDiagFiles.find(satellite.id());
+    if (it == mTropoDiagFiles.end()) {
+        auto sv_char = satellite.id().to_string()[0];
+        char prn_buf[8];
+        snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
+                 static_cast<int>(satellite.id().lpp_id().value) + 1);
+        auto path = mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/tropo.diag";
+        mTropoDiagFiles[satellite.id()].open(path, satellite.id(), zenith_names, mapping_names);
+        it = mTropoDiagFiles.find(satellite.id());
+    }
+
+    auto            llh          = ecef_to_llh(mGroundPosition, ellipsoid::gWgs84);
+    auto            geoid_height = Geoid::height(llh.x, llh.y, Geoid::Model::EMBEDDED);
+    TroposphereSite site{state.reception_time, llh, geoid_height};
+    auto const*     data = mGenerator.mTroposphereData.get();
+
+    TropoDiagRow row{};
+    row.prn =
+        satellite.id().lpp_id().valid ? static_cast<int>(satellite.id().lpp_id().value) + 1 : 0;
+    row.elevation_deg = state.true_elevation * constant::RAD2DEG;
+
+    // zenith delays, source 0 is SSR
+    row.zenith.resize(zenith_names.size());
+    {
+        TroposphericCorrection ssr{};
+        if (mGenerator.mCorrectionData->tropospheric(satellite.id(), llh, ssr)) {
+            auto hydrostatic_scale = 1.0;
+            auto wet_scale         = 1.0;
+            auto scaled            = true;
+            if (mTropoHeightCorrection) {
+                scaled = height_scaling(site, hydrostatic_scale, wet_scale);
+            }
+            if (scaled) {
+                row.zenith[0].valid       = true;
+                row.zenith[0].hydrostatic = ssr.dry * hydrostatic_scale;
+                row.zenith[0].wet         = ssr.wet * wet_scale;
+            }
+        }
+    }
+    for (size_t i = 0; i < models.size(); i++) {
+        ZenithDelays delays{};
+        if (zenith_delays(models[i], data, site, delays)) {
+            row.zenith[i + 1] = {true, delays.hydrostatic, delays.wet};
+        }
+    }
+
+    // mapping functions
+    row.mapping.resize(mappings.size());
+    for (size_t i = 0; i < mappings.size(); i++) {
+        MappingValues values{};
+        if (mapping_values(mappings[i], data, site, state.true_elevation, mTropoHydrostaticDelta,
+                           values)) {
+            row.mapping[i] = {true, values.hydrostatic, values.wet};
+        }
+    }
+
+    // every combination
+    row.slant.resize(zenith_names.size() * mappings.size());
+    for (size_t s = 0; s < zenith_names.size(); s++) {
+        for (size_t m = 0; m < mappings.size(); m++) {
+            if (!row.zenith[s].valid || !row.mapping[m].valid) continue;
+            auto& slant = row.slant[s * mappings.size() + m];
+            slant.valid = true;
+            slant.value = row.zenith[s].hydrostatic * row.mapping[m].hydrostatic +
+                          row.zenith[s].wet * row.mapping[m].wet;
+        }
+    }
+
+    // the delay that is applied: SSR if available, otherwise the selected model if enabled
+    size_t mapping_index = 0;
+    for (size_t m = 0; m < mappings.size(); m++) {
+        if (mappings[m] == mMappingFunction) mapping_index = m;
+    }
+    size_t source_index = 0;
+    if (!row.zenith[0].valid && mUseTroposphericModel) {
+        for (size_t i = 0; i < models.size(); i++) {
+            if (models[i] == mTroposphereModel) source_index = i + 1;
+        }
+    }
+    if (source_index != 0 || row.zenith[0].valid) {
+        auto const& applied = row.slant[source_index * mappings.size() + mapping_index];
+        if (applied.valid) {
+            row.has_applied = true;
+            row.applied     = applied.value;
+        }
+    }
+
+    it->second.write(mGenerationTime, row);
 }
 
 bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
@@ -517,6 +636,12 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             }
 
             it->second.write(mGenerationTime, row);
+        }
+    }
+
+    if (mGenerateDiag && mDiagTropoAll) {
+        for (auto const& satellite : mSatellites) {
+            write_tropospheric_diag(satellite);
         }
     }
 

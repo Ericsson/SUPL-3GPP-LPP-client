@@ -20,6 +20,7 @@
 #endif
 #include <generator/tokoro/diag.hpp>
 #include <generator/tokoro/sv_id.hpp>
+#include <generator/tokoro/troposphere.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 #include <time/tai.hpp>
@@ -135,6 +136,15 @@ public:
     }
     void set_generate_residuals(bool enabled) { mGenerateResiduals = enabled; }
 
+    // A-priori zenith delay model, used if there is no SSR tropospheric correction
+    // (`set_use_tropospheric_model`)
+    void set_tropospheric_model(TroposphereModel model) { mTroposphereModel = model; }
+    // Mapping function of the SSR tropospheric delays and the a-priori model
+    void set_tropospheric_mapping(MappingFunction mapping) { mMappingFunction = mapping; }
+    // Write the tropospheric delays of all models and mapping functions to `tropo.diag` for every
+    // satellite (requires `set_diag_output`). It does not change the generated observations.
+    void set_diag_tropospheric_all(bool enabled) { mDiagTropoAll = enabled; }
+
     void set_diag_output(std::string dir) NOEXCEPT {
         mDiagOutputDir = std::move(dir);
         mGenerateDiag  = true;
@@ -160,6 +170,7 @@ protected:
                               rtcm::Observations& observations) NOEXCEPT;
     void build_rtcm_residual(Satellite const& satellite, Float3 const& vrs_llh,
                              rtcm::Residuals& residuals) NOEXCEPT;
+    void write_tropospheric_diag(Satellite const& satellite) NOEXCEPT;
 
 private:
     Float3 mGroundPosition;
@@ -217,6 +228,11 @@ private:
     // Integer phase ambiguity N (cycles) per signal; incremented by one on every detected
     // phase discontinuity (cycle slip) and added to the synthesized carrier phase.
     std::unordered_map<SatelliteSignalId, int64_t> mPhaseAmbiguity;
+
+    TroposphereModel                               mTroposphereModel{TroposphereModel::Mops};
+    MappingFunction                                mMappingFunction{MappingFunction::Niell};
+    bool                                           mDiagTropoAll{false};
+    std::unordered_map<SatelliteId, TropoDiagFile> mTropoDiagFiles;
 
     LockStart              mLockStart{LockStart::Reset};
     LockStart              mLockRise{LockStart::Reset};
@@ -283,6 +299,12 @@ public:
     }
 #endif
 
+    // Data for the troposphere models that need it (GPT2 and VMF3 grid files)
+    NODISCARD TroposphereData& troposphere_data() {
+        if (!mTroposphereData) mTroposphereData.reset(new TroposphereData());
+        return *mTroposphereData;
+    }
+
     std::shared_ptr<ReferenceStation>
     define_reference_station(ReferenceStationConfig const& config) NOEXCEPT;
 
@@ -348,6 +370,7 @@ private:
 #ifdef INCLUDE_FORMAT_ANTEX
     std::unique_ptr<format::antex::Antex> mAntex;
 #endif
+    std::unique_ptr<TroposphereData> mTroposphereData;
 
     bool   mIodConsistencyCheck;
     bool   mSsrGenerationConsistencyCheck;

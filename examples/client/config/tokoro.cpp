@@ -248,6 +248,54 @@ static args::Flag gNegativeCorrectionSign{
     {"tkr-negative-correction-sign"},
 };
 
+static args::ValueFlag<std::string> gTropoModel{
+    gGroup,
+    "model",
+    "Zenith delay model used when there is no SSR tropospheric correction (see\n"
+    "`--tkr-use-tropospheric-model`), also in `--tkr-diag-tropo-all`. One of:\n"
+    "mops (default), saastamoinen, saastamoinen-gpt, gpt2 (needs `--tkr-gpt2-grid`), vmf3 (needs\n"
+    "`--tkr-vmf3-grid` and `--tkr-vmf3-orography`)",
+    {"tkr-tropo-model"},
+};
+
+static args::ValueFlag<std::string> gTropoMapping{
+    gGroup,
+    "function",
+    "Mapping function of the tropospheric delays. One of: niell (default), simple (1/sin(el)),\n"
+    "gmf, gpt2 (VMF1 with GPT2 coefficients, needs `--tkr-gpt2-grid`), vmf3 (needs\n"
+    "`--tkr-vmf3-grid` and `--tkr-vmf3-orography`)",
+    {"tkr-tropo-mapping"},
+};
+
+static args::Flag gDiagTropoAll{
+    gGroup,
+    "diag-tropo-all",
+    "Write the tropospheric delays of all models and mapping functions to `tropo.diag` for every\n"
+    "satellite, for comparison (requires `--tkr-diag-dir`)",
+    {"tkr-diag-tropo-all"},
+};
+
+static args::ValueFlag<std::string> gGpt2Grid{
+    gGroup,
+    "file",
+    "GPT2 5x5 degree grid file (e.g. gpt2_5.grd)",
+    {"tkr-gpt2-grid"},
+};
+
+static args::ValueFlagList<std::string> gVmf3Grid{
+    gGroup,
+    "file",
+    "VMF3 grid file (one epoch, e.g. VMF3_20260607.H00), can be repeated",
+    {"tkr-vmf3-grid"},
+};
+
+static args::ValueFlag<std::string> gVmf3Orography{
+    gGroup,
+    "file",
+    "VMF3 orography file for the grid of the VMF3 grid files",
+    {"tkr-vmf3-orography"},
+};
+
 static args::ValueFlag<std::string> gLockStart{
     gGroup,
     "reset|max",
@@ -572,6 +620,12 @@ void parse(Config* config) {
     tokoro.negative_correction_sign           = false;
     tokoro.negative_phase_windup              = false;
     tokoro.phase_alignment                    = false;
+    tokoro.tropospheric_model                 = generator::tokoro::TroposphereModel::Mops;
+    tokoro.tropospheric_mapping               = generator::tokoro::MappingFunction::Niell;
+    tokoro.diag_tropospheric_all              = false;
+    tokoro.gpt2_grid                          = "";
+    tokoro.vmf3_grids                         = {};
+    tokoro.vmf3_orography                     = "";
     tokoro.lock_start                         = TokoroConfig::LockStart::Reset;
     tokoro.lock_rise                          = TokoroConfig::LockStart::Reset;
     tokoro.ambiguity_randomization            = TokoroConfig::AmbiguityRandomization::Off;
@@ -830,6 +884,46 @@ void parse(Config* config) {
     if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
     if (gDiagOutputDir) tokoro.diag_output_dir = gDiagOutputDir.Get();
 
+    if (gTropoModel) {
+        if (!generator::tokoro::parse_troposphere_model(gTropoModel.Get(),
+                                                        tokoro.tropospheric_model)) {
+            throw args::ValidationError("--tkr-tropo-model must be one of " +
+                                        generator::tokoro::troposphere_model_names() + ", got `" +
+                                        gTropoModel.Get() + "`");
+        }
+    }
+    if (gTropoMapping) {
+        if (!generator::tokoro::parse_mapping_function(gTropoMapping.Get(),
+                                                       tokoro.tropospheric_mapping)) {
+            throw args::ValidationError("--tkr-tropo-mapping must be one of " +
+                                        generator::tokoro::mapping_function_names() + ", got `" +
+                                        gTropoMapping.Get() + "`");
+        }
+    }
+    if (gGpt2Grid) tokoro.gpt2_grid = gGpt2Grid.Get();
+    if (gVmf3Grid) tokoro.vmf3_grids = gVmf3Grid.Get();
+    if (gVmf3Orography) tokoro.vmf3_orography = gVmf3Orography.Get();
+    if (gDiagTropoAll) {
+        tokoro.diag_tropospheric_all = true;
+        if (tokoro.diag_output_dir.empty()) {
+            throw args::ValidationError("--tkr-diag-tropo-all requires --tkr-diag-dir");
+        }
+    }
+    {
+        auto needs_gpt2 = tokoro.tropospheric_model == generator::tokoro::TroposphereModel::Gpt2 ||
+                          tokoro.tropospheric_mapping == generator::tokoro::MappingFunction::Gpt2;
+        auto needs_vmf3 = tokoro.tropospheric_model == generator::tokoro::TroposphereModel::Vmf3 ||
+                          tokoro.tropospheric_mapping == generator::tokoro::MappingFunction::Vmf3;
+        if (needs_gpt2 && tokoro.gpt2_grid.empty()) {
+            throw args::ValidationError("the selected tropospheric model or mapping function "
+                                        "`gpt2` requires --tkr-gpt2-grid");
+        }
+        if (needs_vmf3 && (tokoro.vmf3_grids.empty() || tokoro.vmf3_orography.empty())) {
+            throw args::ValidationError("the selected tropospheric model or mapping function "
+                                        "`vmf3` requires --tkr-vmf3-grid and --tkr-vmf3-orography");
+        }
+    }
+
     {
         int provided = (gFakeCpsId ? 1 : 0) + (gFakeCpsLat ? 1 : 0) + (gFakeCpsLon ? 1 : 0) +
                        (gFakeCpsStepsLat ? 1 : 0) + (gFakeCpsStepsLon ? 1 : 0) +
@@ -927,6 +1021,11 @@ void dump(TokoroConfig const& config) {
     DEBUGF("ocit:                    %s", config.ocit ? "true" : "false");
     DEBUGF("negative phase windup:   %s", config.negative_phase_windup ? "true" : "false");
     DEBUGF("negative correction sign: %s", config.negative_correction_sign ? "true" : "false");
+    DEBUGF("tropospheric model:      %s",
+           generator::tokoro::troposphere_model_name(config.tropospheric_model));
+    DEBUGF("tropospheric mapping:    %s",
+           generator::tokoro::mapping_function_name(config.tropospheric_mapping));
+    DEBUGF("diag tropo all:          %s", config.diag_tropospheric_all ? "true" : "false");
     DEBUGF("lock start:              %s",
            config.lock_start == TokoroConfig::LockStart::Max ? "max" : "reset");
     DEBUGF("lock rise:               %s",
