@@ -19,6 +19,7 @@
 #include <format/rinex/builder.hpp>
 #endif
 #include <generator/tokoro/diag.hpp>
+#include <generator/tokoro/ephemeris_search.hpp>
 #include <generator/tokoro/sv_id.hpp>
 #include <generator/tokoro/troposphere.hpp>
 #include <gnss/satellite_id.hpp>
@@ -175,7 +176,12 @@ public:
 protected:
     void initialize_satellites() NOEXCEPT;
     void initialize_observation(Satellite& satellite, SignalId signal_id,
-                                char const* diag_discard_reason = nullptr) NOEXCEPT;
+                                char const* diag_discard_reason = nullptr,
+                                std::string diag_discard_detail = {}) NOEXCEPT;
+    // The diagnostic file of a signal, opened if it is not
+    DiagFile& diag_file(SatelliteId satellite_id, SignalId signal_id) NOEXCEPT;
+    // Write the rows of the signals of a satellite that is not available
+    void write_unavailable_signals(Satellite const& satellite) NOEXCEPT;
     void build_rtcm_observation(Satellite const& satellite, Observation const& observation,
                                 RangeTimeDivision const& rtd, double reference_phase_range_rate,
                                 rtcm::Observations& observations) NOEXCEPT;
@@ -371,8 +377,10 @@ private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;
     void find_corrections(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;
 
+    // `search` (optional) describes the ephemeris that were considered
     bool find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iod,
-                        ephemeris::Ephemeris& eph) const NOEXCEPT;
+                        ephemeris::Ephemeris& eph,
+                        EphemerisSearch*      search = nullptr) const NOEXCEPT;
     bool compute_tropospheric_residual(double& residual) NOEXCEPT;
 
     std::unordered_map<SatelliteId, std::vector<ephemeris::GpsEphemeris>> mGpsEphemeris;

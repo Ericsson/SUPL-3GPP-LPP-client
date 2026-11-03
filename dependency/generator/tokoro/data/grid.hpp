@@ -138,6 +138,8 @@ struct GridData {
     long                   number_of_steps_longitude;
     std::vector<GridPoint> grid_points;
     ts::Tai                epoch_time;
+    uint16_t               ssr_iod{0};  // SSR IOD of the gridded message
+    bool                   ssr_iod_valid{false};
 };
 
 }  // namespace tokoro

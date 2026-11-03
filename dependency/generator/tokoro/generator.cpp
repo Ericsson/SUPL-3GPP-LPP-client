@@ -34,6 +34,7 @@ EXTERNAL_WARNINGS_POP
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -174,8 +175,74 @@ int64_t ReferenceStation::random_phase_ambiguity(SatelliteSignalId ss_id) const 
     return static_cast<int64_t>(hash % range) - PHASE_AMBIGUITY_LIMIT;
 }
 
+// The IODs are compared with this many bits: GPS and QZSS compare the 8 bits of the IODE, the IOD
+// of Galileo is the 10 bit IODnav and the IOD of BeiDou are the 11 MSB of toe.
+static int iod_modulus(SatelliteId id) {
+    if (id.is_gps() || id.is_qzss()) return 256;
+    if (id.is_galileo()) return 1024;
+    return 2048;
+}
+
+// wanted - actual, wrapped to [-modulus / 2, modulus / 2)
+static int iod_offset(SatelliteId id, uint16_t wanted, uint16_t actual) {
+    auto modulus = iod_modulus(id);
+    auto offset  = (static_cast<int>(wanted) % modulus) - (static_cast<int>(actual) % modulus);
+    offset       = ((offset % modulus) + modulus) % modulus;
+    if (offset >= modulus / 2) offset -= modulus;
+    return offset;
+}
+
+DiagFile& ReferenceStation::diag_file(SatelliteId satellite_id, SignalId signal_id) NOEXCEPT {
+    SatelliteSignalId ss_id{satellite_id, signal_id};
+    auto              it = mDiagFiles.find(ss_id);
+    if (it != mDiagFiles.end()) return it->second;
+
+    auto sv_char = satellite_id.to_string()[0];
+    char prn_buf[8];
+    snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
+             static_cast<int>(satellite_id.lpp_id().value) + 1);
+    auto sig_str = DiagFile::rtcm_signal_name(satellite_id, signal_id);
+    auto path =
+        mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/" + sig_str + ".diag";
+    auto& file = mDiagFiles[ss_id];
+    file.open(path, satellite_id, signal_id);
+    return file;
+}
+
+void ReferenceStation::write_unavailable_signals(Satellite const& satellite) NOEXCEPT {
+    if (!mGenerateDiag) return;
+    auto reason = satellite.disable_reason();
+    if (!reason || strcmp(reason, "not_included") == 0) return;
+
+    auto signals = mGenerator.mCorrectionData->signals(satellite.id());
+    if (!signals) return;
+
+    for (auto const& signal : *signals) {
+        if (mSignalIncludeSet.size() > 0 &&
+            mSignalIncludeSet.find(signal) == mSignalIncludeSet.end()) {
+            continue;
+        }
+        if (signal.frequency() <= 1.0) continue;
+
+        auto    msm_id = signal.as_msm();
+        DiagRow row{};
+        row.prn =
+            satellite.id().lpp_id().valid ? static_cast<int>(satellite.id().lpp_id().value) + 1 : 0;
+        row.sig_id         = msm_id.valid ? static_cast<int>(msm_id.value) : 0;
+        row.frequency_mhz  = signal.frequency() * 1.0e-3;
+        row.valid          = false;
+        row.discard_reason = std::string("satellite_") + reason;
+        row.discard_detail =
+            satellite.disable_detail().empty() ?
+                std::string("satellite_") + reason + ":unknown" :
+                std::string("satellite_") + reason + ":" + satellite.disable_detail();
+        diag_file(satellite.id(), signal).write(mGenerationTime, row);
+    }
+}
+
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id,
-                                              char const* diag_discard_reason) NOEXCEPT {
+                                              char const* diag_discard_reason,
+                                              std::string diag_discard_detail) NOEXCEPT {
     FUNCTION_SCOPE();
 
     auto const& correction_data = *mGenerator.mCorrectionData;
@@ -286,24 +353,13 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     observation.set_use_ionospheric_height_correction(mUseIonosphericHeightCorrection);
 
     if (mGenerateDiag) {
-        auto it = mDiagFiles.find(ss_id);
-        if (it == mDiagFiles.end()) {
-            auto sv_char = satellite.id().to_string()[0];
-            char prn_buf[8];
-            snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
-                     static_cast<int>(satellite.id().lpp_id().value) + 1);
-            auto sig_str = DiagFile::rtcm_signal_name(satellite.id(), signal_id);
-            auto path    = mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/" +
-                        sig_str + ".diag";
-            auto& df = mDiagFiles[ss_id];
-            df.open(path, satellite.id(), signal_id);
-            observation.set_diag_file(&mDiagFiles[ss_id]);
-        } else {
-            observation.set_diag_file(&it->second);
-        }
+        observation.set_diag_file(&diag_file(satellite.id(), signal_id));
     }
 
-    if (diag_discard_reason) observation.set_diag_discard_reason(diag_discard_reason);
+    if (diag_discard_reason) {
+        observation.set_diag_discard_reason(diag_discard_reason);
+        observation.set_diag_discard_detail(std::move(diag_discard_detail));
+    }
 
     if (mGenerateDiag) {
         auto previous = mPhaseDiscontinuity.find(ss_id);
@@ -530,6 +586,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
         if (!satellite.enabled()) {
             TRACEF("discarded: %s - disabled", satellite.id().name());
+            write_unavailable_signals(satellite);
             continue;
         }
 
@@ -546,20 +603,28 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             continue;
         }
 
-        bool elevation_masked = false;
+        bool        elevation_masked = false;
+        std::string elevation_detail;
         if (satellite.elevation() * constant::RAD2DEG < mElevationMask) {
             WARNF("discarded: %s - elevation mask (%.2f < %.2f)", satellite.id().name(),
                   satellite.elevation() * constant::RAD2DEG, mElevationMask);
             elevation_masked = true;
+            char buffer[64];
+            snprintf(buffer, sizeof(buffer), "elevation=%.2fdeg,mask=%.2fdeg",
+                     satellite.elevation() * constant::RAD2DEG, mElevationMask);
+            elevation_detail = buffer;
         }
 
         auto signals = mGenerator.mCorrectionData->signals(satellite.id());
         if (!signals) {
             WARNF("discarded: %s - no signals", satellite.id().name());
-            satellite.disable("no_signals");
+            satellite.disable("no_signals", "no_bias_data");
             continue;
         }
 
+        // why the signals were discarded: reason -> count
+        size_t                     signal_count = 0;
+        std::map<std::string, int> discard_tally;
         for (auto& signal : *signals) {
             if (mSignalIncludeSet.size() > 0 &&
                 mSignalIncludeSet.find(signal) == mSignalIncludeSet.end()) {
@@ -572,19 +637,33 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 continue;
             }
 
-            initialize_observation(satellite, signal,
-                                   elevation_masked ? "elevation_mask" : nullptr);
+            initialize_observation(satellite, signal, elevation_masked ? "elevation_mask" : nullptr,
+                                   elevation_detail);
+            signal_count++;
+            if (!satellite.observations().empty() && !satellite.observations().back().is_valid()) {
+                auto const& reason = satellite.observations().back().discard_reason();
+                discard_tally[reason.empty() ? "unknown" : reason]++;
+            }
             satellite.remove_discarded_observations();
         }
 
         if (elevation_masked) {
-            satellite.disable("elevation_mask");
+            satellite.disable("elevation_mask", elevation_detail);
             continue;
         }
 
         if (satellite.observations().size() == 0) {
             WARNF("discarded: %s - no valid observations", satellite.id().name());
-            satellite.disable("no_valid_observations");
+            std::string detail = "signals=" + std::to_string(signal_count);
+            if (!discard_tally.empty()) {
+                detail += "(";
+                for (auto const& entry : discard_tally) {
+                    if (detail.back() != '(') detail += ',';
+                    detail += entry.first + ":" + std::to_string(entry.second);
+                }
+                detail += ")";
+            }
+            satellite.disable("no_valid_observations", detail);
             continue;
         }
 
@@ -627,6 +706,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.orbit_along_dot  = orb.dot_delta.y;
                 row.orbit_cross_dot  = orb.dot_delta.z;
                 row.orbit_iod        = orb.iod;
+                row.orbit_ssr_iod    = orb.ssr_iod;
                 row.has_orbit_ssr    = true;
                 row.orbit_epoch.set(orb.epoch_time, mGenerationTime);
             }
@@ -637,6 +717,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.clock_c0      = clk.c0;
                 row.clock_c1      = clk.c1;
                 row.clock_c2      = clk.c2;
+                row.clock_ssr_iod = clk.ssr_iod;
                 row.has_clock_ssr = true;
                 row.clock_epoch.set(clk.epoch_time, mGenerationTime);
             }
@@ -662,6 +743,53 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                     row.has_iono_quality = true;
                 }
                 row.iono_epoch.set(iono_poly->epoch_time, mGenerationTime);
+                if (iono_poly->ssr_iod_valid) {
+                    row.has_iono_ssr_iod = true;
+                    row.iono_ssr_iod     = iono_poly->ssr_iod;
+                }
+            }
+
+            {
+                uint16_t grid_ssr_iod = 0;
+                if (mGenerator.mCorrectionData->grid_ssr_iod(satellite.id().gnss(), grid_ssr_iod)) {
+                    row.has_grid_ssr_iod = true;
+                    row.grid_ssr_iod     = grid_ssr_iod;
+                }
+            }
+
+            // Ephemeris IOD
+            if (satellite.has_ephemeris_search()) {
+                auto const& search = satellite.ephemeris_search();
+                row.eph_is_galileo = satellite.id().is_galileo();
+                if (search.found) {
+                    row.has_eph_iod = true;
+                    row.eph_iod     = search.selected.iod;
+                    row.eph_iode    = search.selected.iode;
+                    row.eph_iodc    = search.selected.iodc;
+                    row.eph_iod_nav = search.selected.iod_nav;
+                }
+                for (size_t i = 0; i < search.valid.size(); i++) {
+                    if (i > 0) row.eph_valid_iods += '/';
+                    row.eph_valid_iods += std::to_string(search.valid[i].iod);
+                }
+
+                // the ephemeris that is closest to the IOD of the SSR orbit correction, the
+                // selected one if there is a match
+                if (satellite.has_orbit_correction() && !search.valid.empty()) {
+                    auto wanted = satellite.orbit_correction().iod;
+                    auto best   = search.found ? search.selected : search.valid.front();
+                    if (!search.found) {
+                        for (auto const& candidate : search.valid) {
+                            if (std::abs(iod_offset(satellite.id(), wanted, candidate.iod)) <
+                                std::abs(iod_offset(satellite.id(), wanted, best.iod))) {
+                                best = candidate;
+                            }
+                        }
+                    }
+                    row.has_eph_candidate = true;
+                    row.eph_candidate_iod = best.iod;
+                    row.eph_iod_offset    = iod_offset(satellite.id(), wanted, best.iod);
+                }
             }
 
             // Geometry + evaluated clock (available if update() completed successfully)
@@ -699,6 +827,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             // Discard reason
             if (!satellite.enabled() && satellite.disable_reason()) {
                 row.discard_reason = satellite.disable_reason();
+                row.discard_detail = satellite.disable_detail();
             }
 
             it->second.write(mGenerationTime, row);
@@ -1327,7 +1456,7 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
 }
 
 bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iod,
-                               ephemeris::Ephemeris& eph) const NOEXCEPT {
+                               ephemeris::Ephemeris& eph, EphemerisSearch* search) const NOEXCEPT {
     FUNCTION_SCOPE();
     if (sv_id.gnss() == SatelliteId::Gnss::GPS) {
         auto it = mGpsEphemeris.find(sv_id);
@@ -1336,6 +1465,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto gps_time = ts::Gps(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1345,6 +1475,10 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(gps_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc, 0,
+                                         ephemeris.toe, ephemeris.week_number});
+            }
             // TODO(ewasjon): [low-priority] Due to a issue for one datafeed the lpp_iod for GPS
             // uses IODE instead of IODC. As IODE by definition is the 8 lower bits of IODC let's
             // just compare them. This could cause problem with ephemeris >6 hours but the time
@@ -1353,6 +1487,10 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             auto wanted_iode = iod & 0xFF;
             if (eph_iode != wanted_iode && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
@@ -1361,6 +1499,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GLONASS) {
         // TODO:
+        if (search) search->unsupported = true;
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GALILEO) {
         auto it = mGalEphemeris.find(sv_id);
@@ -1369,6 +1508,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto gal_time = ts::Gst(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1378,8 +1518,16 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(gal_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gal_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, 0, 0, ephemeris.iod_nav, ephemeris.toe,
+                                         ephemeris.week_number});
+            }
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
@@ -1393,6 +1541,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto bds_time = ts::Bdt(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1402,8 +1551,16 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(bds_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(bds_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc, 0,
+                                         ephemeris.toe, ephemeris.week_number});
+            }
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
@@ -1417,6 +1574,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto qzs_time = ts::Gps(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1426,10 +1584,18 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(qzs_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(qzs_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc, 0,
+                                         ephemeris.toe, ephemeris.week_number});
+            }
             auto eph_iode    = ephemeris.lpp_iod & 0xFF;
             auto wanted_iode = iod & 0xFF;
             if (eph_iode != wanted_iode && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
