@@ -92,6 +92,18 @@ struct DiagRow {
     bool        has_phase_windup{false};
     bool        has_ant_phase{false};
     std::string discard_reason;
+
+    // SSR IOD of the orbit/clock generation and of the biases that were found
+    bool     has_orbit_ssr_iod{false};
+    uint16_t orbit_ssr_iod{};
+    bool     has_clock_ssr_iod{false};
+    uint16_t clock_ssr_iod{};
+    bool     has_code_bias_ssr_iod{false};
+    uint16_t code_bias_ssr_iod{};
+    bool     has_phase_bias_ssr_iod{false};
+    uint16_t phase_bias_ssr_iod{};
+    // why the signal was not available, `reason:detail;reason:detail` without spaces
+    std::string discard_detail;
 };
 
 class DiagFile {
@@ -186,6 +198,32 @@ struct SatDiagRow {
     bool has_solid_tides{false};
 
     std::string discard_reason;
+
+    // SSR IOD of the orbit and clock correction (has_orbit_ssr, has_clock_ssr)
+    uint16_t orbit_ssr_iod{};
+    uint16_t clock_ssr_iod{};
+
+    // Ephemeris IOD of the selected ephemeris
+    bool     has_eph_iod{false};
+    uint16_t eph_iod{};  // the IOD that is compared with the SSR orbit IOD (ORB_IOD)
+    uint16_t eph_iode{};
+    uint16_t eph_iodc{};
+    uint16_t eph_iod_nav{};
+    bool     eph_is_galileo{false};  // IODnav instead of IODE/IODC
+    // The ephemeris that is valid at the time and closest to ORB_IOD, also if it does not match
+    bool        has_eph_candidate{false};
+    uint16_t    eph_candidate_iod{};
+    int         eph_iod_offset{};  // ORB_IOD - candidate IOD, wrapped to the size of the IOD
+    std::string eph_valid_iods;    // IOD of all ephemeris that are valid at the time, `a/b/c`
+
+    // SSR IOD of the STEC polynomial and of the gridded (troposphere, STEC residual) message
+    bool     has_iono_ssr_iod{false};
+    uint16_t iono_ssr_iod{};
+    bool     has_grid_ssr_iod{false};
+    uint16_t grid_ssr_iod{};
+
+    // why the satellite was not available, without spaces
+    std::string discard_detail;
 };
 
 class SatDiagFile {

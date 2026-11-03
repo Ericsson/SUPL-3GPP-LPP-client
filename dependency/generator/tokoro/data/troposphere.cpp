@@ -42,13 +42,14 @@ LOGLET_MODULE3(tokoro, data, troposphere);
 namespace generator {
 namespace tokoro {
 
-bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
-                                  TroposphericCorrection& correction) const NOEXCEPT {
+bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh, TroposphericCorrection& correction,
+                                  DataStatus* data_status) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     if (correction_point_set == nullptr) {
         WARNF("tropospheric correction grid not available: no correction point set (missing "
               "assistance data)");
+        if (data_status) data_status->fail("no_correction_point_set");
         return false;
     }
 
@@ -56,6 +57,7 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
     if (grid_it == mGrid.end()) {
         WARNF("tropospheric correction grid not available: no grid for GNSS (missing assistance "
               "data)");
+        if (data_status) data_status->fail("no_grid");
         return false;
     }
 
@@ -63,12 +65,15 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh,
     auto  status = grid.tropospheric(llh, mLatestCorrectionTime, max_tropo_age, correction);
     if (status == GridData::GridStatus::PositionOutsideGrid) {
         WARNF("tropospheric correction not available: position outside grid");
+        if (data_status) data_status->fail("outside_grid");
         return false;
     } else if (status == GridData::GridStatus::MissingSatelliteData) {
         WARNF("tropospheric correction not available: missing grid point data");
+        if (data_status) data_status->fail("missing_grid_point_data");
         return false;
     } else if (status == GridData::GridStatus::StaleData) {
         WARNF("tropospheric correction not available: grid point data too old");
+        if (data_status) data_status->fail("stale_grid_point_data");
         return false;
     }
 

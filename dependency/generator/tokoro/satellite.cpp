@@ -35,8 +35,11 @@ Satellite::Satellite(SatelliteId id, Float3 ground_position, Generator const& ge
 void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
-    mEnabled            = false;
-    mDisableReason      = nullptr;
+    mEnabled       = false;
+    mDisableReason = nullptr;
+    mDisableDetail.clear();
+    mEphemerisSearch    = {};
+    mHasEphemerisSearch = false;
     mHasOrbitCorrection = false;
     mHasClockCorrection = false;
     mLastGenerationTime = generation_time;
@@ -60,9 +63,32 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
     // Find broadcast ephemeris
     ephemeris::Ephemeris eph{};
-    if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iod, eph)) {
+    mHasEphemerisSearch = true;
+    if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iod, eph,
+                                   &mEphemerisSearch)) {
         DEBUGF("ephemeris not found [sv=%s,iod=%u]", mId.name(), mOrbitCorrection.iod);
         mDisableReason = "no_ephemeris";
+
+        char buffer[64];
+        if (mEphemerisSearch.unsupported) {
+            mDisableDetail = "ephemeris_unsupported";
+        } else if (mEphemerisSearch.total == 0) {
+            mDisableDetail = "ephemeris_none_received";
+        } else if (mEphemerisSearch.valid.empty()) {
+            snprintf(buffer, sizeof(buffer), "ephemeris_none_valid_at_time(total=%zu)",
+                     mEphemerisSearch.total);
+            mDisableDetail = buffer;
+        } else {
+            snprintf(buffer, sizeof(buffer), "ephemeris_iod_mismatch(wanted=%u,valid=",
+                     static_cast<unsigned>(mOrbitCorrection.iod));
+            mDisableDetail = buffer;
+            for (size_t i = 0; i < mEphemerisSearch.valid.size(); i++) {
+                snprintf(buffer, sizeof(buffer), "%s%u", i > 0 ? "/" : "",
+                         static_cast<unsigned>(mEphemerisSearch.valid[i].iod));
+                mDisableDetail += buffer;
+            }
+            mDisableDetail += ")";
+        }
         return;
     }
 
@@ -406,9 +432,11 @@ bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_posi
 bool Satellite::find_orbit_correction(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
-    auto correction = correction_data.orbit_correction(mId);
+    DataStatus status;
+    auto       correction = correction_data.orbit_correction(mId, &status);
     if (!correction) {
         VERBOSEF("satellite missing orbit corrections [sv=%s]", mId.name());
+        mDisableDetail = "orbit_" + status.text();
         return false;
     }
 
@@ -419,9 +447,11 @@ bool Satellite::find_orbit_correction(CorrectionData const& correction_data) NOE
 bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
-    auto correction = correction_data.clock_correction(mId);
+    DataStatus status;
+    auto       correction = correction_data.clock_correction(mId, &status);
     if (!correction) {
         VERBOSEF("satellite missing clock corrections [sv=%s]", mId.name());
+        mDisableDetail = "clock_" + status.text();
         return false;
     }
 
@@ -430,6 +460,11 @@ bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOE
         VERBOSEF("clock correction belongs to a different SSR generation than the orbit "
                  "correction [sv=%s,orbit_iod=%u,clock_iod=%u]",
                  mId.name(), mOrbitCorrection.ssr_iod, correction->ssr_iod);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "clock_ssr_iod_mismatch(clock=%u,orbit=%u)",
+                 static_cast<unsigned>(correction->ssr_iod),
+                 static_cast<unsigned>(mOrbitCorrection.ssr_iod));
+        mDisableDetail = buffer;
         return false;
     }
 

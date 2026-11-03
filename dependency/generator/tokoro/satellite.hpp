@@ -9,6 +9,7 @@
 #include "sv_id.hpp"
 
 #include <ephemeris/ephemeris.hpp>
+#include <generator/tokoro/ephemeris_search.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 #include <maths/float3.hpp>
@@ -89,9 +90,21 @@ public:
     void disable(char const* reason) NOEXCEPT {
         mEnabled       = false;
         mDisableReason = reason;
+        mDisableDetail.clear();
+    }
+    // `detail` has no spaces, it is written to the diagnostics
+    void disable(char const* reason, std::string detail) NOEXCEPT {
+        mEnabled       = false;
+        mDisableReason = reason;
+        mDisableDetail = std::move(detail);
     }
 
     NODISCARD const char* disable_reason() const NOEXCEPT { return mDisableReason; }
+    NODISCARD std::string const& disable_detail() const NOEXCEPT { return mDisableDetail; }
+
+    // The ephemeris that were considered for the latest update
+    NODISCARD EphemerisSearch const& ephemeris_search() const NOEXCEPT { return mEphemerisSearch; }
+    NODISCARD bool has_ephemeris_search() const NOEXCEPT { return mHasEphemerisSearch; }
 
     NODISCARD OrbitCorrection const& orbit_correction() const NOEXCEPT { return mOrbitCorrection; }
     NODISCARD ClockCorrection const& clock_correction_data() const NOEXCEPT {
@@ -146,6 +159,10 @@ private:
     Float3      mGroundPositionLlh;
     bool        mEnabled;
     char const* mDisableReason{nullptr};
+    std::string mDisableDetail;
+
+    EphemerisSearch mEphemerisSearch;
+    bool            mHasEphemerisSearch{false};
 
     ts::Tai mLastGenerationTime;
 

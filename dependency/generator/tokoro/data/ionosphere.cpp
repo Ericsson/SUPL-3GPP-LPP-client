@@ -42,8 +42,8 @@ LOGLET_MODULE3(tokoro, data, ionosphere);
 namespace generator {
 namespace tokoro {
 
-bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
-                                 IonosphericCorrection& correction) const NOEXCEPT {
+bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh, IonosphericCorrection& correction,
+                                 DataStatus* data_status) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     auto has_polynomial   = false;
@@ -62,6 +62,7 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
             VERBOSEF("ionospheric polynomial for %s belongs to set %u, current set is %u",
                      sv_id.name(), polynomial.set_id, correction_point_set->set_id);
             polynomial_stale = true;
+            if (data_status) data_status->fail("polynomial_other_set");
         }
 
         if (!polynomial_stale && max_iono_age > 0.0) {
@@ -70,6 +71,7 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
                 WARNF("ionospheric polynomial for %s is too old (%.1fs > %.1fs limit) - dropping",
                       sv_id.name(), age, max_iono_age);
                 polynomial_stale = true;
+                if (data_status) data_status->stale("polynomial_stale", age, max_iono_age);
             }
         }
 
@@ -120,6 +122,7 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
             WARNF("ionospheric correction not available for %s: no STEC polynomial (grid "
                   "residual alone is not a complete correction)",
                   sv_id.name());
+            if (data_status) data_status->fail("no_polynomial");
         }
         return false;
     }

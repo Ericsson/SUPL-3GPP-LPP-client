@@ -51,6 +51,7 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mNegativeCorrectionSign        = false;
     mSsrGenerationConsistencyCheck = false;
     mOrbitClockSsrIod              = satellite.orbit_correction().ssr_iod;
+    mClockSsrIod                   = satellite.clock_correction_data().ssr_iod;
 
     mRequirePhaseBias               = true;
     mRequireCodeBias                = true;
@@ -142,14 +143,24 @@ void Observation::update_lock_time(LockTime const& lock_time) NOEXCEPT {
 void Observation::compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-    auto bias = correction_data.phase_bias(mSvId, mSignalId);
-    if (!bias) return;
+    DataStatus status;
+    auto       bias = correction_data.phase_bias(mSvId, mSignalId, &status);
+    if (!bias) {
+        mPhaseBiasDetail = status.text();
+        return;
+    }
 
-    auto it = bias;
+    auto it               = bias;
+    mPhaseBiasSsrIod      = it->ssr_iod;
+    mPhaseBiasSsrIodValid = true;
     if (mSsrGenerationConsistencyCheck && it->ssr_iod != mOrbitClockSsrIod) {
         VERBOSEF("phase bias belongs to a different SSR generation than the orbit/clock "
                  "correction [sv=%s,signal=%s,orbit_iod=%u,bias_iod=%u]",
                  mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->ssr_iod);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "ssr_iod_mismatch(bias=%u,orbit=%u)",
+                 static_cast<unsigned>(it->ssr_iod), static_cast<unsigned>(mOrbitClockSsrIod));
+        mPhaseBiasDetail = buffer;
         return;
     }
     mPhaseBias                = Correction{it->bias, true};
@@ -162,12 +173,22 @@ void Observation::compute_phase_bias(CorrectionData const& correction_data) NOEX
 void Observation::compute_code_bias(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
-    auto it = correction_data.code_bias(mSvId, mSignalId);
-    if (!it) return;
+    DataStatus status;
+    auto       it = correction_data.code_bias(mSvId, mSignalId, &status);
+    if (!it) {
+        mCodeBiasDetail = status.text();
+        return;
+    }
+    mCodeBiasSsrIod      = it->ssr_iod;
+    mCodeBiasSsrIodValid = true;
     if (mSsrGenerationConsistencyCheck && it->ssr_iod != mOrbitClockSsrIod) {
         VERBOSEF("code bias belongs to a different SSR generation than the orbit/clock "
                  "correction [sv=%s,signal=%s,orbit_iod=%u,bias_iod=%u]",
                  mSvId.name(), mSignalId.name(), mOrbitClockSsrIod, it->ssr_iod);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "ssr_iod_mismatch(bias=%u,orbit=%u)",
+                 static_cast<unsigned>(it->ssr_iod), static_cast<unsigned>(mOrbitClockSsrIod));
+        mCodeBiasDetail = buffer;
         return;
     }
     mCodeBias      = Correction{it->bias, true};
@@ -178,8 +199,10 @@ void Observation::compute_tropospheric(CorrectionData const& correction_data) NO
     VSCOPE_FUNCTIONF("%s", mSvId.name());
 
     TroposphericCorrection correction{};
-    if (!correction_data.tropospheric(mSvId, mGroundLlh, correction)) {
+    DataStatus             status;
+    if (!correction_data.tropospheric(mSvId, mGroundLlh, correction, &status)) {
         VERBOSEF("tropospheric correction not found");
+        mTropoDetail = status.text();
         return;
     }
 
@@ -264,8 +287,10 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
     VSCOPE_FUNCTIONF("%s, %s", mSvId.name(), mSignalId.name());
 
     IonosphericCorrection correction{};
-    if (!correction_data.ionospheric(mSvId, mGroundLlh, correction)) {
+    DataStatus            status;
+    if (!correction_data.ionospheric(mSvId, mGroundLlh, correction, &status)) {
         VERBOSEF("ionospheric correction not found");
+        mIonoDetail = status.text();
         return;
     }
 
@@ -310,39 +335,46 @@ void Observation::compute_ranges() NOEXCEPT {
     // Discard this observation if it is missing important corrections, however, we still want to
     // compute the ranges to report via DATA TRACING.
     std::string discard_reason;
+    std::string discard_detail;
+    auto        add_reason = [&](char const* reason, std::string const& detail) {
+        if (!discard_reason.empty()) discard_reason += '+';
+        discard_reason += reason;
+        if (!discard_detail.empty()) discard_detail += ';';
+        discard_detail += reason;
+        discard_detail += ':';
+        discard_detail += detail.empty() ? "unknown" : detail;
+    };
     if (mRequireCodeBias && !has_code_bias()) {
         WARNF("discarded: %s %s - no code bias", mSvId.name(), mSignalId.name());
-        if (!discard_reason.empty()) discard_reason += '+';
-        discard_reason += "no_code_bias";
+        add_reason("no_code_bias", mCodeBiasDetail);
         discard();
     }
     if (mRequirePhaseBias && !has_phase_bias()) {
         WARNF("discarded: %s %s - no phase bias", mSvId.name(), mSignalId.name());
-        if (!discard_reason.empty()) discard_reason += '+';
-        discard_reason += "no_phase_bias";
+        add_reason("no_phase_bias", mPhaseBiasDetail);
         discard();
     }
 
     if (mRequireTropospheric && !has_tropospheric()) {
         WARNF("discarded: %s %s - no tropospheric correction", mSvId.name(), mSignalId.name());
-        if (!discard_reason.empty()) discard_reason += '+';
-        discard_reason += "no_tropospheric";
+        add_reason("no_tropospheric", mTropoDetail);
         discard();
     }
     if (!mTropospheric.mapping_valid &&
         (mTropospheric.valid || (mUseTroposphericModel && mTropospheric.valid_model))) {
         WARNF("discarded: %s %s - no tropospheric mapping function", mSvId.name(),
               mSignalId.name());
-        if (!discard_reason.empty()) discard_reason += '+';
-        discard_reason += "no_tropospheric_mapping";
+        add_reason("no_tropospheric_mapping",
+                   std::string("mapping=") + mapping_function_name(mMappingFunction));
         discard();
     }
     if (mRequireIonospheric && !has_ionospheric()) {
         WARNF("discarded: %s %s - no ionospheric correction", mSvId.name(), mSignalId.name());
-        if (!discard_reason.empty()) discard_reason += '+';
-        discard_reason += "no_ionospheric";
+        add_reason("no_ionospheric", mIonoDetail);
         discard();
     }
+    mDiscardReason = discard_reason;
+    mDiscardDetail = discard_detail;
 
     auto true_range0 = mCurrent->true_range;
     auto true_range1 = mNext->true_range;
@@ -683,13 +715,21 @@ void Observation::compute_ranges() NOEXCEPT {
     if (mDiagFile) {
         auto    msm_id = mSignalId.as_msm();
         DiagRow row{};
-        row.prn        = mSvId.lpp_id().valid ? static_cast<int>(mSvId.lpp_id().value) + 1 : 0;
-        row.sig_id     = msm_id.valid ? static_cast<int>(msm_id.value) : 0;
-        row.clock      = clock0;
-        row.code_bias  = code_bias;
-        row.phase_bias = phase_bias;
-        row.stec_grid  = stec_grid;
-        row.stec_poly  = stec_poly;
+        row.prn    = mSvId.lpp_id().valid ? static_cast<int>(mSvId.lpp_id().value) + 1 : 0;
+        row.sig_id = msm_id.valid ? static_cast<int>(msm_id.value) : 0;
+        row.has_orbit_ssr_iod      = true;
+        row.orbit_ssr_iod          = mOrbitClockSsrIod;
+        row.has_clock_ssr_iod      = true;
+        row.clock_ssr_iod          = mClockSsrIod;
+        row.has_code_bias_ssr_iod  = mCodeBiasSsrIodValid;
+        row.code_bias_ssr_iod      = mCodeBiasSsrIod;
+        row.has_phase_bias_ssr_iod = mPhaseBiasSsrIodValid;
+        row.phase_bias_ssr_iod     = mPhaseBiasSsrIod;
+        row.clock                  = clock0;
+        row.code_bias              = code_bias;
+        row.phase_bias             = phase_bias;
+        row.stec_grid              = stec_grid;
+        row.stec_poly              = stec_poly;
         row.stec_height_correction = stec_height_correction;
         row.tropo_dry              = tropo_dry + tropo_model_dry;
         row.tropo_wet              = tropo_wet + tropo_model_wet;
@@ -751,6 +791,15 @@ void Observation::compute_ranges() NOEXCEPT {
         } else {
             row.valid          = false;
             row.discard_reason = mDiagDiscardReason ? mDiagDiscardReason : discard_reason;
+        }
+        // the detail also has the reasons that the reason column does not show when the signal is
+        // masked by the station
+        if (mDiagDiscardReason) {
+            row.discard_detail = std::string(mDiagDiscardReason) + ":" +
+                                 (mDiagDiscardDetail.empty() ? "unknown" : mDiagDiscardDetail);
+            if (!discard_detail.empty()) row.discard_detail += ";" + discard_detail;
+        } else {
+            row.discard_detail = discard_detail;
         }
         mDiagFile->write(mCurrent->reception_time, row);
     }

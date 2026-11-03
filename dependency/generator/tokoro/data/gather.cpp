@@ -327,9 +327,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
     auto epoch_time = decode::epoch_time_r15(stec->epochTime_r16);
-#ifdef DATA_TRACING
-    auto ssr_iod = decode::iod_ssr_r16(stec->iod_ssr_r16);
-#endif
+    auto ssr_iod    = decode::iod_ssr_r16(stec->iod_ssr_r16);
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -367,6 +365,8 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
         poly.quality_indicator_valid = !stec_quality_indicator.invalid;
         poly.quality_indicator       = stec_quality_indicator.value;
         poly.epoch_time              = epoch_time;
+        poly.ssr_iod                 = static_cast<uint16_t>(ssr_iod);
+        poly.ssr_iod_valid           = true;
 
 #ifdef DATA_TRACING
         datatrace::Option<long>   quality_indiciator_class{};
@@ -405,9 +405,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
     auto epoch_time = decode::epoch_time_r15(grid->epochTime_r16);
-#ifdef DATA_TRACING
-    auto ssr_iod = decode::iod_ssr_r16(grid->iod_ssr_r16);
-#endif
+    auto ssr_iod    = decode::iod_ssr_r16(grid->iod_ssr_r16);
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -444,8 +442,10 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
         }
     }
 
-    auto& grid_data      = mGrid[satellite_gnss];
-    grid_data.epoch_time = epoch_time;
+    auto& grid_data         = mGrid[satellite_gnss];
+    grid_data.epoch_time    = epoch_time;
+    grid_data.ssr_iod       = static_cast<uint16_t>(ssr_iod);
+    grid_data.ssr_iod_valid = true;
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
         if (!element) continue;
@@ -729,6 +729,9 @@ void CorrectionData::load_snapshot(
             poly.quality_indicator         = sip.quality_indicator;
             poly.quality_indicator_valid   = sip.quality_indicator_valid;
             poly.set_id = correction_point_set ? correction_point_set->set_id : 0;
+            // the snapshot does not store the SSR IOD
+            poly.ssr_iod       = 0;
+            poly.ssr_iod_valid = false;
 
             VERBOSEF("%3s c00=%+f c01=%+f c10=%+f c11=%+f ref=(%.6f,%.6f)", sat_id.name(), poly.c00,
                      poly.c01, poly.c10, poly.c11, poly.reference_point_latitude,

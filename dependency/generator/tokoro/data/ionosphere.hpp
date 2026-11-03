@@ -45,6 +45,8 @@ struct IonosphericPolynomial {
     bool     quality_indicator_valid;
     uint16_t set_id;      // correction point set this polynomial belongs to
     ts::Tai  epoch_time;  // SSR STEC message epoch (assistance-data update time)
+    uint16_t ssr_iod;     // SSR IOD of the STEC message
+    bool     ssr_iod_valid;
 };
 
 struct IonosphereGridPoint {

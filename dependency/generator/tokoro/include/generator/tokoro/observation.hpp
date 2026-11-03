@@ -136,7 +136,15 @@ public:
 
     void set_diag_file(DiagFile* diag) NOEXCEPT { mDiagFile = diag; }
     void set_diag_discard_reason(char const* reason) NOEXCEPT { mDiagDiscardReason = reason; }
-    void set_previous_phase_discontinuity(uint8_t value) NOEXCEPT {
+    void set_diag_discard_detail(std::string detail) NOEXCEPT {
+        mDiagDiscardDetail = std::move(detail);
+    }
+
+    // Why the observation was discarded (`a+b`) and the details of it (`a:detail;b:detail`), both
+    // empty if it was not. Available after `compute_ranges`.
+    NODISCARD std::string const& discard_reason() const NOEXCEPT { return mDiscardReason; }
+    NODISCARD std::string const& discard_detail() const NOEXCEPT { return mDiscardDetail; }
+    void                         set_previous_phase_discontinuity(uint8_t value) NOEXCEPT {
         mPreviousPhaseDiscontinuity    = value;
         mHasPreviousPhaseDiscontinuity = true;
     }
@@ -183,6 +191,23 @@ private:
     bool     mNegativeCorrectionSign;
     bool     mSsrGenerationConsistencyCheck;
     uint16_t mOrbitClockSsrIod;
+    uint16_t mClockSsrIod{0};
+
+    // SSR IOD of the bias that was found, also if it was not used
+    bool     mCodeBiasSsrIodValid{false};
+    uint16_t mCodeBiasSsrIod{0};
+    bool     mPhaseBiasSsrIodValid{false};
+    uint16_t mPhaseBiasSsrIod{0};
+
+    // Why the corrections are missing
+    std::string mCodeBiasDetail;
+    std::string mPhaseBiasDetail;
+    std::string mTropoDetail;
+    std::string mIonoDetail;
+
+    std::string mDiscardReason;
+    std::string mDiscardDetail;
+    std::string mDiagDiscardDetail;
 
     bool mRequireCodeBias;
     bool mRequirePhaseBias;
