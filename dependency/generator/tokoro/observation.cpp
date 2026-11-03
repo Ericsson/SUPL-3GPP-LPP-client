@@ -191,6 +191,62 @@ void Observation::compute_tropospheric(CorrectionData const& correction_data) NO
     mTropospheric.hydrostatic = correction.dry;
     mTropospheric.wet         = correction.wet;
     mTropospheric.valid       = true;
+
+    mGradient.ssr_valid     = correction.has_gradient;
+    mGradient.ssr_dry_north = correction.dry_north;
+    mGradient.ssr_dry_east  = correction.dry_east;
+    mGradient.ssr_wet_north = correction.wet_north;
+    mGradient.ssr_wet_east  = correction.wet_east;
+}
+
+void Observation::compute_tropospheric_gradient() NOEXCEPT {
+    VSCOPE_FUNCTION();
+
+    mGradient.valid   = false;
+    mGradient.north   = 0.0;
+    mGradient.east    = 0.0;
+    mGradient.mapping = 0.0;
+    mGradient.delay   = 0.0;
+
+    double north = 0.0;
+    double east  = 0.0;
+    switch (mGradientSource) {
+    case GradientSource::None: return;
+    case GradientSource::SsrGrid: {
+        if (!mTropospheric.valid || !mGradient.ssr_valid) return;
+
+        // the zenith delays are scaled to the height of the station, so is their slope
+        auto hydrostatic_scale = 1.0;
+        auto wet_scale         = 1.0;
+        if (mTropospheric.valid_height_mapping) {
+            hydrostatic_scale = mTropospheric.height_mapping_hydrostatic;
+            wet_scale         = mTropospheric.height_mapping_wet;
+        }
+
+        TroposphericCorrection slope{};
+        slope.has_gradient = true;
+        slope.dry_north    = mGradient.ssr_dry_north;
+        slope.dry_east     = mGradient.ssr_dry_east;
+        slope.wet_north    = mGradient.ssr_wet_north;
+        slope.wet_east     = mGradient.ssr_wet_east;
+        if (!ssr_grid_gradient(slope, hydrostatic_scale, wet_scale, north, east)) return;
+        break;
+    }
+    case GradientSource::Constant:
+        if (!mGradientConstantSet) return;
+        north = mGradientConstantNorth;
+        east  = mGradientConstantEast;
+        break;
+    }
+
+    mGradient.north   = north;
+    mGradient.east    = east;
+    mGradient.mapping = gradient_mapping_value(mGradientMapping, mCurrent->true_elevation,
+                                               mTropospheric.mapping_hydrostatic);
+    mGradient.delay   = gradient_delay(mGradient.mapping, mCurrent->true_azimuth, north, east);
+    mGradient.valid   = true;
+    VERBOSEF("gradient: G_N %+.6f G_E %+.6f m_g %+.6f az %.2f -> %+.6f m", north, east,
+             mGradient.mapping, mCurrent->true_azimuth * constant::RAD2DEG, mGradient.delay);
 }
 
 static double compute_vtec_mapping(double altitude, double elevation) {
@@ -455,6 +511,14 @@ void Observation::compute_ranges() NOEXCEPT {
         VERBOSEF("tropo_wet:    ---");
     }
 
+    // The gradient term is only applied together with a tropospheric delay
+    auto tropo_gradient = 0.0;
+    if (mGradient.valid && mTropospheric.mapping_valid &&
+        (mTropospheric.valid || (mUseTroposphericModel && mTropospheric.valid_model))) {
+        tropo_gradient = mGradient.delay;
+        VERBOSEF("tropo_grad:   %+24.10f", tropo_gradient);
+    }
+
     auto shapiro0 = 0.0;
     auto shapiro1 = 0.0;
     if (mCurrent->shapiro.valid) {
@@ -554,8 +618,8 @@ void Observation::compute_ranges() NOEXCEPT {
             stec1 *= stec_height_correction;
         }
 
-        auto tropo0 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;
-        auto tropo1 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;
+        auto tropo0 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet + tropo_gradient;
+        auto tropo1 = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet + tropo_gradient;
 
         auto code_correction0 = clock0 + code_bias + stec0 + tropo0;
         auto code_correction1 = clock1 + code_bias + stec1 + tropo1;
@@ -629,9 +693,10 @@ void Observation::compute_ranges() NOEXCEPT {
         row.stec_height_correction = stec_height_correction;
         row.tropo_dry              = tropo_dry + tropo_model_dry;
         row.tropo_wet              = tropo_wet + tropo_model_wet;
-        row.tropo_total            = tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet;
-        row.tropo_dry_mapping      = mTropospheric.mapping_hydrostatic;
-        row.tropo_wet_mapping      = mTropospheric.mapping_wet;
+        row.tropo_total =
+            tropo_dry + tropo_wet + tropo_model_dry + tropo_model_wet + tropo_gradient;
+        row.tropo_dry_mapping = mTropospheric.mapping_hydrostatic;
+        row.tropo_wet_mapping = mTropospheric.mapping_wet;
         row.tropo_dry_zenith =
             mTropospheric.valid ?
                 mTropospheric.hydrostatic :

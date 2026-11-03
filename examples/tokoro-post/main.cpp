@@ -126,6 +126,12 @@ struct Config {
         generator::tokoro::TroposphereModel::Mops;
     generator::tokoro::MappingFunction tropospheric_mapping =
         generator::tokoro::MappingFunction::Niell;
+    generator::tokoro::GradientSource  gradient_source = generator::tokoro::GradientSource::None;
+    generator::tokoro::GradientMapping gradient_mapping =
+        generator::tokoro::GradientMapping::ChenHerring;
+    bool                     gradient_constant_set = false;
+    double                   gradient_north        = 0.0;  // m
+    double                   gradient_east         = 0.0;  // m
     bool                     diag_tropospheric_all = false;
     std::string              gpt2_grid;
     std::vector<std::string> vmf3_grids;
@@ -284,6 +290,26 @@ static Config parse_args(int argc, char** argv) {
                         generator::tokoro::mapping_function_names().c_str(), value.c_str());
                 exit(1);
             }
+        } else if (arg == "--tropo-gradient") {
+            auto value = next();
+            if (!generator::tokoro::parse_gradient_source(value, cfg.gradient_source)) {
+                fprintf(stderr, "--tropo-gradient must be one of %s, got `%s`\n",
+                        generator::tokoro::gradient_source_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-gradient-mapping") {
+            auto value = next();
+            if (!generator::tokoro::parse_gradient_mapping(value, cfg.gradient_mapping)) {
+                fprintf(stderr, "--tropo-gradient-mapping must be one of %s, got `%s`\n",
+                        generator::tokoro::gradient_mapping_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-gradient-north") {
+            cfg.gradient_north        = std::stod(next()) * 1e-3;
+            cfg.gradient_constant_set = true;
+        } else if (arg == "--tropo-gradient-east") {
+            cfg.gradient_east         = std::stod(next()) * 1e-3;
+            cfg.gradient_constant_set = true;
         } else if (arg == "--diag-tropo-all") {
             cfg.diag_tropospheric_all = true;
         } else if (arg == "--gpt2-grid") {
@@ -365,6 +391,12 @@ static Config parse_args(int argc, char** argv) {
                             "--vmf3-grid and --vmf3-orography\n");
             exit(1);
         }
+        if (cfg.gradient_source == generator::tokoro::GradientSource::Constant &&
+            !cfg.gradient_constant_set) {
+            fprintf(stderr, "--tropo-gradient constant requires --tropo-gradient-north and/or "
+                            "--tropo-gradient-east\n");
+            exit(1);
+        }
         if (cfg.diag_tropospheric_all && cfg.diag_dir.empty()) {
             fprintf(stderr, "--diag-tropo-all requires --diag-dir\n");
             exit(1);
@@ -385,6 +417,9 @@ static Config parse_args(int argc, char** argv) {
                         "[--lock-rise reset|max] "
                         "[--tropo-model mops|saastamoinen|saastamoinen-gpt|gpt2|vmf3] "
                         "[--tropo-mapping niell|simple|gmf|gpt2|vmf3] [--diag-tropo-all] "
+                        "[--tropo-gradient none|ssr-grid|constant] "
+                        "[--tropo-gradient-mapping chen-herring|macmillan] "
+                        "[--tropo-gradient-north <mm>] [--tropo-gradient-east <mm>] "
                         "[--gpt2-grid <file>] [--vmf3-grid <file>...] [--vmf3-orography <file>] "
                         "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
                         "[--antenna-descriptor <string>] "
@@ -694,6 +729,10 @@ int main(int argc, char** argv) {
 #endif
     ref_station->set_tropospheric_model(cfg.tropospheric_model);
     ref_station->set_tropospheric_mapping(cfg.tropospheric_mapping);
+    ref_station->set_tropospheric_gradient(cfg.gradient_source, cfg.gradient_mapping);
+    if (cfg.gradient_constant_set) {
+        ref_station->set_tropospheric_gradient_constant(cfg.gradient_north, cfg.gradient_east);
+    }
     if (!cfg.diag_dir.empty()) {
         ref_station->set_diag_output(cfg.diag_dir);
         ref_station->set_diag_tropospheric_all(cfg.diag_tropospheric_all);

@@ -141,6 +141,19 @@ public:
     void set_tropospheric_model(TroposphereModel model) { mTroposphereModel = model; }
     // Mapping function of the SSR tropospheric delays and the a-priori model
     void set_tropospheric_mapping(MappingFunction mapping) { mMappingFunction = mapping; }
+    // Horizontal gradient of the troposphere: the term m_g(el) * (G_N * cos(az) + G_E * sin(az)) is
+    // added to the slant delay. `Constant` uses the gradient of
+    // `set_tropospheric_gradient_constant`, `SsrGrid` the slope of the SSR zenith delays.
+    void set_tropospheric_gradient(GradientSource source, GradientMapping mapping) {
+        mGradientSource  = source;
+        mGradientMapping = mapping;
+    }
+    // G_N and G_E in meters
+    void set_tropospheric_gradient_constant(double north, double east) {
+        mGradientConstantNorth = north;
+        mGradientConstantEast  = east;
+        mGradientConstantSet   = true;
+    }
     // Write the tropospheric delays of all models and mapping functions to `tropo.diag` for every
     // satellite (requires `set_diag_output`). It does not change the generated observations.
     void set_diag_tropospheric_all(bool enabled) { mDiagTropoAll = enabled; }
@@ -231,6 +244,11 @@ private:
 
     TroposphereModel                               mTroposphereModel{TroposphereModel::Mops};
     MappingFunction                                mMappingFunction{MappingFunction::Niell};
+    GradientSource                                 mGradientSource{GradientSource::None};
+    GradientMapping                                mGradientMapping{GradientMapping::ChenHerring};
+    bool                                           mGradientConstantSet{false};
+    double                                         mGradientConstantNorth{0.0};
+    double                                         mGradientConstantEast{0.0};
     bool                                           mDiagTropoAll{false};
     std::unordered_map<SatelliteId, TropoDiagFile> mTropoDiagFiles;
 

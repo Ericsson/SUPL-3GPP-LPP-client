@@ -29,17 +29,40 @@ enum class MappingFunction {
     Vmf3,    // VMF3 mapping function, coefficients from VMF3 grid files
 };
 
+// Source of the horizontal gradient (G_N, G_E) of the troposphere. The gradient adds the term
+// m_g(el) * (G_N * cos(az) + G_E * sin(az)) to the slant delay (IERS Conventions 2010, eq. 9.12).
+enum class GradientSource {
+    None,      // no gradient term (default)
+    SsrGrid,   // slope of the SSR zenith delays across the grid cell of the station
+    Constant,  // fixed G_N and G_E (`set_tropospheric_gradient_constant`)
+};
+
+// Mapping function of the gradient term.
+enum class GradientMapping {
+    ChenHerring,  // 1 / (sin(el) * tan(el) + 0.0032), Chen and Herring (1997)
+    MacMillan,    // m_h(el) * cot(el), the hydrostatic mapping function of the selected mapping
+};
+
 NODISCARD char const* troposphere_model_name(TroposphereModel model) NOEXCEPT;
 NODISCARD char const* mapping_function_name(MappingFunction function) NOEXCEPT;
 NODISCARD bool parse_troposphere_model(std::string const& name, TroposphereModel& model) NOEXCEPT;
 NODISCARD bool parse_mapping_function(std::string const& name, MappingFunction& function) NOEXCEPT;
 
+NODISCARD char const* gradient_source_name(GradientSource source) NOEXCEPT;
+NODISCARD char const* gradient_mapping_name(GradientMapping mapping) NOEXCEPT;
+NODISCARD bool parse_gradient_source(std::string const& name, GradientSource& source) NOEXCEPT;
+NODISCARD bool parse_gradient_mapping(std::string const& name, GradientMapping& mapping) NOEXCEPT;
+
 NODISCARD std::vector<TroposphereModel> all_troposphere_models();
 NODISCARD std::vector<MappingFunction> all_mapping_functions();
+NODISCARD std::vector<GradientSource> all_gradient_sources();  // without `None`
+NODISCARD std::vector<GradientMapping> all_gradient_mappings();
 
 // `a|b|c` lists, for help texts and error messages
 NODISCARD std::string troposphere_model_names();
 NODISCARD std::string mapping_function_names();
+NODISCARD std::string gradient_source_names();
+NODISCARD std::string gradient_mapping_names();
 
 // True when the model or mapping function needs data that is loaded at runtime
 NODISCARD bool troposphere_model_needs_data(TroposphereModel model) NOEXCEPT;

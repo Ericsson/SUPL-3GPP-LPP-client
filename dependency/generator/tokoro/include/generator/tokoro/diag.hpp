@@ -222,9 +222,16 @@ struct TropoDiagSlant {
     double value{};
 };
 
+struct TropoDiagGradient {
+    bool   valid{false};
+    double north{};  // G_N [m]
+    double east{};   // G_E [m]
+};
+
 struct TropoDiagRow {
     int    prn{};
     double elevation_deg{};
+    double azimuth_deg{};
 
     // [source], same order as the names given to TropoDiagFile::open; source 0 is the SSR
     // tropospheric delays scaled to the height of the station
@@ -234,9 +241,18 @@ struct TropoDiagRow {
     // slant delay [source * mapping count + mapping function], hydrostatic + wet, meters
     std::vector<TropoDiagSlant> slant;
 
-    // The slant delay that is applied to the observations
+    // [gradient source], same order as the names given to TropoDiagFile::open
+    std::vector<TropoDiagGradient> gradient;
+    // m_g [gradient mapping]
+    std::vector<TropoDiagSlant> gradient_mapping;
+    // gradient term of the slant delay [source * gradient mapping count + gradient mapping], meters
+    std::vector<TropoDiagSlant> gradient_delay;
+
+    // The slant delay that is applied to the observations, including the gradient term
     bool   has_applied{false};
     double applied{};
+    // the gradient term of the applied slant delay (0 if there is none)
+    double applied_gradient{};
 };
 
 class TropoDiagFile {
@@ -250,7 +266,9 @@ public:
     TropoDiagFile& operator=(TropoDiagFile&&)      = default;
 
     void open(std::string const& path, SatelliteId sv_id, std::vector<std::string> zenith_names,
-              std::vector<std::string> mapping_names) noexcept;
+              std::vector<std::string> mapping_names,
+              std::vector<std::string> gradient_source_names,
+              std::vector<std::string> gradient_mapping_names) noexcept;
     void write(ts::Tai const& time, TropoDiagRow const& row) noexcept;
 
 private:
@@ -258,6 +276,8 @@ private:
     SatelliteId              mSvId{};
     std::vector<std::string> mZenithNames;
     std::vector<std::string> mMappingNames;
+    std::vector<std::string> mGradientSourceNames;
+    std::vector<std::string> mGradientMappingNames;
     bool                     mHeaderWritten{false};
 
     void write_header() noexcept;

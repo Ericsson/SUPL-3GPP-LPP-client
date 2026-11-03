@@ -28,6 +28,13 @@ namespace tokoro {
 struct TroposphericCorrection {
     double wet;
     double dry;
+
+    // Horizontal slope of the zenith delays across the grid cell of the position, [m/m]
+    bool   has_gradient;
+    double dry_north;
+    double dry_east;
+    double wet_north;
+    double wet_east;
 };
 
 struct TroposphereGridPoint {

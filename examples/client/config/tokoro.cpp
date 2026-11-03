@@ -267,6 +267,37 @@ static args::ValueFlag<std::string> gTropoMapping{
     {"tkr-tropo-mapping"},
 };
 
+static args::ValueFlag<std::string> gTropoGradient{
+    gGroup,
+    "source",
+    "Horizontal gradient of the troposphere, adds m_g(el) * (G_N cos(az) + G_E sin(az)) to the\n"
+    "slant delay. One of: none (default), ssr-grid (slope of the SSR zenith delays across the\n"
+    "grid cell, an approximation), constant (`--tkr-tropo-gradient-north/east`)",
+    {"tkr-tropo-gradient"},
+};
+
+static args::ValueFlag<std::string> gTropoGradientMapping{
+    gGroup,
+    "function",
+    "Mapping function m_g of the gradient. One of: chen-herring (default,\n"
+    "1/(sin(el) tan(el) + 0.0032)), macmillan (m_h(el) cot(el), m_h of `--tkr-tropo-mapping`)",
+    {"tkr-tropo-gradient-mapping"},
+};
+
+static args::ValueFlag<double> gTropoGradientNorth{
+    gGroup,
+    "mm",
+    "Constant gradient G_N (south-north) in millimeters, for `--tkr-tropo-gradient constant`",
+    {"tkr-tropo-gradient-north"},
+};
+
+static args::ValueFlag<double> gTropoGradientEast{
+    gGroup,
+    "mm",
+    "Constant gradient G_E (west-east) in millimeters, for `--tkr-tropo-gradient constant`",
+    {"tkr-tropo-gradient-east"},
+};
+
 static args::Flag gDiagTropoAll{
     gGroup,
     "diag-tropo-all",
@@ -622,6 +653,11 @@ void parse(Config* config) {
     tokoro.phase_alignment                    = false;
     tokoro.tropospheric_model                 = generator::tokoro::TroposphereModel::Mops;
     tokoro.tropospheric_mapping               = generator::tokoro::MappingFunction::Niell;
+    tokoro.tropospheric_gradient              = generator::tokoro::GradientSource::None;
+    tokoro.tropospheric_gradient_mapping      = generator::tokoro::GradientMapping::ChenHerring;
+    tokoro.tropospheric_gradient_constant_set = false;
+    tokoro.tropospheric_gradient_north        = 0.0;
+    tokoro.tropospheric_gradient_east         = 0.0;
     tokoro.diag_tropospheric_all              = false;
     tokoro.gpt2_grid                          = "";
     tokoro.vmf3_grids                         = {};
@@ -900,6 +936,33 @@ void parse(Config* config) {
                                         gTropoMapping.Get() + "`");
         }
     }
+    if (gTropoGradient) {
+        if (!generator::tokoro::parse_gradient_source(gTropoGradient.Get(),
+                                                      tokoro.tropospheric_gradient)) {
+            throw args::ValidationError("--tkr-tropo-gradient must be one of " +
+                                        generator::tokoro::gradient_source_names() + ", got `" +
+                                        gTropoGradient.Get() + "`");
+        }
+    }
+    if (gTropoGradientMapping) {
+        if (!generator::tokoro::parse_gradient_mapping(gTropoGradientMapping.Get(),
+                                                       tokoro.tropospheric_gradient_mapping)) {
+            throw args::ValidationError("--tkr-tropo-gradient-mapping must be one of " +
+                                        generator::tokoro::gradient_mapping_names() + ", got `" +
+                                        gTropoGradientMapping.Get() + "`");
+        }
+    }
+    if (gTropoGradientNorth || gTropoGradientEast) {
+        tokoro.tropospheric_gradient_constant_set = true;
+        if (gTropoGradientNorth)
+            tokoro.tropospheric_gradient_north = gTropoGradientNorth.Get() * 1e-3;
+        if (gTropoGradientEast) tokoro.tropospheric_gradient_east = gTropoGradientEast.Get() * 1e-3;
+    }
+    if (tokoro.tropospheric_gradient == generator::tokoro::GradientSource::Constant &&
+        !tokoro.tropospheric_gradient_constant_set) {
+        throw args::ValidationError("--tkr-tropo-gradient constant requires "
+                                    "--tkr-tropo-gradient-north and/or --tkr-tropo-gradient-east");
+    }
     if (gGpt2Grid) tokoro.gpt2_grid = gGpt2Grid.Get();
     if (gVmf3Grid) tokoro.vmf3_grids = gVmf3Grid.Get();
     if (gVmf3Orography) tokoro.vmf3_orography = gVmf3Orography.Get();
@@ -1025,6 +1088,10 @@ void dump(TokoroConfig const& config) {
            generator::tokoro::troposphere_model_name(config.tropospheric_model));
     DEBUGF("tropospheric mapping:    %s",
            generator::tokoro::mapping_function_name(config.tropospheric_mapping));
+    DEBUGF("tropospheric gradient:   %s (mapping %s, constant G_N %+.4f m, G_E %+.4f m)",
+           generator::tokoro::gradient_source_name(config.tropospheric_gradient),
+           generator::tokoro::gradient_mapping_name(config.tropospheric_gradient_mapping),
+           config.tropospheric_gradient_north, config.tropospheric_gradient_east);
     DEBUGF("diag tropo all:          %s", config.diag_tropospheric_all ? "true" : "false");
     DEBUGF("lock start:              %s",
            config.lock_start == TokoroConfig::LockStart::Max ? "max" : "reset");

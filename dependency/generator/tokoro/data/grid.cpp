@@ -4,6 +4,8 @@
 #include "ionosphere.hpp"
 #include "troposphere.hpp"
 
+#include <cmath>
+
 #include <external_warnings.hpp>
 
 EXTERNAL_WARNINGS_PUSH
@@ -255,6 +257,42 @@ GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, doub
 
         VERBOSEF("tropospheric wet: %+.14f", correction.wet);
         VERBOSEF("tropospheric dry: %+.14f", correction.dry);
+
+        // Slope of the bilinear interpolation, per metre north and east. dx runs from the top to
+        // the bottom row (latitude), dy from the left to the right column (longitude).
+        {
+            auto lat_span = br->position.x - tl->position.x;  // [deg]
+            auto lon_span = br->position.y - tl->position.y;  // [deg]
+            auto cos_lat  = std::cos(llh.x);
+            if (lat_span != 0.0 && lon_span != 0.0 && cos_lat > 1e-6) {
+                // mean Earth radius
+                constexpr double EARTH_RADIUS = 6371000.0;
+                auto             deg_to_m_n   = EARTH_RADIUS * constant::DEG2RAD;
+                auto             deg_to_m_e   = EARTH_RADIUS * cos_lat * constant::DEG2RAD;
+
+                auto d_dx = [&](double tl_v, double tr_v, double bl_v, double br_v) {
+                    return (1.0 - dy) * (bl_v - tl_v) + dy * (br_v - tr_v);
+                };
+                auto d_dy = [&](double tl_v, double tr_v, double bl_v, double br_v) {
+                    return (1.0 - dx) * (tr_v - tl_v) + dx * (br_v - bl_v);
+                };
+
+                correction.dry_north =
+                    d_dx(tl_value_dry, tr_value_dry, bl_value_dry, br_value_dry) / lat_span /
+                    deg_to_m_n;
+                correction.dry_east = d_dy(tl_value_dry, tr_value_dry, bl_value_dry, br_value_dry) /
+                                      lon_span / deg_to_m_e;
+                correction.wet_north =
+                    d_dx(tl_value_wet, tr_value_wet, bl_value_wet, br_value_wet) / lat_span /
+                    deg_to_m_n;
+                correction.wet_east = d_dy(tl_value_wet, tr_value_wet, bl_value_wet, br_value_wet) /
+                                      lon_span / deg_to_m_e;
+                correction.has_gradient = true;
+                VERBOSEF("tropospheric gradient dry: N %+.4e E %+.4e, wet: N %+.4e E %+.4e m/m",
+                         correction.dry_north, correction.dry_east, correction.wet_north,
+                         correction.wet_east);
+            }
+        }
 
         return GridStatus::Success;
     }
