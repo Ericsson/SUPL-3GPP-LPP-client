@@ -14,7 +14,7 @@ public:
     EXPLICIT Message(DF002 type, std::vector<uint8_t> data) NOEXCEPT;
     virtual ~Message();
 
-    Message(Message const& other) : mData{other.mData} {}
+    Message(Message const& other) : mType{other.mType}, mData{other.mData} {}
     Message(Message&&)                 = delete;
     Message& operator=(Message const&) = delete;
     Message& operator=(Message&&)      = delete;

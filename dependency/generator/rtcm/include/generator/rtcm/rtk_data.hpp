@@ -19,6 +19,7 @@ enum GenericGnssId {
     GLONASS,
     GALILEO,
     BEIDOU,
+    QZSS,
 };
 
 }

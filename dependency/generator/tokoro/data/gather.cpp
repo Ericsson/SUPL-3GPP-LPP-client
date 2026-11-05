@@ -54,6 +54,7 @@ static SatelliteId::Gnss satellite_gnss_from_id(long gnss_id) {
     case GNSS_ID__gnss_id_galileo: return SatelliteId::GALILEO;
     case GNSS_ID__gnss_id_glonass: return SatelliteId::GLONASS;
     case GNSS_ID__gnss_id_bds: return SatelliteId::BEIDOU;
+    case GNSS_ID__gnss_id_qzss: return SatelliteId::QZSS;
     default: UNREACHABLE();
     }
 }
@@ -64,6 +65,7 @@ static SignalId::Gnss signal_gnss_from_id(long gnss_id) {
     case GNSS_ID__gnss_id_galileo: return SignalId::GALILEO;
     case GNSS_ID__gnss_id_glonass: return SignalId::GLONASS;
     case GNSS_ID__gnss_id_bds: return SignalId::BEIDOU;
+    case GNSS_ID__gnss_id_qzss: return SignalId::QZSS;
     default: UNREACHABLE();
     }
 }

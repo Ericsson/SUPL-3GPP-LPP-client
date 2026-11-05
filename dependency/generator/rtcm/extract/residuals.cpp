@@ -27,6 +27,7 @@ static SatelliteId satellite_id(GenericGnssId                    gnss_id,
     case GenericGnssId::GLONASS: gnss = SatelliteId::Gnss::GLONASS; break;
     case GenericGnssId::GALILEO: gnss = SatelliteId::Gnss::GALILEO; break;
     case GenericGnssId::BEIDOU: gnss = SatelliteId::Gnss::BEIDOU; break;
+    case GenericGnssId::QZSS: gnss = SatelliteId::Gnss::QZSS; break;
     }
 
     auto id = src_element.svID_r15.satellite_id;
@@ -81,6 +82,7 @@ static bool link_frequency(GenericGnssId gnss, long id, double& mhz) {
         table = bds;
         count = 5;
         break;
+    case GenericGnssId::QZSS: break;
     }
     if (!table || id < 0 || id >= count) return false;
     mhz = table[id];

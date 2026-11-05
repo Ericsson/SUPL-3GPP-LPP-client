@@ -10,6 +10,7 @@
 #include <ephemeris/bds.hpp>
 #include <ephemeris/ephemeris.hpp>
 #include <ephemeris/gal.hpp>
+#include <ephemeris/glo.hpp>
 #include <ephemeris/gps.hpp>
 #include <ephemeris/qzs.hpp>
 #ifdef INCLUDE_FORMAT_ANTEX
@@ -280,6 +281,11 @@ private:
     friend void extract_observations(std::shared_ptr<ReferenceStation> const&, TokoroOutput&);
 };
 
+class OrbitFrames;
+
+// "gps", "glo", "gal", "bds", "qzs"
+NODISCARD bool gnss_from_name(char const* name, SatelliteId::Gnss& gnss) NOEXCEPT;
+
 class Generator {
 public:
     Generator() NOEXCEPT;
@@ -292,6 +298,7 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
+    void process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT;
 
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
     void set_ssr_generation_consistency_check(bool enabled) NOEXCEPT {
@@ -313,11 +320,18 @@ public:
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
     void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
     void set_iono_polynomial_only(bool enabled) NOEXCEPT { mIonoPolynomialOnly = enabled; }
-    void set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
-                                       double reference_point_longitude,
-                                       long   number_of_steps_latitude,
-                                       long number_of_steps_longitude, double step_of_latitude,
-                                       double step_of_longitude) NOEXCEPT;
+    // Transform the broadcast orbits from the frame of each GNSS to `frame` (e.g. "itrf2020")
+    // before the SSR orbit correction is applied. nullptr disables it (default). False if the
+    // frame is unknown.
+    NODISCARD bool set_orbit_frame(char const* frame) NOEXCEPT;
+    // Override the broadcast frame of a GNSS (requires set_orbit_frame). False if the frame is
+    // unknown or not connected to the orbit frame.
+    NODISCARD bool set_orbit_source_frame(SatelliteId::Gnss gnss, char const* frame) NOEXCEPT;
+    void           set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
+                                                 double reference_point_longitude,
+                                                 long   number_of_steps_latitude,
+                                                 long number_of_steps_longitude, double step_of_latitude,
+                                                 double step_of_longitude) NOEXCEPT;
 #ifdef INCLUDE_FORMAT_ANTEX
     void set_antex(std::unique_ptr<format::antex::Antex> antex) NOEXCEPT {
         mAntex = std::move(antex);
@@ -365,6 +379,10 @@ public:
               qzs_ephemeris() const NOEXCEPT {
         return mQzsEphemeris;
     }
+    NODISCARD std::unordered_map<SatelliteId, std::vector<ephemeris::GloEphemeris>> const&
+              glo_ephemeris() const NOEXCEPT {
+        return mGloEphemeris;
+    }
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     // Create a snapshot of ephemeris data for regression testing.
@@ -388,6 +406,7 @@ private:
     std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::QzsEphemeris>> mQzsEphemeris;
+    std::unordered_map<SatelliteId, std::vector<ephemeris::GloEphemeris>> mGloEphemeris;
     size_t                                                                mEphemerisMaxCache = 10;
 
     ts::Tai                             mLastCorrectionDataTime;
@@ -399,17 +418,18 @@ private:
 #endif
     std::unique_ptr<TroposphereData> mTroposphereData;
 
-    bool   mIodConsistencyCheck;
-    bool   mSsrGenerationConsistencyCheck;
-    double mMaxOrbitAge = -1.0;
-    double mMaxClockAge = -1.0;
-    double mMaxBiasAge  = -1.0;
-    double mMaxIonoAge  = -1.0;
-    double mMaxTropoAge = -1.0;
-    bool   mUseReceptionTimeForOrbitAndClockCorrections;
-    bool   mUseOrbitCorrectionInIteration;
-    bool   mIgnoreBitmask;
-    bool   mIonoPolynomialOnly{false};
+    bool                         mIodConsistencyCheck;
+    bool                         mSsrGenerationConsistencyCheck;
+    double                       mMaxOrbitAge = -1.0;
+    double                       mMaxClockAge = -1.0;
+    double                       mMaxBiasAge  = -1.0;
+    double                       mMaxIonoAge  = -1.0;
+    double                       mMaxTropoAge = -1.0;
+    bool                         mUseReceptionTimeForOrbitAndClockCorrections;
+    bool                         mUseOrbitCorrectionInIteration;
+    bool                         mIgnoreBitmask;
+    bool                         mIonoPolynomialOnly{false};
+    std::unique_ptr<OrbitFrames> mOrbitFrames;
 
     mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;
 

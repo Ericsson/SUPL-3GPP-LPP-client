@@ -51,10 +51,39 @@ Investigated, not issues:
 - [x] RTCM 1019/1042/1046 → ephemeris conversion shared in `format/rtcm` (`format::rtcm::to_ephemeris`), used by the client Tokoro processor, `Rtcm2Eph` and `tokoro-post`.
 - [x] Tests: `tests/generator/tokoro/correction.cpp` (iono grid requirement and poly-only, satellite dropped from a later grid message, grid rebuild on layout change, orbit/clock age from the SSR epoch); antimeridian grid in `grid.cpp`.
 
+## Fixed (round 5): QZSS and GLONASS
+
+- [x] QZSS: SSR assistance data ingested; MSM 1114-1117 (RTCM Table 3.5-111 signal ids); QZSS signal names/RINEX codes; RINEX obs `J` support.
+- [x] GLONASS: satellites generated; ephemeris search with the 7-bit tb IOD; FDMA carrier frequency per channel (`SignalId::frequency(channel)`) for wavelength, iono, windup and APC reference; DF419 channel in MSM5/7; MT1230 (zero biases) and MT1031 residuals; RINEX obs `GLONASS SLOT / FRQ #`.
+- [x] Ephemeris sources for both: RTCM 1020/1044, UBX-RXM-SFRBX (GLONASS strings with Hamming check, QZSS LNAV), RINEX nav `R`/`J` records, LPP navigation model (GLONASS needs the channel from GNSS-AuxiliaryInformation).
+- [x] `lpp2eph.cpp`: scale factors were decimal (`1e-31`) instead of binary (`2^-31`), and Galileo navToe/navToc and I/NAV af0-af2 exponents were wrong.
+- [x] RINEX obs satellite labels used the 0-based `to_string()` (G01 written as G00).
+- [x] RTCM `clone()` lost the decoded fields (copy constructor only copied the raw bytes); now re-parses. `Message` copy also kept `mType`.
+- [x] Removed the unused `TokoroEphemerisUbx` / `TokoroEphemerisRtcm` (ephemeris comes via Ubx2Eph/Rtcm2Eph).
+
+Defaults NOT changed (left as-is on request): client `generate_glonass` defaults to true (GLONASS now really generated), client QZSS is hard-coded off, tokoro-post GLONASS hard-coded off and QZSS on (`--no-qzs`).
+
+Not verified on real data: GLONASS/QZSS SSR corrections (the recorded datasets carry only GPS/GAL/BDS SSR). UBX GLONASS decoding was verified against the IGS brdc file for the same period.
+
+## Fixed (round 6)
+
+- [x] Lpp2Eph: the week (GPS/GAL/BDS/QZS) and the GLONASS tb day are resolved from the GNSS-ReferenceTime of the assistance data (the latest one seen), falling back to the wall clock only when none was received. The week is chosen so that toe is within half a week of the reference time, which also fixes ephemerides near a week rollover.
+- [x] Per-GNSS flags for GLONASS/QZSS in the ephemeris converters: `--u2e-no-glo`, `--u2e-no-qzs`, `--r2e-no-glo`, `--r2e-no-qzs`, `--l2e-no-glo`, `--l2e-no-qzs` (default: converted, as before).
+- [x] GLONASS broadcast orbit integration step reduced from 60 s to 30 s, the maximum RTCM 10403.4 (3.5.10.1) allows for SSR consistency.
+
+Investigated, not an issue:
+- PZ-90.11 to ITRF transformation: SSR orbit corrections are defined relative to the broadcast orbit and give the corrected orbit in the SSR datum (ITRS-related, RTCM 10403.4 3.5.10.1.1), so the frame offset (mm level) is already absorbed by the correction. Transforming the broadcast orbit first would apply it twice.
+
+## Fixed (round 7)
+
+- [x] Option to transform the broadcast orbits of all GNSS to a common frame before the SSR orbit correction: `--tkr-orbit-frame <frame>` / `--orbit-frame` (default off), with per-GNSS overrides `--tkr-orbit-source-frame <gnss>=<frame>` / `--orbit-source-frame`. Defaults: GPS WGS 84 by GPS week, GLONASS PZ-90.11; Galileo/BeiDou/QZSS only when a source frame is given. New PZ-90.11 <-> ITRF2008 edge (epoch 2010.0, no rates; values and rotation sign convention to be checked against the PZ-90.11 reference document). `frame_from_gps_week` now returns WGS 84 (G2296) from week 2296.
+- [ ] Coordinates library: no GTRF (Galileo), JGS (QZSS) or CGCS2000 (BeiDou) transformations; WGS 84 only G2296 is connected (older realizations are not transformed).
+
 ## Improvements
 
-- [ ] QZSS output: `find_corrections` skips QZSS assistance data and there is no QZSS MSM (`rtcm::GenericGnssId` has no QZSS), so enabled QZSS satellites are never output. Needs QZSS in the RTCM generator first.
-- [ ] GLONASS generation is unimplemented (`generator.cpp` satellite list, `find_ephemeris`); FDMA channel not modeled in `Observation`.
+- [ ] Datum flag `satelliteReferenceDatum-r15` of the SSR orbit corrections is not read; a regional datum is not detected.
+- [ ] VRS position frame/epoch: the configured VRS position is used as-is; no transformation into the SSR datum at the observation epoch (plate motion, station velocity model).
+
 - [ ] Masked cell corner: no 3-point or nearest-point fallback, the cell has no correction.
 - [ ] `observation.cpp` `compute_ranges`: phase-range rate holds STEC, tropo and windup constant between the two states; only geometry and clock contribute.
 - [ ] `satellite.cpp` `update()`: diagnostic detail strings are built even when diagnostics are disabled (only on the no-ephemeris path).

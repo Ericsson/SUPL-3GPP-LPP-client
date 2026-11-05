@@ -147,6 +147,8 @@ extern Message generate_1032(ReferenceStation const&         reference_station,
 extern Message generate_1033(ReferenceStation const&  reference_station,
                              AntennaDescriptor const& antenna_descriptor);
 
+extern Message generate_1230(BiasInformation const& bias_information);
+
 extern Message generate_1030(Residuals const& residuals);
 extern Message generate_1031(Residuals const& residuals);
 extern Message generate_1303(Residuals const& residuals);

@@ -6,6 +6,7 @@ add_executable(eph_tests
     bds.cpp
     qzss.cpp
     glo.cpp
+    ephemeris_union.cpp
 )
 target_link_libraries(eph_tests PRIVATE 
     dependency::ephemeris

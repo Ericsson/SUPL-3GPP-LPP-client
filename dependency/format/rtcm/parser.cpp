@@ -1,6 +1,8 @@
 #include "parser.hpp"
 #include "1019.hpp"
+#include "1020.hpp"
 #include "1042.hpp"
+#include "1044.hpp"
 #include "1046.hpp"
 #include "helper.hpp"
 #include "message.hpp"
@@ -97,7 +99,9 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         DEBUGF("rtcm: %04d, data: %zu bytes", type.value(), message.size());
         switch (type) {
         case 1019: return Rtcm1019::parse(message);
+        case 1020: return Rtcm1020::parse(message);
         case 1042: return Rtcm1042::parse(message);
+        case 1044: return Rtcm1044::parse(message);
         case 1046: return Rtcm1046::parse(message);
         default: return std::make_unique<UnsupportedMessage>(type, message);
         }

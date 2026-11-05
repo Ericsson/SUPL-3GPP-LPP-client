@@ -11,6 +11,7 @@
 #include "coordinates/transform/itrf_etrf2000.hpp"
 #include "coordinates/transform/itrf_etrf2014.hpp"
 #include "coordinates/transform/itrf_etrf2020.hpp"
+#include "coordinates/transform/pz90.hpp"
 #include "coordinates/transform/sweref99.hpp"
 #include "coordinates/transform/wgs84.hpp"
 
@@ -51,6 +52,7 @@ TransformGraph::TransformGraph() {
     add_bidirectional_edge_impl<ITRF2020, ITRF88>(*this);
 
     add_bidirectional_edge_impl<WGS84_G2296, ITRF2020>(*this);
+    add_bidirectional_edge_impl<PZ90_11, ITRF2008>(*this);
 
     add_bidirectional_edge_impl<ITRF2014, ETRF2014>(*this);
     add_bidirectional_edge_impl<ITRF2005, ETRF2005>(*this);

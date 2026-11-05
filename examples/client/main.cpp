@@ -943,6 +943,8 @@ static void setup_tokoro(UNUSED Program& program) {
         program.stream.add_inspector<TokoroEphemerisGps>(*tokoro);
         program.stream.add_inspector<TokoroEphemerisGal>(*tokoro);
         program.stream.add_inspector<TokoroEphemerisBds>(*tokoro);
+        program.stream.add_inspector<TokoroEphemerisGlo>(*tokoro);
+        program.stream.add_inspector<TokoroEphemerisQzs>(*tokoro);
         program.stream.add_inspector<TokoroLocation>(*tokoro);
 
 #ifdef ENABLE_TOKORO_SNAPSHOT

@@ -19,6 +19,7 @@ static SatelliteId satellite_id(GenericGnssId                     gnss_id,
     case GenericGnssId::GLONASS: gnss = SatelliteId::Gnss::GLONASS; break;
     case GenericGnssId::GALILEO: gnss = SatelliteId::Gnss::GALILEO; break;
     case GenericGnssId::BEIDOU: gnss = SatelliteId::Gnss::BEIDOU; break;
+    case GenericGnssId::QZSS: gnss = SatelliteId::Gnss::QZSS; break;
     }
 
     auto id = src_satellite.svID.satellite_id;

@@ -44,6 +44,18 @@ static args::Flag gNoBeidou{
     "Do not convert BeiDou ephemeris",
     {"u2e-no-bds"},
 };
+static args::Flag gNoGlonass{
+    gGroup,
+    "glo",
+    "Do not convert GLONASS ephemeris",
+    {"u2e-no-glo"},
+};
+static args::Flag gNoQzss{
+    gGroup,
+    "qzs",
+    "Do not convert QZSS ephemeris",
+    {"u2e-no-qzs"},
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
@@ -55,11 +67,15 @@ void parse(Config* config) {
     ubx2eph.gps     = true;
     ubx2eph.galileo = true;
     ubx2eph.beidou  = true;
+    ubx2eph.glonass = true;
+    ubx2eph.qzss    = true;
 
     if (gDisable) ubx2eph.enabled = false;
     if (gNoGps) ubx2eph.gps = false;
     if (gNoGalileo) ubx2eph.galileo = false;
     if (gNoBeidou) ubx2eph.beidou = false;
+    if (gNoGlonass) ubx2eph.glonass = false;
+    if (gNoQzss) ubx2eph.qzss = false;
 }
 
 void dump(Ubx2EphConfig const& config) {
@@ -69,6 +85,8 @@ void dump(Ubx2EphConfig const& config) {
     DEBUGF("gps:     %s", config.gps ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.galileo ? "enabled" : "disabled");
     DEBUGF("beidou:  %s", config.beidou ? "enabled" : "disabled");
+    DEBUGF("glonass: %s", config.glonass ? "enabled" : "disabled");
+    DEBUGF("qzss:    %s", config.qzss ? "enabled" : "disabled");
 }
 
 }  // namespace ubx2eph

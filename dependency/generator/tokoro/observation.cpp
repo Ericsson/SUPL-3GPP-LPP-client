@@ -37,8 +37,9 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
       mNext{&satellite.next_state()} {
     mIsValid = true;
 
-    // TODO(ewasjon): For GLONASS, the frequency depends on the channel number
-    mFrequency  = signal_id.frequency();
+    mFrequency  = satellite.has_frequency_channel() ?
+                      signal_id.frequency(satellite.frequency_channel()) :
+                      signal_id.frequency();
     mWavelength = constant::SPEED_OF_LIGHT / mFrequency / 1000.0;
 
     mCarrierToNoiseRatio = 0.0;

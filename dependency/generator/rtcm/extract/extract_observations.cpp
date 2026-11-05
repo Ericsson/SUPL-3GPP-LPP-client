@@ -110,6 +110,7 @@ static SatelliteId satellite_id(GenericGnssId                            gnss_id
     case GenericGnssId::GLONASS: gnss = SatelliteId::Gnss::GLONASS; break;
     case GenericGnssId::GALILEO: gnss = SatelliteId::Gnss::GALILEO; break;
     case GenericGnssId::BEIDOU: gnss = SatelliteId::Gnss::BEIDOU; break;
+    case GenericGnssId::QZSS: gnss = SatelliteId::Gnss::QZSS; break;
     }
 
     auto id = src_satellite.svID_r15.satellite_id;
@@ -124,6 +125,7 @@ static SignalId signal_id(GenericGnssId                                  gnss_id
     case GenericGnssId::GLONASS: gnss = SignalId::Gnss::GLONASS; break;
     case GenericGnssId::GALILEO: gnss = SignalId::Gnss::GALILEO; break;
     case GenericGnssId::BEIDOU: gnss = SignalId::Gnss::BEIDOU; break;
+    case GenericGnssId::QZSS: gnss = SignalId::Gnss::QZSS; break;
     }
 
     auto id = src_signal.gnss_SignalID_r15.gnss_SignalID;

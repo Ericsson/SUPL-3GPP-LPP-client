@@ -53,6 +53,18 @@ void Rtcm2Eph::handle_gal(streamline::System& system, format::rtcm::Rtcm1046* rt
     }
 }
 
+void Rtcm2Eph::handle_glo(streamline::System& system, format::rtcm::Rtcm1020* rtcm) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    if (!mConfig.glonass) return;
+    system.push(format::rtcm::to_ephemeris(*rtcm, ts::Tai::now()), mTag);
+}
+
+void Rtcm2Eph::handle_qzs(streamline::System& system, format::rtcm::Rtcm1044* rtcm) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    if (!mConfig.qzss) return;
+    system.push(format::rtcm::to_ephemeris(*rtcm), mTag);
+}
+
 void Rtcm2Eph::inspect(streamline::System& system, DataType const& message, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto ptr = message.get();
@@ -64,4 +76,8 @@ void Rtcm2Eph::inspect(streamline::System& system, DataType const& message, uint
     if (rtcm1042) return handle_bds(system, rtcm1042);
     auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046*>(ptr);
     if (rtcm1046) return handle_gal(system, rtcm1046);
+    auto rtcm1020 = dynamic_cast<format::rtcm::Rtcm1020*>(ptr);
+    if (rtcm1020) return handle_glo(system, rtcm1020);
+    auto rtcm1044 = dynamic_cast<format::rtcm::Rtcm1044*>(ptr);
+    if (rtcm1044) return handle_qzs(system, rtcm1044);
 }

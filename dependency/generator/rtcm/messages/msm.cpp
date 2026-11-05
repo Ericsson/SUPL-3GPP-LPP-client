@@ -50,6 +50,12 @@ static void epoch_time(Encoder& encoder, ts::Tai const& time, GenericGnssId gnss
         if (milliseconds >= 604800000.0) milliseconds -= 604800000.0;
         encoder.u32(30, static_cast<uint32_t>(milliseconds));
     } break;
+    case GenericGnssId::QZSS: {
+        auto tow          = ts::Gps(time).time_of_week();
+        auto milliseconds = rtcm_round(tow.full_seconds() * 1000.0);
+        if (milliseconds >= 604800000.0) milliseconds -= 604800000.0;
+        encoder.u32(30, static_cast<uint32_t>(milliseconds));
+    } break;
     case GenericGnssId::BEIDOU: {
         auto tow          = ts::Bdt(time).time_of_week();
         auto milliseconds = rtcm_round(tow.full_seconds() * 1000.0);
@@ -65,6 +71,7 @@ static uint16_t msm_message_id(uint32_t msm, GenericGnssId gnss) {
     case GenericGnssId::GPS: return 1070 + static_cast<uint16_t>(msm);
     case GenericGnssId::GLONASS: return 1080 + static_cast<uint16_t>(msm);
     case GenericGnssId::GALILEO: return 1090 + static_cast<uint16_t>(msm);
+    case GenericGnssId::QZSS: return 1110 + static_cast<uint16_t>(msm);
     case GenericGnssId::BEIDOU: return 1120 + static_cast<uint16_t>(msm);
     }
     return 0;

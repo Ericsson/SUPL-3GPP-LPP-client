@@ -63,6 +63,7 @@ ts::Tai epoch_time(GNSS_SystemTime const& src_time) {
     auto gnss = gnss_id(src_time);
     switch (gnss) {
     case generator::rtcm::GenericGnssId::GPS:
+    case generator::rtcm::GenericGnssId::QZSS:
         return ts::Tai(ts::Gps::from_day_tod(day_number, time_of_day));
     case generator::rtcm::GenericGnssId::GLONASS:
         return ts::Tai(ts::Glo::from_day_tod(day_number, time_of_day));

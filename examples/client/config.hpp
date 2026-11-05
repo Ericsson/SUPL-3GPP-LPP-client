@@ -289,6 +289,8 @@ struct Lpp2EphConfig {
     bool gps;
     bool galileo;
     bool beidou;
+    bool glonass;
+    bool qzss;
 };
 
 struct Ubx2EphConfig {
@@ -296,6 +298,8 @@ struct Ubx2EphConfig {
     bool gps;
     bool galileo;
     bool beidou;
+    bool glonass;
+    bool qzss;
 };
 
 struct Rtcm2EphConfig {
@@ -303,6 +307,8 @@ struct Rtcm2EphConfig {
     bool gps;
     bool galileo;
     bool beidou;
+    bool glonass;
+    bool qzss;
 };
 #endif
 
@@ -470,6 +476,8 @@ struct TokoroConfig {
     std::vector<std::string> nav_files;
     bool                     ignore_bitmask;
     bool                     iono_polynomial_only;
+    std::string              orbit_frame;          // empty: no transformation
+    std::vector<std::string> orbit_source_frames;  // "<gnss>=<frame>"
     bool                     deduplicate_epochs;
     std::string              output_tag;
     std::string              diag_output_dir;

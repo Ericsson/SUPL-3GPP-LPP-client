@@ -64,7 +64,8 @@ FrameId frame_from_gps_week(int week) {
     if (week < 1674) return FrameId::WGS84_G1150;
     if (week < 1762) return FrameId::WGS84_G1674;
     if (week < 2139) return FrameId::WGS84_G1762;
-    return FrameId::WGS84_G2139;
+    if (week < 2296) return FrameId::WGS84_G2139;
+    return FrameId::WGS84_G2296;
 }
 
 std::vector<FrameId> all_frames() {

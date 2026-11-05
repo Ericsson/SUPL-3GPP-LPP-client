@@ -53,7 +53,8 @@ void Rtcm1046::print() const NOEXCEPT {
 }
 
 std::unique_ptr<Message> Rtcm1046::clone() const NOEXCEPT {
-    return std::unique_ptr<Message>(new Rtcm1046(*this));
+    // the copy constructor does not copy the decoded fields, decode them again
+    return parse(mData);
 }
 
 std::unique_ptr<Message> Rtcm1046::parse(std::vector<uint8_t> data) {

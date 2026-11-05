@@ -44,6 +44,18 @@ static args::Flag gNoBeidou{
     "Do not convert BeiDou ephemeris",
     {"r2e-no-bds"},
 };
+static args::Flag gNoGlonass{
+    gGroup,
+    "glo",
+    "Do not convert GLONASS ephemeris",
+    {"r2e-no-glo"},
+};
+static args::Flag gNoQzss{
+    gGroup,
+    "qzs",
+    "Do not convert QZSS ephemeris",
+    {"r2e-no-qzs"},
+};
 
 void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
@@ -55,11 +67,15 @@ void parse(Config* config) {
     rtcm2eph.gps     = true;
     rtcm2eph.galileo = true;
     rtcm2eph.beidou  = true;
+    rtcm2eph.glonass = true;
+    rtcm2eph.qzss    = true;
 
     if (gDisable) rtcm2eph.enabled = false;
     if (gNoGps) rtcm2eph.gps = false;
     if (gNoGalileo) rtcm2eph.galileo = false;
     if (gNoBeidou) rtcm2eph.beidou = false;
+    if (gNoGlonass) rtcm2eph.glonass = false;
+    if (gNoQzss) rtcm2eph.qzss = false;
 }
 
 void dump(Rtcm2EphConfig const& config) {
@@ -69,6 +85,8 @@ void dump(Rtcm2EphConfig const& config) {
     DEBUGF("gps:     %s", config.gps ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.galileo ? "enabled" : "disabled");
     DEBUGF("beidou:  %s", config.beidou ? "enabled" : "disabled");
+    DEBUGF("glonass: %s", config.glonass ? "enabled" : "disabled");
+    DEBUGF("qzss:    %s", config.qzss ? "enabled" : "disabled");
 }
 
 }  // namespace rtcm2eph

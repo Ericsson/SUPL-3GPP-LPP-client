@@ -2,6 +2,7 @@
 #include <core/core.hpp>
 
 #include <fstream>
+#include <map>
 #include <memory>
 #include <sstream>
 #include <unordered_map>
@@ -58,6 +59,11 @@ public:
     void set_glo_support(bool support) NOEXCEPT { mGloSupport = support; }
     void set_gal_support(bool support) NOEXCEPT { mGalSupport = support; }
     void set_bds_support(bool support) NOEXCEPT { mBdsSupport = support; }
+    void set_qzs_support(bool support) NOEXCEPT { mQzsSupport = support; }
+    // GLONASS frequency channel of a slot, written to the header before the first epoch
+    void set_glo_frequency_channel(int slot, int channel) NOEXCEPT {
+        mGloFrequencyChannels[slot] = channel;
+    }
 
 protected:
     void header_begin();
@@ -70,6 +76,7 @@ protected:
 
     void header_phase_shift_type(ObservationType const& type, char gnss_ch);
     void header_phase_shift();
+    void header_glonass_slots();
 
     std::vector<ObservationType> const& observation_types(SatelliteId const& id) const;
 
@@ -96,11 +103,15 @@ private:
     std::vector<ObservationType> mGloTypeOrder;
     std::vector<ObservationType> mGalTypeOrder;
     std::vector<ObservationType> mBdsTypeOrder;
+    std::vector<ObservationType> mQzsTypeOrder;
 
     bool mGpsSupport = true;
     bool mGloSupport = true;
     bool mGalSupport = true;
     bool mBdsSupport = true;
+    bool mQzsSupport = false;
+
+    std::map<int, int> mGloFrequencyChannels;
 
     bool          mInitialized = false;
     std::string   mPath;

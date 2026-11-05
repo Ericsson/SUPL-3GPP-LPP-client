@@ -39,6 +39,14 @@ SatelliteId SatelliteId::from_bds_prn(uint8_t prn) {
     }
 }
 
+SatelliteId SatelliteId::from_glo_slot(uint8_t slot) {
+    if (slot >= 1 && slot <= 24) {
+        return SatelliteId(Gnss::GLONASS, slot - 1);
+    } else {
+        return invalid();
+    }
+}
+
 SatelliteId SatelliteId::from_qzs_prn(uint8_t prn) {
     if (prn >= 193 && prn <= 202) {
         return SatelliteId(Gnss::QZSS, prn - 193);

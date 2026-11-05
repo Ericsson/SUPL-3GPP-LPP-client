@@ -21,10 +21,13 @@
 #include <format/lpp/uper_parser.hpp>
 #include <format/nav/d1.hpp>
 #include <format/nav/gal/inav.hpp>
+#include <format/nav/glo.hpp>
 #include <format/nav/gps/lnav.hpp>
 #include <format/rinex/nav_reader.hpp>
 #include <format/rtcm/1019.hpp>
+#include <format/rtcm/1020.hpp>
 #include <format/rtcm/1042.hpp>
+#include <format/rtcm/1044.hpp>
 #include <format/rtcm/1046.hpp>
 #include <format/rtcm/ephemeris.hpp>
 #include <format/rtcm/message.hpp>
@@ -108,14 +111,16 @@ struct Config {
     bool                     rtoc                              = false;
     bool                     ignore_bitmask                    = false;
     bool                     iono_poly_only                    = false;
-    bool                     fake_cps_set                      = false;
-    uint16_t                 fake_cps_id                       = 0;
-    double                   fake_cps_lat                      = 0;
-    double                   fake_cps_lon                      = 0;
-    long                     fake_cps_steps_lat                = 0;
-    long                     fake_cps_steps_lon                = 0;
-    double                   fake_cps_step_lat                 = 0;
-    double                   fake_cps_step_lon                 = 0;
+    std::string              orbit_frame;
+    std::vector<std::string> orbit_source_frames;
+    bool                     fake_cps_set       = false;
+    uint16_t                 fake_cps_id        = 0;
+    double                   fake_cps_lat       = 0;
+    double                   fake_cps_lon       = 0;
+    long                     fake_cps_steps_lat = 0;
+    long                     fake_cps_steps_lon = 0;
+    double                   fake_cps_step_lat  = 0;
+    double                   fake_cps_step_lon  = 0;
 
     generator::tokoro::LockStart              lock_start = generator::tokoro::LockStart::Reset;
     generator::tokoro::LockStart              lock_rise  = generator::tokoro::LockStart::Reset;
@@ -350,6 +355,10 @@ static Config parse_args(int argc, char** argv) {
             cfg.ignore_bitmask = true;
         else if (arg == "--iono-poly-only")
             cfg.iono_poly_only = true;
+        else if (arg == "--orbit-frame")
+            cfg.orbit_frame = next();
+        else if (arg == "--orbit-source-frame")
+            cfg.orbit_source_frames.push_back(next());
         else if (arg == "--cps-id") {
             cfg.fake_cps_id  = static_cast<uint16_t>(std::stoi(next()));
             cfg.fake_cps_set = true;
@@ -428,7 +437,8 @@ static Config parse_args(int argc, char** argv) {
                         "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
                         "[--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
-                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] "
+                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] [--orbit-frame "
+                        "<frame>] [--orbit-source-frame <gnss>=<frame>] "
                         "[--gen assistance|time-step|time-step-aligned|time-step-last] "
                         "[--time-step <seconds>]\n");
         exit(1);
@@ -470,7 +480,7 @@ static void rtcm_to_ephemeris(generator::tokoro::Generator& generator,
 }
 
 static void process_rtcm_ephemeris(generator::tokoro::Generator& generator,
-                                   format::rtcm::Message const*  message) {
+                                   format::rtcm::Message const* message, ts::Tai const& time) {
     if (!message) return;
     if (auto rtcm1019 = dynamic_cast<format::rtcm::Rtcm1019 const*>(message)) {
         rtcm_to_ephemeris(generator, rtcm1019);
@@ -478,6 +488,10 @@ static void process_rtcm_ephemeris(generator::tokoro::Generator& generator,
         rtcm_to_ephemeris(generator, rtcm1042);
     } else if (auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046 const*>(message)) {
         rtcm_to_ephemeris(generator, rtcm1046);
+    } else if (auto rtcm1020 = dynamic_cast<format::rtcm::Rtcm1020 const*>(message)) {
+        generator.process_ephemeris(format::rtcm::to_ephemeris(*rtcm1020, time));
+    } else if (auto rtcm1044 = dynamic_cast<format::rtcm::Rtcm1044 const*>(message)) {
+        generator.process_ephemeris(format::rtcm::to_ephemeris(*rtcm1044));
     }
 }
 
@@ -485,7 +499,9 @@ static void process_ubx_ephemeris(generator::tokoro::Generator&               ge
                                   format::nav::gps::lnav::EphemerisCollector& gps_collector,
                                   format::nav::gal::InavEphemerisCollector&   gal_collector,
                                   format::nav::D1Collector&                   bds_collector,
-                                  format::ubx::RxmSfrbx*                      sfrbx) {
+                                  format::nav::gps::lnav::EphemerisCollector& qzs_collector,
+                                  format::nav::GloEphemerisCollector&         glo_collector,
+                                  format::ubx::RxmSfrbx* sfrbx, ts::Tai const& time) {
     if (!sfrbx) return;
     if (sfrbx->gnss_id() == 0) {
         // GPS
@@ -513,6 +529,26 @@ static void process_ubx_ephemeris(generator::tokoro::Generator&               ge
         if (!format::nav::D1Subframe::decode(words, sfrbx->sv_id(), subframe)) return;
         ephemeris::BdsEphemeris ephemeris{};
         if (!bds_collector.process(sfrbx->sv_id(), subframe, ephemeris)) return;
+        generator.process_ephemeris(ephemeris);
+    } else if (sfrbx->gnss_id() == 5) {
+        // QZSS L1 C/A LNAV, the GPS LNAV layout
+        if (sfrbx->sig_id() != 0) return;
+        auto words = format::nav::Words::from_sfrbx_l1ca(sfrbx->words());
+        format::nav::gps::lnav::Subframe subframe{};
+        if (!format::nav::gps::lnav::Subframe::decode(words, subframe)) return;
+        auto                    prn = static_cast<uint8_t>(192 + sfrbx->sv_id());
+        ephemeris::GpsEphemeris gps{};
+        if (!qzs_collector.process(prn, subframe, gps)) return;
+        gps.prn = prn;
+        generator.process_ephemeris(ephemeris::QzsEphemeris::from_gps_layout(gps));
+    } else if (sfrbx->gnss_id() == 6) {
+        // GLONASS L1OF/L2OF strings
+        if (sfrbx->words().size() < 4) return;
+        if (sfrbx->sv_id() < 1 || sfrbx->sv_id() > 24) return;
+        auto string  = format::nav::GloString::from_sfrbx(sfrbx->words().data());
+        auto channel = static_cast<int8_t>(static_cast<int>(sfrbx->freq_id()) - 7);
+        ephemeris::GloEphemeris ephemeris{};
+        if (!glo_collector.process(sfrbx->sv_id(), channel, string, time, ephemeris)) return;
         generator.process_ephemeris(ephemeris);
     }
 }
@@ -550,6 +586,25 @@ int main(int argc, char** argv) {
     generator->set_rtoc(cfg.rtoc);
     generator->set_ignore_bitmask(cfg.ignore_bitmask);
     generator->set_iono_polynomial_only(cfg.iono_poly_only);
+    if (!cfg.orbit_frame.empty()) {
+        if (!generator->set_orbit_frame(cfg.orbit_frame.c_str())) {
+            fprintf(stderr, "Invalid --orbit-frame %s\n", cfg.orbit_frame.c_str());
+            return 1;
+        }
+        for (auto const& value : cfg.orbit_source_frames) {
+            auto              separator = value.find('=');
+            SatelliteId::Gnss gnss{};
+            if (separator == std::string::npos ||
+                !generator::tokoro::gnss_from_name(value.substr(0, separator).c_str(), gnss) ||
+                !generator->set_orbit_source_frame(gnss, value.substr(separator + 1).c_str())) {
+                fprintf(stderr, "Invalid --orbit-source-frame %s\n", value.c_str());
+                return 1;
+            }
+        }
+    } else if (!cfg.orbit_source_frames.empty()) {
+        fprintf(stderr, "--orbit-source-frame requires --orbit-frame\n");
+        return 1;
+    }
     if (cfg.fake_cps_set) {
         generator->set_fake_correction_point_set(
             cfg.fake_cps_id, cfg.fake_cps_lat, cfg.fake_cps_lon, cfg.fake_cps_steps_lat,
@@ -564,6 +619,10 @@ int main(int argc, char** argv) {
         for (auto& eph : nav.gal)
             generator->process_ephemeris(eph);
         for (auto& eph : nav.bds)
+            generator->process_ephemeris(eph);
+        for (auto& eph : nav.glo)
+            generator->process_ephemeris(eph);
+        for (auto& eph : nav.qzs)
             generator->process_ephemeris(eph);
     }
 
@@ -666,6 +725,8 @@ int main(int argc, char** argv) {
     format::nav::gps::lnav::EphemerisCollector gps_collector;
     format::nav::gal::InavEphemerisCollector   gal_collector;
     format::nav::D1Collector                   bds_collector;
+    format::nav::gps::lnav::EphemerisCollector qzs_collector;
+    format::nav::GloEphemerisCollector         glo_collector;
 
     // Merge heap
     std::priority_queue<MergeEntry, std::vector<MergeEntry>, std::greater<MergeEntry>> heap;
@@ -769,7 +830,8 @@ int main(int argc, char** argv) {
                 auto sfrbx = dynamic_cast<format::ubx::RxmSfrbx*>(msg.get());
                 if (sfrbx) {
                     process_ubx_ephemeris(*generator, gps_collector, gal_collector, bds_collector,
-                                          sfrbx);
+                                          qzs_collector, glo_collector, sfrbx,
+                                          unix_us_to_tai(top.timestamp_us));
                 }
             }
             if (has_ubx && ubx_reader.next(ubx_msg))
@@ -778,7 +840,7 @@ int main(int argc, char** argv) {
             // RTCM message — feed to parser for ephemeris extraction
             rtcm_parser.append(rtcm_msg.data.data(), rtcm_msg.data.size());
             while (auto msg = rtcm_parser.try_parse()) {
-                process_rtcm_ephemeris(*generator, msg.get());
+                process_rtcm_ephemeris(*generator, msg.get(), unix_us_to_tai(top.timestamp_us));
             }
             if (has_rtcm && rtcm_reader.next(rtcm_msg))
                 heap.push({rtcm_msg.timestamp_us + rtcm_shift_us, 2});

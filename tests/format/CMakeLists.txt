@@ -3,6 +3,8 @@ add_executable(format_tests
     nmea/parser.cpp
     ubx/parser.cpp
     rtcm/parser.cpp
+    rtcm/ephemeris.cpp
+    nav/glo.cpp
     at/parser.cpp
     resync.cpp
 )
@@ -10,6 +12,7 @@ target_link_libraries(format_tests PRIVATE
     dependency::format::nmea 
     dependency::format::ubx 
     dependency::format::rtcm
+    dependency::format::nav
     dependency::format::at
     dependency::format::ctrl
     dependency::core 
@@ -21,7 +24,7 @@ if(INCLUDE_FORMAT_ANTEX)
     target_link_libraries(format_tests PRIVATE dependency::format::antex)
 endif()
 
-target_sources(format_tests PRIVATE rinex/nav_reader.cpp)
+target_sources(format_tests PRIVATE rinex/nav_reader.cpp rinex/nav_glo_qzs.cpp)
 target_link_libraries(format_tests PRIVATE dependency::format::rinex)
 
 target_compile_options(format_tests PRIVATE -fsanitize=address -g)

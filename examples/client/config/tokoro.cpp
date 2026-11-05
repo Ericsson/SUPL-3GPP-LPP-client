@@ -455,6 +455,22 @@ static args::ValueFlagList<std::string> gNavFile{
     {"tkr-nav-file"},
 };
 
+static args::ValueFlag<std::string> gOrbitFrame{
+    gGroup,
+    "frame",
+    "Transform the broadcast orbits from the frame of each GNSS (GPS: WGS 84, GLONASS: PZ-90.11) "
+    "to this frame (e.g. itrf2020) before applying the SSR orbit correction",
+    {"tkr-orbit-frame"},
+};
+
+static args::ValueFlagList<std::string> gOrbitSourceFrame{
+    gGroup,
+    "gnss=frame",
+    "Broadcast frame of a GNSS (gps, glo, gal, bds, qzs) for --tkr-orbit-frame, e.g. gal=itrf2020 "
+    "(repeatable)",
+    {"tkr-orbit-source-frame"},
+};
+
 static args::Flag gIonoPolynomialOnly{
     gGroup,
     "iono-poly-only",
@@ -706,10 +722,12 @@ void parse(Config* config) {
     tokoro.antex_file           = "";
     tokoro.ignore_bitmask       = false;
     tokoro.iono_polynomial_only = false;
-    tokoro.deduplicate_epochs   = false;
-    tokoro.output_tag           = "";
-    tokoro.ephemeris_max_cache  = static_cast<size_t>(gEphemerisMaxCache.Get());
-    tokoro.elevation_mask       = gElevationMask.Get();
+    tokoro.orbit_frame          = "";
+    tokoro.orbit_source_frames.clear();
+    tokoro.deduplicate_epochs  = false;
+    tokoro.output_tag          = "";
+    tokoro.ephemeris_max_cache = static_cast<size_t>(gEphemerisMaxCache.Get());
+    tokoro.elevation_mask      = gElevationMask.Get();
 
     // Per-component max correction age: start from per-component defaults, then apply
     // --tkr-max-age as an override for all, then per-component flags override individually.
@@ -925,6 +943,17 @@ void parse(Config* config) {
     if (gNavFile) tokoro.nav_files = gNavFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
     if (gIonoPolynomialOnly) tokoro.iono_polynomial_only = true;
+    if (gOrbitFrame) tokoro.orbit_frame = gOrbitFrame.Get();
+    for (auto const& value : gOrbitSourceFrame.Get()) {
+        if (value.find('=') == std::string::npos) {
+            throw args::ValidationError("--tkr-orbit-source-frame must be <gnss>=<frame>, got `" +
+                                        value + "`");
+        }
+        tokoro.orbit_source_frames.push_back(value);
+    }
+    if (!tokoro.orbit_source_frames.empty() && tokoro.orbit_frame.empty()) {
+        throw args::ValidationError("--tkr-orbit-source-frame requires --tkr-orbit-frame");
+    }
     if (gDeduplicateEpochs) tokoro.deduplicate_epochs = true;
     if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
     if (gDiagOutputDir) tokoro.diag_output_dir = gDiagOutputDir.Get();
@@ -1128,6 +1157,10 @@ void dump(TokoroConfig const& config) {
         DEBUGF("nav file:   \"%s\"", nf.c_str());
     DEBUGF("ignore bitmask: %s", config.ignore_bitmask ? "true" : "false");
     DEBUGF("iono polynomial only: %s", config.iono_polynomial_only ? "true" : "false");
+    DEBUGF("orbit frame: %s",
+           config.orbit_frame.empty() ? "broadcast" : config.orbit_frame.c_str());
+    for (auto const& value : config.orbit_source_frames)
+        DEBUGF("orbit source frame: %s", value.c_str());
     DEBUGF("elevation mask: %f degrees", config.elevation_mask);
 }
 
