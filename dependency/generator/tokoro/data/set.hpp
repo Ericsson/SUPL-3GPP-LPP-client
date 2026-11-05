@@ -47,6 +47,8 @@ struct CorrectionPointSet {
     // Convert array index (the index of the grid point in the array from LPP) to an absolute index
     // that includes invalid grid points.
     NODISCARD bool array_to_index(long array_index, CorrectionPointInfo* result) const NOEXCEPT;
+    // Number of correction points enabled by the bitmask
+    NODISCARD long enabled_point_count() const NOEXCEPT;
 };
 
 }  // namespace tokoro

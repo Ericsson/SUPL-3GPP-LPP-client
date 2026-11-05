@@ -25,31 +25,6 @@ struct GNSS_SSR_GriddedCorrection_r16;
 namespace generator {
 namespace tokoro {
 
-struct GridIndex {
-    long x;
-    long y;
-    long i;
-
-    bool operator==(GridIndex const& other) const {
-        return x == other.x && y == other.y && i == other.i;
-    }
-};
-
-}  // namespace tokoro
-}  // namespace generator
-
-namespace std {
-template <>
-struct hash<generator::tokoro::GridIndex> {
-    size_t operator()(generator::tokoro::GridIndex const& index) const {
-        return hash<long>()(index.x) ^ hash<long>()(index.y) ^ hash<long>()(index.i);
-    }
-};
-}  // namespace std
-
-namespace generator {
-namespace tokoro {
-
 struct GridPoint {
     bool   valid;
     bool   tropspheric_valid;
@@ -83,8 +58,7 @@ struct GridData {
         StaleData,
     };
 
-    NODISCARD GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
-    NODISCARD GridPoint const* find_with_absolute_index(long absolute_index) const NOEXCEPT;
+    NODISCARD GridPoint const* point_at(long latitude_index, long longitude_index) const NOEXCEPT;
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
                        GridPoint const*& br) const NOEXCEPT;
 
@@ -95,6 +69,8 @@ struct GridData {
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
         correction_point_set_id   = correction_point_set.set_id;
+        reference_latitude        = correction_point_set.reference_point_latitude;
+        reference_longitude       = correction_point_set.reference_point_longitude;
         delta_latitude            = correction_point_set.step_of_latitude;
         delta_longitude           = correction_point_set.step_of_longitude;
         number_of_steps_latitude  = correction_point_set.number_of_steps_latitude;
@@ -132,6 +108,8 @@ struct GridData {
     void print_grid();
 
     uint16_t               correction_point_set_id;
+    double                 reference_latitude;   // north-west corner [deg]
+    double                 reference_longitude;  // north-west corner [deg]
     double                 delta_latitude;
     double                 delta_longitude;
     long                   number_of_steps_latitude;

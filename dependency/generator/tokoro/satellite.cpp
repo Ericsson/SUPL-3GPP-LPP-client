@@ -256,15 +256,6 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
 
     auto final_result = eph.compute(t_e);
 
-#if 0
-    auto t_e2         = t_e + ts::Timestamp{0.1};
-    auto final_result2 = mEph.compute(t_e2);
-    auto delta_position = final_result2.position - final_result.position;
-    VERBOSEF("delta_position: (%f, %f, %f)", delta_position.x, delta_position.y, delta_position.z);
-    auto velocity = delta_position / 0.1;
-    VERBOSEF("velocity by ts: (%f, %f, %f)", velocity.x, velocity.y, velocity.z);
-#endif
-
     state.eph_iod        = eph.iod();
     state.eph_week       = eph.week();
     state.eph_toe        = eph.toe();
@@ -295,40 +286,6 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
         WARNF("failed to correct satellite position");
         return false;
     }
-
-#if 0
-    for (int orbit_r = 0; orbit_r <= 1; orbit_r++) {
-        for (int orbit_a = 0; orbit_a <= 1; orbit_a++) {
-            for (int orbit_c = 0; orbit_c <= 1; orbit_c++) {
-                auto new_orbit_correction = mOrbitCorrection;
-                if (orbit_r == 1) {
-                    new_orbit_correction.delta.x     = -new_orbit_correction.delta.x;
-                    new_orbit_correction.dot_delta.x = -new_orbit_correction.dot_delta.x;
-                }
-                if (orbit_a == 1) {
-                    new_orbit_correction.delta.y     = -new_orbit_correction.delta.y;
-                    new_orbit_correction.dot_delta.y = -new_orbit_correction.dot_delta.y;
-                }
-                if (orbit_c == 1) {
-                    new_orbit_correction.delta.z     = -new_orbit_correction.delta.z;
-                    new_orbit_correction.dot_delta.z = -new_orbit_correction.dot_delta.z;
-                }
-                Float3 orbit_corrected_position{};
-                new_orbit_correction.correction(t_e, mEphPosition, mEphVelocity,
-                                                                    orbit_corrected_position);
-
-                Float3 line_of_sight{};
-                auto   orbit_corrected_range = geometric_distance(orbit_corrected_position,
-                                                                  mReceptionLocation, &line_of_sight);
-                VERBOSEF("[%s,%s,%s]: %.14f, %.14f, %.14f, %.14f", orbit_r == 0 ? "+R" : "-R",
-                         orbit_a == 0 ? "+A" : "-A", orbit_c == 0 ? "+C" : "-C",
-                         orbit_corrected_position.x, orbit_corrected_position.y,
-                         orbit_corrected_position.z, orbit_corrected_range);
-            }
-        }
-    }
-
-#endif
 
     auto relativistic_correction =
         eph.relativistic_correction(state.true_position, state.true_velocity);

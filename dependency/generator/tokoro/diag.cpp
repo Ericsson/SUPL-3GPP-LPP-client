@@ -1,9 +1,15 @@
 #include <generator/tokoro/diag.hpp>
 
+#include <cerrno>
 #include <cstring>
 #include <sys/stat.h>
 
+#include <loglet/loglet.hpp>
 #include <time/utc.hpp>
+
+LOGLET_MODULE2(tokoro, diag);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, diag)
 
 namespace generator {
 namespace tokoro {
@@ -43,17 +49,18 @@ static void fmt_iod(char* buf, size_t size, bool valid, unsigned value, int widt
         snprintf(buf, size, "%*s", width, "-");
 }
 
-static void mkdirs(std::string const& path) {
+// Create the parent directories of `path` and open it for writing
+static FILE* open_diag_file(std::string const& path) {
     for (size_t i = 1; i < path.size(); ++i) {
-        if (path[i] == '/') {
-            auto dir = path.substr(0, i);
-            mkdir(dir.c_str(), 0755);
+        if (path[i] != '/') continue;
+        auto dir = path.substr(0, i);
+        if (mkdir(dir.c_str(), 0755) != 0 && errno != EEXIST) {
+            WARNF("failed to create diag directory \"%s\": %s", dir.c_str(), strerror(errno));
         }
     }
-    auto last_slash = path.rfind('/');
-    if (last_slash != std::string::npos) {
-        mkdir(path.substr(0, last_slash).c_str(), 0755);
-    }
+    auto file = fopen(path.c_str(), "w");
+    if (!file) WARNF("failed to open diag file \"%s\": %s", path.c_str(), strerror(errno));
+    return file;
 }
 
 static char const* gnss_name(SatelliteId const& sv_id) {
@@ -150,8 +157,7 @@ void DiagFile::open(std::string const& path, SatelliteId sv_id, SignalId signal_
     mSignalId   = signal_id;
     mMsmSigName = rtcm_signal_name(sv_id, signal_id);
     if (path.empty()) return;
-    mkdirs(path);
-    mFile = fopen(path.c_str(), "w");
+    mFile = open_diag_file(path);
 }
 
 void DiagFile::write_header() noexcept {
@@ -426,8 +432,7 @@ SatDiagFile::~SatDiagFile() {
 void SatDiagFile::open(std::string const& path, SatelliteId sv_id) noexcept {
     mSvId = sv_id;
     if (path.empty()) return;
-    mkdirs(path);
-    mFile = fopen(path.c_str(), "w");
+    mFile = open_diag_file(path);
 }
 
 void SatDiagFile::write_header() noexcept {
@@ -765,8 +770,7 @@ void TropoDiagFile::open(std::string const& path, SatelliteId sv_id,
     mGradientSourceNames  = std::move(gradient_source_names);
     mGradientMappingNames = std::move(gradient_mapping_names);
     if (path.empty()) return;
-    mkdirs(path);
-    mFile = fopen(path.c_str(), "w");
+    mFile = open_diag_file(path);
 }
 
 void TropoDiagFile::write_header() noexcept {

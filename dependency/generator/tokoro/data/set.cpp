@@ -39,6 +39,15 @@ LOGLET_MODULE3(tokoro, data, set);
 namespace generator {
 namespace tokoro {
 
+long CorrectionPointSet::enabled_point_count() const NOEXCEPT {
+    long count = 0;
+    auto total = (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
+    for (long i = 0; i < total && i < 64; i++) {
+        if ((bitmask & (1ULL << (64 - 1 - i))) != 0) count++;
+    }
+    return count;
+}
+
 bool CorrectionPointSet::array_to_index(long                 array_index,
                                         CorrectionPointInfo* result) const NOEXCEPT {
     long array_count    = 0;
