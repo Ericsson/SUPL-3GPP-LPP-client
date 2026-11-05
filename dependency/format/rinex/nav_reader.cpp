@@ -6,8 +6,10 @@
 
 #include <loglet/loglet.hpp>
 #include <time/bdt.hpp>
+#include <time/glo.hpp>
 #include <time/gps.hpp>
 #include <time/gst.hpp>
+#include <time/utc.hpp>
 
 LOGLET_MODULE(rinex_nav);
 #undef LOGLET_CURRENT_MODULE
@@ -219,6 +221,44 @@ static bool parse_bds_record(char lines[8][128], ephemeris::BdsEphemeris& eph) {
     return true;
 }
 
+// RINEX 3 GLONASS record; the epoch (tb) is in UTC
+static bool parse_glo_record(char lines[8][128], ephemeris::GloEphemeris& eph) {
+    int slot, year, month, day, hour, min, sec;
+    if (sscanf(lines[0] + 1, "%d %d %d %d %d %d %d", &slot, &year, &month, &day, &hour, &min,
+               &sec) != 7)
+        return false;
+    if (slot < 1 || slot > 24) return false;
+
+    auto utc = ts::Utc::from_date_time(year, month, day, hour, min, static_cast<double>(sec));
+
+    eph                = {};
+    eph.slot_number    = static_cast<uint8_t>(slot);
+    eph.reference_time = ts::Glo(utc);
+    eph.tau_n          = -parse_double(lines[0] + 23, 19);  // field is -TauN
+    eph.gamma_n        = parse_double(lines[0] + 42, 19);
+
+    eph.position.x     = parse_double(lines[1] + 4, 19);
+    eph.velocity.x     = parse_double(lines[1] + 23, 19);
+    eph.acceleration.x = parse_double(lines[1] + 42, 19);
+    eph.health         = static_cast<uint8_t>(parse_double(lines[1] + 61, 19));
+
+    eph.position.y       = parse_double(lines[2] + 4, 19);
+    eph.velocity.y       = parse_double(lines[2] + 23, 19);
+    eph.acceleration.y   = parse_double(lines[2] + 42, 19);
+    eph.frequency_number = static_cast<int8_t>(parse_double(lines[2] + 61, 19));
+
+    eph.position.z     = parse_double(lines[3] + 4, 19);
+    eph.velocity.z     = parse_double(lines[3] + 23, 19);
+    eph.acceleration.z = parse_double(lines[3] + 42, 19);
+    eph.age            = static_cast<uint8_t>(parse_double(lines[3] + 61, 19));
+
+    // LPP IOD for GLONASS is tb, the 15 minute index of the Moscow time of day
+    eph.lpp_iod = static_cast<uint16_t>(
+        static_cast<uint32_t>(eph.reference_time.time_of_day().full_seconds() / 900.0 + 0.5) &
+        0x7F);
+    return true;
+}
+
 NavData parse_nav_file(std::string const& path) {
     NavData result;
 
@@ -273,13 +313,26 @@ NavData parse_nav_file(std::string const& path) {
             if (parse_bds_record(record, eph)) {
                 result.bds.push_back(eph);
             }
+        } else if (gnss == 'R') {
+            ephemeris::GloEphemeris eph{};
+            if (parse_glo_record(record, eph)) {
+                result.glo.push_back(eph);
+            }
+        } else if (gnss == 'J') {
+            // QZSS LNAV uses the GPS record layout; J01 is PRN 193
+            ephemeris::GpsEphemeris gps{};
+            if (parse_gps_record(record, gps)) {
+                gps.prn = static_cast<uint8_t>(gps.prn + 192);
+                result.qzs.push_back(ephemeris::QzsEphemeris::from_gps_layout(gps));
+            }
         }
-        // R/S/J: skip (not supported)
+        // S: skip (not supported)
     }
 
     fclose(f);
-    INFOF("RINEX nav: loaded %zu GPS, %zu GAL, %zu BDS ephemerides from %s", result.gps.size(),
-          result.gal.size(), result.bds.size(), path.c_str());
+    INFOF("RINEX nav: loaded %zu GPS, %zu GAL, %zu BDS, %zu GLO, %zu QZS ephemerides from %s",
+          result.gps.size(), result.gal.size(), result.bds.size(), result.glo.size(),
+          result.qzs.size(), path.c_str());
     return result;
 }
 

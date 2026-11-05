@@ -2,6 +2,7 @@
 #include "constant.hpp"
 #include "data/correction.hpp"
 #include "models/earth_solid_tides.hpp"
+#include "models/frame_transform.hpp"
 #include "models/phase_windup.hpp"
 #include "models/shapiro.hpp"
 #include "models/sun_moon.hpp"
@@ -111,7 +112,10 @@ public:
         return mClockCorrection;
     }
     NODISCARD bool has_orbit_correction() const NOEXCEPT { return mHasOrbitCorrection; }
-    NODISCARD bool has_clock_correction() const NOEXCEPT { return mHasClockCorrection; }
+    // GLONASS FDMA frequency channel (-7..+6), from the broadcast ephemeris
+    NODISCARD bool    has_frequency_channel() const NOEXCEPT { return mHasFrequencyChannel; }
+    NODISCARD int32_t frequency_channel() const NOEXCEPT { return mFrequencyChannel; }
+    NODISCARD bool    has_clock_correction() const NOEXCEPT { return mHasClockCorrection; }
 
     NODISCARD double average_code_range() const NOEXCEPT;
     NODISCARD double average_phase_range_rate() const NOEXCEPT;
@@ -136,12 +140,11 @@ public:
     void datatrace_report() NOEXCEPT;
 
 protected:
-    NODISCARD static bool
-    compute_true_position(SatelliteId id, Float3 ground_position, ts::Tai const& reception_time,
-                          ephemeris::Ephemeris const& eph, OrbitCorrection const& orbit_correction,
-                          SatelliteState& state,
-                          bool            use_reception_time_for_orbit_and_clock_corrections,
-                          bool            use_orbit_correction_in_iteration) NOEXCEPT;
+    NODISCARD static bool compute_true_position(
+        SatelliteId id, Float3 ground_position, ts::Tai const& reception_time,
+        ephemeris::Ephemeris const& eph, OrbitCorrection const& orbit_correction,
+        SatelliteState& state, bool use_reception_time_for_orbit_and_clock_corrections,
+        bool use_orbit_correction_in_iteration, OrbitFrames const* frame_transform) NOEXCEPT;
     NODISCARD static bool compute_azimuth_and_elevation(SatelliteId id, Float3 ground_position,
                                                         SatelliteState& state) NOEXCEPT;
 
@@ -173,6 +176,8 @@ private:
     ClockCorrection mClockCorrection;
     bool            mHasOrbitCorrection{false};
     bool            mHasClockCorrection{false};
+    bool            mHasFrequencyChannel{false};
+    int32_t         mFrequencyChannel{0};
 
     std::vector<Observation> mObservations;
 

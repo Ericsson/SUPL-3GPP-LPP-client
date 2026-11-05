@@ -3,6 +3,7 @@
 #include "coordinate.hpp"
 #include "data/correction.hpp"
 #include "decode.hpp"
+#include "models/frame_transform.hpp"
 #include "models/geoid.hpp"
 #include "models/helper.hpp"
 #include "models/troposphere_models.hpp"
@@ -117,8 +118,13 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
         }
     }
 
-    // TODO(ewasjon): GLONASS
+    // GLONASS
     if (mGenerateGlo) {
+        for (uint8_t i = 1; i <= 24; i++) {
+            auto id = SatelliteId::from_glo_slot(i);
+            ASSERT(id.is_valid(), "invalid satellite id");
+            mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+        }
     }
 
     // GALILEO
@@ -175,9 +181,11 @@ int64_t ReferenceStation::random_phase_ambiguity(SatelliteSignalId ss_id) const 
 }
 
 // The IODs are compared with this many bits: GPS and QZSS compare the 8 bits of the IODE, the IOD
-// of Galileo is the 10 bit IODnav and the IOD of BeiDou are the 11 MSB of toe.
+// of Galileo is the 10 bit IODnav, the IOD of GLONASS is the 7 bit tb and the IOD of BeiDou are
+// the 11 MSB of toe.
 static int iod_modulus(SatelliteId id) {
     if (id.is_gps() || id.is_qzss()) return 256;
+    if (id.is_glonass()) return 128;
     if (id.is_galileo()) return 1024;
     return 2048;
 }
@@ -887,7 +895,7 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
 
     if (mPhaseAlignment) {
         auto shift_cycles = observation.signal_id().phase_alignment_shift();
-        auto shift_meters = shift_cycles * observation.signal_id().wavelength();
+        auto shift_meters = shift_cycles * observation.wave_length();
         auto shift_ms     = shift_meters * meter_to_cms;
         delta_phase_range_ms += shift_ms;
     }
@@ -936,8 +944,9 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
     }
 
     rtcm::Satellite rtcm{};
-    rtcm.id          = satellite.id();
-    rtcm.integer_ms  = rtd.integer_ms;
+    rtcm.id         = satellite.id();
+    rtcm.integer_ms = rtd.integer_ms;
+    if (satellite.has_frequency_channel()) rtcm.frequency_channel = satellite.frequency_channel();
     rtcm.rough_range = rtd.rough_range;
     if (mPhaseRangeRate) {
         rtcm.rough_phase_range_rate = phase_range_rate;
@@ -972,6 +981,10 @@ void ReferenceStation::build_rtcm_residual(Satellite const& satellite, Float3 co
     double frequency = 0.0;
     switch (satellite.id().gnss()) {
     case SatelliteId::Gnss::GPS: frequency = SignalId::GPS_L1_CA.frequency(); break;
+    case SatelliteId::Gnss::GLONASS:
+        if (!satellite.has_frequency_channel()) return;
+        frequency = SignalId::GLONASS_G1_CA.frequency(satellite.frequency_channel());
+        break;
     case SatelliteId::Gnss::GALILEO: frequency = SignalId::GALILEO_E1.frequency(); break;
     case SatelliteId::Gnss::BEIDOU: frequency = SignalId::BEIDOU_B1_I.frequency(); break;
     default: return;
@@ -1018,11 +1031,13 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     rtcm::Observations msm_glo{};
     rtcm::Observations msm_gal{};
     rtcm::Observations msm_bds{};
+    rtcm::Observations msm_qzs{};
 
     msm_gps.time = mGenerationTime;
     msm_glo.time = mGenerationTime;
     msm_gal.time = mGenerationTime;
     msm_bds.time = mGenerationTime;
+    msm_qzs.time = mGenerationTime;
 
 #ifdef INCLUDE_FORMAT_RINEX
     if (mGenerateRinex) {
@@ -1032,6 +1047,13 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
             mRinexBuilder.set_glo_support(mGenerateGlo);
             mRinexBuilder.set_gal_support(mGenerateGal);
             mRinexBuilder.set_bds_support(mGenerateBds);
+            mRinexBuilder.set_qzs_support(mGenerateQzs);
+            for (auto& satellite : mSatellites) {
+                if (!satellite.enabled() || !satellite.has_frequency_channel()) continue;
+                auto slot = satellite.id().prn();
+                if (!slot.valid) continue;
+                mRinexBuilder.set_glo_frequency_channel(slot.value, satellite.frequency_channel());
+            }
 
             std::vector<SatelliteId> rinex_satellites;
             for (auto& satellite : mSatellites) {
@@ -1040,6 +1062,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
                 if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
                 if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
                 if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
+                if (!mGenerateQzs && satellite.id().gnss() == SatelliteId::Gnss::QZSS) continue;
                 rinex_satellites.push_back(satellite.id());
             }
 
@@ -1052,6 +1075,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
                 if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
                 if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
                 if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
+                if (!mGenerateQzs && satellite.id().gnss() == SatelliteId::Gnss::QZSS) continue;
                 rinex_observations.clear();
 
                 std::unordered_set<SignalId> loss_signals;
@@ -1113,12 +1137,24 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         }
     }
 
+    if (mGenerateQzs) {
+        for (auto& satellite : mSatellites) {
+            if (!satellite.enabled()) continue;
+            if (satellite.id().gnss() != SatelliteId::Gnss::QZSS) continue;
+            build_rtcm_satellite(satellite, msm_qzs);
+        }
+    }
+
     if (mGenerateResiduals) {
         auto vrs_llh = ecef_to_llh(mGroundPosition, ellipsoid::gWgs84);
 
         rtcm::Residuals gps_residuals{};
         rtcm::Residuals gal_residuals{};
         rtcm::Residuals bds_residuals{};
+        rtcm::Residuals glo_residuals{};
+        glo_residuals.time                 = mGenerationTime;
+        glo_residuals.reference_station_id = mRtcmReferenceStationId;
+        glo_residuals.n_refs               = 1;
         gps_residuals.time                 = mGenerationTime;
         gps_residuals.reference_station_id = mRtcmReferenceStationId;
         gps_residuals.n_refs               = 1;
@@ -1135,6 +1171,9 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
             case SatelliteId::Gnss::GPS:
                 if (mGenerateGps) build_rtcm_residual(satellite, vrs_llh, gps_residuals);
                 break;
+            case SatelliteId::Gnss::GLONASS:
+                if (mGenerateGlo) build_rtcm_residual(satellite, vrs_llh, glo_residuals);
+                break;
             case SatelliteId::Gnss::GALILEO:
                 if (mGenerateGal) build_rtcm_residual(satellite, vrs_llh, gal_residuals);
                 break;
@@ -1148,6 +1187,9 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         if (!gps_residuals.satellites.empty()) {
             messages.push_back(rtcm::generate_1030(gps_residuals));
         }
+        if (!glo_residuals.satellites.empty()) {
+            messages.push_back(rtcm::generate_1031(glo_residuals));
+        }
         if (!bds_residuals.satellites.empty()) {
             messages.push_back(rtcm::generate_1303(bds_residuals));
         }
@@ -1160,6 +1202,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     DEBUGF("GLO: satellites=%2zu, signals=%2zu", msm_glo.satellites.size(), msm_glo.signals.size());
     DEBUGF("GAL: satellites=%2zu, signals=%2zu", msm_gal.satellites.size(), msm_gal.signals.size());
     DEBUGF("BDS: satellites=%2zu, signals=%2zu", msm_bds.satellites.size(), msm_bds.signals.size());
+    DEBUGF("QZS: satellites=%2zu, signals=%2zu", msm_qzs.satellites.size(), msm_qzs.signals.size());
     auto will_generate_gps =
         mGenerateGps && msm_gps.satellites.size() > 0 && msm_gps.signals.size() > 0;
     auto will_generate_glo =
@@ -1168,6 +1211,8 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         mGenerateGal && msm_gal.satellites.size() > 0 && msm_gal.signals.size() > 0;
     auto will_generate_bds =
         mGenerateBds && msm_bds.satellites.size() > 0 && msm_bds.signals.size() > 0;
+    auto will_generate_qzs =
+        mGenerateQzs && msm_qzs.satellites.size() > 0 && msm_qzs.signals.size() > 0;
 
     // The GNSS indicator bits in 1005/1006 must reflect what is actually being delivered this
     // epoch, not merely what was requested. Advertising a system that has no observations (e.g.
@@ -1199,8 +1244,22 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
     }
 
+    if (will_generate_glo) {
+        // The synthetic observations have no inter-frequency code-phase biases
+        rtcm::BiasInformation bias{};
+        bias.reference_station_id = mRtcmReferenceStationId;
+        bias.indicator            = true;
+        bias.mask                 = 0xF;
+        bias.l1_ca                = 0.0;
+        bias.l1_p                 = 0.0;
+        bias.l2_ca                = 0.0;
+        bias.l2_p                 = 0.0;
+        messages.push_back(rtcm::generate_1230(bias));
+    }
+
     if (will_generate_gps) {
-        auto last_msm = !will_generate_glo && !will_generate_gal && !will_generate_bds;
+        auto last_msm =
+            !will_generate_glo && !will_generate_gal && !will_generate_bds && !will_generate_qzs;
         auto msm_messages =
             rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GPS, common, msm_gps);
         for (auto& message : msm_messages) {
@@ -1209,7 +1268,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     }
 
     if (will_generate_glo) {
-        auto last_msm     = !will_generate_gal && !will_generate_bds;
+        auto last_msm     = !will_generate_gal && !will_generate_bds && !will_generate_qzs;
         auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
                                                common, msm_glo);
         for (auto& message : msm_messages) {
@@ -1218,7 +1277,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     }
 
     if (will_generate_gal) {
-        auto last_msm     = !will_generate_bds;
+        auto last_msm     = !will_generate_bds && !will_generate_qzs;
         auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
                                                common, msm_gal);
         for (auto& message : msm_messages) {
@@ -1227,8 +1286,16 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     }
 
     if (will_generate_bds) {
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, !will_generate_qzs,
+                                               rtcm::GenericGnssId::BEIDOU, common, msm_bds);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
+    }
+
+    if (will_generate_qzs) {
         auto msm_messages =
-            rtcm::generate_msm(mRtcmMsmType, true, rtcm::GenericGnssId::BEIDOU, common, msm_bds);
+            rtcm::generate_msm(mRtcmMsmType, true, rtcm::GenericGnssId::QZSS, common, msm_qzs);
         for (auto& message : msm_messages) {
             messages.push_back(std::move(message));
         }
@@ -1251,6 +1318,26 @@ Generator::Generator() NOEXCEPT {
 }
 
 Generator::~Generator() = default;
+
+bool Generator::set_orbit_frame(char const* frame) NOEXCEPT {
+    if (!frame) {
+        mOrbitFrames.reset();
+        return true;
+    }
+    auto frames = OrbitFrames::create(frame);
+    if (!frames) return false;
+    INFOF("broadcast orbits transformed to %s", frames->target_name());
+    mOrbitFrames = std::move(frames);
+    return true;
+}
+
+bool Generator::set_orbit_source_frame(SatelliteId::Gnss gnss, char const* frame) NOEXCEPT {
+    if (!mOrbitFrames) {
+        ERRORF("the orbit source frame requires an orbit frame");
+        return false;
+    }
+    return mOrbitFrames->set_source(gnss, frame);
+}
 
 void Generator::set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
                                               double reference_point_longitude,
@@ -1433,7 +1520,8 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
 
         auto gnss_id = element->gnss_ID.gnss_id;
         if (gnss_id != GNSS_ID__gnss_id_gps && gnss_id != GNSS_ID__gnss_id_galileo &&
-            gnss_id != GNSS_ID__gnss_id_bds && gnss_id != GNSS_ID__gnss_id_glonass) {
+            gnss_id != GNSS_ID__gnss_id_bds && gnss_id != GNSS_ID__gnss_id_glonass &&
+            gnss_id != GNSS_ID__gnss_id_qzss) {
             WARNF("unsupported GNSS ID: %d", gnss_id);
             continue;
         }
@@ -1498,8 +1586,35 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         mMissingEphemeris.push_back({sv_id, iod});
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GLONASS) {
-        // TODO:
-        if (search) search->unsupported = true;
+        auto it = mGloEphemeris.find(sv_id);
+        if (it == mGloEphemeris.end()) {
+            mMissingEphemeris.push_back({sv_id, iod});
+            return false;
+        }
+        auto& list = it->second;
+        if (search) search->total = list.size();
+
+        auto glo_time = ts::Glo(time);
+        VERBOSEF("searching: %s %u", sv_id.name(), iod);
+        for (auto& ephemeris : list) {
+            auto tb = ephemeris.reference_time.time_of_day().full_seconds();
+            VERBOSEF("  %8.0f | %4u |%s%s", tb, ephemeris.lpp_iod,
+                     ephemeris.is_valid(glo_time) ? " [time]" : "",
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
+            if (!ephemeris.is_valid(glo_time)) continue;
+            if (search) search->valid.push_back({ephemeris.lpp_iod, 0, 0, 0, tb, 0});
+            // the SSR iod of GLONASS is tb (7 bits)
+            if ((ephemeris.lpp_iod & 0x7F) != (iod & 0x7F) && mIodConsistencyCheck) continue;
+            eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
+            VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
+            return true;
+        }
+
+        mMissingEphemeris.push_back({sv_id, iod});
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GALILEO) {
         auto it = mGalEphemeris.find(sv_id);
@@ -1738,6 +1853,37 @@ void Generator::process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEX
     DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
 }
 
+void Generator::process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
+    auto satellite_id = SatelliteId::from_glo_slot(ephemeris.slot_number);
+    if (!satellite_id.is_valid()) {
+        VERBOSEF("invalid satellite id: GLO %d", ephemeris.slot_number);
+        return;
+    }
+
+    auto& list = mGloEphemeris[satellite_id];
+
+    for (auto& eph : list) {
+        if (eph.match(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
+            return;
+        }
+    }
+
+    if (list.size() >= mEphemerisMaxCache) {
+        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
+        list.erase(list.begin());
+    }
+
+    list.push_back(ephemeris);
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::GloEphemeris const& a, ephemeris::GloEphemeris const& b) {
+                  return a.compare(b);
+              });
+
+    DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
+}
+
 bool Generator::get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT {
     if (!mCorrectionPointSet) return false;
     ASSERT(lat, "lat is null");
@@ -1825,6 +1971,14 @@ SnapshotInput Generator::snapshot() const NOEXCEPT {
             input.ephemeris.push_back(snapshot_eph);
         }
     }
+    for (auto const& pair : mGloEphemeris) {
+        for (auto const& eph : pair.second) {
+            SnapshotEphemeris snapshot_eph;
+            msgpack::Packer   packer(snapshot_eph.data);
+            ephemeris::Ephemeris(eph).msgpack_pack(packer);
+            input.ephemeris.push_back(snapshot_eph);
+        }
+    }
 
     if (mCorrectionData) {
         mCorrectionData->snapshot(input.orbit_corrections, input.clock_corrections,
@@ -1858,6 +2012,7 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
     mGalEphemeris.clear();
     mBdsEphemeris.clear();
     mQzsEphemeris.clear();
+    mGloEphemeris.clear();
 
     TRACEF("load ephemeris");
     for (auto const& snapshot_eph : input.ephemeris) {
@@ -1884,6 +2039,10 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
             auto id = SatelliteId::from_qzs_prn(eph.qzs_ephemeris.prn);
             DEBUGF("loaded ephemeris: %s", id.name());
             mQzsEphemeris[id].push_back(eph.qzs_ephemeris);
+        } else if (eph.mType == ephemeris::Ephemeris::Type::GLO) {
+            auto id = SatelliteId::from_glo_slot(eph.glo_ephemeris.slot_number);
+            DEBUGF("loaded ephemeris: %s", id.name());
+            mGloEphemeris[id].push_back(eph.glo_ephemeris);
         } else {
             WARNF("unknown ephemeris type: %d", eph.mType);
         }

@@ -20,7 +20,8 @@ CONSTEXPR static double GLO_OMEGA_E = 7.292115e-5;   // Earth rotation rate (rad
 CONSTEXPR static double GLO_C       = 2.99792458e8;  // speed of light (m/s)
 
 // Integration parameters
-CONSTEXPR static double GLO_STEP_SIZE = 60.0;
+// RTCM 10403.4 3.5.10.1: SSR refers to RK4 with a step of at most 30 s
+CONSTEXPR static double GLO_STEP_SIZE = 30.0;
 CONSTEXPR static int    GLO_MAX_ITER  = 100;
 
 bool GloEphemeris::is_valid(ts::Glo const& time) const NOEXCEPT {

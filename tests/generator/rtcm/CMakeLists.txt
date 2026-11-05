@@ -2,6 +2,7 @@ add_executable(generator_rtcm_tests
     main.cpp
     qzss.cpp
     generator.cpp
+    msm.cpp
 )
 target_link_libraries(generator_rtcm_tests PRIVATE 
     dependency::generator::rtcm

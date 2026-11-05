@@ -7,14 +7,9 @@
 
 #include <ephemeris/bds.hpp>
 #include <ephemeris/gal.hpp>
+#include <ephemeris/glo.hpp>
 #include <ephemeris/gps.hpp>
-#include <format/nav/d1.hpp>
-#include <format/nav/gal/inav.hpp>
-#include <format/nav/gps/lnav.hpp>
-#include <format/rtcm/1019.hpp>
-#include <format/rtcm/1042.hpp>
-#include <format/rtcm/1046.hpp>
-#include <format/ubx/messages/rxm_sfrbx.hpp>
+#include <ephemeris/qzs.hpp>
 #include <generator/tokoro/constant.hpp>
 #include <generator/tokoro/coordinate.hpp>
 #include <generator/tokoro/generator.hpp>
@@ -48,6 +43,8 @@ public:
     void process_ephemeris(ephemeris::GpsEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
+    void process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT;
+    void process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
 
     NODISCARD char const* name() const NOEXCEPT override { return "Tokoro"; }
     void inspect(streamline::System&, DataType const& message, uint64_t tag) override;
@@ -123,50 +120,30 @@ private:
     Tokoro& mTokoro;
 };
 
-class TokoroEphemerisUbx : public streamline::Inspector<UbxMessage> {
+class TokoroEphemerisGlo : public streamline::Inspector<ephemeris::GloEphemeris> {
 public:
-    TokoroEphemerisUbx(Tokoro& tokoro) : mTokoro(tokoro) {}
+    TokoroEphemerisGlo(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    void handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx);
-    void handle_gps(format::ubx::RxmSfrbx* sfrbx);
-
-    void handle_gal_inav(format::ubx::RxmSfrbx* sfrbx);
-    void handle_gal(format::ubx::RxmSfrbx* sfrbx);
-
-    void handle_bds_d1(format::ubx::RxmSfrbx* sfrbx);
-    void handle_bds(format::ubx::RxmSfrbx* sfrbx);
-
-    char const* name() const NOEXCEPT override { return "TokoroEphemerisUbx"; }
-    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    NODISCARD char const* name() const NOEXCEPT override { return "TokoroEphemerisGlo"; }
+    void                  inspect(streamline::System&, DataType const& eph, uint64_t) override {
+        mTokoro.process_ephemeris(eph);
+    }
 
 private:
-    Tokoro&                                    mTokoro;
-    format::nav::gps::lnav::EphemerisCollector mGpsCollector;
-    format::nav::gal::InavEphemerisCollector   mGalCollector;
-    format::nav::D1Collector                   mBdsCollector;
+    Tokoro& mTokoro;
 };
 
-class TokoroEphemerisRtcm : public streamline::Inspector<RtcmMessage> {
+class TokoroEphemerisQzs : public streamline::Inspector<ephemeris::QzsEphemeris> {
 public:
-    TokoroEphemerisRtcm(Tokoro& tokoro) : mTokoro(tokoro) {}
+    TokoroEphemerisQzs(Tokoro& tokoro) : mTokoro(tokoro) {}
 
-    void handle_gps_lnav(format::rtcm::Rtcm1019* rtcm);
-    void handle_gps(format::rtcm::Rtcm1019* rtcm);
-
-    void handle_gal_inav(format::rtcm::Rtcm1046* rtcm);
-    void handle_gal(format::rtcm::Rtcm1046* rtcm);
-
-    void handle_bds_d1(format::rtcm::Rtcm1042* rtcm);
-    void handle_bds(format::rtcm::Rtcm1042* rtcm);
-
-    char const* name() const NOEXCEPT override { return "TokoroEphemerisRtcm"; }
-    void        inspect(streamline::System&, DataType const& message, uint64_t tag) override;
+    NODISCARD char const* name() const NOEXCEPT override { return "TokoroEphemerisQzs"; }
+    void                  inspect(streamline::System&, DataType const& eph, uint64_t) override {
+        mTokoro.process_ephemeris(eph);
+    }
 
 private:
-    Tokoro&                                    mTokoro;
-    format::nav::gps::lnav::EphemerisCollector mGpsCollector;
-    format::nav::gal::InavEphemerisCollector   mGalCollector;
-    format::nav::D1Collector                   mBdsCollector;
+    Tokoro& mTokoro;
 };
 
 class TokoroLocation : public streamline::Inspector<lpp::LocationInformation> {

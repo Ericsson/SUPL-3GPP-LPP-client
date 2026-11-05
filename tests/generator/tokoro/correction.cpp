@@ -284,3 +284,48 @@ TEST_CASE("Tokoro orbit/clock: age is measured from the SSR epoch") {
     CHECK(status.age == doctest::Approx(40.0));
     CHECK(data.clock_correction(G02) == nullptr);
 }
+
+#include <generator/tokoro/generator.hpp>
+#include <models/frame_transform.hpp>
+#include <time/utc.hpp>
+
+TEST_CASE("Tokoro broadcast orbit frames") {
+    CHECK(OrbitFrames::create("not-a-frame") == nullptr);
+
+    auto frames = OrbitFrames::create("itrf2020");
+    REQUIRE(frames);
+    CHECK(std::string(frames->target_name()) == "itrf2020");
+
+    auto   time = ts::Tai(ts::Utc::from_date_time(2026, 6, 6, 0, 15, 0.0));
+    Float3 original{10732367.1875, -11441130.37109, 19524788.08594};
+    Float3 velocity{-2112.96, -1364.08, 233.65};
+
+    // GLONASS: PZ-90.11 -> ITRF2008 -> ITRF2020
+    CHECK(std::string(frames->source_name(SatelliteId::GLONASS, time)) == "pz-90.11");
+    auto position = original;
+    REQUIRE(frames->apply(SatelliteId::GLONASS, time, position, velocity));
+    auto difference = (position - original).length();
+    CHECK(difference > 0.001);
+    CHECK(difference < 0.03);
+
+    // GPS: WGS 84 (G2296), aligned with ITRF2020
+    CHECK(std::string(frames->source_name(SatelliteId::GPS, time)) == "wgs84(g2296)");
+    position = original;
+    REQUIRE(frames->apply(SatelliteId::GPS, time, position, velocity));
+    CHECK((position - original).length() < 1e-9);
+
+    // Galileo: not transformed unless a source frame is set
+    CHECK(frames->source_name(SatelliteId::GALILEO, time) == nullptr);
+    CHECK_FALSE(frames->apply(SatelliteId::GALILEO, time, position, velocity));
+    CHECK_FALSE(frames->set_source(SatelliteId::GALILEO, "not-a-frame"));
+    REQUIRE(frames->set_source(SatelliteId::GALILEO, "itrf2014"));
+    position = original;
+    REQUIRE(frames->apply(SatelliteId::GALILEO, time, position, velocity));
+    CHECK((position - original).length() > 0.0);
+    CHECK((position - original).length() < 0.05);
+
+    SatelliteId::Gnss gnss{};
+    CHECK(gnss_from_name("bds", gnss));
+    CHECK(gnss == SatelliteId::BEIDOU);
+    CHECK_FALSE(gnss_from_name("xyz", gnss));
+}

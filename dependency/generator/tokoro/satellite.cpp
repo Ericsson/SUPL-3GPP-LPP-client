@@ -38,11 +38,13 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     mEnabled       = false;
     mDisableReason = nullptr;
     mDisableDetail.clear();
-    mEphemerisSearch    = {};
-    mHasEphemerisSearch = false;
-    mHasOrbitCorrection = false;
-    mHasClockCorrection = false;
-    mLastGenerationTime = generation_time;
+    mEphemerisSearch     = {};
+    mHasEphemerisSearch  = false;
+    mHasOrbitCorrection  = false;
+    mHasClockCorrection  = false;
+    mHasFrequencyChannel = false;
+    mFrequencyChannel    = 0;
+    mLastGenerationTime  = generation_time;
     if (!mGenerator.mCorrectionData) {
         WARNF("no correction data available [sv=%s]", mId.name());
         mDisableReason = "no_correction_data";
@@ -92,13 +94,20 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
         return;
     }
 
+    if (eph.mType == ephemeris::Ephemeris::Type::GLO) {
+        mHasFrequencyChannel = true;
+        mFrequencyChannel    = eph.glo_ephemeris.frequency_number;
+    }
+
     auto current_time = generation_time;
     auto next_time    = generation_time + ts::Timestamp{0.1};
+
+    auto frame_transform = mGenerator.mOrbitFrames.get();
 
     if (!compute_true_position(mId, mGroundPositionEcef, current_time, eph, mOrbitCorrection,
                                mCurrentState,
                                mGenerator.mUseReceptionTimeForOrbitAndClockCorrections,
-                               mGenerator.mUseOrbitCorrectionInIteration)) {
+                               mGenerator.mUseOrbitCorrectionInIteration, frame_transform)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         mDisableReason = "position_failed";
         return;
@@ -106,7 +115,7 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
     if (!compute_true_position(mId, mGroundPositionEcef, next_time, eph, mOrbitCorrection,
                                mNextState, mGenerator.mUseReceptionTimeForOrbitAndClockCorrections,
-                               mGenerator.mUseOrbitCorrectionInIteration)) {
+                               mGenerator.mUseOrbitCorrectionInIteration, frame_transform)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         mDisableReason = "position_failed";
         return;
@@ -138,7 +147,8 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
     // Broadcast APC reference (iono-free pair the ephemeris orbit/clock refers
     // to). Depends on GNSS (and, in future, the nav message type).
-    auto set_apc_reference = [](ephemeris::Ephemeris::Type type, SatelliteState& state) {
+    auto channel           = static_cast<double>(mFrequencyChannel);
+    auto set_apc_reference = [channel](ephemeris::Ephemeris::Type type, SatelliteState& state) {
         switch (type) {
         case ephemeris::Ephemeris::Type::GPS:
         case ephemeris::Ephemeris::Type::QZS:
@@ -153,6 +163,14 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
             state.apc_ref_fa    = 1575.42e6;
             state.apc_ref_b     = FrequencyType::E5b;
             state.apc_ref_fb    = 1207.140e6;
+            state.apc_ref_valid = true;
+            break;
+        case ephemeris::Ephemeris::Type::GLO:
+            // GLONASS broadcast clocks refer to the G1/G2 P-code iono-free combination
+            state.apc_ref_a     = FrequencyType::G1;
+            state.apc_ref_fa    = 1602.0e6 + channel * 0.5625e6;
+            state.apc_ref_b     = FrequencyType::G2;
+            state.apc_ref_fb    = 1246.0e6 + channel * 0.4375e6;
             state.apc_ref_valid = true;
             break;
         default:
@@ -190,13 +208,11 @@ void Satellite::datatrace_report() NOEXCEPT {
 #endif
 }
 
-bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
-                                      ts::Tai const&              reception_time,
-                                      ephemeris::Ephemeris const& eph,
-                                      OrbitCorrection const&      orbit_correction,
-                                      SatelliteState&             state,
-                                      bool use_reception_time_for_orbit_and_clock_corrections,
-                                      bool use_orbit_correction_in_iteration) NOEXCEPT {
+bool Satellite::compute_true_position(
+    SatelliteId id, Float3 ground_position, ts::Tai const& reception_time,
+    ephemeris::Ephemeris const& eph, OrbitCorrection const& orbit_correction, SatelliteState& state,
+    bool use_reception_time_for_orbit_and_clock_corrections, bool use_orbit_correction_in_iteration,
+    OrbitFrames const* frame_transform) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", id.name());
 
     VERBOSEF("iode: %u", eph.iode());
@@ -218,6 +234,8 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
 
         // ephemeral position at t_e
         auto result = eph.compute(t_e);
+        if (frame_transform)
+            frame_transform->apply(id.gnss(), t_e, result.position, result.velocity);
         VERBOSEF("    x=%f, y=%f, z=%f", result.position.x, result.position.y, result.position.z);
         VERBOSEF("    dx=%f, dy=%f, dz=%f", result.velocity.x, result.velocity.y,
                  result.velocity.z);
@@ -255,6 +273,8 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
     }
 
     auto final_result = eph.compute(t_e);
+    if (frame_transform)
+        frame_transform->apply(id.gnss(), t_e, final_result.position, final_result.velocity);
 
     state.eph_iod        = eph.iod();
     state.eph_week       = eph.week();

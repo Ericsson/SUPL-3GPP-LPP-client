@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <time/utc.hpp>
 #include "ephemeris/bds.hpp"
 #include "ephemeris/gal.hpp"
@@ -8,13 +9,10 @@
 #include "agnss.hpp"
 #include "tokoro.hpp"
 
-#include <format/rtcm/ephemeris.hpp>
-
 #ifdef INCLUDE_FORMAT_ANTEX
 #include <format/antex/antex.hpp>
 #endif
 #include <format/rinex/nav_reader.hpp>
-#include <format/rtcm/datafields.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
 #include <lpp/session.hpp>
@@ -40,169 +38,6 @@ static uint32_t tokoro_rtcm_msm_type(TokoroConfig::MsmType msm_type) {
     }
 
     return 5;
-}
-
-void TokoroEphemerisUbx::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    auto words = format::nav::Words::from_sfrbx_l1ca(sfrbx->words());
-
-    format::nav::gps::lnav::Subframe subframe{};
-    if (!format::nav::gps::lnav::Subframe::decode(words, subframe)) {
-        WARNF("failed to decode GPS LNAV subframe");
-        return;
-    }
-
-    ephemeris::GpsEphemeris ephemeris{};
-    if (!mGpsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) {
-        return;
-    }
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisUbx::handle_gps(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gps_enabled()) return;
-    if (sfrbx->sig_id() == 0) {
-        handle_gps_lnav(sfrbx);
-    } else {
-        VERBOSEF("unsupported GPS signal id %d", sfrbx->sig_id());
-    }
-}
-
-void TokoroEphemerisUbx::handle_gal_inav(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    auto words = format::nav::Words::from_sfrbx_e5b(sfrbx->words());
-
-    format::nav::gal::InavWord word{};
-    if (!format::nav::gal::InavWord::decode(words, word)) {
-        WARNF("failed to decode GAL INAV word");
-        return;
-    }
-
-    ephemeris::GalEphemeris ephemeris{};
-    if (!mGalCollector.process(sfrbx->sv_id(), word, ephemeris)) return;
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisUbx::handle_gal(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gal_enabled()) return;
-    // sig_id 1 = E1-B I/NAV (ZED-X20P), sig_id 5 = E5b-I I/NAV (older receivers)
-    if (sfrbx->sig_id() == 1 || sfrbx->sig_id() == 5) {
-        handle_gal_inav(sfrbx);
-    } else {
-        VERBOSEF("unsupported GAL signal id %d", sfrbx->sig_id());
-    }
-}
-
-void TokoroEphemerisUbx::handle_bds_d1(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    auto words = format::nav::Words::from_sfrbx_bds_d1(sfrbx->words());
-
-    format::nav::D1Subframe subframe{};
-    if (!format::nav::D1Subframe::decode(words, sfrbx->sv_id(), subframe)) {
-        WARNF("failed to decode BDS D1 subframe");
-        return;
-    }
-
-    ephemeris::BdsEphemeris ephemeris{};
-    if (!mBdsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) return;
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisUbx::handle_bds(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_bds_enabled()) return;
-    if (sfrbx->sig_id() == 0) {
-        handle_bds_d1(sfrbx);
-    } else {
-        VERBOSEF("unsupported BDS signal id %d", sfrbx->sig_id());
-    }
-}
-
-void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message, uint64_t) {
-    VSCOPE_FUNCTION();
-    auto ptr = message.get();
-    if (!ptr) return;
-
-    auto sfrbx = dynamic_cast<format::ubx::RxmSfrbx*>(ptr);
-    if (!sfrbx) return;
-
-    if (sfrbx->gnss_id() == 0) {
-        handle_gps(sfrbx);
-    } else if (sfrbx->gnss_id() == 2) {
-        handle_gal(sfrbx);
-    } else if (sfrbx->gnss_id() == 3) {
-        handle_bds(sfrbx);
-    }
-}
-
-//
-//
-//
-
-void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019* rtcm) {
-    VSCOPE_FUNCTION();
-    auto ephemeris = format::rtcm::to_ephemeris(*rtcm);
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019* rtcm) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gps_enabled()) return;
-    if (rtcm->type() == 1019) {
-        handle_gps_lnav(rtcm);
-    } else {
-        VERBOSEF("not rtcm 1019 but rtcm %d", rtcm->type());
-    }
-}
-
-void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042* rtcm) {
-    VSCOPE_FUNCTION();
-    auto ephemeris = format::rtcm::to_ephemeris(*rtcm);
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisRtcm::handle_bds(format::rtcm::Rtcm1042* rtcm) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gal_enabled()) return;
-    if (rtcm->type() == 1042) {
-        handle_bds_d1(rtcm);
-    } else {
-        VERBOSEF("not rtcm 1042 but rtcm %d", rtcm->type());
-    }
-}
-
-void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046* rtcm) {
-    VSCOPE_FUNCTION();
-    auto ephemeris = format::rtcm::to_ephemeris(*rtcm);
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046* rtcm) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gal_enabled()) return;
-    if (rtcm->type() == 1046) {
-        handle_gal_inav(rtcm);
-    } else {
-        VERBOSEF("not rtcm 1046 but rtcm %d", rtcm->type());
-    }
-}
-
-void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message, uint64_t) {
-    VSCOPE_FUNCTION();
-    auto ptr = message.get();
-    if (!ptr) return;
-
-    auto rtcm1019 = dynamic_cast<format::rtcm::Rtcm1019*>(ptr);
-    if (rtcm1019) return handle_gps(rtcm1019);
-    auto rtcm1042 = dynamic_cast<format::rtcm::Rtcm1042*>(ptr);
-    if (rtcm1042) return handle_bds(rtcm1042);
-    auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046*>(ptr);
-    if (rtcm1046) return handle_gal(rtcm1046);
 }
 
 //
@@ -233,6 +68,23 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
     mGenerator->set_iono_polynomial_only(mConfig.iono_polynomial_only);
+    if (!mConfig.orbit_frame.empty()) {
+        if (!mGenerator->set_orbit_frame(mConfig.orbit_frame.c_str())) {
+            ERRORF("invalid --tkr-orbit-frame \"%s\"", mConfig.orbit_frame.c_str());
+            exit(1);
+        }
+        for (auto const& value : mConfig.orbit_source_frames) {
+            auto              separator = value.find('=');
+            auto              gnss_name = value.substr(0, separator);
+            auto              frame     = value.substr(separator + 1);
+            SatelliteId::Gnss gnss{};
+            if (!generator::tokoro::gnss_from_name(gnss_name.c_str(), gnss) ||
+                !mGenerator->set_orbit_source_frame(gnss, frame.c_str())) {
+                ERRORF("invalid --tkr-orbit-source-frame \"%s\"", value.c_str());
+                exit(1);
+            }
+        }
+    }
     mGenerator->set_ephemeris_max_cache(mConfig.ephemeris_max_cache);
     mGenerator->set_max_orbit_age(mConfig.max_orbit_age);
     mGenerator->set_max_clock_age(mConfig.max_clock_age);
@@ -283,6 +135,10 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
             for (auto& eph : nav.gal)
                 mGenerator->process_ephemeris(eph);
             for (auto& eph : nav.bds)
+                mGenerator->process_ephemeris(eph);
+            for (auto& eph : nav.glo)
+                mGenerator->process_ephemeris(eph);
+            for (auto& eph : nav.qzs)
                 mGenerator->process_ephemeris(eph);
         }
     }
@@ -365,6 +221,18 @@ void Tokoro::process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEP
 }
 
 void Tokoro::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    mGenerator->process_ephemeris(ephemeris);
+}
+
+void Tokoro::process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    mGenerator->process_ephemeris(ephemeris);
+}
+
+void Tokoro::process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
     mGenerator->process_ephemeris(ephemeris);

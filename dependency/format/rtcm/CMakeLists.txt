@@ -5,6 +5,8 @@ add_library(dependency_format_rtcm STATIC
     "datafields.cpp"
     "messages/1019.cpp"
     "messages/1042.cpp"
+    "messages/1020.cpp"
+    "messages/1044.cpp"
     "messages/1046.cpp"
     "messages/ephemeris.cpp"
 )

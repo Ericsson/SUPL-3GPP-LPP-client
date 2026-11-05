@@ -1,5 +1,6 @@
 #pragma once
 #include <core/core.hpp>
+#include <ephemeris/gps.hpp>
 #include <ephemeris/result.hpp>
 #include <maths/float3.hpp>
 #include <msgpack/msgpack.hpp>
@@ -50,6 +51,9 @@ struct QzsEphemeris {
 
     bool fit_interval_flag;
     bool l2_p_data_flag;
+
+    // QZSS LNAV uses the GPS LNAV layout; `prn` must already be the QZSS PRN (193..202)
+    NODISCARD static QzsEphemeris from_gps_layout(GpsEphemeris const& gps) NOEXCEPT;
 
     NODISCARD bool is_valid(ts::Gps const& time) const NOEXCEPT;
     NODISCARD bool match(QzsEphemeris const& other) const NOEXCEPT {

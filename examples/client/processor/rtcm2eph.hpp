@@ -3,7 +3,9 @@
 #include <ephemeris/gal.hpp>
 #include <ephemeris/gps.hpp>
 #include <format/rtcm/1019.hpp>
+#include <format/rtcm/1020.hpp>
 #include <format/rtcm/1042.hpp>
+#include <format/rtcm/1044.hpp>
 #include <format/rtcm/1046.hpp>
 #include <streamline/inspector.hpp>
 #include <streamline/system.hpp>
@@ -26,6 +28,8 @@ private:
     void handle_gal(streamline::System& system, format::rtcm::Rtcm1046* rtcm) NOEXCEPT;
     void handle_bds_d1(streamline::System& system, format::rtcm::Rtcm1042* rtcm) NOEXCEPT;
     void handle_bds(streamline::System& system, format::rtcm::Rtcm1042* rtcm) NOEXCEPT;
+    void handle_glo(streamline::System& system, format::rtcm::Rtcm1020* rtcm) NOEXCEPT;
+    void handle_qzs(streamline::System& system, format::rtcm::Rtcm1044* rtcm) NOEXCEPT;
 
     Rtcm2EphConfig const& mConfig;
     uint64_t              mTag;

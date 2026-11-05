@@ -583,6 +583,34 @@ static FrequencyType gBdsFreqType[24] = {
     FrequencyType::UNKNOWN   // Reserved
 };
 
+static std::string gQzssNames[24] = {
+    "L1 C/A",   "L1C(D)",   "L1C(P)",   "L1C(D+P)", "L2C(M)",   "L2C(L)",   "L2C(M+L)", "L5 I",
+    "L5 Q",     "L5 I+Q",   "L6 D",     "L6 E",     "Reserved", "Reserved", "Reserved", "Reserved",
+    "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved", "Reserved",
+};
+
+static std::string gQzssRinexNames[24] = {
+    "1C", "1S", "1L", "1X", "2S", "2L", "2X", "5I", "5Q", "5X", "6S", "6E",
+    "??", "??", "??", "??", "??", "??", "??", "??", "??", "??", "??", "??",
+};
+
+// RTCM 10403.4 Table 3.5-111
+CONSTEXPR static int32_t QZSS_LPP_TO_RTCM[24] = {
+    2,   // L1 C/A
+    30,  // L1C(D)
+    31,  // L1C(P)
+    32,  // L1C(D+P)
+    15,  // L2C(M)
+    16,  // L2C(L)
+    17,  // L2C(M+L)
+    22,  // L5 I
+    23,  // L5 Q
+    24,  // L5 I+Q
+    9,   // L6 D
+    -1,  // L6 E
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
+};
+
 #define QZSS_L1_FREQ 1575.42e3
 #define QZSS_L2_FREQ 1227.60e3
 #define QZSS_L5_FREQ 1176.45e3
@@ -676,6 +704,8 @@ std::string SignalId::to_string() const {
         return gGalileoNames[id];
     } else if (mGnss == Gnss::BEIDOU) {
         return gBdsNames[id];
+    } else if (mGnss == Gnss::QZSS) {
+        return gQzssNames[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -695,6 +725,8 @@ std::string SignalId::to_rinex() const {
         return gGalileoRinexNames[id];
     } else if (mGnss == Gnss::BEIDOU) {
         return gBdsRinexNames[id];
+    } else if (mGnss == Gnss::QZSS) {
+        return gQzssRinexNames[id];
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -714,6 +746,8 @@ char const* SignalId::name() const {
         return gGalileoNames[id].c_str();
     } else if (mGnss == Gnss::BEIDOU) {
         return gBdsNames[id].c_str();
+    } else if (mGnss == Gnss::QZSS) {
+        return gQzssNames[id].c_str();
     } else {
         CORE_UNREACHABLE();
 #if COMPILER_CANNOT_DEDUCE_UNREACHABLE
@@ -764,6 +798,16 @@ FrequencyType SignalId::frequency_type() const {
     }
 }
 
+double SignalId::frequency(int32_t glonass_channel) const {
+    if (mGnss != Gnss::GLONASS) return frequency();
+    // GLONASS FDMA: G1 = 1602 + k * 0.5625 MHz, G2 = 1246 + k * 0.4375 MHz (ICD 5.0, 3.3.1.4)
+    // Only the C/A and P signals are FDMA
+    auto id = lpp_id();
+    if (id == 0 || id == 3) return frequency() + static_cast<double>(glonass_channel) * 562.5;
+    if (id == 1 || id == 4) return frequency() + static_cast<double>(glonass_channel) * 437.5;
+    return frequency();
+}
+
 double SignalId::wavelength() const {
     return 299792458.0 / (frequency() * 1.0e3);
 }
@@ -782,6 +826,8 @@ Maybe<long> SignalId::as_msm() const {
         result = GALILEO_LPP_TO_RTCM[mLppId];
     } else if (mGnss == Gnss::BEIDOU) {
         result = BDS_LPP_TO_RTCM[mLppId];
+    } else if (mGnss == Gnss::QZSS) {
+        result = QZSS_LPP_TO_RTCM[mLppId];
     } else {
         assert(false);
         return Maybe<long>();

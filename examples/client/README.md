@@ -328,6 +328,15 @@
                                           requirement
         --tkr-iono-poly-only              Allow the STEC polynomial without the
                                           gridded STEC residual
+        --tkr-orbit-frame=[frame]         Transform the broadcast orbits from the
+                                          frame of each GNSS (GPS: WGS 84,
+                                          GLONASS: PZ-90.11) to this frame (e.g.
+                                          itrf2020) before applying the SSR
+                                          orbit correction
+        --tkr-orbit-source-frame=[gnss=frame...]
+                                          Broadcast frame of a GNSS (gps, glo,
+                                          gal, bds, qzs) for --tkr-orbit-frame,
+                                          e.g. gal=itrf2020 (repeatable)
         --tkr-use-tropospheric-model      Use tropospheric model if tropospheric
                                           correction are not available (requires
                                           tkr-tropo-optional)

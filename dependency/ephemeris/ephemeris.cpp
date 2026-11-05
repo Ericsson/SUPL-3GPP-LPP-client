@@ -15,6 +15,8 @@ void Ephemeris::msgpack_pack(msgpack::Packer& packer) const NOEXCEPT {
         msgpack::pack(packer, bds_ephemeris);
     } else if (mType == Type::QZS) {
         msgpack::pack(packer, qzs_ephemeris);
+    } else if (mType == Type::GLO) {
+        msgpack::pack(packer, glo_ephemeris);
     } else {
         packer.pack_nil();
     }
@@ -45,6 +47,10 @@ bool Ephemeris::msgpack_unpack(msgpack::Unpacker& unpacker) NOEXCEPT {
         QzsEphemeris eph;
         if (!msgpack::unpack(unpacker, eph)) return false;
         qzs_ephemeris = eph;
+    } else if (mType == Type::GLO) {
+        GloEphemeris eph;
+        if (!msgpack::unpack(unpacker, eph)) return false;
+        glo_ephemeris = eph;
     } else {
         return false;
     }
