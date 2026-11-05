@@ -131,6 +131,7 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh, IonosphericCorre
     if (grid_it != mGrid.end()) {
         auto status = grid_it->second.ionospheric(sv_id, llh, mLatestCorrectionTime, max_iono_age,
                                                   correction.grid_residual);
+        correction.grid_valid = status == GridData::GridStatus::Success;
         if (status == GridData::GridStatus::PositionOutsideGrid) {
             WARNF("ionospheric correction not available for %s: position outside grid",
                   sv_id.name());

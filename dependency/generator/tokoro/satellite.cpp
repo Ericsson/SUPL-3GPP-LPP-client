@@ -230,6 +230,7 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
                                              satellite_position, nullptr, nullptr, nullptr,
                                              nullptr)) {
                 WARNF("failed to correct satellite position");
+                return false;
             }
         } else {
             satellite_position = result.position;
@@ -292,6 +293,7 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
                                      &state.orbit_along_axis, &state.orbit_cross_axis,
                                      &state.orbit_delta_t)) {
         WARNF("failed to correct satellite position");
+        return false;
     }
 
 #if 0

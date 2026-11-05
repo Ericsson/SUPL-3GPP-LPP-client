@@ -28,11 +28,11 @@ double reference_point_longitude_r16(long value) {
 }
 
 double step_of_latitude_r16(long value) {
-    return static_cast<double>(value) * STEP_OF_LONGITUDE_RESOLUTION;
+    return static_cast<double>(value) * STEP_OF_LATITUDE_RESOLUTION;
 }
 
 double step_of_longitude_r16(long value) {
-    return static_cast<double>(value) * STEP_OF_LATITUDE_RESOLUTION;
+    return static_cast<double>(value) * STEP_OF_LONGITUDE_RESOLUTION;
 }
 
 long number_of_steps_latitude_r16(long value) {

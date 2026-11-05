@@ -65,7 +65,7 @@ Observation::Observation(Satellite const& satellite, SignalId signal_id, Float3 
     mPhaseBias       = Correction{0.0, false};
     mTropospheric =
         TroposphericDelay{0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, false, false, false, true};
-    mIonospheric           = IonosphericDelay{0.0, 0.0, false, 0.0, 0.0, 0.0, false};
+    mIonospheric           = IonosphericDelay{0.0, 0.0, false, 0.0, 0.0, 0.0, false, false};
     mAntennaPhaseVariation = Correction{0.0, false};
 
     mGroundPosition = location;
@@ -296,6 +296,7 @@ void Observation::compute_ionospheric(CorrectionData const& correction_data) NOE
 
     mIonospheric.grid_residual = correction.grid_residual;
     mIonospheric.poly_residual = correction.polynomial_residual;
+    mIonospheric.grid_valid    = correction.grid_valid;
     mIonospheric.valid         = true;
 
     mIonospheric.quality       = correction.quality;
@@ -766,6 +767,7 @@ void Observation::compute_ranges() NOEXCEPT {
         row.has_code_bias     = mCodeBias.valid;
         row.has_phase_bias    = mPhaseBias.valid;
         row.has_ionospheric   = mIonospheric.valid;
+        row.has_stec_grid     = mIonospheric.valid && mIonospheric.grid_valid;
         row.has_tropospheric =
             mTropospheric.valid || (mUseTroposphericModel && mTropospheric.valid_model);
         row.has_phase_windup = mCurrent->phase_windup.valid;

@@ -47,17 +47,6 @@ struct CorrectionPointSet {
     // Convert array index (the index of the grid point in the array from LPP) to an absolute index
     // that includes invalid grid points.
     NODISCARD bool array_to_index(long array_index, CorrectionPointInfo* result) const NOEXCEPT;
-
-    NODISCARD double latitude_min() const NOEXCEPT { return reference_point_latitude; }
-    NODISCARD double latitude_max() const NOEXCEPT {
-        return reference_point_latitude +
-               static_cast<double>(number_of_steps_latitude) * step_of_latitude;
-    }
-    NODISCARD double longitude_min() const NOEXCEPT { return reference_point_longitude; }
-    NODISCARD double longitude_max() const NOEXCEPT {
-        return reference_point_longitude +
-               static_cast<double>(number_of_steps_longitude) * step_of_longitude;
-    }
 };
 
 }  // namespace tokoro

@@ -167,7 +167,8 @@ void DiagFile::write_header() noexcept {
     fprintf(mFile, "CLOCK                 SSR clock correction (evaluated), meters\n");
     fprintf(mFile, "CODE_BIAS             Signal code bias, meters\n");
     fprintf(mFile, "PHASE_BIAS            Signal phase bias, meters\n");
-    fprintf(mFile, "STEC_GRID             Grid ionospheric delay (STEC), meters\n");
+    fprintf(mFile, "STEC_GRID             Grid ionospheric delay (STEC), meters (- if the grid "
+                   "residual is unavailable)\n");
     fprintf(mFile, "STEC_POLY             Polynomial ionospheric delay (STEC), meters\n");
     fprintf(mFile,
             "STEC_TOTAL            Total ionospheric delay (after height correction), meters\n");
@@ -325,7 +326,10 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
         snprintf(phase_bias_s, sizeof(phase_bias_s), "%10s", "-");
 
     if (row.has_ionospheric) {
-        snprintf(stec_grid_s, sizeof(stec_grid_s), "%+10.5f", row.stec_grid);
+        if (row.has_stec_grid)
+            snprintf(stec_grid_s, sizeof(stec_grid_s), "%+10.5f", row.stec_grid);
+        else
+            snprintf(stec_grid_s, sizeof(stec_grid_s), "%10s", "-");
         snprintf(stec_poly_s, sizeof(stec_poly_s), "%+10.5f", row.stec_poly);
         snprintf(stec_hcorr_s, sizeof(stec_hcorr_s), "%+11.6f", row.stec_height_correction);
     } else {
