@@ -19,12 +19,12 @@ using namespace generator::tokoro;
 static constexpr double DEG2RAD = M_PI / 180.0;
 
 // 3x3 array, north-west corner at 60N 10E, 1 degree spacing. Absolute index = row * 3 + col.
-static CorrectionPointSet make_set(uint64_t bitmask) {
+static CorrectionPointSet make_set(uint64_t bitmask, double reference_longitude = 10.0) {
     CorrectionPointSet set{};
     set.set_id                    = 7;
     set.grid_point_count          = 9;
     set.reference_point_latitude  = 60.0;
-    set.reference_point_longitude = 10.0;
+    set.reference_point_longitude = reference_longitude;
     set.step_of_latitude          = 1.0;
     set.step_of_longitude         = 1.0;
     set.number_of_steps_latitude  = 2;
@@ -37,6 +37,8 @@ static CorrectionPointSet make_set(uint64_t bitmask) {
 static uint64_t bit(long i) {
     return 1ULL << (63 - i);
 }
+
+namespace {
 
 struct Gridded {
     GNSS_SSR_GriddedCorrection_r16              msg{};
@@ -63,6 +65,8 @@ struct Gridded {
         msg.gridList_r16.list.size  = static_cast<int>(count);
     }
 };
+
+}  // namespace
 
 static double dry(long entry) {
     return 2.3 + 0.004 * static_cast<double>(entry + 1);
@@ -170,4 +174,23 @@ TEST_CASE("Tokoro grid: entry count does not match bitmask") {
 
     double value = 0.0;
     CHECK_FALSE(tropo_at(data, 58.5, 11.5, value));
+}
+
+TEST_CASE("Tokoro grid: crossing the antimeridian") {
+    // Columns at 179.5E, 180.5E (= 179.5W) and 181.5E (= 178.5W)
+    auto set = make_set(0xFFFFFFFFFFFFFFFFULL, 179.5);
+
+    Gridded        gridded(9);
+    CorrectionData data{};
+    data.correction_point_set = &set;
+    data.add_correction(GNSS_ID__gnss_id_gps, &gridded.msg, set);
+
+    double value = 0.0;
+    REQUIRE(tropo_at(data, 59.5, -179.0, value));
+    CHECK(value == doctest::Approx((dry(1) + dry(2) + dry(4) + dry(5)) / 4.0));
+    REQUIRE(tropo_at(data, 59.5, 179.75, value));
+    CHECK(value ==
+          doctest::Approx(0.75 * (dry(0) + dry(3)) / 2.0 + 0.25 * (dry(1) + dry(4)) / 2.0));
+    CHECK_FALSE(tropo_at(data, 59.5, 179.0, value));
+    CHECK_FALSE(tropo_at(data, 59.5, -178.0, value));
 }

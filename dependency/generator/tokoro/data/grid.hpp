@@ -59,16 +59,28 @@ struct GridData {
     };
 
     NODISCARD GridPoint const* point_at(long latitude_index, long longitude_index) const NOEXCEPT;
+    // `dx`/`dy` are the position within the cell, 0..1 from the top-left corner towards south/east
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
-                       GridPoint const*& br) const NOEXCEPT;
+                       GridPoint const*& br, double& dx, double& dy) const NOEXCEPT;
 
     GridStatus ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now, double max_age,
                            double& ionospheric_residual) const NOEXCEPT;
     GridStatus tropospheric(Float3 llh, ts::Tai const& now, double max_age,
                             TroposphericCorrection& correction) const NOEXCEPT;
 
+    // True if the grid was built from a correction point set with the same id and layout
+    NODISCARD bool matches(CorrectionPointSet const& set) const NOEXCEPT {
+        return correction_point_set_id == set.set_id &&
+               reference_latitude == set.reference_point_latitude &&
+               reference_longitude == set.reference_point_longitude &&
+               delta_latitude == set.step_of_latitude && delta_longitude == set.step_of_longitude &&
+               number_of_steps_latitude == set.number_of_steps_latitude &&
+               number_of_steps_longitude == set.number_of_steps_longitude && bitmask == set.bitmask;
+    }
+
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
         correction_point_set_id   = correction_point_set.set_id;
+        bitmask                   = correction_point_set.bitmask;
         reference_latitude        = correction_point_set.reference_point_latitude;
         reference_longitude       = correction_point_set.reference_point_longitude;
         delta_latitude            = correction_point_set.step_of_latitude;
@@ -110,6 +122,7 @@ struct GridData {
     uint16_t               correction_point_set_id;
     double                 reference_latitude;   // north-west corner [deg]
     double                 reference_longitude;  // north-west corner [deg]
+    uint64_t               bitmask;
     double                 delta_latitude;
     double                 delta_longitude;
     long                   number_of_steps_latitude;
