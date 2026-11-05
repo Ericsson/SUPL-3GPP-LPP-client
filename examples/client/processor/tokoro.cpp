@@ -151,7 +151,7 @@ void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019* rtcm) {
     ephemeris.ca_or_p_on_l2     = rtcm->code_on_l2;
     ephemeris.ura_index         = rtcm->sv_accuracy;
     ephemeris.sv_health         = rtcm->sv_health;
-    ephemeris.lpp_iod           = rtcm->iode;
+    ephemeris.lpp_iod           = rtcm->iodc;
     ephemeris.iodc              = rtcm->iodc;
     ephemeris.iode              = rtcm->iode;
     ephemeris.aodo              = 0;

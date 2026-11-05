@@ -27,6 +27,7 @@ namespace tokoro {
 
 struct IonosphericCorrection {
     double grid_residual;
+    bool   grid_valid;
     double polynomial_residual;
     double vtec_grid_residual;
     double vtec_polynomial_residual;

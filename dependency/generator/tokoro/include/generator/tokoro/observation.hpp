@@ -60,6 +60,7 @@ struct IonosphericDelay {
     double height_correction;
     double quality;
     bool   quality_valid;
+    bool   grid_valid;
 };
 
 struct Correction {
@@ -235,9 +236,9 @@ private:
     Correction             mAntennaPhaseVariation;  // PCV pattern (phase only), metres
     double                 mAntennaPcoRange{0.0};   // PCO projected on LOS (code+phase), metres
 
-    double mPhaseRange;
-    double mPhaseRangeRate;
-    double mCodeRange;
+    double mPhaseRange{0.0};
+    double mPhaseRangeRate{0.0};
+    double mCodeRange{0.0};
 
     ts::Tai mCodeBiasEpoch{};
     ts::Tai mPhaseBiasEpoch{};

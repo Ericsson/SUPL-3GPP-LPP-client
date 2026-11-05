@@ -17,7 +17,7 @@ OrbitCorrection const* CorrectionData::orbit_correction(SatelliteId id,
         return nullptr;
     }
     if (max_orbit_age > 0.0) {
-        auto age = mLatestCorrectionTime - it->second.reference_time;
+        auto age = mLatestCorrectionTime - it->second.epoch_time;
         if (age > max_orbit_age) {
             WARNF("orbit correction for %s is too old (%.1fs > %.1fs limit) - dropping", id.name(),
                   age, max_orbit_age);
@@ -36,7 +36,7 @@ ClockCorrection const* CorrectionData::clock_correction(SatelliteId id,
         return nullptr;
     }
     if (max_clock_age > 0.0) {
-        auto age = mLatestCorrectionTime - it->second.reference_time;
+        auto age = mLatestCorrectionTime - it->second.epoch_time;
         if (age > max_clock_age) {
             WARNF("clock correction for %s is too old (%.1fs > %.1fs limit) - dropping", id.name(),
                   age, max_clock_age);

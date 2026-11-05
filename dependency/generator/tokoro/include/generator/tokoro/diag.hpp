@@ -88,6 +88,7 @@ struct DiagRow {
     bool        has_code_bias{false};
     bool        has_phase_bias{false};
     bool        has_ionospheric{false};
+    bool        has_stec_grid{false};
     bool        has_tropospheric{false};
     bool        has_phase_windup{false};
     bool        has_ant_phase{false};
