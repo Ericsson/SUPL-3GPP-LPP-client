@@ -1326,6 +1326,7 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
     mCorrectionData->max_bias_age         = mMaxBiasAge;
     mCorrectionData->max_iono_age         = mMaxIonoAge;
     mCorrectionData->max_tropo_age        = mMaxTropoAge;
+    mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
@@ -1915,6 +1916,8 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
         mCorrectionData->max_bias_age         = mMaxBiasAge;
         mCorrectionData->max_iono_age         = mMaxIonoAge;
         mCorrectionData->max_tropo_age        = mMaxTropoAge;
+        mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
+        mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
     }
 
     TRACEF("load correction data");

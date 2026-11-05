@@ -127,22 +127,30 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh, IonosphericCorre
         return false;
     }
 
-    auto grid_it = mGrid.find(sv_id.gnss());
+    char const* grid_reason = "no_grid";
+    auto        grid_it     = mGrid.find(sv_id.gnss());
     if (grid_it != mGrid.end()) {
         auto status = grid_it->second.ionospheric(sv_id, llh, mLatestCorrectionTime, max_iono_age,
                                                   correction.grid_residual);
-        correction.grid_valid = status == GridData::GridStatus::Success;
-        if (status == GridData::GridStatus::PositionOutsideGrid) {
-            WARNF("ionospheric correction not available for %s: position outside grid",
-                  sv_id.name());
-        } else if (status == GridData::GridStatus::MissingSatelliteData) {
-            WARNF("ionospheric correction not available for %s: satellite data missing from "
-                  "grid points",
-                  sv_id.name());
-        } else if (status == GridData::GridStatus::StaleData) {
-            WARNF("ionospheric correction not available for %s: grid point data too old",
-                  sv_id.name());
+        switch (status) {
+        case GridData::GridStatus::Success: correction.grid_valid = true; break;
+        case GridData::GridStatus::PositionOutsideGrid: grid_reason = "grid_outside"; break;
+        case GridData::GridStatus::MissingSatelliteData: grid_reason = "grid_missing_sat"; break;
+        case GridData::GridStatus::StaleData: grid_reason = "grid_stale"; break;
         }
+    }
+
+    if (!correction.grid_valid) {
+        correction.grid_residual = 0.0;
+        if (iono_polynomial_only) {
+            VERBOSEF("ionospheric grid residual not available for %s (%s): polynomial only",
+                     sv_id.name(), grid_reason);
+            return true;
+        }
+        WARNF("ionospheric correction not available for %s: no grid residual (%s)", sv_id.name(),
+              grid_reason);
+        if (data_status) data_status->fail(grid_reason);
+        return false;
     }
 
     return true;

@@ -420,22 +420,13 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
         auto& gnss_grid = mGrid[satellite_gnss];
         gnss_grid.init(*correction_point_set);
 
-        for (int i = 0; i < list.count; i++) {
-            auto element = list.array[i];
-            if (!element) continue;
-
-            CorrectionPointInfo correction_point;
-            if (!correction_point_set->array_to_index(i, &correction_point)) {
-                WARNF("correction point set array to index failed: %d", i);
-                continue;
-            }
+        CorrectionPointInfo correction_point{};
+        for (long i = 0; correction_point_set->array_to_index(i, &correction_point); i++) {
             DEBUGF("point: %s %2ld,%2ld, (%2ld,%2ld), %.14f, %.14f, %.14f",
                    correction_point.is_valid ? "OK " : "BAD", correction_point.array_index,
                    correction_point.absolute_index, correction_point.latitude_index,
                    correction_point.longitude_index, correction_point.position.x,
                    correction_point.position.y, correction_point.position.z);
-            // xer_fprint(stdout, &asn_DEF_GridElement_r16, element);
-
             gnss_grid.add_point(correction_point);
         }
     }

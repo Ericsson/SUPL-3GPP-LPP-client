@@ -312,6 +312,7 @@ public:
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
     void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
+    void set_iono_polynomial_only(bool enabled) NOEXCEPT { mIonoPolynomialOnly = enabled; }
     void set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
                                        double reference_point_longitude,
                                        long   number_of_steps_latitude,
@@ -408,6 +409,7 @@ private:
     bool   mUseReceptionTimeForOrbitAndClockCorrections;
     bool   mUseOrbitCorrectionInIteration;
     bool   mIgnoreBitmask;
+    bool   mIonoPolynomialOnly{false};
 
     mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;
 

@@ -120,6 +120,9 @@ struct CorrectionData {
     double max_iono_age  = -1.0;
     double max_tropo_age = -1.0;
 
+    // Accept the STEC polynomial without the gridded STEC residual. By default both are required.
+    bool iono_polynomial_only = false;
+
 private:
     ts::Tai mLatestCorrectionTime;
 
