@@ -83,13 +83,19 @@ static long cell_candidates(double position, long steps, long* cells) {
 }
 
 bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr,
-                             GridPoint const*& bl, GridPoint const*& br) const NOEXCEPT {
+                             GridPoint const*& bl, GridPoint const*& br, double& dx,
+                             double& dy) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     if (delta_latitude <= 0.0 || delta_longitude <= 0.0) return false;
 
     auto row = (reference_latitude - llh.x * constant::RAD2DEG) / delta_latitude;
     auto col = (llh.y * constant::RAD2DEG - reference_longitude) / delta_longitude;
+    // grids crossing the antimeridian: the position may be one revolution behind the reference
+    auto revolution = 360.0 / delta_longitude;
+    if (col < 0.0 && col + revolution <= static_cast<double>(number_of_steps_longitude) + 1e-6) {
+        col += revolution;
+    }
     VERBOSEF("grid position: row %+.6f col %+.6f", row, col);
 
     long rows[2];
@@ -110,6 +116,8 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
             tr = p_tr;
             bl = p_bl;
             br = p_br;
+            dx = row - static_cast<double>(rows[r]);
+            dy = col - static_cast<double>(cols[c]);
             return true;
         }
     }
@@ -127,7 +135,9 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh, ts::Ta
     GridPoint const* tr = nullptr;
     GridPoint const* bl = nullptr;
     GridPoint const* br = nullptr;
-    if (!find_4_points(llh, tl, tr, bl, br)) {
+    double           dx = 0.0;
+    double           dy = 0.0;
+    if (!find_4_points(llh, tl, tr, bl, br, dx, dy)) {
         return GridStatus::PositionOutsideGrid;
     }
 
@@ -149,9 +159,6 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh, ts::Ta
             }
         }
     }
-
-    auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
-    auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
 
     VERBOSEF("dx: %+.14f", dx);
     VERBOSEF("dy: %+.14f", dy);
@@ -181,7 +188,9 @@ GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, doub
     GridPoint const* tr = nullptr;
     GridPoint const* bl = nullptr;
     GridPoint const* br = nullptr;
-    if (find_4_points(llh, tl, tr, bl, br)) {
+    double           dx = 0.0;
+    double           dy = 0.0;
+    if (find_4_points(llh, tl, tr, bl, br, dx, dy)) {
         VERBOSEF("bilinear interpolation");
 
         if (!tl->has_tropospheric_data() || !tr->has_tropospheric_data() ||
@@ -200,9 +209,6 @@ GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, doub
                 }
             }
         }
-
-        auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
-        auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
 
         VERBOSEF("dx: %+.14f", dx);
         VERBOSEF("dy: %+.14f", dy);

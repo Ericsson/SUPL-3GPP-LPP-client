@@ -42,18 +42,22 @@ Investigated, not issues:
 - [x] Dead code removed: `GridIndex`, `IonosphereGrid*`, `TroposphereGrid*`, `IonosphericCorrection::vtec_*_residual`, `#if 0` blocks in `satellite.cpp`.
 - [x] Tests: `tests/generator/tokoro/grid.cpp` (masked points, corners, shared edges, outside grid, count mismatch).
 
+## Fixed (round 4)
+
+- [x] `decode.cpp` `epoch_time_r15`: returns false for unsupported time IDs (SBAS, NavIC); the message is dropped with a warning instead of being stamped with `Tai::now()`.
+- [x] `data/gather.cpp`: grid is rebuilt when the correction point set layout (reference point, steps, bitmask) changes, not only the ID.
+- [x] `data/gather.cpp`: each gridded message replaces the previous one; troposphere values and STEC residuals that are no longer provided are cleared (only for the components the message carries).
+- [x] `data/grid.cpp`: grids crossing the ±180° meridian; interpolation fractions come from the cell lookup instead of point positions.
+- [x] RTCM 1019/1042/1046 → ephemeris conversion shared in `format/rtcm` (`format::rtcm::to_ephemeris`), used by the client Tokoro processor, `Rtcm2Eph` and `tokoro-post`.
+- [x] Tests: `tests/generator/tokoro/correction.cpp` (iono grid requirement and poly-only, satellite dropped from a later grid message, grid rebuild on layout change, orbit/clock age from the SSR epoch); antimeridian grid in `grid.cpp`.
+
 ## Improvements
 
-- [ ] `generator.cpp` `find_corrections`: QZSS gnss-ID assistance data is skipped as unsupported, so enabling QZSS gives satellites without SSR corrections.
+- [ ] QZSS output: `find_corrections` skips QZSS assistance data and there is no QZSS MSM (`rtcm::GenericGnssId` has no QZSS), so enabled QZSS satellites are never output. Needs QZSS in the RTCM generator first.
 - [ ] GLONASS generation is unimplemented (`generator.cpp` satellite list, `find_ephemeris`); FDMA channel not modeled in `Observation`.
-- [ ] Grid residuals/tropo per point are never cleared when a later gridded message omits a satellite or point; with max ages disabled (client default) a cell can mix epochs indefinitely.
-- [ ] Grid is only rebuilt when `correctionPointSetID` changes; a new correction point set with the same ID but different geometry/bitmask keeps the old layout.
-- [ ] `decode.cpp` `epoch_time_r15`: SBAS/NavIC time IDs fall back to `Tai::now()`; should reject instead.
 - [ ] Masked cell corner: no 3-point or nearest-point fallback, the cell has no correction.
-- [ ] `data/grid.cpp`: no handling for grids crossing the ±180° meridian.
 - [ ] `observation.cpp` `compute_ranges`: phase-range rate holds STEC, tropo and windup constant between the two states; only geometry and clock contribute.
-- [ ] Deduplicate RTCM→ephemeris conversion (`processor/tokoro.cpp`, `processor/rtcm2eph.cpp`, `tokoro-post/main.cpp`) and option validation between `examples/client` and `examples/tokoro-post`.
 - [ ] `satellite.cpp` `update()`: diagnostic detail strings are built even when diagnostics are disabled (only on the no-ephemeris path).
 - [ ] `data/grid.hpp` `point_from_array_index`: O(n) scan.
-- [ ] Dynamic VRS: no diagnostic when location updates go stale.
-- [ ] Tests: iono grid requirement, orbit/clock age checks, config CLI parsing.
+- [ ] Dynamic VRS: no diagnostic when location updates go stale (needs a staleness limit to be decided).
+- [ ] Tests: config CLI parsing (no test harness for `examples/client` yet).

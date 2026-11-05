@@ -2,6 +2,7 @@ add_executable(generator_tokoro_tests
     main.cpp
     coordinates.cpp
     grid.cpp
+    correction.cpp
 )
 target_include_directories(generator_tokoro_tests PRIVATE
     "${PROJECT_SOURCE_DIR}/dependency/generator/tokoro"

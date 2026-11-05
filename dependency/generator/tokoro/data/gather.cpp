@@ -96,8 +96,12 @@ void CorrectionData::add_correction(long                                 gnss_id
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
-    auto ssr_iod    = decode::iod_ssr_r16(orbit->iod_ssr_r15);
-    auto epoch_time = decode::epoch_time_r15(orbit->epochTime_r15);
+    auto    ssr_iod = decode::iod_ssr_r16(orbit->iod_ssr_r15);
+    ts::Tai epoch_time;
+    if (!decode::epoch_time_r15(orbit->epochTime_r15, epoch_time)) {
+        WARNF("unsupported epoch time system: %ld", orbit->epochTime_r15.gnss_TimeID.gnss_id);
+        return;
+    }
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -157,8 +161,12 @@ void CorrectionData::add_correction(long                                 gnss_id
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
-    auto ssr_iod    = decode::iod_ssr_r16(clock->iod_ssr_r15);
-    auto epoch_time = decode::epoch_time_r15(clock->epochTime_r15);
+    auto    ssr_iod = decode::iod_ssr_r16(clock->iod_ssr_r15);
+    ts::Tai epoch_time;
+    if (!decode::epoch_time_r15(clock->epochTime_r15, epoch_time)) {
+        WARNF("unsupported epoch time system: %ld", clock->epochTime_r15.gnss_TimeID.gnss_id);
+        return;
+    }
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -211,8 +219,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_CodeBias_r15 const* c
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
 
-    auto ssr_iod    = decode::iod_ssr_r16(code_bias->iod_ssr_r15);
-    auto epoch_time = decode::epoch_time_r15(code_bias->epochTime_r15);
+    auto    ssr_iod = decode::iod_ssr_r16(code_bias->iod_ssr_r15);
+    ts::Tai epoch_time;
+    if (!decode::epoch_time_r15(code_bias->epochTime_r15, epoch_time)) {
+        WARNF("unsupported epoch time system: %ld", code_bias->epochTime_r15.gnss_TimeID.gnss_id);
+        return;
+    }
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -262,8 +274,12 @@ void CorrectionData::add_correction(long                          gnss_id,
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
     auto signal_gnss    = signal_gnss_from_id(gnss_id);
 
-    auto ssr_iod    = decode::iod_ssr_r16(phase_bias->iod_ssr_r16);
-    auto epoch_time = decode::epoch_time_r15(phase_bias->epochTime_r16);
+    auto    ssr_iod = decode::iod_ssr_r16(phase_bias->iod_ssr_r16);
+    ts::Tai epoch_time;
+    if (!decode::epoch_time_r15(phase_bias->epochTime_r16, epoch_time)) {
+        WARNF("unsupported epoch time system: %ld", phase_bias->epochTime_r16.gnss_TimeID.gnss_id);
+        return;
+    }
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -326,8 +342,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_STEC_Correction_r16 c
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
-    auto epoch_time = decode::epoch_time_r15(stec->epochTime_r16);
-    auto ssr_iod    = decode::iod_ssr_r16(stec->iod_ssr_r16);
+    ts::Tai epoch_time;
+    if (!decode::epoch_time_r15(stec->epochTime_r16, epoch_time)) {
+        WARNF("unsupported epoch time system: %ld", stec->epochTime_r16.gnss_TimeID.gnss_id);
+        return;
+    }
+    auto ssr_iod = decode::iod_ssr_r16(stec->iod_ssr_r16);
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -410,8 +430,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
-    auto epoch_time = decode::epoch_time_r15(grid->epochTime_r16);
-    auto ssr_iod    = decode::iod_ssr_r16(grid->iod_ssr_r16);
+    ts::Tai epoch_time;
+    if (!decode::epoch_time_r15(grid->epochTime_r16, epoch_time)) {
+        WARNF("unsupported epoch time system: %ld", grid->epochTime_r16.gnss_TimeID.gnss_id);
+        return;
+    }
+    auto ssr_iod = decode::iod_ssr_r16(grid->iod_ssr_r16);
     if (epoch_time > mLatestCorrectionTime) {
         mLatestCorrectionTime = epoch_time;
     }
@@ -421,8 +445,7 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
     auto& list = grid->gridList_r16.list;
 
     auto grid_it = mGrid.find(satellite_gnss);
-    if (grid_it == mGrid.end() ||
-        grid_it->second.correction_point_set_id != correction_point_set->set_id) {
+    if (grid_it == mGrid.end() || !grid_it->second.matches(*correction_point_set)) {
         auto& gnss_grid = mGrid[satellite_gnss];
         gnss_grid.init(*correction_point_set);
 
@@ -441,6 +464,25 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
     grid_data.epoch_time    = epoch_time;
     grid_data.ssr_iod       = static_cast<uint16_t>(ssr_iod);
     grid_data.ssr_iod_valid = true;
+
+    // Each gridded message carries the whole grid, so a value missing from it is no longer
+    // provided. Only reset the components that the message carries.
+    auto has_tropo = false;
+    auto has_stec  = false;
+    for (int i = 0; i < list.count; i++) {
+        if (!list.array[i]) continue;
+        if (list.array[i]->tropospericDelayCorrection_r16) has_tropo = true;
+        if (list.array[i]->stec_ResidualSatList_r16) has_stec = true;
+    }
+    for (auto& point : grid_data.grid_points) {
+        if (has_tropo) point.tropspheric_valid = false;
+        if (has_stec) {
+            point.ionospheric_valid = false;
+            point.ionospheric_residual.clear();
+            point.ionospheric_residual_epoch.clear();
+        }
+    }
+
     for (int i = 0; i < list.count; i++) {
         auto element = list.array[i];
         if (!element) continue;
