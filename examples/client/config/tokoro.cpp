@@ -455,6 +455,13 @@ static args::ValueFlagList<std::string> gNavFile{
     {"tkr-nav-file"},
 };
 
+static args::Flag gIonoPolynomialOnly{
+    gGroup,
+    "iono-poly-only",
+    "Allow the STEC polynomial without the gridded STEC residual",
+    {"tkr-iono-poly-only"},
+};
+
 static args::Flag gIgnoreBitmask{
     gGroup,
     "ignore-bitmask",
@@ -696,12 +703,13 @@ void parse(Config* config) {
     tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
     tokoro.time_step           = 1.0;
 
-    tokoro.antex_file          = "";
-    tokoro.ignore_bitmask      = false;
-    tokoro.deduplicate_epochs  = false;
-    tokoro.output_tag          = "";
-    tokoro.ephemeris_max_cache = static_cast<size_t>(gEphemerisMaxCache.Get());
-    tokoro.elevation_mask      = gElevationMask.Get();
+    tokoro.antex_file           = "";
+    tokoro.ignore_bitmask       = false;
+    tokoro.iono_polynomial_only = false;
+    tokoro.deduplicate_epochs   = false;
+    tokoro.output_tag           = "";
+    tokoro.ephemeris_max_cache  = static_cast<size_t>(gEphemerisMaxCache.Get());
+    tokoro.elevation_mask       = gElevationMask.Get();
 
     // Per-component max correction age: start from per-component defaults, then apply
     // --tkr-max-age as an override for all, then per-component flags override individually.
@@ -916,6 +924,7 @@ void parse(Config* config) {
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
     if (gNavFile) tokoro.nav_files = gNavFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
+    if (gIonoPolynomialOnly) tokoro.iono_polynomial_only = true;
     if (gDeduplicateEpochs) tokoro.deduplicate_epochs = true;
     if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
     if (gDiagOutputDir) tokoro.diag_output_dir = gDiagOutputDir.Get();
@@ -1118,6 +1127,7 @@ void dump(TokoroConfig const& config) {
     for (auto const& nf : config.nav_files)
         DEBUGF("nav file:   \"%s\"", nf.c_str());
     DEBUGF("ignore bitmask: %s", config.ignore_bitmask ? "true" : "false");
+    DEBUGF("iono polynomial only: %s", config.iono_polynomial_only ? "true" : "false");
     DEBUGF("elevation mask: %f degrees", config.elevation_mask);
 }
 

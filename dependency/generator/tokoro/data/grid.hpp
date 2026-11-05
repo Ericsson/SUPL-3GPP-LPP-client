@@ -124,7 +124,7 @@ struct GridData {
 
     GridPoint* point_from_array_index(long array_index) {
         for (auto& grid_point : grid_points) {
-            if (grid_point.array_index == array_index) return &grid_point;
+            if (grid_point.valid && grid_point.array_index == array_index) return &grid_point;
         }
         return nullptr;
     }

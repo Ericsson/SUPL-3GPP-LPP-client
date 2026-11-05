@@ -106,6 +106,7 @@ struct Config {
     bool                     ocit                              = false;
     bool                     rtoc                              = false;
     bool                     ignore_bitmask                    = false;
+    bool                     iono_poly_only                    = false;
     bool                     fake_cps_set                      = false;
     uint16_t                 fake_cps_id                       = 0;
     double                   fake_cps_lat                      = 0;
@@ -346,6 +347,8 @@ static Config parse_args(int argc, char** argv) {
             cfg.rtoc = true;
         else if (arg == "--ignore-bitmask")
             cfg.ignore_bitmask = true;
+        else if (arg == "--iono-poly-only")
+            cfg.iono_poly_only = true;
         else if (arg == "--cps-id") {
             cfg.fake_cps_id  = static_cast<uint16_t>(std::stoi(next()));
             cfg.fake_cps_set = true;
@@ -424,7 +427,7 @@ static Config parse_args(int argc, char** argv) {
                         "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
                         "[--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
-                        "[--ocit] [--rtoc] [--ignore-bitmask] "
+                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] "
                         "[--gen assistance|time-step|time-step-aligned|time-step-last] "
                         "[--time-step <seconds>]\n");
         exit(1);
@@ -636,6 +639,7 @@ int main(int argc, char** argv) {
     generator->set_ocit(cfg.ocit);
     generator->set_rtoc(cfg.rtoc);
     generator->set_ignore_bitmask(cfg.ignore_bitmask);
+    generator->set_iono_polynomial_only(cfg.iono_poly_only);
     if (cfg.fake_cps_set) {
         generator->set_fake_correction_point_set(
             cfg.fake_cps_id, cfg.fake_cps_lat, cfg.fake_cps_lon, cfg.fake_cps_steps_lat,

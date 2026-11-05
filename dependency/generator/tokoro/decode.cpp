@@ -66,7 +66,8 @@ ts::Tai epoch_time_r15(GNSS_SystemTime const& src_time) {
     auto time_of_day          = time_of_day_seconds + time_of_day_fraction;
 
     switch (src_time.gnss_TimeID.gnss_id) {
-    case GNSS_ID__gnss_id_gps: return ts::Tai(ts::Gps::from_day_tod(day_number, time_of_day));
+    case GNSS_ID__gnss_id_gps:
+    case GNSS_ID__gnss_id_qzss: return ts::Tai(ts::Gps::from_day_tod(day_number, time_of_day));
     case GNSS_ID__gnss_id_glonass: return ts::Tai(ts::Glo::from_day_tod(day_number, time_of_day));
     case GNSS_ID__gnss_id_galileo: return ts::Tai(ts::Gst::from_day_tod(day_number, time_of_day));
     case GNSS_ID__gnss_id_bds: return ts::Tai(ts::Bdt::from_day_tod(day_number, time_of_day));

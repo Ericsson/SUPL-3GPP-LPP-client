@@ -469,6 +469,7 @@ struct TokoroConfig {
     std::string              antex_file;
     std::vector<std::string> nav_files;
     bool                     ignore_bitmask;
+    bool                     iono_polynomial_only;
     bool                     deduplicate_epochs;
     std::string              output_tag;
     std::string              diag_output_dir;

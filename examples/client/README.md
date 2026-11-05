@@ -326,6 +326,8 @@
                                           requirement
         --tkr-iono-optional               Disable ionospheric correction
                                           requirement
+        --tkr-iono-poly-only              Allow the STEC polynomial without the
+                                          gridded STEC residual
         --tkr-use-tropospheric-model      Use tropospheric model if tropospheric
                                           correction are not available (requires
                                           tkr-tropo-optional)

@@ -329,6 +329,7 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mGenerator->set_rtoc(mConfig.rtoc);
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
+    mGenerator->set_iono_polynomial_only(mConfig.iono_polynomial_only);
     mGenerator->set_ephemeris_max_cache(mConfig.ephemeris_max_cache);
     mGenerator->set_max_orbit_age(mConfig.max_orbit_age);
     mGenerator->set_max_clock_age(mConfig.max_clock_age);
