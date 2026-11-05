@@ -37,14 +37,5 @@ struct TroposphericCorrection {
     double wet_east;
 };
 
-struct TroposphereGridPoint {
-    Float3                 position;
-    TroposphericCorrection tropospheric;
-};
-
-struct TroposphereGrid {
-    std::unordered_map<GridIndex, TroposphereGridPoint> points;
-};
-
 }  // namespace tokoro
 }  // namespace generator

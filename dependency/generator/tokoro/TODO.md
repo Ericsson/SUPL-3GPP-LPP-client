@@ -29,28 +29,31 @@ Investigated, not issues:
 - SSR scale factors in `decode.hpp` (orbit, clock C0-C2, code/phase bias, STEC C00-C11, residual b7/b16, tropo, reference point, step) match TS 37.355 v18.4.0.
 - Grid bilinear interpolation, row-major indexing and the NW-origin layout in `grid.cpp`/`set.cpp` match the spec.
 
+- `models/helper.hpp` `range_time_division`: the fractional ms is in [0, 1), so at most one carry is possible; the single-step fix-up is sufficient.
+- GLONASS and QZSS generation are off by default by design; settings left unchanged.
+
+## Fixed (round 3)
+
+- [x] `data/grid.cpp`: cell lookup rewritten to compute the cell from the reference point and steps instead of scanning for a valid top-left. Positions on the outer edge (including grid corners) are accepted with a 1e-6 step tolerance, and a position on a shared cell edge falls back to the neighbouring cell when the first one has a masked corner.
+- [x] `data/gather.cpp`: gridded messages whose `gridList` count differs from the enabled bitmask points are dropped with a warning (prevents silent shifting, e.g. with `--tkr-ignore-bitmask`).
+- [x] `data/gather.cpp`: `TOKORO_GRID_DUMP` resolved once instead of `getenv` per residual.
+- [x] `diag.cpp`: `mkdir`/`fopen` failures are logged; redundant `mkdir` removed.
+- [x] `generator.cpp`: satellite reserve matches the actual list (165).
+- [x] Dead code removed: `GridIndex`, `IonosphereGrid*`, `TroposphereGrid*`, `IonosphericCorrection::vtec_*_residual`, `#if 0` blocks in `satellite.cpp`.
+- [x] Tests: `tests/generator/tokoro/grid.cpp` (masked points, corners, shared edges, outside grid, count mismatch).
+
 ## Improvements
 
-- [ ] `data/grid.cpp` `find_top_left`: a position exactly on the outer south/east grid edge (e.g. the SE corner) fails the containment test from degree/radian round-off; add a small tolerance.
-- [ ] `generator.cpp` `find_corrections`: QZSS gnss-ID assistance data is skipped as unsupported, so QZSS satellites can never get SSR corrections even though `generate_qzs` exists.
-- [ ] `data/gather.cpp`: no check that `gridList` count equals the number of enabled bitmask points; with `--tkr-ignore-bitmask` and a really masked grid, entries shift onto the wrong points silently.
-
+- [ ] `generator.cpp` `find_corrections`: QZSS gnss-ID assistance data is skipped as unsupported, so enabling QZSS gives satellites without SSR corrections.
+- [ ] GLONASS generation is unimplemented (`generator.cpp` satellite list, `find_ephemeris`); FDMA channel not modeled in `Observation`.
 - [ ] Grid residuals/tropo per point are never cleared when a later gridded message omits a satellite or point; with max ages disabled (client default) a cell can mix epochs indefinitely.
 - [ ] Grid is only rebuilt when `correctionPointSetID` changes; a new correction point set with the same ID but different geometry/bitmask keeps the old layout.
-- [ ] `data/gather.cpp`: `TOKORO_GRID_DUMP` calls `getenv` per residual and never closes the file.
 - [ ] `decode.cpp` `epoch_time_r15`: SBAS/NavIC time IDs fall back to `Tai::now()`; should reject instead.
-
-- [ ] `data/grid.cpp` `find_top_left`: interpolation requires all four cell corners, and the top-left must be valid. A VRS in a cell with one masked corner is reported as outside the grid; consider 3-point or nearest-point fallback.
+- [ ] Masked cell corner: no 3-point or nearest-point fallback, the cell has no correction.
 - [ ] `data/grid.cpp`: no handling for grids crossing the ±180° meridian.
 - [ ] `observation.cpp` `compute_ranges`: phase-range rate holds STEC, tropo and windup constant between the two states; only geometry and clock contribute.
-- [ ] Front-end parity: QZSS hard-coded off in client but configurable in tokoro-post; `--tkr-no-glonass` exists in client but GLONASS generation is unimplemented (`generator.cpp` satellite list, `find_ephemeris`).
 - [ ] Deduplicate RTCM→ephemeris conversion (`processor/tokoro.cpp`, `processor/rtcm2eph.cpp`, `tokoro-post/main.cpp`) and option validation between `examples/client` and `examples/tokoro-post`.
-- [ ] `diag.cpp`: log when `fopen`/`mkdir` fails; simplify `mkdirs()`.
-- [ ] `satellite.cpp` `update()`: per-epoch diagnostic string building even when diagnostics are disabled.
-- [ ] `generator.cpp:94`: satellite reserve is 127, actual count is 141.
-- [ ] `models/helper.hpp` `range_time_division`: single-step overflow fix-up; use a loop or assert.
-- [ ] Remove dead code: `GridIndex`, `IonosphereGrid*`, `TroposphereGrid*`, `IonosphericCorrection::vtec_*_residual`, `#if 0` blocks in `satellite.cpp`.
+- [ ] `satellite.cpp` `update()`: diagnostic detail strings are built even when diagnostics are disabled (only on the no-ephemeris path).
 - [ ] `data/grid.hpp` `point_from_array_index`: O(n) scan.
-- [ ] GLONASS FDMA channel not modeled in `Observation` (needed before GLONASS support).
 - [ ] Dynamic VRS: no diagnostic when location updates go stale.
 - [ ] Tests: iono grid requirement, orbit/clock age checks, config CLI parsing.

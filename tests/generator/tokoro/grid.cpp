@@ -98,9 +98,13 @@ TEST_CASE("Tokoro grid: masked north-west point") {
     REQUIRE(tropo_at(data, 58.5, 10.5, value));
     CHECK(value == doctest::Approx((dry(2) + dry(3) + dry(5) + dry(6)) / 4.0));
 
-    // Next to grid point 8 (south-east corner) -> entry 7
-    REQUIRE(tropo_at(data, 58.0001, 11.9999, value));
-    CHECK(value == doctest::Approx(dry(7)).epsilon(1e-5));
+    // Exactly on grid point 8 (south-east corner) -> entry 7
+    REQUIRE(tropo_at(data, 58.0, 12.0, value));
+    CHECK(value == doctest::Approx(dry(7)));
+
+    // On the edge between the incomplete cell 0,1,3,4 and the complete cell 3,4,6,7
+    REQUIRE(tropo_at(data, 59.0, 10.5, value));
+    CHECK(value == doctest::Approx((dry(2) + dry(3)) / 2.0));
 
     // Cell with the masked corner 0 has no correction
     CHECK_FALSE(tropo_at(data, 59.5, 10.5, value));
@@ -143,6 +147,27 @@ TEST_CASE("Tokoro grid: no bitmask") {
     double value = 0.0;
     REQUIRE(tropo_at(data, 59.5, 10.5, value));
     CHECK(value == doctest::Approx((dry(0) + dry(1) + dry(3) + dry(4)) / 4.0));
-    REQUIRE(tropo_at(data, 58.0001, 11.9999, value));
-    CHECK(value == doctest::Approx(dry(8)).epsilon(1e-5));
+    REQUIRE(tropo_at(data, 58.0, 12.0, value));
+    CHECK(value == doctest::Approx(dry(8)));
+    REQUIRE(tropo_at(data, 60.0, 10.0, value));
+    CHECK(value == doctest::Approx(dry(0)));
+
+    // Outside the grid
+    CHECK_FALSE(tropo_at(data, 60.1, 10.5, value));
+    CHECK_FALSE(tropo_at(data, 59.5, 12.1, value));
+}
+
+TEST_CASE("Tokoro grid: entry count does not match bitmask") {
+    uint64_t mask = 0;
+    for (long i = 1; i < 9; i++)
+        mask |= bit(i);
+    auto set = make_set(mask);
+
+    Gridded        gridded(9);
+    CorrectionData data{};
+    data.correction_point_set = &set;
+    data.add_correction(GNSS_ID__gnss_id_gps, &gridded.msg, set);
+
+    double value = 0.0;
+    CHECK_FALSE(tropo_at(data, 58.5, 11.5, value));
 }

@@ -400,6 +400,12 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
         return;
     }
 
+    if (grid->gridList_r16.list.count != cps.enabled_point_count()) {
+        WARNF("gridded correction has %d points, correction point set %u enables %ld - dropping",
+              grid->gridList_r16.list.count, cps.set_id, cps.enabled_point_count());
+        return;
+    }
+
     this->correction_point_set = &cps;
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
@@ -488,8 +494,11 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                 grid_point->ionospheric_residual[satellite_id]       = ionospheric;
                 grid_point->ionospheric_residual_epoch[satellite_id] = epoch_time;
 
-                if (auto* dump_path = std::getenv("TOKORO_GRID_DUMP")) {
-                    static FILE* dump_file = std::fopen(dump_path, "a");
+                static FILE* dump_file = [] {
+                    auto path = std::getenv("TOKORO_GRID_DUMP");
+                    return path ? std::fopen(path, "a") : nullptr;
+                }();
+                {
                     if (dump_file) {
                         auto utc = ts::Utc{epoch_time};
                         auto ts  = utc.rfc3339();

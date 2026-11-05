@@ -29,8 +29,6 @@ struct IonosphericCorrection {
     double grid_residual;
     bool   grid_valid;
     double polynomial_residual;
-    double vtec_grid_residual;
-    double vtec_polynomial_residual;
     double quality;
     bool   quality_valid;
 };
@@ -48,15 +46,6 @@ struct IonosphericPolynomial {
     ts::Tai  epoch_time;  // SSR STEC message epoch (assistance-data update time)
     uint16_t ssr_iod;     // SSR IOD of the STEC message
     bool     ssr_iod_valid;
-};
-
-struct IonosphereGridPoint {
-    Float3 position;
-    double ionospheric;
-};
-
-struct IonosphereGrid {
-    std::unordered_map<GridIndex, IonosphereGridPoint> points;
 };
 
 }  // namespace tokoro

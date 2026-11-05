@@ -91,9 +91,8 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRinexBuilder(ts::Utc::now().rinex_filename() + ".rnx", 3.04),
 #endif
       mGenerator(generator) {
-    // Initialize the satellite vector to the maximum number of satellites
-    // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
-    mSatellites.reserve(32 + 24 + 36 + 35);
+    // GPS: 32, GLONASS: 24, Galileo: 36, BeiDou: 63, QZSS: 10
+    mSatellites.reserve(32 + 24 + 36 + 63 + 10);
 
     // Initialize the satellites
     initialize_satellites();

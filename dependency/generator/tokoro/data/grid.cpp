@@ -52,93 +52,70 @@ static double interpolate(double a, double b, double t) {
     return a * (1.0 - t) + b * t;
 }
 
-GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
-    FUNCTION_SCOPE();
-
-    for (auto& grid_point : grid_points) {
-        if (!grid_point.valid) {
-            continue;
-        }
-
-        // a top-left cell origin must have a point below (next latitude row) and to
-        // its right (next longitude column); the last row/column cannot start a cell
-        if (grid_point.latitude_index >= number_of_steps_latitude ||
-            grid_point.longitude_index >= number_of_steps_longitude) {
-            continue;
-        }
-
-        auto x0 = grid_point.position.x;
-        auto y0 = grid_point.position.y;
-        auto x1 = x0 - delta_latitude;
-        auto y1 = y0 + delta_longitude;
-        VERBOSEF("latitude:  %+18.14f >= %+18.14f >= %+18.14f", x0, llh.x * constant::RAD2DEG, x1);
-        VERBOSEF("longitude: %+18.14f <= %+18.14f <= %+18.14f", y0, llh.y * constant::RAD2DEG, y1);
-        if (llh.x * constant::RAD2DEG <= x0 && llh.x * constant::RAD2DEG >= x1 &&
-            llh.y * constant::RAD2DEG >= y0 && llh.y * constant::RAD2DEG <= y1) {
-            VERBOSEF("found: %ld/%ld", grid_point.array_index, grid_point.absolute_index);
-            return &grid_point;
-        }
-    }
-
-    VERBOSEF("top left not found");
-    return nullptr;
+GridPoint const* GridData::point_at(long latitude_index, long longitude_index) const NOEXCEPT {
+    if (latitude_index < 0 || latitude_index > number_of_steps_latitude) return nullptr;
+    if (longitude_index < 0 || longitude_index > number_of_steps_longitude) return nullptr;
+    auto  index = latitude_index * (number_of_steps_longitude + 1) + longitude_index;
+    auto& point = grid_points[static_cast<size_t>(index)];
+    return point.valid ? &point : nullptr;
 }
 
-GridPoint const* GridData::find_with_absolute_index(long absolute_index) const NOEXCEPT {
-    FUNCTION_SCOPE();
+// Cells adjacent to `position` (in steps from the reference point): the cell containing it, plus
+// the neighbouring cell when it lies on a cell edge. Positions on the outer edge belong to the
+// last cell.
+static long cell_candidates(double position, long steps, long* cells) {
+    constexpr double EDGE_TOLERANCE = 1e-6;
+    if (steps <= 0) return 0;
+    if (position < -EDGE_TOLERANCE || position > static_cast<double>(steps) + EDGE_TOLERANCE)
+        return 0;
 
-    for (auto& grid_point : grid_points) {
-        if (!grid_point.valid) {
-            continue;
-        }
-
-        if (grid_point.absolute_index == absolute_index) {
-            return &grid_point;
-        }
+    auto nearest = std::round(position);
+    if (std::fabs(position - nearest) <= EDGE_TOLERANCE) {
+        auto edge  = static_cast<long>(nearest);
+        long count = 0;
+        if (edge < steps) cells[count++] = edge;
+        if (edge > 0) cells[count++] = edge - 1;
+        return count;
     }
 
-    VERBOSEF("absolute index not found: %ld", absolute_index);
-    return nullptr;
+    cells[0] = static_cast<long>(std::floor(position));
+    return 1;
 }
 
 bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr,
                              GridPoint const*& bl, GridPoint const*& br) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    auto top_left = find_top_left(llh);
-    if (top_left == nullptr) {
-        VERBOSEF("top left not found");
-        return false;
+    if (delta_latitude <= 0.0 || delta_longitude <= 0.0) return false;
+
+    auto row = (reference_latitude - llh.x * constant::RAD2DEG) / delta_latitude;
+    auto col = (llh.y * constant::RAD2DEG - reference_longitude) / delta_longitude;
+    VERBOSEF("grid position: row %+.6f col %+.6f", row, col);
+
+    long rows[2];
+    long cols[2];
+    auto row_count = cell_candidates(row, number_of_steps_latitude, rows);
+    auto col_count = cell_candidates(col, number_of_steps_longitude, cols);
+    for (long r = 0; r < row_count; r++) {
+        for (long c = 0; c < col_count; c++) {
+            auto p_tl = point_at(rows[r], cols[c]);
+            auto p_tr = point_at(rows[r], cols[c] + 1);
+            auto p_bl = point_at(rows[r] + 1, cols[c]);
+            auto p_br = point_at(rows[r] + 1, cols[c] + 1);
+            if (!p_tl || !p_tr || !p_bl || !p_br) {
+                VERBOSEF("cell %ld,%ld has a masked corner", rows[r], cols[c]);
+                continue;
+            }
+            tl = p_tl;
+            tr = p_tr;
+            bl = p_bl;
+            br = p_br;
+            return true;
+        }
     }
 
-    auto top_right = find_with_absolute_index(top_left->absolute_index + 1);
-    auto bottom_left =
-        find_with_absolute_index(top_left->absolute_index + (number_of_steps_longitude + 1));
-    auto bottom_right =
-        find_with_absolute_index(top_left->absolute_index + (number_of_steps_longitude + 1) + 1);
-    if (top_right == nullptr || bottom_left == nullptr || bottom_right == nullptr) {
-        VERBOSEF("4 points not found");
-        return false;
-    }
-
-    // verify the four points actually form a rectangle adjacent to top_left; this
-    // guards against any residual grid-layout inconsistency beyond find_top_left's
-    // own row/column bound check
-    if (top_right->latitude_index != top_left->latitude_index ||
-        top_right->longitude_index != top_left->longitude_index + 1 ||
-        bottom_left->latitude_index != top_left->latitude_index + 1 ||
-        bottom_left->longitude_index != top_left->longitude_index ||
-        bottom_right->latitude_index != top_left->latitude_index + 1 ||
-        bottom_right->longitude_index != top_left->longitude_index + 1) {
-        VERBOSEF("4 points do not form a rectangle");
-        return false;
-    }
-
-    tl = top_left;
-    tr = top_right;
-    bl = bottom_left;
-    br = bottom_right;
-    return true;
+    VERBOSEF("no complete cell found");
+    return false;
 }
 
 GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now,
