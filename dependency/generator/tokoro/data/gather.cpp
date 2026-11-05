@@ -427,8 +427,6 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
             CorrectionPointInfo correction_point;
             if (!correction_point_set->array_to_index(i, &correction_point)) {
                 WARNF("correction point set array to index failed: %d", i);
-                correction_point.is_valid = false;
-                gnss_grid.add_point(correction_point);
                 continue;
             }
             DEBUGF("point: %s %2ld,%2ld, (%2ld,%2ld), %.14f, %.14f, %.14f",

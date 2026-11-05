@@ -619,10 +619,10 @@ void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gMsmType.HelpDefault("5");
     gMsmType.HelpChoices({"4", "5", "6", "7"});
-    gVrsModeArg.HelpChoices({"fixed", "dynamic"});
+    gVrsModeArg.HelpChoices({"fixed", "grid", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
 
-    gGenStrategyArg.HelpChoices({"assistance", "time-step", "time-step-aligned"});
+    gGenStrategyArg.HelpChoices({"assistance", "time-step", "time-step-aligned", "time-step-last"});
     gGenStrategyArg.HelpDefault("assistance");
 
     gTimeStep.HelpDefault("1.0");

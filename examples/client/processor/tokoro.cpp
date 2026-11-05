@@ -394,7 +394,7 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
             std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
         mPeriodicTask->callback = [this]() {
             ASSERT(mGenerator, "generator is null");
-            ASSERT(mSystem, "system is null");
+            if (!mSystem) return;
             if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepLast) {
                 generate(mGenerator->last_correction_data_time());
             } else if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStep) {
