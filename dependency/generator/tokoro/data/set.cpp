@@ -46,8 +46,7 @@ bool CorrectionPointSet::array_to_index(long                 array_index,
     for (long y = 0; y <= number_of_steps_latitude; y++) {
         for (long x = 0; x <= number_of_steps_longitude; x++) {
             auto i        = y * (number_of_steps_longitude + 1) + x;
-            auto bit      = 1ULL << (64 - 1 - i);
-            auto is_valid = (bitmask & bit) != 0;
+            auto is_valid = i < 64 && (bitmask & (1ULL << (64 - 1 - i))) != 0;
 
             // only valid grid points are included in the compact array, so disabled
             // points must be skipped before comparing against the requested index
