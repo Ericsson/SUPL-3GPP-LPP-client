@@ -143,6 +143,8 @@ static char const* msm_sig(SatelliteId const& sv_id, int msm_id) {
 
 std::string DiagFile::rtcm_signal_name(SatelliteId const& sv_id,
                                        SignalId const&    signal_id) noexcept {
+    // the MSM table only covers GPS, Galileo and BeiDou
+    if (sv_id.is_glonass() || sv_id.is_qzss()) return signal_id.to_rinex();
     auto msm = signal_id.as_msm();
     if (msm.valid) return msm_sig(sv_id, static_cast<int>(msm.value));
     return signal_id.to_rinex();

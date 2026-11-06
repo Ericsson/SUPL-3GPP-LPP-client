@@ -79,10 +79,47 @@ Investigated, not an issue:
 - [x] Option to transform the broadcast orbits of all GNSS to a common frame before the SSR orbit correction: `--tkr-orbit-frame <frame>` / `--orbit-frame` (default off), with per-GNSS overrides `--tkr-orbit-source-frame <gnss>=<frame>` / `--orbit-source-frame`. Defaults: GPS WGS 84 by GPS week, GLONASS PZ-90.11; Galileo/BeiDou/QZSS only when a source frame is given. New PZ-90.11 <-> ITRF2008 edge (epoch 2010.0, no rates; values and rotation sign convention to be checked against the PZ-90.11 reference document). `frame_from_gps_week` now returns WGS 84 (G2296) from week 2296.
 - [ ] Coordinates library: no GTRF (Galileo), JGS (QZSS) or CGCS2000 (BeiDou) transformations; WGS 84 only G2296 is connected (older realizations are not transformed).
 
+## Fixed (round 8)
+
+- [x] `satelliteReferenceDatum-r15` is read; a regional datum is warned about once per GNSS (the datum itself is not in the message).
+- [x] VRS position frame: `--tkr-fixed-frame`, `--tkr-fixed-epoch`, `--tkr-fixed-velocity`, `--tkr-ssr-frame` (default itrf2020) in the client fixed VRS mode; `--pos-frame`, `--pos-epoch`, `--pos-velocity`, `--ssr-frame` in tokoro-post. The configured position is transformed to the SSR frame at the observation epoch (recomputed daily), using the coordinates transform graph (SWEREF 99 via NKG_RF17vel, ETRF/ITRF via Helmert) and the station velocity for epoch changes. The RTCM 1005/1006 position stays as configured, so a rover gets its position in the configured datum.
+
+## Fixed (round 9): GLONASS/QZSS
+
+- [x] GLONASS ephemeris selection: prefer the ephemeris whose tb matches the SSR IOD (even with the IOD consistency check off), otherwise the one with tb closest to the time. Previously the earliest valid one was used, i.e. up to 30 min of extrapolation (2-3 m orbit error vs about 1 m at 15 min).
+- [x] Opt-in switches, defaults unchanged: `--tkr-qzss` (client, QZSS was hard-coded off) and `--glo` (tokoro-post, GLONASS was hard-coded off).
+
+Verification (broadcast-only, zero SSR corrections, dataset2 22:50-23:50, against the Trimble receiver at the VRS, `ntrip-vrs.obs`, Tokoro RTCM MSM7 converted with convbin):
+- Frequency channels from DF419 match the receiver for all common satellites.
+- Iono-free code minus Tokoro code (per-epoch median removed): GPS std 0.05-0.11 m, GLONASS std 0.2-0.6 m with per-satellite offsets up to 6.6 m (receiver GLONASS code inter-frequency biases and broadcast clock errors); 10 s phase-rate residual GPS 3-16 mm, GLONASS 15-55 mm (outliers at ephemeris switches).
+- QZSS (synthetic VRS in Tokyo): MSM 1114-1117 decode in convbin as C1C/L1C, C2X/L2X, C5X/L5X with consistent code/phase.
+- Not verified: GLONASS/QZSS SSR corrections (no recording with GLONASS/QZSS SSR).
+
+## Verified with GLONASS SSR (round 10)
+
+Session `tokoro_compare/sessions/itrf-vrs_20261022_140701` (6 h, LPP SSR with GLONASS, device RTCM, provider VRS `SE_Lin_Office_ITRF`), `tokoro-post --glo` at the Lin Office VRS, compared with the provider's VRS observations (per-epoch median removed, phase per arc):
+
+| | code std | phase std |
+|---|---|---|
+| GPS L1C / L2W | 6 / 8 mm | 4.6 / 5.9 mm |
+| GLONASS G1C / G2C (13 sats) | 6 / 8 mm | 5.5 / 6.3 mm |
+| Galileo E1 / E6 | 6 / 7 mm | 9.8 / 4.7 mm |
+| BeiDou B1I / B3I | 9 / 11 mm | 4.4 / 5.8 mm |
+
+- `--orbit-frame itrf2020` changes GLONASS ranges by 4 +- 2 mm and fits the provider slightly worse (G1C phase 5.9 vs 5.5 mm): weak evidence that the corrections refer to the untransformed broadcast orbit.
+- The phase arcs break at jumps common to all satellites of a system (e.g. -1.44 / -6.2 cycles on GPS L1); these are the known reference-side events, not GLONASS specific.
+
+Fixed while doing this:
+- [x] RINEX nav reader: RINEX 4 (`> EPH <sat> <type>` records, also STO/EOP/ION skipped); before, a RINEX 4 file lost sync and loaded almost nothing.
+- [x] Diag file names for GLONASS/QZSS signals were `??.diag`.
+
+Found, not fixed (data source): the receiver in the session sends GLONASS RTCM 1020 that are days old (one fixed tb per slot for the whole session, NT = 1009-1019 while the day is 1026), so GLONASS needs `--nav` with a broadcast file there.
+
 ## Improvements
 
-- [ ] Datum flag `satelliteReferenceDatum-r15` of the SSR orbit corrections is not read; a regional datum is not detected.
-- [ ] VRS position frame/epoch: the configured VRS position is used as-is; no transformation into the SSR datum at the observation epoch (plate motion, station velocity model).
+- [ ] Station velocity models are compiled in (NKG_RF17vel, Nordic only); no external velocity grid files.
+- [ ] Shared broadcast-orbit frame handling for Idokeido SPP (broadcast-only orbits).
+
 
 - [ ] Masked cell corner: no 3-point or nearest-point fallback, the cell has no correction.
 - [ ] `observation.cpp` `compute_ranges`: phase-range rate holds STEC, tropo and windup constant between the two states; only geometry and clock contribute.

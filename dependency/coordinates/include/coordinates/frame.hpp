@@ -55,7 +55,13 @@ template <typename Frame>
 struct FrameTrait;
 
 char const* frame_name(FrameId id);
-FrameId     frame_from_gps_week(int week);
+
+struct FrameEpoch {
+    FrameTemporalModel temporal_model;
+    double             reference_epoch;
+};
+FrameEpoch frame_epoch(FrameId id);
+FrameId    frame_from_gps_week(int week);
 
 std::vector<FrameId> all_frames();
 bool                 frame_from_name(char const* name, FrameId& out);

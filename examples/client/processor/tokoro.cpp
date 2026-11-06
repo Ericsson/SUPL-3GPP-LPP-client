@@ -253,13 +253,25 @@ void Tokoro::vrs_mode_fixed() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
-                false,
+                mConfig.generate_qzss,
             });
 
         if (mConfig.fixed_physical_station_set) {
             Float3 physical_position{mConfig.fixed_physical_x, mConfig.fixed_physical_y,
                                      mConfig.fixed_physical_z};
             mReferenceStation->set_physical_ground_position(physical_position);
+        }
+
+        if (!mConfig.fixed_frame.empty()) {
+            Float3 velocity{mConfig.fixed_velocity_x, mConfig.fixed_velocity_y,
+                            mConfig.fixed_velocity_z};
+            if (!mReferenceStation->set_ground_position_frame(mConfig.fixed_frame.c_str(),
+                                                              mConfig.fixed_epoch, velocity,
+                                                              mConfig.ssr_frame.c_str())) {
+                ERRORF("invalid --tkr-fixed-frame \"%s\" or --tkr-ssr-frame \"%s\"",
+                       mConfig.fixed_frame.c_str(), mConfig.ssr_frame.c_str());
+                exit(1);
+            }
         }
     }
 }
@@ -291,7 +303,7 @@ void Tokoro::vrs_mode_grid() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
-                false,
+                mConfig.generate_qzss,
             });
     }
 }
@@ -365,7 +377,7 @@ void Tokoro::vrs_mode_dynamic() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
-                false,
+                mConfig.generate_qzss,
             });
 
         mLastUsedLocation = mLastLocation;

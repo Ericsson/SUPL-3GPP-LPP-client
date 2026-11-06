@@ -123,8 +123,13 @@ struct CorrectionData {
     // Accept the STEC polynomial without the gridded STEC residual. By default both are required.
     bool iono_polynomial_only = false;
 
+    // Satellite reference datum of the latest SSR orbit corrections: ITRF (false) or regional
+    NODISCARD bool regional_datum() const NOEXCEPT { return mRegionalDatum; }
+
 private:
-    ts::Tai mLatestCorrectionTime;
+    ts::Tai  mLatestCorrectionTime;
+    bool     mRegionalDatum{false};
+    unsigned mRegionalDatumWarned{0};
 
     std::unordered_map<SatelliteId, std::unordered_set<SignalId>> mSignals;
 

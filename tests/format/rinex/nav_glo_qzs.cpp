@@ -34,3 +34,21 @@ TEST_CASE("RINEX nav reader - GLONASS and QZSS records") {
                   ts::Utc::from_date_time(2026, 6, 6, 0, 15, 0.0).timestamp().full_seconds()));
     }
 }
+
+TEST_CASE("RINEX nav reader - RINEX 4") {
+    auto nav = format::rinex::parse_nav_file("tests/corpus/rinex/nav_rinex4.rnx");
+    // CNAV, STO and ION records are skipped
+    CHECK(nav.gps.size() == 1);
+    CHECK(nav.gal.size() == 1);
+    CHECK(nav.bds.size() == 1);
+    REQUIRE(nav.glo.size() == 1);
+    REQUIRE(nav.qzs.size() == 1);
+
+    CHECK(nav.gps[0].prn == 1);
+    CHECK(nav.gps[0].af0 == doctest::Approx(1.444183290005e-04));
+    CHECK(nav.glo[0].slot_number == 1);
+    CHECK(nav.glo[0].frequency_number == 1);
+    CHECK(nav.glo[0].position.x == doctest::Approx(2.215357617188e+04));
+    CHECK(nav.qzs[0].prn == 194);
+    CHECK(nav.bds[0].prn == 20);
+}

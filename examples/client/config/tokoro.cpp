@@ -57,6 +57,13 @@ static args::Flag gNoBeiDou{
     {"tkr-no-beidou"},
 };
 
+static args::Flag gQzss{
+    gGroup,
+    "qzss",
+    "Generate QZSS messages",
+    {"tkr-qzss"},
+};
+
 static args::ValueFlag<std::string> gMsmType{
     gGroup,
     "type",
@@ -153,6 +160,37 @@ static args::ValueFlag<double> gFixedPhysicalZ{
     "meter",
     "Z coordinate (RTCM/ECEF) of the physical reference station in Fixed VRS mode",
     {"tkr-fixed-physical-z"},
+};
+
+static args::ValueFlag<std::string> gFixedFrame{
+    gGroup,
+    "frame",
+    "Frame of --tkr-fixed-itrf-x/y/z (e.g. etrf2014, sweref99, itrf2014); the position is "
+    "transformed to --tkr-ssr-frame at the observation epoch",
+    {"tkr-fixed-frame"},
+};
+
+static args::ValueFlag<double> gFixedEpoch{
+    gGroup,
+    "year",
+    "Epoch (decimal year) of --tkr-fixed-itrf-x/y/z. Default: the frame's own epoch for "
+    "fixed-epoch frames, otherwise the observation epoch",
+    {"tkr-fixed-epoch"},
+};
+
+static args::ValueFlag<std::string> gFixedVelocity{
+    gGroup,
+    "vx,vy,vz",
+    "Station velocity (ECEF, m/year) used to move --tkr-fixed-itrf-x/y/z from --tkr-fixed-epoch "
+    "to the observation epoch",
+    {"tkr-fixed-velocity"},
+};
+
+static args::ValueFlag<std::string> gSsrFrame{
+    gGroup,
+    "frame",
+    "Frame of the SSR corrected orbits, used with --tkr-fixed-frame",
+    {"tkr-ssr-frame"},
 };
 
 static args::ValueFlag<double> gTimeStep{
@@ -659,6 +697,7 @@ void parse(Config* config) {
     tokoro.generate_glonass = true;
     tokoro.generate_galileo = true;
     tokoro.generate_beidou  = true;
+    tokoro.generate_qzss    = false;
     tokoro.msm_type         = TokoroConfig::MsmType::MSM5;
 
     tokoro.shapiro_correction                 = true;
@@ -711,6 +750,12 @@ void parse(Config* config) {
     tokoro.fixed_rtcm_x               = 0.0;
     tokoro.fixed_rtcm_y               = 0.0;
     tokoro.fixed_rtcm_z               = 0.0;
+    tokoro.fixed_frame                = "";
+    tokoro.fixed_epoch                = 0.0;
+    tokoro.fixed_velocity_x           = 0.0;
+    tokoro.fixed_velocity_y           = 0.0;
+    tokoro.fixed_velocity_z           = 0.0;
+    tokoro.ssr_frame                  = "itrf2020";
     tokoro.fixed_physical_station_set = false;
     tokoro.fixed_physical_x           = 0.0;
     tokoro.fixed_physical_y           = 0.0;
@@ -761,6 +806,7 @@ void parse(Config* config) {
     if (gNoGLONASS) tokoro.generate_glonass = false;
     if (gNoGalileo) tokoro.generate_galileo = false;
     if (gNoBeiDou) tokoro.generate_beidou = false;
+    if (gQzss) tokoro.generate_qzss = true;
 
     if (gMsmType) {
         auto type = gMsmType.Get();
@@ -943,6 +989,19 @@ void parse(Config* config) {
     if (gNavFile) tokoro.nav_files = gNavFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
     if (gIonoPolynomialOnly) tokoro.iono_polynomial_only = true;
+    if (gFixedFrame) tokoro.fixed_frame = gFixedFrame.Get();
+    if (gFixedEpoch) tokoro.fixed_epoch = gFixedEpoch.Get();
+    if (gSsrFrame) tokoro.ssr_frame = gSsrFrame.Get();
+    if (gFixedVelocity) {
+        if (sscanf(gFixedVelocity.Get().c_str(), "%lf,%lf,%lf", &tokoro.fixed_velocity_x,
+                   &tokoro.fixed_velocity_y, &tokoro.fixed_velocity_z) != 3) {
+            throw args::ValidationError("--tkr-fixed-velocity must be vx,vy,vz");
+        }
+    }
+    if ((gFixedEpoch || gFixedVelocity) && !gFixedFrame) {
+        throw args::ValidationError("--tkr-fixed-epoch and --tkr-fixed-velocity require "
+                                    "--tkr-fixed-frame");
+    }
     if (gOrbitFrame) tokoro.orbit_frame = gOrbitFrame.Get();
     for (auto const& value : gOrbitSourceFrame.Get()) {
         if (value.find('=') == std::string::npos) {
@@ -1064,6 +1123,7 @@ void dump(TokoroConfig const& config) {
     DEBUGF("glonass: %s", config.generate_glonass ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.generate_galileo ? "enabled" : "disabled");
     DEBUGF("beidou:  %s", config.generate_beidou ? "enabled" : "disabled");
+    DEBUGF("qzss:    %s", config.generate_qzss ? "enabled" : "disabled");
     DEBUGF("msm type: %s", [&]() {
         switch (config.msm_type) {
         case TokoroConfig::MsmType::MSM4: return "4";
