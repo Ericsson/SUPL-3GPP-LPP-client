@@ -73,6 +73,8 @@ struct Satellite {
 public:
     EXPLICIT Satellite(SatelliteId id, Float3 ground_position, Generator const& generator) NOEXCEPT;
 
+    void set_ground_position(Float3 ground_position) NOEXCEPT;
+
     void update(ts::Tai const& generation_time) NOEXCEPT;
 
     NODISCARD const SatelliteId& id() const NOEXCEPT { return mId; }

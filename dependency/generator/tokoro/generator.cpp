@@ -56,6 +56,7 @@ namespace tokoro {
 ReferenceStation::ReferenceStation(Generator&                    generator,
                                    ReferenceStationConfig const& config) NOEXCEPT
     : mGroundPosition(config.itrf_ground_position),
+      mGroundPositionInput(config.itrf_ground_position),
       mRtcmGroundPosition(config.rtcm_ground_position),
       mRtcmPhysicalGroundPosition(config.rtcm_ground_position),
       mRtcmPhysicalGroundPositionSet(false),
@@ -562,6 +563,36 @@ void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXC
     it->second.write(mGenerationTime, row);
 }
 
+bool ReferenceStation::set_ground_position_frame(char const* frame, double epoch, Float3 velocity,
+                                                 char const* ssr_frame) NOEXCEPT {
+    auto ground = GroundFrame::create(frame, epoch, velocity, ssr_frame);
+    if (!ground) return false;
+    INFOF("ground position in %s, transformed to %s", ground->frame_name(),
+          ground->ssr_frame_name());
+    mGroundFrame        = std::move(ground);
+    mGroundFrameTimeSet = false;
+    return true;
+}
+
+// Plate motion is a few cm per year, recomputing the position daily is more than enough
+void ReferenceStation::update_ground_position() NOEXCEPT {
+    if (!mGroundFrame) return;
+    if (mGroundFrameTimeSet &&
+        std::fabs(mGenerationTime.difference_seconds(mGroundFrameTime)) < 86400.0) {
+        return;
+    }
+
+    mGroundFrameTime    = mGenerationTime;
+    mGroundFrameTimeSet = true;
+    mGroundPosition     = mGroundFrame->position(mGroundPositionInput, mGenerationTime);
+    INFOF("ground position (%s): (%.4f, %.4f, %.4f) -> (%s): (%.4f, %.4f, %.4f) [%+.4f m]",
+          mGroundFrame->frame_name(), mGroundPositionInput.x, mGroundPositionInput.y,
+          mGroundPositionInput.z, mGroundFrame->ssr_frame_name(), mGroundPosition.x,
+          mGroundPosition.y, mGroundPosition.z, (mGroundPosition - mGroundPositionInput).length());
+    for (auto& satellite : mSatellites)
+        satellite.set_ground_position(mGroundPosition);
+}
+
 bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     FUNCTION_SCOPE();
     if (mGenerator.mCorrectionData == nullptr) {
@@ -570,6 +601,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     }
 
     mGenerationTime = reception_time;
+    update_ground_position();
 
     DEBUGF("generation time: %s", mGenerationTime.rtklib_time_string().c_str());
     DEBUGF("satellite count: %zu", mSatellites.size());
@@ -1594,7 +1626,11 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         auto& list = it->second;
         if (search) search->total = list.size();
 
-        auto glo_time = ts::Glo(time);
+        // GLONASS ephemerides are valid for +-30 min but degrade quickly after 15 min (about 1 m
+        // at 15 min, 2-3 m at 30 min), so use the one with tb closest to the time
+        auto                           glo_time     = ts::Glo(time);
+        ephemeris::GloEphemeris const* best         = nullptr;
+        auto                           best_matches = false;
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
         for (auto& ephemeris : list) {
             auto tb = ephemeris.reference_time.time_of_day().full_seconds();
@@ -1603,13 +1639,22 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(glo_time)) continue;
             if (search) search->valid.push_back({ephemeris.lpp_iod, 0, 0, 0, tb, 0});
-            // the SSR iod of GLONASS is tb (7 bits)
-            if ((ephemeris.lpp_iod & 0x7F) != (iod & 0x7F) && mIodConsistencyCheck) continue;
-            eph = ephemeris::Ephemeris(ephemeris);
-            if (search) {
-                search->found    = true;
-                search->selected = search->valid.back();
+            // the SSR iod of GLONASS is tb (7 bits). The ephemeris the SSR orbit correction refers
+            // to is preferred even without the IOD consistency check; the corrections are only
+            // consistent with that one.
+            auto matches = (ephemeris.lpp_iod & 0x7F) == (iod & 0x7F);
+            if (!matches && mIodConsistencyCheck) continue;
+            auto closer = !best || std::fabs(glo_time - ephemeris.reference_time) <
+                                       std::fabs(glo_time - best->reference_time);
+            if (!best || (matches && !best_matches) || (matches == best_matches && closer)) {
+                best         = &ephemeris;
+                best_matches = matches;
+                if (search) search->selected = search->valid.back();
             }
+        }
+        if (best) {
+            eph = ephemeris::Ephemeris(*best);
+            if (search) search->found = true;
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }

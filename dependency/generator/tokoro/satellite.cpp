@@ -32,6 +32,11 @@ Satellite::Satellite(SatelliteId id, Float3 ground_position, Generator const& ge
     mNextState         = {};
 }
 
+void Satellite::set_ground_position(Float3 ground_position) NOEXCEPT {
+    mGroundPositionEcef = ground_position;
+    mGroundPositionLlh  = ecef_to_llh(mGroundPositionEcef, ellipsoid::gWgs84);
+}
+
 void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 

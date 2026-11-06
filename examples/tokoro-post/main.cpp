@@ -90,6 +90,7 @@ struct Config {
     bool                     no_gal                     = false;
     bool                     no_bds                     = false;
     bool                     no_qzs                     = false;
+    bool                     glo                        = false;
     bool                     antenna                    = false;  // enable ANTEX PCO/PCV correction
     bool                     iono_height_correction     = false;
     bool                     no_iod_consistency_check   = false;
@@ -112,6 +113,10 @@ struct Config {
     bool                     ignore_bitmask                    = false;
     bool                     iono_poly_only                    = false;
     std::string              orbit_frame;
+    std::string              pos_frame;
+    double                   pos_epoch = 0.0;
+    double                   pos_vx = 0.0, pos_vy = 0.0, pos_vz = 0.0;
+    std::string              ssr_frame = "itrf2020";
     std::vector<std::string> orbit_source_frames;
     bool                     fake_cps_set       = false;
     uint16_t                 fake_cps_id        = 0;
@@ -219,6 +224,8 @@ static Config parse_args(int argc, char** argv) {
             cfg.no_gps = true;
         else if (arg == "--no-gal")
             cfg.no_gal = true;
+        else if (arg == "--glo")
+            cfg.glo = true;
         else if (arg == "--no-bds")
             cfg.no_bds = true;
         else if (arg == "--no-qzs")
@@ -355,6 +362,18 @@ static Config parse_args(int argc, char** argv) {
             cfg.ignore_bitmask = true;
         else if (arg == "--iono-poly-only")
             cfg.iono_poly_only = true;
+        else if (arg == "--pos-frame")
+            cfg.pos_frame = next();
+        else if (arg == "--pos-epoch")
+            cfg.pos_epoch = std::stod(next());
+        else if (arg == "--pos-velocity") {
+            auto value = next();
+            if (sscanf(value.c_str(), "%lf,%lf,%lf", &cfg.pos_vx, &cfg.pos_vy, &cfg.pos_vz) != 3) {
+                fprintf(stderr, "--pos-velocity must be vx,vy,vz\n");
+                exit(1);
+            }
+        } else if (arg == "--ssr-frame")
+            cfg.ssr_frame = next();
         else if (arg == "--orbit-frame")
             cfg.orbit_frame = next();
         else if (arg == "--orbit-source-frame")
@@ -420,7 +439,7 @@ static Config parse_args(int argc, char** argv) {
                         "--pos-z Z [--ubx <tbin>] [--rtcm <tbin>] [--nav <file>...] "
                         "[--elevation-mask <degrees>] [--msm-type 4|5|6|7] "
                         "[--reference-station-id <id>] [--physical-x/y/z <meter>] "
-                        "[--no-gps|--no-gal|--no-bds|--no-qzs] "
+                        "[--no-gps|--no-gal|--no-bds|--no-qzs] [--glo] "
                         "[--code-bias-optional] [--phase-bias-optional] [--tropo-optional] "
                         "[--iono-optional] [--use-tropospheric-model] "
                         "[--no-shapiro-correction] [--no-phase-windup-correction] "
@@ -437,7 +456,9 @@ static Config parse_args(int argc, char** argv) {
                         "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
                         "[--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
-                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] [--orbit-frame "
+                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] [--pos-frame "
+                        "<frame>] [--pos-epoch <year>] "
+                        "[--pos-velocity vx,vy,vz] [--ssr-frame <frame>] [--orbit-frame "
                         "<frame>] [--orbit-source-frame <gnss>=<frame>] "
                         "[--gen assistance|time-step|time-step-aligned|time-step-last] "
                         "[--time-step <seconds>]\n");
@@ -657,7 +678,7 @@ int main(int argc, char** argv) {
     rs_cfg.generate_gps         = !cfg.no_gps;
     rs_cfg.generate_gal         = !cfg.no_gal;
     rs_cfg.generate_bds         = !cfg.no_bds;
-    rs_cfg.generate_glo         = false;
+    rs_cfg.generate_glo         = cfg.glo;
     rs_cfg.generate_qzs         = !cfg.no_qzs;
     auto ref_station = std::make_shared<generator::tokoro::ReferenceStation>(*generator, rs_cfg);
     ref_station->set_msm_type(cfg.msm_type);
@@ -693,6 +714,14 @@ int main(int argc, char** argv) {
     ref_station->set_require_iono(!cfg.iono_optional);
     ref_station->set_use_tropospheric_model(cfg.use_tropospheric_model);
     ref_station->set_generate_residuals(cfg.generate_residuals);
+    if (!cfg.pos_frame.empty() &&
+        !ref_station->set_ground_position_frame(cfg.pos_frame.c_str(), cfg.pos_epoch,
+                                                {cfg.pos_vx, cfg.pos_vy, cfg.pos_vz},
+                                                cfg.ssr_frame.c_str())) {
+        fprintf(stderr, "Invalid --pos-frame %s or --ssr-frame %s\n", cfg.pos_frame.c_str(),
+                cfg.ssr_frame.c_str());
+        return 1;
+    }
     if (cfg.physical_pos_set) {
         ref_station->set_physical_ground_position(
             {cfg.physical_pos_x, cfg.physical_pos_y, cfg.physical_pos_z});

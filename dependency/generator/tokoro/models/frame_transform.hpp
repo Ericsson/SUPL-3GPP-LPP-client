@@ -40,5 +40,32 @@ private:
     std::unique_ptr<Impl> mImpl;
 };
 
+// Transforms a ground position given in some frame (at an epoch, optionally with a station
+// velocity) into the SSR frame at the observation epoch
+class GroundFrame {
+public:
+    // `epoch` <= 0 uses the reference epoch of a fixed-epoch frame (e.g. SWEREF 99) or the
+    // observation epoch otherwise. `velocity` is the station velocity in ECEF [m/year] in the
+    // source frame, used to move the position from `epoch` to the observation epoch.
+    // nullptr if a frame is unknown or not connected.
+    NODISCARD static std::unique_ptr<GroundFrame>
+    create(char const* frame, double epoch, Float3 velocity, char const* ssr_frame) NOEXCEPT;
+    ~GroundFrame();
+
+    NODISCARD Float3 position(Float3 const& position, ts::Tai const& time) const NOEXCEPT;
+
+    NODISCARD char const* frame_name() const NOEXCEPT;
+    NODISCARD char const* ssr_frame_name() const NOEXCEPT;
+
+    struct Impl;
+
+private:
+    GroundFrame() NOEXCEPT;
+    std::unique_ptr<Impl> mImpl;
+};
+
+// Decimal year
+NODISCARD double decimal_year(ts::Tai const& time) NOEXCEPT;
+
 }  // namespace tokoro
 }  // namespace generator

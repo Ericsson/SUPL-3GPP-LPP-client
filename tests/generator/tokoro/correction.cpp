@@ -329,3 +329,41 @@ TEST_CASE("Tokoro broadcast orbit frames") {
     CHECK(gnss == SatelliteId::BEIDOU);
     CHECK_FALSE(gnss_from_name("xyz", gnss));
 }
+
+TEST_CASE("Tokoro ground position frame") {
+    // Linköping, Sweden
+    Float3 position{3227560.2402, 898383.8750, 5409177.4433};
+    auto   time = ts::Tai(ts::Utc::from_date_time(2026, 6, 6, 0, 0, 0.0));
+    auto   year = decimal_year(time);
+    CHECK(year == doctest::Approx(2026.43).epsilon(1e-4));
+
+    CHECK(GroundFrame::create("not-a-frame", 0.0, {}, "itrf2020") == nullptr);
+    CHECK(GroundFrame::create("itrf2020", 0.0, {}, "not-a-frame") == nullptr);
+
+    // same frame, no velocity: unchanged
+    auto same = GroundFrame::create("itrf2020", 0.0, {}, "itrf2020");
+    REQUIRE(same);
+    CHECK((same->position(position, time) - position).length() < 1e-9);
+
+    // same frame, moved with the station velocity from 2020.0
+    Float3 velocity{-0.015, 0.016, 0.010};
+    auto   moved = GroundFrame::create("itrf2020", 2020.0, velocity, "itrf2020");
+    REQUIRE(moved);
+    auto p = moved->position(position, time);
+    CHECK(p.x - position.x == doctest::Approx(velocity.x * (year - 2020.0)));
+    CHECK(p.z - position.z == doctest::Approx(velocity.z * (year - 2020.0)));
+
+    // SWEREF 99 (ETRF89 at 1999.5) to ITRF2020: about 2.5 cm/year of plate motion since 1999.5
+    auto sweref = GroundFrame::create("sweref99", 0.0, {}, "itrf2020");
+    REQUIRE(sweref);
+    auto difference = (sweref->position(position, time) - position).length();
+    CHECK(difference > 0.5);
+    CHECK(difference < 1.0);
+
+    // ETRF2014 to ITRF2020 at the observation epoch
+    auto etrf = GroundFrame::create("etrf2014", 0.0, {}, "itrf2020");
+    REQUIRE(etrf);
+    difference = (etrf->position(position, time) - position).length();
+    CHECK(difference > 0.5);
+    CHECK(difference < 1.0);
+}

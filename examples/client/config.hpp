@@ -406,6 +406,7 @@ struct TokoroConfig {
     bool    generate_glonass;
     bool    generate_galileo;
     bool    generate_beidou;
+    bool    generate_qzss;
     MsmType msm_type;
 
     VrsMode            vrs_mode;
@@ -414,12 +415,18 @@ struct TokoroConfig {
 
     std::unique_ptr<std::pair<int, int>> vrs_grid_position;  // east, north
 
-    double fixed_itrf_x;
-    double fixed_itrf_y;
-    double fixed_itrf_z;
-    double fixed_rtcm_x;
-    double fixed_rtcm_y;
-    double fixed_rtcm_z;
+    double      fixed_itrf_x;
+    double      fixed_itrf_y;
+    double      fixed_itrf_z;
+    double      fixed_rtcm_x;
+    double      fixed_rtcm_y;
+    double      fixed_rtcm_z;
+    std::string fixed_frame;  // frame of fixed_itrf_*, empty: the SSR frame
+    double      fixed_epoch;  // decimal year, <= 0: default
+    double      fixed_velocity_x;
+    double      fixed_velocity_y;
+    double      fixed_velocity_z;
+    std::string ssr_frame;
 
     bool   fixed_physical_station_set;  // physical reference station position (RTCM 1032)
     double fixed_physical_x;

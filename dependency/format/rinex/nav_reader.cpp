@@ -3,6 +3,8 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <vector>
 
 #include <loglet/loglet.hpp>
 #include <time/bdt.hpp>
@@ -274,51 +276,37 @@ NavData parse_nav_file(std::string const& path) {
         if (strstr(line, "END OF HEADER")) break;
     }
 
-    // Parse records
-    while (fgets(line, sizeof(line), f)) {
-        if (line[0] == '\n' || line[0] == '\r' || line[0] == '\0') continue;
-        if (line[0] == ' ') continue;  // continuation line without a record start
+    // Parse records. RINEX 3 records start with the satellite line, their length depends on the
+    // GNSS. RINEX 4 records start with a "> EPH <sat> <type>" line (also "> STO", "> EOP",
+    // "> ION"), and run until the next "> " line.
+    std::vector<std::string> lines;
+    char                     rinex4_type[16] = {};
+    bool                     rinex4          = false;
+    bool                     rinex4_eph      = false;
 
-        char gnss    = line[0];
-        int  n_lines = 8;                             // GPS/GAL/BDS: 1 header + 7 data lines
-        if (gnss == 'R' || gnss == 'S') n_lines = 4;  // GLONASS/SBAS: 1 + 3
-
+    auto dispatch = [&](char gnss, char const* type) {
         char record[8][128];
         memset(record, 0, sizeof(record));
-        size_t len = strlen(line);
-        if (len > 127) len = 127;
-        memcpy(record[0], line, len);
-
-        bool ok = true;
-        for (int i = 1; i < n_lines; i++) {
-            if (!fgets(record[i], sizeof(record[i]), f)) {
-                ok = false;
-                break;
-            }
+        for (size_t k = 0; k < lines.size() && k < 8; k++) {
+            auto len = lines[k].size() < 127 ? lines[k].size() : 127;
+            memcpy(record[k], lines[k].c_str(), len);
         }
-        if (!ok) break;
-
-        if (gnss == 'G') {
+        if (gnss == 'G' && (!type || strcmp(type, "LNAV") == 0) && lines.size() >= 8) {
             ephemeris::GpsEphemeris eph{};
-            if (parse_gps_record(record, eph)) {
-                result.gps.push_back(eph);
-            }
-        } else if (gnss == 'E') {
+            if (parse_gps_record(record, eph)) result.gps.push_back(eph);
+        } else if (gnss == 'E' &&
+                   (!type || strcmp(type, "INAV") == 0 || strcmp(type, "FNAV") == 0) &&
+                   lines.size() >= 8) {
             ephemeris::GalEphemeris eph{};
-            if (parse_gal_record(record, eph)) {
-                result.gal.push_back(eph);
-            }
-        } else if (gnss == 'C') {
+            if (parse_gal_record(record, eph)) result.gal.push_back(eph);
+        } else if (gnss == 'C' && (!type || strcmp(type, "D1") == 0 || strcmp(type, "D2") == 0) &&
+                   lines.size() >= 8) {
             ephemeris::BdsEphemeris eph{};
-            if (parse_bds_record(record, eph)) {
-                result.bds.push_back(eph);
-            }
-        } else if (gnss == 'R') {
+            if (parse_bds_record(record, eph)) result.bds.push_back(eph);
+        } else if (gnss == 'R' && (!type || strcmp(type, "FDMA") == 0) && lines.size() >= 4) {
             ephemeris::GloEphemeris eph{};
-            if (parse_glo_record(record, eph)) {
-                result.glo.push_back(eph);
-            }
-        } else if (gnss == 'J') {
+            if (parse_glo_record(record, eph)) result.glo.push_back(eph);
+        } else if (gnss == 'J' && (!type || strcmp(type, "LNAV") == 0) && lines.size() >= 8) {
             // QZSS LNAV uses the GPS record layout; J01 is PRN 193
             ephemeris::GpsEphemeris gps{};
             if (parse_gps_record(record, gps)) {
@@ -326,8 +314,55 @@ NavData parse_nav_file(std::string const& path) {
                 result.qzs.push_back(ephemeris::QzsEphemeris::from_gps_layout(gps));
             }
         }
-        // S: skip (not supported)
+    };
+
+    auto flush_rinex4 = [&]() {
+        if (rinex4_eph && !lines.empty()) dispatch(lines[0][0], rinex4_type);
+        lines.clear();
+        rinex4_eph = false;
+    };
+
+    while (fgets(line, sizeof(line), f)) {
+        if (line[0] == '\n' || line[0] == '\r' || line[0] == '\0') continue;
+
+        if (line[0] == '>') {
+            rinex4 = true;
+            flush_rinex4();
+            char kind[8]   = {};
+            char sat[8]    = {};
+            rinex4_type[0] = '\0';
+            if (sscanf(line + 1, "%7s %7s %15s", kind, sat, rinex4_type) == 3 &&
+                strcmp(kind, "EPH") == 0) {
+                rinex4_eph = true;
+            }
+            continue;
+        }
+
+        if (rinex4) {
+            if (rinex4_eph) lines.emplace_back(line);
+            continue;
+        }
+
+        if (line[0] == ' ') continue;  // continuation line without a record start
+
+        char gnss    = line[0];
+        int  n_lines = 8;                             // GPS/GAL/BDS/QZS: 1 header + 7 data lines
+        if (gnss == 'R' || gnss == 'S') n_lines = 4;  // GLONASS/SBAS: 1 + 3
+
+        lines.clear();
+        lines.emplace_back(line);
+        bool ok = true;
+        for (int i = 1; i < n_lines; i++) {
+            if (!fgets(line, sizeof(line), f)) {
+                ok = false;
+                break;
+            }
+            lines.emplace_back(line);
+        }
+        if (!ok) break;
+        dispatch(gnss, nullptr);
     }
+    if (rinex4) flush_rinex4();
 
     fclose(f);
     INFOF("RINEX nav: loaded %zu GPS, %zu GAL, %zu BDS, %zu GLO, %zu QZS ephemerides from %s",

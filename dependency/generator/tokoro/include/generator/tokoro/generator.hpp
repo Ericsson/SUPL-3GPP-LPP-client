@@ -76,6 +76,8 @@ struct TokoroOutput;
 struct SnapshotInput;
 #endif
 class Generator;
+class GroundFrame;
+
 class ReferenceStation {
 public:
     ReferenceStation(Generator& generator, ReferenceStationConfig const& config) NOEXCEPT;
@@ -94,6 +96,13 @@ public:
 
     void include_satellite(SatelliteId sv_id) NOEXCEPT { mSatelliteIncludeSet.insert(sv_id); }
     void include_signal(SignalId signal_id) NOEXCEPT { mSignalIncludeSet.insert(signal_id); }
+
+    // The ITRF ground position of the config is given in `frame` (at `epoch`, decimal year, <= 0
+    // for the frame's own epoch or the observation epoch, with an optional station velocity in
+    // ECEF [m/year]) and is transformed to `ssr_frame` at the observation epoch. The RTCM ground
+    // position is not changed. False if a frame is unknown or not connected.
+    NODISCARD bool set_ground_position_frame(char const* frame, double epoch, Float3 velocity,
+                                             char const* ssr_frame) NOEXCEPT;
 
     void set_physical_ground_position(Float3 position) NOEXCEPT {
         mRtcmPhysicalGroundPosition    = position;
@@ -193,10 +202,16 @@ protected:
     void write_tropospheric_diag(Satellite const& satellite) NOEXCEPT;
 
 private:
-    Float3 mGroundPosition;
-    Float3 mRtcmGroundPosition;
-    Float3 mRtcmPhysicalGroundPosition;
-    bool   mRtcmPhysicalGroundPositionSet;
+    void update_ground_position() NOEXCEPT;
+
+    Float3                       mGroundPosition;
+    Float3                       mGroundPositionInput;  // as configured, in mGroundFrame
+    std::unique_ptr<GroundFrame> mGroundFrame;
+    ts::Tai                      mGroundFrameTime;
+    bool                         mGroundFrameTimeSet{false};
+    Float3                       mRtcmGroundPosition;
+    Float3                       mRtcmPhysicalGroundPosition;
+    bool                         mRtcmPhysicalGroundPositionSet;
 
     bool        mGenerateGps;
     bool        mGenerateGlo;

@@ -85,8 +85,8 @@ static bool source_frame(OrbitFrames::Impl const& impl, SatelliteId::Gnss gnss, 
     return true;
 }
 
-// Decimal year, accurate enough for the time-dependent Helmert parameters
-static double decimal_year(ts::Tai const& time) {
+// Decimal year, accurate enough for the time-dependent Helmert parameters and velocities
+double decimal_year(ts::Tai const& time) NOEXCEPT {
     static auto const J2000 = ts::Utc::from_date_time(2000, 1, 1, 12, 0, 0.0).timestamp();
     auto              dt    = (ts::Utc(time).timestamp() - J2000).full_seconds();
     return 2000.0 + dt / (365.25 * 86400.0);
@@ -126,6 +126,82 @@ char const* OrbitFrames::source_name(SatelliteId::Gnss gnss, ts::Tai const& time
     FrameId source{};
     if (!source_frame(*mImpl, gnss, time, source)) return nullptr;
     return coordinates::frame_name(source);
+}
+
+struct GroundFrame::Impl {
+    coordinates::TransformGraph graph;
+    FrameId                     source;
+    FrameId                     target;
+    double                      epoch;  // <= 0: see `create`
+    Float3                      velocity;
+};
+
+GroundFrame::GroundFrame() NOEXCEPT : mImpl(new Impl{}) {}
+GroundFrame::~GroundFrame() = default;
+
+std::unique_ptr<GroundFrame> GroundFrame::create(char const* frame, double epoch, Float3 velocity,
+                                                 char const* ssr_frame) NOEXCEPT {
+    FrameId source{};
+    FrameId target{};
+    if (!coordinates::frame_from_name(frame, source)) {
+        ERRORF("unknown frame \"%s\"", frame);
+        return nullptr;
+    }
+    if (!coordinates::frame_from_name(ssr_frame, target)) {
+        ERRORF("unknown frame \"%s\"", ssr_frame);
+        return nullptr;
+    }
+
+    std::unique_ptr<GroundFrame> ground(new GroundFrame());
+    auto&                        impl = *ground->mImpl;
+    impl.source                       = source;
+    impl.target                       = target;
+    impl.velocity                     = velocity;
+    impl.epoch                        = epoch;
+    if (impl.epoch <= 0.0) {
+        auto info = coordinates::frame_epoch(source);
+        if (info.temporal_model == coordinates::FrameTemporalModel::FixedEpoch) {
+            impl.epoch = info.reference_epoch;
+        }
+    }
+    if (source != target && impl.graph.find_path(source, 2020.0, target, 2020.0).empty() &&
+        (impl.epoch <= 0.0 || impl.graph.find_path(source, impl.epoch, target, 2020.0).empty())) {
+        ERRORF("no transformation from %s to %s", frame, ssr_frame);
+        return nullptr;
+    }
+    return ground;
+}
+
+Float3 GroundFrame::position(Float3 const& position, ts::Tai const& time) const NOEXCEPT {
+    auto const& impl = *mImpl;
+    auto        t    = decimal_year(time);
+
+    coordinates::Vector3d p{position.x, position.y, position.z};
+    coordinates::Vector3d v{impl.velocity.x, impl.velocity.y, impl.velocity.z};
+
+    // A frame with its own deformation model (e.g. SWEREF 99 with NKG_RF17vel) is transformed
+    // from its epoch to the observation epoch by the transformation itself
+    if (impl.epoch > 0.0 && impl.source != impl.target &&
+        !impl.graph.find_path(impl.source, impl.epoch, impl.target, t).empty()) {
+        auto result = impl.graph.transform(impl.source, impl.target, impl.epoch, t, p, v);
+        return Float3{result.final_position.x(), result.final_position.y(),
+                      result.final_position.z()};
+    }
+
+    // Otherwise move the position to the observation epoch with the station velocity and
+    // transform at that epoch
+    if (impl.epoch > 0.0) p += v * (t - impl.epoch);
+    if (impl.source == impl.target) return Float3{p.x(), p.y(), p.z()};
+    auto result = impl.graph.transform(impl.source, impl.target, t, t, p, v);
+    return Float3{result.final_position.x(), result.final_position.y(), result.final_position.z()};
+}
+
+char const* GroundFrame::frame_name() const NOEXCEPT {
+    return coordinates::frame_name(mImpl->source);
+}
+
+char const* GroundFrame::ssr_frame_name() const NOEXCEPT {
+    return coordinates::frame_name(mImpl->target);
 }
 
 bool gnss_from_name(char const* name, SatelliteId::Gnss& gnss) NOEXCEPT {

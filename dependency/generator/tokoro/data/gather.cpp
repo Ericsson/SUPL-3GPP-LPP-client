@@ -98,6 +98,19 @@ void CorrectionData::add_correction(long                                 gnss_id
 
     auto satellite_gnss = satellite_gnss_from_id(gnss_id);
 
+    // The corrected orbits are in the datum of the SSR provider: ITRF or a regional datum, which
+    // is not identified in the message. The ground position must be in the same datum.
+    auto regional = orbit->satelliteReferenceDatum_r15 ==
+                    GNSS_SSR_OrbitCorrections_r15__satelliteReferenceDatum_r15_regional;
+    auto gnss_bit = 1u << static_cast<unsigned>(satellite_gnss);
+    if (regional && (mRegionalDatumWarned & gnss_bit) == 0) {
+        WARNF("SSR orbit corrections (gnss %ld) are in a regional datum; the ground position must "
+              "be given in that datum",
+              gnss_id);
+        mRegionalDatumWarned |= gnss_bit;
+    }
+    mRegionalDatum = regional;
+
     auto    ssr_iod = decode::iod_ssr_r16(orbit->iod_ssr_r15);
     ts::Tai epoch_time;
     if (!decode::epoch_time_r15(orbit->epochTime_r15, epoch_time)) {
