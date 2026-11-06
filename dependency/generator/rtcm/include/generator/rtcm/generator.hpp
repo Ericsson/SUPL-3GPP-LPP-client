@@ -65,6 +65,10 @@ struct MessageFilter {
         bool mt1030 = true;
         /// Generate MT1031 - GLONASS residuals.
         bool mt1031 = true;
+        /// Generate MT1303 - BeiDou residuals.
+        bool mt1303 = true;
+        /// Generate MT1304 - Galileo residuals.
+        bool mt1304 = true;
     } residuals;
 
     struct {
@@ -127,8 +131,9 @@ private:
     std::unique_ptr<PhysicalReferenceStation> mPhysicalReferenceStation;
 };
 
-extern Message generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
-                            CommonObservationInfo const& common, Observations const& observations);
+extern std::vector<Message> generate_msm(uint32_t msm, bool last_msm, GenericGnssId gnss,
+                                         CommonObservationInfo const& common,
+                                         Observations const&          observations);
 
 extern Message generate_1005(ReferenceStation const& reference_station, bool gps_indicator,
                              bool glonass_indicator, bool galileo_indicator);
@@ -141,6 +146,8 @@ extern Message generate_1032(ReferenceStation const&         reference_station,
 
 extern Message generate_1033(ReferenceStation const&  reference_station,
                              AntennaDescriptor const& antenna_descriptor);
+
+extern Message generate_1230(BiasInformation const& bias_information);
 
 extern Message generate_1030(Residuals const& residuals);
 extern Message generate_1031(Residuals const& residuals);

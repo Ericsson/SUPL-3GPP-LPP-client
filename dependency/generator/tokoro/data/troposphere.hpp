@@ -28,15 +28,13 @@ namespace tokoro {
 struct TroposphericCorrection {
     double wet;
     double dry;
-};
 
-struct TroposphereGridPoint {
-    Float3                 position;
-    TroposphericCorrection tropospheric;
-};
-
-struct TroposphereGrid {
-    std::unordered_map<GridIndex, TroposphereGridPoint> points;
+    // Horizontal slope of the zenith delays across the grid cell of the position, [m/m]
+    bool   has_gradient;
+    double dry_north;
+    double dry_east;
+    double wet_north;
+    double wet_east;
 };
 
 }  // namespace tokoro

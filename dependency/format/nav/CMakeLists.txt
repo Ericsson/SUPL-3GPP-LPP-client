@@ -4,6 +4,7 @@ add_library(dependency_format_nav STATIC
     "gps/lnav.cpp"
     "gal/inav.cpp"
     "d1.cpp"
+    "glo/glo.cpp"
 )
 add_library(dependency::format::nav ALIAS dependency_format_nav)
 

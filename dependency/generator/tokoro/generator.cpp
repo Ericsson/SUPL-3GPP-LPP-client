@@ -3,8 +3,12 @@
 #include "coordinate.hpp"
 #include "data/correction.hpp"
 #include "decode.hpp"
+#include "models/frame_transform.hpp"
+#include "models/geoid.hpp"
 #include "models/helper.hpp"
+#include "models/troposphere_models.hpp"
 #include "observation.hpp"
+#include "reference_ellipsoid.hpp"
 #include "satellite.hpp"
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
@@ -31,6 +35,7 @@ EXTERNAL_WARNINGS_POP
 
 #include <algorithm>
 #include <cmath>
+#include <cstring>
 #include <map>
 #include <string>
 #include <unordered_map>
@@ -51,6 +56,7 @@ namespace tokoro {
 ReferenceStation::ReferenceStation(Generator&                    generator,
                                    ReferenceStationConfig const& config) NOEXCEPT
     : mGroundPosition(config.itrf_ground_position),
+      mGroundPositionInput(config.itrf_ground_position),
       mRtcmGroundPosition(config.rtcm_ground_position),
       mRtcmPhysicalGroundPosition(config.rtcm_ground_position),
       mRtcmPhysicalGroundPositionSet(false),
@@ -70,6 +76,7 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRtcmReferenceStationId(1902),
       mRtcmMsmType(5),
       mNegativePhaseWindup(false),
+      mNegativeCorrectionSign(false),
       mPhaseAlignment(false),
       mAntennaDescriptor(),
       mReceiverDescriptor(),
@@ -86,9 +93,8 @@ ReferenceStation::ReferenceStation(Generator&                    generator,
       mRinexBuilder(ts::Utc::now().rinex_filename() + ".rnx", 3.04),
 #endif
       mGenerator(generator) {
-    // Initialize the satellite vector to the maximum number of satellites
-    // GPS: 32, GLONASS: 24, GALILEO: 36, BEIDOU: 35
-    mSatellites.reserve(32 + 24 + 36 + 35);
+    // GPS: 32, GLONASS: 24, Galileo: 36, BeiDou: 63, QZSS: 10
+    mSatellites.reserve(32 + 24 + 36 + 63 + 10);
 
     // Initialize the satellites
     initialize_satellites();
@@ -113,8 +119,13 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
         }
     }
 
-    // TODO(ewasjon): GLONASS
+    // GLONASS
     if (mGenerateGlo) {
+        for (uint8_t i = 1; i <= 24; i++) {
+            auto id = SatelliteId::from_glo_slot(i);
+            ASSERT(id.is_valid(), "invalid satellite id");
+            mSatellites.emplace_back(id, mGroundPosition, mGenerator);
+        }
     }
 
     // GALILEO
@@ -145,31 +156,186 @@ void ReferenceStation::initialize_satellites() NOEXCEPT {
     }
 }
 
+static CONSTEXPR int64_t PHASE_AMBIGUITY_LIMIT = 1000;
+
+// Lock time [s] at which both the MSM4/5 (DF402, >= 524.288 s) and MSM6/7 (DF407, >= 67108.864 s)
+// lock time indicators are saturated.
+static CONSTEXPR double LOCK_TIME_MAX_SECONDS = 67108.864;
+
+static uint64_t splitmix64(uint64_t x) NOEXCEPT {
+    x += 0x9E3779B97F4A7C15ULL;
+    x = (x ^ (x >> 30)) * 0xBF58476D1CE4E5B9ULL;
+    x = (x ^ (x >> 27)) * 0x94D049BB133111EBULL;
+    return x ^ (x >> 31);
+}
+
+// Deterministic for a given seed, signal and loss count (independent of iteration order), so a
+// run can be reproduced and a recreated reference station draws the same ambiguity.
+int64_t ReferenceStation::random_phase_ambiguity(SatelliteSignalId ss_id) const NOEXCEPT {
+    auto key = (static_cast<uint64_t>(ss_id.satellite().absolute_id()) << 32) ^
+               static_cast<uint64_t>(ss_id.signal().absolute_id());
+    auto count_it = mLossCount.find(ss_id);
+    auto count    = count_it != mLossCount.end() ? count_it->second : 0u;
+    auto hash     = splitmix64(mAmbiguitySeed ^ splitmix64(key) ^ splitmix64(count + 1ULL));
+    auto range    = static_cast<uint64_t>(2 * PHASE_AMBIGUITY_LIMIT + 1);
+    return static_cast<int64_t>(hash % range) - PHASE_AMBIGUITY_LIMIT;
+}
+
+// The IODs are compared with this many bits: GPS and QZSS compare the 8 bits of the IODE, the IOD
+// of Galileo is the 10 bit IODnav, the IOD of GLONASS is the 7 bit tb and the IOD of BeiDou are
+// the 11 MSB of toe.
+static int iod_modulus(SatelliteId id) {
+    if (id.is_gps() || id.is_qzss()) return 256;
+    if (id.is_glonass()) return 128;
+    if (id.is_galileo()) return 1024;
+    return 2048;
+}
+
+// wanted - actual, wrapped to [-modulus / 2, modulus / 2)
+static int iod_offset(SatelliteId id, uint16_t wanted, uint16_t actual) {
+    auto modulus = iod_modulus(id);
+    auto offset  = (static_cast<int>(wanted) % modulus) - (static_cast<int>(actual) % modulus);
+    offset       = ((offset % modulus) + modulus) % modulus;
+    if (offset >= modulus / 2) offset -= modulus;
+    return offset;
+}
+
+DiagFile& ReferenceStation::diag_file(SatelliteId satellite_id, SignalId signal_id) NOEXCEPT {
+    SatelliteSignalId ss_id{satellite_id, signal_id};
+    auto              it = mDiagFiles.find(ss_id);
+    if (it != mDiagFiles.end()) return it->second;
+
+    auto sv_char = satellite_id.to_string()[0];
+    char prn_buf[8];
+    snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
+             static_cast<int>(satellite_id.lpp_id().value) + 1);
+    auto sig_str = DiagFile::rtcm_signal_name(satellite_id, signal_id);
+    auto path =
+        mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/" + sig_str + ".diag";
+    auto& file = mDiagFiles[ss_id];
+    file.open(path, satellite_id, signal_id);
+    return file;
+}
+
+void ReferenceStation::write_unavailable_signals(Satellite const& satellite) NOEXCEPT {
+    if (!mGenerateDiag) return;
+    auto reason = satellite.disable_reason();
+    if (!reason || strcmp(reason, "not_included") == 0) return;
+
+    auto signals = mGenerator.mCorrectionData->signals(satellite.id());
+    if (!signals) return;
+
+    for (auto const& signal : *signals) {
+        if (mSignalIncludeSet.size() > 0 &&
+            mSignalIncludeSet.find(signal) == mSignalIncludeSet.end()) {
+            continue;
+        }
+        if (signal.frequency() <= 1.0) continue;
+
+        auto    msm_id = signal.as_msm();
+        DiagRow row{};
+        row.prn =
+            satellite.id().lpp_id().valid ? static_cast<int>(satellite.id().lpp_id().value) + 1 : 0;
+        row.sig_id         = msm_id.valid ? static_cast<int>(msm_id.value) : 0;
+        row.frequency_mhz  = signal.frequency() * 1.0e-3;
+        row.valid          = false;
+        row.discard_reason = std::string("satellite_") + reason;
+        row.discard_detail =
+            satellite.disable_detail().empty() ?
+                std::string("satellite_") + reason + ":unknown" :
+                std::string("satellite_") + reason + ":" + satellite.disable_detail();
+        diag_file(satellite.id(), signal).write(mGenerationTime, row);
+    }
+}
+
 void ReferenceStation::initialize_observation(Satellite& satellite, SignalId signal_id,
-                                              char const* diag_discard_reason) NOEXCEPT {
+                                              char const* diag_discard_reason,
+                                              std::string diag_discard_detail) NOEXCEPT {
     FUNCTION_SCOPE();
+
+    auto const& correction_data = *mGenerator.mCorrectionData;
 
     // Update lock tracking
     SatelliteSignalId ss_id{satellite.id(), signal_id};
-    LockTime          lock_time{};
-    if (mLockTime.find(ss_id) == mLockTime.end()) {
+
+    // A changed phaseDiscontinuityIndicator_r16 from the SSR provider means the phase
+    // ambiguity/lock arc is no longer continuous, even though the signal never left
+    // the active set - restart the lock the same way a freshly (re)acquired signal
+    // would be treated.
+    auto discontinuity_changed = false;
+    if (auto* phase_bias = correction_data.phase_bias(satellite.id(), signal_id)) {
+        auto counter_it = mLastPhaseDiscontinuityCounter.find(ss_id);
+        if (counter_it != mLastPhaseDiscontinuityCounter.end() &&
+            counter_it->second != phase_bias->discontinuity) {
+            discontinuity_changed = true;
+        }
+        mLastPhaseDiscontinuityCounter[ss_id] = phase_bias->discontinuity;
+    }
+
+    if (discontinuity_changed) {
+        // Keep N within +-PHASE_AMBIGUITY_LIMIT cycles. The carrier phase is encoded relative
+        // to the rough range in a +-2^-8 ms (~1171 m) field (DF401/DF406); the limit leaves
+        // ample room below that for N*wavelength (<= ~0.26 m/cycle, so <= ~260 m) on top of
+        // the code remainder (<~150 m) and phase-code differences. Wrapping is still an
+        // integer-cycle jump, i.e. indistinguishable from another slip.
+        auto& ambiguity = mPhaseAmbiguity[ss_id];
+        ambiguity += 1;
+        if (ambiguity > PHASE_AMBIGUITY_LIMIT) ambiguity = -PHASE_AMBIGUITY_LIMIT;
+    }
+
+    // A signal without a lock entry has just appeared: at startup (first epoch with
+    // observations) or as a rise (rising satellite, or a signal that was lost earlier).
+    auto is_new     = mLockTime.find(ss_id) == mLockTime.end();
+    auto start_mode = mStarted ? mLockRise : mLockStart;
+    if (is_new) {
+        auto mode = mAmbiguityRandomization;
+        auto randomize =
+            mStarted ?
+                (mode == AmbiguityRandomization::Rise || mode == AmbiguityRandomization::Both) :
+                (mode == AmbiguityRandomization::Startup || mode == AmbiguityRandomization::Both);
+        if (randomize) {
+            auto ambiguity         = random_phase_ambiguity(ss_id);
+            mPhaseAmbiguity[ss_id] = ambiguity;
+            VERBOSEF("ambiguity %s %s: %+lld", mStarted ? "rise" : "startup",
+                     ss_id.to_string().c_str(), static_cast<long long>(ambiguity));
+        }
+    }
+
+    LockTime lock_time{};
+    if (is_new && !discontinuity_changed && start_mode == LockStart::Max) {
+        lock_time.time    = mGenerationTime + ts::Timestamp{-LOCK_TIME_MAX_SECONDS};
+        lock_time.seconds = LOCK_TIME_MAX_SECONDS;
+        lock_time.lost    = false;
+        mLockTime[ss_id]  = lock_time.time;
+        VERBOSEF("lock %s %s: max", mStarted ? "rise" : "startup", ss_id.to_string().c_str());
+    } else if (discontinuity_changed || is_new) {
         lock_time.time    = mGenerationTime;
         lock_time.seconds = 0;
         lock_time.lost    = true;
+        // Persist the reset immediately so later generations compute elapsed lock
+        // time relative to the discontinuity, not the stale pre-discontinuity start.
+        mLockTime[ss_id] = mGenerationTime;
     } else {
         lock_time.time    = mLockTime[ss_id];
         lock_time.seconds = mGenerationTime.difference_seconds(lock_time.time);
         lock_time.lost    = false;
     }
 
-    auto const& correction_data = *mGenerator.mCorrectionData;
 #ifdef INCLUDE_FORMAT_ANTEX
     auto antex = mGenerator.mAntex.get();
 #endif
 
     auto& observation = satellite.initialize_observation(signal_id);
-    observation.recompute_mapping_hydrostatic(mTropoHydrostaticDelta);
+    observation.set_tropospheric_selection(mTroposphereModel, mMappingFunction,
+                                           mTropoHydrostaticDelta,
+                                           mGenerator.mTroposphereData.get());
+    observation.compute_tropospheric_mapping();
     observation.update_lock_time(lock_time);
+    {
+        auto ambiguity_it = mPhaseAmbiguity.find(ss_id);
+        observation.set_phase_ambiguity(
+            ambiguity_it != mPhaseAmbiguity.end() ? ambiguity_it->second : 0);
+    }
     observation.compute_phase_bias(correction_data);
     observation.compute_code_bias(correction_data);
     observation.compute_tropospheric(correction_data);
@@ -181,32 +347,27 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     if (mTropoHeightCorrection) observation.compute_tropospheric_height();
 
     observation.set_negative_phase_windup(mNegativePhaseWindup);
+    observation.set_negative_correction_sign(mNegativeCorrectionSign);
+    observation.set_ssr_generation_consistency_check(mGenerator.mSsrGenerationConsistencyCheck);
     observation.set_require_code_bias(mRequireCodeBias);
     observation.set_require_phase_bias(mRequirePhaseBias);
     observation.set_require_tropo(mRequireTropo);
     observation.set_require_iono(mRequireIono);
     observation.set_use_tropospheric_model(mUseTroposphericModel);
+    observation.compute_tropospheric_model();
+    observation.set_tropospheric_gradient(mGradientSource, mGradientMapping, mGradientConstantSet,
+                                          mGradientConstantNorth, mGradientConstantEast);
+    observation.compute_tropospheric_gradient();
     observation.set_use_ionospheric_height_correction(mUseIonosphericHeightCorrection);
 
     if (mGenerateDiag) {
-        auto it = mDiagFiles.find(ss_id);
-        if (it == mDiagFiles.end()) {
-            auto sv_char = satellite.id().to_string()[0];
-            char prn_buf[8];
-            snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
-                     static_cast<int>(satellite.id().lpp_id().value) + 1);
-            auto sig_str = DiagFile::rtcm_signal_name(satellite.id(), signal_id);
-            auto path    = mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/" +
-                        sig_str + ".diag";
-            auto& df = mDiagFiles[ss_id];
-            df.open(path, satellite.id(), signal_id);
-            observation.set_diag_file(&mDiagFiles[ss_id]);
-        } else {
-            observation.set_diag_file(&it->second);
-        }
+        observation.set_diag_file(&diag_file(satellite.id(), signal_id));
     }
 
-    if (diag_discard_reason) observation.set_diag_discard_reason(diag_discard_reason);
+    if (diag_discard_reason) {
+        observation.set_diag_discard_reason(diag_discard_reason);
+        observation.set_diag_discard_detail(std::move(diag_discard_detail));
+    }
 
     if (mGenerateDiag) {
         auto previous = mPhaseDiscontinuity.find(ss_id);
@@ -227,6 +388,211 @@ void ReferenceStation::initialize_observation(Satellite& satellite, SignalId sig
     VERBOSEF("observation: c=%f, p=%f", observation.code_range(), observation.phase_range());
 }
 
+void ReferenceStation::write_tropospheric_diag(Satellite const& satellite) NOEXCEPT {
+    FUNCTION_SCOPE();
+
+    // only satellites above the horizon with a position
+    if (!satellite.has_orbit_correction() || !satellite.has_clock_correction()) return;
+    auto const& state = satellite.current_state();
+    if (!(state.true_range > 0.0) || !(state.true_elevation > 0.0)) return;
+
+    auto models   = all_troposphere_models();
+    auto mappings = all_mapping_functions();
+
+    // the sources of the zenith delays: the SSR delays and every model
+    std::vector<std::string> zenith_names;
+    zenith_names.push_back("ssr");
+    for (auto model : models) {
+        zenith_names.push_back(troposphere_model_name(model));
+    }
+    std::vector<std::string> mapping_names;
+    for (auto mapping : mappings) {
+        mapping_names.push_back(mapping_function_name(mapping));
+    }
+    auto                     gradient_sources  = all_gradient_sources();
+    auto                     gradient_mappings = all_gradient_mappings();
+    std::vector<std::string> gradient_source_names;
+    for (auto source : gradient_sources) {
+        gradient_source_names.push_back(gradient_source_name(source));
+    }
+    std::vector<std::string> gradient_mapping_names;
+    for (auto mapping : gradient_mappings) {
+        gradient_mapping_names.push_back(gradient_mapping_name(mapping));
+    }
+
+    auto it = mTropoDiagFiles.find(satellite.id());
+    if (it == mTropoDiagFiles.end()) {
+        auto sv_char = satellite.id().to_string()[0];
+        char prn_buf[8];
+        snprintf(prn_buf, sizeof(prn_buf), "%c%02d", sv_char,
+                 static_cast<int>(satellite.id().lpp_id().value) + 1);
+        auto path = mDiagOutputDir + "/" + sv_char + "/" + std::string(prn_buf) + "/tropo.diag";
+        mTropoDiagFiles[satellite.id()].open(path, satellite.id(), zenith_names, mapping_names,
+                                             gradient_source_names, gradient_mapping_names);
+        it = mTropoDiagFiles.find(satellite.id());
+    }
+
+    auto            llh          = ecef_to_llh(mGroundPosition, ellipsoid::gWgs84);
+    auto            geoid_height = Geoid::height(llh.x, llh.y, Geoid::Model::EMBEDDED);
+    TroposphereSite site{state.reception_time, llh, geoid_height};
+    auto const*     data = mGenerator.mTroposphereData.get();
+
+    TropoDiagRow row{};
+    row.prn =
+        satellite.id().lpp_id().valid ? static_cast<int>(satellite.id().lpp_id().value) + 1 : 0;
+    row.elevation_deg = state.true_elevation * constant::RAD2DEG;
+    row.azimuth_deg   = state.true_azimuth * constant::RAD2DEG;
+
+    // zenith delays, source 0 is SSR
+    row.zenith.resize(zenith_names.size());
+    row.gradient.resize(gradient_sources.size());
+    for (size_t i = 0; i < gradient_sources.size(); i++) {
+        if (gradient_sources[i] == GradientSource::Constant && mGradientConstantSet) {
+            row.gradient[i] = {true, mGradientConstantNorth, mGradientConstantEast};
+        }
+    }
+    {
+        TroposphericCorrection ssr{};
+        if (mGenerator.mCorrectionData->tropospheric(satellite.id(), llh, ssr)) {
+            auto hydrostatic_scale = 1.0;
+            auto wet_scale         = 1.0;
+            auto scaled            = true;
+            if (mTropoHeightCorrection) {
+                scaled = height_scaling(site, hydrostatic_scale, wet_scale);
+            }
+            if (scaled) {
+                row.zenith[0].valid       = true;
+                row.zenith[0].hydrostatic = ssr.dry * hydrostatic_scale;
+                row.zenith[0].wet         = ssr.wet * wet_scale;
+
+                double north = 0.0;
+                double east  = 0.0;
+                if (ssr_grid_gradient(ssr, hydrostatic_scale, wet_scale, north, east)) {
+                    for (size_t i = 0; i < gradient_sources.size(); i++) {
+                        if (gradient_sources[i] == GradientSource::SsrGrid) {
+                            row.gradient[i] = {true, north, east};
+                        }
+                    }
+                }
+            }
+        }
+    }
+    for (size_t i = 0; i < models.size(); i++) {
+        ZenithDelays delays{};
+        if (zenith_delays(models[i], data, site, delays)) {
+            row.zenith[i + 1] = {true, delays.hydrostatic, delays.wet};
+        }
+    }
+
+    // mapping functions
+    row.mapping.resize(mappings.size());
+    for (size_t i = 0; i < mappings.size(); i++) {
+        MappingValues values{};
+        if (mapping_values(mappings[i], data, site, state.true_elevation, mTropoHydrostaticDelta,
+                           values)) {
+            row.mapping[i] = {true, values.hydrostatic, values.wet};
+        }
+    }
+
+    // every combination
+    row.slant.resize(zenith_names.size() * mappings.size());
+    for (size_t s = 0; s < zenith_names.size(); s++) {
+        for (size_t m = 0; m < mappings.size(); m++) {
+            if (!row.zenith[s].valid || !row.mapping[m].valid) continue;
+            auto& slant = row.slant[s * mappings.size() + m];
+            slant.valid = true;
+            slant.value = row.zenith[s].hydrostatic * row.mapping[m].hydrostatic +
+                          row.zenith[s].wet * row.mapping[m].wet;
+        }
+    }
+
+    // the delay that is applied: SSR if available, otherwise the selected model if enabled
+    size_t mapping_index = 0;
+    for (size_t m = 0; m < mappings.size(); m++) {
+        if (mappings[m] == mMappingFunction) mapping_index = m;
+    }
+    size_t source_index = 0;
+    if (!row.zenith[0].valid && mUseTroposphericModel) {
+        for (size_t i = 0; i < models.size(); i++) {
+            if (models[i] == mTroposphereModel) source_index = i + 1;
+        }
+    }
+
+    // gradient mapping functions, `macmillan` uses m_h of the selected mapping function
+    row.gradient_mapping.resize(gradient_mappings.size());
+    for (size_t g = 0; g < gradient_mappings.size(); g++) {
+        auto const& selected = row.mapping[mapping_index];
+        if (gradient_mappings[g] == GradientMapping::MacMillan && !selected.valid) continue;
+        row.gradient_mapping[g] = {
+            true, gradient_mapping_value(gradient_mappings[g], state.true_elevation,
+                                         selected.valid ? selected.hydrostatic : 0.0)};
+    }
+
+    // gradient term of every combination of source and mapping function
+    row.gradient_delay.resize(gradient_sources.size() * gradient_mappings.size());
+    for (size_t s = 0; s < gradient_sources.size(); s++) {
+        for (size_t g = 0; g < gradient_mappings.size(); g++) {
+            if (!row.gradient[s].valid || !row.gradient_mapping[g].valid) continue;
+            auto& term = row.gradient_delay[s * gradient_mappings.size() + g];
+            term.valid = true;
+            term.value = gradient_delay(row.gradient_mapping[g].value, state.true_azimuth,
+                                        row.gradient[s].north, row.gradient[s].east);
+        }
+    }
+
+    if (source_index != 0 || row.zenith[0].valid) {
+        auto const& applied = row.slant[source_index * mappings.size() + mapping_index];
+        if (applied.valid) {
+            row.has_applied = true;
+            row.applied     = applied.value;
+
+            // the gradient of the selected source and mapping function
+            for (size_t s = 0; s < gradient_sources.size(); s++) {
+                for (size_t g = 0; g < gradient_mappings.size(); g++) {
+                    auto const& term = row.gradient_delay[s * gradient_mappings.size() + g];
+                    if (gradient_sources[s] == mGradientSource &&
+                        gradient_mappings[g] == mGradientMapping && term.valid) {
+                        row.applied_gradient = term.value;
+                        row.applied += term.value;
+                    }
+                }
+            }
+        }
+    }
+
+    it->second.write(mGenerationTime, row);
+}
+
+bool ReferenceStation::set_ground_position_frame(char const* frame, double epoch, Float3 velocity,
+                                                 char const* ssr_frame) NOEXCEPT {
+    auto ground = GroundFrame::create(frame, epoch, velocity, ssr_frame);
+    if (!ground) return false;
+    INFOF("ground position in %s, transformed to %s", ground->frame_name(),
+          ground->ssr_frame_name());
+    mGroundFrame        = std::move(ground);
+    mGroundFrameTimeSet = false;
+    return true;
+}
+
+// Plate motion is a few cm per year, recomputing the position daily is more than enough
+void ReferenceStation::update_ground_position() NOEXCEPT {
+    if (!mGroundFrame) return;
+    if (mGroundFrameTimeSet &&
+        std::fabs(mGenerationTime.difference_seconds(mGroundFrameTime)) < 86400.0) {
+        return;
+    }
+
+    mGroundFrameTime    = mGenerationTime;
+    mGroundFrameTimeSet = true;
+    mGroundPosition     = mGroundFrame->position(mGroundPositionInput, mGenerationTime);
+    INFOF("ground position (%s): (%.4f, %.4f, %.4f) -> (%s): (%.4f, %.4f, %.4f) [%+.4f m]",
+          mGroundFrame->frame_name(), mGroundPositionInput.x, mGroundPositionInput.y,
+          mGroundPositionInput.z, mGroundFrame->ssr_frame_name(), mGroundPosition.x,
+          mGroundPosition.y, mGroundPosition.z, (mGroundPosition - mGroundPositionInput).length());
+    for (auto& satellite : mSatellites)
+        satellite.set_ground_position(mGroundPosition);
+}
+
 bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     FUNCTION_SCOPE();
     if (mGenerator.mCorrectionData == nullptr) {
@@ -235,6 +601,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
     }
 
     mGenerationTime = reception_time;
+    update_ground_position();
 
     DEBUGF("generation time: %s", mGenerationTime.rtklib_time_string().c_str());
     DEBUGF("satellite count: %zu", mSatellites.size());
@@ -258,6 +625,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
 
         if (!satellite.enabled()) {
             TRACEF("discarded: %s - disabled", satellite.id().name());
+            write_unavailable_signals(satellite);
             continue;
         }
 
@@ -274,20 +642,28 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             continue;
         }
 
-        bool elevation_masked = false;
+        bool        elevation_masked = false;
+        std::string elevation_detail;
         if (satellite.elevation() * constant::RAD2DEG < mElevationMask) {
             WARNF("discarded: %s - elevation mask (%.2f < %.2f)", satellite.id().name(),
                   satellite.elevation() * constant::RAD2DEG, mElevationMask);
             elevation_masked = true;
+            char buffer[64];
+            snprintf(buffer, sizeof(buffer), "elevation=%.2fdeg,mask=%.2fdeg",
+                     satellite.elevation() * constant::RAD2DEG, mElevationMask);
+            elevation_detail = buffer;
         }
 
         auto signals = mGenerator.mCorrectionData->signals(satellite.id());
         if (!signals) {
             WARNF("discarded: %s - no signals", satellite.id().name());
-            satellite.disable("no_signals");
+            satellite.disable("no_signals", "no_bias_data");
             continue;
         }
 
+        // why the signals were discarded: reason -> count
+        size_t                     signal_count = 0;
+        std::map<std::string, int> discard_tally;
         for (auto& signal : *signals) {
             if (mSignalIncludeSet.size() > 0 &&
                 mSignalIncludeSet.find(signal) == mSignalIncludeSet.end()) {
@@ -300,19 +676,33 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 continue;
             }
 
-            initialize_observation(satellite, signal,
-                                   elevation_masked ? "elevation_mask" : nullptr);
+            initialize_observation(satellite, signal, elevation_masked ? "elevation_mask" : nullptr,
+                                   elevation_detail);
+            signal_count++;
+            if (!satellite.observations().empty() && !satellite.observations().back().is_valid()) {
+                auto const& reason = satellite.observations().back().discard_reason();
+                discard_tally[reason.empty() ? "unknown" : reason]++;
+            }
             satellite.remove_discarded_observations();
         }
 
         if (elevation_masked) {
-            satellite.disable("elevation_mask");
+            satellite.disable("elevation_mask", elevation_detail);
             continue;
         }
 
         if (satellite.observations().size() == 0) {
             WARNF("discarded: %s - no valid observations", satellite.id().name());
-            satellite.disable("no_valid_observations");
+            std::string detail = "signals=" + std::to_string(signal_count);
+            if (!discard_tally.empty()) {
+                detail += "(";
+                for (auto const& entry : discard_tally) {
+                    if (detail.back() != '(') detail += ',';
+                    detail += entry.first + ":" + std::to_string(entry.second);
+                }
+                detail += ")";
+            }
+            satellite.disable("no_valid_observations", detail);
             continue;
         }
 
@@ -355,6 +745,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.orbit_along_dot  = orb.dot_delta.y;
                 row.orbit_cross_dot  = orb.dot_delta.z;
                 row.orbit_iod        = orb.iod;
+                row.orbit_ssr_iod    = orb.ssr_iod;
                 row.has_orbit_ssr    = true;
                 row.orbit_epoch.set(orb.epoch_time, mGenerationTime);
             }
@@ -365,6 +756,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                 row.clock_c0      = clk.c0;
                 row.clock_c1      = clk.c1;
                 row.clock_c2      = clk.c2;
+                row.clock_ssr_iod = clk.ssr_iod;
                 row.has_clock_ssr = true;
                 row.clock_epoch.set(clk.epoch_time, mGenerationTime);
             }
@@ -390,6 +782,53 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
                     row.has_iono_quality = true;
                 }
                 row.iono_epoch.set(iono_poly->epoch_time, mGenerationTime);
+                if (iono_poly->ssr_iod_valid) {
+                    row.has_iono_ssr_iod = true;
+                    row.iono_ssr_iod     = iono_poly->ssr_iod;
+                }
+            }
+
+            {
+                uint16_t grid_ssr_iod = 0;
+                if (mGenerator.mCorrectionData->grid_ssr_iod(satellite.id().gnss(), grid_ssr_iod)) {
+                    row.has_grid_ssr_iod = true;
+                    row.grid_ssr_iod     = grid_ssr_iod;
+                }
+            }
+
+            // Ephemeris IOD
+            if (satellite.has_ephemeris_search()) {
+                auto const& search = satellite.ephemeris_search();
+                row.eph_is_galileo = satellite.id().is_galileo();
+                if (search.found) {
+                    row.has_eph_iod = true;
+                    row.eph_iod     = search.selected.iod;
+                    row.eph_iode    = search.selected.iode;
+                    row.eph_iodc    = search.selected.iodc;
+                    row.eph_iod_nav = search.selected.iod_nav;
+                }
+                for (size_t i = 0; i < search.valid.size(); i++) {
+                    if (i > 0) row.eph_valid_iods += '/';
+                    row.eph_valid_iods += std::to_string(search.valid[i].iod);
+                }
+
+                // the ephemeris that is closest to the IOD of the SSR orbit correction, the
+                // selected one if there is a match
+                if (satellite.has_orbit_correction() && !search.valid.empty()) {
+                    auto wanted = satellite.orbit_correction().iod;
+                    auto best   = search.found ? search.selected : search.valid.front();
+                    if (!search.found) {
+                        for (auto const& candidate : search.valid) {
+                            if (std::abs(iod_offset(satellite.id(), wanted, candidate.iod)) <
+                                std::abs(iod_offset(satellite.id(), wanted, best.iod))) {
+                                best = candidate;
+                            }
+                        }
+                    }
+                    row.has_eph_candidate = true;
+                    row.eph_candidate_iod = best.iod;
+                    row.eph_iod_offset    = iod_offset(satellite.id(), wanted, best.iod);
+                }
             }
 
             // Geometry + evaluated clock (available if update() completed successfully)
@@ -427,9 +866,16 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             // Discard reason
             if (!satellite.enabled() && satellite.disable_reason()) {
                 row.discard_reason = satellite.disable_reason();
+                row.discard_detail = satellite.disable_detail();
             }
 
             it->second.write(mGenerationTime, row);
+        }
+    }
+
+    if (mGenerateDiag && mDiagTropoAll) {
+        for (auto const& satellite : mSatellites) {
+            write_tropospheric_diag(satellite);
         }
     }
 
@@ -447,6 +893,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
         VERBOSEF("lli -%s", id.to_string().c_str());
         mLockTime.erase(id);
         mPhaseDiscontinuity.erase(id);
+        mLossCount[id] += 1;
     }
 
     for (auto& id : active_signals) {
@@ -455,6 +902,8 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             mLockTime[id] = mGenerationTime;
         }
     }
+
+    if (!active_signals.empty()) mStarted = true;
 
     return true;
 }
@@ -478,7 +927,7 @@ void ReferenceStation::build_rtcm_observation(Satellite const&         satellite
 
     if (mPhaseAlignment) {
         auto shift_cycles = observation.signal_id().phase_alignment_shift();
-        auto shift_meters = shift_cycles * observation.signal_id().wavelength();
+        auto shift_meters = shift_cycles * observation.wave_length();
         auto shift_ms     = shift_meters * meter_to_cms;
         delta_phase_range_ms += shift_ms;
     }
@@ -527,8 +976,9 @@ void ReferenceStation::build_rtcm_satellite(Satellite const&    satellite,
     }
 
     rtcm::Satellite rtcm{};
-    rtcm.id          = satellite.id();
-    rtcm.integer_ms  = rtd.integer_ms;
+    rtcm.id         = satellite.id();
+    rtcm.integer_ms = rtd.integer_ms;
+    if (satellite.has_frequency_channel()) rtcm.frequency_channel = satellite.frequency_channel();
     rtcm.rough_range = rtd.rough_range;
     if (mPhaseRangeRate) {
         rtcm.rough_phase_range_rate = phase_range_rate;
@@ -563,6 +1013,10 @@ void ReferenceStation::build_rtcm_residual(Satellite const& satellite, Float3 co
     double frequency = 0.0;
     switch (satellite.id().gnss()) {
     case SatelliteId::Gnss::GPS: frequency = SignalId::GPS_L1_CA.frequency(); break;
+    case SatelliteId::Gnss::GLONASS:
+        if (!satellite.has_frequency_channel()) return;
+        frequency = SignalId::GLONASS_G1_CA.frequency(satellite.frequency_channel());
+        break;
     case SatelliteId::Gnss::GALILEO: frequency = SignalId::GALILEO_E1.frequency(); break;
     case SatelliteId::Gnss::BEIDOU: frequency = SignalId::BEIDOU_B1_I.frequency(); break;
     default: return;
@@ -609,11 +1063,13 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     rtcm::Observations msm_glo{};
     rtcm::Observations msm_gal{};
     rtcm::Observations msm_bds{};
+    rtcm::Observations msm_qzs{};
 
     msm_gps.time = mGenerationTime;
     msm_glo.time = mGenerationTime;
     msm_gal.time = mGenerationTime;
     msm_bds.time = mGenerationTime;
+    msm_qzs.time = mGenerationTime;
 
 #ifdef INCLUDE_FORMAT_RINEX
     if (mGenerateRinex) {
@@ -623,6 +1079,13 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
             mRinexBuilder.set_glo_support(mGenerateGlo);
             mRinexBuilder.set_gal_support(mGenerateGal);
             mRinexBuilder.set_bds_support(mGenerateBds);
+            mRinexBuilder.set_qzs_support(mGenerateQzs);
+            for (auto& satellite : mSatellites) {
+                if (!satellite.enabled() || !satellite.has_frequency_channel()) continue;
+                auto slot = satellite.id().prn();
+                if (!slot.valid) continue;
+                mRinexBuilder.set_glo_frequency_channel(slot.value, satellite.frequency_channel());
+            }
 
             std::vector<SatelliteId> rinex_satellites;
             for (auto& satellite : mSatellites) {
@@ -631,6 +1094,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
                 if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
                 if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
                 if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
+                if (!mGenerateQzs && satellite.id().gnss() == SatelliteId::Gnss::QZSS) continue;
                 rinex_satellites.push_back(satellite.id());
             }
 
@@ -643,6 +1107,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
                 if (!mGenerateGlo && satellite.id().gnss() == SatelliteId::Gnss::GLONASS) continue;
                 if (!mGenerateGal && satellite.id().gnss() == SatelliteId::Gnss::GALILEO) continue;
                 if (!mGenerateBds && satellite.id().gnss() == SatelliteId::Gnss::BEIDOU) continue;
+                if (!mGenerateQzs && satellite.id().gnss() == SatelliteId::Gnss::QZSS) continue;
                 rinex_observations.clear();
 
                 std::unordered_set<SignalId> loss_signals;
@@ -704,12 +1169,24 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         }
     }
 
+    if (mGenerateQzs) {
+        for (auto& satellite : mSatellites) {
+            if (!satellite.enabled()) continue;
+            if (satellite.id().gnss() != SatelliteId::Gnss::QZSS) continue;
+            build_rtcm_satellite(satellite, msm_qzs);
+        }
+    }
+
     if (mGenerateResiduals) {
         auto vrs_llh = ecef_to_llh(mGroundPosition, ellipsoid::gWgs84);
 
         rtcm::Residuals gps_residuals{};
         rtcm::Residuals gal_residuals{};
         rtcm::Residuals bds_residuals{};
+        rtcm::Residuals glo_residuals{};
+        glo_residuals.time                 = mGenerationTime;
+        glo_residuals.reference_station_id = mRtcmReferenceStationId;
+        glo_residuals.n_refs               = 1;
         gps_residuals.time                 = mGenerationTime;
         gps_residuals.reference_station_id = mRtcmReferenceStationId;
         gps_residuals.n_refs               = 1;
@@ -726,6 +1203,9 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
             case SatelliteId::Gnss::GPS:
                 if (mGenerateGps) build_rtcm_residual(satellite, vrs_llh, gps_residuals);
                 break;
+            case SatelliteId::Gnss::GLONASS:
+                if (mGenerateGlo) build_rtcm_residual(satellite, vrs_llh, glo_residuals);
+                break;
             case SatelliteId::Gnss::GALILEO:
                 if (mGenerateGal) build_rtcm_residual(satellite, vrs_llh, gal_residuals);
                 break;
@@ -739,6 +1219,9 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         if (!gps_residuals.satellites.empty()) {
             messages.push_back(rtcm::generate_1030(gps_residuals));
         }
+        if (!glo_residuals.satellites.empty()) {
+            messages.push_back(rtcm::generate_1031(glo_residuals));
+        }
         if (!bds_residuals.satellites.empty()) {
             messages.push_back(rtcm::generate_1303(bds_residuals));
         }
@@ -751,6 +1234,7 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
     DEBUGF("GLO: satellites=%2zu, signals=%2zu", msm_glo.satellites.size(), msm_glo.signals.size());
     DEBUGF("GAL: satellites=%2zu, signals=%2zu", msm_gal.satellites.size(), msm_gal.signals.size());
     DEBUGF("BDS: satellites=%2zu, signals=%2zu", msm_bds.satellites.size(), msm_bds.signals.size());
+    DEBUGF("QZS: satellites=%2zu, signals=%2zu", msm_qzs.satellites.size(), msm_qzs.signals.size());
     auto will_generate_gps =
         mGenerateGps && msm_gps.satellites.size() > 0 && msm_gps.signals.size() > 0;
     auto will_generate_glo =
@@ -759,6 +1243,8 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         mGenerateGal && msm_gal.satellites.size() > 0 && msm_gal.signals.size() > 0;
     auto will_generate_bds =
         mGenerateBds && msm_bds.satellites.size() > 0 && msm_bds.signals.size() > 0;
+    auto will_generate_qzs =
+        mGenerateQzs && msm_qzs.satellites.size() > 0 && msm_qzs.signals.size() > 0;
 
     // The GNSS indicator bits in 1005/1006 must reflect what is actually being delivered this
     // epoch, not merely what was requested. Advertising a system that has no observations (e.g.
@@ -790,31 +1276,61 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
         messages.push_back(rtcm::generate_1032(reference_station, physical_reference_station));
     }
 
+    if (will_generate_glo) {
+        // The synthetic observations have no inter-frequency code-phase biases
+        rtcm::BiasInformation bias{};
+        bias.reference_station_id = mRtcmReferenceStationId;
+        bias.indicator            = true;
+        bias.mask                 = 0xF;
+        bias.l1_ca                = 0.0;
+        bias.l1_p                 = 0.0;
+        bias.l2_ca                = 0.0;
+        bias.l2_p                 = 0.0;
+        messages.push_back(rtcm::generate_1230(bias));
+    }
+
     if (will_generate_gps) {
-        auto last_msm = !will_generate_glo && !will_generate_gal && !will_generate_bds;
-        auto message =
+        auto last_msm =
+            !will_generate_glo && !will_generate_gal && !will_generate_bds && !will_generate_qzs;
+        auto msm_messages =
             rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GPS, common, msm_gps);
-        messages.push_back(std::move(message));
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_glo) {
-        auto last_msm = !will_generate_gal && !will_generate_bds;
-        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
-                                           common, msm_glo);
-        messages.push_back(std::move(message));
+        auto last_msm     = !will_generate_gal && !will_generate_bds && !will_generate_qzs;
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GLONASS,
+                                               common, msm_glo);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_gal) {
-        auto last_msm = !will_generate_bds;
-        auto message  = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
-                                           common, msm_gal);
-        messages.push_back(std::move(message));
+        auto last_msm     = !will_generate_bds && !will_generate_qzs;
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, last_msm, rtcm::GenericGnssId::GALILEO,
+                                               common, msm_gal);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     if (will_generate_bds) {
-        auto message =
-            rtcm::generate_msm(mRtcmMsmType, true, rtcm::GenericGnssId::BEIDOU, common, msm_bds);
-        messages.push_back(std::move(message));
+        auto msm_messages = rtcm::generate_msm(mRtcmMsmType, !will_generate_qzs,
+                                               rtcm::GenericGnssId::BEIDOU, common, msm_bds);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
+    }
+
+    if (will_generate_qzs) {
+        auto msm_messages =
+            rtcm::generate_msm(mRtcmMsmType, true, rtcm::GenericGnssId::QZSS, common, msm_qzs);
+        for (auto& message : msm_messages) {
+            messages.push_back(std::move(message));
+        }
     }
 
     return messages;
@@ -827,12 +1343,33 @@ std::vector<rtcm::Message> ReferenceStation::produce() NOEXCEPT {
 Generator::Generator() NOEXCEPT {
     FUNCTION_SCOPE();
     mIodConsistencyCheck                         = false;
+    mSsrGenerationConsistencyCheck               = false;
     mUseReceptionTimeForOrbitAndClockCorrections = false;
     mUseOrbitCorrectionInIteration               = false;
     mIgnoreBitmask                               = false;
 }
 
 Generator::~Generator() = default;
+
+bool Generator::set_orbit_frame(char const* frame) NOEXCEPT {
+    if (!frame) {
+        mOrbitFrames.reset();
+        return true;
+    }
+    auto frames = OrbitFrames::create(frame);
+    if (!frames) return false;
+    INFOF("broadcast orbits transformed to %s", frames->target_name());
+    mOrbitFrames = std::move(frames);
+    return true;
+}
+
+bool Generator::set_orbit_source_frame(SatelliteId::Gnss gnss, char const* frame) NOEXCEPT {
+    if (!mOrbitFrames) {
+        ERRORF("the orbit source frame requires an orbit frame");
+        return false;
+    }
+    return mOrbitFrames->set_source(gnss, frame);
+}
 
 void Generator::set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
                                               double reference_point_longitude,
@@ -907,6 +1444,7 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
     mCorrectionData->max_bias_age         = mMaxBiasAge;
     mCorrectionData->max_iono_age         = mMaxIonoAge;
     mCorrectionData->max_tropo_age        = mMaxTropoAge;
+    mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
@@ -1014,7 +1552,8 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
 
         auto gnss_id = element->gnss_ID.gnss_id;
         if (gnss_id != GNSS_ID__gnss_id_gps && gnss_id != GNSS_ID__gnss_id_galileo &&
-            gnss_id != GNSS_ID__gnss_id_bds && gnss_id != GNSS_ID__gnss_id_glonass) {
+            gnss_id != GNSS_ID__gnss_id_bds && gnss_id != GNSS_ID__gnss_id_glonass &&
+            gnss_id != GNSS_ID__gnss_id_qzss) {
             WARNF("unsupported GNSS ID: %d", gnss_id);
             continue;
         }
@@ -1037,7 +1576,7 @@ void Generator::find_corrections(ProvideAssistanceData_r9_IEs const& message) NO
 }
 
 bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iod,
-                               ephemeris::Ephemeris& eph) const NOEXCEPT {
+                               ephemeris::Ephemeris& eph, EphemerisSearch* search) const NOEXCEPT {
     FUNCTION_SCOPE();
     if (sv_id.gnss() == SatelliteId::Gnss::GPS) {
         auto it = mGpsEphemeris.find(sv_id);
@@ -1046,6 +1585,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto gps_time = ts::Gps(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1055,6 +1595,10 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(gps_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gps_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc, 0,
+                                         ephemeris.toe, ephemeris.week_number});
+            }
             // TODO(ewasjon): [low-priority] Due to a issue for one datafeed the lpp_iod for GPS
             // uses IODE instead of IODC. As IODE by definition is the 8 lower bits of IODC let's
             // just compare them. This could cause problem with ephemeris >6 hours but the time
@@ -1063,6 +1607,10 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             auto wanted_iode = iod & 0xFF;
             if (eph_iode != wanted_iode && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
@@ -1070,7 +1618,48 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
         mMissingEphemeris.push_back({sv_id, iod});
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GLONASS) {
-        // TODO:
+        auto it = mGloEphemeris.find(sv_id);
+        if (it == mGloEphemeris.end()) {
+            mMissingEphemeris.push_back({sv_id, iod});
+            return false;
+        }
+        auto& list = it->second;
+        if (search) search->total = list.size();
+
+        // GLONASS ephemerides are valid for +-30 min but degrade quickly after 15 min (about 1 m
+        // at 15 min, 2-3 m at 30 min), so use the one with tb closest to the time
+        auto                           glo_time     = ts::Glo(time);
+        ephemeris::GloEphemeris const* best         = nullptr;
+        auto                           best_matches = false;
+        VERBOSEF("searching: %s %u", sv_id.name(), iod);
+        for (auto& ephemeris : list) {
+            auto tb = ephemeris.reference_time.time_of_day().full_seconds();
+            VERBOSEF("  %8.0f | %4u |%s%s", tb, ephemeris.lpp_iod,
+                     ephemeris.is_valid(glo_time) ? " [time]" : "",
+                     ephemeris.lpp_iod == iod ? " [iod]" : "");
+            if (!ephemeris.is_valid(glo_time)) continue;
+            if (search) search->valid.push_back({ephemeris.lpp_iod, 0, 0, 0, tb, 0});
+            // the SSR iod of GLONASS is tb (7 bits). The ephemeris the SSR orbit correction refers
+            // to is preferred even without the IOD consistency check; the corrections are only
+            // consistent with that one.
+            auto matches = (ephemeris.lpp_iod & 0x7F) == (iod & 0x7F);
+            if (!matches && mIodConsistencyCheck) continue;
+            auto closer = !best || std::fabs(glo_time - ephemeris.reference_time) <
+                                       std::fabs(glo_time - best->reference_time);
+            if (!best || (matches && !best_matches) || (matches == best_matches && closer)) {
+                best         = &ephemeris;
+                best_matches = matches;
+                if (search) search->selected = search->valid.back();
+            }
+        }
+        if (best) {
+            eph = ephemeris::Ephemeris(*best);
+            if (search) search->found = true;
+            VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
+            return true;
+        }
+
+        mMissingEphemeris.push_back({sv_id, iod});
         return false;
     } else if (sv_id.gnss() == SatelliteId::Gnss::GALILEO) {
         auto it = mGalEphemeris.find(sv_id);
@@ -1079,6 +1668,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto gal_time = ts::Gst(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1088,8 +1678,16 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(gal_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(gal_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, 0, 0, ephemeris.iod_nav, ephemeris.toe,
+                                         ephemeris.week_number});
+            }
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
@@ -1103,6 +1701,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto bds_time = ts::Bdt(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1112,8 +1711,16 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(bds_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(bds_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc, 0,
+                                         ephemeris.toe, ephemeris.week_number});
+            }
             if (ephemeris.lpp_iod != iod && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
@@ -1127,6 +1734,7 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
             return false;
         }
         auto& list = it->second;
+        if (search) search->total = list.size();
 
         auto qzs_time = ts::Gps(time);
         VERBOSEF("searching: %s %u", sv_id.name(), iod);
@@ -1136,10 +1744,18 @@ bool Generator::find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t 
                      ephemeris.is_valid(qzs_time) ? " [time]" : "",
                      ephemeris.lpp_iod == iod ? " [iod]" : "");
             if (!ephemeris.is_valid(qzs_time)) continue;
+            if (search) {
+                search->valid.push_back({ephemeris.lpp_iod, ephemeris.iode, ephemeris.iodc, 0,
+                                         ephemeris.toe, ephemeris.week_number});
+            }
             auto eph_iode    = ephemeris.lpp_iod & 0xFF;
             auto wanted_iode = iod & 0xFF;
             if (eph_iode != wanted_iode && mIodConsistencyCheck) continue;
             eph = ephemeris::Ephemeris(ephemeris);
+            if (search) {
+                search->found    = true;
+                search->selected = search->valid.back();
+            }
             VERBOSEF("found: %s %u", sv_id.name(), eph.iod());
             return true;
         }
@@ -1282,6 +1898,37 @@ void Generator::process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEX
     DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
 }
 
+void Generator::process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT {
+    FUNCTION_SCOPE();
+    auto satellite_id = SatelliteId::from_glo_slot(ephemeris.slot_number);
+    if (!satellite_id.is_valid()) {
+        VERBOSEF("invalid satellite id: GLO %d", ephemeris.slot_number);
+        return;
+    }
+
+    auto& list = mGloEphemeris[satellite_id];
+
+    for (auto& eph : list) {
+        if (eph.match(ephemeris)) {
+            VERBOSEF("duplicate ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
+            return;
+        }
+    }
+
+    if (list.size() >= mEphemerisMaxCache) {
+        WARNF("removing oldest ephemeris: %s (size=%zu)", satellite_id.name(), list.size());
+        list.erase(list.begin());
+    }
+
+    list.push_back(ephemeris);
+    std::sort(list.begin(), list.end(),
+              [](ephemeris::GloEphemeris const& a, ephemeris::GloEphemeris const& b) {
+                  return a.compare(b);
+              });
+
+    DEBUGF("ephemeris: %s (iod=%u)", satellite_id.name(), ephemeris.lpp_iod);
+}
+
 bool Generator::get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT {
     if (!mCorrectionPointSet) return false;
     ASSERT(lat, "lat is null");
@@ -1323,6 +1970,7 @@ SnapshotInput ReferenceStation::snapshot(ts::Tai const& time) const NOEXCEPT {
     input.config.elevation_mask                     = mElevationMask;
     input.config.phase_range_rate                   = mPhaseRangeRate;
     input.config.negative_phase_windup              = mNegativePhaseWindup;
+    input.config.negative_correction_sign           = mNegativeCorrectionSign;
     input.config.require_code_bias                  = mRequireCodeBias;
     input.config.require_phase_bias                 = mRequirePhaseBias;
     input.config.require_tropo                      = mRequireTropo;
@@ -1368,6 +2016,14 @@ SnapshotInput Generator::snapshot() const NOEXCEPT {
             input.ephemeris.push_back(snapshot_eph);
         }
     }
+    for (auto const& pair : mGloEphemeris) {
+        for (auto const& eph : pair.second) {
+            SnapshotEphemeris snapshot_eph;
+            msgpack::Packer   packer(snapshot_eph.data);
+            ephemeris::Ephemeris(eph).msgpack_pack(packer);
+            input.ephemeris.push_back(snapshot_eph);
+        }
+    }
 
     if (mCorrectionData) {
         mCorrectionData->snapshot(input.orbit_corrections, input.clock_corrections,
@@ -1401,6 +2057,7 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
     mGalEphemeris.clear();
     mBdsEphemeris.clear();
     mQzsEphemeris.clear();
+    mGloEphemeris.clear();
 
     TRACEF("load ephemeris");
     for (auto const& snapshot_eph : input.ephemeris) {
@@ -1427,6 +2084,10 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
             auto id = SatelliteId::from_qzs_prn(eph.qzs_ephemeris.prn);
             DEBUGF("loaded ephemeris: %s", id.name());
             mQzsEphemeris[id].push_back(eph.qzs_ephemeris);
+        } else if (eph.mType == ephemeris::Ephemeris::Type::GLO) {
+            auto id = SatelliteId::from_glo_slot(eph.glo_ephemeris.slot_number);
+            DEBUGF("loaded ephemeris: %s", id.name());
+            mGloEphemeris[id].push_back(eph.glo_ephemeris);
         } else {
             WARNF("unknown ephemeris type: %d", eph.mType);
         }
@@ -1458,6 +2119,8 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
         mCorrectionData->max_bias_age         = mMaxBiasAge;
         mCorrectionData->max_iono_age         = mMaxIonoAge;
         mCorrectionData->max_tropo_age        = mMaxTropoAge;
+        mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
+        mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
     }
 
     TRACEF("load correction data");

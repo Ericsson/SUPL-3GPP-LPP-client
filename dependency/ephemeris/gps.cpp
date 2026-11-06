@@ -15,21 +15,34 @@ CONSTEXPR static double GPS_CONSTANT_MU              = 3.986005e14;
 CONSTEXPR static double GPS_CONSTANT_OMEGA_EARTH_DOT = 7.2921151467e-5;
 CONSTEXPR static double GPS_CONSTANT_C               = 2.99792458e8;
 
+// Total curve fit interval in hours from the fit interval flag and IODC (IS-GPS-200N Table
+// 20-XII). Flag 0 is the nominal 4 hours; flag 1 means "greater than 4 hours" and the
+// extended duration depends on the IODC range used for the transmission interval.
+static double gps_curve_fit_interval_hours(bool fit_interval_flag, uint16_t iodc) {
+    if (!fit_interval_flag) return 4.0;
+    if (iodc >= 240 && iodc <= 247) return 8.0;
+    if ((iodc >= 248 && iodc <= 255) || iodc == 496) return 14.0;
+    if ((iodc >= 497 && iodc <= 503) || (iodc >= 1021 && iodc <= 1023)) return 26.0;
+    return 6.0;
+}
+
 bool GpsEphemeris::is_valid(ts::Gps const& time) const NOEXCEPT {
     auto toe_tow  = static_cast<uint32_t>(toe);
     auto toe_frac = toe - toe_tow;
 
     // Resolve week_number (may be truncated to 10 bits from broadcast nav) relative to query time.
-    // diff_mod==0: same week; diff_mod==1023: eph is one week ahead (week boundary crossover).
+    // diff_mod==0: same week; diff_mod==1023: eph is one week ahead (week boundary crossover);
+    // diff_mod==1: eph is one week behind (query crossed into the next week while the
+    // ephemeris is still within its fit interval from the previous week).
     auto q_mod    = time.week() % 1024;
     auto e_mod    = static_cast<int64_t>(week_number) % 1024;
     auto diff_mod = (q_mod - e_mod + 1024) % 1024;
-    if (diff_mod != 0 && diff_mod != 1023) return false;
-    auto full_week = time.week() + (diff_mod == 1023 ? 1 : 0);
+    if (diff_mod != 0 && diff_mod != 1 && diff_mod != 1023) return false;
+    auto full_week = time.week() + (diff_mod == 1023 ? 1 : (diff_mod == 1 ? -1 : 0));
 
-    // TODO: Verify GPS validity window is correctly symmetric ±2/4 hours
-    // GPS ephemeris validity should be symmetric around TOE
-    auto fit_interval = fit_interval_flag ? (2 * 3600) : (4 * 3600);
+    // The curve fit interval is a *total* duration centred on toe, so the accepted window is
+    // +/- half of it (IS-GPS-200N 20.3.4.4, Table 20-XII).
+    auto fit_interval = 0.5 * 3600.0 * gps_curve_fit_interval_hours(fit_interval_flag, iodc);
     auto toe_ts       = ts::Gps::from_week_tow(full_week, toe_tow, toe_frac).timestamp();
     auto current_ts   = time.timestamp();
 

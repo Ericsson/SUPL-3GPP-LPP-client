@@ -33,7 +33,12 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
         if (std::fabs(phi_n - phi) < tolerance) {
             phi = phi_n;
 
-            auto h = p / std::cos(phi) - n;
+            // p / cos(phi) - n is undefined on the polar axis (p = 0, cos(phi) = 0) and loses
+            // precision near it; this form is well conditioned for every latitude.
+            auto sin_phi_n = std::sin(phi);
+            auto cos_phi_n = std::cos(phi);
+            auto h =
+                p * cos_phi_n + z * sin_phi_n - a * std::sqrt(1.0 - e2 * sin_phi_n * sin_phi_n);
             return Float3{phi, lon, h};
         }
 
@@ -103,7 +108,7 @@ static ItrfParameter gItrf2020To94Parameter = {
     6.5, -3.9, -77.9, 3.98, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,
 };
 static ItrfParameter gItrf2020To93Parameter = {
-    -65.8, 1.9, -71.3, 4.47, -3.36, -4.33, 0.75, 2015.0, 2.8, -0.2, -2.3, 0.12, -0.11, -0.19, 0.07,
+    -65.8, 1.9, -71.3, 4.47, -3.36, -4.33, 0.75, 2015.0, -2.8, -0.2, -2.3, 0.12, -0.11, -0.19, 0.07,
 };
 static ItrfParameter gItrf2020To92Parameter = {
     14.5, -1.9, -85.9, 3.27, 0.00, 0.00, 0.36, 2015.0, 0.1, -0.6, -3.1, 0.12, 0.00, 0.00, 0.02,

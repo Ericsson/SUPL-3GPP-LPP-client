@@ -1,6 +1,7 @@
 #include "builder.hpp"
 
 #include <algorithm>
+#include <cstdio>
 #include <iomanip>
 #include <unordered_set>
 
@@ -16,12 +17,13 @@ LOGLET_MODULE2(format, rinex);
 namespace format {
 namespace rinex {
 
-static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds) {
+static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds, bool qzs) {
     auto count = 0;
     count += gps ? 1 : 0;
     count += glo ? 1 : 0;
     count += gal ? 1 : 0;
     count += bds ? 1 : 0;
+    count += qzs ? 1 : 0;
     if (count > 1) {
         return "M: MIXED";
     }
@@ -34,6 +36,8 @@ static char const* observation_data_type(bool gps, bool glo, bool gal, bool bds)
         return "E: Galileo";
     } else if (bds) {
         return "C: BDS";
+    } else if (qzs) {
+        return "J: QZSS";
     } else {
         return "M: MIXED";
     }
@@ -112,6 +116,13 @@ static SignalId const gBdsSignals[4] = {
     SignalId::BEIDOU_B2A_D_P,
 };
 
+static SignalId const gQzsSignals[4] = {
+    SignalId::QZSS_L1_CA,
+    SignalId::QZSS_L1C_D_P,
+    SignalId::QZSS_L2C_M_L,
+    SignalId::QZSS_L5_I_Q,
+};
+
 Builder::Builder(std::string path, double version) NOEXCEPT : mVersion(version),
                                                               mPath(std::move(path)) {
     VSCOPE_FUNCTION();
@@ -143,6 +154,7 @@ void Builder::generate_observation_order() {
     mGloTypeOrder.clear();
     mGalTypeOrder.clear();
     mBdsTypeOrder.clear();
+    mQzsTypeOrder.clear();
 
     if (mGpsSupport) {
         for (auto const& signal : gGpsSignals) {
@@ -179,6 +191,14 @@ void Builder::generate_observation_order() {
             mBdsTypeOrder.push_back({ObservationKind::SignalStrength, signal});
         }
     }
+
+    if (mQzsSupport) {
+        for (auto const& signal : gQzsSignals) {
+            mQzsTypeOrder.push_back({ObservationKind::Code, signal});
+            mQzsTypeOrder.push_back({ObservationKind::Phase, signal});
+            mQzsTypeOrder.push_back({ObservationKind::SignalStrength, signal});
+        }
+    }
 }
 
 void Builder::header_begin() {
@@ -195,7 +215,8 @@ void Builder::header_begin() {
             << std::setw(11) << std::left << ""                                              //
             << std::setw(20) << std::left << "OBSERVATION DATA"                              //
             << std::setw(20) << std::left
-            << observation_data_type(mGpsSupport, mGloSupport, mGalSupport, mBdsSupport)  //
+            << observation_data_type(mGpsSupport, mGloSupport, mGalSupport, mBdsSupport,
+                                     mQzsSupport)  //
             << std::setw(20) << std::left << "RINEX VERSION / TYPE" << std::endl;
 
     mStream << std::setw(20) << std::left << mProgram             //
@@ -299,11 +320,16 @@ void Builder::header_observation_types() {
               [](ObservationType const& a, ObservationType const& b) {
                   return a < b;
               });
+    std::sort(mQzsTypeOrder.begin(), mQzsTypeOrder.end(),
+              [](ObservationType const& a, ObservationType const& b) {
+                  return a < b;
+              });
 
     header_observation_types_gnss(mGpsTypeOrder, 'G');
     header_observation_types_gnss(mGloTypeOrder, 'R');
     header_observation_types_gnss(mGalTypeOrder, 'E');
     header_observation_types_gnss(mBdsTypeOrder, 'C');
+    header_observation_types_gnss(mQzsTypeOrder, 'J');
 }
 
 void Builder::header_observation_types_gnss(std::vector<ObservationType> const& types,
@@ -353,6 +379,27 @@ void Builder::header_phase_shift() {
         header_phase_shift_type(type, 'E');
     for (auto const& type : mBdsTypeOrder)
         header_phase_shift_type(type, 'C');
+    for (auto const& type : mQzsTypeOrder)
+        header_phase_shift_type(type, 'J');
+}
+
+void Builder::header_glonass_slots() {
+    VSCOPE_FUNCTION();
+    if (!mGloSupport || mGloFrequencyChannels.empty()) return;
+
+    mStream << std::setw(3) << std::right << mGloFrequencyChannels.size() << " ";
+    size_t i = 0;
+    for (auto const& pair : mGloFrequencyChannels) {
+        if (i > 0 && i % 8 == 0) {
+            mStream << std::setw(20) << std::left << "GLONASS SLOT / FRQ #" << std::endl << "    ";
+        }
+        char buffer[16];
+        snprintf(buffer, sizeof(buffer), "R%02d %2d ", pair.first, pair.second);
+        mStream << buffer;
+        i++;
+    }
+    if (i % 8 > 0) mStream << std::setw(7 * (8 - (i % 8))) << "";
+    mStream << std::setw(20) << std::left << "GLONASS SLOT / FRQ #" << std::endl;
 }
 
 void Builder::epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites) {
@@ -377,6 +424,7 @@ void Builder::epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites) {
         header_observation_types();
         header_time_of_first_observation(time);
         header_phase_shift();
+        header_glonass_slots();
         header_end();
 
         mInitialized = true;
@@ -406,7 +454,7 @@ void Builder::epoch(ts::Tai const& time, std::vector<SatelliteId>& satellites) {
             if (i > 0 && i % 12 == 0) {
                 mStream << std::endl;
             }
-            mStream << satellites[i].to_string();
+            mStream << satellites[i].name();
         }
         if (i % 12 > 0) {
             mStream << std::endl;
@@ -427,6 +475,8 @@ std::vector<ObservationType> const& Builder::observation_types(SatelliteId const
         return mGalTypeOrder;
     } else if (id.is_beidou()) {
         return mBdsTypeOrder;
+    } else if (id.is_qzss()) {
+        return mQzsTypeOrder;
     } else {
         UNREACHABLE();
     }
@@ -438,7 +488,7 @@ void Builder::observations(SatelliteId                                        sa
     VSCOPE_FUNCTION();
 
     if (mVersion >= 3.00) {
-        mStream << satellite_id.to_string();
+        mStream << satellite_id.name();
     }
 
     auto& order = observation_types(satellite_id);

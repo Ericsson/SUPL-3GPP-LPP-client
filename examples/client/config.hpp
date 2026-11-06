@@ -13,6 +13,9 @@
 #ifdef INCLUDE_GENERATOR_IDOKEIDO
 #include <generator/idokeido/idokeido.hpp>
 #endif
+#ifdef INCLUDE_GENERATOR_TOKORO
+#include <generator/tokoro/troposphere.hpp>
+#endif
 
 #include "config/types.hpp"
 
@@ -286,6 +289,8 @@ struct Lpp2EphConfig {
     bool gps;
     bool galileo;
     bool beidou;
+    bool glonass;
+    bool qzss;
 };
 
 struct Ubx2EphConfig {
@@ -293,6 +298,8 @@ struct Ubx2EphConfig {
     bool gps;
     bool galileo;
     bool beidou;
+    bool glonass;
+    bool qzss;
 };
 
 struct Rtcm2EphConfig {
@@ -300,6 +307,8 @@ struct Rtcm2EphConfig {
     bool gps;
     bool galileo;
     bool beidou;
+    bool glonass;
+    bool qzss;
 };
 #endif
 
@@ -371,6 +380,18 @@ struct TokoroConfig {
         Grid,
     };
 
+    enum class LockStart {
+        Reset,  // lock time starts at zero (loss of lock)
+        Max,    // lock time starts saturated (in lock)
+    };
+
+    enum class AmbiguityRandomization {
+        Off,
+        Startup,
+        Rise,
+        Both,
+    };
+
     enum class GenerationStrategy {
         AssistanceData,   // Generate when assistance data is received
         TimeStep,         // Generate every time step, using the current time
@@ -385,6 +406,7 @@ struct TokoroConfig {
     bool    generate_glonass;
     bool    generate_galileo;
     bool    generate_beidou;
+    bool    generate_qzss;
     MsmType msm_type;
 
     VrsMode            vrs_mode;
@@ -393,12 +415,18 @@ struct TokoroConfig {
 
     std::unique_ptr<std::pair<int, int>> vrs_grid_position;  // east, north
 
-    double fixed_itrf_x;
-    double fixed_itrf_y;
-    double fixed_itrf_z;
-    double fixed_rtcm_x;
-    double fixed_rtcm_y;
-    double fixed_rtcm_z;
+    double      fixed_itrf_x;
+    double      fixed_itrf_y;
+    double      fixed_itrf_z;
+    double      fixed_rtcm_x;
+    double      fixed_rtcm_y;
+    double      fixed_rtcm_z;
+    std::string fixed_frame;  // frame of fixed_itrf_*, empty: the SSR frame
+    double      fixed_epoch;  // decimal year, <= 0: default
+    double      fixed_velocity_x;
+    double      fixed_velocity_y;
+    double      fixed_velocity_z;
+    std::string ssr_frame;
 
     bool   fixed_physical_station_set;  // physical reference station position (RTCM 1032)
     double fixed_physical_x;
@@ -407,19 +435,36 @@ struct TokoroConfig {
 
     double time_step;
 
-    bool        shapiro_correction;
-    bool        phase_windup_correction;
-    bool        earth_solid_tides_correction;
-    bool        antenna_phase_variation_correction;
-    bool        tropospheric_height_correction;
-    bool        tropospheric_hydrostatic_delta;
-    bool        iod_consistency_check;
-    bool        rtoc;
-    bool        ocit;
-    bool        negative_phase_windup;
-    bool        phase_alignment;
-    std::string antenna_descriptor;
-    std::string receiver_descriptor;
+    bool                                shapiro_correction;
+    bool                                phase_windup_correction;
+    bool                                earth_solid_tides_correction;
+    bool                                antenna_phase_variation_correction;
+    bool                                tropospheric_height_correction;
+    bool                                tropospheric_hydrostatic_delta;
+    bool                                iod_consistency_check;
+    bool                                ssr_generation_consistency_check;
+    bool                                rtoc;
+    bool                                ocit;
+    bool                                negative_phase_windup;
+    bool                                negative_correction_sign;
+    bool                                phase_alignment;
+    generator::tokoro::TroposphereModel tropospheric_model;
+    generator::tokoro::MappingFunction  tropospheric_mapping;
+    generator::tokoro::GradientSource   tropospheric_gradient;
+    generator::tokoro::GradientMapping  tropospheric_gradient_mapping;
+    bool                                tropospheric_gradient_constant_set;
+    double                              tropospheric_gradient_north;  // m
+    double                              tropospheric_gradient_east;   // m
+    bool                                diag_tropospheric_all;
+    std::string                         gpt2_grid;
+    std::vector<std::string>            vmf3_grids;
+    std::string                         vmf3_orography;
+    LockStart                           lock_start;
+    LockStart                           lock_rise;
+    AmbiguityRandomization              ambiguity_randomization;
+    uint64_t                            ambiguity_seed;
+    std::string                         antenna_descriptor;
+    std::string                         receiver_descriptor;
 #ifdef INCLUDE_FORMAT_RINEX
     bool generate_rinex;
 #endif
@@ -437,6 +482,9 @@ struct TokoroConfig {
     std::string              antex_file;
     std::vector<std::string> nav_files;
     bool                     ignore_bitmask;
+    bool                     iono_polynomial_only;
+    std::string              orbit_frame;          // empty: no transformation
+    std::vector<std::string> orbit_source_frames;  // "<gnss>=<frame>"
     bool                     deduplicate_epochs;
     std::string              output_tag;
     std::string              diag_output_dir;

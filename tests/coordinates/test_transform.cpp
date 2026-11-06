@@ -119,3 +119,30 @@ TEST_CASE("ETRF2020 to ITRF94 transformation with epoch change") {
     CHECK(pos_itrf94_2025.y() == doctest::Approx(307051.2058).epsilon(0.001));
     CHECK(pos_itrf94_2025.z() == doctest::Approx(4919475.9368).epsilon(0.001));
 }
+
+TEST_CASE("PZ-90.11 to ITRF2008 transformation") {
+    TransformGraph graph;
+    // a GLONASS satellite position
+    Vector3d pos(10732367.1875, -11441130.37109, 19524788.08594);
+    auto     result =
+        graph.transform(FrameId::PZ90_11, FrameId::ITRF2008, 2026.4, 2026.4, pos, Vector3d::Zero());
+    REQUIRE(result.steps.size() == 1);
+
+    // dX = -3 mm, dY = -1 mm; wy = -0.042 mas gives about -0.042e-3 / 206265 * z in x
+    auto mas = 4.84813681109536e-9;
+    CHECK(result.final_position.x() - pos.x() ==
+          doctest::Approx(-0.003 - 0.002 * mas * pos.y() + -0.042 * mas * pos.z()));
+    auto difference = (result.final_position - pos).norm();
+    CHECK(difference > 0.001);
+    CHECK(difference < 0.02);
+
+    auto back = graph.transform(FrameId::ITRF2008, FrameId::PZ90_11, 2026.4, 2026.4,
+                                result.final_position, Vector3d::Zero());
+    CHECK((back.final_position - pos).norm() < 1e-6);
+
+    // through ITRF2008 to ITRF2020
+    auto itrf2020 =
+        graph.transform(FrameId::PZ90_11, FrameId::ITRF2020, 2026.4, 2026.4, pos, Vector3d::Zero());
+    CHECK(itrf2020.steps.size() == 2);
+    CHECK((itrf2020.final_position - pos).norm() < 0.03);
+}

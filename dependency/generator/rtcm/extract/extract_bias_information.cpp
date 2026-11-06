@@ -16,10 +16,12 @@ static uint32_t reference_station_id(GLO_RTK_BiasInformation_r15 const& src_bias
 }
 
 static uint8_t mask(GLO_RTK_BiasInformation_r15 const& src_bias_info) {
-    return (src_bias_info.l1_ca_cpBias_r15 ? 0x01 : 0x00) |
-           (src_bias_info.l1_p_cpBias_r15 ? 0x02 : 0x00) |
-           (src_bias_info.l2_ca_cpBias_r15 ? 0x04 : 0x00) |
-           (src_bias_info.l2_p_cpBias_r15 ? 0x08 : 0x00);
+    // RTCM MT1230 GLONASS Code-Phase bias mask is MSB-first: L1 C/A occupies bit 8
+    // (the most significant of the 4 mask bits), then L1 P, L2 C/A, L2 P in order.
+    return (src_bias_info.l1_ca_cpBias_r15 ? 0x08 : 0x00) |
+           (src_bias_info.l1_p_cpBias_r15 ? 0x04 : 0x00) |
+           (src_bias_info.l2_ca_cpBias_r15 ? 0x02 : 0x00) |
+           (src_bias_info.l2_p_cpBias_r15 ? 0x01 : 0x00);
 }
 
 static double bias(long value) {

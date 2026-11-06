@@ -42,6 +42,7 @@ public:
     NODISCARD static SatelliteId from_gal_prn(uint8_t prn);
     NODISCARD static SatelliteId from_bds_prn(uint8_t prn);
     NODISCARD static SatelliteId from_qzs_prn(uint8_t prn);
+    NODISCARD static SatelliteId from_glo_slot(uint8_t slot);
     NODISCARD static SatelliteId from_string(std::string const& str);
 
     //

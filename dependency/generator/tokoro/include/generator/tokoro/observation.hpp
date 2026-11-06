@@ -1,5 +1,6 @@
 #pragma once
 #include <generator/tokoro/diag.hpp>
+#include <generator/tokoro/troposphere.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 #include "models/earth_solid_tides.hpp"
@@ -31,6 +32,24 @@ struct TroposphericDelay {
     bool   valid;
     bool   valid_height_mapping;
     bool   valid_model;
+    bool   mapping_valid;
+};
+
+// Horizontal gradient of the troposphere, m_g(el) * (G_N * cos(az) + G_E * sin(az))
+struct TroposphericGradient {
+    // Slope of the SSR zenith delays across the grid cell [m/m]
+    bool   ssr_valid{false};
+    double ssr_dry_north{0.0};
+    double ssr_dry_east{0.0};
+    double ssr_wet_north{0.0};
+    double ssr_wet_east{0.0};
+
+    // The gradient of the selected source
+    bool   valid{false};
+    double north{0.0};    // G_N [m]
+    double east{0.0};     // G_E [m]
+    double mapping{0.0};  // m_g
+    double delay{0.0};    // slant delay [m]
 };
 
 struct IonosphericDelay {
@@ -41,6 +60,7 @@ struct IonosphericDelay {
     double height_correction;
     double quality;
     bool   quality_valid;
+    bool   grid_valid;
 };
 
 struct Correction {
@@ -58,15 +78,39 @@ struct Observation {
 public:
     EXPLICIT Observation(Satellite const& satellite, SignalId signal_id, Float3 location) NOEXCEPT;
 
-    void update_lock_time(LockTime const& lock_time) NOEXCEPT;
+    void              update_lock_time(LockTime const& lock_time) NOEXCEPT;
+    void              set_phase_ambiguity(int64_t cycles) NOEXCEPT { mPhaseAmbiguity = cycles; }
+    NODISCARD int64_t phase_ambiguity() const NOEXCEPT { return mPhaseAmbiguity; }
 
     void compute_phase_bias(CorrectionData const& correction_data) NOEXCEPT;
     void compute_code_bias(CorrectionData const& correction_data) NOEXCEPT;
     void compute_tropospheric(CorrectionData const& correction_data) NOEXCEPT;
     void compute_ionospheric(CorrectionData const& correction_data) NOEXCEPT;
 
+    // Scaling of the SSR tropospheric delays to the height of the station (MOPS)
     void compute_tropospheric_height() NOEXCEPT;
-    void recompute_mapping_hydrostatic(bool apply_hydrostatic_delta) NOEXCEPT;
+    // Mapping function of the tropospheric delays
+    void compute_tropospheric_mapping() NOEXCEPT;
+    // Gradient term of the selected source, after the mapping function and the height scaling
+    void compute_tropospheric_gradient() NOEXCEPT;
+    void set_tropospheric_gradient(GradientSource source, GradientMapping mapping,
+                                   bool constant_set, double constant_north,
+                                   double constant_east) NOEXCEPT {
+        mGradientSource        = source;
+        mGradientMapping       = mapping;
+        mGradientConstantSet   = constant_set;
+        mGradientConstantNorth = constant_north;
+        mGradientConstantEast  = constant_east;
+    }
+    // Zenith delays of the a-priori model, used if there is no SSR tropospheric correction
+    void compute_tropospheric_model() NOEXCEPT;
+    void set_tropospheric_selection(TroposphereModel model, MappingFunction mapping,
+                                    bool hydrostatic_delta, TroposphereData const* data) NOEXCEPT {
+        mTroposphereModel      = model;
+        mMappingFunction       = mapping;
+        mTropoHydrostaticDelta = hydrostatic_delta;
+        mTroposphereData       = data;
+    }
 
 #ifdef INCLUDE_FORMAT_ANTEX
     void compute_antenna_phase_variation(format::antex::Antex const& antex) NOEXCEPT;
@@ -78,6 +122,10 @@ public:
     void           discard() NOEXCEPT { mIsValid = false; }
 
     void set_negative_phase_windup(bool enabled) NOEXCEPT { mNegativePhaseWindup = enabled; }
+    void set_negative_correction_sign(bool enabled) NOEXCEPT { mNegativeCorrectionSign = enabled; }
+    void set_ssr_generation_consistency_check(bool enabled) NOEXCEPT {
+        mSsrGenerationConsistencyCheck = enabled;
+    }
     void set_require_code_bias(bool enabled) NOEXCEPT { mRequireCodeBias = enabled; }
     void set_require_phase_bias(bool enabled) NOEXCEPT { mRequirePhaseBias = enabled; }
     void set_require_tropo(bool enabled) NOEXCEPT { mRequireTropospheric = enabled; }
@@ -89,7 +137,15 @@ public:
 
     void set_diag_file(DiagFile* diag) NOEXCEPT { mDiagFile = diag; }
     void set_diag_discard_reason(char const* reason) NOEXCEPT { mDiagDiscardReason = reason; }
-    void set_previous_phase_discontinuity(uint8_t value) NOEXCEPT {
+    void set_diag_discard_detail(std::string detail) NOEXCEPT {
+        mDiagDiscardDetail = std::move(detail);
+    }
+
+    // Why the observation was discarded (`a+b`) and the details of it (`a:detail;b:detail`), both
+    // empty if it was not. Available after `compute_ranges`.
+    NODISCARD std::string const& discard_reason() const NOEXCEPT { return mDiscardReason; }
+    NODISCARD std::string const& discard_detail() const NOEXCEPT { return mDiscardDetail; }
+    void                         set_previous_phase_discontinuity(uint8_t value) NOEXCEPT {
         mPreviousPhaseDiscontinuity    = value;
         mHasPreviousPhaseDiscontinuity = true;
     }
@@ -131,7 +187,28 @@ private:
     double   mWavelength;
     double   mCarrierToNoiseRatio;
     LockTime mLockTime;
+    int64_t  mPhaseAmbiguity{0};
     bool     mNegativePhaseWindup;
+    bool     mNegativeCorrectionSign;
+    bool     mSsrGenerationConsistencyCheck;
+    uint16_t mOrbitClockSsrIod;
+    uint16_t mClockSsrIod{0};
+
+    // SSR IOD of the bias that was found, also if it was not used
+    bool     mCodeBiasSsrIodValid{false};
+    uint16_t mCodeBiasSsrIod{0};
+    bool     mPhaseBiasSsrIodValid{false};
+    uint16_t mPhaseBiasSsrIod{0};
+
+    // Why the corrections are missing
+    std::string mCodeBiasDetail;
+    std::string mPhaseBiasDetail;
+    std::string mTropoDetail;
+    std::string mIonoDetail;
+
+    std::string mDiscardReason;
+    std::string mDiscardDetail;
+    std::string mDiagDiscardDetail;
 
     bool mRequireCodeBias;
     bool mRequirePhaseBias;
@@ -145,12 +222,23 @@ private:
     Correction        mPhaseBias;
     TroposphericDelay mTropospheric;
     IonosphericDelay  mIonospheric;
-    Correction        mAntennaPhaseVariation;  // PCV pattern (phase only), metres
-    double            mAntennaPcoRange{0.0};   // PCO projected on LOS (code+phase), metres
 
-    double mPhaseRange;
-    double mPhaseRangeRate;
-    double mCodeRange;
+    TroposphericGradient   mGradient;
+    GradientSource         mGradientSource{GradientSource::None};
+    GradientMapping        mGradientMapping{GradientMapping::ChenHerring};
+    bool                   mGradientConstantSet{false};
+    double                 mGradientConstantNorth{0.0};
+    double                 mGradientConstantEast{0.0};
+    TroposphereModel       mTroposphereModel{TroposphereModel::Mops};
+    MappingFunction        mMappingFunction{MappingFunction::Niell};
+    bool                   mTropoHydrostaticDelta{true};
+    TroposphereData const* mTroposphereData{nullptr};
+    Correction             mAntennaPhaseVariation;  // PCV pattern (phase only), metres
+    double                 mAntennaPcoRange{0.0};   // PCO projected on LOS (code+phase), metres
+
+    double mPhaseRange{0.0};
+    double mPhaseRangeRate{0.0};
+    double mCodeRange{0.0};
 
     ts::Tai mCodeBiasEpoch{};
     ts::Tai mPhaseBiasEpoch{};

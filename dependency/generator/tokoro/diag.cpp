@@ -1,9 +1,15 @@
 #include <generator/tokoro/diag.hpp>
 
+#include <cerrno>
 #include <cstring>
 #include <sys/stat.h>
 
+#include <loglet/loglet.hpp>
 #include <time/utc.hpp>
+
+LOGLET_MODULE2(tokoro, diag);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(tokoro, diag)
 
 namespace generator {
 namespace tokoro {
@@ -35,17 +41,26 @@ static void fmt_age(char* buf, size_t size, DiagEpoch const& epoch, int width) {
         snprintf(buf, size, "%*s", width, "-");
 }
 
-static void mkdirs(std::string const& path) {
+// Unsigned IOD right-aligned to the column width, `-` if there is none
+static void fmt_iod(char* buf, size_t size, bool valid, unsigned value, int width) {
+    if (valid)
+        snprintf(buf, size, "%*u", width, value);
+    else
+        snprintf(buf, size, "%*s", width, "-");
+}
+
+// Create the parent directories of `path` and open it for writing
+static FILE* open_diag_file(std::string const& path) {
     for (size_t i = 1; i < path.size(); ++i) {
-        if (path[i] == '/') {
-            auto dir = path.substr(0, i);
-            mkdir(dir.c_str(), 0755);
+        if (path[i] != '/') continue;
+        auto dir = path.substr(0, i);
+        if (mkdir(dir.c_str(), 0755) != 0 && errno != EEXIST) {
+            WARNF("failed to create diag directory \"%s\": %s", dir.c_str(), strerror(errno));
         }
     }
-    auto last_slash = path.rfind('/');
-    if (last_slash != std::string::npos) {
-        mkdir(path.substr(0, last_slash).c_str(), 0755);
-    }
+    auto file = fopen(path.c_str(), "w");
+    if (!file) WARNF("failed to open diag file \"%s\": %s", path.c_str(), strerror(errno));
+    return file;
 }
 
 static char const* gnss_name(SatelliteId const& sv_id) {
@@ -128,6 +143,8 @@ static char const* msm_sig(SatelliteId const& sv_id, int msm_id) {
 
 std::string DiagFile::rtcm_signal_name(SatelliteId const& sv_id,
                                        SignalId const&    signal_id) noexcept {
+    // the MSM table only covers GPS, Galileo and BeiDou
+    if (sv_id.is_glonass() || sv_id.is_qzss()) return signal_id.to_rinex();
     auto msm = signal_id.as_msm();
     if (msm.valid) return msm_sig(sv_id, static_cast<int>(msm.value));
     return signal_id.to_rinex();
@@ -142,8 +159,7 @@ void DiagFile::open(std::string const& path, SatelliteId sv_id, SignalId signal_
     mSignalId   = signal_id;
     mMsmSigName = rtcm_signal_name(sv_id, signal_id);
     if (path.empty()) return;
-    mkdirs(path);
-    mFile = fopen(path.c_str(), "w");
+    mFile = open_diag_file(path);
 }
 
 void DiagFile::write_header() noexcept {
@@ -159,14 +175,16 @@ void DiagFile::write_header() noexcept {
     fprintf(mFile, "CLOCK                 SSR clock correction (evaluated), meters\n");
     fprintf(mFile, "CODE_BIAS             Signal code bias, meters\n");
     fprintf(mFile, "PHASE_BIAS            Signal phase bias, meters\n");
-    fprintf(mFile, "STEC_GRID             Grid ionospheric delay (STEC), meters\n");
+    fprintf(mFile, "STEC_GRID             Grid ionospheric delay (STEC), meters (- if the grid "
+                   "residual is unavailable)\n");
     fprintf(mFile, "STEC_POLY             Polynomial ionospheric delay (STEC), meters\n");
     fprintf(mFile,
             "STEC_TOTAL            Total ionospheric delay (after height correction), meters\n");
     fprintf(mFile, "STEC_H_CORR           Ionospheric height correction factor\n");
     fprintf(mFile, "TROPO_DRY             Dry (hydrostatic) tropospheric delay, meters\n");
     fprintf(mFile, "TROPO_WET             Wet tropospheric delay, meters\n");
-    fprintf(mFile, "TROPO_TOTAL           Total tropospheric delay, meters\n");
+    fprintf(mFile, "TROPO_TOTAL           Total tropospheric delay, including the gradient term, "
+                   "meters\n");
     fprintf(mFile, "TROPO_DRY_MAP         Hydrostatic mapping function value\n");
     fprintf(mFile, "TROPO_WET_MAP         Wet mapping function value\n");
     fprintf(mFile, "TROPO_DRY_ZEN         Zenith hydrostatic delay (before mapping), meters\n");
@@ -206,6 +224,13 @@ void DiagFile::write_header() noexcept {
     fprintf(mFile, "CYCLE_SLIP            1 if PHASE_DISC changed since the previous epoch (cycle "
                    "slip), 0 if not, - if unknown\n");
     fprintf(mFile, "DISCARD_REASON        Reason for discard (- if valid)\n");
+    fprintf(mFile, "ORB_SSR_IOD           SSR IOD of the orbit correction (SSR generation)\n");
+    fprintf(mFile, "CLK_SSR_IOD           SSR IOD of the clock correction\n");
+    fprintf(mFile, "CODE_BIAS_SSR_IOD     SSR IOD of the code bias (also if it was not used)\n");
+    fprintf(mFile, "PHASE_BIAS_SSR_IOD    SSR IOD of the phase bias (also if it was not used)\n");
+    fprintf(mFile, "DISCARD_DETAIL        Why the signal was not available: reason:detail pairs "
+                   "separated by `;` (- if available). A satellite that is not available has "
+                   "rows marked satellite_<reason>\n");
     fprintf(mFile, "End Field Description\n");
     // Column header — widths match data format exactly (2-space separator between each)
     fprintf(mFile, "*%-23s  %3s  %3s  %2s", "TIMESTAMP", "PRN", "SIG", "ID");
@@ -244,7 +269,12 @@ void DiagFile::write_header() noexcept {
     hdr(mFile, "PHASE_INT", 9);
     hdr(mFile, "INT_CYCLES", 10);
     hdr(mFile, "CYCLE_SLIP", 10);
-    fprintf(mFile, "  DISCARD_REASON\n");
+    fprintf(mFile, "  DISCARD_REASON");
+    hdr(mFile, "ORB_SSR_IOD", 11);
+    hdr(mFile, "CLK_SSR_IOD", 11);
+    hdr(mFile, "CODE_BIAS_SSR_IOD", 17);
+    hdr(mFile, "PHASE_BIAS_SSR_IOD", 18);
+    fprintf(mFile, "  DISCARD_DETAIL\n");
     mHeaderWritten = true;
 }
 
@@ -304,7 +334,10 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
         snprintf(phase_bias_s, sizeof(phase_bias_s), "%10s", "-");
 
     if (row.has_ionospheric) {
-        snprintf(stec_grid_s, sizeof(stec_grid_s), "%+10.5f", row.stec_grid);
+        if (row.has_stec_grid)
+            snprintf(stec_grid_s, sizeof(stec_grid_s), "%+10.5f", row.stec_grid);
+        else
+            snprintf(stec_grid_s, sizeof(stec_grid_s), "%10s", "-");
         snprintf(stec_poly_s, sizeof(stec_poly_s), "%+10.5f", row.stec_poly);
         snprintf(stec_hcorr_s, sizeof(stec_hcorr_s), "%+11.6f", row.stec_height_correction);
     } else {
@@ -374,7 +407,7 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
             "  %s  %s  %s  %s"
             "  %s  %+6.2f  %+9.3f  %+11.4f"
             "  %s  %s  %s  %s  %s  %s  %s  %s"
-            "  %s\n",
+            "  %s",
             prefix, ts.c_str(), row.prn, mMsmSigName.c_str(), row.sig_id, clock_s, code_bias_s,
             phase_bias_s, stec_grid_s, stec_poly_s, stec_total_s, stec_hcorr_s, tropo_dry_s,
             tropo_wet_s, tropo_total_s, tropo_dmap_s, tropo_wmap_s, tropo_dzen_s, tropo_wzen_s,
@@ -383,6 +416,15 @@ void DiagFile::write(ts::Tai const& time, DiagRow const& row) noexcept {
             row.lock_time, row.frequency_mhz, code_bias_epoch_s, code_bias_age_s,
             phase_bias_epoch_s, phase_bias_age_s, phase_disc_s, phase_int_s, int_cycles_s,
             cycle_slip_s, row.valid ? "-" : row.discard_reason.c_str());
+
+    char orb_iod_s[32], clk_iod_s[32], code_iod_s[32], phase_iod_s[32];
+    fmt_iod(orb_iod_s, sizeof(orb_iod_s), row.has_orbit_ssr_iod, row.orbit_ssr_iod, 11);
+    fmt_iod(clk_iod_s, sizeof(clk_iod_s), row.has_clock_ssr_iod, row.clock_ssr_iod, 11);
+    fmt_iod(code_iod_s, sizeof(code_iod_s), row.has_code_bias_ssr_iod, row.code_bias_ssr_iod, 17);
+    fmt_iod(phase_iod_s, sizeof(phase_iod_s), row.has_phase_bias_ssr_iod, row.phase_bias_ssr_iod,
+            18);
+    fprintf(mFile, "  %s  %s  %s  %s  %s\n", orb_iod_s, clk_iod_s, code_iod_s, phase_iod_s,
+            row.discard_detail.empty() ? "-" : row.discard_detail.c_str());
 }
 
 SatDiagFile::~SatDiagFile() {
@@ -392,8 +434,7 @@ SatDiagFile::~SatDiagFile() {
 void SatDiagFile::open(std::string const& path, SatelliteId sv_id) noexcept {
     mSvId = sv_id;
     if (path.empty()) return;
-    mkdirs(path);
-    mFile = fopen(path.c_str(), "w");
+    mFile = open_diag_file(path);
 }
 
 void SatDiagFile::write_header() noexcept {
@@ -459,6 +500,25 @@ void SatDiagFile::write_header() noexcept {
     fprintf(mFile, "SOLID_TIDES_Y         Earth solid tides displacement, ECEF Y, meters\n");
     fprintf(mFile, "SOLID_TIDES_Z         Earth solid tides displacement, ECEF Z, meters\n");
     fprintf(mFile, "DISCARD_REASON        Reason for discard (- if valid)\n");
+    fprintf(mFile,
+            "EPH_IOD               IOD of the selected ephemeris, compared with ORB_IOD (GPS: "
+            "IODC, Galileo: IODnav, BeiDou B1I/B3I: 11 MSB of toe)\n");
+    fprintf(mFile, "EPH_IODE              IODE of the selected ephemeris (GPS, QZSS, BeiDou)\n");
+    fprintf(mFile, "EPH_IODC              IODC of the selected ephemeris (GPS, QZSS, BeiDou)\n");
+    fprintf(mFile, "EPH_IODNAV            IODnav of the selected ephemeris (Galileo)\n");
+    fprintf(mFile, "EPH_VALID_IODS        EPH_IOD of every stored ephemeris that is valid at the "
+                   "time, a/b/c (- if none)\n");
+    fprintf(mFile,
+            "EPH_CAND_IOD          EPH_IOD of the valid ephemeris that is closest to ORB_IOD "
+            "(the selected one if there is a match)\n");
+    fprintf(mFile, "EPH_IOD_OFFSET        ORB_IOD - EPH_CAND_IOD, wrapped to the size of the IOD "
+                   "(GPS/QZSS 8 bit, Galileo 10 bit, BeiDou 11 bit); 0 if they match\n");
+    fprintf(mFile, "ORB_SSR_IOD           SSR IOD of the orbit correction (SSR generation)\n");
+    fprintf(mFile, "CLK_SSR_IOD           SSR IOD of the clock correction\n");
+    fprintf(mFile, "IONO_SSR_IOD          SSR IOD of the STEC polynomial\n");
+    fprintf(mFile, "GRID_SSR_IOD          SSR IOD of the gridded (troposphere, STEC residual) "
+                   "message\n");
+    fprintf(mFile, "DISCARD_DETAIL        Why the satellite was not available (- if available)\n");
     fprintf(mFile, "End Field Description\n");
     // Column header — widths match data format exactly (2-space separator between each)
     fprintf(mFile, "*%-23s  %3s", "TIMESTAMP", "PRN");
@@ -505,7 +565,19 @@ void SatDiagFile::write_header() noexcept {
     hdr(mFile, "SOLID_TIDES_X", 13);
     hdr(mFile, "SOLID_TIDES_Y", 13);
     hdr(mFile, "SOLID_TIDES_Z", 13);
-    fprintf(mFile, "  DISCARD_REASON\n");
+    fprintf(mFile, "  DISCARD_REASON");
+    hdr(mFile, "EPH_IOD", 8);
+    hdr(mFile, "EPH_IODE", 9);
+    hdr(mFile, "EPH_IODC", 9);
+    hdr(mFile, "EPH_IODNAV", 10);
+    hdr(mFile, "EPH_VALID_IODS", 14);
+    hdr(mFile, "EPH_CAND_IOD", 12);
+    hdr(mFile, "EPH_IOD_OFFSET", 14);
+    hdr(mFile, "ORB_SSR_IOD", 11);
+    hdr(mFile, "CLK_SSR_IOD", 11);
+    hdr(mFile, "IONO_SSR_IOD", 12);
+    hdr(mFile, "GRID_SSR_IOD", 12);
+    fprintf(mFile, "  DISCARD_DETAIL\n");
     mHeaderWritten = true;
 }
 
@@ -644,13 +716,207 @@ void SatDiagFile::write(ts::Tai const& time, SatDiagRow const& row) noexcept {
             "  %s  %s  %s  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s  %s  %s  %s"
             "  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s  %s"
-            "  %s  %s  %s  %s  %s  %s\n",
+            "  %s  %s  %s  %s  %s  %s",
             prefix, ts.c_str(), row.prn, true_range_s, eph_range_s, orbit_s, orbit_x_s, orbit_y_s,
             orbit_z_s, elev_s, azim_s, nadir_s, eph_clock_s, eph_week_s, eph_toe_s, orb_r, orb_a,
             orb_c, orb_rd, orb_ad, orb_cd, orb_iod, oepoch, oage, clk_c0, clk_c1, clk_c2, clk_corr,
             cepoch, cage, ic00, ic01, ic10, ic11, irlat, irlon, iqual, iepoch, iage, gepoch, gage,
             shapiro_s, solid_tides_s, solid_tides_x_s, solid_tides_y_s, solid_tides_z_s,
             row.discard_reason.empty() ? "-" : row.discard_reason.c_str());
+
+    char eph_iod_s[32], eph_iode_s[32], eph_iodc_s[32], eph_iodnav_s[32], eph_cand_s[32];
+    fmt_iod(eph_iod_s, sizeof(eph_iod_s), row.has_eph_iod, row.eph_iod, 8);
+    fmt_iod(eph_iode_s, sizeof(eph_iode_s), row.has_eph_iod && !row.eph_is_galileo, row.eph_iode,
+            9);
+    fmt_iod(eph_iodc_s, sizeof(eph_iodc_s), row.has_eph_iod && !row.eph_is_galileo, row.eph_iodc,
+            9);
+    fmt_iod(eph_iodnav_s, sizeof(eph_iodnav_s), row.has_eph_iod && row.eph_is_galileo,
+            row.eph_iod_nav, 10);
+    fmt_iod(eph_cand_s, sizeof(eph_cand_s), row.has_eph_candidate, row.eph_candidate_iod, 12);
+    char eph_offset_s[32];
+    if (row.has_eph_candidate)
+        snprintf(eph_offset_s, sizeof(eph_offset_s), "%+14d", row.eph_iod_offset);
+    else
+        snprintf(eph_offset_s, sizeof(eph_offset_s), "%14s", "-");
+    char orb_ssr_s[32], clk_ssr_s[32], iono_ssr_s[32], grid_ssr_s[32];
+    fmt_iod(orb_ssr_s, sizeof(orb_ssr_s), row.has_orbit_ssr, row.orbit_ssr_iod, 11);
+    fmt_iod(clk_ssr_s, sizeof(clk_ssr_s), row.has_clock_ssr, row.clock_ssr_iod, 11);
+    fmt_iod(iono_ssr_s, sizeof(iono_ssr_s), row.has_iono_ssr_iod, row.iono_ssr_iod, 12);
+    fmt_iod(grid_ssr_s, sizeof(grid_ssr_s), row.has_grid_ssr_iod, row.grid_ssr_iod, 12);
+    fprintf(mFile, "  %s  %s  %s  %s  %14s  %s  %s  %s  %s  %s  %s  %s\n", eph_iod_s, eph_iode_s,
+            eph_iodc_s, eph_iodnav_s, row.eph_valid_iods.empty() ? "-" : row.eph_valid_iods.c_str(),
+            eph_cand_s, eph_offset_s, orb_ssr_s, clk_ssr_s, iono_ssr_s, grid_ssr_s,
+            row.discard_detail.empty() ? "-" : row.discard_detail.c_str());
+}
+
+static std::string diag_column_name(std::string name) {
+    for (auto& c : name) {
+        if (c == '-') c = '_';
+        if (c >= 'a' && c <= 'z') c = static_cast<char>(c - 'a' + 'A');
+    }
+    return name;
+}
+
+TropoDiagFile::~TropoDiagFile() {
+    if (mFile) fclose(mFile);
+}
+
+void TropoDiagFile::open(std::string const& path, SatelliteId sv_id,
+                         std::vector<std::string> zenith_names,
+                         std::vector<std::string> mapping_names,
+                         std::vector<std::string> gradient_source_names,
+                         std::vector<std::string> gradient_mapping_names) noexcept {
+    mSvId                 = sv_id;
+    mZenithNames          = std::move(zenith_names);
+    mMappingNames         = std::move(mapping_names);
+    mGradientSourceNames  = std::move(gradient_source_names);
+    mGradientMappingNames = std::move(gradient_mapping_names);
+    if (path.empty()) return;
+    mFile = open_diag_file(path);
+}
+
+void TropoDiagFile::write_header() noexcept {
+    if (!mFile) return;
+    fprintf(mFile, "Tokoro Tropospheric Model Diagnostic. Satellite: %s\n", mSvId.name());
+    fprintf(mFile, "GNSS          : %s\n", gnss_name(mSvId));
+    fprintf(mFile, "Start Field Description\n");
+    fprintf(mFile, "TIMESTAMP             UTC date/time\n");
+    fprintf(mFile, "PRN                   Satellite PRN number\n");
+    fprintf(mFile, "ELEV                  Satellite elevation angle, degrees\n");
+    fprintf(mFile, "AZIM                  Satellite azimuth angle (east from north), degrees\n");
+    fprintf(mFile, "APPLIED               Tropospheric slant delay applied to the observations, "
+                   "including the gradient term, meters\n");
+    fprintf(mFile, "APPLIED_GRAD          Gradient term of APPLIED (0 without gradient), meters\n");
+    fprintf(mFile, "ZHD_<SOURCE>          Zenith hydrostatic delay, meters\n");
+    fprintf(mFile, "ZWD_<SOURCE>          Zenith wet delay, meters\n");
+    fprintf(mFile, "                      SOURCE is SSR (the SSR delays interpolated to the "
+                   "station and scaled to its height) or a model (");
+    for (size_t i = 1; i < mZenithNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 1 ? ", " : "", mZenithNames[i].c_str());
+    }
+    fprintf(mFile, ")\n");
+    fprintf(mFile, "MH_<MAPPING>          Hydrostatic mapping function value\n");
+    fprintf(mFile, "MW_<MAPPING>          Wet mapping function value\n");
+    fprintf(mFile, "                      MAPPING is one of (");
+    for (size_t i = 0; i < mMappingNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 0 ? ", " : "", mMappingNames[i].c_str());
+    }
+    fprintf(mFile, ")\n");
+    fprintf(mFile, "GN_<GSOURCE>          Gradient G_N (south-north), meters\n");
+    fprintf(mFile, "GE_<GSOURCE>          Gradient G_E (west-east), meters\n");
+    fprintf(mFile, "                      GSOURCE is one of (");
+    for (size_t i = 0; i < mGradientSourceNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 0 ? ", " : "", mGradientSourceNames[i].c_str());
+    }
+    fprintf(mFile, "); ssr-grid is the slope of the SSR zenith delays across the grid cell\n");
+    fprintf(mFile, "MG_<GMAPPING>         Gradient mapping function value m_g\n");
+    fprintf(mFile, "                      GMAPPING is one of (");
+    for (size_t i = 0; i < mGradientMappingNames.size(); i++) {
+        fprintf(mFile, "%s%s", i > 0 ? ", " : "", mGradientMappingNames[i].c_str());
+    }
+    fprintf(mFile, "); macmillan uses the hydrostatic mapping of the selected mapping function\n");
+    fprintf(mFile, "SLANT_<SOURCE>_<MAPPING>   Slant delay without gradient: ZHD * MH + ZWD * MW, "
+                   "meters\n");
+    fprintf(mFile, "GRAD_<GSOURCE>_<GMAPPING>  Gradient term: MG * (GN * cos(AZIM) + GE * "
+                   "sin(AZIM)), meters\n");
+    fprintf(mFile, "DIFF_<SOURCE>_<MAPPING>    SLANT - (APPLIED - APPLIED_GRAD), meters\n");
+    fprintf(mFile, "                      A range with another source and mapping function is "
+                   "the range + DIFF, with another gradient also + (GRAD - APPLIED_GRAD)\n");
+    fprintf(mFile, "End Field Description\n");
+
+    // Column header, widths match the data format (2-space separator between each)
+    fprintf(mFile, "*%-23s  %3s", "TIMESTAMP", "PRN");
+    hdr(mFile, "ELEV", 6);
+    hdr(mFile, "AZIM", 6);
+    hdr(mFile, "APPLIED", 11);
+    hdr(mFile, "APPLIED_GRAD", 11);
+    for (auto const& name : mZenithNames) {
+        auto column = diag_column_name(name);
+        hdr(mFile, ("ZHD_" + column).c_str(), 11);
+        hdr(mFile, ("ZWD_" + column).c_str(), 11);
+    }
+    for (auto const& name : mMappingNames) {
+        auto column = diag_column_name(name);
+        hdr(mFile, ("MH_" + column).c_str(), 11);
+        hdr(mFile, ("MW_" + column).c_str(), 11);
+    }
+    for (auto const& name : mGradientSourceNames) {
+        auto column = diag_column_name(name);
+        hdr(mFile, ("GN_" + column).c_str(), 11);
+        hdr(mFile, ("GE_" + column).c_str(), 11);
+    }
+    for (auto const& name : mGradientMappingNames) {
+        hdr(mFile, ("MG_" + diag_column_name(name)).c_str(), 11);
+    }
+    for (auto const& source : mZenithNames) {
+        for (auto const& mapping : mMappingNames) {
+            auto column = diag_column_name(source) + "_" + diag_column_name(mapping);
+            hdr(mFile, ("SLANT_" + column).c_str(), 11);
+        }
+    }
+    for (auto const& source : mGradientSourceNames) {
+        for (auto const& mapping : mGradientMappingNames) {
+            auto column = diag_column_name(source) + "_" + diag_column_name(mapping);
+            hdr(mFile, ("GRAD_" + column).c_str(), 11);
+        }
+    }
+    for (auto const& source : mZenithNames) {
+        for (auto const& mapping : mMappingNames) {
+            auto column = diag_column_name(source) + "_" + diag_column_name(mapping);
+            hdr(mFile, ("DIFF_" + column).c_str(), 11);
+        }
+    }
+    fprintf(mFile, "\n");
+    mHeaderWritten = true;
+}
+
+void TropoDiagFile::write(ts::Tai const& time, TropoDiagRow const& row) noexcept {
+    if (!mFile) return;
+    if (!mHeaderWritten) write_header();
+
+    fprintf(mFile, " %-23s  %3d", utc_string(time).c_str(), row.prn);
+    fprintf(mFile, "  %6.2f  %6.2f", row.elevation_deg, row.azimuth_deg);
+
+    // every column is 11 characters wide, like the column header
+    auto number = [&](bool valid, double value, int precision) {
+        if (valid)
+            fprintf(mFile, "  %+11.*f", precision, value);
+        else
+            fprintf(mFile, "  %11s", "-");
+    };
+
+    number(row.has_applied, row.applied, 5);
+    number(row.has_applied, row.applied_gradient, 6);
+    for (size_t i = 0; i < mZenithNames.size(); i++) {
+        auto valid = i < row.zenith.size() && row.zenith[i].valid;
+        number(valid, valid ? row.zenith[i].hydrostatic : 0.0, 5);
+        number(valid, valid ? row.zenith[i].wet : 0.0, 5);
+    }
+    for (size_t i = 0; i < mMappingNames.size(); i++) {
+        auto valid = i < row.mapping.size() && row.mapping[i].valid;
+        number(valid, valid ? row.mapping[i].hydrostatic : 0.0, 6);
+        number(valid, valid ? row.mapping[i].wet : 0.0, 6);
+    }
+    for (size_t i = 0; i < mGradientSourceNames.size(); i++) {
+        auto valid = i < row.gradient.size() && row.gradient[i].valid;
+        number(valid, valid ? row.gradient[i].north : 0.0, 6);
+        number(valid, valid ? row.gradient[i].east : 0.0, 6);
+    }
+    for (size_t i = 0; i < mGradientMappingNames.size(); i++) {
+        auto valid = i < row.gradient_mapping.size() && row.gradient_mapping[i].valid;
+        number(valid, valid ? row.gradient_mapping[i].value : 0.0, 6);
+    }
+    for (size_t i = 0; i < row.slant.size(); i++) {
+        number(row.slant[i].valid, row.slant[i].value, 5);
+    }
+    for (size_t i = 0; i < row.gradient_delay.size(); i++) {
+        number(row.gradient_delay[i].valid, row.gradient_delay[i].value, 6);
+    }
+    for (size_t i = 0; i < row.slant.size(); i++) {
+        auto valid = row.slant[i].valid && row.has_applied;
+        number(valid, valid ? row.slant[i].value - (row.applied - row.applied_gradient) : 0.0, 5);
+    }
+    fprintf(mFile, "\n");
 }
 
 }  // namespace tokoro

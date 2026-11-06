@@ -32,14 +32,24 @@ Satellite::Satellite(SatelliteId id, Float3 ground_position, Generator const& ge
     mNextState         = {};
 }
 
+void Satellite::set_ground_position(Float3 ground_position) NOEXCEPT {
+    mGroundPositionEcef = ground_position;
+    mGroundPositionLlh  = ecef_to_llh(mGroundPositionEcef, ellipsoid::gWgs84);
+}
+
 void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
-    mEnabled            = false;
-    mDisableReason      = nullptr;
-    mHasOrbitCorrection = false;
-    mHasClockCorrection = false;
-    mLastGenerationTime = generation_time;
+    mEnabled       = false;
+    mDisableReason = nullptr;
+    mDisableDetail.clear();
+    mEphemerisSearch     = {};
+    mHasEphemerisSearch  = false;
+    mHasOrbitCorrection  = false;
+    mHasClockCorrection  = false;
+    mHasFrequencyChannel = false;
+    mFrequencyChannel    = 0;
+    mLastGenerationTime  = generation_time;
     if (!mGenerator.mCorrectionData) {
         WARNF("no correction data available [sv=%s]", mId.name());
         mDisableReason = "no_correction_data";
@@ -60,19 +70,49 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
     // Find broadcast ephemeris
     ephemeris::Ephemeris eph{};
-    if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iod, eph)) {
+    mHasEphemerisSearch = true;
+    if (!mGenerator.find_ephemeris(mId, generation_time, mOrbitCorrection.iod, eph,
+                                   &mEphemerisSearch)) {
         DEBUGF("ephemeris not found [sv=%s,iod=%u]", mId.name(), mOrbitCorrection.iod);
         mDisableReason = "no_ephemeris";
+
+        char buffer[64];
+        if (mEphemerisSearch.unsupported) {
+            mDisableDetail = "ephemeris_unsupported";
+        } else if (mEphemerisSearch.total == 0) {
+            mDisableDetail = "ephemeris_none_received";
+        } else if (mEphemerisSearch.valid.empty()) {
+            snprintf(buffer, sizeof(buffer), "ephemeris_none_valid_at_time(total=%zu)",
+                     mEphemerisSearch.total);
+            mDisableDetail = buffer;
+        } else {
+            snprintf(buffer, sizeof(buffer), "ephemeris_iod_mismatch(wanted=%u,valid=",
+                     static_cast<unsigned>(mOrbitCorrection.iod));
+            mDisableDetail = buffer;
+            for (size_t i = 0; i < mEphemerisSearch.valid.size(); i++) {
+                snprintf(buffer, sizeof(buffer), "%s%u", i > 0 ? "/" : "",
+                         static_cast<unsigned>(mEphemerisSearch.valid[i].iod));
+                mDisableDetail += buffer;
+            }
+            mDisableDetail += ")";
+        }
         return;
+    }
+
+    if (eph.mType == ephemeris::Ephemeris::Type::GLO) {
+        mHasFrequencyChannel = true;
+        mFrequencyChannel    = eph.glo_ephemeris.frequency_number;
     }
 
     auto current_time = generation_time;
     auto next_time    = generation_time + ts::Timestamp{0.1};
 
+    auto frame_transform = mGenerator.mOrbitFrames.get();
+
     if (!compute_true_position(mId, mGroundPositionEcef, current_time, eph, mOrbitCorrection,
                                mCurrentState,
                                mGenerator.mUseReceptionTimeForOrbitAndClockCorrections,
-                               mGenerator.mUseOrbitCorrectionInIteration)) {
+                               mGenerator.mUseOrbitCorrectionInIteration, frame_transform)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         mDisableReason = "position_failed";
         return;
@@ -80,7 +120,7 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
     if (!compute_true_position(mId, mGroundPositionEcef, next_time, eph, mOrbitCorrection,
                                mNextState, mGenerator.mUseReceptionTimeForOrbitAndClockCorrections,
-                               mGenerator.mUseOrbitCorrectionInIteration)) {
+                               mGenerator.mUseOrbitCorrectionInIteration, frame_transform)) {
         WARNF("failed to compute true position [sv=%s]", mId.name());
         mDisableReason = "position_failed";
         return;
@@ -112,7 +152,8 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
 
     // Broadcast APC reference (iono-free pair the ephemeris orbit/clock refers
     // to). Depends on GNSS (and, in future, the nav message type).
-    auto set_apc_reference = [](ephemeris::Ephemeris::Type type, SatelliteState& state) {
+    auto channel           = static_cast<double>(mFrequencyChannel);
+    auto set_apc_reference = [channel](ephemeris::Ephemeris::Type type, SatelliteState& state) {
         switch (type) {
         case ephemeris::Ephemeris::Type::GPS:
         case ephemeris::Ephemeris::Type::QZS:
@@ -127,6 +168,14 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
             state.apc_ref_fa    = 1575.42e6;
             state.apc_ref_b     = FrequencyType::E5b;
             state.apc_ref_fb    = 1207.140e6;
+            state.apc_ref_valid = true;
+            break;
+        case ephemeris::Ephemeris::Type::GLO:
+            // GLONASS broadcast clocks refer to the G1/G2 P-code iono-free combination
+            state.apc_ref_a     = FrequencyType::G1;
+            state.apc_ref_fa    = 1602.0e6 + channel * 0.5625e6;
+            state.apc_ref_b     = FrequencyType::G2;
+            state.apc_ref_fb    = 1246.0e6 + channel * 0.4375e6;
             state.apc_ref_valid = true;
             break;
         default:
@@ -164,13 +213,11 @@ void Satellite::datatrace_report() NOEXCEPT {
 #endif
 }
 
-bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
-                                      ts::Tai const&              reception_time,
-                                      ephemeris::Ephemeris const& eph,
-                                      OrbitCorrection const&      orbit_correction,
-                                      SatelliteState&             state,
-                                      bool use_reception_time_for_orbit_and_clock_corrections,
-                                      bool use_orbit_correction_in_iteration) NOEXCEPT {
+bool Satellite::compute_true_position(
+    SatelliteId id, Float3 ground_position, ts::Tai const& reception_time,
+    ephemeris::Ephemeris const& eph, OrbitCorrection const& orbit_correction, SatelliteState& state,
+    bool use_reception_time_for_orbit_and_clock_corrections, bool use_orbit_correction_in_iteration,
+    OrbitFrames const* frame_transform) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", id.name());
 
     VERBOSEF("iode: %u", eph.iode());
@@ -192,6 +239,8 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
 
         // ephemeral position at t_e
         auto result = eph.compute(t_e);
+        if (frame_transform)
+            frame_transform->apply(id.gnss(), t_e, result.position, result.velocity);
         VERBOSEF("    x=%f, y=%f, z=%f", result.position.x, result.position.y, result.position.z);
         VERBOSEF("    dx=%f, dy=%f, dz=%f", result.velocity.x, result.velocity.y,
                  result.velocity.z);
@@ -204,6 +253,7 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
                                              satellite_position, nullptr, nullptr, nullptr,
                                              nullptr)) {
                 WARNF("failed to correct satellite position");
+                return false;
             }
         } else {
             satellite_position = result.position;
@@ -228,15 +278,8 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
     }
 
     auto final_result = eph.compute(t_e);
-
-#if 0
-    auto t_e2         = t_e + ts::Timestamp{0.1};
-    auto final_result2 = mEph.compute(t_e2);
-    auto delta_position = final_result2.position - final_result.position;
-    VERBOSEF("delta_position: (%f, %f, %f)", delta_position.x, delta_position.y, delta_position.z);
-    auto velocity = delta_position / 0.1;
-    VERBOSEF("velocity by ts: (%f, %f, %f)", velocity.x, velocity.y, velocity.z);
-#endif
+    if (frame_transform)
+        frame_transform->apply(id.gnss(), t_e, final_result.position, final_result.velocity);
 
     state.eph_iod        = eph.iod();
     state.eph_week       = eph.week();
@@ -266,41 +309,8 @@ bool Satellite::compute_true_position(SatelliteId id, Float3 ground_position,
                                      &state.orbit_along_axis, &state.orbit_cross_axis,
                                      &state.orbit_delta_t)) {
         WARNF("failed to correct satellite position");
+        return false;
     }
-
-#if 0
-    for (int orbit_r = 0; orbit_r <= 1; orbit_r++) {
-        for (int orbit_a = 0; orbit_a <= 1; orbit_a++) {
-            for (int orbit_c = 0; orbit_c <= 1; orbit_c++) {
-                auto new_orbit_correction = mOrbitCorrection;
-                if (orbit_r == 1) {
-                    new_orbit_correction.delta.x     = -new_orbit_correction.delta.x;
-                    new_orbit_correction.dot_delta.x = -new_orbit_correction.dot_delta.x;
-                }
-                if (orbit_a == 1) {
-                    new_orbit_correction.delta.y     = -new_orbit_correction.delta.y;
-                    new_orbit_correction.dot_delta.y = -new_orbit_correction.dot_delta.y;
-                }
-                if (orbit_c == 1) {
-                    new_orbit_correction.delta.z     = -new_orbit_correction.delta.z;
-                    new_orbit_correction.dot_delta.z = -new_orbit_correction.dot_delta.z;
-                }
-                Float3 orbit_corrected_position{};
-                new_orbit_correction.correction(t_e, mEphPosition, mEphVelocity,
-                                                                    orbit_corrected_position);
-
-                Float3 line_of_sight{};
-                auto   orbit_corrected_range = geometric_distance(orbit_corrected_position,
-                                                                  mReceptionLocation, &line_of_sight);
-                VERBOSEF("[%s,%s,%s]: %.14f, %.14f, %.14f, %.14f", orbit_r == 0 ? "+R" : "-R",
-                         orbit_a == 0 ? "+A" : "-A", orbit_c == 0 ? "+C" : "-C",
-                         orbit_corrected_position.x, orbit_corrected_position.y,
-                         orbit_corrected_position.z, orbit_corrected_range);
-            }
-        }
-    }
-
-#endif
 
     auto relativistic_correction =
         eph.relativistic_correction(state.true_position, state.true_velocity);
@@ -406,9 +416,11 @@ bool Satellite::compute_azimuth_and_elevation(SatelliteId id, Float3 ground_posi
 bool Satellite::find_orbit_correction(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
-    auto correction = correction_data.orbit_correction(mId);
+    DataStatus status;
+    auto       correction = correction_data.orbit_correction(mId, &status);
     if (!correction) {
         VERBOSEF("satellite missing orbit corrections [sv=%s]", mId.name());
+        mDisableDetail = "orbit_" + status.text();
         return false;
     }
 
@@ -419,9 +431,24 @@ bool Satellite::find_orbit_correction(CorrectionData const& correction_data) NOE
 bool Satellite::find_clock_correction(CorrectionData const& correction_data) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
-    auto correction = correction_data.clock_correction(mId);
+    DataStatus status;
+    auto       correction = correction_data.clock_correction(mId, &status);
     if (!correction) {
         VERBOSEF("satellite missing clock corrections [sv=%s]", mId.name());
+        mDisableDetail = "clock_" + status.text();
+        return false;
+    }
+
+    if (mGenerator.mSsrGenerationConsistencyCheck &&
+        correction->ssr_iod != mOrbitCorrection.ssr_iod) {
+        VERBOSEF("clock correction belongs to a different SSR generation than the orbit "
+                 "correction [sv=%s,orbit_iod=%u,clock_iod=%u]",
+                 mId.name(), mOrbitCorrection.ssr_iod, correction->ssr_iod);
+        char buffer[64];
+        snprintf(buffer, sizeof(buffer), "clock_ssr_iod_mismatch(clock=%u,orbit=%u)",
+                 static_cast<unsigned>(correction->ssr_iod),
+                 static_cast<unsigned>(mOrbitCorrection.ssr_iod));
+        mDisableDetail = buffer;
         return false;
     }
 
@@ -469,8 +496,8 @@ void Satellite::compute_earth_solid_tides(SatelliteState& state) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s, %s", mId.name(), state.reception_time.rtklib_time_string().c_str());
 
     // TODO(ewasjon): Use sun_moon_position in model_earth_solid_tides instead of re-computing it
-    state.earth_solid_tides = model_earth_solid_tides(state.reception_time, state,
-                                                      mGroundPositionEcef, mGroundPositionLlh);
+    state.earth_solid_tides =
+        model_earth_solid_tides(state.reception_time, state, mGroundPositionEcef);
 
     VERBOSEF("disp x: %+.14f * %+.14f = %+.14f", state.earth_solid_tides.displacement_vector.x,
              state.true_line_of_sight.x,

@@ -10,6 +10,7 @@
 #include <ephemeris/bds.hpp>
 #include <ephemeris/ephemeris.hpp>
 #include <ephemeris/gal.hpp>
+#include <ephemeris/glo.hpp>
 #include <ephemeris/gps.hpp>
 #include <ephemeris/qzs.hpp>
 #ifdef INCLUDE_FORMAT_ANTEX
@@ -19,7 +20,9 @@
 #include <format/rinex/builder.hpp>
 #endif
 #include <generator/tokoro/diag.hpp>
+#include <generator/tokoro/ephemeris_search.hpp>
 #include <generator/tokoro/sv_id.hpp>
+#include <generator/tokoro/troposphere.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 #include <time/tai.hpp>
@@ -46,6 +49,23 @@ struct ReferenceStationConfig {
     bool   generate_qzs;
 };
 
+// Lock time of a signal when it first appears. `Reset` starts at zero and flags a loss of lock;
+// `Max` starts at the largest lock time that RTCM can express (saturated) without a loss of lock.
+enum class LockStart {
+    Reset,
+    Max,
+};
+
+// When to give a signal a random integer carrier phase ambiguity N instead of N = 0.
+// `Startup` is the first epoch that produces observations, `Rise` is every later appearance of
+// a signal (rising satellite, or a signal that was lost).
+enum class AmbiguityRandomization {
+    Off,
+    Startup,
+    Rise,
+    Both,
+};
+
 struct CorrectionData;
 struct CorrectionPointSet;
 struct Satellite;
@@ -56,6 +76,8 @@ struct TokoroOutput;
 struct SnapshotInput;
 #endif
 class Generator;
+class GroundFrame;
+
 class ReferenceStation {
 public:
     ReferenceStation(Generator& generator, ReferenceStationConfig const& config) NOEXCEPT;
@@ -75,6 +97,13 @@ public:
     void include_satellite(SatelliteId sv_id) NOEXCEPT { mSatelliteIncludeSet.insert(sv_id); }
     void include_signal(SignalId signal_id) NOEXCEPT { mSignalIncludeSet.insert(signal_id); }
 
+    // The ITRF ground position of the config is given in `frame` (at `epoch`, decimal year, <= 0
+    // for the frame's own epoch or the observation epoch, with an optional station velocity in
+    // ECEF [m/year]) and is transformed to `ssr_frame` at the observation epoch. The RTCM ground
+    // position is not changed. False if a frame is unknown or not connected.
+    NODISCARD bool set_ground_position_frame(char const* frame, double epoch, Float3 velocity,
+                                             char const* ssr_frame) NOEXCEPT;
+
     void set_physical_ground_position(Float3 position) NOEXCEPT {
         mRtcmPhysicalGroundPosition    = position;
         mRtcmPhysicalGroundPositionSet = true;
@@ -91,7 +120,14 @@ public:
     void set_reference_station_id(uint32_t id) { mRtcmReferenceStationId = id; }
     void set_msm_type(uint32_t type) { mRtcmMsmType = type; }
     void set_negative_phase_windup(bool enabled) { mNegativePhaseWindup = enabled; }
+    void set_negative_correction_sign(bool enabled) { mNegativeCorrectionSign = enabled; }
     void set_phase_alignment(bool enabled) { mPhaseAlignment = enabled; }
+    void set_lock_start(LockStart start) { mLockStart = start; }
+    void set_lock_rise(LockStart start) { mLockRise = start; }
+    void set_ambiguity_randomization(AmbiguityRandomization mode) {
+        mAmbiguityRandomization = mode;
+    }
+    void set_ambiguity_seed(uint64_t seed) { mAmbiguitySeed = seed; }
     void set_antenna_descriptor(std::string descriptor) NOEXCEPT {
         mAntennaDescriptor = std::move(descriptor);
     }
@@ -111,6 +147,28 @@ public:
     }
     void set_generate_residuals(bool enabled) { mGenerateResiduals = enabled; }
 
+    // A-priori zenith delay model, used if there is no SSR tropospheric correction
+    // (`set_use_tropospheric_model`)
+    void set_tropospheric_model(TroposphereModel model) { mTroposphereModel = model; }
+    // Mapping function of the SSR tropospheric delays and the a-priori model
+    void set_tropospheric_mapping(MappingFunction mapping) { mMappingFunction = mapping; }
+    // Horizontal gradient of the troposphere: the term m_g(el) * (G_N * cos(az) + G_E * sin(az)) is
+    // added to the slant delay. `Constant` uses the gradient of
+    // `set_tropospheric_gradient_constant`, `SsrGrid` the slope of the SSR zenith delays.
+    void set_tropospheric_gradient(GradientSource source, GradientMapping mapping) {
+        mGradientSource  = source;
+        mGradientMapping = mapping;
+    }
+    // G_N and G_E in meters
+    void set_tropospheric_gradient_constant(double north, double east) {
+        mGradientConstantNorth = north;
+        mGradientConstantEast  = east;
+        mGradientConstantSet   = true;
+    }
+    // Write the tropospheric delays of all models and mapping functions to `tropo.diag` for every
+    // satellite (requires `set_diag_output`). It does not change the generated observations.
+    void set_diag_tropospheric_all(bool enabled) { mDiagTropoAll = enabled; }
+
     void set_diag_output(std::string dir) NOEXCEPT {
         mDiagOutputDir = std::move(dir);
         mGenerateDiag  = true;
@@ -128,7 +186,12 @@ public:
 protected:
     void initialize_satellites() NOEXCEPT;
     void initialize_observation(Satellite& satellite, SignalId signal_id,
-                                char const* diag_discard_reason = nullptr) NOEXCEPT;
+                                char const* diag_discard_reason = nullptr,
+                                std::string diag_discard_detail = {}) NOEXCEPT;
+    // The diagnostic file of a signal, opened if it is not
+    DiagFile& diag_file(SatelliteId satellite_id, SignalId signal_id) NOEXCEPT;
+    // Write the rows of the signals of a satellite that is not available
+    void write_unavailable_signals(Satellite const& satellite) NOEXCEPT;
     void build_rtcm_observation(Satellite const& satellite, Observation const& observation,
                                 RangeTimeDivision const& rtd, double reference_phase_range_rate,
                                 rtcm::Observations& observations) NOEXCEPT;
@@ -136,12 +199,19 @@ protected:
                               rtcm::Observations& observations) NOEXCEPT;
     void build_rtcm_residual(Satellite const& satellite, Float3 const& vrs_llh,
                              rtcm::Residuals& residuals) NOEXCEPT;
+    void write_tropospheric_diag(Satellite const& satellite) NOEXCEPT;
 
 private:
-    Float3 mGroundPosition;
-    Float3 mRtcmGroundPosition;
-    Float3 mRtcmPhysicalGroundPosition;
-    bool   mRtcmPhysicalGroundPositionSet;
+    void update_ground_position() NOEXCEPT;
+
+    Float3                       mGroundPosition;
+    Float3                       mGroundPositionInput;  // as configured, in mGroundFrame
+    std::unique_ptr<GroundFrame> mGroundFrame;
+    ts::Tai                      mGroundFrameTime;
+    bool                         mGroundFrameTimeSet{false};
+    Float3                       mRtcmGroundPosition;
+    Float3                       mRtcmPhysicalGroundPosition;
+    bool                         mRtcmPhysicalGroundPositionSet;
 
     bool        mGenerateGps;
     bool        mGenerateGlo;
@@ -159,6 +229,7 @@ private:
     uint32_t    mRtcmReferenceStationId;
     uint32_t    mRtcmMsmType;
     bool        mNegativePhaseWindup;
+    bool        mNegativeCorrectionSign;
     bool        mPhaseAlignment;
     std::string mAntennaDescriptor;
     std::string mReceiverDescriptor;
@@ -185,6 +256,34 @@ private:
 
     std::unordered_map<SatelliteSignalId, ts::Tai> mLockTime;
     std::unordered_map<SatelliteSignalId, uint8_t> mPhaseDiscontinuity;
+    // Last-seen phaseDiscontinuityIndicator_r16 per signal; a change (relative to the
+    // previously observed value) means the SSR provider has flagged a phase
+    // discontinuity, so the output lock/ambiguity arc must restart.
+    std::unordered_map<SatelliteSignalId, uint8_t> mLastPhaseDiscontinuityCounter;
+    // Integer phase ambiguity N (cycles) per signal; incremented by one on every detected
+    // phase discontinuity (cycle slip) and added to the synthesized carrier phase.
+    std::unordered_map<SatelliteSignalId, int64_t> mPhaseAmbiguity;
+
+    TroposphereModel                               mTroposphereModel{TroposphereModel::Mops};
+    MappingFunction                                mMappingFunction{MappingFunction::Niell};
+    GradientSource                                 mGradientSource{GradientSource::None};
+    GradientMapping                                mGradientMapping{GradientMapping::ChenHerring};
+    bool                                           mGradientConstantSet{false};
+    double                                         mGradientConstantNorth{0.0};
+    double                                         mGradientConstantEast{0.0};
+    bool                                           mDiagTropoAll{false};
+    std::unordered_map<SatelliteId, TropoDiagFile> mTropoDiagFiles;
+
+    LockStart              mLockStart{LockStart::Reset};
+    LockStart              mLockRise{LockStart::Reset};
+    AmbiguityRandomization mAmbiguityRandomization{AmbiguityRandomization::Off};
+    uint64_t               mAmbiguitySeed{0};
+    // True once an epoch with observations has been generated; later new signals are "rises".
+    bool mStarted{false};
+    // Number of times a signal's lock was lost, used so that every rise draws a new ambiguity.
+    std::unordered_map<SatelliteSignalId, uint32_t> mLossCount;
+
+    NODISCARD int64_t random_phase_ambiguity(SatelliteSignalId ss_id) const NOEXCEPT;
 
     ts::Tai mGenerationTime;
 #ifdef INCLUDE_FORMAT_RINEX
@@ -196,6 +295,11 @@ private:
 
     friend void extract_observations(std::shared_ptr<ReferenceStation> const&, TokoroOutput&);
 };
+
+class OrbitFrames;
+
+// "gps", "glo", "gal", "bds", "qzs"
+NODISCARD bool gnss_from_name(char const* name, SatelliteId::Gnss& gnss) NOEXCEPT;
 
 class Generator {
 public:
@@ -209,8 +313,12 @@ public:
     void process_ephemeris(ephemeris::GalEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEPT;
     void process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT;
+    void process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT;
 
     void set_iod_consistency_check(bool enabled) NOEXCEPT { mIodConsistencyCheck = enabled; }
+    void set_ssr_generation_consistency_check(bool enabled) NOEXCEPT {
+        mSsrGenerationConsistencyCheck = enabled;
+    }
     void set_max_orbit_age(double seconds) NOEXCEPT { mMaxOrbitAge = seconds; }
     void set_max_clock_age(double seconds) NOEXCEPT { mMaxClockAge = seconds; }
     void set_max_bias_age(double seconds) NOEXCEPT { mMaxBiasAge = seconds; }
@@ -226,16 +334,30 @@ public:
     void set_rtoc(bool enabled) NOEXCEPT { mUseReceptionTimeForOrbitAndClockCorrections = enabled; }
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
     void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
-    void set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
-                                       double reference_point_longitude,
-                                       long   number_of_steps_latitude,
-                                       long number_of_steps_longitude, double step_of_latitude,
-                                       double step_of_longitude) NOEXCEPT;
+    void set_iono_polynomial_only(bool enabled) NOEXCEPT { mIonoPolynomialOnly = enabled; }
+    // Transform the broadcast orbits from the frame of each GNSS to `frame` (e.g. "itrf2020")
+    // before the SSR orbit correction is applied. nullptr disables it (default). False if the
+    // frame is unknown.
+    NODISCARD bool set_orbit_frame(char const* frame) NOEXCEPT;
+    // Override the broadcast frame of a GNSS (requires set_orbit_frame). False if the frame is
+    // unknown or not connected to the orbit frame.
+    NODISCARD bool set_orbit_source_frame(SatelliteId::Gnss gnss, char const* frame) NOEXCEPT;
+    void           set_fake_correction_point_set(uint16_t set_id, double reference_point_latitude,
+                                                 double reference_point_longitude,
+                                                 long   number_of_steps_latitude,
+                                                 long number_of_steps_longitude, double step_of_latitude,
+                                                 double step_of_longitude) NOEXCEPT;
 #ifdef INCLUDE_FORMAT_ANTEX
     void set_antex(std::unique_ptr<format::antex::Antex> antex) NOEXCEPT {
         mAntex = std::move(antex);
     }
 #endif
+
+    // Data for the troposphere models that need it (GPT2 and VMF3 grid files)
+    NODISCARD TroposphereData& troposphere_data() {
+        if (!mTroposphereData) mTroposphereData.reset(new TroposphereData());
+        return *mTroposphereData;
+    }
 
     std::shared_ptr<ReferenceStation>
     define_reference_station(ReferenceStationConfig const& config) NOEXCEPT;
@@ -272,6 +394,10 @@ public:
               qzs_ephemeris() const NOEXCEPT {
         return mQzsEphemeris;
     }
+    NODISCARD std::unordered_map<SatelliteId, std::vector<ephemeris::GloEphemeris>> const&
+              glo_ephemeris() const NOEXCEPT {
+        return mGloEphemeris;
+    }
 
 #ifdef ENABLE_TOKORO_SNAPSHOT
     // Create a snapshot of ephemeris data for regression testing.
@@ -285,14 +411,17 @@ private:
     void find_correction_point_set(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;
     void find_corrections(ProvideAssistanceData_r9_IEs const& message) NOEXCEPT;
 
+    // `search` (optional) describes the ephemeris that were considered
     bool find_ephemeris(SatelliteId sv_id, ts::Tai const& time, uint16_t iod,
-                        ephemeris::Ephemeris& eph) const NOEXCEPT;
+                        ephemeris::Ephemeris& eph,
+                        EphemerisSearch*      search = nullptr) const NOEXCEPT;
     bool compute_tropospheric_residual(double& residual) NOEXCEPT;
 
     std::unordered_map<SatelliteId, std::vector<ephemeris::GpsEphemeris>> mGpsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::GalEphemeris>> mGalEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::BdsEphemeris>> mBdsEphemeris;
     std::unordered_map<SatelliteId, std::vector<ephemeris::QzsEphemeris>> mQzsEphemeris;
+    std::unordered_map<SatelliteId, std::vector<ephemeris::GloEphemeris>> mGloEphemeris;
     size_t                                                                mEphemerisMaxCache = 10;
 
     ts::Tai                             mLastCorrectionDataTime;
@@ -302,16 +431,20 @@ private:
 #ifdef INCLUDE_FORMAT_ANTEX
     std::unique_ptr<format::antex::Antex> mAntex;
 #endif
+    std::unique_ptr<TroposphereData> mTroposphereData;
 
-    bool   mIodConsistencyCheck;
-    double mMaxOrbitAge = -1.0;
-    double mMaxClockAge = -1.0;
-    double mMaxBiasAge  = -1.0;
-    double mMaxIonoAge  = -1.0;
-    double mMaxTropoAge = -1.0;
-    bool   mUseReceptionTimeForOrbitAndClockCorrections;
-    bool   mUseOrbitCorrectionInIteration;
-    bool   mIgnoreBitmask;
+    bool                         mIodConsistencyCheck;
+    bool                         mSsrGenerationConsistencyCheck;
+    double                       mMaxOrbitAge = -1.0;
+    double                       mMaxClockAge = -1.0;
+    double                       mMaxBiasAge  = -1.0;
+    double                       mMaxIonoAge  = -1.0;
+    double                       mMaxTropoAge = -1.0;
+    bool                         mUseReceptionTimeForOrbitAndClockCorrections;
+    bool                         mUseOrbitCorrectionInIteration;
+    bool                         mIgnoreBitmask;
+    bool                         mIonoPolynomialOnly{false};
+    std::unique_ptr<OrbitFrames> mOrbitFrames;
 
     mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;
 

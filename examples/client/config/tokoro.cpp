@@ -15,6 +15,7 @@
 #pragma GCC diagnostic ignored "-Wshadow-field"
 #pragma GCC diagnostic ignored "-Wsuggest-destructor-override"
 #include <args.hxx>
+#include <random>
 #pragma GCC diagnostic pop
 
 namespace tokoro {
@@ -54,6 +55,13 @@ static args::Flag gNoBeiDou{
     "no-beidou",
     "Skip generating BeiDou messages",
     {"tkr-no-beidou"},
+};
+
+static args::Flag gQzss{
+    gGroup,
+    "qzss",
+    "Generate QZSS messages",
+    {"tkr-qzss"},
 };
 
 static args::ValueFlag<std::string> gMsmType{
@@ -154,6 +162,37 @@ static args::ValueFlag<double> gFixedPhysicalZ{
     {"tkr-fixed-physical-z"},
 };
 
+static args::ValueFlag<std::string> gFixedFrame{
+    gGroup,
+    "frame",
+    "Frame of --tkr-fixed-itrf-x/y/z (e.g. etrf2014, sweref99, itrf2014); the position is "
+    "transformed to --tkr-ssr-frame at the observation epoch",
+    {"tkr-fixed-frame"},
+};
+
+static args::ValueFlag<double> gFixedEpoch{
+    gGroup,
+    "year",
+    "Epoch (decimal year) of --tkr-fixed-itrf-x/y/z. Default: the frame's own epoch for "
+    "fixed-epoch frames, otherwise the observation epoch",
+    {"tkr-fixed-epoch"},
+};
+
+static args::ValueFlag<std::string> gFixedVelocity{
+    gGroup,
+    "vx,vy,vz",
+    "Station velocity (ECEF, m/year) used to move --tkr-fixed-itrf-x/y/z from --tkr-fixed-epoch "
+    "to the observation epoch",
+    {"tkr-fixed-velocity"},
+};
+
+static args::ValueFlag<std::string> gSsrFrame{
+    gGroup,
+    "frame",
+    "Frame of the SSR corrected orbits, used with --tkr-fixed-frame",
+    {"tkr-ssr-frame"},
+};
+
 static args::ValueFlag<double> gTimeStep{
     gGroup,
     "seconds",
@@ -211,6 +250,14 @@ static args::Flag gIodConsistencyCheck{
     {"tkr-no-icc"},
 };
 
+static args::Flag gSsrGenerationConsistencyCheck{
+    gGroup,
+    "ssr-generation-consistency-check",
+    "Reject orbit/clock/bias corrections that belong to different SSR generations (IOD "
+    "mismatch) instead of silently combining them",
+    {"tkr-ssr-gcc"},
+};
+
 static args::Flag gRtOC{
     gGroup,
     "rtoc",
@@ -230,6 +277,123 @@ static args::Flag gNegativePhaseWindup{
     "negative-phase-windup",
     "Enable negative phase windup correction",
     {"tkr-npw"},
+};
+
+static args::Flag gNegativeCorrectionSign{
+    gGroup,
+    "negative-correction-sign",
+    "Flip the sign of SSR clock, code-bias and phase-bias corrections",
+    {"tkr-negative-correction-sign"},
+};
+
+static args::ValueFlag<std::string> gTropoModel{
+    gGroup,
+    "model",
+    "Zenith delay model used when there is no SSR tropospheric correction (see\n"
+    "`--tkr-use-tropospheric-model`), also in `--tkr-diag-tropo-all`. One of:\n"
+    "mops (default), saastamoinen, saastamoinen-gpt, gpt2 (needs `--tkr-gpt2-grid`), vmf3 (needs\n"
+    "`--tkr-vmf3-grid` and `--tkr-vmf3-orography`)",
+    {"tkr-tropo-model"},
+};
+
+static args::ValueFlag<std::string> gTropoMapping{
+    gGroup,
+    "function",
+    "Mapping function of the tropospheric delays. One of: niell (default), simple (1/sin(el)),\n"
+    "gmf, gpt2 (VMF1 with GPT2 coefficients, needs `--tkr-gpt2-grid`), vmf3 (needs\n"
+    "`--tkr-vmf3-grid` and `--tkr-vmf3-orography`)",
+    {"tkr-tropo-mapping"},
+};
+
+static args::ValueFlag<std::string> gTropoGradient{
+    gGroup,
+    "source",
+    "Horizontal gradient of the troposphere, adds m_g(el) * (G_N cos(az) + G_E sin(az)) to the\n"
+    "slant delay. One of: none (default), ssr-grid (slope of the SSR zenith delays across the\n"
+    "grid cell, an approximation), constant (`--tkr-tropo-gradient-north/east`)",
+    {"tkr-tropo-gradient"},
+};
+
+static args::ValueFlag<std::string> gTropoGradientMapping{
+    gGroup,
+    "function",
+    "Mapping function m_g of the gradient. One of: chen-herring (default,\n"
+    "1/(sin(el) tan(el) + 0.0032)), macmillan (m_h(el) cot(el), m_h of `--tkr-tropo-mapping`)",
+    {"tkr-tropo-gradient-mapping"},
+};
+
+static args::ValueFlag<double> gTropoGradientNorth{
+    gGroup,
+    "mm",
+    "Constant gradient G_N (south-north) in millimeters, for `--tkr-tropo-gradient constant`",
+    {"tkr-tropo-gradient-north"},
+};
+
+static args::ValueFlag<double> gTropoGradientEast{
+    gGroup,
+    "mm",
+    "Constant gradient G_E (west-east) in millimeters, for `--tkr-tropo-gradient constant`",
+    {"tkr-tropo-gradient-east"},
+};
+
+static args::Flag gDiagTropoAll{
+    gGroup,
+    "diag-tropo-all",
+    "Write the tropospheric delays of all models and mapping functions to `tropo.diag` for every\n"
+    "satellite, for comparison (requires `--tkr-diag-dir`)",
+    {"tkr-diag-tropo-all"},
+};
+
+static args::ValueFlag<std::string> gGpt2Grid{
+    gGroup,
+    "file",
+    "GPT2 5x5 degree grid file (e.g. gpt2_5.grd)",
+    {"tkr-gpt2-grid"},
+};
+
+static args::ValueFlagList<std::string> gVmf3Grid{
+    gGroup,
+    "file",
+    "VMF3 grid file (one epoch, e.g. VMF3_20260607.H00), can be repeated",
+    {"tkr-vmf3-grid"},
+};
+
+static args::ValueFlag<std::string> gVmf3Orography{
+    gGroup,
+    "file",
+    "VMF3 orography file for the grid of the VMF3 grid files",
+    {"tkr-vmf3-orography"},
+};
+
+static args::ValueFlag<std::string> gLockStart{
+    gGroup,
+    "reset|max",
+    "Lock time of the signals present at startup: `reset` starts at zero (default), `max` starts\n"
+    "saturated and in lock",
+    {"tkr-lock-start"},
+};
+
+static args::ValueFlag<std::string> gLockRise{
+    gGroup,
+    "reset|max",
+    "Lock time of a signal that appears after startup (rising satellite or regained signal):\n"
+    "`reset` starts at zero with loss of lock (default), `max` starts saturated and in lock",
+    {"tkr-lock-rise"},
+};
+
+static args::ValueFlag<std::string> gAmbiguityRandomize{
+    gGroup,
+    "off|startup|rise|both",
+    "Start signals with a random integer carrier phase ambiguity (+-1000 cycles) instead of 0,\n"
+    "at startup, when a signal appears after startup, or both (default: off)",
+    {"tkr-ambiguity-randomize"},
+};
+
+static args::ValueFlag<uint64_t> gAmbiguitySeed{
+    gGroup,
+    "seed",
+    "Seed for `--tkr-ambiguity-randomize` (default: random, logged at info level)",
+    {"tkr-ambiguity-seed"},
 };
 
 static args::Flag gPhaseAlignment{
@@ -327,6 +491,29 @@ static args::ValueFlagList<std::string> gNavFile{
     "file",
     "RINEX navigation file for broadcast ephemeris (repeatable)",
     {"tkr-nav-file"},
+};
+
+static args::ValueFlag<std::string> gOrbitFrame{
+    gGroup,
+    "frame",
+    "Transform the broadcast orbits from the frame of each GNSS (GPS: WGS 84, GLONASS: PZ-90.11) "
+    "to this frame (e.g. itrf2020) before applying the SSR orbit correction",
+    {"tkr-orbit-frame"},
+};
+
+static args::ValueFlagList<std::string> gOrbitSourceFrame{
+    gGroup,
+    "gnss=frame",
+    "Broadcast frame of a GNSS (gps, glo, gal, bds, qzs) for --tkr-orbit-frame, e.g. gal=itrf2020 "
+    "(repeatable)",
+    {"tkr-orbit-source-frame"},
+};
+
+static args::Flag gIonoPolynomialOnly{
+    gGroup,
+    "iono-poly-only",
+    "Allow the STEC polynomial without the gridded STEC residual",
+    {"tkr-iono-poly-only"},
 };
 
 static args::Flag gIgnoreBitmask{
@@ -493,10 +680,10 @@ void setup(args::ArgumentParser& parser) {
     static args::GlobalOptions sGlobals{parser, gGroup};
     gMsmType.HelpDefault("5");
     gMsmType.HelpChoices({"4", "5", "6", "7"});
-    gVrsModeArg.HelpChoices({"fixed", "dynamic"});
+    gVrsModeArg.HelpChoices({"fixed", "grid", "dynamic"});
     gVrsModeArg.HelpDefault("dynamic");
 
-    gGenStrategyArg.HelpChoices({"assistance", "time-step", "time-step-aligned"});
+    gGenStrategyArg.HelpChoices({"assistance", "time-step", "time-step-aligned", "time-step-last"});
     gGenStrategyArg.HelpDefault("assistance");
 
     gTimeStep.HelpDefault("1.0");
@@ -510,6 +697,7 @@ void parse(Config* config) {
     tokoro.generate_glonass = true;
     tokoro.generate_galileo = true;
     tokoro.generate_beidou  = true;
+    tokoro.generate_qzss    = false;
     tokoro.msm_type         = TokoroConfig::MsmType::MSM5;
 
     tokoro.shapiro_correction                 = true;
@@ -519,10 +707,27 @@ void parse(Config* config) {
     tokoro.tropospheric_height_correction     = true;
     tokoro.tropospheric_hydrostatic_delta     = true;
     tokoro.iod_consistency_check              = true;
+    tokoro.ssr_generation_consistency_check   = false;
     tokoro.rtoc                               = false;
     tokoro.ocit                               = false;
+    tokoro.negative_correction_sign           = false;
     tokoro.negative_phase_windup              = false;
     tokoro.phase_alignment                    = false;
+    tokoro.tropospheric_model                 = generator::tokoro::TroposphereModel::Mops;
+    tokoro.tropospheric_mapping               = generator::tokoro::MappingFunction::Niell;
+    tokoro.tropospheric_gradient              = generator::tokoro::GradientSource::None;
+    tokoro.tropospheric_gradient_mapping      = generator::tokoro::GradientMapping::ChenHerring;
+    tokoro.tropospheric_gradient_constant_set = false;
+    tokoro.tropospheric_gradient_north        = 0.0;
+    tokoro.tropospheric_gradient_east         = 0.0;
+    tokoro.diag_tropospheric_all              = false;
+    tokoro.gpt2_grid                          = "";
+    tokoro.vmf3_grids                         = {};
+    tokoro.vmf3_orography                     = "";
+    tokoro.lock_start                         = TokoroConfig::LockStart::Reset;
+    tokoro.lock_rise                          = TokoroConfig::LockStart::Reset;
+    tokoro.ambiguity_randomization            = TokoroConfig::AmbiguityRandomization::Off;
+    tokoro.ambiguity_seed                     = 0;
     tokoro.antenna_descriptor                 = "";
     tokoro.receiver_descriptor                = "";
 #ifdef INCLUDE_RINEX_FORMAT
@@ -545,6 +750,12 @@ void parse(Config* config) {
     tokoro.fixed_rtcm_x               = 0.0;
     tokoro.fixed_rtcm_y               = 0.0;
     tokoro.fixed_rtcm_z               = 0.0;
+    tokoro.fixed_frame                = "";
+    tokoro.fixed_epoch                = 0.0;
+    tokoro.fixed_velocity_x           = 0.0;
+    tokoro.fixed_velocity_y           = 0.0;
+    tokoro.fixed_velocity_z           = 0.0;
+    tokoro.ssr_frame                  = "itrf2020";
     tokoro.fixed_physical_station_set = false;
     tokoro.fixed_physical_x           = 0.0;
     tokoro.fixed_physical_y           = 0.0;
@@ -553,8 +764,11 @@ void parse(Config* config) {
     tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
     tokoro.time_step           = 1.0;
 
-    tokoro.antex_file          = "";
-    tokoro.ignore_bitmask      = false;
+    tokoro.antex_file           = "";
+    tokoro.ignore_bitmask       = false;
+    tokoro.iono_polynomial_only = false;
+    tokoro.orbit_frame          = "";
+    tokoro.orbit_source_frames.clear();
     tokoro.deduplicate_epochs  = false;
     tokoro.output_tag          = "";
     tokoro.ephemeris_max_cache = static_cast<size_t>(gEphemerisMaxCache.Get());
@@ -592,6 +806,7 @@ void parse(Config* config) {
     if (gNoGLONASS) tokoro.generate_glonass = false;
     if (gNoGalileo) tokoro.generate_galileo = false;
     if (gNoBeiDou) tokoro.generate_beidou = false;
+    if (gQzss) tokoro.generate_qzss = true;
 
     if (gMsmType) {
         auto type = gMsmType.Get();
@@ -710,10 +925,52 @@ void parse(Config* config) {
     if (gTroposphericHeightCorrection) tokoro.tropospheric_height_correction = false;
     if (gNoTropoHydrostaticDelta) tokoro.tropospheric_hydrostatic_delta = false;
     if (gIodConsistencyCheck) tokoro.iod_consistency_check = false;
+    if (gSsrGenerationConsistencyCheck) tokoro.ssr_generation_consistency_check = true;
     if (gRtOC) tokoro.rtoc = true;
     if (gOcit) tokoro.ocit = true;
     if (gNegativePhaseWindup) tokoro.negative_phase_windup = true;
+    if (gNegativeCorrectionSign) tokoro.negative_correction_sign = true;
     if (gPhaseAlignment) tokoro.phase_alignment = true;
+
+    auto parse_lock_start = [](args::ValueFlag<std::string>& flag, char const* name,
+                               TokoroConfig::LockStart& out) {
+        if (!flag) return;
+        auto v = flag.Get();
+        if (v == "reset") {
+            out = TokoroConfig::LockStart::Reset;
+        } else if (v == "max") {
+            out = TokoroConfig::LockStart::Max;
+        } else {
+            throw args::ValidationError(std::string(name) + " must be 'reset' or 'max', got `" + v +
+                                        "`");
+        }
+    };
+    parse_lock_start(gLockStart, "--tkr-lock-start", tokoro.lock_start);
+    parse_lock_start(gLockRise, "--tkr-lock-rise", tokoro.lock_rise);
+
+    if (gAmbiguityRandomize) {
+        auto v = gAmbiguityRandomize.Get();
+        if (v == "off") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Off;
+        } else if (v == "startup") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Startup;
+        } else if (v == "rise") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Rise;
+        } else if (v == "both") {
+            tokoro.ambiguity_randomization = TokoroConfig::AmbiguityRandomization::Both;
+        } else {
+            throw args::ValidationError(
+                "--tkr-ambiguity-randomize must be 'off', 'startup', 'rise', or 'both', got `" + v +
+                "`");
+        }
+    }
+    if (gAmbiguitySeed) {
+        tokoro.ambiguity_seed = gAmbiguitySeed.Get();
+    } else if (tokoro.ambiguity_randomization != TokoroConfig::AmbiguityRandomization::Off) {
+        std::random_device device;
+        tokoro.ambiguity_seed = (static_cast<uint64_t>(device()) << 32) ^ device();
+        INFOF("ambiguity seed: %llu", static_cast<unsigned long long>(tokoro.ambiguity_seed));
+    }
     if (gAntennaDescriptor) tokoro.antenna_descriptor = gAntennaDescriptor.Get();
     if (gReceiverDescriptor) tokoro.receiver_descriptor = gReceiverDescriptor.Get();
 
@@ -731,9 +988,101 @@ void parse(Config* config) {
     if (gAntexFile) tokoro.antex_file = gAntexFile.Get();
     if (gNavFile) tokoro.nav_files = gNavFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
+    if (gIonoPolynomialOnly) tokoro.iono_polynomial_only = true;
+    if (gFixedFrame) tokoro.fixed_frame = gFixedFrame.Get();
+    if (gFixedEpoch) tokoro.fixed_epoch = gFixedEpoch.Get();
+    if (gSsrFrame) tokoro.ssr_frame = gSsrFrame.Get();
+    if (gFixedVelocity) {
+        if (sscanf(gFixedVelocity.Get().c_str(), "%lf,%lf,%lf", &tokoro.fixed_velocity_x,
+                   &tokoro.fixed_velocity_y, &tokoro.fixed_velocity_z) != 3) {
+            throw args::ValidationError("--tkr-fixed-velocity must be vx,vy,vz");
+        }
+    }
+    if ((gFixedEpoch || gFixedVelocity) && !gFixedFrame) {
+        throw args::ValidationError("--tkr-fixed-epoch and --tkr-fixed-velocity require "
+                                    "--tkr-fixed-frame");
+    }
+    if (gOrbitFrame) tokoro.orbit_frame = gOrbitFrame.Get();
+    for (auto const& value : gOrbitSourceFrame.Get()) {
+        if (value.find('=') == std::string::npos) {
+            throw args::ValidationError("--tkr-orbit-source-frame must be <gnss>=<frame>, got `" +
+                                        value + "`");
+        }
+        tokoro.orbit_source_frames.push_back(value);
+    }
+    if (!tokoro.orbit_source_frames.empty() && tokoro.orbit_frame.empty()) {
+        throw args::ValidationError("--tkr-orbit-source-frame requires --tkr-orbit-frame");
+    }
     if (gDeduplicateEpochs) tokoro.deduplicate_epochs = true;
     if (gOutputTag) tokoro.output_tag = gOutputTag.Get();
     if (gDiagOutputDir) tokoro.diag_output_dir = gDiagOutputDir.Get();
+
+    if (gTropoModel) {
+        if (!generator::tokoro::parse_troposphere_model(gTropoModel.Get(),
+                                                        tokoro.tropospheric_model)) {
+            throw args::ValidationError("--tkr-tropo-model must be one of " +
+                                        generator::tokoro::troposphere_model_names() + ", got `" +
+                                        gTropoModel.Get() + "`");
+        }
+    }
+    if (gTropoMapping) {
+        if (!generator::tokoro::parse_mapping_function(gTropoMapping.Get(),
+                                                       tokoro.tropospheric_mapping)) {
+            throw args::ValidationError("--tkr-tropo-mapping must be one of " +
+                                        generator::tokoro::mapping_function_names() + ", got `" +
+                                        gTropoMapping.Get() + "`");
+        }
+    }
+    if (gTropoGradient) {
+        if (!generator::tokoro::parse_gradient_source(gTropoGradient.Get(),
+                                                      tokoro.tropospheric_gradient)) {
+            throw args::ValidationError("--tkr-tropo-gradient must be one of " +
+                                        generator::tokoro::gradient_source_names() + ", got `" +
+                                        gTropoGradient.Get() + "`");
+        }
+    }
+    if (gTropoGradientMapping) {
+        if (!generator::tokoro::parse_gradient_mapping(gTropoGradientMapping.Get(),
+                                                       tokoro.tropospheric_gradient_mapping)) {
+            throw args::ValidationError("--tkr-tropo-gradient-mapping must be one of " +
+                                        generator::tokoro::gradient_mapping_names() + ", got `" +
+                                        gTropoGradientMapping.Get() + "`");
+        }
+    }
+    if (gTropoGradientNorth || gTropoGradientEast) {
+        tokoro.tropospheric_gradient_constant_set = true;
+        if (gTropoGradientNorth)
+            tokoro.tropospheric_gradient_north = gTropoGradientNorth.Get() * 1e-3;
+        if (gTropoGradientEast) tokoro.tropospheric_gradient_east = gTropoGradientEast.Get() * 1e-3;
+    }
+    if (tokoro.tropospheric_gradient == generator::tokoro::GradientSource::Constant &&
+        !tokoro.tropospheric_gradient_constant_set) {
+        throw args::ValidationError("--tkr-tropo-gradient constant requires "
+                                    "--tkr-tropo-gradient-north and/or --tkr-tropo-gradient-east");
+    }
+    if (gGpt2Grid) tokoro.gpt2_grid = gGpt2Grid.Get();
+    if (gVmf3Grid) tokoro.vmf3_grids = gVmf3Grid.Get();
+    if (gVmf3Orography) tokoro.vmf3_orography = gVmf3Orography.Get();
+    if (gDiagTropoAll) {
+        tokoro.diag_tropospheric_all = true;
+        if (tokoro.diag_output_dir.empty()) {
+            throw args::ValidationError("--tkr-diag-tropo-all requires --tkr-diag-dir");
+        }
+    }
+    {
+        auto needs_gpt2 = tokoro.tropospheric_model == generator::tokoro::TroposphereModel::Gpt2 ||
+                          tokoro.tropospheric_mapping == generator::tokoro::MappingFunction::Gpt2;
+        auto needs_vmf3 = tokoro.tropospheric_model == generator::tokoro::TroposphereModel::Vmf3 ||
+                          tokoro.tropospheric_mapping == generator::tokoro::MappingFunction::Vmf3;
+        if (needs_gpt2 && tokoro.gpt2_grid.empty()) {
+            throw args::ValidationError("the selected tropospheric model or mapping function "
+                                        "`gpt2` requires --tkr-gpt2-grid");
+        }
+        if (needs_vmf3 && (tokoro.vmf3_grids.empty() || tokoro.vmf3_orography.empty())) {
+            throw args::ValidationError("the selected tropospheric model or mapping function "
+                                        "`vmf3` requires --tkr-vmf3-grid and --tkr-vmf3-orography");
+        }
+    }
 
     {
         int provided = (gFakeCpsId ? 1 : 0) + (gFakeCpsLat ? 1 : 0) + (gFakeCpsLon ? 1 : 0) +
@@ -774,6 +1123,7 @@ void dump(TokoroConfig const& config) {
     DEBUGF("glonass: %s", config.generate_glonass ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.generate_galileo ? "enabled" : "disabled");
     DEBUGF("beidou:  %s", config.generate_beidou ? "enabled" : "disabled");
+    DEBUGF("qzss:    %s", config.generate_qzss ? "enabled" : "disabled");
     DEBUGF("msm type: %s", [&]() {
         switch (config.msm_type) {
         case TokoroConfig::MsmType::MSM4: return "4";
@@ -826,9 +1176,28 @@ void dump(TokoroConfig const& config) {
 
     DEBUGF("tropospheric height:     %s", config.tropospheric_height_correction ? "true" : "false");
     DEBUGF("iod consistency check:   %s", config.iod_consistency_check ? "true" : "false");
+    DEBUGF("ssr generation consistency check: %s",
+           config.ssr_generation_consistency_check ? "true" : "false");
     DEBUGF("rtoc:                    %s", config.rtoc ? "true" : "false");
     DEBUGF("ocit:                    %s", config.ocit ? "true" : "false");
     DEBUGF("negative phase windup:   %s", config.negative_phase_windup ? "true" : "false");
+    DEBUGF("negative correction sign: %s", config.negative_correction_sign ? "true" : "false");
+    DEBUGF("tropospheric model:      %s",
+           generator::tokoro::troposphere_model_name(config.tropospheric_model));
+    DEBUGF("tropospheric mapping:    %s",
+           generator::tokoro::mapping_function_name(config.tropospheric_mapping));
+    DEBUGF("tropospheric gradient:   %s (mapping %s, constant G_N %+.4f m, G_E %+.4f m)",
+           generator::tokoro::gradient_source_name(config.tropospheric_gradient),
+           generator::tokoro::gradient_mapping_name(config.tropospheric_gradient_mapping),
+           config.tropospheric_gradient_north, config.tropospheric_gradient_east);
+    DEBUGF("diag tropo all:          %s", config.diag_tropospheric_all ? "true" : "false");
+    DEBUGF("lock start:              %s",
+           config.lock_start == TokoroConfig::LockStart::Max ? "max" : "reset");
+    DEBUGF("lock rise:               %s",
+           config.lock_rise == TokoroConfig::LockStart::Max ? "max" : "reset");
+    DEBUGF("ambiguity randomization: %d (seed %llu)",
+           static_cast<int>(config.ambiguity_randomization),
+           static_cast<unsigned long long>(config.ambiguity_seed));
     DEBUGF("antenna descriptor:  \"%s\"", config.antenna_descriptor.c_str());
     DEBUGF("receiver descriptor: \"%s\"", config.receiver_descriptor.c_str());
 #ifdef INCLUDE_RINEX_FORMAT
@@ -847,6 +1216,11 @@ void dump(TokoroConfig const& config) {
     for (auto const& nf : config.nav_files)
         DEBUGF("nav file:   \"%s\"", nf.c_str());
     DEBUGF("ignore bitmask: %s", config.ignore_bitmask ? "true" : "false");
+    DEBUGF("iono polynomial only: %s", config.iono_polynomial_only ? "true" : "false");
+    DEBUGF("orbit frame: %s",
+           config.orbit_frame.empty() ? "broadcast" : config.orbit_frame.c_str());
+    for (auto const& value : config.orbit_source_frames)
+        DEBUGF("orbit source frame: %s", value.c_str());
     DEBUGF("elevation mask: %f degrees", config.elevation_mask);
 }
 

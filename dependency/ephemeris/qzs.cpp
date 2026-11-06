@@ -15,6 +15,43 @@ CONSTEXPR static double QZS_CONSTANT_MU              = 3.986005e14;
 CONSTEXPR static double QZS_CONSTANT_OMEGA_EARTH_DOT = 7.2921151467e-5;
 CONSTEXPR static double QZS_CONSTANT_C               = 2.99792458e8;
 
+QzsEphemeris QzsEphemeris::from_gps_layout(GpsEphemeris const& gps) NOEXCEPT {
+    QzsEphemeris qzs{};
+    qzs.prn               = gps.prn;
+    qzs.week_number       = gps.week_number;
+    qzs.ca_or_p_on_l2     = gps.ca_or_p_on_l2;
+    qzs.ura_index         = gps.ura_index;
+    qzs.sv_health         = gps.sv_health;
+    qzs.lpp_iod           = gps.lpp_iod;
+    qzs.iodc              = gps.iodc;
+    qzs.iode              = gps.iode;
+    qzs.aodo              = gps.aodo;
+    qzs.toc               = gps.toc;
+    qzs.toe               = gps.toe;
+    qzs.tgd               = gps.tgd;
+    qzs.af2               = gps.af2;
+    qzs.af1               = gps.af1;
+    qzs.af0               = gps.af0;
+    qzs.crc               = gps.crc;
+    qzs.crs               = gps.crs;
+    qzs.cuc               = gps.cuc;
+    qzs.cus               = gps.cus;
+    qzs.cic               = gps.cic;
+    qzs.cis               = gps.cis;
+    qzs.e                 = gps.e;
+    qzs.m0                = gps.m0;
+    qzs.delta_n           = gps.delta_n;
+    qzs.a                 = gps.a;
+    qzs.i0                = gps.i0;
+    qzs.omega0            = gps.omega0;
+    qzs.omega             = gps.omega;
+    qzs.omega_dot         = gps.omega_dot;
+    qzs.idot              = gps.idot;
+    qzs.fit_interval_flag = gps.fit_interval_flag;
+    qzs.l2_p_data_flag    = gps.l2_p_data_flag;
+    return qzs;
+}
+
 bool QzsEphemeris::is_valid(ts::Gps const& time) const NOEXCEPT {
     if ((time.week() % 1024) != (week_number % 1024)) {
         VERBOSEF("week number mismatch (expected: %u, actual: %u)", week_number,

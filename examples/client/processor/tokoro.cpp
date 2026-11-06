@@ -1,5 +1,6 @@
 #include <chrono>
 #include <cstdint>
+#include <cstdlib>
 #include <time/utc.hpp>
 #include "ephemeris/bds.hpp"
 #include "ephemeris/gal.hpp"
@@ -12,7 +13,6 @@
 #include <format/antex/antex.hpp>
 #endif
 #include <format/rinex/nav_reader.hpp>
-#include <format/rtcm/datafields.hpp>
 #include <generator/rtcm/generator.hpp>
 #include <loglet/loglet.hpp>
 #include <lpp/session.hpp>
@@ -40,268 +40,6 @@ static uint32_t tokoro_rtcm_msm_type(TokoroConfig::MsmType msm_type) {
     return 5;
 }
 
-void TokoroEphemerisUbx::handle_gps_lnav(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    auto words = format::nav::Words::from_sfrbx_l1ca(sfrbx->words());
-
-    format::nav::gps::lnav::Subframe subframe{};
-    if (!format::nav::gps::lnav::Subframe::decode(words, subframe)) {
-        WARNF("failed to decode GPS LNAV subframe");
-        return;
-    }
-
-    ephemeris::GpsEphemeris ephemeris{};
-    if (!mGpsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) {
-        return;
-    }
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisUbx::handle_gps(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gps_enabled()) return;
-    if (sfrbx->sig_id() == 0) {
-        handle_gps_lnav(sfrbx);
-    } else {
-        VERBOSEF("unsupported GPS signal id %d", sfrbx->sig_id());
-    }
-}
-
-void TokoroEphemerisUbx::handle_gal_inav(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    auto words = format::nav::Words::from_sfrbx_e5b(sfrbx->words());
-
-    format::nav::gal::InavWord word{};
-    if (!format::nav::gal::InavWord::decode(words, word)) {
-        WARNF("failed to decode GAL INAV word");
-        return;
-    }
-
-    ephemeris::GalEphemeris ephemeris{};
-    if (!mGalCollector.process(sfrbx->sv_id(), word, ephemeris)) return;
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisUbx::handle_gal(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gal_enabled()) return;
-    // sig_id 1 = E1-B I/NAV (ZED-X20P), sig_id 5 = E5b-I I/NAV (older receivers)
-    if (sfrbx->sig_id() == 1 || sfrbx->sig_id() == 5) {
-        handle_gal_inav(sfrbx);
-    } else {
-        VERBOSEF("unsupported GAL signal id %d", sfrbx->sig_id());
-    }
-}
-
-void TokoroEphemerisUbx::handle_bds_d1(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    auto words = format::nav::Words::from_sfrbx_bds_d1(sfrbx->words());
-
-    format::nav::D1Subframe subframe{};
-    if (!format::nav::D1Subframe::decode(words, sfrbx->sv_id(), subframe)) {
-        WARNF("failed to decode BDS D1 subframe");
-        return;
-    }
-
-    ephemeris::BdsEphemeris ephemeris{};
-    if (!mBdsCollector.process(sfrbx->sv_id(), subframe, ephemeris)) return;
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisUbx::handle_bds(format::ubx::RxmSfrbx* sfrbx) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_bds_enabled()) return;
-    if (sfrbx->sig_id() == 0) {
-        handle_bds_d1(sfrbx);
-    } else {
-        VERBOSEF("unsupported BDS signal id %d", sfrbx->sig_id());
-    }
-}
-
-void TokoroEphemerisUbx::inspect(streamline::System&, DataType const& message, uint64_t) {
-    VSCOPE_FUNCTION();
-    auto ptr = message.get();
-    if (!ptr) return;
-
-    auto sfrbx = dynamic_cast<format::ubx::RxmSfrbx*>(ptr);
-    if (!sfrbx) return;
-
-    if (sfrbx->gnss_id() == 0) {
-        handle_gps(sfrbx);
-    } else if (sfrbx->gnss_id() == 2) {
-        handle_gal(sfrbx);
-    } else if (sfrbx->gnss_id() == 3) {
-        handle_bds(sfrbx);
-    }
-}
-
-//
-//
-//
-
-void TokoroEphemerisRtcm::handle_gps_lnav(format::rtcm::Rtcm1019* rtcm) {
-    VSCOPE_FUNCTION();
-
-    ephemeris::GpsEphemeris ephemeris{};
-    ephemeris.prn               = rtcm->prn;
-    ephemeris.week_number       = rtcm->week;
-    ephemeris.ca_or_p_on_l2     = rtcm->code_on_l2;
-    ephemeris.ura_index         = rtcm->sv_accuracy;
-    ephemeris.sv_health         = rtcm->sv_health;
-    ephemeris.lpp_iod           = rtcm->iode;
-    ephemeris.iodc              = rtcm->iodc;
-    ephemeris.iode              = rtcm->iode;
-    ephemeris.aodo              = 0;
-    ephemeris.toc               = rtcm->t_oc;
-    ephemeris.toe               = rtcm->t_oe;
-    ephemeris.tgd               = rtcm->t_gd;
-    ephemeris.af2               = rtcm->a_f2;
-    ephemeris.af1               = rtcm->a_f1;
-    ephemeris.af0               = rtcm->a_f0;
-    ephemeris.crc               = rtcm->c_rc;
-    ephemeris.crs               = rtcm->c_rs;
-    ephemeris.cuc               = rtcm->c_uc;
-    ephemeris.cus               = rtcm->c_us;
-    ephemeris.cic               = rtcm->c_ic;
-    ephemeris.cis               = rtcm->c_is;
-    ephemeris.e                 = rtcm->e;
-    ephemeris.m0                = rtcm->m_0;
-    ephemeris.delta_n           = rtcm->delta_n;
-    ephemeris.a                 = rtcm->sqrt_a * rtcm->sqrt_a;
-    ephemeris.i0                = rtcm->i_0;
-    ephemeris.omega0            = rtcm->omega_0;
-    ephemeris.omega             = rtcm->omega;
-    ephemeris.omega_dot         = rtcm->omegadot;
-    ephemeris.idot              = rtcm->idot;
-    ephemeris.fit_interval_flag = rtcm->fit;
-    ephemeris.l2_p_data_flag    = rtcm->l2_p_data_flag;
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisRtcm::handle_gps(format::rtcm::Rtcm1019* rtcm) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gps_enabled()) return;
-    if (rtcm->type() == 1019) {
-        handle_gps_lnav(rtcm);
-    } else {
-        VERBOSEF("not rtcm 1019 but rtcm %d", rtcm->type());
-    }
-}
-
-void TokoroEphemerisRtcm::handle_bds_d1(format::rtcm::Rtcm1042* rtcm) {
-    VSCOPE_FUNCTION();
-
-    ephemeris::BdsEphemeris ephemeris{};
-    ephemeris.prn         = rtcm->prn;
-    ephemeris.week_number = rtcm->week_number;  // Could have something to do with sow???
-    ephemeris.sv_health   = rtcm->sv_health;
-    ephemeris.lpp_iod     = static_cast<uint16_t>(static_cast<uint32_t>(rtcm->toe) >> 9);
-    ephemeris.iodc        = (static_cast<uint32_t>(rtcm->toc) / 720) % 240;
-    ephemeris.iode        = (static_cast<uint32_t>(rtcm->toe) / 720) % 240;
-    ephemeris.aode        = rtcm->aode;
-    ephemeris.aodc        = rtcm->aodc;
-    ephemeris.toc_time =
-        ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toc), 0.0);
-    ephemeris.toe_time =
-        ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toe), 0.0);
-    ephemeris.toc       = rtcm->toc;
-    ephemeris.toe       = rtcm->toe;
-    ephemeris.af2       = rtcm->af2;
-    ephemeris.af1       = rtcm->af1;
-    ephemeris.af0       = rtcm->af0;
-    ephemeris.crc       = rtcm->crc;
-    ephemeris.crs       = rtcm->crs;
-    ephemeris.cuc       = rtcm->cuc;
-    ephemeris.cus       = rtcm->cus;
-    ephemeris.cic       = rtcm->cic;
-    ephemeris.cis       = rtcm->cis;
-    ephemeris.e         = rtcm->e;
-    ephemeris.m0        = rtcm->m0;
-    ephemeris.delta_n   = rtcm->delta_n;
-    ephemeris.a         = rtcm->sqrt_a * rtcm->sqrt_a;
-    ephemeris.i0        = rtcm->i0;
-    ephemeris.omega0    = rtcm->omega0;
-    ephemeris.omega     = rtcm->omega;
-    ephemeris.omega_dot = rtcm->omega_dot;
-    ephemeris.idot      = rtcm->idot;
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisRtcm::handle_bds(format::rtcm::Rtcm1042* rtcm) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gal_enabled()) return;
-    if (rtcm->type() == 1042) {
-        handle_bds_d1(rtcm);
-    } else {
-        VERBOSEF("not rtcm 1042 but rtcm %d", rtcm->type());
-    }
-}
-
-void TokoroEphemerisRtcm::handle_gal_inav(format::rtcm::Rtcm1046* rtcm) {
-    VSCOPE_FUNCTION();
-
-    ephemeris::GalEphemeris ephemeris{};
-    ephemeris.prn         = rtcm->prn;
-    ephemeris.week_number = rtcm->week_number;
-    ephemeris.lpp_iod     = rtcm->iod_nav;
-    ephemeris.iod_nav     = rtcm->iod_nav;
-
-    ephemeris.toc = rtcm->toc;
-    ephemeris.toe = rtcm->toe;
-
-    ephemeris.af2 = rtcm->af2;
-    ephemeris.af1 = rtcm->af1;
-    ephemeris.af0 = rtcm->af0;
-
-    ephemeris.crc = rtcm->crc;
-    ephemeris.crs = rtcm->crs;
-    ephemeris.cuc = rtcm->cuc;
-    ephemeris.cus = rtcm->cus;
-    ephemeris.cic = rtcm->cic;
-    ephemeris.cis = rtcm->cis;
-
-    ephemeris.e       = rtcm->e;
-    ephemeris.m0      = rtcm->m0;
-    ephemeris.delta_n = rtcm->delta_n;
-    ephemeris.a       = rtcm->sqrt_a * rtcm->sqrt_a;
-
-    ephemeris.i0        = rtcm->i0;
-    ephemeris.omega0    = rtcm->omega0;
-    ephemeris.omega     = rtcm->omega;
-    ephemeris.omega_dot = rtcm->omega_dot;
-    ephemeris.idot      = rtcm->idot;
-
-    mTokoro.process_ephemeris(ephemeris);
-}
-
-void TokoroEphemerisRtcm::handle_gal(format::rtcm::Rtcm1046* rtcm) {
-    VSCOPE_FUNCTION();
-    if (!mTokoro.is_gal_enabled()) return;
-    if (rtcm->type() == 1046) {
-        handle_gal_inav(rtcm);
-    } else {
-        VERBOSEF("not rtcm 1046 but rtcm %d", rtcm->type());
-    }
-}
-
-void TokoroEphemerisRtcm::inspect(streamline::System&, DataType const& message, uint64_t) {
-    VSCOPE_FUNCTION();
-    auto ptr = message.get();
-    if (!ptr) return;
-
-    auto rtcm1019 = dynamic_cast<format::rtcm::Rtcm1019*>(ptr);
-    if (rtcm1019) return handle_gps(rtcm1019);
-    auto rtcm1042 = dynamic_cast<format::rtcm::Rtcm1042*>(ptr);
-    if (rtcm1042) return handle_bds(rtcm1042);
-    auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046*>(ptr);
-    if (rtcm1046) return handle_gal(rtcm1046);
-}
-
 //
 //
 //
@@ -325,9 +63,28 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mOutputTag        = tags::get(mConfig.output_tag).value;
 
     mGenerator->set_iod_consistency_check(mConfig.iod_consistency_check);
+    mGenerator->set_ssr_generation_consistency_check(mConfig.ssr_generation_consistency_check);
     mGenerator->set_rtoc(mConfig.rtoc);
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
+    mGenerator->set_iono_polynomial_only(mConfig.iono_polynomial_only);
+    if (!mConfig.orbit_frame.empty()) {
+        if (!mGenerator->set_orbit_frame(mConfig.orbit_frame.c_str())) {
+            ERRORF("invalid --tkr-orbit-frame \"%s\"", mConfig.orbit_frame.c_str());
+            exit(1);
+        }
+        for (auto const& value : mConfig.orbit_source_frames) {
+            auto              separator = value.find('=');
+            auto              gnss_name = value.substr(0, separator);
+            auto              frame     = value.substr(separator + 1);
+            SatelliteId::Gnss gnss{};
+            if (!generator::tokoro::gnss_from_name(gnss_name.c_str(), gnss) ||
+                !mGenerator->set_orbit_source_frame(gnss, frame.c_str())) {
+                ERRORF("invalid --tkr-orbit-source-frame \"%s\"", value.c_str());
+                exit(1);
+            }
+        }
+    }
     mGenerator->set_ephemeris_max_cache(mConfig.ephemeris_max_cache);
     mGenerator->set_max_orbit_age(mConfig.max_orbit_age);
     mGenerator->set_max_clock_age(mConfig.max_clock_age);
@@ -341,6 +98,22 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
             f.set_id, f.reference_point_latitude, f.reference_point_longitude,
             f.number_of_steps_latitude, f.number_of_steps_longitude, f.step_of_latitude,
             f.step_of_longitude);
+    }
+
+    if (!config.gpt2_grid.empty()) {
+        if (!mGenerator->troposphere_data().load_gpt2_grid(config.gpt2_grid)) {
+            ERRORF("failed to load GPT2 grid file: \"%s\"", config.gpt2_grid.c_str());
+        }
+    }
+    for (auto const& file : config.vmf3_grids) {
+        if (!mGenerator->troposphere_data().load_vmf3_grid(file)) {
+            ERRORF("failed to load VMF3 grid file: \"%s\"", file.c_str());
+        }
+    }
+    if (!config.vmf3_orography.empty()) {
+        if (!mGenerator->troposphere_data().load_vmf3_orography(config.vmf3_orography)) {
+            ERRORF("failed to load VMF3 orography file: \"%s\"", config.vmf3_orography.c_str());
+        }
     }
 
 #ifdef INCLUDE_FORMAT_ANTEX
@@ -363,6 +136,10 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
                 mGenerator->process_ephemeris(eph);
             for (auto& eph : nav.bds)
                 mGenerator->process_ephemeris(eph);
+            for (auto& eph : nav.glo)
+                mGenerator->process_ephemeris(eph);
+            for (auto& eph : nav.qzs)
+                mGenerator->process_ephemeris(eph);
         }
     }
 
@@ -377,7 +154,7 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
             std::unique_ptr<scheduler::PeriodicTask>(new scheduler::PeriodicTask(interval));
         mPeriodicTask->callback = [this]() {
             ASSERT(mGenerator, "generator is null");
-            ASSERT(mSystem, "system is null");
+            if (!mSystem) return;
             if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStepLast) {
                 generate(mGenerator->last_correction_data_time());
             } else if (mConfig.generation_strategy == TokoroConfig::GenerationStrategy::TimeStep) {
@@ -449,6 +226,18 @@ void Tokoro::process_ephemeris(ephemeris::BdsEphemeris const& ephemeris) NOEXCEP
     mGenerator->process_ephemeris(ephemeris);
 }
 
+void Tokoro::process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    mGenerator->process_ephemeris(ephemeris);
+}
+
+void Tokoro::process_ephemeris(ephemeris::QzsEphemeris const& ephemeris) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    ASSERT(mGenerator, "generator is null");
+    mGenerator->process_ephemeris(ephemeris);
+}
+
 void Tokoro::vrs_mode_fixed() {
     VSCOPE_FUNCTION();
     ASSERT(mGenerator, "generator is null");
@@ -464,13 +253,25 @@ void Tokoro::vrs_mode_fixed() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
-                false,
+                mConfig.generate_qzss,
             });
 
         if (mConfig.fixed_physical_station_set) {
             Float3 physical_position{mConfig.fixed_physical_x, mConfig.fixed_physical_y,
                                      mConfig.fixed_physical_z};
             mReferenceStation->set_physical_ground_position(physical_position);
+        }
+
+        if (!mConfig.fixed_frame.empty()) {
+            Float3 velocity{mConfig.fixed_velocity_x, mConfig.fixed_velocity_y,
+                            mConfig.fixed_velocity_z};
+            if (!mReferenceStation->set_ground_position_frame(mConfig.fixed_frame.c_str(),
+                                                              mConfig.fixed_epoch, velocity,
+                                                              mConfig.ssr_frame.c_str())) {
+                ERRORF("invalid --tkr-fixed-frame \"%s\" or --tkr-ssr-frame \"%s\"",
+                       mConfig.fixed_frame.c_str(), mConfig.ssr_frame.c_str());
+                exit(1);
+            }
         }
     }
 }
@@ -502,7 +303,7 @@ void Tokoro::vrs_mode_grid() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
-                false,
+                mConfig.generate_qzss,
             });
     }
 }
@@ -576,7 +377,7 @@ void Tokoro::vrs_mode_dynamic() {
                 mConfig.generate_glonass,
                 mConfig.generate_galileo,
                 mConfig.generate_beidou,
-                false,
+                mConfig.generate_qzss,
             });
 
         mLastUsedLocation = mLastLocation;
@@ -623,7 +424,41 @@ void Tokoro::generate(ts::Tai const& generation_time) {
     mReferenceStation->set_elevation_mask(mConfig.elevation_mask);
     mReferenceStation->set_msm_type(tokoro_rtcm_msm_type(mConfig.msm_type));
     mReferenceStation->set_negative_phase_windup(mConfig.negative_phase_windup);
+    mReferenceStation->set_negative_correction_sign(mConfig.negative_correction_sign);
     mReferenceStation->set_phase_alignment(mConfig.phase_alignment);
+    mReferenceStation->set_tropospheric_model(mConfig.tropospheric_model);
+    mReferenceStation->set_tropospheric_mapping(mConfig.tropospheric_mapping);
+    mReferenceStation->set_tropospheric_gradient(mConfig.tropospheric_gradient,
+                                                 mConfig.tropospheric_gradient_mapping);
+    if (mConfig.tropospheric_gradient_constant_set) {
+        mReferenceStation->set_tropospheric_gradient_constant(mConfig.tropospheric_gradient_north,
+                                                              mConfig.tropospheric_gradient_east);
+    }
+    mReferenceStation->set_lock_start(mConfig.lock_start == TokoroConfig::LockStart::Max ?
+                                          generator::tokoro::LockStart::Max :
+                                          generator::tokoro::LockStart::Reset);
+    mReferenceStation->set_lock_rise(mConfig.lock_rise == TokoroConfig::LockStart::Max ?
+                                         generator::tokoro::LockStart::Max :
+                                         generator::tokoro::LockStart::Reset);
+    switch (mConfig.ambiguity_randomization) {
+    case TokoroConfig::AmbiguityRandomization::Off:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Off);
+        break;
+    case TokoroConfig::AmbiguityRandomization::Startup:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Startup);
+        break;
+    case TokoroConfig::AmbiguityRandomization::Rise:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Rise);
+        break;
+    case TokoroConfig::AmbiguityRandomization::Both:
+        mReferenceStation->set_ambiguity_randomization(
+            generator::tokoro::AmbiguityRandomization::Both);
+        break;
+    }
+    mReferenceStation->set_ambiguity_seed(mConfig.ambiguity_seed);
     mReferenceStation->set_antenna_descriptor(mConfig.antenna_descriptor);
     mReferenceStation->set_receiver_descriptor(mConfig.receiver_descriptor);
 #ifdef INCLUDE_FORMAT_RINEX
@@ -640,6 +475,7 @@ void Tokoro::generate(ts::Tai const& generation_time) {
 
     if (!mConfig.diag_output_dir.empty()) {
         mReferenceStation->set_diag_output(mConfig.diag_output_dir);
+        mReferenceStation->set_diag_tropospheric_all(mConfig.diag_tropospheric_all);
     }
 
 #if defined(ENABLE_TOKORO_SNAPSHOT)

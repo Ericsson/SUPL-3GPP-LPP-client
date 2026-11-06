@@ -20,6 +20,7 @@
 #include "orbit.hpp"
 #include "set.hpp"
 #include "signal.hpp"
+#include "status.hpp"
 #include "troposphere.hpp"
 
 namespace generator {
@@ -38,8 +39,17 @@ struct CorrectionData {
     ts::Tai const& latest_correction_time() const { return mLatestCorrectionTime; }
 
     SignalCorrection const* signal_corrections(SatelliteId id) const NOEXCEPT;
-    OrbitCorrection const*  orbit_correction(SatelliteId id) const NOEXCEPT;
-    ClockCorrection const*  clock_correction(SatelliteId id) const NOEXCEPT;
+    // Per-signal lookups. Freshness (max_bias_age) is checked against the requested entry's own
+    // epoch, since code and phase biases arrive in separate messages and accumulate per signal.
+    // The optional `status` tells why nothing was returned.
+    CodeBiasCorrection const*  code_bias(SatelliteId id, SignalId signal,
+                                         DataStatus* status = nullptr) const NOEXCEPT;
+    PhaseBiasCorrection const* phase_bias(SatelliteId id, SignalId signal,
+                                          DataStatus* status = nullptr) const NOEXCEPT;
+    OrbitCorrection const*     orbit_correction(SatelliteId id,
+                                                DataStatus* status = nullptr) const NOEXCEPT;
+    ClockCorrection const*     clock_correction(SatelliteId id,
+                                                DataStatus* status = nullptr) const NOEXCEPT;
 
     IonosphericPolynomial const* ionospheric_polynomial(SatelliteId id) const {
         auto it = mIonosphericPolynomial.find(id);
@@ -54,10 +64,18 @@ struct CorrectionData {
         return true;
     }
 
-    bool tropospheric(SatelliteId sv_id, Float3 llh,
-                      TroposphericCorrection& correction) const NOEXCEPT;
-    bool ionospheric(SatelliteId sv_id, Float3 llh,
-                     IonosphericCorrection& correction) const NOEXCEPT;
+    // SSR IOD of the latest gridded (troposphere and STEC residual) message of the GNSS
+    NODISCARD bool grid_ssr_iod(SatelliteId::Gnss gnss, uint16_t& ssr_iod) const NOEXCEPT {
+        auto it = mGrid.find(gnss);
+        if (it == mGrid.end() || !it->second.ssr_iod_valid) return false;
+        ssr_iod = it->second.ssr_iod;
+        return true;
+    }
+
+    bool tropospheric(SatelliteId sv_id, Float3 llh, TroposphericCorrection& correction,
+                      DataStatus* status = nullptr) const NOEXCEPT;
+    bool ionospheric(SatelliteId sv_id, Float3 llh, IonosphericCorrection& correction,
+                     DataStatus* status = nullptr) const NOEXCEPT;
 
     void add_correction(long gnss_id, GNSS_SSR_OrbitCorrections_r15 const* orbit) NOEXCEPT;
     void add_correction(long gnss_id, GNSS_SSR_ClockCorrections_r15 const* clock) NOEXCEPT;
@@ -102,8 +120,16 @@ struct CorrectionData {
     double max_iono_age  = -1.0;
     double max_tropo_age = -1.0;
 
+    // Accept the STEC polynomial without the gridded STEC residual. By default both are required.
+    bool iono_polynomial_only = false;
+
+    // Satellite reference datum of the latest SSR orbit corrections: ITRF (false) or regional
+    NODISCARD bool regional_datum() const NOEXCEPT { return mRegionalDatum; }
+
 private:
-    ts::Tai mLatestCorrectionTime;
+    ts::Tai  mLatestCorrectionTime;
+    bool     mRegionalDatum{false};
+    unsigned mRegionalDatumWarned{0};
 
     std::unordered_map<SatelliteId, std::unordered_set<SignalId>> mSignals;
 

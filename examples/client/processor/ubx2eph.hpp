@@ -1,9 +1,12 @@
 #pragma once
 #include <ephemeris/bds.hpp>
 #include <ephemeris/gal.hpp>
+#include <ephemeris/glo.hpp>
 #include <ephemeris/gps.hpp>
+#include <ephemeris/qzs.hpp>
 #include <format/nav/d1.hpp>
 #include <format/nav/gal/inav.hpp>
+#include <format/nav/glo.hpp>
 #include <format/nav/gps/lnav.hpp>
 #include <format/ubx/messages/rxm_sfrbx.hpp>
 #include <streamline/inspector.hpp>
@@ -27,10 +30,14 @@ private:
     void handle_gal(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
     void handle_bds_d1(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
     void handle_bds(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
+    void handle_qzs(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
+    void handle_glo(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT;
 
     Ubx2EphConfig const&                       mConfig;
     uint64_t                                   mTag;
     format::nav::gps::lnav::EphemerisCollector mGpsCollector;
     format::nav::gal::InavEphemerisCollector   mGalCollector;
     format::nav::D1Collector                   mBdsCollector;
+    format::nav::gps::lnav::EphemerisCollector mQzsCollector;
+    format::nav::GloEphemerisCollector         mGloCollector;
 };

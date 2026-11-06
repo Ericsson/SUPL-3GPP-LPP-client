@@ -2,6 +2,7 @@
 #include "constant.hpp"
 #include "data/correction.hpp"
 #include "models/earth_solid_tides.hpp"
+#include "models/frame_transform.hpp"
 #include "models/phase_windup.hpp"
 #include "models/shapiro.hpp"
 #include "models/sun_moon.hpp"
@@ -9,6 +10,7 @@
 #include "sv_id.hpp"
 
 #include <ephemeris/ephemeris.hpp>
+#include <generator/tokoro/ephemeris_search.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 #include <maths/float3.hpp>
@@ -71,6 +73,8 @@ struct Satellite {
 public:
     EXPLICIT Satellite(SatelliteId id, Float3 ground_position, Generator const& generator) NOEXCEPT;
 
+    void set_ground_position(Float3 ground_position) NOEXCEPT;
+
     void update(ts::Tai const& generation_time) NOEXCEPT;
 
     NODISCARD const SatelliteId& id() const NOEXCEPT { return mId; }
@@ -89,16 +93,31 @@ public:
     void disable(char const* reason) NOEXCEPT {
         mEnabled       = false;
         mDisableReason = reason;
+        mDisableDetail.clear();
+    }
+    // `detail` has no spaces, it is written to the diagnostics
+    void disable(char const* reason, std::string detail) NOEXCEPT {
+        mEnabled       = false;
+        mDisableReason = reason;
+        mDisableDetail = std::move(detail);
     }
 
     NODISCARD const char* disable_reason() const NOEXCEPT { return mDisableReason; }
+    NODISCARD std::string const& disable_detail() const NOEXCEPT { return mDisableDetail; }
+
+    // The ephemeris that were considered for the latest update
+    NODISCARD EphemerisSearch const& ephemeris_search() const NOEXCEPT { return mEphemerisSearch; }
+    NODISCARD bool has_ephemeris_search() const NOEXCEPT { return mHasEphemerisSearch; }
 
     NODISCARD OrbitCorrection const& orbit_correction() const NOEXCEPT { return mOrbitCorrection; }
     NODISCARD ClockCorrection const& clock_correction_data() const NOEXCEPT {
         return mClockCorrection;
     }
     NODISCARD bool has_orbit_correction() const NOEXCEPT { return mHasOrbitCorrection; }
-    NODISCARD bool has_clock_correction() const NOEXCEPT { return mHasClockCorrection; }
+    // GLONASS FDMA frequency channel (-7..+6), from the broadcast ephemeris
+    NODISCARD bool    has_frequency_channel() const NOEXCEPT { return mHasFrequencyChannel; }
+    NODISCARD int32_t frequency_channel() const NOEXCEPT { return mFrequencyChannel; }
+    NODISCARD bool    has_clock_correction() const NOEXCEPT { return mHasClockCorrection; }
 
     NODISCARD double average_code_range() const NOEXCEPT;
     NODISCARD double average_phase_range_rate() const NOEXCEPT;
@@ -123,12 +142,11 @@ public:
     void datatrace_report() NOEXCEPT;
 
 protected:
-    NODISCARD static bool
-    compute_true_position(SatelliteId id, Float3 ground_position, ts::Tai const& reception_time,
-                          ephemeris::Ephemeris const& eph, OrbitCorrection const& orbit_correction,
-                          SatelliteState& state,
-                          bool            use_reception_time_for_orbit_and_clock_corrections,
-                          bool            use_orbit_correction_in_iteration) NOEXCEPT;
+    NODISCARD static bool compute_true_position(
+        SatelliteId id, Float3 ground_position, ts::Tai const& reception_time,
+        ephemeris::Ephemeris const& eph, OrbitCorrection const& orbit_correction,
+        SatelliteState& state, bool use_reception_time_for_orbit_and_clock_corrections,
+        bool use_orbit_correction_in_iteration, OrbitFrames const* frame_transform) NOEXCEPT;
     NODISCARD static bool compute_azimuth_and_elevation(SatelliteId id, Float3 ground_position,
                                                         SatelliteState& state) NOEXCEPT;
 
@@ -146,6 +164,10 @@ private:
     Float3      mGroundPositionLlh;
     bool        mEnabled;
     char const* mDisableReason{nullptr};
+    std::string mDisableDetail;
+
+    EphemerisSearch mEphemerisSearch;
+    bool            mHasEphemerisSearch{false};
 
     ts::Tai mLastGenerationTime;
 
@@ -156,6 +178,8 @@ private:
     ClockCorrection mClockCorrection;
     bool            mHasOrbitCorrection{false};
     bool            mHasClockCorrection{false};
+    bool            mHasFrequencyChannel{false};
+    int32_t         mFrequencyChannel{0};
 
     std::vector<Observation> mObservations;
 

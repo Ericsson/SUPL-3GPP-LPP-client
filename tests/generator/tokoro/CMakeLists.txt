@@ -1,9 +1,16 @@
 add_executable(generator_tokoro_tests
     main.cpp
     coordinates.cpp
+    grid.cpp
+    correction.cpp
+)
+target_include_directories(generator_tokoro_tests PRIVATE
+    "${PROJECT_SOURCE_DIR}/dependency/generator/tokoro"
+    "${PROJECT_SOURCE_DIR}/dependency/generator/tokoro/include/generator/tokoro"
 )
 target_link_libraries(generator_tokoro_tests PRIVATE 
     dependency::generator::tokoro
+    asn1::generated::lpp
     dependency::core
     doctest::doctest
 )

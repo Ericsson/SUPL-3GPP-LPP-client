@@ -3,11 +3,15 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <string>
+#include <vector>
 
 #include <loglet/loglet.hpp>
 #include <time/bdt.hpp>
+#include <time/glo.hpp>
 #include <time/gps.hpp>
 #include <time/gst.hpp>
+#include <time/utc.hpp>
 
 LOGLET_MODULE(rinex_nav);
 #undef LOGLET_CURRENT_MODULE
@@ -219,6 +223,44 @@ static bool parse_bds_record(char lines[8][128], ephemeris::BdsEphemeris& eph) {
     return true;
 }
 
+// RINEX 3 GLONASS record; the epoch (tb) is in UTC
+static bool parse_glo_record(char lines[8][128], ephemeris::GloEphemeris& eph) {
+    int slot, year, month, day, hour, min, sec;
+    if (sscanf(lines[0] + 1, "%d %d %d %d %d %d %d", &slot, &year, &month, &day, &hour, &min,
+               &sec) != 7)
+        return false;
+    if (slot < 1 || slot > 24) return false;
+
+    auto utc = ts::Utc::from_date_time(year, month, day, hour, min, static_cast<double>(sec));
+
+    eph                = {};
+    eph.slot_number    = static_cast<uint8_t>(slot);
+    eph.reference_time = ts::Glo(utc);
+    eph.tau_n          = -parse_double(lines[0] + 23, 19);  // field is -TauN
+    eph.gamma_n        = parse_double(lines[0] + 42, 19);
+
+    eph.position.x     = parse_double(lines[1] + 4, 19);
+    eph.velocity.x     = parse_double(lines[1] + 23, 19);
+    eph.acceleration.x = parse_double(lines[1] + 42, 19);
+    eph.health         = static_cast<uint8_t>(parse_double(lines[1] + 61, 19));
+
+    eph.position.y       = parse_double(lines[2] + 4, 19);
+    eph.velocity.y       = parse_double(lines[2] + 23, 19);
+    eph.acceleration.y   = parse_double(lines[2] + 42, 19);
+    eph.frequency_number = static_cast<int8_t>(parse_double(lines[2] + 61, 19));
+
+    eph.position.z     = parse_double(lines[3] + 4, 19);
+    eph.velocity.z     = parse_double(lines[3] + 23, 19);
+    eph.acceleration.z = parse_double(lines[3] + 42, 19);
+    eph.age            = static_cast<uint8_t>(parse_double(lines[3] + 61, 19));
+
+    // LPP IOD for GLONASS is tb, the 15 minute index of the Moscow time of day
+    eph.lpp_iod = static_cast<uint16_t>(
+        static_cast<uint32_t>(eph.reference_time.time_of_day().full_seconds() / 900.0 + 0.5) &
+        0x7F);
+    return true;
+}
+
 NavData parse_nav_file(std::string const& path) {
     NavData result;
 
@@ -234,52 +276,98 @@ NavData parse_nav_file(std::string const& path) {
         if (strstr(line, "END OF HEADER")) break;
     }
 
-    // Parse records
+    // Parse records. RINEX 3 records start with the satellite line, their length depends on the
+    // GNSS. RINEX 4 records start with a "> EPH <sat> <type>" line (also "> STO", "> EOP",
+    // "> ION"), and run until the next "> " line.
+    std::vector<std::string> lines;
+    char                     rinex4_type[16] = {};
+    bool                     rinex4          = false;
+    bool                     rinex4_eph      = false;
+
+    auto dispatch = [&](char gnss, char const* type) {
+        char record[8][128];
+        memset(record, 0, sizeof(record));
+        for (size_t k = 0; k < lines.size() && k < 8; k++) {
+            auto len = lines[k].size() < 127 ? lines[k].size() : 127;
+            memcpy(record[k], lines[k].c_str(), len);
+        }
+        if (gnss == 'G' && (!type || strcmp(type, "LNAV") == 0) && lines.size() >= 8) {
+            ephemeris::GpsEphemeris eph{};
+            if (parse_gps_record(record, eph)) result.gps.push_back(eph);
+        } else if (gnss == 'E' &&
+                   (!type || strcmp(type, "INAV") == 0 || strcmp(type, "FNAV") == 0) &&
+                   lines.size() >= 8) {
+            ephemeris::GalEphemeris eph{};
+            if (parse_gal_record(record, eph)) result.gal.push_back(eph);
+        } else if (gnss == 'C' && (!type || strcmp(type, "D1") == 0 || strcmp(type, "D2") == 0) &&
+                   lines.size() >= 8) {
+            ephemeris::BdsEphemeris eph{};
+            if (parse_bds_record(record, eph)) result.bds.push_back(eph);
+        } else if (gnss == 'R' && (!type || strcmp(type, "FDMA") == 0) && lines.size() >= 4) {
+            ephemeris::GloEphemeris eph{};
+            if (parse_glo_record(record, eph)) result.glo.push_back(eph);
+        } else if (gnss == 'J' && (!type || strcmp(type, "LNAV") == 0) && lines.size() >= 8) {
+            // QZSS LNAV uses the GPS record layout; J01 is PRN 193
+            ephemeris::GpsEphemeris gps{};
+            if (parse_gps_record(record, gps)) {
+                gps.prn = static_cast<uint8_t>(gps.prn + 192);
+                result.qzs.push_back(ephemeris::QzsEphemeris::from_gps_layout(gps));
+            }
+        }
+    };
+
+    auto flush_rinex4 = [&]() {
+        if (rinex4_eph && !lines.empty()) dispatch(lines[0][0], rinex4_type);
+        lines.clear();
+        rinex4_eph = false;
+    };
+
     while (fgets(line, sizeof(line), f)) {
         if (line[0] == '\n' || line[0] == '\r' || line[0] == '\0') continue;
+
+        if (line[0] == '>') {
+            rinex4 = true;
+            flush_rinex4();
+            char kind[8]   = {};
+            char sat[8]    = {};
+            rinex4_type[0] = '\0';
+            if (sscanf(line + 1, "%7s %7s %15s", kind, sat, rinex4_type) == 3 &&
+                strcmp(kind, "EPH") == 0) {
+                rinex4_eph = true;
+            }
+            continue;
+        }
+
+        if (rinex4) {
+            if (rinex4_eph) lines.emplace_back(line);
+            continue;
+        }
+
         if (line[0] == ' ') continue;  // continuation line without a record start
 
         char gnss    = line[0];
-        int  n_lines = 8;                             // GPS/GAL/BDS: 1 header + 7 data lines
+        int  n_lines = 8;                             // GPS/GAL/BDS/QZS: 1 header + 7 data lines
         if (gnss == 'R' || gnss == 'S') n_lines = 4;  // GLONASS/SBAS: 1 + 3
 
-        char record[8][128];
-        memset(record, 0, sizeof(record));
-        size_t len = strlen(line);
-        if (len > 127) len = 127;
-        memcpy(record[0], line, len);
-
+        lines.clear();
+        lines.emplace_back(line);
         bool ok = true;
         for (int i = 1; i < n_lines; i++) {
-            if (!fgets(record[i], sizeof(record[i]), f)) {
+            if (!fgets(line, sizeof(line), f)) {
                 ok = false;
                 break;
             }
+            lines.emplace_back(line);
         }
         if (!ok) break;
-
-        if (gnss == 'G') {
-            ephemeris::GpsEphemeris eph{};
-            if (parse_gps_record(record, eph)) {
-                result.gps.push_back(eph);
-            }
-        } else if (gnss == 'E') {
-            ephemeris::GalEphemeris eph{};
-            if (parse_gal_record(record, eph)) {
-                result.gal.push_back(eph);
-            }
-        } else if (gnss == 'C') {
-            ephemeris::BdsEphemeris eph{};
-            if (parse_bds_record(record, eph)) {
-                result.bds.push_back(eph);
-            }
-        }
-        // R/S/J: skip (not supported)
+        dispatch(gnss, nullptr);
     }
+    if (rinex4) flush_rinex4();
 
     fclose(f);
-    INFOF("RINEX nav: loaded %zu GPS, %zu GAL, %zu BDS ephemerides from %s", result.gps.size(),
-          result.gal.size(), result.bds.size(), path.c_str());
+    INFOF("RINEX nav: loaded %zu GPS, %zu GAL, %zu BDS, %zu GLO, %zu QZS ephemerides from %s",
+          result.gps.size(), result.gal.size(), result.bds.size(), result.glo.size(),
+          result.qzs.size(), path.c_str());
     return result;
 }
 

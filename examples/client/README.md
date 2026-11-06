@@ -268,6 +268,7 @@
         --tkr-no-glonass                  Skip generating GLONASS messages
         --tkr-no-galileo                  Skip generating Galileo messages
         --tkr-no-beidou                   Skip generating BeiDou messages
+        --tkr-qzss                        Generate QZSS messages
         --tkr-msm=[type]                  Which MSM type to generate
         --tkr-vrs-mode=[vrs-mode]         VRS mode
                                           One of: fixed, dynamic
@@ -326,6 +327,34 @@
                                           requirement
         --tkr-iono-optional               Disable ionospheric correction
                                           requirement
+        --tkr-iono-poly-only              Allow the STEC polynomial without the
+                                          gridded STEC residual
+        --tkr-fixed-frame=[frame]         Frame of --tkr-fixed-itrf-x/y/z (e.g.
+                                          etrf2014, sweref99, itrf2014); the
+                                          position is transformed to
+                                          --tkr-ssr-frame at the observation
+                                          epoch
+        --tkr-fixed-epoch=[year]          Epoch (decimal year) of
+                                          --tkr-fixed-itrf-x/y/z. Default: the
+                                          frame's own epoch for fixed-epoch
+                                          frames, otherwise the observation
+                                          epoch
+        --tkr-fixed-velocity=[vx,vy,vz]   Station velocity (ECEF, m/year) used
+                                          to move --tkr-fixed-itrf-x/y/z from
+                                          --tkr-fixed-epoch to the observation
+                                          epoch
+        --tkr-ssr-frame=[frame]           Frame of the SSR corrected orbits,
+                                          used with --tkr-fixed-frame
+                                          Default: itrf2020
+        --tkr-orbit-frame=[frame]         Transform the broadcast orbits from the
+                                          frame of each GNSS (GPS: WGS 84,
+                                          GLONASS: PZ-90.11) to this frame (e.g.
+                                          itrf2020) before applying the SSR
+                                          orbit correction
+        --tkr-orbit-source-frame=[gnss=frame...]
+                                          Broadcast frame of a GNSS (gps, glo,
+                                          gal, bds, qzs) for --tkr-orbit-frame,
+                                          e.g. gal=itrf2020 (repeatable)
         --tkr-use-tropospheric-model      Use tropospheric model if tropospheric
                                           correction are not available (requires
                                           tkr-tropo-optional)

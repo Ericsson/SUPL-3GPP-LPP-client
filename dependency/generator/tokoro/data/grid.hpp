@@ -25,31 +25,6 @@ struct GNSS_SSR_GriddedCorrection_r16;
 namespace generator {
 namespace tokoro {
 
-struct GridIndex {
-    long x;
-    long y;
-    long i;
-
-    bool operator==(GridIndex const& other) const {
-        return x == other.x && y == other.y && i == other.i;
-    }
-};
-
-}  // namespace tokoro
-}  // namespace generator
-
-namespace std {
-template <>
-struct hash<generator::tokoro::GridIndex> {
-    size_t operator()(generator::tokoro::GridIndex const& index) const {
-        return hash<long>()(index.x) ^ hash<long>()(index.y) ^ hash<long>()(index.i);
-    }
-};
-}  // namespace std
-
-namespace generator {
-namespace tokoro {
-
 struct GridPoint {
     bool   valid;
     bool   tropspheric_valid;
@@ -61,12 +36,14 @@ struct GridPoint {
     long latitude_index;
     long longitude_index;
 
-    std::unordered_map<SatelliteId, double> ionospheric_residual;
-    double                                  tropospheric_wet;
-    double                                  tropospheric_dry;
+    std::unordered_map<SatelliteId, double>  ionospheric_residual;
+    std::unordered_map<SatelliteId, ts::Tai> ionospheric_residual_epoch;
+    double                                   tropospheric_wet;
+    double                                   tropospheric_dry;
+    ts::Tai                                  tropospheric_epoch;
 
     bool has_ionospheric_residual(SatelliteId sv_id) const {
-        return ionospheric_residual.find(sv_id) != ionospheric_residual.end();
+        return ionospheric_valid && ionospheric_residual.find(sv_id) != ionospheric_residual.end();
     }
 
     bool has_tropospheric_data() const { return tropspheric_valid; }
@@ -78,24 +55,42 @@ struct GridData {
         Success,
         PositionOutsideGrid,
         MissingSatelliteData,
+        StaleData,
     };
 
-    NODISCARD GridPoint const* find_top_left(Float3 llh) const NOEXCEPT;
-    NODISCARD GridPoint const* find_with_absolute_index(long absolute_index) const NOEXCEPT;
+    NODISCARD GridPoint const* point_at(long latitude_index, long longitude_index) const NOEXCEPT;
+    // `dx`/`dy` are the position within the cell, 0..1 from the top-left corner towards south/east
     bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
-                       GridPoint const*& br) const NOEXCEPT;
+                       GridPoint const*& br, double& dx, double& dy) const NOEXCEPT;
 
-    GridStatus ionospheric(SatelliteId sv_id, Float3 llh,
+    GridStatus ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now, double max_age,
                            double& ionospheric_residual) const NOEXCEPT;
-    GridStatus tropospheric(Float3 llh, TroposphericCorrection& correction) const NOEXCEPT;
+    GridStatus tropospheric(Float3 llh, ts::Tai const& now, double max_age,
+                            TroposphericCorrection& correction) const NOEXCEPT;
+
+    // True if the grid was built from a correction point set with the same id and layout
+    NODISCARD bool matches(CorrectionPointSet const& set) const NOEXCEPT {
+        return correction_point_set_id == set.set_id &&
+               reference_latitude == set.reference_point_latitude &&
+               reference_longitude == set.reference_point_longitude &&
+               delta_latitude == set.step_of_latitude && delta_longitude == set.step_of_longitude &&
+               number_of_steps_latitude == set.number_of_steps_latitude &&
+               number_of_steps_longitude == set.number_of_steps_longitude && bitmask == set.bitmask;
+    }
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
         correction_point_set_id   = correction_point_set.set_id;
+        bitmask                   = correction_point_set.bitmask;
+        reference_latitude        = correction_point_set.reference_point_latitude;
+        reference_longitude       = correction_point_set.reference_point_longitude;
         delta_latitude            = correction_point_set.step_of_latitude;
         delta_longitude           = correction_point_set.step_of_longitude;
         number_of_steps_latitude  = correction_point_set.number_of_steps_latitude;
         number_of_steps_longitude = correction_point_set.number_of_steps_longitude;
         auto grid_point_count = (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
+        // Start from empty storage: resizing in place would keep the old set's points (and
+        // their residuals/epochs) wherever the old and new grids overlap.
+        grid_points.clear();
         grid_points.resize(static_cast<size_t>(grid_point_count));
     }
 
@@ -109,13 +104,15 @@ struct GridData {
         grid_point.absolute_index    = info.absolute_index;
         grid_point.tropspheric_valid = false;
         grid_point.ionospheric_valid = false;
-        grid_point.latitude_index    = info.latitude_index;
-        grid_point.longitude_index   = info.longitude_index;
+        grid_point.ionospheric_residual.clear();
+        grid_point.ionospheric_residual_epoch.clear();
+        grid_point.latitude_index  = info.latitude_index;
+        grid_point.longitude_index = info.longitude_index;
     }
 
     GridPoint* point_from_array_index(long array_index) {
         for (auto& grid_point : grid_points) {
-            if (grid_point.array_index == array_index) return &grid_point;
+            if (grid_point.valid && grid_point.array_index == array_index) return &grid_point;
         }
         return nullptr;
     }
@@ -123,12 +120,17 @@ struct GridData {
     void print_grid();
 
     uint16_t               correction_point_set_id;
+    double                 reference_latitude;   // north-west corner [deg]
+    double                 reference_longitude;  // north-west corner [deg]
+    uint64_t               bitmask;
     double                 delta_latitude;
     double                 delta_longitude;
     long                   number_of_steps_latitude;
     long                   number_of_steps_longitude;
     std::vector<GridPoint> grid_points;
     ts::Tai                epoch_time;
+    uint16_t               ssr_iod{0};  // SSR IOD of the gridded message
+    bool                   ssr_iod_valid{false};
 };
 
 }  // namespace tokoro

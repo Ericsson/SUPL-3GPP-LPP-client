@@ -14,16 +14,23 @@ LOGLET_MODULE2(tokoro, eci);
 namespace generator {
 namespace tokoro {
 
+double terrestrial_time_century(ts::Tai const& time) {
+    // j2000_century() shifts the UTC timestamp by its argument, so passing TT-UTC yields TT.
+    auto tt_utc = static_cast<double>(ts::LeapSeconds::count()) + 32.184;
+    return ts::Utc{time}.j2000_century(tt_utc);
+}
+
 void eci_to_ecef_matrix(ts::Tai const& time, EciEarthParameters const& earth_params,
-                        Mat3* transform_out, double* gmst_out) {
+                        Mat3* transform_out, double* gmst_out, EciFrame frame) {
     VSCOPE_FUNCTIONF("%s", time.rtklib_time_string().c_str());
 
     auto xp      = earth_params.xp;
     auto yp      = earth_params.yp;
     auto ut1_utc = earth_params.ut1_utc;
 
-    // Get Julian centuries since J2000
-    auto t  = ts::Utc{time}.j2000_century(ut1_utc);
+    // Precession, nutation and the fundamental arguments are functions of TT; only the Earth
+    // rotation angle (GMST below) uses UT1.
+    auto t  = terrestrial_time_century(time);
     auto t2 = t * t;
     auto t3 = t2 * t;
     VERBOSEF("t: %f", t);
@@ -95,7 +102,8 @@ void eci_to_ecef_matrix(ts::Tai const& time, EciEarthParameters const& earth_par
 
     // ECI to ECEF matrix
     auto w = Mat3::rotate_y(-xp) * Mat3::rotate_x(-yp);
-    auto u = (w * Mat3::rotate_z(gast)) * (n * p);
+    auto u = frame == EciFrame::MeanOfDate ? (w * Mat3::rotate_z(gast)) * n :
+                                             (w * Mat3::rotate_z(gast)) * (n * p);
 
 #ifdef EXTRA_VERBOSE
     VERBOSEF("w:");

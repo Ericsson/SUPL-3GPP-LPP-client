@@ -18,6 +18,13 @@ add_library(dependency_generator_tokoro STATIC
     "models/nutation.cpp"
     "models/sun_moon.cpp"
     "models/gpt.cpp"
+    "models/saastamoinen.cpp"
+    "models/gmf.cpp"
+    "models/vienna.cpp"
+    "models/gpt2.cpp"
+    "models/vmf3.cpp"
+    "models/vmf3_coefficients.cpp"
+    "models/troposphere_models.cpp"
     
     "coordinates/coordinate.cpp"
     "coordinates/reference_ellipsoid.cpp"
@@ -34,6 +41,7 @@ add_library(dependency_generator_tokoro STATIC
     "data/ionosphere.cpp"
     "data/troposphere.cpp"
     "data/gather.cpp"
+    "models/frame_transform.cpp"
 )
 add_library(dependency::generator::tokoro ALIAS dependency_generator_tokoro)
 
@@ -50,6 +58,7 @@ if(INCLUDE_FORMAT_ANTEX)
     target_link_libraries(dependency_generator_tokoro PUBLIC dependency::format::antex)
 endif()
 target_link_libraries(dependency_generator_tokoro PUBLIC dependency::maths)
+target_link_libraries(dependency_generator_tokoro PRIVATE dependency::coordinates)
 target_link_libraries(dependency_generator_tokoro PRIVATE dependency::generator::rtcm)
 
 if(DATA_TRACING)

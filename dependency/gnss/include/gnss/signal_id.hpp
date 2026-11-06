@@ -51,9 +51,11 @@ public:
     NODISCARD Gnss gnss() const { return mGnss; }
     NODISCARD Maybe<long> as_msm() const;
     NODISCARD long        lpp_id() const;
-    NODISCARD std::string   to_string() const;
-    NODISCARD const char*   name() const;
-    NODISCARD double        frequency() const;
+    NODISCARD std::string to_string() const;
+    NODISCARD const char* name() const;
+    NODISCARD double      frequency() const;
+    // Frequency [kHz] of a GLONASS FDMA signal for the frequency channel; other signals ignore it
+    NODISCARD double        frequency(int32_t glonass_channel) const;
     NODISCARD double        wavelength() const;
     NODISCARD FrequencyType frequency_type() const;
 

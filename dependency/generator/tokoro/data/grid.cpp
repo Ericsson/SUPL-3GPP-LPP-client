@@ -4,6 +4,8 @@
 #include "ionosphere.hpp"
 #include "troposphere.hpp"
 
+#include <cmath>
+
 #include <external_warnings.hpp>
 
 EXTERNAL_WARNINGS_PUSH
@@ -50,76 +52,82 @@ static double interpolate(double a, double b, double t) {
     return a * (1.0 - t) + b * t;
 }
 
-GridPoint const* GridData::find_top_left(Float3 llh) const NOEXCEPT {
-    FUNCTION_SCOPE();
-
-    for (auto& grid_point : grid_points) {
-        if (!grid_point.valid) {
-            continue;
-        }
-
-        auto x0 = grid_point.position.x;
-        auto y0 = grid_point.position.y;
-        auto x1 = x0 - delta_latitude;
-        auto y1 = y0 + delta_longitude;
-        VERBOSEF("latitude:  %+18.14f >= %+18.14f >= %+18.14f", x0, llh.x * constant::RAD2DEG, x1);
-        VERBOSEF("longitude: %+18.14f <= %+18.14f <= %+18.14f", y0, llh.y * constant::RAD2DEG, y1);
-        if (llh.x * constant::RAD2DEG <= x0 && llh.x * constant::RAD2DEG >= x1 &&
-            llh.y * constant::RAD2DEG >= y0 && llh.y * constant::RAD2DEG <= y1) {
-            VERBOSEF("found: %ld/%ld", grid_point.array_index, grid_point.absolute_index);
-            return &grid_point;
-        }
-    }
-
-    VERBOSEF("top left not found");
-    return nullptr;
+GridPoint const* GridData::point_at(long latitude_index, long longitude_index) const NOEXCEPT {
+    if (latitude_index < 0 || latitude_index > number_of_steps_latitude) return nullptr;
+    if (longitude_index < 0 || longitude_index > number_of_steps_longitude) return nullptr;
+    auto  index = latitude_index * (number_of_steps_longitude + 1) + longitude_index;
+    auto& point = grid_points[static_cast<size_t>(index)];
+    return point.valid ? &point : nullptr;
 }
 
-GridPoint const* GridData::find_with_absolute_index(long absolute_index) const NOEXCEPT {
-    FUNCTION_SCOPE();
+// Cells adjacent to `position` (in steps from the reference point): the cell containing it, plus
+// the neighbouring cell when it lies on a cell edge. Positions on the outer edge belong to the
+// last cell.
+static long cell_candidates(double position, long steps, long* cells) {
+    constexpr double EDGE_TOLERANCE = 1e-6;
+    if (steps <= 0) return 0;
+    if (position < -EDGE_TOLERANCE || position > static_cast<double>(steps) + EDGE_TOLERANCE)
+        return 0;
 
-    for (auto& grid_point : grid_points) {
-        if (!grid_point.valid) {
-            continue;
-        }
-
-        if (grid_point.absolute_index == absolute_index) {
-            return &grid_point;
-        }
+    auto nearest = std::round(position);
+    if (std::fabs(position - nearest) <= EDGE_TOLERANCE) {
+        auto edge  = static_cast<long>(nearest);
+        long count = 0;
+        if (edge < steps) cells[count++] = edge;
+        if (edge > 0) cells[count++] = edge - 1;
+        return count;
     }
 
-    VERBOSEF("absolute index not found: %ld", absolute_index);
-    return nullptr;
+    cells[0] = static_cast<long>(std::floor(position));
+    return 1;
 }
 
 bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr,
-                             GridPoint const*& bl, GridPoint const*& br) const NOEXCEPT {
+                             GridPoint const*& bl, GridPoint const*& br, double& dx,
+                             double& dy) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    auto top_left = find_top_left(llh);
-    if (top_left == nullptr) {
-        VERBOSEF("top left not found");
-        return false;
+    if (delta_latitude <= 0.0 || delta_longitude <= 0.0) return false;
+
+    auto row = (reference_latitude - llh.x * constant::RAD2DEG) / delta_latitude;
+    auto col = (llh.y * constant::RAD2DEG - reference_longitude) / delta_longitude;
+    // grids crossing the antimeridian: the position may be one revolution behind the reference
+    auto revolution = 360.0 / delta_longitude;
+    if (col < 0.0 && col + revolution <= static_cast<double>(number_of_steps_longitude) + 1e-6) {
+        col += revolution;
+    }
+    VERBOSEF("grid position: row %+.6f col %+.6f", row, col);
+
+    long rows[2];
+    long cols[2];
+    auto row_count = cell_candidates(row, number_of_steps_latitude, rows);
+    auto col_count = cell_candidates(col, number_of_steps_longitude, cols);
+    for (long r = 0; r < row_count; r++) {
+        for (long c = 0; c < col_count; c++) {
+            auto p_tl = point_at(rows[r], cols[c]);
+            auto p_tr = point_at(rows[r], cols[c] + 1);
+            auto p_bl = point_at(rows[r] + 1, cols[c]);
+            auto p_br = point_at(rows[r] + 1, cols[c] + 1);
+            if (!p_tl || !p_tr || !p_bl || !p_br) {
+                VERBOSEF("cell %ld,%ld has a masked corner", rows[r], cols[c]);
+                continue;
+            }
+            tl = p_tl;
+            tr = p_tr;
+            bl = p_bl;
+            br = p_br;
+            dx = row - static_cast<double>(rows[r]);
+            dy = col - static_cast<double>(cols[c]);
+            return true;
+        }
     }
 
-    auto top_right = find_with_absolute_index(top_left->absolute_index + 1);
-    auto bottom_left =
-        find_with_absolute_index(top_left->absolute_index + (number_of_steps_longitude + 1));
-    auto bottom_right =
-        find_with_absolute_index(top_left->absolute_index + (number_of_steps_longitude + 1) + 1);
-    if (top_right == nullptr || bottom_left == nullptr || bottom_right == nullptr) {
-        VERBOSEF("4 points not found");
-        return false;
-    }
-
-    tl = top_left;
-    tr = top_right;
-    bl = bottom_left;
-    br = bottom_right;
-    return true;
+    VERBOSEF("no complete cell found");
+    return false;
 }
 
-GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
+GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now,
+                                           double  max_age,
                                            double& ionospheric_residual) const NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -127,7 +135,9 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
     GridPoint const* tr = nullptr;
     GridPoint const* bl = nullptr;
     GridPoint const* br = nullptr;
-    if (!find_4_points(llh, tl, tr, bl, br)) {
+    double           dx = 0.0;
+    double           dy = 0.0;
+    if (!find_4_points(llh, tl, tr, bl, br, dx, dy)) {
         return GridStatus::PositionOutsideGrid;
     }
 
@@ -139,8 +149,16 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
         return GridStatus::MissingSatelliteData;
     }
 
-    auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
-    auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
+    if (max_age > 0.0) {
+        for (auto* corner : {tl, tr, bl, br}) {
+            auto age = now - corner->ionospheric_residual_epoch.at(sv_id);
+            if (age > max_age) {
+                VERBOSEF("ionospheric grid point residual is too old (%.1fs > %.1fs limit)", age,
+                         max_age);
+                return GridStatus::StaleData;
+            }
+        }
+    }
 
     VERBOSEF("dx: %+.14f", dx);
     VERBOSEF("dy: %+.14f", dy);
@@ -161,7 +179,7 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh,
     return GridStatus::Success;
 }
 
-GridData::GridStatus GridData::tropospheric(Float3                  llh,
+GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, double max_age,
                                             TroposphericCorrection& correction) const NOEXCEPT {
     FUNCTION_SCOPE();
 
@@ -170,7 +188,9 @@ GridData::GridStatus GridData::tropospheric(Float3                  llh,
     GridPoint const* tr = nullptr;
     GridPoint const* bl = nullptr;
     GridPoint const* br = nullptr;
-    if (find_4_points(llh, tl, tr, bl, br)) {
+    double           dx = 0.0;
+    double           dy = 0.0;
+    if (find_4_points(llh, tl, tr, bl, br, dx, dy)) {
         VERBOSEF("bilinear interpolation");
 
         if (!tl->has_tropospheric_data() || !tr->has_tropospheric_data() ||
@@ -179,8 +199,16 @@ GridData::GridStatus GridData::tropospheric(Float3                  llh,
             return GridStatus::MissingSatelliteData;
         }
 
-        auto dx = (llh.x * constant::RAD2DEG - tl->position.x) / (br->position.x - tl->position.x);
-        auto dy = (llh.y * constant::RAD2DEG - tl->position.y) / (br->position.y - tl->position.y);
+        if (max_age > 0.0) {
+            for (auto* corner : {tl, tr, bl, br}) {
+                auto age = now - corner->tropospheric_epoch;
+                if (age > max_age) {
+                    VERBOSEF("tropospheric grid point is too old (%.1fs > %.1fs limit)", age,
+                             max_age);
+                    return GridStatus::StaleData;
+                }
+            }
+        }
 
         VERBOSEF("dx: %+.14f", dx);
         VERBOSEF("dy: %+.14f", dy);
@@ -212,6 +240,42 @@ GridData::GridStatus GridData::tropospheric(Float3                  llh,
 
         VERBOSEF("tropospheric wet: %+.14f", correction.wet);
         VERBOSEF("tropospheric dry: %+.14f", correction.dry);
+
+        // Slope of the bilinear interpolation, per metre north and east. dx runs from the top to
+        // the bottom row (latitude), dy from the left to the right column (longitude).
+        {
+            auto lat_span = br->position.x - tl->position.x;  // [deg]
+            auto lon_span = br->position.y - tl->position.y;  // [deg]
+            auto cos_lat  = std::cos(llh.x);
+            if (lat_span != 0.0 && lon_span != 0.0 && cos_lat > 1e-6) {
+                // mean Earth radius
+                constexpr double EARTH_RADIUS = 6371000.0;
+                auto             deg_to_m_n   = EARTH_RADIUS * constant::DEG2RAD;
+                auto             deg_to_m_e   = EARTH_RADIUS * cos_lat * constant::DEG2RAD;
+
+                auto d_dx = [&](double tl_v, double tr_v, double bl_v, double br_v) {
+                    return (1.0 - dy) * (bl_v - tl_v) + dy * (br_v - tr_v);
+                };
+                auto d_dy = [&](double tl_v, double tr_v, double bl_v, double br_v) {
+                    return (1.0 - dx) * (tr_v - tl_v) + dx * (br_v - bl_v);
+                };
+
+                correction.dry_north =
+                    d_dx(tl_value_dry, tr_value_dry, bl_value_dry, br_value_dry) / lat_span /
+                    deg_to_m_n;
+                correction.dry_east = d_dy(tl_value_dry, tr_value_dry, bl_value_dry, br_value_dry) /
+                                      lon_span / deg_to_m_e;
+                correction.wet_north =
+                    d_dx(tl_value_wet, tr_value_wet, bl_value_wet, br_value_wet) / lat_span /
+                    deg_to_m_n;
+                correction.wet_east = d_dy(tl_value_wet, tr_value_wet, bl_value_wet, br_value_wet) /
+                                      lon_span / deg_to_m_e;
+                correction.has_gradient = true;
+                VERBOSEF("tropospheric gradient dry: N %+.4e E %+.4e, wet: N %+.4e E %+.4e m/m",
+                         correction.dry_north, correction.dry_east, correction.wet_north,
+                         correction.wet_east);
+            }
+        }
 
         return GridStatus::Success;
     }

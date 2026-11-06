@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdio>
 #include <string>
+#include <vector>
 
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
@@ -87,10 +88,23 @@ struct DiagRow {
     bool        has_code_bias{false};
     bool        has_phase_bias{false};
     bool        has_ionospheric{false};
+    bool        has_stec_grid{false};
     bool        has_tropospheric{false};
     bool        has_phase_windup{false};
     bool        has_ant_phase{false};
     std::string discard_reason;
+
+    // SSR IOD of the orbit/clock generation and of the biases that were found
+    bool     has_orbit_ssr_iod{false};
+    uint16_t orbit_ssr_iod{};
+    bool     has_clock_ssr_iod{false};
+    uint16_t clock_ssr_iod{};
+    bool     has_code_bias_ssr_iod{false};
+    uint16_t code_bias_ssr_iod{};
+    bool     has_phase_bias_ssr_iod{false};
+    uint16_t phase_bias_ssr_iod{};
+    // why the signal was not available, `reason:detail;reason:detail` without spaces
+    std::string discard_detail;
 };
 
 class DiagFile {
@@ -185,6 +199,32 @@ struct SatDiagRow {
     bool has_solid_tides{false};
 
     std::string discard_reason;
+
+    // SSR IOD of the orbit and clock correction (has_orbit_ssr, has_clock_ssr)
+    uint16_t orbit_ssr_iod{};
+    uint16_t clock_ssr_iod{};
+
+    // Ephemeris IOD of the selected ephemeris
+    bool     has_eph_iod{false};
+    uint16_t eph_iod{};  // the IOD that is compared with the SSR orbit IOD (ORB_IOD)
+    uint16_t eph_iode{};
+    uint16_t eph_iodc{};
+    uint16_t eph_iod_nav{};
+    bool     eph_is_galileo{false};  // IODnav instead of IODE/IODC
+    // The ephemeris that is valid at the time and closest to ORB_IOD, also if it does not match
+    bool        has_eph_candidate{false};
+    uint16_t    eph_candidate_iod{};
+    int         eph_iod_offset{};  // ORB_IOD - candidate IOD, wrapped to the size of the IOD
+    std::string eph_valid_iods;    // IOD of all ephemeris that are valid at the time, `a/b/c`
+
+    // SSR IOD of the STEC polynomial and of the gridded (troposphere, STEC residual) message
+    bool     has_iono_ssr_iod{false};
+    uint16_t iono_ssr_iod{};
+    bool     has_grid_ssr_iod{false};
+    uint16_t grid_ssr_iod{};
+
+    // why the satellite was not available, without spaces
+    std::string discard_detail;
 };
 
 class SatDiagFile {
@@ -204,6 +244,80 @@ private:
     FILE*       mFile{nullptr};
     SatelliteId mSvId{};
     bool        mHeaderWritten{false};
+
+    void write_header() noexcept;
+};
+
+// Tropospheric delays of every combination of zenith delay source (the SSR delays and every
+// a-priori model) and mapping function, for comparison
+struct TropoDiagValue {
+    bool   valid{false};
+    double hydrostatic{};  // zenith delay / mapping function value
+    double wet{};
+};
+
+struct TropoDiagSlant {
+    bool   valid{false};
+    double value{};
+};
+
+struct TropoDiagGradient {
+    bool   valid{false};
+    double north{};  // G_N [m]
+    double east{};   // G_E [m]
+};
+
+struct TropoDiagRow {
+    int    prn{};
+    double elevation_deg{};
+    double azimuth_deg{};
+
+    // [source], same order as the names given to TropoDiagFile::open; source 0 is the SSR
+    // tropospheric delays scaled to the height of the station
+    std::vector<TropoDiagValue> zenith;
+    // [mapping function]
+    std::vector<TropoDiagValue> mapping;
+    // slant delay [source * mapping count + mapping function], hydrostatic + wet, meters
+    std::vector<TropoDiagSlant> slant;
+
+    // [gradient source], same order as the names given to TropoDiagFile::open
+    std::vector<TropoDiagGradient> gradient;
+    // m_g [gradient mapping]
+    std::vector<TropoDiagSlant> gradient_mapping;
+    // gradient term of the slant delay [source * gradient mapping count + gradient mapping], meters
+    std::vector<TropoDiagSlant> gradient_delay;
+
+    // The slant delay that is applied to the observations, including the gradient term
+    bool   has_applied{false};
+    double applied{};
+    // the gradient term of the applied slant delay (0 if there is none)
+    double applied_gradient{};
+};
+
+class TropoDiagFile {
+public:
+    TropoDiagFile() = default;
+    ~TropoDiagFile();
+
+    TropoDiagFile(TropoDiagFile const&)            = delete;
+    TropoDiagFile& operator=(TropoDiagFile const&) = delete;
+    TropoDiagFile(TropoDiagFile&&)                 = default;
+    TropoDiagFile& operator=(TropoDiagFile&&)      = default;
+
+    void open(std::string const& path, SatelliteId sv_id, std::vector<std::string> zenith_names,
+              std::vector<std::string> mapping_names,
+              std::vector<std::string> gradient_source_names,
+              std::vector<std::string> gradient_mapping_names) noexcept;
+    void write(ts::Tai const& time, TropoDiagRow const& row) noexcept;
+
+private:
+    FILE*                    mFile{nullptr};
+    SatelliteId              mSvId{};
+    std::vector<std::string> mZenithNames;
+    std::vector<std::string> mMappingNames;
+    std::vector<std::string> mGradientSourceNames;
+    std::vector<std::string> mGradientMappingNames;
+    bool                     mHeaderWritten{false};
 
     void write_header() noexcept;
 };

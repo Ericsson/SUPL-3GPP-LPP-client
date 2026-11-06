@@ -27,32 +27,25 @@ namespace tokoro {
 
 struct IonosphericCorrection {
     double grid_residual;
+    bool   grid_valid;
     double polynomial_residual;
-    double vtec_grid_residual;
-    double vtec_polynomial_residual;
     double quality;
     bool   quality_valid;
 };
 
 struct IonosphericPolynomial {
-    double  c00;
-    double  c01;
-    double  c10;
-    double  c11;
-    double  reference_point_latitude;
-    double  reference_point_longitude;
-    double  quality_indicator;
-    bool    quality_indicator_valid;
-    ts::Tai epoch_time;  // SSR STEC message epoch (assistance-data update time)
-};
-
-struct IonosphereGridPoint {
-    Float3 position;
-    double ionospheric;
-};
-
-struct IonosphereGrid {
-    std::unordered_map<GridIndex, IonosphereGridPoint> points;
+    double   c00;
+    double   c01;
+    double   c10;
+    double   c11;
+    double   reference_point_latitude;
+    double   reference_point_longitude;
+    double   quality_indicator;
+    bool     quality_indicator_valid;
+    uint16_t set_id;      // correction point set this polynomial belongs to
+    ts::Tai  epoch_time;  // SSR STEC message epoch (assistance-data update time)
+    uint16_t ssr_iod;     // SSR IOD of the STEC message
+    bool     ssr_iod_valid;
 };
 
 }  // namespace tokoro

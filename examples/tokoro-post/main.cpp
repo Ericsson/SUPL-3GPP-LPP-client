@@ -9,6 +9,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <queue>
+#include <random>
 #include <string>
 #include <vector>
 
@@ -20,11 +21,15 @@
 #include <format/lpp/uper_parser.hpp>
 #include <format/nav/d1.hpp>
 #include <format/nav/gal/inav.hpp>
+#include <format/nav/glo.hpp>
 #include <format/nav/gps/lnav.hpp>
 #include <format/rinex/nav_reader.hpp>
 #include <format/rtcm/1019.hpp>
+#include <format/rtcm/1020.hpp>
 #include <format/rtcm/1042.hpp>
+#include <format/rtcm/1044.hpp>
 #include <format/rtcm/1046.hpp>
+#include <format/rtcm/ephemeris.hpp>
 #include <format/rtcm/message.hpp>
 #include <format/rtcm/parser.hpp>
 #include <format/tbin/reader.hpp>
@@ -85,6 +90,7 @@ struct Config {
     bool                     no_gal                     = false;
     bool                     no_bds                     = false;
     bool                     no_qzs                     = false;
+    bool                     glo                        = false;
     bool                     antenna                    = false;  // enable ANTEX PCO/PCV correction
     bool                     iono_height_correction     = false;
     bool                     no_iod_consistency_check   = false;
@@ -105,14 +111,43 @@ struct Config {
     bool                     ocit                              = false;
     bool                     rtoc                              = false;
     bool                     ignore_bitmask                    = false;
-    bool                     fake_cps_set                      = false;
-    uint16_t                 fake_cps_id                       = 0;
-    double                   fake_cps_lat                      = 0;
-    double                   fake_cps_lon                      = 0;
-    long                     fake_cps_steps_lat                = 0;
-    long                     fake_cps_steps_lon                = 0;
-    double                   fake_cps_step_lat                 = 0;
-    double                   fake_cps_step_lon                 = 0;
+    bool                     iono_poly_only                    = false;
+    std::string              orbit_frame;
+    std::string              pos_frame;
+    double                   pos_epoch = 0.0;
+    double                   pos_vx = 0.0, pos_vy = 0.0, pos_vz = 0.0;
+    std::string              ssr_frame = "itrf2020";
+    std::vector<std::string> orbit_source_frames;
+    bool                     fake_cps_set       = false;
+    uint16_t                 fake_cps_id        = 0;
+    double                   fake_cps_lat       = 0;
+    double                   fake_cps_lon       = 0;
+    long                     fake_cps_steps_lat = 0;
+    long                     fake_cps_steps_lon = 0;
+    double                   fake_cps_step_lat  = 0;
+    double                   fake_cps_step_lon  = 0;
+
+    generator::tokoro::LockStart              lock_start = generator::tokoro::LockStart::Reset;
+    generator::tokoro::LockStart              lock_rise  = generator::tokoro::LockStart::Reset;
+    generator::tokoro::AmbiguityRandomization ambiguity_randomization =
+        generator::tokoro::AmbiguityRandomization::Off;
+    uint64_t ambiguity_seed     = 0;
+    bool     ambiguity_seed_set = false;
+
+    generator::tokoro::TroposphereModel tropospheric_model =
+        generator::tokoro::TroposphereModel::Mops;
+    generator::tokoro::MappingFunction tropospheric_mapping =
+        generator::tokoro::MappingFunction::Niell;
+    generator::tokoro::GradientSource  gradient_source = generator::tokoro::GradientSource::None;
+    generator::tokoro::GradientMapping gradient_mapping =
+        generator::tokoro::GradientMapping::ChenHerring;
+    bool                     gradient_constant_set = false;
+    double                   gradient_north        = 0.0;  // m
+    double                   gradient_east         = 0.0;  // m
+    bool                     diag_tropospheric_all = false;
+    std::string              gpt2_grid;
+    std::vector<std::string> vmf3_grids;
+    std::string              vmf3_orography;
 };
 
 static Config parse_args(int argc, char** argv) {
@@ -189,6 +224,8 @@ static Config parse_args(int argc, char** argv) {
             cfg.no_gps = true;
         else if (arg == "--no-gal")
             cfg.no_gal = true;
+        else if (arg == "--glo")
+            cfg.glo = true;
         else if (arg == "--no-bds")
             cfg.no_bds = true;
         else if (arg == "--no-qzs")
@@ -225,7 +262,80 @@ static Config parse_args(int argc, char** argv) {
             cfg.negative_phase_windup = true;
         else if (arg == "--no-phase-alignment")
             cfg.no_phase_alignment = true;
-        else if (arg == "--antenna-descriptor")
+        else if (arg == "--lock-start" || arg == "--lock-rise") {
+            auto value = next();
+            auto mode  = generator::tokoro::LockStart::Reset;
+            if (value == "max") {
+                mode = generator::tokoro::LockStart::Max;
+            } else if (value != "reset") {
+                fprintf(stderr, "%s must be 'reset' or 'max', got `%s`\n", arg.c_str(),
+                        value.c_str());
+                exit(1);
+            }
+            (arg == "--lock-start" ? cfg.lock_start : cfg.lock_rise) = mode;
+        } else if (arg == "--ambiguity-randomize") {
+            auto value = next();
+            if (value == "off") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Off;
+            } else if (value == "startup") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Startup;
+            } else if (value == "rise") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Rise;
+            } else if (value == "both") {
+                cfg.ambiguity_randomization = generator::tokoro::AmbiguityRandomization::Both;
+            } else {
+                fprintf(stderr,
+                        "--ambiguity-randomize must be 'off', 'startup', 'rise', or 'both', got "
+                        "`%s`\n",
+                        value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-model") {
+            auto value = next();
+            if (!generator::tokoro::parse_troposphere_model(value, cfg.tropospheric_model)) {
+                fprintf(stderr, "--tropo-model must be one of %s, got `%s`\n",
+                        generator::tokoro::troposphere_model_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-mapping") {
+            auto value = next();
+            if (!generator::tokoro::parse_mapping_function(value, cfg.tropospheric_mapping)) {
+                fprintf(stderr, "--tropo-mapping must be one of %s, got `%s`\n",
+                        generator::tokoro::mapping_function_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-gradient") {
+            auto value = next();
+            if (!generator::tokoro::parse_gradient_source(value, cfg.gradient_source)) {
+                fprintf(stderr, "--tropo-gradient must be one of %s, got `%s`\n",
+                        generator::tokoro::gradient_source_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-gradient-mapping") {
+            auto value = next();
+            if (!generator::tokoro::parse_gradient_mapping(value, cfg.gradient_mapping)) {
+                fprintf(stderr, "--tropo-gradient-mapping must be one of %s, got `%s`\n",
+                        generator::tokoro::gradient_mapping_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--tropo-gradient-north") {
+            cfg.gradient_north        = std::stod(next()) * 1e-3;
+            cfg.gradient_constant_set = true;
+        } else if (arg == "--tropo-gradient-east") {
+            cfg.gradient_east         = std::stod(next()) * 1e-3;
+            cfg.gradient_constant_set = true;
+        } else if (arg == "--diag-tropo-all") {
+            cfg.diag_tropospheric_all = true;
+        } else if (arg == "--gpt2-grid") {
+            cfg.gpt2_grid = next();
+        } else if (arg == "--vmf3-grid") {
+            cfg.vmf3_grids.push_back(next());
+        } else if (arg == "--vmf3-orography") {
+            cfg.vmf3_orography = next();
+        } else if (arg == "--ambiguity-seed") {
+            cfg.ambiguity_seed     = std::stoull(next());
+            cfg.ambiguity_seed_set = true;
+        } else if (arg == "--antenna-descriptor")
             cfg.antenna_descriptor = next();
         else if (arg == "--receiver-descriptor")
             cfg.receiver_descriptor = next();
@@ -250,6 +360,24 @@ static Config parse_args(int argc, char** argv) {
             cfg.rtoc = true;
         else if (arg == "--ignore-bitmask")
             cfg.ignore_bitmask = true;
+        else if (arg == "--iono-poly-only")
+            cfg.iono_poly_only = true;
+        else if (arg == "--pos-frame")
+            cfg.pos_frame = next();
+        else if (arg == "--pos-epoch")
+            cfg.pos_epoch = std::stod(next());
+        else if (arg == "--pos-velocity") {
+            auto value = next();
+            if (sscanf(value.c_str(), "%lf,%lf,%lf", &cfg.pos_vx, &cfg.pos_vy, &cfg.pos_vz) != 3) {
+                fprintf(stderr, "--pos-velocity must be vx,vy,vz\n");
+                exit(1);
+            }
+        } else if (arg == "--ssr-frame")
+            cfg.ssr_frame = next();
+        else if (arg == "--orbit-frame")
+            cfg.orbit_frame = next();
+        else if (arg == "--orbit-source-frame")
+            cfg.orbit_source_frames.push_back(next());
         else if (arg == "--cps-id") {
             cfg.fake_cps_id  = static_cast<uint16_t>(std::stoi(next()));
             cfg.fake_cps_set = true;
@@ -280,20 +408,58 @@ static Config parse_args(int argc, char** argv) {
         fprintf(stderr, "--time-step must be greater than zero\n");
         exit(1);
     }
+    {
+        auto needs_gpt2 = cfg.tropospheric_model == generator::tokoro::TroposphereModel::Gpt2 ||
+                          cfg.tropospheric_mapping == generator::tokoro::MappingFunction::Gpt2;
+        auto needs_vmf3 = cfg.tropospheric_model == generator::tokoro::TroposphereModel::Vmf3 ||
+                          cfg.tropospheric_mapping == generator::tokoro::MappingFunction::Vmf3;
+        if (needs_gpt2 && cfg.gpt2_grid.empty()) {
+            fprintf(stderr, "the tropospheric model or mapping function `gpt2` requires "
+                            "--gpt2-grid\n");
+            exit(1);
+        }
+        if (needs_vmf3 && (cfg.vmf3_grids.empty() || cfg.vmf3_orography.empty())) {
+            fprintf(stderr, "the tropospheric model or mapping function `vmf3` requires "
+                            "--vmf3-grid and --vmf3-orography\n");
+            exit(1);
+        }
+        if (cfg.gradient_source == generator::tokoro::GradientSource::Constant &&
+            !cfg.gradient_constant_set) {
+            fprintf(stderr, "--tropo-gradient constant requires --tropo-gradient-north and/or "
+                            "--tropo-gradient-east\n");
+            exit(1);
+        }
+        if (cfg.diag_tropospheric_all && cfg.diag_dir.empty()) {
+            fprintf(stderr, "--diag-tropo-all requires --diag-dir\n");
+            exit(1);
+        }
+    }
     if (cfg.ssr_path.empty() || cfg.output_path.empty()) {
         fprintf(stderr, "Usage: tokoro-post --ssr <tbin> --output <rtcm> --pos-x X --pos-y Y "
                         "--pos-z Z [--ubx <tbin>] [--rtcm <tbin>] [--nav <file>...] "
                         "[--elevation-mask <degrees>] [--msm-type 4|5|6|7] "
                         "[--reference-station-id <id>] [--physical-x/y/z <meter>] "
-                        "[--no-gps|--no-gal|--no-bds|--no-qzs] "
+                        "[--no-gps|--no-gal|--no-bds|--no-qzs] [--glo] "
                         "[--code-bias-optional] [--phase-bias-optional] [--tropo-optional] "
                         "[--iono-optional] [--use-tropospheric-model] "
                         "[--no-shapiro-correction] [--no-phase-windup-correction] "
                         "[--no-earth-solid-tides-correction] [--no-tropospheric-height-correction] "
                         "[--no-tropo-hydrostatic-delta] [--negative-phase-windup] "
-                        "[--no-phase-alignment] [--antenna-descriptor <string>] "
+                        "[--no-phase-alignment] [--lock-start reset|max] "
+                        "[--lock-rise reset|max] "
+                        "[--tropo-model mops|saastamoinen|saastamoinen-gpt|gpt2|vmf3] "
+                        "[--tropo-mapping niell|simple|gmf|gpt2|vmf3] [--diag-tropo-all] "
+                        "[--tropo-gradient none|ssr-grid|constant] "
+                        "[--tropo-gradient-mapping chen-herring|macmillan] "
+                        "[--tropo-gradient-north <mm>] [--tropo-gradient-east <mm>] "
+                        "[--gpt2-grid <file>] [--vmf3-grid <file>...] [--vmf3-orography <file>] "
+                        "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
+                        "[--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
-                        "[--ocit] [--rtoc] [--ignore-bitmask] "
+                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] [--pos-frame "
+                        "<frame>] [--pos-epoch <year>] "
+                        "[--pos-velocity vx,vy,vz] [--ssr-frame <frame>] [--orbit-frame "
+                        "<frame>] [--orbit-source-frame <gnss>=<frame>] "
                         "[--gen assistance|time-step|time-step-aligned|time-step-last] "
                         "[--time-step <seconds>]\n");
         exit(1);
@@ -321,112 +487,21 @@ static int64_t tai_to_us(ts::Tai const& tai) {
 
 static void rtcm_to_ephemeris(generator::tokoro::Generator& generator,
                               format::rtcm::Rtcm1019 const* rtcm) {
-    ephemeris::GpsEphemeris ephemeris{};
-    ephemeris.prn               = rtcm->prn;
-    ephemeris.week_number       = rtcm->week;
-    ephemeris.ca_or_p_on_l2     = rtcm->code_on_l2;
-    ephemeris.ura_index         = rtcm->sv_accuracy;
-    ephemeris.sv_health         = rtcm->sv_health;
-    ephemeris.lpp_iod           = rtcm->iodc;
-    ephemeris.iodc              = rtcm->iodc;
-    ephemeris.iode              = rtcm->iode;
-    ephemeris.aodo              = 0;
-    ephemeris.toc               = rtcm->t_oc;
-    ephemeris.toe               = rtcm->t_oe;
-    ephemeris.tgd               = rtcm->t_gd;
-    ephemeris.af2               = rtcm->a_f2;
-    ephemeris.af1               = rtcm->a_f1;
-    ephemeris.af0               = rtcm->a_f0;
-    ephemeris.crc               = rtcm->c_rc;
-    ephemeris.crs               = rtcm->c_rs;
-    ephemeris.cuc               = rtcm->c_uc;
-    ephemeris.cus               = rtcm->c_us;
-    ephemeris.cic               = rtcm->c_ic;
-    ephemeris.cis               = rtcm->c_is;
-    ephemeris.e                 = rtcm->e;
-    ephemeris.m0                = rtcm->m_0;
-    ephemeris.delta_n           = rtcm->delta_n;
-    ephemeris.a                 = rtcm->sqrt_a * rtcm->sqrt_a;
-    ephemeris.i0                = rtcm->i_0;
-    ephemeris.omega0            = rtcm->omega_0;
-    ephemeris.omega             = rtcm->omega;
-    ephemeris.omega_dot         = rtcm->omegadot;
-    ephemeris.idot              = rtcm->idot;
-    ephemeris.fit_interval_flag = rtcm->fit;
-    ephemeris.l2_p_data_flag    = rtcm->l2_p_data_flag;
-    generator.process_ephemeris(ephemeris);
+    generator.process_ephemeris(format::rtcm::to_ephemeris(*rtcm));
 }
 
 static void rtcm_to_ephemeris(generator::tokoro::Generator& generator,
                               format::rtcm::Rtcm1042 const* rtcm) {
-    ephemeris::BdsEphemeris ephemeris{};
-    ephemeris.prn         = rtcm->prn;
-    ephemeris.week_number = rtcm->week_number;
-    ephemeris.sv_health   = rtcm->sv_health;
-    ephemeris.lpp_iod     = static_cast<uint16_t>(static_cast<uint32_t>(rtcm->toe) >> 9);
-    ephemeris.iodc        = (static_cast<uint32_t>(rtcm->toc) / 720) % 240;
-    ephemeris.iode        = (static_cast<uint32_t>(rtcm->toe) / 720) % 240;
-    ephemeris.aode        = rtcm->aode;
-    ephemeris.aodc        = rtcm->aodc;
-    ephemeris.toc_time =
-        ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toc), 0.0);
-    ephemeris.toe_time =
-        ts::Bdt::from_week_tow(rtcm->week_number, static_cast<int64_t>(rtcm->toe), 0.0);
-    ephemeris.toc       = rtcm->toc;
-    ephemeris.toe       = rtcm->toe;
-    ephemeris.af2       = rtcm->af2;
-    ephemeris.af1       = rtcm->af1;
-    ephemeris.af0       = rtcm->af0;
-    ephemeris.crc       = rtcm->crc;
-    ephemeris.crs       = rtcm->crs;
-    ephemeris.cuc       = rtcm->cuc;
-    ephemeris.cus       = rtcm->cus;
-    ephemeris.cic       = rtcm->cic;
-    ephemeris.cis       = rtcm->cis;
-    ephemeris.e         = rtcm->e;
-    ephemeris.m0        = rtcm->m0;
-    ephemeris.delta_n   = rtcm->delta_n;
-    ephemeris.a         = rtcm->sqrt_a * rtcm->sqrt_a;
-    ephemeris.i0        = rtcm->i0;
-    ephemeris.omega0    = rtcm->omega0;
-    ephemeris.omega     = rtcm->omega;
-    ephemeris.omega_dot = rtcm->omega_dot;
-    ephemeris.idot      = rtcm->idot;
-    generator.process_ephemeris(ephemeris);
+    generator.process_ephemeris(format::rtcm::to_ephemeris(*rtcm));
 }
 
 static void rtcm_to_ephemeris(generator::tokoro::Generator& generator,
                               format::rtcm::Rtcm1046 const* rtcm) {
-    ephemeris::GalEphemeris ephemeris{};
-    ephemeris.prn         = rtcm->prn;
-    ephemeris.week_number = rtcm->week_number;
-    ephemeris.lpp_iod     = rtcm->iod_nav;
-    ephemeris.iod_nav     = rtcm->iod_nav;
-    ephemeris.toc         = rtcm->toc;
-    ephemeris.toe         = rtcm->toe;
-    ephemeris.af2         = rtcm->af2;
-    ephemeris.af1         = rtcm->af1;
-    ephemeris.af0         = rtcm->af0;
-    ephemeris.crc         = rtcm->crc;
-    ephemeris.crs         = rtcm->crs;
-    ephemeris.cuc         = rtcm->cuc;
-    ephemeris.cus         = rtcm->cus;
-    ephemeris.cic         = rtcm->cic;
-    ephemeris.cis         = rtcm->cis;
-    ephemeris.e           = rtcm->e;
-    ephemeris.m0          = rtcm->m0;
-    ephemeris.delta_n     = rtcm->delta_n;
-    ephemeris.a           = rtcm->sqrt_a * rtcm->sqrt_a;
-    ephemeris.i0          = rtcm->i0;
-    ephemeris.omega0      = rtcm->omega0;
-    ephemeris.omega       = rtcm->omega;
-    ephemeris.omega_dot   = rtcm->omega_dot;
-    ephemeris.idot        = rtcm->idot;
-    generator.process_ephemeris(ephemeris);
+    generator.process_ephemeris(format::rtcm::to_ephemeris(*rtcm));
 }
 
 static void process_rtcm_ephemeris(generator::tokoro::Generator& generator,
-                                   format::rtcm::Message const*  message) {
+                                   format::rtcm::Message const* message, ts::Tai const& time) {
     if (!message) return;
     if (auto rtcm1019 = dynamic_cast<format::rtcm::Rtcm1019 const*>(message)) {
         rtcm_to_ephemeris(generator, rtcm1019);
@@ -434,6 +509,10 @@ static void process_rtcm_ephemeris(generator::tokoro::Generator& generator,
         rtcm_to_ephemeris(generator, rtcm1042);
     } else if (auto rtcm1046 = dynamic_cast<format::rtcm::Rtcm1046 const*>(message)) {
         rtcm_to_ephemeris(generator, rtcm1046);
+    } else if (auto rtcm1020 = dynamic_cast<format::rtcm::Rtcm1020 const*>(message)) {
+        generator.process_ephemeris(format::rtcm::to_ephemeris(*rtcm1020, time));
+    } else if (auto rtcm1044 = dynamic_cast<format::rtcm::Rtcm1044 const*>(message)) {
+        generator.process_ephemeris(format::rtcm::to_ephemeris(*rtcm1044));
     }
 }
 
@@ -441,7 +520,9 @@ static void process_ubx_ephemeris(generator::tokoro::Generator&               ge
                                   format::nav::gps::lnav::EphemerisCollector& gps_collector,
                                   format::nav::gal::InavEphemerisCollector&   gal_collector,
                                   format::nav::D1Collector&                   bds_collector,
-                                  format::ubx::RxmSfrbx*                      sfrbx) {
+                                  format::nav::gps::lnav::EphemerisCollector& qzs_collector,
+                                  format::nav::GloEphemerisCollector&         glo_collector,
+                                  format::ubx::RxmSfrbx* sfrbx, ts::Tai const& time) {
     if (!sfrbx) return;
     if (sfrbx->gnss_id() == 0) {
         // GPS
@@ -469,6 +550,26 @@ static void process_ubx_ephemeris(generator::tokoro::Generator&               ge
         if (!format::nav::D1Subframe::decode(words, sfrbx->sv_id(), subframe)) return;
         ephemeris::BdsEphemeris ephemeris{};
         if (!bds_collector.process(sfrbx->sv_id(), subframe, ephemeris)) return;
+        generator.process_ephemeris(ephemeris);
+    } else if (sfrbx->gnss_id() == 5) {
+        // QZSS L1 C/A LNAV, the GPS LNAV layout
+        if (sfrbx->sig_id() != 0) return;
+        auto words = format::nav::Words::from_sfrbx_l1ca(sfrbx->words());
+        format::nav::gps::lnav::Subframe subframe{};
+        if (!format::nav::gps::lnav::Subframe::decode(words, subframe)) return;
+        auto                    prn = static_cast<uint8_t>(192 + sfrbx->sv_id());
+        ephemeris::GpsEphemeris gps{};
+        if (!qzs_collector.process(prn, subframe, gps)) return;
+        gps.prn = prn;
+        generator.process_ephemeris(ephemeris::QzsEphemeris::from_gps_layout(gps));
+    } else if (sfrbx->gnss_id() == 6) {
+        // GLONASS L1OF/L2OF strings
+        if (sfrbx->words().size() < 4) return;
+        if (sfrbx->sv_id() < 1 || sfrbx->sv_id() > 24) return;
+        auto string  = format::nav::GloString::from_sfrbx(sfrbx->words().data());
+        auto channel = static_cast<int8_t>(static_cast<int>(sfrbx->freq_id()) - 7);
+        ephemeris::GloEphemeris ephemeris{};
+        if (!glo_collector.process(sfrbx->sv_id(), channel, string, time, ephemeris)) return;
         generator.process_ephemeris(ephemeris);
     }
 }
@@ -505,6 +606,26 @@ int main(int argc, char** argv) {
     generator->set_ocit(cfg.ocit);
     generator->set_rtoc(cfg.rtoc);
     generator->set_ignore_bitmask(cfg.ignore_bitmask);
+    generator->set_iono_polynomial_only(cfg.iono_poly_only);
+    if (!cfg.orbit_frame.empty()) {
+        if (!generator->set_orbit_frame(cfg.orbit_frame.c_str())) {
+            fprintf(stderr, "Invalid --orbit-frame %s\n", cfg.orbit_frame.c_str());
+            return 1;
+        }
+        for (auto const& value : cfg.orbit_source_frames) {
+            auto              separator = value.find('=');
+            SatelliteId::Gnss gnss{};
+            if (separator == std::string::npos ||
+                !generator::tokoro::gnss_from_name(value.substr(0, separator).c_str(), gnss) ||
+                !generator->set_orbit_source_frame(gnss, value.substr(separator + 1).c_str())) {
+                fprintf(stderr, "Invalid --orbit-source-frame %s\n", value.c_str());
+                return 1;
+            }
+        }
+    } else if (!cfg.orbit_source_frames.empty()) {
+        fprintf(stderr, "--orbit-source-frame requires --orbit-frame\n");
+        return 1;
+    }
     if (cfg.fake_cps_set) {
         generator->set_fake_correction_point_set(
             cfg.fake_cps_id, cfg.fake_cps_lat, cfg.fake_cps_lon, cfg.fake_cps_steps_lat,
@@ -520,10 +641,30 @@ int main(int argc, char** argv) {
             generator->process_ephemeris(eph);
         for (auto& eph : nav.bds)
             generator->process_ephemeris(eph);
+        for (auto& eph : nav.glo)
+            generator->process_ephemeris(eph);
+        for (auto& eph : nav.qzs)
+            generator->process_ephemeris(eph);
     }
 
     // Load antex
 #ifdef INCLUDE_FORMAT_ANTEX
+    if (!cfg.gpt2_grid.empty() && !generator->troposphere_data().load_gpt2_grid(cfg.gpt2_grid)) {
+        fprintf(stderr, "Cannot load GPT2 grid file %s\n", cfg.gpt2_grid.c_str());
+        return 1;
+    }
+    for (auto const& file : cfg.vmf3_grids) {
+        if (!generator->troposphere_data().load_vmf3_grid(file)) {
+            fprintf(stderr, "Cannot load VMF3 grid file %s\n", file.c_str());
+            return 1;
+        }
+    }
+    if (!cfg.vmf3_orography.empty() &&
+        !generator->troposphere_data().load_vmf3_orography(cfg.vmf3_orography)) {
+        fprintf(stderr, "Cannot load VMF3 orography file %s\n", cfg.vmf3_orography.c_str());
+        return 1;
+    }
+
     if (!cfg.antex_file.empty()) {
         auto antex = format::antex::Antex::from_file(cfg.antex_file);
         if (antex) generator->set_antex(std::move(antex));
@@ -537,7 +678,7 @@ int main(int argc, char** argv) {
     rs_cfg.generate_gps         = !cfg.no_gps;
     rs_cfg.generate_gal         = !cfg.no_gal;
     rs_cfg.generate_bds         = !cfg.no_bds;
-    rs_cfg.generate_glo         = false;
+    rs_cfg.generate_glo         = cfg.glo;
     rs_cfg.generate_qzs         = !cfg.no_qzs;
     auto ref_station = std::make_shared<generator::tokoro::ReferenceStation>(*generator, rs_cfg);
     ref_station->set_msm_type(cfg.msm_type);
@@ -552,6 +693,19 @@ int main(int argc, char** argv) {
     ref_station->set_use_ionospheric_height_correction(cfg.iono_height_correction);
     ref_station->set_elevation_mask(cfg.elevation_mask);
     ref_station->set_negative_phase_windup(cfg.negative_phase_windup);
+    ref_station->set_lock_start(cfg.lock_start);
+    ref_station->set_lock_rise(cfg.lock_rise);
+    ref_station->set_ambiguity_randomization(cfg.ambiguity_randomization);
+    {
+        auto seed = cfg.ambiguity_seed;
+        if (!cfg.ambiguity_seed_set &&
+            cfg.ambiguity_randomization != generator::tokoro::AmbiguityRandomization::Off) {
+            std::random_device device;
+            seed = (static_cast<uint64_t>(device()) << 32) ^ device();
+            INFOF("ambiguity seed: %llu", static_cast<unsigned long long>(seed));
+        }
+        ref_station->set_ambiguity_seed(seed);
+    }
     ref_station->set_antenna_descriptor(cfg.antenna_descriptor);
     ref_station->set_receiver_descriptor(cfg.receiver_descriptor);
     ref_station->set_require_code_bias(!cfg.code_bias_optional);
@@ -560,6 +714,14 @@ int main(int argc, char** argv) {
     ref_station->set_require_iono(!cfg.iono_optional);
     ref_station->set_use_tropospheric_model(cfg.use_tropospheric_model);
     ref_station->set_generate_residuals(cfg.generate_residuals);
+    if (!cfg.pos_frame.empty() &&
+        !ref_station->set_ground_position_frame(cfg.pos_frame.c_str(), cfg.pos_epoch,
+                                                {cfg.pos_vx, cfg.pos_vy, cfg.pos_vz},
+                                                cfg.ssr_frame.c_str())) {
+        fprintf(stderr, "Invalid --pos-frame %s or --ssr-frame %s\n", cfg.pos_frame.c_str(),
+                cfg.ssr_frame.c_str());
+        return 1;
+    }
     if (cfg.physical_pos_set) {
         ref_station->set_physical_ground_position(
             {cfg.physical_pos_x, cfg.physical_pos_y, cfg.physical_pos_z});
@@ -567,7 +729,16 @@ int main(int argc, char** argv) {
 #ifdef INCLUDE_FORMAT_RINEX
     ref_station->set_generate_rinex(cfg.generate_rinex);
 #endif
-    if (!cfg.diag_dir.empty()) ref_station->set_diag_output(cfg.diag_dir);
+    ref_station->set_tropospheric_model(cfg.tropospheric_model);
+    ref_station->set_tropospheric_mapping(cfg.tropospheric_mapping);
+    ref_station->set_tropospheric_gradient(cfg.gradient_source, cfg.gradient_mapping);
+    if (cfg.gradient_constant_set) {
+        ref_station->set_tropospheric_gradient_constant(cfg.gradient_north, cfg.gradient_east);
+    }
+    if (!cfg.diag_dir.empty()) {
+        ref_station->set_diag_output(cfg.diag_dir);
+        ref_station->set_diag_tropospheric_all(cfg.diag_tropospheric_all);
+    }
 
     // Open output
     FILE* out_file = fopen(cfg.output_path.c_str(), "wb");
@@ -583,6 +754,8 @@ int main(int argc, char** argv) {
     format::nav::gps::lnav::EphemerisCollector gps_collector;
     format::nav::gal::InavEphemerisCollector   gal_collector;
     format::nav::D1Collector                   bds_collector;
+    format::nav::gps::lnav::EphemerisCollector qzs_collector;
+    format::nav::GloEphemerisCollector         glo_collector;
 
     // Merge heap
     std::priority_queue<MergeEntry, std::vector<MergeEntry>, std::greater<MergeEntry>> heap;
@@ -686,7 +859,8 @@ int main(int argc, char** argv) {
                 auto sfrbx = dynamic_cast<format::ubx::RxmSfrbx*>(msg.get());
                 if (sfrbx) {
                     process_ubx_ephemeris(*generator, gps_collector, gal_collector, bds_collector,
-                                          sfrbx);
+                                          qzs_collector, glo_collector, sfrbx,
+                                          unix_us_to_tai(top.timestamp_us));
                 }
             }
             if (has_ubx && ubx_reader.next(ubx_msg))
@@ -695,7 +869,7 @@ int main(int argc, char** argv) {
             // RTCM message — feed to parser for ephemeris extraction
             rtcm_parser.append(rtcm_msg.data.data(), rtcm_msg.data.size());
             while (auto msg = rtcm_parser.try_parse()) {
-                process_rtcm_ephemeris(*generator, msg.get());
+                process_rtcm_ephemeris(*generator, msg.get(), unix_us_to_tai(top.timestamp_us));
             }
             if (has_rtcm && rtcm_reader.next(rtcm_msg))
                 heap.push({rtcm_msg.timestamp_us + rtcm_shift_us, 2});

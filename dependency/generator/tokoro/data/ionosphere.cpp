@@ -42,12 +42,11 @@ LOGLET_MODULE3(tokoro, data, ionosphere);
 namespace generator {
 namespace tokoro {
 
-bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
-                                 IonosphericCorrection& correction) const NOEXCEPT {
+bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh, IonosphericCorrection& correction,
+                                 DataStatus* data_status) const NOEXCEPT {
     FUNCTION_SCOPE();
 
     auto has_polynomial   = false;
-    auto has_gridded      = false;
     auto polynomial_stale = false;
 
     correction = {};
@@ -56,12 +55,23 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
     if (it != mIonosphericPolynomial.end()) {
         auto& polynomial = it->second;
 
-        if (max_iono_age > 0.0) {
+        // A polynomial is only meaningful together with the correction point set it was
+        // received for; after a set change, polynomials from the old set must not combine
+        // with the new set's grid (or be evaluated around the new reference point).
+        if (correction_point_set && polynomial.set_id != correction_point_set->set_id) {
+            VERBOSEF("ionospheric polynomial for %s belongs to set %u, current set is %u",
+                     sv_id.name(), polynomial.set_id, correction_point_set->set_id);
+            polynomial_stale = true;
+            if (data_status) data_status->fail("polynomial_other_set");
+        }
+
+        if (!polynomial_stale && max_iono_age > 0.0) {
             auto age = mLatestCorrectionTime - polynomial.epoch_time;
             if (age > max_iono_age) {
                 WARNF("ionospheric polynomial for %s is too old (%.1fs > %.1fs limit) - dropping",
                       sv_id.name(), age, max_iono_age);
                 polynomial_stale = true;
+                if (data_status) data_status->stale("polynomial_stale", age, max_iono_age);
             }
         }
 
@@ -103,42 +113,47 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh,
         }  // !polynomial_stale
     }
 
-    if (polynomial_stale) {
-        // The polynomial is the dominant STEC term; without a fresh one the grid
-        // residual alone is not a valid correction, so treat the whole ionospheric
-        // correction as unavailable (the satellite is withheld when iono is required).
+    if (!has_polynomial) {
+        // The polynomial is the dominant STEC term; without a fresh one (stale or never
+        // received) the grid residual alone is not a valid correction, so treat the whole
+        // ionospheric correction as unavailable (the satellite is withheld when iono is
+        // required).
+        if (!polynomial_stale) {
+            WARNF("ionospheric correction not available for %s: no STEC polynomial (grid "
+                  "residual alone is not a complete correction)",
+                  sv_id.name());
+            if (data_status) data_status->fail("no_polynomial");
+        }
         return false;
     }
 
-    auto grid_it = mGrid.find(sv_id.gnss());
+    char const* grid_reason = "no_grid";
+    auto        grid_it     = mGrid.find(sv_id.gnss());
     if (grid_it != mGrid.end()) {
-        bool grid_stale = false;
-        if (max_iono_age > 0.0) {
-            auto age = mLatestCorrectionTime - grid_it->second.epoch_time;
-            if (age > max_iono_age) {
-                WARNF("ionospheric grid for %s is too old (%.1fs > %.1fs limit) - dropping",
-                      sv_id.name(), age, max_iono_age);
-                grid_stale = true;
-            }
+        auto status = grid_it->second.ionospheric(sv_id, llh, mLatestCorrectionTime, max_iono_age,
+                                                  correction.grid_residual);
+        switch (status) {
+        case GridData::GridStatus::Success: correction.grid_valid = true; break;
+        case GridData::GridStatus::PositionOutsideGrid: grid_reason = "grid_outside"; break;
+        case GridData::GridStatus::MissingSatelliteData: grid_reason = "grid_missing_sat"; break;
+        case GridData::GridStatus::StaleData: grid_reason = "grid_stale"; break;
         }
-        if (!grid_stale) {
-            auto status = grid_it->second.ionospheric(sv_id, llh, correction.grid_residual);
-            if (status == GridData::GridStatus::Success) {
-                has_gridded = true;
-            } else if (status == GridData::GridStatus::PositionOutsideGrid) {
-                WARNF("ionospheric correction not available for %s: position outside grid",
-                      sv_id.name());
-            } else if (status == GridData::GridStatus::MissingSatelliteData) {
-                WARNF("ionospheric correction not available for %s: satellite data missing from "
-                      "grid points",
-                      sv_id.name());
-            }
-        }
-    } else if (!has_polynomial) {
-        WARNF("ionospheric correction not available: no grid for GNSS (missing assistance data)");
     }
 
-    return has_polynomial || has_gridded;
+    if (!correction.grid_valid) {
+        correction.grid_residual = 0.0;
+        if (iono_polynomial_only) {
+            VERBOSEF("ionospheric grid residual not available for %s (%s): polynomial only",
+                     sv_id.name(), grid_reason);
+            return true;
+        }
+        WARNF("ionospheric correction not available for %s: no grid residual (%s)", sv_id.name(),
+              grid_reason);
+        if (data_status) data_status->fail(grid_reason);
+        return false;
+    }
+
+    return true;
 }
 
 }  // namespace tokoro

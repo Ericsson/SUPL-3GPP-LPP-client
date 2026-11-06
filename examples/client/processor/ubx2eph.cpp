@@ -84,6 +84,44 @@ void Ubx2Eph::handle_bds(streamline::System& system, format::ubx::RxmSfrbx* sfrb
     }
 }
 
+void Ubx2Eph::handle_qzs(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    if (!mConfig.qzss) return;
+    if (sfrbx->sig_id() != 0) {
+        VERBOSEF("unsupported QZSS signal id %d", sfrbx->sig_id());
+        return;
+    }
+
+    // QZSS L1 C/A LNAV has the GPS LNAV layout
+    auto                             words = format::nav::Words::from_sfrbx_l1ca(sfrbx->words());
+    format::nav::gps::lnav::Subframe subframe{};
+    if (!format::nav::gps::lnav::Subframe::decode(words, subframe)) {
+        WARNF("failed to decode QZSS LNAV subframe");
+        return;
+    }
+
+    auto                    prn = static_cast<uint8_t>(192 + sfrbx->sv_id());
+    ephemeris::GpsEphemeris gps{};
+    if (!mQzsCollector.process(prn, subframe, gps)) return;
+    gps.prn = prn;
+    system.push(ephemeris::QzsEphemeris::from_gps_layout(gps), mTag);
+}
+
+void Ubx2Eph::handle_glo(streamline::System& system, format::ubx::RxmSfrbx* sfrbx) NOEXCEPT {
+    VSCOPE_FUNCTION();
+    if (!mConfig.glonass) return;
+    if (sfrbx->words().size() < 4) return;
+    // the slot is unknown (255) until the receiver has decoded it
+    if (sfrbx->sv_id() < 1 || sfrbx->sv_id() > 24) return;
+
+    auto string  = format::nav::GloString::from_sfrbx(sfrbx->words().data());
+    auto channel = static_cast<int8_t>(static_cast<int>(sfrbx->freq_id()) - 7);
+
+    ephemeris::GloEphemeris ephemeris{};
+    if (!mGloCollector.process(sfrbx->sv_id(), channel, string, ts::Tai::now(), ephemeris)) return;
+    system.push(std::move(ephemeris), mTag);
+}
+
 void Ubx2Eph::inspect(streamline::System& system, DataType const& message, uint64_t) NOEXCEPT {
     VSCOPE_FUNCTION();
     auto ptr = message.get();
@@ -98,5 +136,9 @@ void Ubx2Eph::inspect(streamline::System& system, DataType const& message, uint6
         handle_gal(system, sfrbx);
     } else if (sfrbx->gnss_id() == 3) {
         handle_bds(system, sfrbx);
+    } else if (sfrbx->gnss_id() == 5) {
+        handle_qzs(system, sfrbx);
+    } else if (sfrbx->gnss_id() == 6) {
+        handle_glo(system, sfrbx);
     }
 }
