@@ -40,6 +40,8 @@ namespace generator {
 namespace tokoro {
 
 long CorrectionPointSet::enabled_point_count() const NOEXCEPT {
+    if (layout == Layout::List) return static_cast<long>(list_points.size());
+
     long count = 0;
     auto total = (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
     for (long i = 0; i < total && i < 64; i++) {
@@ -50,6 +52,19 @@ long CorrectionPointSet::enabled_point_count() const NOEXCEPT {
 
 bool CorrectionPointSet::array_to_index(long                 array_index,
                                         CorrectionPointInfo* result) const NOEXCEPT {
+    if (layout == Layout::List) {
+        if (array_index < 0 || array_index >= static_cast<long>(list_points.size())) return false;
+        if (result) {
+            result->array_index     = array_index;
+            result->absolute_index  = array_index;
+            result->is_valid        = true;
+            result->latitude_index  = 0;
+            result->longitude_index = array_index;
+            result->position        = list_points[static_cast<size_t>(array_index)];
+        }
+        return true;
+    }
+
     long array_count    = 0;
     long absolute_index = 0;
     for (long y = 0; y <= number_of_steps_latitude; y++) {

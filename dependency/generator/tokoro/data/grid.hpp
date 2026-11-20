@@ -55,6 +55,10 @@ struct GridOptions {
     // Corners without data (masked, or without a value for the satellite) count as a zero residual
     // when the interpolation would otherwise fail; at least one corner must have data
     bool missing_as_zero{false};
+
+    GridExtrapolation extrapolation{GridExtrapolation::None};
+    // Extrapolation: the furthest distance [m] from the nearest point, 0 for no limit
+    double extrapolation_distance{0.0};
 };
 
 struct TroposphericCorrection;
@@ -87,6 +91,17 @@ struct GridData {
 
     // True if the grid was built from a correction point set with the same id and layout
     NODISCARD bool matches(CorrectionPointSet const& set) const NOEXCEPT {
+        if (is_list != (set.layout == CorrectionPointSet::Layout::List)) return false;
+        if (is_list) {
+            if (correction_point_set_id != set.set_id) return false;
+            if (grid_points.size() != set.list_points.size()) return false;
+            for (size_t i = 0; i < grid_points.size(); i++) {
+                if (grid_points[i].position.x != set.list_points[i].x ||
+                    grid_points[i].position.y != set.list_points[i].y)
+                    return false;
+            }
+            return true;
+        }
         return correction_point_set_id == set.set_id &&
                reference_latitude == set.reference_point_latitude &&
                reference_longitude == set.reference_point_longitude &&
@@ -96,6 +111,7 @@ struct GridData {
     }
 
     void init(CorrectionPointSet const& correction_point_set) NOEXCEPT {
+        is_list                   = correction_point_set.layout == CorrectionPointSet::Layout::List;
         correction_point_set_id   = correction_point_set.set_id;
         bitmask                   = correction_point_set.bitmask;
         reference_latitude        = correction_point_set.reference_point_latitude;
@@ -104,7 +120,9 @@ struct GridData {
         delta_longitude           = correction_point_set.step_of_longitude;
         number_of_steps_latitude  = correction_point_set.number_of_steps_latitude;
         number_of_steps_longitude = correction_point_set.number_of_steps_longitude;
-        auto grid_point_count = (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
+        auto grid_point_count =
+            is_list ? static_cast<long>(correction_point_set.list_points.size()) :
+                      (number_of_steps_latitude + 1) * (number_of_steps_longitude + 1);
         // Start from empty storage: resizing in place would keep the old set's points (and
         // their residuals/epochs) wherever the old and new grids overlap.
         grid_points.clear();
@@ -136,6 +154,7 @@ struct GridData {
 
     void print_grid();
 
+    bool                   is_list;  // list of points, otherwise a regular grid
     uint16_t               correction_point_set_id;
     double                 reference_latitude;   // north-west corner [deg]
     double                 reference_longitude;  // north-west corner [deg]

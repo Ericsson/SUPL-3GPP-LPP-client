@@ -115,7 +115,10 @@ struct Config {
 
     generator::tokoro::GridInterpolation grid_interpolation =
         generator::tokoro::GridInterpolation::FourPoint;
-    bool grid_missing_as_zero = false;
+    bool                                 grid_missing_as_zero = false;
+    generator::tokoro::GridExtrapolation grid_extrapolation =
+        generator::tokoro::GridExtrapolation::None;
+    double grid_extrapolation_distance = 0.0;
 
     std::string              orbit_frame;
     std::string              pos_frame;
@@ -376,6 +379,15 @@ static Config parse_args(int argc, char** argv) {
             }
         } else if (arg == "--grid-missing-as-zero")
             cfg.grid_missing_as_zero = true;
+        else if (arg == "--grid-extrapolation") {
+            auto value = next();
+            if (!generator::tokoro::parse_grid_extrapolation(value, cfg.grid_extrapolation)) {
+                fprintf(stderr, "--grid-extrapolation must be one of %s, got `%s`\n",
+                        generator::tokoro::grid_extrapolation_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--grid-extrapolation-distance")
+            cfg.grid_extrapolation_distance = std::stod(next());
         else if (arg == "--pos-frame")
             cfg.pos_frame = next();
         else if (arg == "--pos-epoch")
@@ -472,7 +484,8 @@ static Config parse_args(int argc, char** argv) {
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
                         "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] "
                         "[--grid-interpolation four-point|three-point|nearest] "
-                        "[--grid-missing-as-zero] [--pos-frame "
+                        "[--grid-missing-as-zero] [--grid-extrapolation none|nearest] "
+                        "[--grid-extrapolation-distance <m>] [--pos-frame "
                         "<frame>] [--pos-epoch <year>] "
                         "[--pos-velocity vx,vy,vz] [--ssr-frame <frame>] [--orbit-frame "
                         "<frame>] [--orbit-source-frame <gnss>=<frame>] "
@@ -625,6 +638,7 @@ int main(int argc, char** argv) {
     generator->set_iono_polynomial_only(cfg.iono_poly_only);
     generator->set_grid_interpolation(cfg.grid_interpolation);
     generator->set_grid_missing_as_zero(cfg.grid_missing_as_zero);
+    generator->set_grid_extrapolation(cfg.grid_extrapolation, cfg.grid_extrapolation_distance);
     if (!cfg.orbit_frame.empty()) {
         if (!generator->set_orbit_frame(cfg.orbit_frame.c_str())) {
             fprintf(stderr, "Invalid --orbit-frame %s\n", cfg.orbit_frame.c_str());

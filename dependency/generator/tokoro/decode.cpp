@@ -35,6 +35,14 @@ double step_of_longitude_r16(long value) {
     return static_cast<double>(value) * STEP_OF_LONGITUDE_RESOLUTION;
 }
 
+double delta_latitude_r16(long value) {
+    return static_cast<double>(value) * RELATIVE_LOCATION_RESOLUTION;
+}
+
+double delta_longitude_r16(long value) {
+    return static_cast<double>(value) * RELATIVE_LOCATION_RESOLUTION;
+}
+
 long number_of_steps_latitude_r16(long value) {
     return value;
 }
