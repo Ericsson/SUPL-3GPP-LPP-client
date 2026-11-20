@@ -84,7 +84,8 @@ Investigated, not an issue:
 
 ## Fixed (round 7)
 
-- [x] Option to transform the broadcast orbits of all GNSS to a common frame before the SSR orbit correction: `--tkr-orbit-frame <frame>` / `--orbit-frame` (default off), with per-GNSS overrides `--tkr-orbit-source-frame <gnss>=<frame>` / `--orbit-source-frame`. Defaults: GPS WGS 84 by GPS week, GLONASS PZ-90.11; Galileo/BeiDou/QZSS only when a source frame is given. New PZ-90.11 <-> ITRF2008 edge (epoch 2010.0, no rates; values and rotation sign convention to be checked against the PZ-90.11 reference document). `frame_from_gps_week` now returns WGS 84 (G2296) from week 2296.
+- [x] Option to transform the broadcast orbits of all GNSS to a common frame before the SSR orbit correction: `--tkr-orbit-frame <frame>` / `--orbit-frame` (default off), with per-GNSS overrides `--tkr-orbit-source-frame <gnss>=<frame>` / `--orbit-source-frame`. Defaults: GPS WGS 84 by GPS week, GLONASS PZ-90.11; Galileo/BeiDou/QZSS only when a source frame is given. New PZ-90.11 <-> ITRF2008 edge (epoch 2010.0, no rates; values from EPSG:7960 (matches ICG-11 WG-D (2016) slide 11); EPSG gives them as coordinate frame rotations, so the rotations are negated for the position vector convention of the library; Navipedia's translation-only transform with opposite sign is not consistent with EPSG). `frame_from_gps_week` now returns WGS 84 (G2296) from week 2296.
+- [x] Coordinates library: PZ-90 -> PZ-90.02 (EPSG:7702), PZ-90.02 -> PZ-90.11 (EPSG:7703) and PZ-90 -> PZ-90.11 (EPSG:7704) transformations, both directions; checked against PROJ `cct` (coordinate frame convention) with the EPSG parameters from proj.db, same as PZ-90.11 -> ITRF2008.
 - [ ] Coordinates library: no GTRF (Galileo), JGS (QZSS) or CGCS2000 (BeiDou) transformations; WGS 84 only G2296 is connected (older realizations are not transformed).
 
 ## Fixed (round 8)

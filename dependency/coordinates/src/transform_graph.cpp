@@ -53,6 +53,9 @@ TransformGraph::TransformGraph() {
 
     add_bidirectional_edge_impl<WGS84_G2296, ITRF2020>(*this);
     add_bidirectional_edge_impl<PZ90_11, ITRF2008>(*this);
+    add_bidirectional_edge_impl<PZ90, PZ90_02>(*this);
+    add_bidirectional_edge_impl<PZ90_02, PZ90_11>(*this);
+    add_bidirectional_edge_impl<PZ90, PZ90_11>(*this);
 
     add_bidirectional_edge_impl<ITRF2014, ETRF2014>(*this);
     add_bidirectional_edge_impl<ITRF2005, ETRF2005>(*this);
