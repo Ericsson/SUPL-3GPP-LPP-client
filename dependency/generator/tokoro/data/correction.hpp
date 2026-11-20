@@ -123,6 +123,9 @@ struct CorrectionData {
     // Accept the STEC polynomial without the gridded STEC residual. By default both are required.
     bool iono_polynomial_only = false;
 
+    // How the gridded corrections are interpolated to the position
+    GridOptions grid_options;
+
     // Satellite reference datum of the latest SSR orbit corrections: ITRF (false) or regional
     NODISCARD bool regional_datum() const NOEXCEPT { return mRegionalDatum; }
 

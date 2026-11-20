@@ -112,6 +112,11 @@ struct Config {
     bool                     rtoc                              = false;
     bool                     ignore_bitmask                    = false;
     bool                     iono_poly_only                    = false;
+
+    generator::tokoro::GridInterpolation grid_interpolation =
+        generator::tokoro::GridInterpolation::FourPoint;
+    bool grid_missing_as_zero = false;
+
     std::string              orbit_frame;
     std::string              pos_frame;
     double                   pos_epoch = 0.0;
@@ -362,6 +367,15 @@ static Config parse_args(int argc, char** argv) {
             cfg.ignore_bitmask = true;
         else if (arg == "--iono-poly-only")
             cfg.iono_poly_only = true;
+        else if (arg == "--grid-interpolation") {
+            auto value = next();
+            if (!generator::tokoro::parse_grid_interpolation(value, cfg.grid_interpolation)) {
+                fprintf(stderr, "--grid-interpolation must be one of %s, got `%s`\n",
+                        generator::tokoro::grid_interpolation_names().c_str(), value.c_str());
+                exit(1);
+            }
+        } else if (arg == "--grid-missing-as-zero")
+            cfg.grid_missing_as_zero = true;
         else if (arg == "--pos-frame")
             cfg.pos_frame = next();
         else if (arg == "--pos-epoch")
@@ -456,7 +470,9 @@ static Config parse_args(int argc, char** argv) {
                         "[--ambiguity-randomize off|startup|rise|both] [--ambiguity-seed <n>] "
                         "[--antenna-descriptor <string>] "
                         "[--receiver-descriptor <string>] [--generate-rinex] [--residuals] "
-                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] [--pos-frame "
+                        "[--ocit] [--rtoc] [--ignore-bitmask] [--iono-poly-only] "
+                        "[--grid-interpolation four-point|three-point|nearest] "
+                        "[--grid-missing-as-zero] [--pos-frame "
                         "<frame>] [--pos-epoch <year>] "
                         "[--pos-velocity vx,vy,vz] [--ssr-frame <frame>] [--orbit-frame "
                         "<frame>] [--orbit-source-frame <gnss>=<frame>] "
@@ -607,6 +623,8 @@ int main(int argc, char** argv) {
     generator->set_rtoc(cfg.rtoc);
     generator->set_ignore_bitmask(cfg.ignore_bitmask);
     generator->set_iono_polynomial_only(cfg.iono_poly_only);
+    generator->set_grid_interpolation(cfg.grid_interpolation);
+    generator->set_grid_missing_as_zero(cfg.grid_missing_as_zero);
     if (!cfg.orbit_frame.empty()) {
         if (!generator->set_orbit_frame(cfg.orbit_frame.c_str())) {
             fprintf(stderr, "Invalid --orbit-frame %s\n", cfg.orbit_frame.c_str());

@@ -68,6 +68,8 @@ Tokoro::Tokoro(ProgramOutput const& output, TokoroConfig const& config,
     mGenerator->set_ocit(mConfig.ocit);
     mGenerator->set_ignore_bitmask(mConfig.ignore_bitmask);
     mGenerator->set_iono_polynomial_only(mConfig.iono_polynomial_only);
+    mGenerator->set_grid_interpolation(mConfig.grid_interpolation);
+    mGenerator->set_grid_missing_as_zero(mConfig.grid_missing_as_zero);
     if (!mConfig.orbit_frame.empty()) {
         if (!mGenerator->set_orbit_frame(mConfig.orbit_frame.c_str())) {
             ERRORF("invalid --tkr-orbit-frame \"%s\"", mConfig.orbit_frame.c_str());

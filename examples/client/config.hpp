@@ -14,6 +14,7 @@
 #include <generator/idokeido/idokeido.hpp>
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
+#include <generator/tokoro/grid_interpolation.hpp>
 #include <generator/tokoro/troposphere.hpp>
 #endif
 
@@ -495,6 +496,9 @@ struct TokoroConfig {
     double                   max_iono_age   = -1.0;
     double                   max_tropo_age  = -1.0;
     double                   elevation_mask = 10.0;  // degrees
+
+    generator::tokoro::GridInterpolation grid_interpolation;
+    bool                                 grid_missing_as_zero;
 
     struct FakeCorrectionPointSet {
         uint16_t set_id;

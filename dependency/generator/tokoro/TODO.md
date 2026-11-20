@@ -20,8 +20,16 @@
 - [x] `observation.hpp`: `mPhaseRange`, `mPhaseRangeRate`, `mCodeRange` now default-initialized.
 - [x] `satellite.cpp` `compute_true_position`: orbit-correction failure only warned and continued with the uncorrected broadcast orbit (or a zero position inside the emission-time iteration). Now returns false, disabling the satellite with `position_failed`.
 - [x] `data/set.hpp`: removed unused `latitude_min/max`, `longitude_min/max`; they assumed the reference point is the south-west corner, but TS 37.355 defines it as the north-west corner.
-- [ ] `models/troposphere_models.cpp` `height_scaling()`: scales from ellipsoidal height 0. TS 37.355 does not state the reference surface for gridded tropo; SPARTN uses zero ellipsoidal height. Consistent with that assumption; confirm with the SSR provider.
-- [ ] Only `GNSS-SSR-ArrayOfCorrectionPoints-r16` is supported; `listOfCorrectionPoints` and r18 `ArrayOfGridPoints` (bog16/64/256) are not.
+- [x] `models/troposphere_models.cpp` `height_scaling()`: scales from ellipsoidal height 0. TS 37.355 does not state the reference surface for gridded tropo, so this follows Compact SSR (CSSR RTCM v08, 3.5.2.6): the tropospheric delay is defined at zero ellipsoidal height (WGS-84) and altitude compensation is applied at the user. SPARTN uses the same reference.
+- [ ] Only `GNSS-SSR-ArrayOfCorrectionPoints-r16` is supported; `GNSS-SSR-ListOfCorrectionPoints-r16` is not. (r18 `ArrayOfGridPoints` with bog16/64/256 belongs to `GNSS-LOS-NLOS-GridPoints`, a metre-spaced LOS/NLOS grid, not to the SSR correction points, and is not relevant here.)
+- [ ] What the specifications say about grid interpolation (TS 37.355 v18.4.0, Compact SSR = CSSR RTCM v08):
+  - LPP does not define an interpolation algorithm for `GNSS-SSR-GriddedCorrection`. It only defines the points: `correctionPointSetID` links the `gridList` to a `GNSS-SSR-CorrectionPoints` set, with at most 64 points.
+  - LPP `arrayOfCorrectionPoints`: regular grid, reference point = north-west corner, `numberOfSteps*` + 1 points per axis, `step*` in 0.01 degrees, row-major west to east and north to south. `bitmaskOfGrids` marks which points have data (omitted = all). `gridList` has one entry per enabled bit, in bit order. Missing points are expected (masked), so a cell can have fewer than 4 corners.
+  - LPP `listOfCorrectionPoints`: no regular structure. The reference point is the 1st point, `relativeLocationsList` gives points 2..64 as `deltaLatitude`/`deltaLongitude` (0.01 degrees) relative to the previous point, and `gridList` has the same entries in the same order. The points can be anywhere, so there is no cell to look up and a bilinear scheme cannot be used as is (needs a scattered-data method such as IDW or a triangulation/barycentric interpolation, which also covers the 3-point case).
+  - Compact SSR (3.5.2.5 STEC, 3.5.2.6 troposphere): select "4 (or 3)" reference grids with valid data surrounding the user position, compute the value at each grid (STEC = network polynomial + residual, a missing network polynomial counts as zero; tropo = nominal + variation), then interpolate to the user position. The interpolation method is not specified. 63 or fewer grid points per network. The grid positions are not defined in the correction messages. The Service Information message (4073,10) carries "reference position for atmospheric delay corrections", and its content is defined in a separate document ("Specification of Service Information Messages for Compact SSR") that is not part of this spec.
+  - Neither specification defines extrapolation outside the grid or the behaviour when fewer than 3 valid points surround the user.
+- [x] Grid interpolation method: `--tkr-grid-interpolation` (client) / `--grid-interpolation` (tokoro-post), `four-point` (default, bilinear, all 4 corners of the cell required), `three-point` (bilinear, or linear over the 3 corners with data when the position is inside their triangle, as Compact SSR "4 (or 3)") and `nearest` (nearest corner of the cell). `--tkr-grid-missing-as-zero` / `--grid-missing-as-zero` counts corners without data (masked, or no value for the satellite) as a zero residual (zero variation from the nominal troposphere delay) when the method would otherwise fail; one corner must have data. Applies to the STEC residual and the troposphere.
+- [ ] Grid interpolation outside the grid (extrapolation) and for scattered points (`listOfCorrectionPoints`, e.g. inverse distance weighting or a triangulation) is not implemented.
 
 Investigated, not issues:
 - `satellite.cpp` emission-time iteration: fixed-point contraction is ~v/c per step, so 10 iterations always converge; the missing break only costs cycles.
@@ -121,7 +129,7 @@ Found, not fixed (data source): the receiver in the session sends GLONASS RTCM 1
 - [ ] Shared broadcast-orbit frame handling for Idokeido SPP (broadcast-only orbits).
 
 
-- [ ] Masked cell corner: no 3-point or nearest-point fallback, the cell has no correction.
+- [x] Masked cell corner: the cell has no correction with `four-point`; use `three-point`, `nearest` or `--tkr-grid-missing-as-zero`.
 - [ ] `observation.cpp` `compute_ranges`: phase-range rate holds STEC, tropo and windup constant between the two states; only geometry and clock contribute.
 - [ ] `satellite.cpp` `update()`: diagnostic detail strings are built even when diagnostics are disabled (only on the no-ephemeris path).
 - [ ] `data/grid.hpp` `point_from_array_index`: O(n) scan.
