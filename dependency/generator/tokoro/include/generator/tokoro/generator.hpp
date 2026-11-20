@@ -21,6 +21,7 @@
 #endif
 #include <generator/tokoro/diag.hpp>
 #include <generator/tokoro/ephemeris_search.hpp>
+#include <generator/tokoro/grid_interpolation.hpp>
 #include <generator/tokoro/sv_id.hpp>
 #include <generator/tokoro/troposphere.hpp>
 #include <gnss/satellite_id.hpp>
@@ -335,6 +336,13 @@ public:
     void set_ocit(bool enabled) NOEXCEPT { mUseOrbitCorrectionInIteration = enabled; }
     void set_ignore_bitmask(bool enabled) NOEXCEPT { mIgnoreBitmask = enabled; }
     void set_iono_polynomial_only(bool enabled) NOEXCEPT { mIonoPolynomialOnly = enabled; }
+    // Interpolation of the gridded corrections (default: four-point, all 4 corners required)
+    void set_grid_interpolation(GridInterpolation interpolation) NOEXCEPT {
+        mGridInterpolation = interpolation;
+    }
+    // Let corners without data count as zero residual (variation from the nominal troposphere
+    // delay) when the interpolation would otherwise fail; one corner must have data
+    void set_grid_missing_as_zero(bool enabled) NOEXCEPT { mGridMissingAsZero = enabled; }
     // Transform the broadcast orbits from the frame of each GNSS to `frame` (e.g. "itrf2020")
     // before the SSR orbit correction is applied. nullptr disables it (default). False if the
     // frame is unknown.
@@ -444,6 +452,8 @@ private:
     bool                         mUseOrbitCorrectionInIteration;
     bool                         mIgnoreBitmask;
     bool                         mIonoPolynomialOnly{false};
+    GridInterpolation            mGridInterpolation{GridInterpolation::FourPoint};
+    bool                         mGridMissingAsZero{false};
     std::unique_ptr<OrbitFrames> mOrbitFrames;
 
     mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;

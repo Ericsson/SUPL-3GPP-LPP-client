@@ -1438,13 +1438,15 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
     if (!mCorrectionData) {
         mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
     }
-    mCorrectionData->correction_point_set = mCorrectionPointSet.get();
-    mCorrectionData->max_orbit_age        = mMaxOrbitAge;
-    mCorrectionData->max_clock_age        = mMaxClockAge;
-    mCorrectionData->max_bias_age         = mMaxBiasAge;
-    mCorrectionData->max_iono_age         = mMaxIonoAge;
-    mCorrectionData->max_tropo_age        = mMaxTropoAge;
-    mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
+    mCorrectionData->correction_point_set         = mCorrectionPointSet.get();
+    mCorrectionData->max_orbit_age                = mMaxOrbitAge;
+    mCorrectionData->max_clock_age                = mMaxClockAge;
+    mCorrectionData->max_bias_age                 = mMaxBiasAge;
+    mCorrectionData->max_iono_age                 = mMaxIonoAge;
+    mCorrectionData->max_tropo_age                = mMaxTropoAge;
+    mCorrectionData->iono_polynomial_only         = mIonoPolynomialOnly;
+    mCorrectionData->grid_options.interpolation   = mGridInterpolation;
+    mCorrectionData->grid_options.missing_as_zero = mGridMissingAsZero;
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
@@ -2112,15 +2114,16 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
             input.correction_point_set.number_of_steps_latitude;
         mCorrectionPointSet->number_of_steps_longitude =
             input.correction_point_set.number_of_steps_longitude;
-        mCorrectionPointSet->bitmask          = input.correction_point_set.bitmask;
-        mCorrectionData->correction_point_set = mCorrectionPointSet.get();
-        mCorrectionData->max_orbit_age        = mMaxOrbitAge;
-        mCorrectionData->max_clock_age        = mMaxClockAge;
-        mCorrectionData->max_bias_age         = mMaxBiasAge;
-        mCorrectionData->max_iono_age         = mMaxIonoAge;
-        mCorrectionData->max_tropo_age        = mMaxTropoAge;
-        mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
-        mCorrectionData->iono_polynomial_only = mIonoPolynomialOnly;
+        mCorrectionPointSet->bitmask                  = input.correction_point_set.bitmask;
+        mCorrectionData->correction_point_set         = mCorrectionPointSet.get();
+        mCorrectionData->max_orbit_age                = mMaxOrbitAge;
+        mCorrectionData->max_clock_age                = mMaxClockAge;
+        mCorrectionData->max_bias_age                 = mMaxBiasAge;
+        mCorrectionData->max_iono_age                 = mMaxIonoAge;
+        mCorrectionData->max_tropo_age                = mMaxTropoAge;
+        mCorrectionData->iono_polynomial_only         = mIonoPolynomialOnly;
+        mCorrectionData->grid_options.interpolation   = mGridInterpolation;
+        mCorrectionData->grid_options.missing_as_zero = mGridMissingAsZero;
     }
 
     TRACEF("load correction data");

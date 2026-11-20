@@ -82,12 +82,10 @@ static long cell_candidates(double position, long steps, long* cells) {
     return 1;
 }
 
-bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr,
-                             GridPoint const*& bl, GridPoint const*& br, double& dx,
-                             double& dy) const NOEXCEPT {
+long GridData::find_cells(Float3 llh, Cell* cells) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    if (delta_latitude <= 0.0 || delta_longitude <= 0.0) return false;
+    if (delta_latitude <= 0.0 || delta_longitude <= 0.0) return 0;
 
     auto row = (reference_latitude - llh.x * constant::RAD2DEG) / delta_latitude;
     auto col = (llh.y * constant::RAD2DEG - reference_longitude) / delta_longitude;
@@ -102,56 +100,210 @@ bool GridData::find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*&
     long cols[2];
     auto row_count = cell_candidates(row, number_of_steps_latitude, rows);
     auto col_count = cell_candidates(col, number_of_steps_longitude, cols);
+    long count     = 0;
     for (long r = 0; r < row_count; r++) {
         for (long c = 0; c < col_count; c++) {
-            auto p_tl = point_at(rows[r], cols[c]);
-            auto p_tr = point_at(rows[r], cols[c] + 1);
-            auto p_bl = point_at(rows[r] + 1, cols[c]);
-            auto p_br = point_at(rows[r] + 1, cols[c] + 1);
-            if (!p_tl || !p_tr || !p_bl || !p_br) {
-                VERBOSEF("cell %ld,%ld has a masked corner", rows[r], cols[c]);
-                continue;
-            }
-            tl = p_tl;
-            tr = p_tr;
-            bl = p_bl;
-            br = p_br;
-            dx = row - static_cast<double>(rows[r]);
-            dy = col - static_cast<double>(cols[c]);
-            return true;
+            auto& cell     = cells[count++];
+            cell.corner[0] = point_at(rows[r], cols[c]);
+            cell.corner[1] = point_at(rows[r], cols[c] + 1);
+            cell.corner[2] = point_at(rows[r] + 1, cols[c]);
+            cell.corner[3] = point_at(rows[r] + 1, cols[c] + 1);
+            cell.row       = row - static_cast<double>(rows[r]);
+            cell.col       = col - static_cast<double>(cols[c]);
         }
     }
-
-    VERBOSEF("no complete cell found");
-    return false;
+    return count;
 }
 
+namespace {
+
+// Nominal zenith delays that the SSR troposphere variations are relative to (TS 37.355)
+constexpr double TROPO_NOMINAL_DRY = 2.3;
+constexpr double TROPO_NOMINAL_WET = 0.252;
+
+enum class Kind {
+    Bilinear,  // all 4 corners, a corner without data is zero
+    Plane,     // the 3 corners with data
+    Nearest,   // the nearest corner
+};
+
+struct Plan {
+    Kind kind;
+    bool used[4];  // the corner has data and contributes to the value
+    int  pivot;    // Plane: the corner next to both of the others
+    int  nearest;  // Nearest
+};
+
+struct CellValue {
+    double value;
+    // Slope per cell, towards south (`row`) and east (`col`)
+    bool   has_slope;
+    double d_row;
+    double d_col;
+};
+
+// The 3 corners with data span a right triangle with the corner opposite to the missing one in the
+// right angle. The position has to be inside it.
+bool plane_plan(bool const present[4], double row, double col, Plan& plan) {
+    constexpr double TOLERANCE = 1e-9;
+
+    int missing = 0;
+    for (int i = 0; i < 4; i++) {
+        if (!present[i]) missing = i;
+    }
+    auto pivot  = 3 - missing;
+    auto inside = std::fabs(row - static_cast<double>(pivot >> 1)) +
+                  std::fabs(col - static_cast<double>(pivot & 1));
+    if (inside > 1.0 + TOLERANCE) return false;
+
+    plan.kind  = Kind::Plane;
+    plan.pivot = pivot;
+    for (int i = 0; i < 4; i++)
+        plan.used[i] = present[i];
+    return true;
+}
+
+// Chooses how to interpolate in `cell` from the corners that have data. False if that is not
+// possible with the interpolation of `options`.
+bool make_plan(GridData::Cell const& cell, bool const present[4], GridOptions const& options,
+               Plan& plan) {
+    plan = {};
+
+    int count = 0;
+    for (int i = 0; i < 4; i++)
+        if (present[i]) count++;
+
+    auto nearest = (cell.row > 0.5 ? 2 : 0) + (cell.col > 0.5 ? 1 : 0);
+
+    switch (options.interpolation) {
+    case GridInterpolation::FourPoint: break;
+    case GridInterpolation::ThreePoint:
+        if (count == 3 && plane_plan(present, cell.row, cell.col, plan)) return true;
+        break;
+    case GridInterpolation::Nearest:
+        if (present[nearest]) {
+            plan.kind          = Kind::Nearest;
+            plan.nearest       = nearest;
+            plan.used[nearest] = true;
+            return true;
+        }
+        break;
+    }
+
+    if (options.interpolation != GridInterpolation::Nearest && count == 4) {
+        plan.kind = Kind::Bilinear;
+        for (int i = 0; i < 4; i++)
+            plan.used[i] = true;
+        return true;
+    }
+
+    if (!options.missing_as_zero || count == 0) return false;
+
+    if (options.interpolation == GridInterpolation::Nearest) {
+        plan.kind    = Kind::Nearest;
+        plan.nearest = nearest;
+        return true;
+    }
+
+    plan.kind = Kind::Bilinear;
+    for (int i = 0; i < 4; i++)
+        plan.used[i] = present[i];
+    return true;
+}
+
+// The first cell that can be used for `llh` and how. `has_data` tells if a corner has the data.
+template <typename HasData>
+GridData::GridStatus select_cell(GridData const& grid, Float3 llh, GridOptions const& options,
+                                 HasData has_data, GridData::Cell& cell, Plan& plan) {
+    GridData::Cell cells[4];
+    auto           count        = grid.find_cells(llh, cells);
+    auto           data_missing = false;
+    for (long i = 0; i < count; i++) {
+        bool valid[4];
+        bool present[4];
+        for (int j = 0; j < 4; j++) {
+            valid[j]   = cells[i].corner[j] != nullptr;
+            present[j] = valid[j] && has_data(*cells[i].corner[j]);
+        }
+
+        if (make_plan(cells[i], present, options, plan)) {
+            cell = cells[i];
+            return GridData::GridStatus::Success;
+        }
+
+        // Would the cell work if the corners had data? Then data is what is missing.
+        Plan unused;
+        if (make_plan(cells[i], valid, options, unused)) data_missing = true;
+    }
+
+    VERBOSEF("no usable cell found (%ld candidate cells)", count);
+    return data_missing ? GridData::GridStatus::MissingSatelliteData :
+                          GridData::GridStatus::PositionOutsideGrid;
+}
+
+CellValue interpolate_cell(Plan const& plan, GridData::Cell const& cell, double const v[4]) {
+    CellValue result{};
+    switch (plan.kind) {
+    case Kind::Bilinear:
+        result.value     = interpolate(interpolate(v[0], v[2], cell.row),
+                                       interpolate(v[1], v[3], cell.row), cell.col);
+        result.has_slope = true;
+        result.d_row     = (1.0 - cell.col) * (v[2] - v[0]) + cell.col * (v[3] - v[1]);
+        result.d_col     = (1.0 - cell.row) * (v[1] - v[0]) + cell.row * (v[3] - v[2]);
+        break;
+    case Kind::Plane: {
+        auto pivot_row = plan.pivot >> 1;
+        auto pivot_col = plan.pivot & 1;
+        // the other corner in the same column (towards the other row) and in the same row
+        auto row_corner  = (1 - pivot_row) * 2 + pivot_col;
+        auto col_corner  = pivot_row * 2 + (1 - pivot_col);
+        result.has_slope = true;
+        result.d_row     = (v[row_corner] - v[plan.pivot]) * (pivot_row == 0 ? 1.0 : -1.0);
+        result.d_col     = (v[col_corner] - v[plan.pivot]) * (pivot_col == 0 ? 1.0 : -1.0);
+        result.value     = v[plan.pivot] + result.d_row * (cell.row - pivot_row) +
+                       result.d_col * (cell.col - pivot_col);
+        break;
+    }
+    case Kind::Nearest: result.value = v[plan.nearest]; break;
+    }
+    return result;
+}
+
+char const* kind_name(Kind kind) {
+    switch (kind) {
+    case Kind::Bilinear: return "bilinear";
+    case Kind::Plane: return "plane (3 points)";
+    case Kind::Nearest: return "nearest";
+    }
+    return "unknown";
+}
+
+}  // namespace
+
 GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now,
-                                           double  max_age,
+                                           double max_age, GridOptions const& options,
                                            double& ionospheric_residual) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    GridPoint const* tl = nullptr;
-    GridPoint const* tr = nullptr;
-    GridPoint const* bl = nullptr;
-    GridPoint const* br = nullptr;
-    double           dx = 0.0;
-    double           dy = 0.0;
-    if (!find_4_points(llh, tl, tr, bl, br, dx, dy)) {
-        return GridStatus::PositionOutsideGrid;
+    Cell cell{};
+    Plan plan{};
+    auto status = select_cell(
+        *this, llh, options,
+        [sv_id](GridPoint const& point) {
+            return point.has_ionospheric_residual(sv_id);
+        },
+        cell, plan);
+    if (status != GridStatus::Success) {
+        VERBOSEF("ionospheric grid correction not available");
+        return status;
     }
 
-    VERBOSEF("bilinear interpolation");
-
-    if (!tl->has_ionospheric_residual(sv_id) || !tr->has_ionospheric_residual(sv_id) ||
-        !bl->has_ionospheric_residual(sv_id) || !br->has_ionospheric_residual(sv_id)) {
-        VERBOSEF("ionospheric correction not found");
-        return GridStatus::MissingSatelliteData;
-    }
+    VERBOSEF("%s interpolation", kind_name(plan.kind));
 
     if (max_age > 0.0) {
-        for (auto* corner : {tl, tr, bl, br}) {
-            auto age = now - corner->ionospheric_residual_epoch.at(sv_id);
+        for (int i = 0; i < 4; i++) {
+            if (!plan.used[i]) continue;
+            auto age = now - cell.corner[i]->ionospheric_residual_epoch.at(sv_id);
             if (age > max_age) {
                 VERBOSEF("ionospheric grid point residual is too old (%.1fs > %.1fs limit)", age,
                          max_age);
@@ -160,127 +312,149 @@ GridData::GridStatus GridData::ionospheric(SatelliteId sv_id, Float3 llh, ts::Ta
         }
     }
 
-    VERBOSEF("dx: %+.14f", dx);
-    VERBOSEF("dy: %+.14f", dy);
+    VERBOSEF("dx: %+.14f", cell.row);
+    VERBOSEF("dy: %+.14f", cell.col);
 
-    auto tl_value = tl->ionospheric_residual.at(sv_id);
-    auto tr_value = tr->ionospheric_residual.at(sv_id);
-    auto bl_value = bl->ionospheric_residual.at(sv_id);
-    auto br_value = br->ionospheric_residual.at(sv_id);
+    double values[4] = {0.0, 0.0, 0.0, 0.0};
+    for (int i = 0; i < 4; i++) {
+        if (!plan.used[i]) {
+            VERBOSEF("corner %d: no data", i);
+            continue;
+        }
+        values[i] = cell.corner[i]->ionospheric_residual.at(sv_id);
+        VERBOSEF("corner %d: %ld/%ld: %+.14f", i, cell.corner[i]->array_index,
+                 cell.corner[i]->absolute_index, values[i]);
+    }
 
-    VERBOSEF("tl: %ld/%ld: %+.14f", tl->array_index, tl->absolute_index, tl_value);
-    VERBOSEF("tr: %ld/%ld: %+.14f", tr->array_index, tr->absolute_index, tr_value);
-    VERBOSEF("bl: %ld/%ld: %+.14f", bl->array_index, bl->absolute_index, bl_value);
-    VERBOSEF("br: %ld/%ld: %+.14f", br->array_index, br->absolute_index, br_value);
-
-    ionospheric_residual =
-        interpolate(interpolate(tl_value, bl_value, dx), interpolate(tr_value, br_value, dx), dy);
+    ionospheric_residual = interpolate_cell(plan, cell, values).value;
     VERBOSEF("ionospheric: %+.14f", ionospheric_residual);
     return GridStatus::Success;
 }
 
 GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, double max_age,
+                                            GridOptions const&      options,
                                             TroposphericCorrection& correction) const NOEXCEPT {
     FUNCTION_SCOPE();
 
-    // if we're inside 4 points, bilinear interpolation
-    GridPoint const* tl = nullptr;
-    GridPoint const* tr = nullptr;
-    GridPoint const* bl = nullptr;
-    GridPoint const* br = nullptr;
-    double           dx = 0.0;
-    double           dy = 0.0;
-    if (find_4_points(llh, tl, tr, bl, br, dx, dy)) {
-        VERBOSEF("bilinear interpolation");
-
-        if (!tl->has_tropospheric_data() || !tr->has_tropospheric_data() ||
-            !bl->has_tropospheric_data() || !br->has_tropospheric_data()) {
-            VERBOSEF("tropospheric correction not found");
-            return GridStatus::MissingSatelliteData;
-        }
-
-        if (max_age > 0.0) {
-            for (auto* corner : {tl, tr, bl, br}) {
-                auto age = now - corner->tropospheric_epoch;
-                if (age > max_age) {
-                    VERBOSEF("tropospheric grid point is too old (%.1fs > %.1fs limit)", age,
-                             max_age);
-                    return GridStatus::StaleData;
-                }
-            }
-        }
-
-        VERBOSEF("dx: %+.14f", dx);
-        VERBOSEF("dy: %+.14f", dy);
-
-        auto tl_value_wet = tl->tropospheric_wet;
-        auto tr_value_wet = tr->tropospheric_wet;
-        auto bl_value_wet = bl->tropospheric_wet;
-        auto br_value_wet = br->tropospheric_wet;
-
-        VERBOSEF("tl wet: %ld/%ld: %+.14f", tl->array_index, tl->absolute_index, tl_value_wet);
-        VERBOSEF("tr wet: %ld/%ld: %+.14f", tr->array_index, tr->absolute_index, tr_value_wet);
-        VERBOSEF("bl wet: %ld/%ld: %+.14f", bl->array_index, bl->absolute_index, bl_value_wet);
-        VERBOSEF("br wet: %ld/%ld: %+.14f", br->array_index, br->absolute_index, br_value_wet);
-
-        auto tl_value_dry = tl->tropospheric_dry;
-        auto tr_value_dry = tr->tropospheric_dry;
-        auto bl_value_dry = bl->tropospheric_dry;
-        auto br_value_dry = br->tropospheric_dry;
-
-        VERBOSEF("tl dry: %ld/%ld: %+.14f", tl->array_index, tl->absolute_index, tl_value_dry);
-        VERBOSEF("tr dry: %ld/%ld: %+.14f", tr->array_index, tr->absolute_index, tr_value_dry);
-        VERBOSEF("bl dry: %ld/%ld: %+.14f", bl->array_index, bl->absolute_index, bl_value_dry);
-        VERBOSEF("br dry: %ld/%ld: %+.14f", br->array_index, br->absolute_index, br_value_dry);
-
-        correction.wet = interpolate(interpolate(tl_value_wet, bl_value_wet, dx),
-                                     interpolate(tr_value_wet, br_value_wet, dx), dy);
-        correction.dry = interpolate(interpolate(tl_value_dry, bl_value_dry, dx),
-                                     interpolate(tr_value_dry, br_value_dry, dx), dy);
-
-        VERBOSEF("tropospheric wet: %+.14f", correction.wet);
-        VERBOSEF("tropospheric dry: %+.14f", correction.dry);
-
-        // Slope of the bilinear interpolation, per metre north and east. dx runs from the top to
-        // the bottom row (latitude), dy from the left to the right column (longitude).
-        {
-            auto lat_span = br->position.x - tl->position.x;  // [deg]
-            auto lon_span = br->position.y - tl->position.y;  // [deg]
-            auto cos_lat  = std::cos(llh.x);
-            if (lat_span != 0.0 && lon_span != 0.0 && cos_lat > 1e-6) {
-                // mean Earth radius
-                constexpr double EARTH_RADIUS = 6371000.0;
-                auto             deg_to_m_n   = EARTH_RADIUS * constant::DEG2RAD;
-                auto             deg_to_m_e   = EARTH_RADIUS * cos_lat * constant::DEG2RAD;
-
-                auto d_dx = [&](double tl_v, double tr_v, double bl_v, double br_v) {
-                    return (1.0 - dy) * (bl_v - tl_v) + dy * (br_v - tr_v);
-                };
-                auto d_dy = [&](double tl_v, double tr_v, double bl_v, double br_v) {
-                    return (1.0 - dx) * (tr_v - tl_v) + dx * (br_v - bl_v);
-                };
-
-                correction.dry_north =
-                    d_dx(tl_value_dry, tr_value_dry, bl_value_dry, br_value_dry) / lat_span /
-                    deg_to_m_n;
-                correction.dry_east = d_dy(tl_value_dry, tr_value_dry, bl_value_dry, br_value_dry) /
-                                      lon_span / deg_to_m_e;
-                correction.wet_north =
-                    d_dx(tl_value_wet, tr_value_wet, bl_value_wet, br_value_wet) / lat_span /
-                    deg_to_m_n;
-                correction.wet_east = d_dy(tl_value_wet, tr_value_wet, bl_value_wet, br_value_wet) /
-                                      lon_span / deg_to_m_e;
-                correction.has_gradient = true;
-                VERBOSEF("tropospheric gradient dry: N %+.4e E %+.4e, wet: N %+.4e E %+.4e m/m",
-                         correction.dry_north, correction.dry_east, correction.wet_north,
-                         correction.wet_east);
-            }
-        }
-
-        return GridStatus::Success;
+    Cell cell{};
+    Plan plan{};
+    auto status = select_cell(
+        *this, llh, options,
+        [](GridPoint const& point) {
+            return point.has_tropospheric_data();
+        },
+        cell, plan);
+    if (status != GridStatus::Success) {
+        VERBOSEF("tropospheric grid correction not available");
+        return status;
     }
 
-    return GridStatus::PositionOutsideGrid;
+    VERBOSEF("%s interpolation", kind_name(plan.kind));
+
+    if (max_age > 0.0) {
+        for (int i = 0; i < 4; i++) {
+            if (!plan.used[i]) continue;
+            auto age = now - cell.corner[i]->tropospheric_epoch;
+            if (age > max_age) {
+                VERBOSEF("tropospheric grid point is too old (%.1fs > %.1fs limit)", age, max_age);
+                return GridStatus::StaleData;
+            }
+        }
+    }
+
+    VERBOSEF("dx: %+.14f", cell.row);
+    VERBOSEF("dy: %+.14f", cell.col);
+
+    // A corner without data has no variation from the nominal delay
+    double wet[4] = {TROPO_NOMINAL_WET, TROPO_NOMINAL_WET, TROPO_NOMINAL_WET, TROPO_NOMINAL_WET};
+    double dry[4] = {TROPO_NOMINAL_DRY, TROPO_NOMINAL_DRY, TROPO_NOMINAL_DRY, TROPO_NOMINAL_DRY};
+    for (int i = 0; i < 4; i++) {
+        if (!plan.used[i]) {
+            VERBOSEF("corner %d: no data", i);
+            continue;
+        }
+        wet[i] = cell.corner[i]->tropospheric_wet;
+        dry[i] = cell.corner[i]->tropospheric_dry;
+        VERBOSEF("corner %d wet: %ld/%ld: %+.14f", i, cell.corner[i]->array_index,
+                 cell.corner[i]->absolute_index, wet[i]);
+        VERBOSEF("corner %d dry: %ld/%ld: %+.14f", i, cell.corner[i]->array_index,
+                 cell.corner[i]->absolute_index, dry[i]);
+    }
+
+    auto wet_value = interpolate_cell(plan, cell, wet);
+    auto dry_value = interpolate_cell(plan, cell, dry);
+
+    correction.wet          = wet_value.value;
+    correction.dry          = dry_value.value;
+    correction.has_gradient = false;
+
+    VERBOSEF("tropospheric wet: %+.14f", correction.wet);
+    VERBOSEF("tropospheric dry: %+.14f", correction.dry);
+
+    // Slope of the interpolation, per metre north and east
+    if (wet_value.has_slope && dry_value.has_slope) {
+        auto lat_span = -delta_latitude;  // [deg], the rows run towards south
+        auto lon_span = delta_longitude;  // [deg]
+        auto cos_lat  = std::cos(llh.x);
+        if (lat_span != 0.0 && lon_span != 0.0 && cos_lat > 1e-6) {
+            // mean Earth radius
+            constexpr double EARTH_RADIUS = 6371000.0;
+            auto             deg_to_m_n   = EARTH_RADIUS * constant::DEG2RAD;
+            auto             deg_to_m_e   = EARTH_RADIUS * cos_lat * constant::DEG2RAD;
+
+            correction.dry_north    = dry_value.d_row / lat_span / deg_to_m_n;
+            correction.dry_east     = dry_value.d_col / lon_span / deg_to_m_e;
+            correction.wet_north    = wet_value.d_row / lat_span / deg_to_m_n;
+            correction.wet_east     = wet_value.d_col / lon_span / deg_to_m_e;
+            correction.has_gradient = true;
+            VERBOSEF("tropospheric gradient dry: N %+.4e E %+.4e, wet: N %+.4e E %+.4e m/m",
+                     correction.dry_north, correction.dry_east, correction.wet_north,
+                     correction.wet_east);
+        }
+    }
+
+    return GridStatus::Success;
+}
+
+namespace {
+
+struct GridInterpolationName {
+    GridInterpolation interpolation;
+    char const*       name;
+};
+
+constexpr GridInterpolationName GRID_INTERPOLATION_NAMES[] = {
+    {GridInterpolation::FourPoint, "four-point"},
+    {GridInterpolation::ThreePoint, "three-point"},
+    {GridInterpolation::Nearest, "nearest"},
+};
+
+}  // namespace
+
+char const* grid_interpolation_name(GridInterpolation interpolation) NOEXCEPT {
+    for (auto const& entry : GRID_INTERPOLATION_NAMES) {
+        if (entry.interpolation == interpolation) return entry.name;
+    }
+    return "unknown";
+}
+
+bool parse_grid_interpolation(std::string const& name, GridInterpolation& interpolation) NOEXCEPT {
+    for (auto const& entry : GRID_INTERPOLATION_NAMES) {
+        if (name == entry.name) {
+            interpolation = entry.interpolation;
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string grid_interpolation_names() {
+    std::string names;
+    for (auto const& entry : GRID_INTERPOLATION_NAMES) {
+        if (!names.empty()) names += '|';
+        names += entry.name;
+    }
+    return names;
 }
 
 void GridData::print_grid() {

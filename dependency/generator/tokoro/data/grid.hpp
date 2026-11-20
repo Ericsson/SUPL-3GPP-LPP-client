@@ -12,6 +12,7 @@
 #include "set.hpp"
 #include "sv_id.hpp"
 
+#include <generator/tokoro/grid_interpolation.hpp>
 #include <gnss/satellite_id.hpp>
 #include <gnss/signal_id.hpp>
 
@@ -49,6 +50,13 @@ struct GridPoint {
     bool has_tropospheric_data() const { return tropspheric_valid; }
 };
 
+struct GridOptions {
+    GridInterpolation interpolation{GridInterpolation::FourPoint};
+    // Corners without data (masked, or without a value for the satellite) count as a zero residual
+    // when the interpolation would otherwise fail; at least one corner must have data
+    bool missing_as_zero{false};
+};
+
 struct TroposphericCorrection;
 struct GridData {
     enum class GridStatus {
@@ -58,14 +66,23 @@ struct GridData {
         StaleData,
     };
 
+    // A cell of the grid that may contain a position. `corner` is ordered top-left, top-right,
+    // bottom-left, bottom-right and is null for a masked point. `row`/`col` are the position
+    // within the cell, 0..1 from the top-left corner towards south/east.
+    struct Cell {
+        GridPoint const* corner[4];
+        double           row;
+        double           col;
+    };
+
     NODISCARD GridPoint const* point_at(long latitude_index, long longitude_index) const NOEXCEPT;
-    // `dx`/`dy` are the position within the cell, 0..1 from the top-left corner towards south/east
-    bool find_4_points(Float3 llh, GridPoint const*& tl, GridPoint const*& tr, GridPoint const*& bl,
-                       GridPoint const*& br, double& dx, double& dy) const NOEXCEPT;
+    // The cells that contain `llh` (up to 4, when the position is on the edge of cells), or 0
+    NODISCARD long find_cells(Float3 llh, Cell* cells) const NOEXCEPT;
 
     GridStatus ionospheric(SatelliteId sv_id, Float3 llh, ts::Tai const& now, double max_age,
-                           double& ionospheric_residual) const NOEXCEPT;
+                           GridOptions const& options, double& ionospheric_residual) const NOEXCEPT;
     GridStatus tropospheric(Float3 llh, ts::Tai const& now, double max_age,
+                            GridOptions const&      options,
                             TroposphericCorrection& correction) const NOEXCEPT;
 
     // True if the grid was built from a correction point set with the same id and layout

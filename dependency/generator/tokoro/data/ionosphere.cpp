@@ -131,7 +131,7 @@ bool CorrectionData::ionospheric(SatelliteId sv_id, Float3 llh, IonosphericCorre
     auto        grid_it     = mGrid.find(sv_id.gnss());
     if (grid_it != mGrid.end()) {
         auto status = grid_it->second.ionospheric(sv_id, llh, mLatestCorrectionTime, max_iono_age,
-                                                  correction.grid_residual);
+                                                  grid_options, correction.grid_residual);
         switch (status) {
         case GridData::GridStatus::Success: correction.grid_valid = true; break;
         case GridData::GridStatus::PositionOutsideGrid: grid_reason = "grid_outside"; break;

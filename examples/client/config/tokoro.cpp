@@ -516,6 +516,25 @@ static args::Flag gIonoPolynomialOnly{
     {"tkr-iono-poly-only"},
 };
 
+static args::ValueFlag<std::string> gGridInterpolation{
+    gGroup,
+    "method",
+    "Interpolation of the gridded SSR corrections (STEC residual, troposphere) to the position. "
+    "One of: four-point (default, bilinear, all 4 corners of the grid cell required), three-point "
+    "(bilinear, or linear over the 3 corners that have data when the position is inside their "
+    "triangle), nearest (the nearest corner of the grid cell)",
+    {"tkr-grid-interpolation"},
+};
+
+static args::Flag gGridMissingAsZero{
+    gGroup,
+    "grid-missing-as-zero",
+    "Use a zero residual (no variation from the nominal troposphere delay) for grid corners "
+    "without data when the interpolation would otherwise fail. At least one corner of the grid "
+    "cell must have data",
+    {"tkr-grid-missing-as-zero"},
+};
+
 static args::Flag gIgnoreBitmask{
     gGroup,
     "ignore-bitmask",
@@ -767,6 +786,8 @@ void parse(Config* config) {
     tokoro.antex_file           = "";
     tokoro.ignore_bitmask       = false;
     tokoro.iono_polynomial_only = false;
+    tokoro.grid_interpolation   = generator::tokoro::GridInterpolation::FourPoint;
+    tokoro.grid_missing_as_zero = false;
     tokoro.orbit_frame          = "";
     tokoro.orbit_source_frames.clear();
     tokoro.deduplicate_epochs  = false;
@@ -989,6 +1010,15 @@ void parse(Config* config) {
     if (gNavFile) tokoro.nav_files = gNavFile.Get();
     if (gIgnoreBitmask) tokoro.ignore_bitmask = true;
     if (gIonoPolynomialOnly) tokoro.iono_polynomial_only = true;
+    if (gGridInterpolation) {
+        if (!generator::tokoro::parse_grid_interpolation(gGridInterpolation.Get(),
+                                                         tokoro.grid_interpolation)) {
+            throw args::ValidationError("--tkr-grid-interpolation must be one of " +
+                                        generator::tokoro::grid_interpolation_names() + ", got `" +
+                                        gGridInterpolation.Get() + "`");
+        }
+    }
+    if (gGridMissingAsZero) tokoro.grid_missing_as_zero = true;
     if (gFixedFrame) tokoro.fixed_frame = gFixedFrame.Get();
     if (gFixedEpoch) tokoro.fixed_epoch = gFixedEpoch.Get();
     if (gSsrFrame) tokoro.ssr_frame = gSsrFrame.Get();
@@ -1217,6 +1247,9 @@ void dump(TokoroConfig const& config) {
         DEBUGF("nav file:   \"%s\"", nf.c_str());
     DEBUGF("ignore bitmask: %s", config.ignore_bitmask ? "true" : "false");
     DEBUGF("iono polynomial only: %s", config.iono_polynomial_only ? "true" : "false");
+    DEBUGF("grid interpolation: %s%s",
+           generator::tokoro::grid_interpolation_name(config.grid_interpolation),
+           config.grid_missing_as_zero ? " (missing as zero)" : "");
     DEBUGF("orbit frame: %s",
            config.orbit_frame.empty() ? "broadcast" : config.orbit_frame.c_str());
     for (auto const& value : config.orbit_source_frames)

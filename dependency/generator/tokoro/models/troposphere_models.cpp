@@ -249,6 +249,8 @@ double troposphere_mjd(ts::Tai const& time) NOEXCEPT {
     return ts::Utc{time}.julian_date(0.0) - 2400000.5;
 }
 
+// The SSR tropospheric delay is defined at zero ellipsoidal height (WGS-84); this scales it to the
+// site height. See Compact SSR (CSSR RTCM v08) 3.5.2.6, SPARTN uses the same reference.
 bool height_scaling(TroposphereSite const& site, double& hydrostatic, double& wet) NOEXCEPT {
     HydrostaticAndWetDelay alt_0{};
     HydrostaticAndWetDelay alt_eh{};

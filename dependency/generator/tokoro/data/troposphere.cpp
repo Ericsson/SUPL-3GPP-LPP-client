@@ -61,8 +61,9 @@ bool CorrectionData::tropospheric(SatelliteId sv_id, Float3 llh, TroposphericCor
         return false;
     }
 
-    auto& grid   = grid_it->second;
-    auto  status = grid.tropospheric(llh, mLatestCorrectionTime, max_tropo_age, correction);
+    auto& grid = grid_it->second;
+    auto  status =
+        grid.tropospheric(llh, mLatestCorrectionTime, max_tropo_age, grid_options, correction);
     if (status == GridData::GridStatus::PositionOutsideGrid) {
         WARNF("tropospheric correction not available: position outside grid");
         if (data_status) data_status->fail("outside_grid");

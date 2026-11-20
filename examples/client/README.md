@@ -329,6 +329,14 @@
                                           requirement
         --tkr-iono-poly-only              Allow the STEC polynomial without the
                                           gridded STEC residual
+        --tkr-grid-interpolation=[method] Interpolation of the gridded SSR
+                                          corrections to the position. One of:
+                                          four-point (default, all 4 corners of
+                                          the grid cell required), three-point,
+                                          nearest
+        --tkr-grid-missing-as-zero        Use a zero residual for grid corners
+                                          without data when the interpolation
+                                          would otherwise fail
         --tkr-fixed-frame=[frame]         Frame of --tkr-fixed-itrf-x/y/z (e.g.
                                           etrf2014, sweref99, itrf2014); the
                                           position is transformed to
