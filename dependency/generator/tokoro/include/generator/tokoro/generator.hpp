@@ -343,6 +343,12 @@ public:
     // Let corners without data count as zero residual (variation from the nominal troposphere
     // delay) when the interpolation would otherwise fail; one corner must have data
     void set_grid_missing_as_zero(bool enabled) NOEXCEPT { mGridMissingAsZero = enabled; }
+    // What to do with a position that can not be interpolated (default: none). `distance` [m] is
+    // the furthest distance from the nearest point, 0 for no limit.
+    void set_grid_extrapolation(GridExtrapolation extrapolation, double distance) NOEXCEPT {
+        mGridExtrapolation         = extrapolation;
+        mGridExtrapolationDistance = distance;
+    }
     // Transform the broadcast orbits from the frame of each GNSS to `frame` (e.g. "itrf2020")
     // before the SSR orbit correction is applied. nullptr disables it (default). False if the
     // frame is unknown.
@@ -454,6 +460,8 @@ private:
     bool                         mIonoPolynomialOnly{false};
     GridInterpolation            mGridInterpolation{GridInterpolation::FourPoint};
     bool                         mGridMissingAsZero{false};
+    GridExtrapolation            mGridExtrapolation{GridExtrapolation::None};
+    double                       mGridExtrapolationDistance{0.0};
     std::unique_ptr<OrbitFrames> mOrbitFrames;
 
     mutable std::vector<std::pair<SatelliteId, uint32_t>> mMissingEphemeris;

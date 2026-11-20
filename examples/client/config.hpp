@@ -499,6 +499,8 @@ struct TokoroConfig {
 
     generator::tokoro::GridInterpolation grid_interpolation;
     bool                                 grid_missing_as_zero;
+    generator::tokoro::GridExtrapolation grid_extrapolation;
+    double                               grid_extrapolation_distance;  // m, 0 for no limit
 
     struct FakeCorrectionPointSet {
         uint16_t set_id;

@@ -4,6 +4,7 @@
 #include "ionosphere.hpp"
 #include "troposphere.hpp"
 
+#include <algorithm>
 #include <cmath>
 
 #include <external_warnings.hpp>
@@ -125,13 +126,15 @@ enum class Kind {
     Bilinear,  // all 4 corners, a corner without data is zero
     Plane,     // the 3 corners with data
     Nearest,   // the nearest corner
+    Weighted,  // weights of up to 4 points
 };
 
 struct Plan {
-    Kind kind;
-    bool used[4];  // the corner has data and contributes to the value
-    int  pivot;    // Plane: the corner next to both of the others
-    int  nearest;  // Nearest
+    Kind   kind;
+    bool   used[4];    // the corner has data and contributes to the value
+    int    pivot;      // Plane: the corner next to both of the others
+    int    nearest;    // Nearest
+    double weight[4];  // Weighted
 };
 
 struct CellValue {
@@ -213,8 +216,8 @@ bool make_plan(GridData::Cell const& cell, bool const present[4], GridOptions co
 
 // The first cell that can be used for `llh` and how. `has_data` tells if a corner has the data.
 template <typename HasData>
-GridData::GridStatus select_cell(GridData const& grid, Float3 llh, GridOptions const& options,
-                                 HasData has_data, GridData::Cell& cell, Plan& plan) {
+GridData::GridStatus select_array_cell(GridData const& grid, Float3 llh, GridOptions const& options,
+                                       HasData has_data, GridData::Cell& cell, Plan& plan) {
     GridData::Cell cells[4];
     auto           count        = grid.find_cells(llh, cells);
     auto           data_missing = false;
@@ -241,6 +244,242 @@ GridData::GridStatus select_cell(GridData const& grid, Float3 llh, GridOptions c
                           GridData::GridStatus::PositionOutsideGrid;
 }
 
+constexpr double EARTH_RADIUS = 6371000.0;  // mean Earth radius [m]
+
+struct Neighbour {
+    long   index;
+    double east;  // [m] from the position
+    double north;
+    double distance;
+};
+
+Neighbour neighbour_of(GridPoint const& point, long index, Float3 llh) {
+    auto longitude = std::fmod(point.position.y * constant::DEG2RAD - llh.y, 2.0 * M_PI);
+    if (longitude > M_PI) longitude -= 2.0 * M_PI;
+    if (longitude < -M_PI) longitude += 2.0 * M_PI;
+
+    Neighbour neighbour;
+    neighbour.index    = index;
+    neighbour.east     = longitude * std::cos(llh.x) * EARTH_RADIUS;
+    neighbour.north    = (point.position.x * constant::DEG2RAD - llh.x) * EARTH_RADIUS;
+    neighbour.distance = std::hypot(neighbour.east, neighbour.north);
+    return neighbour;
+}
+
+// Barycentric weights of the origin (the position) in the triangle a, b, c. False if the origin is
+// outside of the triangle or the triangle is degenerate.
+bool barycentric(Neighbour const& a, Neighbour const& b, Neighbour const& c, double& area,
+                 double weight[3]) {
+    auto cross = [](Neighbour const& u, Neighbour const& v) {
+        return u.east * v.north - u.north * v.east;
+    };
+
+    auto twice_area = cross(a, b) + cross(b, c) + cross(c, a);
+    if (std::fabs(twice_area) < 1.0) return false;  // [m^2]
+
+    weight[0] = cross(b, c) / twice_area;
+    weight[1] = cross(c, a) / twice_area;
+    weight[2] = cross(a, b) / twice_area;
+    area      = std::fabs(twice_area) * 0.5;
+
+    constexpr double TOLERANCE = 1e-9;
+    return weight[0] >= -TOLERANCE && weight[1] >= -TOLERANCE && weight[2] >= -TOLERANCE;
+}
+
+struct ListChoice {
+    int    count;
+    long   index[4];
+    double weight[4];
+    // The nearest points that the choice was made from
+    int  support_count;
+    long support[4];
+};
+
+// Chooses the points of a list (without cells) to interpolate from, among the points where
+// `eligible` is set. False if the position can not be interpolated from them.
+bool list_plan(GridData const& grid, Float3 llh, GridInterpolation method,
+               std::vector<char> const& eligible, ListChoice& choice) {
+    constexpr size_t TRIANGLE_CANDIDATES = 8;
+
+    choice = {};
+
+    std::vector<Neighbour> near;
+    for (size_t i = 0; i < grid.grid_points.size(); i++) {
+        if (!eligible[i]) continue;
+        near.push_back(neighbour_of(grid.grid_points[i], static_cast<long>(i), llh));
+    }
+    std::sort(near.begin(), near.end(), [](Neighbour const& a, Neighbour const& b) {
+        return a.distance < b.distance;
+    });
+    if (near.empty()) return false;
+
+    choice.support_count = static_cast<int>(std::min<size_t>(near.size(), 4));
+    for (int i = 0; i < choice.support_count; i++)
+        choice.support[i] = near[static_cast<size_t>(i)].index;
+
+    switch (method) {
+    case GridInterpolation::Nearest:
+        choice.count     = 1;
+        choice.index[0]  = near[0].index;
+        choice.weight[0] = 1.0;
+        return true;
+    case GridInterpolation::ThreePoint: {
+        auto count    = std::min(near.size(), TRIANGLE_CANDIDATES);
+        auto found    = false;
+        auto min_area = 0.0;
+        for (size_t a = 0; a < count; a++) {
+            for (size_t b = a + 1; b < count; b++) {
+                for (size_t c = b + 1; c < count; c++) {
+                    double area;
+                    double weight[3];
+                    if (!barycentric(near[a], near[b], near[c], area, weight)) continue;
+                    if (found && area >= min_area) continue;
+
+                    found            = true;
+                    min_area         = area;
+                    choice.count     = 3;
+                    choice.index[0]  = near[a].index;
+                    choice.index[1]  = near[b].index;
+                    choice.index[2]  = near[c].index;
+                    choice.weight[0] = weight[0];
+                    choice.weight[1] = weight[1];
+                    choice.weight[2] = weight[2];
+                }
+            }
+        }
+        return found;
+    }
+    case GridInterpolation::FourPoint: {
+        if (near.size() < 4) return false;
+
+        // the position is inside the hull of the 4 points if it is inside a triangle of 3 of them
+        auto inside = false;
+        for (size_t omit = 0; omit < 4 && !inside; omit++) {
+            Neighbour const* triangle[3];
+            size_t           n = 0;
+            for (size_t i = 0; i < 4; i++) {
+                if (i != omit) triangle[n++] = &near[i];
+            }
+            double area;
+            double weight[3];
+            inside = barycentric(*triangle[0], *triangle[1], *triangle[2], area, weight);
+        }
+        if (!inside) return false;
+
+        // inverse distance weighting
+        auto exact = -1;
+        auto total = 0.0;
+        for (int i = 0; i < 4; i++) {
+            auto distance = near[static_cast<size_t>(i)].distance;
+            if (distance < 1e-3) exact = i;
+            choice.index[i]  = near[static_cast<size_t>(i)].index;
+            choice.weight[i] = 1.0 / (distance * distance + 1e-12);
+            total += choice.weight[i];
+        }
+        for (int i = 0; i < 4; i++)
+            choice.weight[i] = exact >= 0 ? (i == exact ? 1.0 : 0.0) : choice.weight[i] / total;
+        choice.count = 4;
+        return true;
+    }
+    }
+    return false;
+}
+
+template <typename HasData>
+GridData::GridStatus select_list(GridData const& grid, Float3 llh, GridOptions const& options,
+                                 HasData has_data, GridData::Cell& cell, Plan& plan) {
+    auto count = grid.grid_points.size();
+
+    std::vector<char> present(count);
+    std::vector<char> all(count, 1);
+    for (size_t i = 0; i < count; i++)
+        present[i] = grid.grid_points[i].valid && has_data(grid.grid_points[i]);
+
+    auto build = [&](ListChoice const& choice) {
+        cell      = {};
+        plan      = {};
+        plan.kind = Kind::Weighted;
+        for (int i = 0; i < choice.count; i++) {
+            auto index     = static_cast<size_t>(choice.index[i]);
+            cell.corner[i] = &grid.grid_points[index];
+            plan.weight[i] = choice.weight[i];
+            plan.used[i]   = present[index] != 0;
+        }
+    };
+
+    ListChoice choice;
+    if (list_plan(grid, llh, options.interpolation, present, choice)) {
+        build(choice);
+        return GridData::GridStatus::Success;
+    }
+
+    // Points without data count as zero, as long as one of the points that the choice is made
+    // from has data
+    if (list_plan(grid, llh, options.interpolation, all, choice)) {
+        if (options.missing_as_zero) {
+            auto any = false;
+            for (int i = 0; i < choice.support_count; i++)
+                any = any || present[static_cast<size_t>(choice.support[i])];
+            for (int i = 0; i < choice.count; i++)
+                any = any || present[static_cast<size_t>(choice.index[i])];
+            if (any) {
+                build(choice);
+                return GridData::GridStatus::Success;
+            }
+        }
+        return GridData::GridStatus::MissingSatelliteData;
+    }
+
+    return GridData::GridStatus::PositionOutsideGrid;
+}
+
+// The nearest point with data, for a position that can not be interpolated
+template <typename HasData>
+bool select_extrapolated(GridData const& grid, Float3 llh, GridOptions const& options,
+                         HasData has_data, GridData::Cell& cell, Plan& plan) {
+    GridPoint const* nearest = nullptr;
+    auto             minimum = 0.0;
+    for (size_t i = 0; i < grid.grid_points.size(); i++) {
+        auto const& point = grid.grid_points[i];
+        if (!point.valid || !has_data(point)) continue;
+
+        auto distance = neighbour_of(point, static_cast<long>(i), llh).distance;
+        if (!nearest || distance < minimum) {
+            nearest = &point;
+            minimum = distance;
+        }
+    }
+    if (!nearest) return false;
+
+    if (options.extrapolation_distance > 0.0 && minimum > options.extrapolation_distance) {
+        VERBOSEF("nearest point is too far for extrapolation (%.0fm > %.0fm limit)", minimum,
+                 options.extrapolation_distance);
+        return false;
+    }
+
+    VERBOSEF("extrapolating from the nearest point (%.0fm)", minimum);
+    cell           = {};
+    cell.corner[0] = nearest;
+    plan           = {};
+    plan.kind      = Kind::Weighted;
+    plan.weight[0] = 1.0;
+    plan.used[0]   = true;
+    return true;
+}
+
+template <typename HasData>
+GridData::GridStatus select_cell(GridData const& grid, Float3 llh, GridOptions const& options,
+                                 HasData has_data, GridData::Cell& cell, Plan& plan) {
+    auto status = grid.is_list ? select_list(grid, llh, options, has_data, cell, plan) :
+                                 select_array_cell(grid, llh, options, has_data, cell, plan);
+    if (status == GridData::GridStatus::PositionOutsideGrid &&
+        options.extrapolation == GridExtrapolation::Nearest &&
+        select_extrapolated(grid, llh, options, has_data, cell, plan)) {
+        return GridData::GridStatus::Success;
+    }
+    return status;
+}
+
 CellValue interpolate_cell(Plan const& plan, GridData::Cell const& cell, double const v[4]) {
     CellValue result{};
     switch (plan.kind) {
@@ -265,6 +504,10 @@ CellValue interpolate_cell(Plan const& plan, GridData::Cell const& cell, double 
         break;
     }
     case Kind::Nearest: result.value = v[plan.nearest]; break;
+    case Kind::Weighted:
+        for (int i = 0; i < 4; i++)
+            result.value += plan.weight[i] * v[i];
+        break;
     }
     return result;
 }
@@ -274,6 +517,7 @@ char const* kind_name(Kind kind) {
     case Kind::Bilinear: return "bilinear";
     case Kind::Plane: return "plane (3 points)";
     case Kind::Nearest: return "nearest";
+    case Kind::Weighted: return "weighted";
     }
     return "unknown";
 }
@@ -397,10 +641,8 @@ GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, doub
         auto lon_span = delta_longitude;  // [deg]
         auto cos_lat  = std::cos(llh.x);
         if (lat_span != 0.0 && lon_span != 0.0 && cos_lat > 1e-6) {
-            // mean Earth radius
-            constexpr double EARTH_RADIUS = 6371000.0;
-            auto             deg_to_m_n   = EARTH_RADIUS * constant::DEG2RAD;
-            auto             deg_to_m_e   = EARTH_RADIUS * cos_lat * constant::DEG2RAD;
+            auto deg_to_m_n = EARTH_RADIUS * constant::DEG2RAD;
+            auto deg_to_m_e = EARTH_RADIUS * cos_lat * constant::DEG2RAD;
 
             correction.dry_north    = dry_value.d_row / lat_span / deg_to_m_n;
             correction.dry_east     = dry_value.d_col / lon_span / deg_to_m_e;
@@ -446,6 +688,46 @@ bool parse_grid_interpolation(std::string const& name, GridInterpolation& interp
         }
     }
     return false;
+}
+
+namespace {
+
+struct GridExtrapolationName {
+    GridExtrapolation extrapolation;
+    char const*       name;
+};
+
+constexpr GridExtrapolationName GRID_EXTRAPOLATION_NAMES[] = {
+    {GridExtrapolation::None, "none"},
+    {GridExtrapolation::Nearest, "nearest"},
+};
+
+}  // namespace
+
+char const* grid_extrapolation_name(GridExtrapolation extrapolation) NOEXCEPT {
+    for (auto const& entry : GRID_EXTRAPOLATION_NAMES) {
+        if (entry.extrapolation == extrapolation) return entry.name;
+    }
+    return "unknown";
+}
+
+bool parse_grid_extrapolation(std::string const& name, GridExtrapolation& extrapolation) NOEXCEPT {
+    for (auto const& entry : GRID_EXTRAPOLATION_NAMES) {
+        if (name == entry.name) {
+            extrapolation = entry.extrapolation;
+            return true;
+        }
+    }
+    return false;
+}
+
+std::string grid_extrapolation_names() {
+    std::string names;
+    for (auto const& entry : GRID_EXTRAPOLATION_NAMES) {
+        if (!names.empty()) names += '|';
+        names += entry.name;
+    }
+    return names;
 }
 
 std::string grid_interpolation_names() {

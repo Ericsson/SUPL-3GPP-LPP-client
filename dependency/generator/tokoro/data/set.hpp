@@ -34,6 +34,12 @@ struct CorrectionPointInfo {
 };
 
 struct CorrectionPointSet {
+    enum class Layout {
+        Array,  // regular grid, `reference_point_*` is the north-west corner
+        List,   // list of points, `reference_point_*` is the 1st point
+    };
+
+    Layout   layout;
     uint16_t set_id;
     long     grid_point_count;
     double   reference_point_latitude;
@@ -43,6 +49,9 @@ struct CorrectionPointSet {
     long     number_of_steps_latitude;
     long     number_of_steps_longitude;
     uint64_t bitmask;
+
+    // List: the location [deg] (latitude, longitude) of every point, in the order of the gridList
+    std::vector<Float3> list_points;
 
     // Convert array index (the index of the grid point in the array from LPP) to an absolute index
     // that includes invalid grid points.

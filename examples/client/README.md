@@ -337,6 +337,13 @@
         --tkr-grid-missing-as-zero        Use a zero residual for grid corners
                                           without data when the interpolation
                                           would otherwise fail
+        --tkr-grid-extrapolation=[method] What to do with a position that
+                                          can not be interpolated. One of:
+                                          none (default), nearest
+        --tkr-grid-extrapolation-distance=[meters]
+                                          Furthest distance from the nearest
+                                          point for extrapolation, 0 for no
+                                          limit
         --tkr-fixed-frame=[frame]         Frame of --tkr-fixed-itrf-x/y/z (e.g.
                                           etrf2014, sweref99, itrf2014); the
                                           position is transformed to

@@ -522,7 +522,10 @@ static args::ValueFlag<std::string> gGridInterpolation{
     "Interpolation of the gridded SSR corrections (STEC residual, troposphere) to the position. "
     "One of: four-point (default, bilinear, all 4 corners of the grid cell required), three-point "
     "(bilinear, or linear over the 3 corners that have data when the position is inside their "
-    "triangle), nearest (the nearest corner of the grid cell)",
+    "triangle), nearest (the nearest corner of the grid cell). For a list of correction points: "
+    "four-point is inverse distance weighting of the 4 nearest points around the position, "
+    "three-point is linear over the smallest triangle of the nearest points that contains it, "
+    "nearest is the nearest point",
     {"tkr-grid-interpolation"},
 };
 
@@ -533,6 +536,23 @@ static args::Flag gGridMissingAsZero{
     "without data when the interpolation would otherwise fail. At least one corner of the grid "
     "cell must have data",
     {"tkr-grid-missing-as-zero"},
+};
+
+static args::ValueFlag<std::string> gGridExtrapolation{
+    gGroup,
+    "method",
+    "What to do with a position that the grid interpolation can not handle (outside of the grid, "
+    "or not surrounded by enough points with data). One of: none (default, the correction is not "
+    "available), nearest (the value of the nearest point with data)",
+    {"tkr-grid-extrapolation"},
+};
+
+static args::ValueFlag<double> gGridExtrapolationDistance{
+    gGroup,
+    "meters",
+    "Furthest distance from the nearest point for --tkr-grid-extrapolation, 0 for no limit",
+    {"tkr-grid-extrapolation-distance"},
+    0.0,
 };
 
 static args::Flag gIgnoreBitmask{
@@ -783,12 +803,14 @@ void parse(Config* config) {
     tokoro.generation_strategy = TokoroConfig::GenerationStrategy::AssistanceData;
     tokoro.time_step           = 1.0;
 
-    tokoro.antex_file           = "";
-    tokoro.ignore_bitmask       = false;
-    tokoro.iono_polynomial_only = false;
-    tokoro.grid_interpolation   = generator::tokoro::GridInterpolation::FourPoint;
-    tokoro.grid_missing_as_zero = false;
-    tokoro.orbit_frame          = "";
+    tokoro.antex_file                  = "";
+    tokoro.ignore_bitmask              = false;
+    tokoro.iono_polynomial_only        = false;
+    tokoro.grid_interpolation          = generator::tokoro::GridInterpolation::FourPoint;
+    tokoro.grid_missing_as_zero        = false;
+    tokoro.grid_extrapolation          = generator::tokoro::GridExtrapolation::None;
+    tokoro.grid_extrapolation_distance = 0.0;
+    tokoro.orbit_frame                 = "";
     tokoro.orbit_source_frames.clear();
     tokoro.deduplicate_epochs  = false;
     tokoro.output_tag          = "";
@@ -1019,6 +1041,20 @@ void parse(Config* config) {
         }
     }
     if (gGridMissingAsZero) tokoro.grid_missing_as_zero = true;
+    if (gGridExtrapolation) {
+        if (!generator::tokoro::parse_grid_extrapolation(gGridExtrapolation.Get(),
+                                                         tokoro.grid_extrapolation)) {
+            throw args::ValidationError("--tkr-grid-extrapolation must be one of " +
+                                        generator::tokoro::grid_extrapolation_names() + ", got `" +
+                                        gGridExtrapolation.Get() + "`");
+        }
+    }
+    if (gGridExtrapolationDistance) {
+        if (gGridExtrapolationDistance.Get() < 0.0) {
+            throw args::ValidationError("--tkr-grid-extrapolation-distance must not be negative");
+        }
+        tokoro.grid_extrapolation_distance = gGridExtrapolationDistance.Get();
+    }
     if (gFixedFrame) tokoro.fixed_frame = gFixedFrame.Get();
     if (gFixedEpoch) tokoro.fixed_epoch = gFixedEpoch.Get();
     if (gSsrFrame) tokoro.ssr_frame = gSsrFrame.Get();
@@ -1250,6 +1286,9 @@ void dump(TokoroConfig const& config) {
     DEBUGF("grid interpolation: %s%s",
            generator::tokoro::grid_interpolation_name(config.grid_interpolation),
            config.grid_missing_as_zero ? " (missing as zero)" : "");
+    DEBUGF("grid extrapolation: %s (max distance %.0f m)",
+           generator::tokoro::grid_extrapolation_name(config.grid_extrapolation),
+           config.grid_extrapolation_distance);
     DEBUGF("orbit frame: %s",
            config.orbit_frame.empty() ? "broadcast" : config.orbit_frame.c_str());
     for (auto const& value : config.orbit_source_frames)

@@ -24,9 +24,11 @@ EXTERNAL_WARNINGS_PUSH
 #include <GNSS-GenericAssistData.h>
 #include <GNSS-GenericAssistDataElement.h>
 #include <GNSS-SSR-CorrectionPoints-r16.h>
+#include <GNSS-SSR-ListOfCorrectionPoints-r16.h>
 #include <GNSS-SSR-OrbitCorrections-r15.h>
 #include <LPP-Message.h>
 #include <LPP-MessageBody.h>
+#include <RelativeLocationElement-r16.h>
 #include <SSR-CodeBiasSatElement-r15.h>
 #include <SSR-CodeBiasSignalElement-r15.h>
 #include <SSR-PhaseBiasSatElement-r16.h>
@@ -1438,15 +1440,17 @@ bool Generator::process_lpp(LPP_Message const& lpp_message) NOEXCEPT {
     if (!mCorrectionData) {
         mCorrectionData = std::unique_ptr<CorrectionData>(new CorrectionData());
     }
-    mCorrectionData->correction_point_set         = mCorrectionPointSet.get();
-    mCorrectionData->max_orbit_age                = mMaxOrbitAge;
-    mCorrectionData->max_clock_age                = mMaxClockAge;
-    mCorrectionData->max_bias_age                 = mMaxBiasAge;
-    mCorrectionData->max_iono_age                 = mMaxIonoAge;
-    mCorrectionData->max_tropo_age                = mMaxTropoAge;
-    mCorrectionData->iono_polynomial_only         = mIonoPolynomialOnly;
-    mCorrectionData->grid_options.interpolation   = mGridInterpolation;
-    mCorrectionData->grid_options.missing_as_zero = mGridMissingAsZero;
+    mCorrectionData->correction_point_set                = mCorrectionPointSet.get();
+    mCorrectionData->max_orbit_age                       = mMaxOrbitAge;
+    mCorrectionData->max_clock_age                       = mMaxClockAge;
+    mCorrectionData->max_bias_age                        = mMaxBiasAge;
+    mCorrectionData->max_iono_age                        = mMaxIonoAge;
+    mCorrectionData->max_tropo_age                       = mMaxTropoAge;
+    mCorrectionData->iono_polynomial_only                = mIonoPolynomialOnly;
+    mCorrectionData->grid_options.interpolation          = mGridInterpolation;
+    mCorrectionData->grid_options.missing_as_zero        = mGridMissingAsZero;
+    mCorrectionData->grid_options.extrapolation          = mGridExtrapolation;
+    mCorrectionData->grid_options.extrapolation_distance = mGridExtrapolationDistance;
     find_corrections(message);
 
     mLastCorrectionDataTime = mCorrectionData->latest_correction_time();
@@ -1533,8 +1537,46 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const& me
         }
 
         mCorrectionPointSet.reset(cps_ptr);
+    } else if (ssr.correctionPoints_r16.present ==
+               GNSS_SSR_CorrectionPoints_r16__correctionPoints_r16_PR_listOfCorrectionPoints_r16) {
+        auto& list = ssr.correctionPoints_r16.choice.listOfCorrectionPoints_r16;
+
+        CorrectionPointSet correction_point_set{};
+        correction_point_set.layout = CorrectionPointSet::Layout::List;
+        correction_point_set.set_id = static_cast<uint16_t>(ssr.correctionPointSetID_r16);
+        correction_point_set.reference_point_latitude =
+            decode::reference_point_latitude_r16(list.referencePointLatitude_r16);
+        correction_point_set.reference_point_longitude =
+            decode::reference_point_longitude_r16(list.referencePointLongitude_r16);
+
+        // The reference point is the 1st correction point, the others are given relative to the
+        // previous point
+        auto latitude  = correction_point_set.reference_point_latitude;
+        auto longitude = correction_point_set.reference_point_longitude;
+        correction_point_set.list_points.push_back(Float3{latitude, longitude, 0.0});
+        for (int i = 0; i < list.relativeLocationsList_r16.list.count; i++) {
+            auto element = list.relativeLocationsList_r16.list.array[i];
+            if (!element) continue;
+            latitude += decode::delta_latitude_r16(element->deltaLatitude_r16);
+            longitude += decode::delta_longitude_r16(element->deltaLongitude_r16);
+            if (longitude >= 180.0) longitude -= 360.0;
+            if (longitude < -180.0) longitude += 360.0;
+            correction_point_set.list_points.push_back(Float3{latitude, longitude, 0.0});
+        }
+
+        correction_point_set.grid_point_count =
+            static_cast<long>(correction_point_set.list_points.size());
+        correction_point_set.bitmask = 0xFFFFFFFFFFFFFFFF;
+
+        DEBUGF("correction point set (list):");
+        DEBUGF("  set_id: %u", correction_point_set.set_id);
+        for (size_t i = 0; i < correction_point_set.list_points.size(); i++) {
+            DEBUGF("    %2zu: %+18.14f %+18.14f", i, correction_point_set.list_points[i].x,
+                   correction_point_set.list_points[i].y);
+        }
+
+        mCorrectionPointSet.reset(new CorrectionPointSet(correction_point_set));
     } else {
-        // TODO(ewasjon): [low-priority] Support list of correction points
         WARNF("unsupported correction point type");
     }
 }
@@ -1933,6 +1975,7 @@ void Generator::process_ephemeris(ephemeris::GloEphemeris const& ephemeris) NOEX
 
 bool Generator::get_grid_position(int east, int north, double* lat, double* lon) const NOEXCEPT {
     if (!mCorrectionPointSet) return false;
+    if (mCorrectionPointSet->layout != CorrectionPointSet::Layout::Array) return false;
     ASSERT(lat, "lat is null");
     ASSERT(lon, "lon is null");
     *lat = mCorrectionPointSet->reference_point_latitude -
@@ -2033,7 +2076,11 @@ SnapshotInput Generator::snapshot() const NOEXCEPT {
                                   input.ionospheric_polynomials, input.grid_data);
     }
 
-    if (mCorrectionPointSet) {
+    if (mCorrectionPointSet && mCorrectionPointSet->layout == CorrectionPointSet::Layout::List) {
+        WARNF("snapshot does not support a list of correction points, the gridded corrections are "
+              "not included");
+        input.grid_data.clear();
+    } else if (mCorrectionPointSet) {
         input.correction_point_set.set_id           = mCorrectionPointSet->set_id;
         input.correction_point_set.grid_point_count = mCorrectionPointSet->grid_point_count;
         input.correction_point_set.reference_point_latitude =
@@ -2114,16 +2161,18 @@ void Generator::load_snapshot(SnapshotInput const& input) NOEXCEPT {
             input.correction_point_set.number_of_steps_latitude;
         mCorrectionPointSet->number_of_steps_longitude =
             input.correction_point_set.number_of_steps_longitude;
-        mCorrectionPointSet->bitmask                  = input.correction_point_set.bitmask;
-        mCorrectionData->correction_point_set         = mCorrectionPointSet.get();
-        mCorrectionData->max_orbit_age                = mMaxOrbitAge;
-        mCorrectionData->max_clock_age                = mMaxClockAge;
-        mCorrectionData->max_bias_age                 = mMaxBiasAge;
-        mCorrectionData->max_iono_age                 = mMaxIonoAge;
-        mCorrectionData->max_tropo_age                = mMaxTropoAge;
-        mCorrectionData->iono_polynomial_only         = mIonoPolynomialOnly;
-        mCorrectionData->grid_options.interpolation   = mGridInterpolation;
-        mCorrectionData->grid_options.missing_as_zero = mGridMissingAsZero;
+        mCorrectionPointSet->bitmask                         = input.correction_point_set.bitmask;
+        mCorrectionData->correction_point_set                = mCorrectionPointSet.get();
+        mCorrectionData->max_orbit_age                       = mMaxOrbitAge;
+        mCorrectionData->max_clock_age                       = mMaxClockAge;
+        mCorrectionData->max_bias_age                        = mMaxBiasAge;
+        mCorrectionData->max_iono_age                        = mMaxIonoAge;
+        mCorrectionData->max_tropo_age                       = mMaxTropoAge;
+        mCorrectionData->iono_polynomial_only                = mIonoPolynomialOnly;
+        mCorrectionData->grid_options.interpolation          = mGridInterpolation;
+        mCorrectionData->grid_options.missing_as_zero        = mGridMissingAsZero;
+        mCorrectionData->grid_options.extrapolation          = mGridExtrapolation;
+        mCorrectionData->grid_options.extrapolation_distance = mGridExtrapolationDistance;
     }
 
     TRACEF("load correction data");
