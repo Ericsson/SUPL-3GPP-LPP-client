@@ -128,10 +128,11 @@ TEST_CASE("PZ-90.11 to ITRF2008 transformation") {
         graph.transform(FrameId::PZ90_11, FrameId::ITRF2008, 2026.4, 2026.4, pos, Vector3d::Zero());
     REQUIRE(result.steps.size() == 1);
 
-    // dX = -3 mm, dY = -1 mm; wy = -0.042 mas gives about -0.042e-3 / 206265 * z in x
+    // dX = -3 mm, dY = -1 mm; EPSG:7960 gives the rotations as coordinate frame rotations
+    // (+0.019, -0.042, +0.002 mas), the position vector rotations are the negated values
     auto mas = 4.84813681109536e-9;
     CHECK(result.final_position.x() - pos.x() ==
-          doctest::Approx(-0.003 - 0.002 * mas * pos.y() + -0.042 * mas * pos.z()));
+          doctest::Approx(-0.003 + 0.002 * mas * pos.y() + 0.042 * mas * pos.z()));
     auto difference = (result.final_position - pos).norm();
     CHECK(difference > 0.001);
     CHECK(difference < 0.02);
