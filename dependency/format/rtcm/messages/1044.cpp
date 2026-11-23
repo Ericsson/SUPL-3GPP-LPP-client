@@ -75,6 +75,10 @@ std::unique_ptr<Message> Rtcm1044::parse(std::vector<uint8_t> data) {
     m->tgd         = r.s(8, -31);
     m->iodc        = static_cast<uint16_t>(r.u(10));
     m->fit         = r.u(1) != 0;
+    if (!r.ok()) {
+        delete m;
+        return std::make_unique<ErrorMessage>(DF002(1044), std::move(data));
+    }
     return std::unique_ptr<Rtcm1044>(m);
 }
 

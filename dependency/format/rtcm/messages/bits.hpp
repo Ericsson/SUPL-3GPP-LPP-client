@@ -12,7 +12,15 @@ class BitReader {
 public:
     BitReader(std::vector<uint8_t> const& data, size_t bit) : mData(data), mBit(bit) {}
 
+    // Reading past the end of the data (or more than 64 bits) returns 0 and makes `ok()` false, so
+    // a message that is shorter than its definition can not read out of bounds.
     uint64_t u(size_t n) {
+        if (n > 64 || mBit + n > mData.size() * 8) {
+            mError = true;
+            mBit += n;
+            return 0;
+        }
+
         uint64_t value = 0;
         for (size_t i = 0; i < n; i++, mBit++) {
             auto byte = mData[mBit / 8];
@@ -39,10 +47,12 @@ public:
     double sm(size_t n, int exponent) { return std::ldexp(static_cast<double>(sm(n)), exponent); }
 
     size_t position() const { return mBit; }
+    bool   ok() const { return !mError; }
 
 private:
     std::vector<uint8_t> const& mData;
     size_t                      mBit;
+    bool                        mError{false};
 };
 
 }  // namespace rtcm

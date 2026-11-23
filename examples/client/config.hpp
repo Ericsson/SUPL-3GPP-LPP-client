@@ -270,6 +270,7 @@ struct Lpp2RtcmConfig {
     bool        generate_glonass;
     bool        generate_galileo;
     bool        generate_beidou;
+    bool        generate_qzss;
     MsmType     msm_type;
     bool        ignore_cnr;
     size_t      max_conversions;

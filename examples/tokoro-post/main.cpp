@@ -94,6 +94,7 @@ struct Config {
     bool                     antenna                    = false;  // enable ANTEX PCO/PCV correction
     bool                     iono_height_correction     = false;
     bool                     no_iod_consistency_check   = false;
+    bool                     ssr_gcc                    = false;
     bool                     code_bias_optional         = false;
     bool                     phase_bias_optional        = false;
     bool                     tropo_optional             = false;
@@ -105,6 +106,7 @@ struct Config {
     bool                     no_tropospheric_height_correction = false;
     bool                     no_tropo_hydrostatic_delta        = false;
     bool                     negative_phase_windup             = false;
+    bool                     negative_correction_sign          = false;
     bool                     no_phase_alignment                = false;
     bool                     generate_rinex                    = false;
     bool                     generate_residuals                = false;
@@ -244,6 +246,8 @@ static Config parse_args(int argc, char** argv) {
             cfg.iono_height_correction = true;
         else if (arg == "--no-iod-consistency-check")
             cfg.no_iod_consistency_check = true;
+        else if (arg == "--ssr-gcc")
+            cfg.ssr_gcc = true;
         else if (arg == "--code-bias-optional")
             cfg.code_bias_optional = true;
         else if (arg == "--phase-bias-optional")
@@ -268,6 +272,8 @@ static Config parse_args(int argc, char** argv) {
             cfg.msm_type = static_cast<uint32_t>(std::stoul(next()));
         else if (arg == "--negative-phase-windup")
             cfg.negative_phase_windup = true;
+        else if (arg == "--negative-correction-sign")
+            cfg.negative_correction_sign = true;
         else if (arg == "--no-phase-alignment")
             cfg.no_phase_alignment = true;
         else if (arg == "--lock-start" || arg == "--lock-rise") {
@@ -471,6 +477,7 @@ static Config parse_args(int argc, char** argv) {
                         "[--no-shapiro-correction] [--no-phase-windup-correction] "
                         "[--no-earth-solid-tides-correction] [--no-tropospheric-height-correction] "
                         "[--no-tropo-hydrostatic-delta] [--negative-phase-windup] "
+                        "[--negative-correction-sign] [--ssr-gcc] "
                         "[--no-phase-alignment] [--lock-start reset|max] "
                         "[--lock-rise reset|max] "
                         "[--tropo-model mops|saastamoinen|saastamoinen-gpt|gpt2|vmf3] "
@@ -626,6 +633,7 @@ int main(int argc, char** argv) {
     // Setup generator
     auto generator = std::make_unique<generator::tokoro::Generator>();
     generator->set_iod_consistency_check(!cfg.no_iod_consistency_check);
+    generator->set_ssr_generation_consistency_check(cfg.ssr_gcc);
     generator->set_ephemeris_max_cache(static_cast<size_t>(cfg.eph_cache));
     generator->set_max_orbit_age(cfg.max_orbit_age);
     generator->set_max_clock_age(cfg.max_clock_age);
@@ -725,6 +733,7 @@ int main(int argc, char** argv) {
     ref_station->set_use_ionospheric_height_correction(cfg.iono_height_correction);
     ref_station->set_elevation_mask(cfg.elevation_mask);
     ref_station->set_negative_phase_windup(cfg.negative_phase_windup);
+    ref_station->set_negative_correction_sign(cfg.negative_correction_sign);
     ref_station->set_lock_start(cfg.lock_start);
     ref_station->set_lock_rise(cfg.lock_rise);
     ref_station->set_ambiguity_randomization(cfg.ambiguity_randomization);
