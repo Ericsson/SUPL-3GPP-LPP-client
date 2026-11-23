@@ -37,7 +37,7 @@ void Satellite::set_ground_position(Float3 ground_position) NOEXCEPT {
     mGroundPositionLlh  = ecef_to_llh(mGroundPositionEcef, ellipsoid::gWgs84);
 }
 
-void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
+void Satellite::update(ts::Tai const& generation_time, bool diag_detail) NOEXCEPT {
     VSCOPE_FUNCTIONF("%s", mId.name());
 
     mEnabled       = false;
@@ -77,7 +77,9 @@ void Satellite::update(ts::Tai const& generation_time) NOEXCEPT {
         mDisableReason = "no_ephemeris";
 
         char buffer[64];
-        if (mEphemerisSearch.unsupported) {
+        if (!diag_detail) {
+            // the detail is only written to the diagnostics
+        } else if (mEphemerisSearch.unsupported) {
             mDisableDetail = "ephemeris_unsupported";
         } else if (mEphemerisSearch.total == 0) {
             mDisableDetail = "ephemeris_none_received";

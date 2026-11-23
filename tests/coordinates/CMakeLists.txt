@@ -15,9 +15,6 @@ target_link_libraries(coordinates_tests PRIVATE
 if(INCLUDE_GENERATOR_TOKORO)
     target_link_libraries(coordinates_tests PRIVATE dependency::generator::tokoro)
 endif()
-if(INCLUDE_GENERATOR_IDOKEIDO)
-    target_link_libraries(coordinates_tests PRIVATE dependency::generator::idokeido)
-endif()
 target_compile_options(coordinates_tests PRIVATE -fsanitize=address -g)
 target_link_options(coordinates_tests PRIVATE -fsanitize=address)
 

@@ -127,6 +127,7 @@ struct GridData {
         // their residuals/epochs) wherever the old and new grids overlap.
         grid_points.clear();
         grid_points.resize(static_cast<size_t>(grid_point_count));
+        array_lookup.clear();
     }
 
     void add_point(CorrectionPointInfo const& info) NOEXCEPT {
@@ -143,9 +144,22 @@ struct GridData {
         grid_point.ionospheric_residual_epoch.clear();
         grid_point.latitude_index  = info.latitude_index;
         grid_point.longitude_index = info.longitude_index;
+
+        if (info.is_valid && info.array_index >= 0) {
+            auto array_index = static_cast<size_t>(info.array_index);
+            if (array_lookup.size() <= array_index) array_lookup.resize(array_index + 1, -1);
+            array_lookup[array_index] = info.absolute_index;
+        }
     }
 
     GridPoint* point_from_array_index(long array_index) {
+        if (array_index >= 0 && static_cast<size_t>(array_index) < array_lookup.size()) {
+            auto absolute_index = array_lookup[static_cast<size_t>(array_index)];
+            if (absolute_index >= 0 && absolute_index < static_cast<long>(grid_points.size())) {
+                auto& grid_point = grid_points[static_cast<size_t>(absolute_index)];
+                if (grid_point.valid && grid_point.array_index == array_index) return &grid_point;
+            }
+        }
         for (auto& grid_point : grid_points) {
             if (grid_point.valid && grid_point.array_index == array_index) return &grid_point;
         }
@@ -164,6 +178,7 @@ struct GridData {
     long                   number_of_steps_latitude;
     long                   number_of_steps_longitude;
     std::vector<GridPoint> grid_points;
+    std::vector<long>      array_lookup;  // array index -> absolute index (-1: none)
     ts::Tai                epoch_time;
     uint16_t               ssr_iod{0};  // SSR IOD of the gridded message
     bool                   ssr_iod_valid{false};

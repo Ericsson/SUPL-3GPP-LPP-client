@@ -16,7 +16,7 @@ dependency/          # Library modules (each is a CMake static lib)
   time/              # GPS/UTC/TAI/BDT/GST/GLO time systems
   ephemeris/         # GPS/GAL/BDS/GLO/QZS ephemeris computation
   format/            # Parsers: nmea · ubx · rtcm · lpp · at · antex · ctrl · nav · rinex
-  generator/         # Generators: rtcm · spartn · tokoro · idokeido (all optional)
+  generator/         # Generators: rtcm · spartn · tokoro (all optional)
   io/                # Serial · TCP · UDP · File · stdin/stdout + stream adapters
   scheduler/         # epoll event loop (Scheduler, Timeout, Periodic, Stream)
   lpp/               # LPP client, sessions, assistance data, capabilities
@@ -43,7 +43,6 @@ docker/              # Multi-platform Docker build infrastructure
 | `INCLUDE_GENERATOR_RTCM` | Enable RTCM generator |
 | `INCLUDE_GENERATOR_SPARTN` | Enable SPARTN generator |
 | `INCLUDE_GENERATOR_TOKORO` | Enable Tokoro OSR generator (requires RTCM) |
-| `INCLUDE_GENERATOR_IDOKEIDO` | Enable Idokeido PPP generator |
 | `INCLUDE_FORMAT_RINEX` | Enable RINEX builder (requires RTCM generator) |
 | `INCLUDE_FORMAT_ANTEX` | Enable ANTEX parser (requires RTCM generator) |
 | `DATA_TRACING` | Enable datatrace module |

@@ -104,19 +104,6 @@ if(INCLUDE_GENERATOR_TOKORO)
     endif()
 endif()
 
-if(INCLUDE_GENERATOR_IDOKEIDO)
-    target_sources(example_client PRIVATE
-        "config/idokeido.cpp"
-        "processor/idokeido.cpp"
-    )
-    target_compile_definitions(example_client PRIVATE "INCLUDE_GENERATOR_IDOKEIDO=1")
-    target_link_libraries(example_client PRIVATE dependency::format::nav)
-    if(INCLUDE_FORMAT_ANTEX)
-        target_link_libraries(example_client PRIVATE dependency::format::antex)
-    endif()
-    target_link_libraries(example_client PRIVATE dependency::generator::idokeido)
-endif()
-
 if(DATA_TRACING)
     target_link_libraries(example_client PRIVATE dependency::datatrace)
 endif()

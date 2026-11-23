@@ -75,7 +75,9 @@ public:
 
     void set_ground_position(Float3 ground_position) NOEXCEPT;
 
-    void update(ts::Tai const& generation_time) NOEXCEPT;
+    // `diag_detail`: build the detail of why the satellite is disabled (only written to the
+    // diagnostics)
+    void update(ts::Tai const& generation_time, bool diag_detail) NOEXCEPT;
 
     NODISCARD const SatelliteId& id() const NOEXCEPT { return mId; }
 

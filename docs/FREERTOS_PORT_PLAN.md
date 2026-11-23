@@ -7,7 +7,7 @@
 
 ## 1. Goal
 
-Port the LPP/SUPL protocol stack, LPP→RTCM/SPARTN converters, and a trimmed `example-client` to run on an MPU-class target running FreeRTOS (similar to a cellular-modem application processor). Networking through FreeRTOS-Plus-TCP. Heap allowed (heap_4/heap_5). TLS deferred. File I/O, TCP/UDP servers, PTY, Tokoro/Idokeido/RINEX/ANTEX, fuzzing, and on-target unit tests are out of scope.
+Port the LPP/SUPL protocol stack, LPP→RTCM/SPARTN converters, and a trimmed `example-client` to run on an MPU-class target running FreeRTOS (similar to a cellular-modem application processor). Networking through FreeRTOS-Plus-TCP. Heap allowed (heap_4/heap_5). TLS deferred. File I/O, TCP/UDP servers, PTY, Tokoro/RINEX/ANTEX, fuzzing, and on-target unit tests are out of scope.
 
 ## 2. Scope
 
@@ -38,7 +38,7 @@ Port the LPP/SUPL protocol stack, LPP→RTCM/SPARTN converters, and a trimmed `e
 ### 2.2 Out of Scope (FreeRTOS build)
 
 - `dependency/format/rinex`, `dependency/format/antex`
-- `dependency/generator/tokoro`, `dependency/generator/idokeido`
+- `dependency/generator/tokoro`
 - `dependency/datatrace`
 - `dependency/modem` (AT-driver — may revisit once a FreeRTOS serial driver exists)
 - TCP/UDP servers, PTY streams, stdin/stdout streams, file I/O streams
@@ -452,7 +452,7 @@ Each task is an independently demoable increment. No orphaned code — every add
   - `USE_OPENSSL=OFF`
   - `BUILD_TESTING=OFF` (overridable for host-test, see Task 13a)
   - `INCLUDE_FORMAT_RINEX=OFF`, `INCLUDE_FORMAT_ANTEX=OFF`
-  - `INCLUDE_GENERATOR_TOKORO=OFF`, `INCLUDE_GENERATOR_IDOKEIDO=OFF`
+  - `INCLUDE_GENERATOR_TOKORO=OFF`
   - `DATA_TRACING=OFF`
   - `PLATFORM_HAS_TCP_SERVER=OFF`, `PLATFORM_HAS_FS=OFF`
   - `BUILD_EXAMPLE_TRANSFORM=OFF`
@@ -681,7 +681,7 @@ ctest --test-dir build-fr-host --output-on-failure
   - Required `FreeRTOSConfig.h` / `FreeRTOSIPConfig.h` settings (copy of §5)
   - App-supplied hooks: `pal_log_output`, network init (MAC/IP), hard-coded SUPL endpoint `-D` flags
   - Heap sizing guidance (64–128 KiB minimum for protocol stack; measure per target)
-  - Known limitations in this port: no TLS, no TCP/UDP servers, no file I/O, no Tokoro/Idokeido/RINEX/ANTEX, no on-target unit tests
+  - Known limitations in this port: no TLS, no TCP/UDP servers, no file I/O, no Tokoro/RINEX/ANTEX, no on-target unit tests
 - Update `README.md` — add "FreeRTOS support" subsection under Prerequisites with pointer to `docs/freertos-port-usage.md`
 - Update `CHANGELOG.md` — version bump + one-liner per `AGENTS.md` rule 8:
   ```

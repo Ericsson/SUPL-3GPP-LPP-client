@@ -10,9 +10,6 @@
 #ifdef INCLUDE_GENERATOR_SPARTN
 #include <generator/spartn2/generator.hpp>
 #endif
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-#include <generator/idokeido/idokeido.hpp>
-#endif
 #ifdef INCLUDE_GENERATOR_TOKORO
 #include <generator/tokoro/grid_interpolation.hpp>
 #include <generator/tokoro/troposphere.hpp>
@@ -521,27 +518,6 @@ struct TokoroConfig {
 };
 #endif
 
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-struct IdokeidoConfig {
-    bool enabled;
-
-    bool gps;
-    bool glonass;
-    bool galileo;
-    bool beidou;
-
-    double      update_rate;
-    std::string ephemeris_cache;
-
-    idokeido::WeightFunction    weight_function;
-    idokeido::EpochSelection    epoch_selection;
-    idokeido::RelativisticModel relativistic_model;
-    idokeido::IonosphericMode   ionospheric_mode;
-    double                      observation_window;
-    std::string                 output_tag;
-};
-#endif
-
 struct NtripConfig {
     bool        enabled = false;
     std::string host;
@@ -597,9 +573,6 @@ struct Config {
 #endif
 #ifdef INCLUDE_GENERATOR_TOKORO
     TokoroConfig tokoro;
-#endif
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-    IdokeidoConfig idokeido;
 #endif
     LoggingConfig logging;
 #ifdef DATA_TRACING
@@ -730,14 +703,6 @@ void setup(args::ArgumentParser& parser);
 void parse(Config* config);
 void dump(TokoroConfig const& config);
 }  // namespace tokoro
-#endif
-
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-namespace idokeido {
-void setup(args::ArgumentParser& parser);
-void parse(Config* config);
-void dump(IdokeidoConfig const& config);
-}  // namespace idokeido
 #endif
 
 #ifdef DATA_TRACING

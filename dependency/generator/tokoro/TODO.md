@@ -30,7 +30,8 @@
   - Neither specification defines extrapolation outside the grid or the behaviour when fewer than 3 valid points surround the user.
 - [x] Grid interpolation method: `--tkr-grid-interpolation` (client) / `--grid-interpolation` (tokoro-post), `four-point` (default, bilinear, all 4 corners of the cell required), `three-point` (bilinear, or linear over the 3 corners with data when the position is inside their triangle, as Compact SSR "4 (or 3)") and `nearest` (nearest corner of the cell). `--tkr-grid-missing-as-zero` / `--grid-missing-as-zero` counts corners without data (masked, or no value for the satellite) as a zero residual (zero variation from the nominal troposphere delay) when the method would otherwise fail; one corner must have data. Applies to the STEC residual and the troposphere.
 - [x] Extrapolation: `--tkr-grid-extrapolation nearest` (client) / `--grid-extrapolation` (tokoro-post) uses the nearest point with data for a position that can not be interpolated (outside of the grid, or not surrounded by enough points with data), with `--tkr-grid-extrapolation-distance` / `--grid-extrapolation-distance` as the limit [m] from the nearest point. Default: none.
-- [ ] Grid: extrapolation that keeps the slope (plane through the nearest cell) and a troposphere gradient for a list of correction points (only the grid has one, from the bilinear/plane slope).
+- [x] Troposphere gradient for a list of correction points: `three-point` gives the slope of the triangle (checked against finite differences); `four-point` (IDW) and `nearest` have none.
+- [ ] Extrapolation that keeps the slope (plane through the nearest cell or triangle) instead of the value of the nearest point.
 - [ ] Snapshot recording does not support a list of correction points (the gridded corrections are left out, with a warning).
 - [ ] Interpolation of a list of correction points is not defined by LPP or Compact SSR (see below); the weighting and the number of points used are a choice. Check against real data when a network that uses `listOfCorrectionPoints` is available.
 
@@ -89,7 +90,8 @@ Investigated, not an issue:
 
 - [x] Option to transform the broadcast orbits of all GNSS to a common frame before the SSR orbit correction: `--tkr-orbit-frame <frame>` / `--orbit-frame` (default off), with per-GNSS overrides `--tkr-orbit-source-frame <gnss>=<frame>` / `--orbit-source-frame`. Defaults: GPS WGS 84 by GPS week, GLONASS PZ-90.11; Galileo/BeiDou/QZSS only when a source frame is given. New PZ-90.11 <-> ITRF2008 edge (epoch 2010.0, no rates; values from EPSG:7960 (matches ICG-11 WG-D (2016) slide 11); EPSG gives them as coordinate frame rotations, so the rotations are negated for the position vector convention of the library; Navipedia's translation-only transform with opposite sign is not consistent with EPSG). `frame_from_gps_week` now returns WGS 84 (G2296) from week 2296.
 - [x] Coordinates library: PZ-90 -> PZ-90.02 (EPSG:7702), PZ-90.02 -> PZ-90.11 (EPSG:7703) and PZ-90 -> PZ-90.11 (EPSG:7704) transformations, both directions; checked against PROJ `cct` (coordinate frame convention) with the EPSG parameters from proj.db, same as PZ-90.11 -> ITRF2008.
-- [ ] Coordinates library: no GTRF (Galileo), JGS (QZSS) or CGCS2000 (BeiDou) transformations; WGS 84 only G2296 is connected (older realizations are not transformed).
+- [x] Coordinates library: the older WGS 84 realizations are connected to their ITRF (identity, EPSG:9757 G2139-ITRF2014, 7666 G1762-ITRF2008, 7669 G1674-ITRF2008, 7670 G1150-ITRF2000, 9076 G873-ITRF94, 7672 G730-ITRF92) and WGS 84 (G1150) to PZ-90.02 (EPSG:7961, checked against PROJ `cct`).
+- [ ] Coordinates library: no GTRF (Galileo), JGS (QZSS) or CGCS2000 (BeiDou) transformations (no source for the parameters yet).
 
 ## Fixed (round 8)
 
@@ -130,12 +132,11 @@ Found, not fixed (data source): the receiver in the session sends GLONASS RTCM 1
 ## Improvements
 
 - [ ] Station velocity models are compiled in (NKG_RF17vel, Nordic only); no external velocity grid files.
-- [ ] Shared broadcast-orbit frame handling for Idokeido SPP (broadcast-only orbits).
 
 
 - [x] Masked cell corner: the cell has no correction with `four-point`; use `three-point`, `nearest` or `--tkr-grid-missing-as-zero`.
 - [ ] `observation.cpp` `compute_ranges`: phase-range rate holds STEC, tropo and windup constant between the two states; only geometry and clock contribute.
-- [ ] `satellite.cpp` `update()`: diagnostic detail strings are built even when diagnostics are disabled (only on the no-ephemeris path).
-- [ ] `data/grid.hpp` `point_from_array_index`: O(n) scan.
+- [x] `satellite.cpp` `update()`: the diagnostic detail strings are only built when diagnostics are enabled.
+- [x] `data/grid.hpp` `point_from_array_index`: array index to absolute index lookup table (the linear scan remains as a fallback for grids restored from a snapshot).
 - [ ] Dynamic VRS: no diagnostic when location updates go stale (needs a staleness limit to be decided).
 - [ ] Tests: config CLI parsing (no test harness for `examples/client` yet).

@@ -56,6 +56,14 @@ TransformGraph::TransformGraph() {
     add_bidirectional_edge_impl<PZ90, PZ90_02>(*this);
     add_bidirectional_edge_impl<PZ90_02, PZ90_11>(*this);
     add_bidirectional_edge_impl<PZ90, PZ90_11>(*this);
+    add_bidirectional_edge_impl<WGS84_G1150, PZ90_02>(*this);
+
+    add_bidirectional_edge_impl<WGS84_G2139, ITRF2014>(*this);
+    add_bidirectional_edge_impl<WGS84_G1762, ITRF2008>(*this);
+    add_bidirectional_edge_impl<WGS84_G1674, ITRF2008>(*this);
+    add_bidirectional_edge_impl<WGS84_G1150, ITRF2000>(*this);
+    add_bidirectional_edge_impl<WGS84_G873, ITRF94>(*this);
+    add_bidirectional_edge_impl<WGS84_G730, ITRF92>(*this);
 
     add_bidirectional_edge_impl<ITRF2014, ETRF2014>(*this);
     add_bidirectional_edge_impl<ITRF2005, ETRF2005>(*this);

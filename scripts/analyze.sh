@@ -107,7 +107,7 @@ if [ "$COMPACT" -eq 1 ]; then
     echo "Compact mode: only showing error/warning lines"
 fi
 
-find dependency examples -name '*.cpp' -not -path '*/external/*' -not -path './tests/*' -not -path '*/idokeido/*' | \
+find dependency examples -name '*.cpp' -not -path '*/external/*' -not -path './tests/*' | \
     xargs -P"$JOBS" -I{} bash -c 'run_clang_tidy "{}"' || true
 
 echo "Analysis complete! Logs saved in $LOG_DIR"
