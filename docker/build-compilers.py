@@ -99,7 +99,6 @@ MATRIX = {
 #        ['-DLOG_FUNCTION_PERFORMANCE=ON'],
         ['-DDISABLE_TRACE=ON'],
         ['-DINCLUDE_GENERATOR_RTCM=OFF', '-DINCLUDE_GENERATOR_SPARTN=OFF', '-DINCLUDE_GENERATOR_TOKORO=OFF'],
-        ['-DINCLUDE_GENERATOR_IDOKEIDO=ON'],
     ],
     'incompatible': {
         'gcc-4.8': ['-DUSE_ASAN=ON', '-DDATA_TRACING=ON'],
@@ -326,7 +325,6 @@ def shorten_option(opt):
         'BUILD_TESTING': 'Testing',
         'DATA_TRACING': 'Tracing',
         'DISABLE_LOGGING': 'NoLog',
-        'INCLUDE_GENERATOR_IDOKEIDO': 'Idokeido',
         'INCLUDE_GENERATOR_RTCM=OFF': 'NoRTCM',
         'INCLUDE_GENERATOR_SPARTN=OFF': 'NoSPARTN',
         'INCLUDE_GENERATOR_TOKORO=OFF': 'NoTokoro',

@@ -135,6 +135,10 @@ struct Plan {
     int    pivot;      // Plane: the corner next to both of the others
     int    nearest;    // Nearest
     double weight[4];  // Weighted
+    // Weighted: the slope of the weights per metre east and north of the position, for a triangle
+    bool   has_gradient;
+    double gradient_east[4];
+    double gradient_north[4];
 };
 
 struct CellValue {
@@ -143,6 +147,10 @@ struct CellValue {
     bool   has_slope;
     double d_row;
     double d_col;
+    // Slope per metre east and north, where it is not per cell
+    bool   has_metric_slope;
+    double d_east;
+    double d_north;
 };
 
 // The 3 corners with data span a right triangle with the corner opposite to the missing one in the
@@ -268,8 +276,10 @@ Neighbour neighbour_of(GridPoint const& point, long index, Float3 llh) {
 
 // Barycentric weights of the origin (the position) in the triangle a, b, c. False if the origin is
 // outside of the triangle or the triangle is degenerate.
+// `gradient_east/north` get the slope of the weights per metre when given.
 bool barycentric(Neighbour const& a, Neighbour const& b, Neighbour const& c, double& area,
-                 double weight[3]) {
+                 double weight[3], double* gradient_east = nullptr,
+                 double* gradient_north = nullptr) {
     auto cross = [](Neighbour const& u, Neighbour const& v) {
         return u.east * v.north - u.north * v.east;
     };
@@ -282,6 +292,15 @@ bool barycentric(Neighbour const& a, Neighbour const& b, Neighbour const& c, dou
     weight[2] = cross(a, b) / twice_area;
     area      = std::fabs(twice_area) * 0.5;
 
+    if (gradient_east && gradient_north) {
+        gradient_east[0]  = (b.north - c.north) / twice_area;
+        gradient_north[0] = (c.east - b.east) / twice_area;
+        gradient_east[1]  = (c.north - a.north) / twice_area;
+        gradient_north[1] = (a.east - c.east) / twice_area;
+        gradient_east[2]  = (a.north - b.north) / twice_area;
+        gradient_north[2] = (b.east - a.east) / twice_area;
+    }
+
     constexpr double TOLERANCE = 1e-9;
     return weight[0] >= -TOLERANCE && weight[1] >= -TOLERANCE && weight[2] >= -TOLERANCE;
 }
@@ -290,6 +309,9 @@ struct ListChoice {
     int    count;
     long   index[4];
     double weight[4];
+    bool   has_gradient;
+    double gradient_east[4];
+    double gradient_north[4];
     // The nearest points that the choice was made from
     int  support_count;
     long support[4];
@@ -332,7 +354,11 @@ bool list_plan(GridData const& grid, Float3 llh, GridInterpolation method,
                 for (size_t c = b + 1; c < count; c++) {
                     double area;
                     double weight[3];
-                    if (!barycentric(near[a], near[b], near[c], area, weight)) continue;
+                    double gradient_east[3];
+                    double gradient_north[3];
+                    if (!barycentric(near[a], near[b], near[c], area, weight, gradient_east,
+                                     gradient_north))
+                        continue;
                     if (found && area >= min_area) continue;
 
                     found            = true;
@@ -344,6 +370,12 @@ bool list_plan(GridData const& grid, Float3 llh, GridInterpolation method,
                     choice.weight[0] = weight[0];
                     choice.weight[1] = weight[1];
                     choice.weight[2] = weight[2];
+
+                    choice.has_gradient = true;
+                    for (int i = 0; i < 3; i++) {
+                        choice.gradient_east[i]  = gradient_east[i];
+                        choice.gradient_north[i] = gradient_north[i];
+                    }
                 }
             }
         }
@@ -404,7 +436,12 @@ GridData::GridStatus select_list(GridData const& grid, Float3 llh, GridOptions c
             cell.corner[i] = &grid.grid_points[index];
             plan.weight[i] = choice.weight[i];
             plan.used[i]   = present[index] != 0;
+            if (choice.has_gradient) {
+                plan.gradient_east[i]  = choice.gradient_east[i];
+                plan.gradient_north[i] = choice.gradient_north[i];
+            }
         }
+        plan.has_gradient = choice.has_gradient;
     };
 
     ListChoice choice;
@@ -507,6 +544,13 @@ CellValue interpolate_cell(Plan const& plan, GridData::Cell const& cell, double 
     case Kind::Weighted:
         for (int i = 0; i < 4; i++)
             result.value += plan.weight[i] * v[i];
+        if (plan.has_gradient) {
+            result.has_metric_slope = true;
+            for (int i = 0; i < 4; i++) {
+                result.d_east += plan.gradient_east[i] * v[i];
+                result.d_north += plan.gradient_north[i] * v[i];
+            }
+        }
         break;
     }
     return result;
@@ -653,6 +697,15 @@ GridData::GridStatus GridData::tropospheric(Float3 llh, ts::Tai const& now, doub
                      correction.dry_north, correction.dry_east, correction.wet_north,
                      correction.wet_east);
         }
+    } else if (wet_value.has_metric_slope && dry_value.has_metric_slope) {
+        correction.dry_north    = dry_value.d_north;
+        correction.dry_east     = dry_value.d_east;
+        correction.wet_north    = wet_value.d_north;
+        correction.wet_east     = wet_value.d_east;
+        correction.has_gradient = true;
+        VERBOSEF("tropospheric gradient dry: N %+.4e E %+.4e, wet: N %+.4e E %+.4e m/m",
+                 correction.dry_north, correction.dry_east, correction.wet_north,
+                 correction.wet_east);
     }
 
     return GridStatus::Success;

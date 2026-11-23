@@ -57,10 +57,6 @@ EXTERNAL_WARNINGS_POP
 #include "processor/tokoro.hpp"
 #endif
 
-#if defined(INCLUDE_GENERATOR_IDOKEIDO)
-#include "processor/idokeido.hpp"
-#endif
-
 #ifdef DATA_TRACING
 #include "processor/possib_logger.hpp"
 #endif
@@ -537,10 +533,6 @@ static void create_io_from_config(Program& program) {
     if (!config.tokoro.output_tag.empty())
         registry.register_tag(config.tokoro.output_tag, "tokoro output tag", "custom");
 #endif
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-    if (!config.idokeido.output_tag.empty())
-        registry.register_tag(config.idokeido.output_tag, "idokeido output tag", "custom");
-#endif
     if (!config.location_server.output_tag.empty())
         registry.register_tag(config.location_server.output_tag, "location server tag", "custom");
 
@@ -959,19 +951,6 @@ static void setup_tokoro(UNUSED Program& program) {
 #endif
 }
 
-static void setup_idokeido(UNUSED Program& program) {
-#if defined(INCLUDE_GENERATOR_IDOKEIDO)
-    if (program.config.idokeido.enabled) {
-        auto idokeido_spp = program.stream.add_inspector<IdokeidoSpp>(
-            program.output, program.config.idokeido, program.scheduler, program.stream);
-        program.stream.add_inspector<IdokeidoEphemerisUbx<IdokeidoSpp>>(*idokeido_spp);
-        program.stream.add_inspector<IdokeidoMeasurmentUbx<IdokeidoSpp>>(*idokeido_spp);
-    }
-#else
-    (void)program;
-#endif
-}
-
 static void apply_ubx_config(Program& program) {
     if (program.config.ubx_config.interfaces.empty()) {
         return;
@@ -1218,8 +1197,6 @@ int main(int argc, char** argv) {
     DEBUGF("setup_lpp2spartn() completed");
     setup_tokoro(program);
     DEBUGF("setup_tokoro() completed");
-    setup_idokeido(program);
-    DEBUGF("setup_idokeido() completed");
 
     if (program.config.location_information.fake.enabled) {
         setup_fake_location(program);

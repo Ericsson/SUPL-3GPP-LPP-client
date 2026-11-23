@@ -24,28 +24,6 @@ extern ReferenceEllipsoid const gWgs84;
 }  // namespace generator::tokoro
 #endif
 
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-namespace idokeido {
-using Scalar  = double;
-using Vector3 = Eigen::Matrix<Scalar, 3, 1>;
-
-struct ReferenceEllipsoid {
-    double semi_major_axis;
-    double semi_minor_axis;
-    double flattening;
-    double eccentricity_sq;
-    double eccentricity;
-};
-
-Vector3 ecef_to_llh(Vector3 ecef, ReferenceEllipsoid const& ellipsoid);
-Vector3 llh_to_ecef(Vector3 llh, ReferenceEllipsoid const& ellipsoid);
-
-namespace ellipsoid {
-extern ReferenceEllipsoid const WGS84;
-}
-}  // namespace idokeido
-#endif
-
 using namespace coordinates;
 
 #ifdef INCLUDE_GENERATOR_TOKORO
@@ -110,51 +88,6 @@ TEST_CASE("Regression vs tokoro - ECEF to ENU") {
         CHECK(enu_new.east() == doctest::Approx(enu_tokoro.x).epsilon(1e-6));
         CHECK(enu_new.north() == doctest::Approx(enu_tokoro.y).epsilon(1e-6));
         CHECK(enu_new.up() == doctest::Approx(enu_tokoro.z).epsilon(1e-6));
-    }
-}
-#endif
-
-#ifdef INCLUDE_GENERATOR_IDOKEIDO
-TEST_CASE("Regression vs idokeido - ECEF to LLH") {
-    auto& idokeido_ell = idokeido::ellipsoid::WGS84;
-
-    std::vector<idokeido::Vector3> test_ecef = {
-        {coordinates::ellipsoids::Wgs84.a, 0, 0},
-        {0, coordinates::ellipsoids::Wgs84.a, 0},
-        {4000000, 3000000, 5000000},
-        {-2000000, 3000000, 4000000},
-    };
-
-    for (auto const& ecef_idokeido : test_ecef) {
-        Ecef<TestFrame> ecef_new{Vector3d(ecef_idokeido.x(), ecef_idokeido.y(), ecef_idokeido.z())};
-
-        auto llh_idokeido = idokeido::ecef_to_llh(ecef_idokeido, idokeido_ell);
-        auto llh_new      = ecef_to_llh(ecef_new);
-
-        CHECK(llh_new.latitude() == doctest::Approx(llh_idokeido.x()).epsilon(1e-12));
-        CHECK(llh_new.longitude() == doctest::Approx(llh_idokeido.y()).epsilon(1e-12));
-        CHECK(llh_new.height() == doctest::Approx(llh_idokeido.z()).epsilon(1e-6));
-    }
-}
-
-TEST_CASE("Regression vs idokeido - LLH to ECEF") {
-    auto& idokeido_ell = idokeido::ellipsoid::WGS84;
-
-    std::vector<idokeido::Vector3> test_llh = {
-        {0, 0, 0},
-        {M_PI / 4, M_PI / 6, 100},
-        {-M_PI / 6, -M_PI / 3, 1000},
-    };
-
-    for (auto const& llh_idokeido : test_llh) {
-        Llh<TestFrame> llh_new{Vector3d(llh_idokeido.x(), llh_idokeido.y(), llh_idokeido.z())};
-
-        auto ecef_idokeido = idokeido::llh_to_ecef(llh_idokeido, idokeido_ell);
-        auto ecef_new      = llh_to_ecef(llh_new);
-
-        CHECK(ecef_new.x() == doctest::Approx(ecef_idokeido.x()).epsilon(1e-6));
-        CHECK(ecef_new.y() == doctest::Approx(ecef_idokeido.y()).epsilon(1e-6));
-        CHECK(ecef_new.z() == doctest::Approx(ecef_idokeido.z()).epsilon(1e-6));
     }
 }
 #endif

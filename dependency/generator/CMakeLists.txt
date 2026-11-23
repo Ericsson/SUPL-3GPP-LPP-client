@@ -13,7 +13,3 @@ if(NOT INCLUDE_GENERATOR_RTCM)
 endif()
 add_subdirectory("tokoro")
 endif()
-
-if(INCLUDE_GENERATOR_IDOKEIDO)
-add_subdirectory("idokeido")
-endif()

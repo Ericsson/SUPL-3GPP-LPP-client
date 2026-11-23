@@ -617,7 +617,7 @@ bool ReferenceStation::generate(ts::Tai const& reception_time) NOEXCEPT {
             continue;
         }
 
-        satellite.update(mGenerationTime);
+        satellite.update(mGenerationTime, mGenerateDiag);
     }
 
     // Generate the observations

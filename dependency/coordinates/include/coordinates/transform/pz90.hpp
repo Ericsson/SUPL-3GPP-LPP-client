@@ -1,6 +1,7 @@
 #pragma once
 #include "../frame/itrf.hpp"
 #include "../frame/pz90.hpp"
+#include "../frame/wgs84.hpp"
 #include "../frames.hpp"
 #include "../transform.hpp"
 
@@ -114,6 +115,33 @@ struct TimeDependentHelmertTransform<PZ90_11, PZ90> {
             Helmert7Params{-1443.0, 156.0, 222.0, 2.3, -3.54, 134.21, -228.0}.inverse(),
             {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
             2010.0,
+        };
+    }
+};
+
+// WGS 84 (G1150) to PZ-90.02, EPSG:7961, epoch 2002.0, no rates, coordinate frame rotations in
+// EPSG (all zero):
+//   dX = +0.36 m, dY = -0.08 m, dZ = -0.18 m, no rotations, no scale
+template <>
+struct TimeDependentHelmertTransform<WGS84_G1150, PZ90_02> {
+    static constexpr bool                       is_defined = true;
+    static constexpr TimeDependentHelmertParams params() {
+        return {
+            {360.0, -80.0, -180.0, 0.0, 0.0, 0.0, 0.0},
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            2002.0,
+        };
+    }
+};
+
+template <>
+struct TimeDependentHelmertTransform<PZ90_02, WGS84_G1150> {
+    static constexpr bool             is_defined = true;
+    static TimeDependentHelmertParams params() {
+        return {
+            Helmert7Params{360.0, -80.0, -180.0, 0.0, 0.0, 0.0, 0.0}.inverse(),
+            {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0},
+            2002.0,
         };
     }
 };
