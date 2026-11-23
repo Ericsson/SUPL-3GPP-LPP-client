@@ -128,15 +128,18 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
         mEpochLog.iono_dnu  = mCorrectionData->ionosphere_dnu;
         mEpochLog.tropo_dnu = mCorrectionData->troposphere_dnu;
         if (mDoNotUseSatellite) {
-            for (auto& [gnss_id, rti] : mCorrectionData->real_time_integrity_data) {
-                for (auto& [sat_id, sat] : rti.bad_satellites) {
+            for (auto& rti_entry : mCorrectionData->real_time_integrity_data) {
+                auto gnss_id = rti_entry.first;
+                for (auto& sat_entry : rti_entry.second.bad_satellites) {
+                    auto sat_id = sat_entry.first;
                     mEpochLog.dnu_satellites[gnss_id].push_back(static_cast<uint32_t>(sat_id + 1));
                 }
             }
         }
         // Set epoch time and available satellites from OCB data
-        for (auto& [iod, ocb] : mCorrectionData->ocb_data) {
-            for (auto& [key, corr] : ocb.keyed_corrections) {
+        for (auto& ocb_entry : mCorrectionData->ocb_data) {
+            for (auto& corr_entry : ocb_entry.second.keyed_corrections) {
+                auto& corr = corr_entry.second;
                 if (corr.epoch_time.rounded_seconds > 0 && mEpochLog.epoch_time == 0) {
                     mEpochLog.epoch_time = corr.epoch_time.rounded_seconds;
                 }
@@ -193,9 +196,9 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
     if (mEpochLogEnabled) {
         double sum   = 0.0;
         size_t count = 0;
-        for (auto& [_, sats] : mEpochLog.iono_quality_per_sat) {
-            for (auto& [__, q] : sats) {
-                sum += q;
+        for (auto& sats_entry : mEpochLog.iono_quality_per_sat) {
+            for (auto& quality_entry : sats_entry.second) {
+                sum += quality_entry.second;
                 count++;
             }
         }
@@ -206,8 +209,9 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
                                                   17.92, 35.84, 71.68, 143.36, 287.52};
         double                  sf055_sum      = 0.0;
         size_t                  sf055_count    = 0;
-        for (auto& [_, sats] : mEpochLog.sf055_per_sat) {
-            for (auto& [__, v] : sats) {
+        for (auto& sats_entry : mEpochLog.sf055_per_sat) {
+            for (auto& value_entry : sats_entry.second) {
+                auto v = value_entry.second;
                 if (v > 0 && v <= 15) sf055_sum += SF055_METERS[static_cast<size_t>(v) - 1];
                 sf055_count++;
             }
@@ -215,8 +219,9 @@ std::vector<Message> Generator::generate(LPP_Message const* lpp_message) {
         if (sf055_count > 0) mEpochLog.sf055_avg = sf055_sum / static_cast<double>(sf055_count);
 
         if (mDoNotUseSatellite) {
-            for (auto& [gnss_id, sat_ids] : mCorrectionData->stec_dnu_satellites) {
-                for (auto sat_id : sat_ids) {
+            for (auto& dnu_entry : mCorrectionData->stec_dnu_satellites) {
+                auto gnss_id = dnu_entry.first;
+                for (auto sat_id : dnu_entry.second) {
                     mEpochLog.dnu_satellites[gnss_id].push_back(static_cast<uint32_t>(sat_id + 1));
                 }
             }
