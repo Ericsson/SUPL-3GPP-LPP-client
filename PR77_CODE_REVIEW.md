@@ -40,7 +40,7 @@ There is no CI on this branch. Nobody other than the automated reviewers has rea
 
 ## 1. High
 
-### H1. `tokoro-post` has no `--ssr-gcc` or `--negative-correction-sign` ✔
+### H1. `tokoro-post` has no `--ssr-gcc` or `--negative-correction-sign` ✔ **FIXED**
 - **Where:** `examples/tokoro-post/main.cpp` (no flag, no setter call). Compare
   `examples/client/config/tokoro.cpp:258,286` and `examples/client/processor/tokoro.cpp:66,431`.
 - **Problem:** `example-client` exposes both options and wires them to the generator.
@@ -50,7 +50,7 @@ There is no CI on this branch. Nobody other than the automated reviewers has rea
 - **Fix:** Add `--ssr-gcc` and `--negative-correction-sign` to `tokoro-post`. Call
   `generator->set_ssr_generation_consistency_check(...)` and `ref_station->set_negative_correction_sign(...)`.
 
-### H2. README lists only 11 of about 27 new `--tkr-*` flags ✔
+### H2. README lists only 11 of about 27 new `--tkr-*` flags ✔ **FIXED** (Tokoro section regenerated from `--help`)
 - **Where:** `examples/client/README.md` against `examples/client/config/tokoro.cpp`.
 - **Missing (spot-checked: none of these appear in the README):** `--tkr-lock-start/-rise`,
   `--tkr-ambiguity-randomize/-seed`, `--tkr-ssr-gcc`, `--tkr-negative-correction-sign`,
@@ -59,7 +59,7 @@ There is no CI on this branch. Nobody other than the automated reviewers has rea
 - **Fix:** Copy the Tokoro section from `example-client --help` into the README. While there, add `grid`
   to the `--tkr-vrs-mode` choices (L13).
 
-### H3. RTCM `MessageFilter` has no `qzss` switch ✔
+### H3. RTCM `MessageFilter` has no `qzss` switch ✔ **FIXED** (`systems.qzss`, `--l2r-no-qzs`)
 - **Where:** `dependency/generator/rtcm/include/generator/rtcm/generator.hpp:15-22` and the purge block in
   `generator.cpp`.
 - **Problem:** `MessageFilter::systems` has `gps/glonass/galileo/beidou` only. QZSS observations are now
@@ -68,7 +68,7 @@ There is no CI on this branch. Nobody other than the automated reviewers has rea
 - **Fix:** Add `bool qzss = true;` and erase `GenericGnssId::QZSS` like the other systems. Check callers
   that build a `MessageFilter` (the `lpp2rtcm` and `tokoro` configs).
 
-### H4. `BitReader` has no bounds check ✔ (mitigated by callers today)
+### H4. `BitReader` has no bounds check ✔ **FIXED** (sticky `ok()`, 1020/1044 return an error message)
 - **Where:** `dependency/format/rtcm/messages/bits.hpp:15-24`.
 - **Problem:** `u()/s()/sm()` index `mData[mBit / 8]` unchecked. The 1020 and 1044 parsers pre-check the
   total length, so it is safe today. This runs on network input, so a future caller or a wrong bit-count

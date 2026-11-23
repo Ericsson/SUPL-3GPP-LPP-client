@@ -19,6 +19,7 @@ struct MessageFilter {
         bool glonass = true;
         bool galileo = true;
         bool beidou  = true;
+        bool qzss    = true;
     } systems;
 
     /// Which MSM messages should be considered.

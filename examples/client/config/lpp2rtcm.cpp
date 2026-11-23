@@ -50,6 +50,12 @@ static args::Flag gNoBeidou{
     "Do not generate RTCM messages for BDS",
     {"l2r-no-bds"},
 };
+static args::Flag gNoQzss{
+    gGroup,
+    "qzs",
+    "Do not generate RTCM messages for QZSS",
+    {"l2r-no-qzs"},
+};
 
 static args::ValueFlag<std::string> gMsmType{
     gGroup,
@@ -93,6 +99,7 @@ void parse(Config* config) {
     lpp2rtcm.generate_glonass = true;
     lpp2rtcm.generate_galileo = true;
     lpp2rtcm.generate_beidou  = true;
+    lpp2rtcm.generate_qzss    = true;
     lpp2rtcm.msm_type         = Lpp2RtcmConfig::MsmType::ANY;
     lpp2rtcm.ignore_cnr       = false;
     lpp2rtcm.max_conversions  = 0;
@@ -103,6 +110,7 @@ void parse(Config* config) {
     if (gNoGlonass) lpp2rtcm.generate_glonass = false;
     if (gNoGalileo) lpp2rtcm.generate_galileo = false;
     if (gNoBeidou) lpp2rtcm.generate_beidou = false;
+    if (gNoQzss) lpp2rtcm.generate_qzss = false;
     if (gIgnoreCnr) lpp2rtcm.ignore_cnr = true;
 
     if (gMsmType) {
@@ -137,6 +145,7 @@ void dump(Lpp2RtcmConfig const& config) {
     DEBUGF("glonass: %s", config.generate_glonass ? "enabled" : "disabled");
     DEBUGF("galileo: %s", config.generate_galileo ? "enabled" : "disabled");
     DEBUGF("beidou:  %s", config.generate_beidou ? "enabled" : "disabled");
+    DEBUGF("qzss:    %s", config.generate_qzss ? "enabled" : "disabled");
     DEBUGF("ignore cnr: %s", config.ignore_cnr ? "enabled" : "disabled");
 
     DEBUGF("msm type: %s", [&]() {

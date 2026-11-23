@@ -81,6 +81,10 @@ std::unique_ptr<Message> Rtcm1020::parse(std::vector<uint8_t> data) {
     m->n_4             = static_cast<uint8_t>(r.u(5));
     m->tau_gps         = r.sm(22, -30);
     m->ln5             = r.u(1) != 0;
+    if (!r.ok()) {
+        delete m;
+        return std::make_unique<ErrorMessage>(DF002(1020), std::move(data));
+    }
     return std::unique_ptr<Rtcm1020>(m);
 }
 

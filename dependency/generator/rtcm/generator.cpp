@@ -222,6 +222,9 @@ std::vector<Message> Generator::generate(LPP_Message const*   lpp_message,
         rtk_data->observations.erase(GenericGnssId::BEIDOU);
         rtk_data->beidou_residuals.reset();
     }
+    if (!filter.systems.qzss) {
+        rtk_data->observations.erase(GenericGnssId::QZSS);
+    }
 
     auto any_msm       = filter.msm.msm4 || filter.msm.msm5 || filter.msm.msm6 || filter.msm.msm7;
     auto any_force_msm = filter.msm.force_msm4 || filter.msm.force_msm5 || filter.msm.force_msm6 ||

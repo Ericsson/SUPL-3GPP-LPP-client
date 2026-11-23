@@ -19,6 +19,7 @@ Lpp2Rtcm::Lpp2Rtcm(ProgramOutput const& output, Lpp2RtcmConfig const& config,
     mFilter.systems.glonass = mConfig.generate_glonass;
     mFilter.systems.galileo = mConfig.generate_galileo;
     mFilter.systems.beidou  = mConfig.generate_beidou;
+    mFilter.systems.qzss    = mConfig.generate_qzss;
 
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM4) mFilter.msm.force_msm4 = true;
     if (mConfig.msm_type == Lpp2RtcmConfig::MsmType::MSM5) mFilter.msm.force_msm5 = true;

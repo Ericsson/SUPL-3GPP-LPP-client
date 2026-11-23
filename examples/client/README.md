@@ -171,6 +171,7 @@
         --l2r-no-gal                      Do not generate RTCM messages for
                                           Galileo
         --l2r-no-bds                      Do not generate RTCM messages for BDS
+        --l2r-no-qzs                      Do not generate RTCM messages for QZSS
         --l2r-msm=[type]                  Which MSM type to generate
                                           One of: any, 4, 5, 6, 7
                                           Default: any
@@ -270,16 +271,22 @@
         --tkr-no-beidou                   Skip generating BeiDou messages
         --tkr-qzss                        Generate QZSS messages
         --tkr-msm=[type]                  Which MSM type to generate
-        --tkr-vrs-mode=[vrs-mode]         VRS mode
-                                          One of: fixed, dynamic
+                                          One of: 4, 5, 6, 7
+                                          Default: 5
+        --tkr-vrs-mode=[vrs-mode]         VRS mode: fixed, dynamic, or grid
+                                          One of: fixed, grid, dynamic
                                           Default: dynamic
         --tkr-gen=[strategy]              Generation strategy
                                           One of: assistance, time-step,
-                                          time-step-aligned
+                                          time-step-aligned, time-step-last
                                           Default: assistance
         --tkr-distance-threshold=[km]     Distance threshold for dynamic VRS
                                           mode (<= 0 means every time)
                                           Default: 5.0
+        --tkr-vrs-grid-position=[east,north]
+                                          VRS grid position (e.g., 1,1 for
+                                          center of grid cell at 1 east, 1
+                                          north)
         --tkr-fixed-itrf-x=[meter]        X coordinate for ITRF system in Fixed
                                           VRS mode
         --tkr-fixed-itrf-y=[meter]        Y coordinate for ITRF system in Fixed
@@ -301,49 +308,6 @@
         --tkr-fixed-physical-z=[meter]    Z coordinate (RTCM/ECEF) of the
                                           physical reference station in Fixed
                                           VRS mode
-        --tkr-time-step=[seconds]         Time between each generated message,
-                                          used with
-                                          `--tkr-gen time-step` or
-                                          `--tkr-gen time-step-aligned`
-                                          Default: 1.0
-        --tkr-no-sc                       Disable shapiro correction
-        --tkr-no-pwc                      Disable phase windup correction
-        --tkr-no-estc                     Disable earth solid tides correction
-        --tkr-no-apvc                     Disable antenna phase variation
-                                          correction
-        --tkr-no-thc                      Disable tropospheric height correction
-        --tkr-no-icc                      Disable Issue of Data consistency
-                                          check for ephemeris
-        --tkr-rtoc                        Use reception time in orbit correction
-                                          instead of transmission time
-        --tkr-ocit                        Use orbit corrections in satellite
-                                          position evaluation
-        --tkr-npw                         Enable negative phase windup
-                                          correction
-        --tkr-generate-rinex              Generate RINEX files
-        --tkr-code-bias-optional          Disable code bias requirement
-        --tkr-phase-bias-optional         Disable phase bias requirement
-        --tkr-tropo-optional              Disable tropospheric correction
-                                          requirement
-        --tkr-iono-optional               Disable ionospheric correction
-                                          requirement
-        --tkr-iono-poly-only              Allow the STEC polynomial without the
-                                          gridded STEC residual
-        --tkr-grid-interpolation=[method] Interpolation of the gridded SSR
-                                          corrections to the position. One of:
-                                          four-point (default, all 4 corners of
-                                          the grid cell required), three-point,
-                                          nearest
-        --tkr-grid-missing-as-zero        Use a zero residual for grid corners
-                                          without data when the interpolation
-                                          would otherwise fail
-        --tkr-grid-extrapolation=[method] What to do with a position that
-                                          can not be interpolated. One of:
-                                          none (default), nearest
-        --tkr-grid-extrapolation-distance=[meters]
-                                          Furthest distance from the nearest
-                                          point for extrapolation, 0 for no
-                                          limit
         --tkr-fixed-frame=[frame]         Frame of --tkr-fixed-itrf-x/y/z (e.g.
                                           etrf2014, sweref99, itrf2014); the
                                           position is transformed to
@@ -360,9 +324,134 @@
                                           epoch
         --tkr-ssr-frame=[frame]           Frame of the SSR corrected orbits,
                                           used with --tkr-fixed-frame
-                                          Default: itrf2020
-        --tkr-orbit-frame=[frame]         Transform the broadcast orbits from the
-                                          frame of each GNSS (GPS: WGS 84,
+        --tkr-time-step=[seconds]         Time between each generated message,
+                                          used with
+                                          `--tkr-gen time-step` or
+                                          `--tkr-gen time-step-aligned`
+                                          Default: 1.0
+        --tkr-no-sc                       Disable shapiro correction
+        --tkr-no-pwc                      Disable phase windup correction
+        --tkr-no-estc                     Disable earth solid tides correction
+        --tkr-no-apvc                     Disable antenna phase variation
+                                          correction
+        --tkr-no-thc                      Disable tropospheric height correction
+        --tkr-no-tropo-delta              Disable hydrostatic delta correction
+                                          in tropospheric mapping function
+        --tkr-no-icc                      Disable Issue of Data consistency
+                                          check for ephemeris
+        --tkr-ssr-gcc                     Reject orbit/clock/bias corrections
+                                          that belong to different SSR
+                                          generations (IOD mismatch) instead of
+                                          silently combining them
+        --tkr-rtoc                        Use reception time in orbit correction
+                                          instead of transmission time
+        --tkr-ocit                        Use orbit corrections in satellite
+                                          position evaluation
+        --tkr-npw                         Enable negative phase windup
+                                          correction
+        --tkr-negative-correction-sign    Flip the sign of SSR clock, code-bias
+                                          and phase-bias corrections
+        --tkr-tropo-model=[model]         Zenith delay model used when there is
+                                          no SSR tropospheric correction (see
+                                          `--tkr-use-tropospheric-model`), also
+                                          in `--tkr-diag-tropo-all`. One of:
+                                          mops (default), saastamoinen,
+                                          saastamoinen-gpt, gpt2 (needs
+                                          `--tkr-gpt2-grid`), vmf3 (needs
+                                          `--tkr-vmf3-grid` and
+                                          `--tkr-vmf3-orography`)
+        --tkr-tropo-mapping=[function]    Mapping function of the tropospheric
+                                          delays. One of: niell (default),
+                                          simple (1/sin(el)),
+                                          gmf, gpt2 (VMF1 with GPT2
+                                          coefficients, needs
+                                          `--tkr-gpt2-grid`), vmf3 (needs
+                                          `--tkr-vmf3-grid` and
+                                          `--tkr-vmf3-orography`)
+        --tkr-tropo-gradient=[source]     Horizontal gradient of the
+                                          troposphere, adds m_g(el) * (G_N
+                                          cos(az) + G_E sin(az)) to the
+                                          slant delay. One of: none (default),
+                                          ssr-grid (slope of the SSR zenith
+                                          delays across the
+                                          grid cell, an approximation), constant
+                                          (`--tkr-tropo-gradient-north/east`)
+        --tkr-tropo-gradient-mapping=[function]
+                                          Mapping function m_g of the gradient.
+                                          One of: chen-herring (default,
+                                          1/(sin(el) tan(el) + 0.0032)),
+                                          macmillan (m_h(el) cot(el), m_h of
+                                          `--tkr-tropo-mapping`)
+        --tkr-tropo-gradient-north=[mm]   Constant gradient G_N (south-north) in
+                                          millimeters, for `--tkr-tropo-gradient
+                                          constant`
+        --tkr-tropo-gradient-east=[mm]    Constant gradient G_E (west-east) in
+                                          millimeters, for `--tkr-tropo-gradient
+                                          constant`
+        --tkr-diag-tropo-all              Write the tropospheric delays of all
+                                          models and mapping functions to
+                                          `tropo.diag` for every
+                                          satellite, for comparison (requires
+                                          `--tkr-diag-dir`)
+        --tkr-gpt2-grid=[file]            GPT2 5x5 degree grid file (e.g.
+                                          gpt2_5.grd)
+        --tkr-vmf3-grid=[file...]         VMF3 grid file (one epoch, e.g.
+                                          VMF3_20260607.H00), can be repeated
+        --tkr-vmf3-orography=[file]       VMF3 orography file for the grid of
+                                          the VMF3 grid files
+        --tkr-lock-start=[reset|max]      Lock time of the signals present at
+                                          startup: `reset` starts at zero
+                                          (default), `max` starts
+                                          saturated and in lock
+        --tkr-lock-rise=[reset|max]       Lock time of a signal that appears
+                                          after startup (rising satellite or
+                                          regained signal):
+                                          `reset` starts at zero with loss of
+                                          lock (default), `max` starts saturated
+                                          and in lock
+        --tkr-ambiguity-randomize=[off|startup|rise|both]
+                                          Start signals with a random integer
+                                          carrier phase ambiguity (+-1000
+                                          cycles) instead of 0,
+                                          at startup, when a signal appears
+                                          after startup, or both (default: off)
+        --tkr-ambiguity-seed=[seed]       Seed for `--tkr-ambiguity-randomize`
+                                          (default: random, logged at info
+                                          level)
+        --tkr-phase-alignment             Enable phase alignment
+        --tkr-antenna-descriptor=[string] Antenna descriptor string for RTCM
+                                          MT1033 (empty = unknown)
+        --tkr-receiver-descriptor=[string]
+                                          Receiver type descriptor string for
+                                          RTCM MT1033 (empty = unknown)
+        --tkr-code-bias-optional          Disable code bias requirement
+        --tkr-phase-bias-optional         Disable phase bias requirement
+        --tkr-tropo-optional              Disable tropospheric correction
+                                          requirement
+        --tkr-iono-optional               Disable ionospheric correction
+                                          requirement
+        --tkr-use-tropospheric-model      Use tropospheric model if tropospheric
+                                          correction are not available (requires
+                                          tkr-tropo-optional)
+        --tkr-use-ionospheric-height-correction
+                                          Use ionospheric height correction
+        --tkr-residuals                   Generate RTCM Network RTK Residual
+                                          messages (1030/1303/1304) for
+                                          GPS/BDS/Galileo. The ocs/Ics fields
+                                          carry point tropospheric/ionospheric
+                                          corrections (not
+                                          interpolation-residual standard
+                                          deviations as documented by RTCM
+                                          10403.4); ods/ohs/Ids are always zero.
+                                          Default off to avoid silently changing
+                                          the wire format for existing
+                                          deployments.
+        --tkr-antex-file=[file]           Antex file for antenna phase variation
+                                          correction
+        --tkr-nav-file=[file...]          RINEX navigation file for broadcast
+                                          ephemeris (repeatable)
+        --tkr-orbit-frame=[frame]         Transform the broadcast orbits from
+                                          the frame of each GNSS (GPS: WGS 84,
                                           GLONASS: PZ-90.11) to this frame (e.g.
                                           itrf2020) before applying the SSR
                                           orbit correction
@@ -370,13 +459,89 @@
                                           Broadcast frame of a GNSS (gps, glo,
                                           gal, bds, qzs) for --tkr-orbit-frame,
                                           e.g. gal=itrf2020 (repeatable)
-        --tkr-use-tropospheric-model      Use tropospheric model if tropospheric
-                                          correction are not available (requires
-                                          tkr-tropo-optional)
-        --tkr-use-ionospheric-height-correction
-                                          Use ionospheric height correction
-        --tkr-antex-file=[file]           Antex file for antenna phase variation
-                                          correction
+        --tkr-iono-poly-only              Allow the STEC polynomial without the
+                                          gridded STEC residual
+        --tkr-grid-interpolation=[method] Interpolation of the gridded SSR
+                                          corrections (STEC residual,
+                                          troposphere) to the position. One of:
+                                          four-point (default, bilinear, all 4
+                                          corners of the grid cell required),
+                                          three-point (bilinear, or linear over
+                                          the 3 corners that have data when the
+                                          position is inside their triangle),
+                                          nearest (the nearest corner of the
+                                          grid cell). For a list of correction
+                                          points: four-point is inverse distance
+                                          weighting of the 4 nearest points
+                                          around the position, three-point is
+                                          linear over the smallest triangle of
+                                          the nearest points that contains it,
+                                          nearest is the nearest point
+        --tkr-grid-missing-as-zero        Use a zero residual (no variation from
+                                          the nominal troposphere delay) for
+                                          grid corners without data when the
+                                          interpolation would otherwise fail. At
+                                          least one corner of the grid cell must
+                                          have data
+        --tkr-grid-extrapolation=[method] What to do with a position that the
+                                          grid interpolation can not handle
+                                          (outside of the grid, or not
+                                          surrounded by enough points with
+                                          data). One of: none (default, the
+                                          correction is not available), nearest
+                                          (the value of the nearest point with
+                                          data)
+        --tkr-grid-extrapolation-distance=[meters]
+                                          Furthest distance from the nearest
+                                          point for --tkr-grid-extrapolation, 0
+                                          for no limit
+        --tkr-ignore-bitmask              Ignore GNSS-SSR-CorrectionPoints
+                                          bitmask
+        --tkr-deduplicate-epochs          Skip generation if the epoch was
+                                          already processed
+        --tkr-cps-id=[id]                 Fake correction point set ID
+        --tkr-cps-lat=[deg]               Fake CPS reference point latitude
+                                          (degrees)
+        --tkr-cps-lon=[deg]               Fake CPS reference point longitude
+                                          (degrees)
+        --tkr-cps-steps-lat=[n]           Fake CPS number of steps in latitude
+        --tkr-cps-steps-lon=[n]           Fake CPS number of steps in longitude
+        --tkr-cps-step-lat=[deg]          Fake CPS latitude step size (degrees)
+        --tkr-cps-step-lon=[deg]          Fake CPS longitude step size (degrees)
+        --tkr-output-tag=[tag]            Tag to apply to generated RTCM
+                                          messages
+        --tkr-diag-dir=[directory]        Output directory for
+                                          per-satellite/signal .diag files
+        --tkr-eph-cache=[count]           Maximum cached ephemeris entries per
+                                          satellite (default: 10)
+        --tkr-max-age=[seconds]           Set maximum correction age for all
+                                          components at once. Per-component
+                                          flags override this. Negative or zero
+                                          disables (default: disabled).
+        --tkr-max-orbit-age=[seconds]     Maximum age for orbit corrections
+                                          (default: 15.0s). Negative or zero
+                                          disables.
+        --tkr-max-clock-age=[seconds]     Maximum age for clock corrections
+                                          (default: 15.0s). Negative or zero
+                                          disables.
+        --tkr-max-bias-age=[seconds]      Maximum age for code and phase bias
+                                          corrections (default: 15.0s). Negative
+                                          or zero disables.
+        --tkr-max-iono-age=[seconds]      Maximum age for ionospheric (STEC
+                                          polynomial and grid) corrections
+                                          (default: 90.0s). Negative or zero
+                                          disables.
+        --tkr-max-tropo-age=[seconds]     Maximum age for tropospheric grid
+                                          corrections (default: 90.0s). Negative
+                                          or zero disables.
+        --tkr-elevation-mask=[degrees]    Minimum satellite elevation angle to
+                                          generate corrections for (default:
+                                          10.0)
+        --tkr-record-snapshot             Enable Tokoro snapshot recording
+        --tkr-record-snapshot-dir=[directory]
+                                          Directory for snapshot recordings
+        --tkr-record-snapshot-rate=[rate] Sample rate for snapshot recording
+                                          (0.0-1.0)
       Logging:
         --trace                           Set log level to trace
         --verbose                         Set log level to verbose
