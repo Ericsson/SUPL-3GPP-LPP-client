@@ -250,21 +250,23 @@ private:
 
 // Tropospheric delays of every combination of zenith delay source (the SSR delays and every
 // a-priori model) and mapping function, for comparison
+// These are aggregates (no default member initializers) to be assigned from `{...}` in C++11, they
+// are value-initialized by `{}`.
 struct TropoDiagValue {
-    bool   valid{false};
-    double hydrostatic{};  // zenith delay / mapping function value
-    double wet{};
+    bool   valid;
+    double hydrostatic;  // zenith delay / mapping function value
+    double wet;
 };
 
 struct TropoDiagSlant {
-    bool   valid{false};
-    double value{};
+    bool   valid;
+    double value;
 };
 
 struct TropoDiagGradient {
-    bool   valid{false};
-    double north{};  // G_N [m]
-    double east{};   // G_E [m]
+    bool   valid;
+    double north;  // G_N [m]
+    double east;   // G_E [m]
 };
 
 struct TropoDiagRow {

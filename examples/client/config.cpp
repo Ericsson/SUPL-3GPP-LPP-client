@@ -263,9 +263,10 @@ bool config_parse(int argc, char** argv, Config* config) {
                 tags_by_category[info.category].push_back(info);
             }
 
-            for (auto const& [category, tags] : tags_by_category) {
+            for (auto const& category_entry : tags_by_category) {
+                auto const& category = category_entry.first;
                 printf("  %s\n", category.c_str());
-                for (auto const& info : tags) {
+                for (auto const& info : category_entry.second) {
                     printf("    %-12s  %s", info.name.c_str(), info.description.c_str());
                     if (!info.aliases.empty()) {
                         printf(" [");

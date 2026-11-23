@@ -116,12 +116,10 @@ private:
 
     // Chi-squared inverse CDF for df=2
     // For df=2: chi2(p) = -2 * ln(1 - p)
-    static constexpr double chi2_ppf(double p) { return -2.0 * std::log(1.0 - p); }
+    static double chi2_ppf(double p) { return -2.0 * std::log(1.0 - p); }
 
     // Calculate multiplier from confidence level
-    static constexpr double confidence_to_multiplier(double conf) {
-        return std::sqrt(chi2_ppf(conf));
-    }
+    static double confidence_to_multiplier(double conf) { return std::sqrt(chi2_ppf(conf)); }
 };
 
 struct Horizontal {

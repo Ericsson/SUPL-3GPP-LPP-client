@@ -366,12 +366,13 @@ int main(int argc, char** argv) {
                         el.tropo_quality);
                 // Count DNU satellites
                 size_t dnu_count = 0;
-                for (auto const& [_, sats] : el.dnu_satellites)
-                    dnu_count += sats.size();
+                for (auto const& dnu_entry : el.dnu_satellites)
+                    dnu_count += dnu_entry.second.size();
                 fprintf(dnu_out, "%zu,", dnu_count);
                 bool first = true;
-                for (auto const& [gnss_id, sats] : el.dnu_satellites) {
-                    for (auto prn : sats) {
+                for (auto const& dnu_entry : el.dnu_satellites) {
+                    auto gnss_id = dnu_entry.first;
+                    for (auto prn : dnu_entry.second) {
                         if (!first) fprintf(dnu_out, ";");
                         fprintf(dnu_out, "%ld:%u", gnss_id, prn);
                         first = false;
@@ -380,8 +381,9 @@ int main(int argc, char** argv) {
                 fprintf(dnu_out, ",");
                 // Available satellites
                 first = true;
-                for (auto const& [gnss_id, sats] : el.available_satellites) {
-                    for (auto prn : sats) {
+                for (auto const& available_entry : el.available_satellites) {
+                    auto gnss_id = available_entry.first;
+                    for (auto prn : available_entry.second) {
                         if (!first) fprintf(dnu_out, ";");
                         fprintf(dnu_out, "%ld:%u", gnss_id, prn);
                         first = false;
@@ -390,8 +392,11 @@ int main(int argc, char** argv) {
                 fprintf(dnu_out, ",");
                 // Per-satellite iono quality
                 first = true;
-                for (auto const& [gnss_id, sats] : el.iono_quality_per_sat) {
-                    for (auto const& [prn, q] : sats) {
+                for (auto const& quality_entry : el.iono_quality_per_sat) {
+                    auto gnss_id = quality_entry.first;
+                    for (auto const& sat_entry : quality_entry.second) {
+                        auto prn = sat_entry.first;
+                        auto q   = sat_entry.second;
                         if (!first) fprintf(dnu_out, ";");
                         fprintf(dnu_out, "%ld:%u:%.4f", gnss_id, prn, q);
                         first = false;
@@ -400,8 +405,11 @@ int main(int argc, char** argv) {
                 fprintf(dnu_out, ",");
                 // Per-satellite SF055 raw value
                 first = true;
-                for (auto const& [gnss_id, sats] : el.sf055_per_sat) {
-                    for (auto const& [prn, sf055] : sats) {
+                for (auto const& sf055_entry : el.sf055_per_sat) {
+                    auto gnss_id = sf055_entry.first;
+                    for (auto const& sat_entry : sf055_entry.second) {
+                        auto prn   = sat_entry.first;
+                        auto sf055 = sat_entry.second;
                         if (!first) fprintf(dnu_out, ";");
                         fprintf(dnu_out, "%ld:%u:%u", gnss_id, prn, static_cast<unsigned>(sf055));
                         first = false;
