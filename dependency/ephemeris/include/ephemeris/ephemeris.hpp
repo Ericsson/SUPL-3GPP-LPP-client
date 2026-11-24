@@ -59,6 +59,7 @@ public:
         case Type::GAL: return gal_ephemeris.iod_nav;
         case Type::BDS: return bds_ephemeris.iode;
         case Type::QZS: return qzs_ephemeris.iode;
+        // GLONASS has no IODE, the LPP IOD (tb) is used
         case Type::GLO: return glo_ephemeris.lpp_iod;
         }
         CORE_UNREACHABLE();
@@ -71,6 +72,7 @@ public:
         case Type::GAL: return gal_ephemeris.iod_nav;
         case Type::BDS: return bds_ephemeris.iodc;
         case Type::QZS: return qzs_ephemeris.iodc;
+        // GLONASS has no IODC either, same value as iode()
         case Type::GLO: return glo_ephemeris.lpp_iod;
         }
         CORE_UNREACHABLE();

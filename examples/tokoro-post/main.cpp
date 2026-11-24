@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <memory>
 #include <queue>
 #include <random>
 #include <string>
@@ -787,6 +788,7 @@ int main(int argc, char** argv) {
         fprintf(stderr, "Cannot open output %s\n", cfg.output_path.c_str());
         return 1;
     }
+    std::unique_ptr<FILE, int (*)(FILE*)> out_file_closer{out_file, &fclose};
 
     // Setup parsers
     format::ubx::Parser                        ubx_parser;
@@ -933,6 +935,5 @@ int main(int argc, char** argv) {
     }
 
     fprintf(stderr, "\n[tokoro-post] Done: %zu RTCM messages written\n", msg_count);
-    fclose(out_file);
     return 0;
 }

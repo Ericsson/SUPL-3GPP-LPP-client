@@ -12,7 +12,7 @@ LOGLET_MODULE2(tokoro, mops);
 namespace generator {
 namespace tokoro {
 
-// TODO(ewasjon): Investigate ny + dmin_s
+// TODO(ewasjon): Investigate ny
 static double interpolate(double const* x, double const* y, int nx, int, double xi) {
     int    i;
     double dx;

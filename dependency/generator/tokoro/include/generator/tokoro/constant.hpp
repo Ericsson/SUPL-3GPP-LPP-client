@@ -24,6 +24,11 @@ CONSTEXPR static double ARCSEC2RAD = (DEG2RAD / 3600.0);
 
 CONSTEXPR static double AU = 149597870691.0;
 
+// Coefficients of the height correction of the hydrostatic mapping function, Niell (1996)
+CONSTEXPR static double NIELL_HEIGHT_A = 2.53e-5;
+CONSTEXPR static double NIELL_HEIGHT_B = 5.49e-3;
+CONSTEXPR static double NIELL_HEIGHT_C = 1.14e-3;
+
 // Earth semimajor axis (WGS84) (m)
 CONSTEXPR static double RE_WGS84 = 6378137.0;
 // Earth flattening (WGS84)

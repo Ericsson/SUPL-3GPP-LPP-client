@@ -99,7 +99,9 @@
 #include "gmf.hpp"
 
 #include <cmath>
+
 #include <loglet/loglet.hpp>
+#include "constant.hpp"
 
 LOGLET_MODULE2(tokoro, gmf);
 #undef LOGLET_CURRENT_MODULE
@@ -279,9 +281,9 @@ GlobalMappingFunction global_mapping_function(double mjd, double latitude, doubl
 
     // Height correction for the hydrostatic mapping function from Niell (1996)
     if (apply_height_correction) {
-        auto a_ht     = 2.53e-5;
-        auto b_ht     = 5.49e-3;
-        auto c_ht     = 1.14e-3;
+        auto a_ht     = constant::NIELL_HEIGHT_A;
+        auto b_ht     = constant::NIELL_HEIGHT_B;
+        auto c_ht     = constant::NIELL_HEIGHT_C;
         auto hs_km    = height / 1000.0;
         auto beta_ht  = b_ht / (sine + c_ht);
         auto gamma_ht = a_ht / (sine + beta_ht);

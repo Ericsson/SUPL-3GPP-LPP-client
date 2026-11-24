@@ -91,8 +91,8 @@ struct TimeDependentHelmertTransform<PZ90_11, PZ90_02> {
     }
 };
 
-// PZ-90 to PZ-90.11, EPSG:7704, no epoch (the epoch does not matter without rates),
-// coordinate frame rotations in EPSG:
+// PZ-90 to PZ-90.11, EPSG:7704, no epoch (the reference epoch below is not used, there are no
+// rates), coordinate frame rotations in EPSG:
 //   dX = -1.443 m, dY = +0.156 m, dZ = +0.222 m,
 //   wx = -2.3 mas, wy = +3.54 mas, wz = -134.21 mas, m = -0.228 ppm
 template <>
