@@ -352,6 +352,7 @@ bool zenith_delays(TroposphereModel model, TroposphereData const* data, Troposph
     }
     case TroposphereModel::Vmf3: {
         if (data == nullptr || !data->has_vmf3()) return false;
+        if (height < -1000.0 || height > 20000.0) return false;
         Vmf3Values values{};
         if (!vmf3_evaluate(*data->vmf3(), troposphere_mjd(site.time), latitude, longitude, height,
                            values)) {

@@ -26,6 +26,9 @@ struct OrbitFrames::Impl {
     FrameId                     source[GNSS_COUNT];
     bool                        gps_by_week;
 
+    // The graph edges are not limited to a range of epochs, only the epoch of the position moves
+    // along a path (fixed-epoch frames), so the connectivity does not depend on the epoch used
+    // here. The ground frame, which has an epoch, also checks with it.
     bool connected(FrameId from) const {
         return from == target || !graph.find_path(from, 2020.0, target, 2020.0).empty();
     }

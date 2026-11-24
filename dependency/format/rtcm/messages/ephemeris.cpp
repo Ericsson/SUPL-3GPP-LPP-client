@@ -187,7 +187,9 @@ ephemeris::GloEphemeris to_ephemeris(Rtcm1020 const& rtcm, ts::Tai const& now) N
         Float3{rtcm.acceleration[0], rtcm.acceleration[1], rtcm.acceleration[2]};
     ephemeris.tau_n   = rtcm.tau_n;
     ephemeris.gamma_n = rtcm.gamma_n;
-    ephemeris.health  = rtcm.bn_msb ? 1 : 0;
+    // Bn (MSB) or the malfunction flag of the third string, as in the navigation message
+    // (format/nav/glo)
+    ephemeris.health  = (rtcm.bn_msb || rtcm.ln3) ? 1 : 0;
     ephemeris.age     = rtcm.e_n;
     ephemeris.m       = rtcm.m;
     ephemeris.lpp_iod = rtcm.tb;

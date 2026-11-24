@@ -482,7 +482,12 @@
                                           grid corners without data when the
                                           interpolation would otherwise fail. At
                                           least one corner of the grid cell must
-                                          have data
+                                          have data. For a list of correction
+                                          points the weights are not
+                                          renormalized: a point without data
+                                          keeps its weight and contributes zero
+                                          (the nominal delay for the
+                                          troposphere)
         --tkr-grid-extrapolation=[method] What to do with a position that the
                                           grid interpolation can not handle
                                           (outside of the grid, or not

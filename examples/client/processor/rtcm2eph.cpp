@@ -56,6 +56,9 @@ void Rtcm2Eph::handle_gal(streamline::System& system, format::rtcm::Rtcm1046* rt
 void Rtcm2Eph::handle_glo(streamline::System& system, format::rtcm::Rtcm1020* rtcm) NOEXCEPT {
     VSCOPE_FUNCTION();
     if (!mConfig.glonass) return;
+    // The message carries its own date (N_T, N4) when the receiver sends the additional data; the
+    // wall clock is only used to resolve the date when it does not, so a replayed capture without
+    // them needs the clock of that time.
     system.push(format::rtcm::to_ephemeris(*rtcm, ts::Tai::now()), mTag);
 }
 

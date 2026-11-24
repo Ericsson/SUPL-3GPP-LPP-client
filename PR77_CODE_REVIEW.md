@@ -78,32 +78,32 @@ There is no CI on this branch. Nobody other than the automated reviewers has rea
 
 ## 2. Medium
 
-### M1. `Rtcm2Eph` resolves the GLONASS day with the wall clock ✔
+### M1. `Rtcm2Eph` resolves the GLONASS day with the wall clock ✔ **DOWNGRADED, documented** (the message carries N_T/N4 when the receiver sends the additional data; the clock is only a fallback; comment added)
 - **Where:** `examples/client/processor/rtcm2eph.cpp:59`, `format::rtcm::to_ephemeris(*rtcm, ts::Tai::now())`.
 - **Problem:** RTCM 1020 carries only the time within the day. For recorded, replayed or delayed streams,
   `now()` can pick the wrong day around midnight. `tokoro-post` passes the message time instead.
 - **Fix:** Pass the reception or stream time through `Rtcm2Eph::inspect`.
 
-### M2. RTCM 1020 → GLONASS health ignores `ln3/ln5` ◐
+### M2. RTCM 1020 → GLONASS health ignores `ln3/ln5` ◐ **FIXED** (`bn_msb || ln3`, as in `format/nav/glo`)
 - **Where:** `dependency/format/rtcm/messages/ephemeris.cpp:~179` against `dependency/format/nav/glo/glo.cpp:~114`.
 - **Problem:** The SFRBX path uses `((bn >> 2) & 1) | ln`. The RTCM path uses only `bn_msb`. The same
   satellite can read healthy from RTCM and unhealthy from SFRBX.
 - **Fix:** OR in `ln3` (and `ln5`) in the RTCM converter.
 
-### M3. MSM cell-count guard is an `assert` only ✔
+### M3. MSM cell-count guard is an `assert` only ✔ **FIXED** (read loop bounded)
 - **Where:** `dependency/generator/rtcm/messages/msm.cpp:396`, then the read loop at `:409`.
 - **Problem:** With `NDEBUG` the guard disappears. If `cell_count` ever exceeds 64, the loop reads past the
   64-element `cell_data`. The partitioning caller prevents it today.
 - **Fix:** Clamp or return an error as well as asserting.
 
-### M4. List-of-correction-points path allocates on every call ✔
+### M4. List-of-correction-points path allocates on every call ✔ **FIXED** (fixed-size arrays, at most 64 points)
 - **Where:** `dependency/generator/tokoro/data/grid.cpp`, `select_list` and `list_plan` (several
   `std::vector`s per call).
 - **Problem:** It runs once per satellite, signal and epoch, but only for list-form sets. Cost is small for
   at most 64 points, yet it sits on the observation path.
 - **Fix:** Use fixed-size local arrays (the list is at most 64 points) or reusable scratch buffers.
 
-### M5. Missing-as-zero for lists does not renormalise the weights (design note) ✔
+### M5. Missing-as-zero for lists does not renormalise the weights (design note) ✔ **DOCUMENTED** (help and README)
 - **Where:** `grid.cpp`, the `Weighted` branch of `interpolate_cell`.
 - **Observation:** A point without data keeps its IDW or barycentric weight and contributes 0 (iono) or the
   nominal delay (tropo), so the result is pulled towards 0 or nominal. This is what "missing residual = 0"
@@ -111,24 +111,24 @@ There is no CI on this branch. Nobody other than the automated reviewers has rea
 - **Fix:** Document it in the `--tkr-grid-missing-as-zero` help and README. If renormalising is wanted
   instead, add it as a separate option.
 
-### M6. VMF3 height reduction has no domain guard ◐
+### M6. VMF3 height reduction has no domain guard ◐ **FIXED**
 - **Where:** `dependency/generator/tokoro/models/vmf3.cpp:270-274`.
 - **Problem:** The sibling models reject heights outside −1000..20000 m. `pow(1 − k·(h − orography), 5.225)`
   becomes NaN for bad orography data. Not reachable with sane inputs.
 - **Fix:** Add the same height-domain check.
 
-### M7. Frame connectivity is probed at a fixed epoch 2020.0 ◐
+### M7. Frame connectivity is probed at a fixed epoch 2020.0 ◐ **DOCUMENTED** (edges are not epoch-gated)
 - **Where:** `dependency/generator/tokoro/models/frame_transform.cpp:30,163-165`.
 - **Problem:** `OrbitFrames::connected` has no fallback to the real observation epoch. It only runs at setup
   to validate user input, and the graph edges here are epoch-independent today, so impact is low.
 - **Fix:** Thread the epoch through, or add a comment on why 2020.0 is sufficient.
 
-### M8. GLONASS dispersive residual scale uses channel k = 0 ◐
+### M8. GLONASS dispersive residual scale uses channel k = 0 ◐ **DOCUMENTED**
 - **Where:** `dependency/generator/rtcm/extract/residuals.cpp:57-83`.
 - **Problem:** The error is under about 0.6 % and acknowledged in a comment. The helper name suggests more.
 - **Fix:** Document it at the call site, or pass the satellite's channel.
 
-### M9. Snapshots do not carry `ssr_iod` ◐
+### M9. Snapshots do not carry `ssr_iod` ◐ **DOCUMENTED** (`TODO.md`; needs a snapshot format change)
 - **Where:** `include/generator/tokoro/snapshot.hpp`, `data/gather.cpp`.
 - **Problem:** A snapshot-loaded satellite has `ssr_iod == 0` on both sides, so the SSR-generation check
   can never fire in snapshot tests. This is not documented, unlike the `negative_correction_sign` exclusion.
