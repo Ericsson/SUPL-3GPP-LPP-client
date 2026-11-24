@@ -534,7 +534,9 @@ static args::Flag gGridMissingAsZero{
     "grid-missing-as-zero",
     "Use a zero residual (no variation from the nominal troposphere delay) for grid corners "
     "without data when the interpolation would otherwise fail. At least one corner of the grid "
-    "cell must have data",
+    "cell must have data. For a list of correction points the weights are not renormalized: a "
+    "point without data keeps its weight and contributes zero (the nominal delay for the "
+    "troposphere)",
     {"tkr-grid-missing-as-zero"},
 };
 

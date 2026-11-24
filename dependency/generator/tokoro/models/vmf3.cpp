@@ -300,7 +300,14 @@ bool vmf3_evaluate(Vmf3Grid const& grid, double mjd, double latitude, double lon
         return 1.0 - 0.00266 * std::cos(2.0 * latitude) - 0.28 * 1e-6 * h;
     };
 
-    auto lapse = std::pow(1.0 - LAPSE_RATE * (height - orography), 5.225);
+    auto lapse_base = 1.0 - LAPSE_RATE * (height - orography);
+    if (lapse_base <= 0.0) {
+        WARNF("VMF3 height reduction is out of range (height %.1fm, orography %.1fm)", height,
+              orography);
+        return false;
+    }
+
+    auto lapse = std::pow(lapse_base, 5.225);
     values.zhd = lapse * interpolated.zhd * davis(orography) / davis(height);
     values.zwd = interpolated.zwd * std::exp(-(height - orography) / 2000.0);
     values.ah  = interpolated.ah;

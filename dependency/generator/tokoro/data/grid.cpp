@@ -305,6 +305,24 @@ bool barycentric(Neighbour const& a, Neighbour const& b, Neighbour const& c, dou
     return weight[0] >= -TOLERANCE && weight[1] >= -TOLERANCE && weight[2] >= -TOLERANCE;
 }
 
+// A list of correction points has at most 64 points (LPP: the reference point and up to 63
+// relative locations), which keeps the selection free of heap allocations.
+constexpr size_t MAX_LIST_POINTS = 64;
+
+struct NeighbourList {
+    Neighbour data[MAX_LIST_POINTS];
+    size_t    count;
+
+    void push_back(Neighbour const& neighbour) {
+        if (count < MAX_LIST_POINTS) data[count++] = neighbour;
+    }
+    size_t           size() const { return count; }
+    bool             empty() const { return count == 0; }
+    Neighbour*       begin() { return data; }
+    Neighbour*       end() { return data + count; }
+    Neighbour const& operator[](size_t index) const { return data[index]; }
+};
+
 struct ListChoice {
     int    count;
     long   index[4];
@@ -319,14 +337,15 @@ struct ListChoice {
 
 // Chooses the points of a list (without cells) to interpolate from, among the points where
 // `eligible` is set. False if the position can not be interpolated from them.
-bool list_plan(GridData const& grid, Float3 llh, GridInterpolation method,
-               std::vector<char> const& eligible, ListChoice& choice) {
+bool list_plan(GridData const& grid, Float3 llh, GridInterpolation method, bool const* eligible,
+               ListChoice& choice) {
     constexpr size_t TRIANGLE_CANDIDATES = 8;
 
     choice = {};
 
-    std::vector<Neighbour> near;
-    for (size_t i = 0; i < grid.grid_points.size(); i++) {
+    NeighbourList near;
+    near.count = 0;
+    for (size_t i = 0; i < grid.grid_points.size() && i < MAX_LIST_POINTS; i++) {
         if (!eligible[i]) continue;
         near.push_back(neighbour_of(grid.grid_points[i], static_cast<long>(i), llh));
     }
@@ -420,12 +439,14 @@ bool list_plan(GridData const& grid, Float3 llh, GridInterpolation method,
 template <typename HasData>
 GridData::GridStatus select_list(GridData const& grid, Float3 llh, GridOptions const& options,
                                  HasData has_data, GridData::Cell& cell, Plan& plan) {
-    auto count = grid.grid_points.size();
+    auto count = std::min(grid.grid_points.size(), MAX_LIST_POINTS);
 
-    std::vector<char> present(count);
-    std::vector<char> all(count, 1);
-    for (size_t i = 0; i < count; i++)
-        present[i] = grid.grid_points[i].valid && has_data(grid.grid_points[i]);
+    bool present[MAX_LIST_POINTS];
+    bool all[MAX_LIST_POINTS];
+    for (size_t i = 0; i < MAX_LIST_POINTS; i++) {
+        all[i]     = i < count;
+        present[i] = i < count && grid.grid_points[i].valid && has_data(grid.grid_points[i]);
+    }
 
     auto build = [&](ListChoice const& choice) {
         cell      = {};

@@ -93,7 +93,8 @@ static bool link_frequency(GenericGnssId gnss, long id, double& mhz) {
 // where L1 is the link given by the l1 field. The RTCM residual messages define them for the
 // system's default L1 link (link 0: L1, G1, E1, B1I), and a dispersive delay scales with
 // 1/f^2, so a value stated for another link is rescaled by (f_l1 / f_default)^2. Absent, default
-// or unknown links need no conversion.
+// or unknown links need no conversion. For GLONASS the nominal (k = 0) frequencies are used (see
+// `link_frequency`), the scale is then off by less than 0.6 % for a satellite on another channel.
 static double dispersive_scale(GenericGnssId gnss, GNSS_RTK_Residuals_r15 const& src_residuals) {
     if (!src_residuals.l1_r15) return 1.0;
 

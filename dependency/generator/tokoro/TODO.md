@@ -33,6 +33,7 @@
 - [x] Troposphere gradient for a list of correction points: `three-point` gives the slope of the triangle (checked against finite differences); `four-point` (IDW) and `nearest` have none.
 - [ ] Extrapolation that keeps the slope (plane through the nearest cell or triangle) instead of the value of the nearest point.
 - [ ] Snapshot recording does not support a list of correction points (the gridded corrections are left out, with a warning).
+- [ ] Snapshots (`ENABLE_TOKORO_SNAPSHOT`) do not store the SSR IOD of the orbit and clock corrections, so a restored snapshot always passes `--tkr-ssr-gcc` (both IODs are 0). Needs a snapshot format change.
 - [ ] Interpolation of a list of correction points is not defined by LPP or Compact SSR (see below); the weighting and the number of points used are a choice. Check against real data when a network that uses `listOfCorrectionPoints` is available.
 
 Investigated, not issues:

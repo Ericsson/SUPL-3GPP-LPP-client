@@ -406,7 +406,9 @@ static generator::rtcm::Message generate_msm_single(uint32_t msm, bool more_mess
         cell_data[cell_index] = true;
     }
 
-    for (size_t i = 0; i < cell_count; i++) {
+    // Bounded even when the assert above is compiled out (NDEBUG), so a violated precondition can
+    // not read past `cell_data`; the message is then malformed instead of memory unsafe.
+    for (size_t i = 0; i < cell_count && i < 64; i++) {
         encoder.b(cell_data[i]);
     }
 
