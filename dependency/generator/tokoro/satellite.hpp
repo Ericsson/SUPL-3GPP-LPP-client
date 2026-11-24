@@ -91,7 +91,6 @@ public:
 
     NODISCARD bool enabled() const NOEXCEPT { return mEnabled; }
 
-    void disable() NOEXCEPT { mEnabled = false; }
     void disable(char const* reason) NOEXCEPT {
         mEnabled       = false;
         mDisableReason = reason;

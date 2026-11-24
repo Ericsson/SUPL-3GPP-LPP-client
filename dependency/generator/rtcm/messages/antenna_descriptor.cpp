@@ -3,6 +3,12 @@
 
 #include <algorithm>
 
+#include <loglet/loglet.hpp>
+
+LOGLET_MODULE2(rtcm, antenna_descriptor);
+#undef LOGLET_CURRENT_MODULE
+#define LOGLET_CURRENT_MODULE &LOGLET_MODULE_REF2(rtcm, antenna_descriptor)
+
 namespace generator {
 namespace rtcm {
 
@@ -41,6 +47,11 @@ Message generate_1033(ReferenceStation const&  reference_station,
     for (int i = 0; i < 5; i++) {
         lengths[i] = std::min<size_t>(strings[i]->size(), 255);
         total += lengths[i];
+    }
+    if (total > MAX_PAYLOAD_BYTES) {
+        WARNF("antenna and receiver descriptor strings (%zu bytes) do not fit in one frame, "
+              "truncating",
+              total);
     }
     while (total > MAX_PAYLOAD_BYTES) {
         int longest = 0;

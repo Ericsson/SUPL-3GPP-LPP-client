@@ -1,6 +1,7 @@
 #pragma once
 #include <core/core.hpp>
 
+#include <cmath>
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
@@ -96,8 +97,9 @@ struct GridData {
             if (correction_point_set_id != set.set_id) return false;
             if (grid_points.size() != set.list_points.size()) return false;
             for (size_t i = 0; i < grid_points.size(); i++) {
-                if (grid_points[i].position.x != set.list_points[i].x ||
-                    grid_points[i].position.y != set.list_points[i].y)
+                // both come from the same decoding, the tolerance only absorbs rounding [deg]
+                if (std::fabs(grid_points[i].position.x - set.list_points[i].x) > 1e-9 ||
+                    std::fabs(grid_points[i].position.y - set.list_points[i].y) > 1e-9)
                     return false;
             }
             return true;
@@ -168,15 +170,15 @@ struct GridData {
 
     void print_grid();
 
-    bool                   is_list;  // list of points, otherwise a regular grid
-    uint16_t               correction_point_set_id;
-    double                 reference_latitude;   // north-west corner [deg]
-    double                 reference_longitude;  // north-west corner [deg]
-    uint64_t               bitmask;
-    double                 delta_latitude;
-    double                 delta_longitude;
-    long                   number_of_steps_latitude;
-    long                   number_of_steps_longitude;
+    bool                   is_list{false};  // list of points, otherwise a regular grid
+    uint16_t               correction_point_set_id{0};
+    double                 reference_latitude{0.0};   // north-west corner [deg]
+    double                 reference_longitude{0.0};  // north-west corner [deg]
+    uint64_t               bitmask{0};
+    double                 delta_latitude{0.0};
+    double                 delta_longitude{0.0};
+    long                   number_of_steps_latitude{0};
+    long                   number_of_steps_longitude{0};
     std::vector<GridPoint> grid_points;
     std::vector<long>      array_lookup;  // array index -> absolute index (-1: none)
     ts::Tai                epoch_time;

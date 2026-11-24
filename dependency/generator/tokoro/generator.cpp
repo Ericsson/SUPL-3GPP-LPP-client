@@ -1016,7 +1016,10 @@ void ReferenceStation::build_rtcm_residual(Satellite const& satellite, Float3 co
     switch (satellite.id().gnss()) {
     case SatelliteId::Gnss::GPS: frequency = SignalId::GPS_L1_CA.frequency(); break;
     case SatelliteId::Gnss::GLONASS:
-        if (!satellite.has_frequency_channel()) return;
+        if (!satellite.has_frequency_channel()) {
+            VERBOSEF("%s: no frequency channel, no residual", satellite.id().name());
+            return;
+        }
         frequency = SignalId::GLONASS_G1_CA.frequency(satellite.frequency_channel());
         break;
     case SatelliteId::Gnss::GALILEO: frequency = SignalId::GALILEO_E1.frequency(); break;

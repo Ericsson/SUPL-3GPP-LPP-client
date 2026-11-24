@@ -32,7 +32,7 @@ struct TroposphericDelay {
     bool   valid;
     bool   valid_height_mapping;
     bool   valid_model;
-    bool   mapping_valid;
+    bool   mapping_valid;  // the mapping functions of the selected mapping could be evaluated
 };
 
 // Horizontal gradient of the troposphere, m_g(el) * (G_N * cos(az) + G_E * sin(az))

@@ -13,6 +13,7 @@
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
+#include "constant.hpp"
 #include "vienna.hpp"
 
 LOGLET_MODULE2(tokoro, vmf3);
@@ -197,6 +198,8 @@ static Bracket find_bracket(std::vector<double> const& axis, double value, bool 
             auto span = axis.front() + 360.0 - axis.back();
             return {count - 1, 0, (value + 360.0 - axis.back()) / span};
         }
+        VERBOSEF("%.3f is before the first grid point (%.3f), using the nearest", value,
+                 axis.front());
         return {0, 0, 0.0};
     }
     if (it == axis.end()) {
@@ -204,6 +207,7 @@ static Bracket find_bracket(std::vector<double> const& axis, double value, bool 
             auto span = axis.front() + 360.0 - axis.back();
             return {count - 1, 0, (value - axis.back()) / span};
         }
+        VERBOSEF("%.3f is after the last grid point (%.3f), using the nearest", value, axis.back());
         return {count - 1, count - 1, 0.0};
     }
     auto upper = static_cast<size_t>(it - axis.begin());
@@ -416,9 +420,9 @@ Vmf3Mapping vmf3_mapping(double ah, double aw, double mjd, double latitude, doub
     result.wet         = herring_mapping(elevation, aw, bw, cw);
 
     if (apply_height_correction) {
-        auto a1 = 2.53e-5;
-        auto b1 = 5.49e-3;
-        auto c1 = 1.14e-3;
+        auto a1 = constant::NIELL_HEIGHT_A;
+        auto b1 = constant::NIELL_HEIGHT_B;
+        auto c1 = constant::NIELL_HEIGHT_C;
         auto h1 = 1.0 / std::sin(elevation) - herring_mapping(elevation, a1, b1, c1);
         result.hydrostatic += h1 * height / 1000.0;
     }

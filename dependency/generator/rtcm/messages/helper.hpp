@@ -21,7 +21,8 @@ static inline uint32_t rtcm_quantize_unsigned(double value, double scale, unsign
     return static_cast<uint32_t>(steps);
 }
 
-// Signed counterpart; the most negative value of the field is reserved and never produced.
+// Signed counterpart; the most negative value of the field is reserved and never produced. Check
+// that the data field being encoded reserves that same pattern (and no other) before using it.
 static inline int32_t rtcm_quantize_signed(double value, double scale, unsigned bits) {
     auto max_value = static_cast<double>((int64_t{1} << (bits - 1)) - 1);
     if (!std::isfinite(value)) return 0;

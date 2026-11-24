@@ -1,7 +1,9 @@
 #include "vienna.hpp"
 
 #include <cmath>
+
 #include <loglet/loglet.hpp>
+#include "constant.hpp"
 
 LOGLET_MODULE2(tokoro, vienna);
 #undef LOGLET_CURRENT_MODULE
@@ -49,9 +51,9 @@ ViennaMapping vmf1_mapping(double ah, double aw, double mjd, double latitude, do
 
     // Height correction from Niell (1996)
     if (apply_height_correction) {
-        auto aht = 2.53e-5;
-        auto bht = 5.49e-3;
-        auto cht = 1.14e-3;
+        auto aht = constant::NIELL_HEIGHT_A;
+        auto bht = constant::NIELL_HEIGHT_B;
+        auto cht = constant::NIELL_HEIGHT_C;
         result.hydrostatic +=
             (1.0 / std::sin(elevation) - herring_mapping(elevation, aht, bht, cht)) * height /
             1000.0;

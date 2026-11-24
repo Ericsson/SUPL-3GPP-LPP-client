@@ -138,21 +138,21 @@ There is no CI on this branch. Nobody other than the automated reviewers has rea
 
 | # | Item | Where |
 |---|---|---|
-| L1 ✔ | `GridData` members (`is_list`, reference lat/lon, steps, bitmask) have no default initializers. Currently safe because `mGrid[gnss]` value-initialises, but cheap hygiene. | `data/grid.hpp` |
-| L2 ◐ | `GridData::matches` compares list positions with exact `!=`. Fine today (same decode path), fragile later. | `data/grid.hpp` |
-| L3 ◐ | GLONASS residual silently skipped when the frequency channel is unknown. Add a `VERBOSEF`. | `generator.cpp` (`build_rtcm_residual`) |
-| L4 ◐ | `diag_discard_detail` passed as `std::string` by value on every signal. | `generator.hpp`, `generator.cpp` |
-| L5 ◐ | Antenna-descriptor strings are truncated silently when the 1023-byte payload is exceeded. | `dependency/generator/rtcm/messages/antenna_descriptor.cpp` |
-| L6 ◐ | Quantize helpers assume one reserved-pattern convention for every DF. Confirm per call site. | `dependency/generator/rtcm/messages/helper.hpp` |
-| L7 ◐ | PZ-90→PZ-90.11 uses 2010.0 as the reference epoch although "no epoch". Inert (zero rates). | `coordinates/transform/pz90.hpp` |
-| L8 ◐ | `frame_epoch()` falls back to `{TimeDependent, 0.0}` after an exhaustive switch, hiding `-Wswitch`. | `dependency/coordinates/src/frame.cpp` |
-| L9 ◐ | `tokoro-post` `FILE*` is closed only at the end of `main`. A future early return would leak it. | `examples/tokoro-post/main.cpp` |
-| L10 ◐ | VMF3 latitude clamp at the poles is silent (GPT2 logs it). | `models/vmf3.cpp` |
-| L11 ✔ | PZ-90 flattening changed from 1/298.25 to 1/298.257839303. Looks right (matches PZ-90.11), but confirm against the ICD edition you cite. | `tokoro/coordinates/reference_ellipsoid.cpp` |
-| L12 ◐ | `Satellite::disable()` zero-argument overload is dead code. | `satellite.hpp` |
-| L13 ✔ | README `--tkr-vrs-mode` still lists `fixed, dynamic` and not `grid` (pre-existing). | `examples/client/README.md` |
-| L14 ◐ | Niell height constants duplicated in four files. `mops.cpp` has a stale TODO about `dmin_s`. `TroposphericDelay::mapping_valid` is undocumented. | `tokoro/models/*`, `observation.hpp` |
-| L15 ◐ | `Ephemeris::iode()/iodc()` both return `lpp_iod` for GLONASS. Add a one-line comment. | `dependency/ephemeris/include/ephemeris/ephemeris.hpp` |
+| L1 ✔ | `GridData` members (`is_list`, reference lat/lon, steps, bitmask) have no default initializers. Currently safe because `mGrid[gnss]` value-initialises, but cheap hygiene. | `data/grid.hpp` **Status:** **FIXED** |
+| L2 ◐ | `GridData::matches` compares list positions with exact `!=`. Fine today (same decode path), fragile later. | `data/grid.hpp` **Status:** **FIXED** (1e-9 deg tolerance) |
+| L3 ◐ | GLONASS residual silently skipped when the frequency channel is unknown. Add a `VERBOSEF`. | `generator.cpp` (`build_rtcm_residual`) **Status:** **FIXED** (verbose log) |
+| L4 ◐ | `diag_discard_detail` passed as `std::string` by value on every signal. | `generator.hpp`, `generator.cpp` **Status:** **NOT AN ISSUE** (sink parameter, moved into the observation) |
+| L5 ◐ | Antenna-descriptor strings are truncated silently when the 1023-byte payload is exceeded. | `dependency/generator/rtcm/messages/antenna_descriptor.cpp` **Status:** **FIXED** (warning) |
+| L6 ◐ | Quantize helpers assume one reserved-pattern convention for every DF. Confirm per call site. | `dependency/generator/rtcm/messages/helper.hpp` **Status:** **DOCUMENTED** |
+| L7 ◐ | PZ-90→PZ-90.11 uses 2010.0 as the reference epoch although "no epoch". Inert (zero rates). | `coordinates/transform/pz90.hpp` **Status:** **DOCUMENTED** |
+| L8 ◐ | `frame_epoch()` falls back to `{TimeDependent, 0.0}` after an exhaustive switch, hiding `-Wswitch`. | `dependency/coordinates/src/frame.cpp` **Status:** **NOT AN ISSUE** (`-Wswitch` still fires, there is no `default:`; the trailing return is needed for `-Wreturn-type`) |
+| L9 ◐ | `tokoro-post` `FILE*` is closed only at the end of `main`. A future early return would leak it. | `examples/tokoro-post/main.cpp` **Status:** **FIXED** (`unique_ptr` closer) |
+| L10 ◐ | VMF3 latitude clamp at the poles is silent (GPT2 logs it). | `models/vmf3.cpp` **Status:** **FIXED** (verbose log) |
+| L11 ✔ | PZ-90 flattening changed from 1/298.25 to 1/298.257839303. Looks right (matches PZ-90.11), but confirm against the ICD edition you cite. | `tokoro/coordinates/reference_ellipsoid.cpp` **Status:** **CONFIRMED CORRECT** (CDMA ICD: 1/298.25784) |
+| L12 ◐ | `Satellite::disable()` zero-argument overload is dead code. | `satellite.hpp` **Status:** **FIXED** (removed) |
+| L13 ✔ | README `--tkr-vrs-mode` still lists `fixed, dynamic` and not `grid` (pre-existing). | `examples/client/README.md` **Status:** **FIXED** (README regenerated) |
+| L14 ◐ | Niell height constants duplicated in four files. `mops.cpp` has a stale TODO about `dmin_s`. `TroposphericDelay::mapping_valid` is undocumented. | `tokoro/models/*`, `observation.hpp` **Status:** **FIXED** (shared `NIELL_HEIGHT_*`, TODO fixed, field commented) |
+| L15 ◐ | `Ephemeris::iode()/iodc()` both return `lpp_iod` for GLONASS. Add a one-line comment. | `dependency/ephemeris/include/ephemeris/ephemeris.hpp` **Status:** **DOCUMENTED** |
 
 Informational: `random_phase_ambiguity` has negligible modulo bias (about 1e-16). The 64-bit `bitmaskOfGrids`
 cap in `set.cpp` is correct per the ASN.1 but uncommented.
