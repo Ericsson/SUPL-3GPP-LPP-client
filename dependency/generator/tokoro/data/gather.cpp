@@ -36,6 +36,8 @@ EXTERNAL_WARNINGS_POP
 
 #include <cstdio>
 #include <cstdlib>
+#include <fcntl.h>
+#include <unistd.h>
 
 #ifdef DATA_TRACING
 #include <datatrace/datatrace.hpp>
@@ -553,7 +555,19 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
 
                 static FILE* dump_file = [] {
                     auto path = std::getenv("TOKORO_GRID_DUMP");
-                    return path ? std::fopen(path, "a") : nullptr;
+                    if (!path) return static_cast<FILE*>(nullptr);
+
+                    // do not follow symlinks and keep the dump private to the owner
+                    auto fd =
+                        ::open(path, O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW | O_CLOEXEC, 0600);
+                    if (fd < 0) {
+                        WARNF("failed to open TOKORO_GRID_DUMP: %s", path);
+                        return static_cast<FILE*>(nullptr);
+                    }
+
+                    auto file = ::fdopen(fd, "a");
+                    if (!file) ::close(fd);
+                    return file;
                 }();
                 {
                     if (dump_file) {
