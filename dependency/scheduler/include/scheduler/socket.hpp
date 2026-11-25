@@ -189,12 +189,12 @@ protected:
     bool                    mIsScheduled;
     ScheduledEvent          mEvent;
     std::string             mEventName;
-    int                     mFd;
+    int                     mFd = -1;
     std::string             mPath;
     std::string             mHost;
     uint16_t                mPort;
     struct sockaddr_storage mAddress;
-    socklen_t               mAddressLength;
+    socklen_t               mAddressLength = 0;
     bool                    mConnected;
     bool                    mShouldReconnect;
     RepeatableTimeoutTask   mReconnectTimeout;
