@@ -26,6 +26,8 @@ public:
     NODISCARD uint16_t port() const NOEXCEPT;
 
 private:
+    static constexpr size_t MAX_CLIENTS = 32;
+
     struct Client {
         Client(TcpServerStream& server, int fd) NOEXCEPT;
         ~Client() NOEXCEPT;
@@ -33,7 +35,8 @@ private:
         void write(uint8_t const* data, size_t length) NOEXCEPT;
         void destroy() NOEXCEPT;
 
-        int fd() const NOEXCEPT { return mFd; }
+        int  fd() const NOEXCEPT { return mFd; }
+        bool scheduled() const NOEXCEPT { return mScheduled; }
 
     private:
         void on_read() NOEXCEPT;
@@ -46,6 +49,7 @@ private:
         WriteBuffer                        mWriteBuffer;
         bool                               mWriteRegistered = false;
         bool                               mDestroying      = false;
+        bool                               mScheduled       = false;
     };
 
     void remove_client(int fd) NOEXCEPT;
