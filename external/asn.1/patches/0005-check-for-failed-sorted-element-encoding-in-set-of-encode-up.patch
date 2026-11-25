@@ -1,0 +1,16 @@
+Subject: check for failed sorted element encoding in SET_OF_encode_uper
+
+
+---
+diff --git a/skeleton/constr_SET_OF_uper.c b/skeleton/constr_SET_OF_uper.c
+index 633480e4..330f7aad 100644
+--- a/skeleton/constr_SET_OF_uper.c
++++ b/skeleton/constr_SET_OF_uper.c
+@@ -164,6 +164,7 @@ SET_OF_encode_uper(const asn_TYPE_descriptor_t *td,
+      * according to their encodings. Build an array of the encoded elements.
+      */
+     encoded_els = SET_OF__encode_sorted(elm, list, SOES_CUPER);
++    if(!encoded_els && list->count > 0) ASN__ENCODE_FAILED;
+ 
+     for(encoded_edx = 0; (ssize_t)encoded_edx < list->count;) {
+         ssize_t may_encode;

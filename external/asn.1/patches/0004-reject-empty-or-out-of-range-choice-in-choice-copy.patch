@@ -1,0 +1,17 @@
+Subject: reject empty or out-of-range CHOICE in CHOICE_copy
+
+
+---
+diff --git a/skeleton/constr_CHOICE.c b/skeleton/constr_CHOICE.c
+index 2a20583a..c64a3e11 100644
+--- a/skeleton/constr_CHOICE.c
++++ b/skeleton/constr_CHOICE.c
+@@ -345,7 +345,7 @@ CHOICE_copy(const asn_TYPE_descriptor_t *td, void **aptr, const void *bptr) {
+     present = _fetch_present_idx(bptr,
+                                  specs->pres_offset, specs->pres_size);
+ 
+-    if(present <= 0 && (unsigned)present > td->elements_count) return -1;
++    if(present <= 0 || (unsigned)present > td->elements_count) return -1;
+     --present;
+ 
+     elm = &td->elements[present];

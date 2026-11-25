@@ -1,0 +1,45 @@
+Subject: reject UPER sizes above the constraint upper bound
+
+OCTET STRING, BIT STRING and SET OF decoders accepted lengths up to
+lb + 2^eb - 1, which can exceed the declared SIZE upper bound (for
+example a 256 character FQDN with SIZE(1..255)).
+
+---
+diff --git a/skeleton/BIT_STRING_uper.c b/skeleton/BIT_STRING_uper.c
+index 425379b7..94ef143d 100644
+--- a/skeleton/BIT_STRING_uper.c
++++ b/skeleton/BIT_STRING_uper.c
+@@ -100,6 +100,8 @@ BIT_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
+         raw_len = uper_get_length(pd, csiz->effective_bits, csiz->lower_bound,
+                                   &repeat);
+         if(raw_len < 0) RETURN(RC_WMORE);
++        if(csiz->effective_bits >= 0 && raw_len > csiz->upper_bound)
++            RETURN(RC_FAIL);
+         if(raw_len == 0 && st->buf) break;
+ 
+         ASN_DEBUG("Got PER length eb %ld, len %ld, %s (%s)",
+diff --git a/skeleton/OCTET_STRING_uper.c b/skeleton/OCTET_STRING_uper.c
+index f5528cd9..36d25d0c 100644
+--- a/skeleton/OCTET_STRING_uper.c
++++ b/skeleton/OCTET_STRING_uper.c
+@@ -152,6 +152,8 @@ OCTET_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
+         raw_len = uper_get_length(pd, csiz->effective_bits, csiz->lower_bound,
+                                   &repeat);
+         if(raw_len < 0) RETURN(RC_WMORE);
++        if(csiz->effective_bits >= 0 && raw_len > csiz->upper_bound)
++            RETURN(RC_FAIL);
+         if(raw_len == 0 && st->buf) break;
+ 
+         ASN_DEBUG("Got PER length eb %ld, len %ld, %s (%s)",
+diff --git a/skeleton/constr_SET_OF_uper.c b/skeleton/constr_SET_OF_uper.c
+index b090e405..633480e4 100644
+--- a/skeleton/constr_SET_OF_uper.c
++++ b/skeleton/constr_SET_OF_uper.c
+@@ -51,6 +51,7 @@ SET_OF_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
+                   (long)nelems, ct->lower_bound, td->name);
+         if(nelems < 0)  ASN__DECODE_STARVED;
+         nelems += ct->lower_bound;
++        if(nelems > ct->upper_bound) ASN__DECODE_FAILED;
+     } else {
+         nelems = -1;
+     }

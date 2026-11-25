@@ -151,3 +151,4 @@ When `USE_CXX11` is set (i.e., `CMAKE_CXX_STANDARD=11`):
 - Only create branches, commits, pushes, tags, PRs, or releases when explicitly asked. Never force-push, `reset --hard`, or otherwise rewrite history.
 - After any code change, run `scripts/format.sh apply` on the touched files before considering the change done.
 - Release flow: release PR (bump `CLIENT_VERSION`/`CLIENT_VERSION_INT` in `CMakeLists.txt`, README badge, and `LAST_UPDATE_CHECKED` in `dependency/time/timestamp.cpp` after confirming the leap-second count) -> merge -> full clean build + `ctest` -> tag the merge commit `vX.Y.Z` -> `gh release create vX.Y.Z --generate-notes` -> `docker/build-images.py --push --tag vX.Y.Z --latest` (builders are pulled from Rosetta)
+- `external/asn.1/skeleton/` is upstream asn1c code with local patches kept in `external/asn.1/patches/` (see `external/asn.1/README`); keep the patches in sync when editing the skeleton
