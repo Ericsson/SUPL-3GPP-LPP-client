@@ -17,6 +17,9 @@ bool unpack(Unpacker& unpacker, std::vector<T>& value) NOEXCEPT {
     uint32_t size;
     if (!unpacker.unpack_array_header(size)) return false;
 
+    // every element needs at least one byte
+    if (size > unpacker.remaining()) return false;
+
     value.clear();
     value.reserve(size);
 
