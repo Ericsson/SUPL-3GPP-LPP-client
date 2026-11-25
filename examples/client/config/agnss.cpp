@@ -195,10 +195,10 @@ void dump(AGnssConfig const& config) {
     DEBUGF("interval: %ld seconds", config.interval_seconds);
     DEBUGF("triggered_cooldown: %ld seconds", config.triggered_cooldown_seconds);
     if (config.msisdn) {
-        DEBUGF("msisdn: ***%04" PRIu64 " (set)", *config.msisdn % 10000);
+        DEBUGF("msisdn: %" PRIu64, *config.msisdn);
     }
     if (config.imsi) {
-        DEBUGF("imsi: ***%04" PRIu64 " (set)", *config.imsi % 10000);
+        DEBUGF("imsi: %" PRIu64, *config.imsi);
     }
     if (config.ipv4) {
         DEBUGF("ipv4: \"%s\"", config.ipv4->c_str());

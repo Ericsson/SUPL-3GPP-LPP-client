@@ -70,13 +70,13 @@ void dump(IdentityConfig const& config) {
     DEBUGF("wait_for_identity: %s", config.wait_for_identity ? "true" : "false");
 
     if (config.msisdn) {
-        DEBUGF("msisdn: ***%04llu (set)", *config.msisdn % 10000);
+        DEBUGF("msisdn: %llu", *config.msisdn);
     } else {
         DEBUGF("msisdn: not set");
     }
 
     if (config.imsi) {
-        DEBUGF("imsi: ***%04llu (set)", *config.imsi % 10000);
+        DEBUGF("imsi: %llu", *config.imsi);
     } else {
         DEBUGF("imsi: not set");
     }
