@@ -752,7 +752,7 @@ INTEGER_compare(const asn_TYPE_descriptor_t *td, const void *aptr,
             int sign = (a->buf[0] & 0x80) ? -1 : 1;
             return (1) * sign;
         } else if(b->size) {
-            int sign = (a->buf[0] & 0x80) ? -1 : 1;
+            int sign = (b->buf[0] & 0x80) ? -1 : 1;
             return (-1) * sign;
         } else {
             return 0;
