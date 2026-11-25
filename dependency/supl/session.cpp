@@ -410,8 +410,8 @@ bool operator==(Identity const& a, Identity const& b) {
     case Identity::UNKNOWN: return false;
     case Identity::MSISDN: return a.data.msisdn == b.data.msisdn;
     case Identity::IMSI: return a.data.imsi == b.data.imsi;
-    case Identity::IPV4: return memcmp(a.data.ipv4, a.data.ipv4, 4) == 0;
-    case Identity::IPV6: return memcmp(a.data.ipv6, a.data.ipv6, 16) == 0;
+    case Identity::IPV4: return memcmp(a.data.ipv4, b.data.ipv4, 4) == 0;
+    case Identity::IPV6: return memcmp(a.data.ipv6, b.data.ipv6, 16) == 0;
     case Identity::FQDN: return a.data.fqdn == b.data.fqdn;
     }
 
