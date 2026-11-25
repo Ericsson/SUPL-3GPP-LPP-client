@@ -182,5 +182,9 @@ bool Decoder::error() const NOEXCEPT {
     return mError;
 }
 
+void Decoder::fail() NOEXCEPT {
+    mError = true;
+}
+
 }  // namespace ubx
 }  // namespace format

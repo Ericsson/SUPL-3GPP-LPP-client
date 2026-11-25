@@ -254,7 +254,7 @@ void MessageBuilder::satellite_mask(long gnss_id, uint64_t count, bool* bits) {
             count = 37;
         }
         break;
-    default: UNREACHABLE();
+    default: ERRORF("unsupported GNSS ID: %ld", gnss_id); break;
     }
 
     for (uint8_t i = 0; i < count; i++) {
@@ -309,7 +309,7 @@ void MessageBuilder::ephemeris_type(long gnss_id) {
     case GNSS_ID_QZS:         // SF098 - QZSS Ephemeris Type
         mBuilder.bits(0, 3);  // QZSS LNAV (L1C/A)
         break;
-    default: UNREACHABLE();
+    default: ERRORF("unsupported GNSS ID: %ld", gnss_id); break;
     }
 }
 
@@ -330,6 +330,6 @@ void MessageBuilder::orbit_iode(long gnss_id, BIT_STRING_s& bit_string) {
         // IODC = mod(toe_sec / 720, 240) = mod(iod_r15 * 512 / 720, 240)
         mBuilder.bits(static_cast<uint64_t>(iode) * 512 / 720 % 240, 8);
         break;
-    default: UNREACHABLE();
+    default: ERRORF("unsupported GNSS ID: %ld", gnss_id); break;
     }
 }

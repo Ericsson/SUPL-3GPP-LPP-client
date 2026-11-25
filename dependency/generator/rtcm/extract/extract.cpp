@@ -43,12 +43,11 @@ generator::rtcm::GenericGnssId gnss_id(GNSS_SystemTime const& src_time) {
     case GNSS_ID__gnss_id_glonass: return generator::rtcm::GenericGnssId::GLONASS;
     case GNSS_ID__gnss_id_galileo: return generator::rtcm::GenericGnssId::GALILEO;
     case GNSS_ID__gnss_id_bds: return generator::rtcm::GenericGnssId::BEIDOU;
+    case GNSS_ID__gnss_id_qzss: return generator::rtcm::GenericGnssId::QZSS;
     }
 
-    UNREACHABLE();
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
+    WARNF("unsupported GNSS time id: %ld, assuming GPS", src_time.gnss_TimeID.gnss_id);
     return generator::rtcm::GenericGnssId::GPS;
-#endif
 }
 
 ts::Tai epoch_time(GNSS_SystemTime const& src_time) {

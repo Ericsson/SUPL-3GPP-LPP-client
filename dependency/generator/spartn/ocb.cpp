@@ -547,6 +547,7 @@ void Generator::generate_ocb(uint16_t iod) {
 
     std::vector<OcbCorrections*> messages;
     for (auto& kvp : ocb_data->keyed_corrections) {
+        if (!is_spartn_gnss_id(kvp.first.gnss_id)) continue;
         if (!mGpsSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_gps) continue;
         if (!mGlonassSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_glonass) continue;
         if (!mGalileoSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_galileo) continue;
@@ -751,7 +752,7 @@ void Generator::generate_ocb(uint16_t iod) {
                                             satellite.phase_bias,
                                             static_cast<int>(satellite.prn()));
                     break;
-                default: UNREACHABLE();
+                default: break;
                 }
             }
         }

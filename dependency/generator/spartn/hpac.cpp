@@ -914,6 +914,7 @@ void Generator::generate_hpac(uint16_t iod) {
 
     std::vector<HpacCorrections*> messages;
     for (auto& kvp : hpac_data->keyed_corrections) {
+        if (!is_spartn_gnss_id(kvp.first.gnss_id)) continue;
         if (!mGpsSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_gps) continue;
         if (!mGlonassSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_glonass) continue;
         if (!mGalileoSupported && kvp.first.gnss_id == GNSS_ID__gnss_id_galileo) continue;

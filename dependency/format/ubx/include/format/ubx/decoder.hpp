@@ -38,6 +38,7 @@ public:
     void               skip(uint32_t length) NOEXCEPT;
     NODISCARD uint32_t remaining() const NOEXCEPT;
     NODISCARD bool     error() const NOEXCEPT;
+    void               fail() NOEXCEPT;
 
 private:
     uint8_t* mPayload;

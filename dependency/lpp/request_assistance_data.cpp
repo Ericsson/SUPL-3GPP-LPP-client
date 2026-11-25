@@ -127,7 +127,6 @@ static NCGI_r15* ncgi_primary_cell_id(supl::Cell const& cell) {
     mcc_list(mcc, cell.data.nr.mcc);
     mnc_list(mnc, cell.data.nr.mnc);
 
-    ASSERT(cell.data.nr.ci > 0, "cell id <= 0");
     helper::BitStringBuilder{}
         .integer(0, 36, static_cast<uint64_t>(cell.data.nr.ci))
         .into_bit_string(36, &message->nr_cellidentity_r15);
@@ -145,7 +144,6 @@ static ECGI* ecgi_primary_cell_id(supl::Cell const& cell) {
     mcc_list(mcc, cell.data.lte.mcc);
     mnc_list(mnc, cell.data.lte.mnc);
 
-    ASSERT(cell.data.lte.ci > 0, "cell id <= 0");
     helper::BitStringBuilder{}
         .integer(0, 28, static_cast<uint64_t>(cell.data.lte.ci))
         .into_bit_string(28, &message->cellidentity);

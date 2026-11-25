@@ -258,6 +258,7 @@ struct CorrectionData {
 };
 
 uint8_t subtype_from_gnss_id(long gnss_id);
+bool    is_spartn_gnss_id(long gnss_id);
 
 }  // namespace spartn
 }  // namespace generator
