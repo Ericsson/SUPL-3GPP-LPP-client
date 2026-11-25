@@ -54,6 +54,7 @@ struct AGnssConfig {
     std::string                  host;
     uint16_t                     port;
     std::unique_ptr<std::string> interface;
+    supl::TlsConfig              tls;
 
     bool      enabled;
     AGnssMode mode;
