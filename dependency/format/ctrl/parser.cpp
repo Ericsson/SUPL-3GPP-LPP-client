@@ -93,12 +93,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
             continue;
         }
 
-        // the subscriber identity must not end up in the log
-        if (tokens[0] == "/IDENTITY") {
-            VERBOSEF("parsed message: \"/IDENTITY,...\"");
-        } else {
-            VERBOSEF("parsed message: \"%s\"", sanitize_text(payload).c_str());
-        }
+        VERBOSEF("parsed message: \"%s\"", sanitize_text(payload).c_str());
 
         // The line was consumed. If it does not produce a message, keep draining instead of
         // reporting "no data available" to the caller.
@@ -176,7 +171,8 @@ std::unique_ptr<Message> Parser::parse_identity(std::string const&              
         try {
             imsi = std::stoull(tokens[2]);
         } catch (std::exception const& e) {
-            WARNF("/IDENTITY,IMSI parsing failed: %s", e.what());
+            WARNF("/IDENTITY,IMSI parsing failed: \"%s\" %s", sanitize_text(tokens[2]).c_str(),
+                  e.what());
             return nullptr;
         }
 
