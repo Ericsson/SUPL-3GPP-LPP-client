@@ -6,7 +6,11 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <fcntl.h>
 #include <netdb.h>
+#include <poll.h>
+#include <sys/socket.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 LOGLET_MODULE(ntrip_source);
@@ -75,6 +79,43 @@ void NtripSource::connect() {
     freeaddrinfo(res);
     mHeaderDone = false;
 
+    if (mConfig.tls) {
+        timeval timeout{};
+        timeout.tv_sec = mConfig.timeout_s > 0 ? mConfig.timeout_s : 30;
+        ::setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        ::setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
+
+        supl::TlsConfig tls_config{};
+        tls_config.enabled = true;
+        mTls               = supl::create_tls_backend(tls_config);
+        if (!mTls) {
+            ERRORF("NTRIP: TLS requested but unavailable, refusing to connect in cleartext");
+            disconnect();
+            schedule_reconnect();
+            return;
+        }
+
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(timeout.tv_sec);
+        for (;;) {
+            auto result = mTls->handshake(mSocket, mConfig.host);
+            if (result == supl::TlsBackend::HandshakeResult::Ok) break;
+            if (result == supl::TlsBackend::HandshakeResult::Error ||
+                std::chrono::steady_clock::now() >= deadline) {
+                WARNF("NTRIP: TLS handshake with %s:%u failed", mConfig.host.c_str(), mConfig.port);
+                disconnect();
+                schedule_reconnect();
+                return;
+            }
+
+            pollfd pfd{};
+            pfd.fd     = mSocket;
+            pfd.events = result == supl::TlsBackend::HandshakeResult::WantWrite ? POLLOUT : POLLIN;
+            ::poll(&pfd, 1, 1000);
+        }
+    } else if (!mConfig.username.empty()) {
+        WARNF("NTRIP: sending credentials without TLS (use --ntrip-tls)");
+    }
+
     // Randomise offset per connection
     if (mConfig.position_offset_m > 0) {
         double angle = mOffsetAngle(mRng);
@@ -103,7 +144,17 @@ void NtripSource::connect() {
         req += "Authorization: Basic " + enc + "\r\n";
     }
     req += "\r\n";
-    ::send(mSocket, req.c_str(), req.size(), 0);
+    auto sent = send_all(req.c_str(), req.size());
+
+    auto flags = ::fcntl(mSocket, F_GETFL, 0);
+    if (flags >= 0) ::fcntl(mSocket, F_SETFL, flags | O_NONBLOCK);
+
+    if (!sent) {
+        WARNF("NTRIP: failed to send request");
+        disconnect();
+        schedule_reconnect();
+        return;
+    }
 
     if (mConfig.position_mode != NtripConfig::PositionMode::None) send_nmea();
 
@@ -122,6 +173,10 @@ void NtripSource::connect() {
 void NtripSource::disconnect() {
     mPollTask.cancel();
     mPositionTask.cancel();
+    if (mTls) {
+        mTls->shutdown();
+        mTls.reset();
+    }
     if (mSocket >= 0) {
         ::close(mSocket);
         mSocket = -1;
@@ -137,9 +192,22 @@ void NtripSource::poll() {
     if (mSocket < 0) return;
 
     uint8_t buf[4096];
-    auto    n = ::recv(mSocket, buf, sizeof(buf), MSG_DONTWAIT);
+    ssize_t n = 0;
+    if (mTls) {
+        auto result = mTls->read(buf, sizeof(buf));
+        switch (result.status) {
+        case supl::TlsBackend::IoStatus::Ok: n = result.bytes; break;
+        case supl::TlsBackend::IoStatus::WantRead:
+        case supl::TlsBackend::IoStatus::WantWrite: return;
+        case supl::TlsBackend::IoStatus::Closed: n = 0; break;
+        case supl::TlsBackend::IoStatus::Error: n = -1; break;
+        }
+        if (n < 0) errno = 0;
+    } else {
+        n = ::recv(mSocket, buf, sizeof(buf), MSG_DONTWAIT);
+    }
     if (n < 0) {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) return;
+        if (!mTls && (errno == EAGAIN || errno == EWOULDBLOCK)) return;
         WARNF("NTRIP: read error, reconnecting");
         disconnect();
         schedule_reconnect();
@@ -217,5 +285,48 @@ std::string NtripSource::build_gga() const {
 void NtripSource::send_nmea() {
     if (mSocket < 0) return;
     auto gga = build_gga();
-    ::send(mSocket, gga.c_str(), gga.size(), 0);
+    if (!send_all(gga.c_str(), gga.size())) {
+        WARNF("NTRIP: failed to send position, reconnecting");
+        disconnect();
+        schedule_reconnect();
+    }
+}
+
+bool NtripSource::send_all(void const* data, size_t length) {
+    auto ptr       = static_cast<uint8_t const*>(data);
+    auto remaining = length;
+    while (remaining > 0) {
+        if (mTls) {
+            auto result = mTls->write(ptr, static_cast<int>(remaining));
+            if (result.status == supl::TlsBackend::IoStatus::Ok) {
+                ptr += result.bytes;
+                remaining -= static_cast<size_t>(result.bytes);
+                continue;
+            }
+            if (result.status == supl::TlsBackend::IoStatus::WantRead ||
+                result.status == supl::TlsBackend::IoStatus::WantWrite) {
+                pollfd pfd{};
+                pfd.fd = mSocket;
+                pfd.events =
+                    result.status == supl::TlsBackend::IoStatus::WantWrite ? POLLOUT : POLLIN;
+                if (::poll(&pfd, 1, 1000) > 0) continue;
+            }
+            return false;
+        } else {
+            auto n = ::send(mSocket, ptr, remaining, MSG_NOSIGNAL);
+            if (n > 0) {
+                ptr += n;
+                remaining -= static_cast<size_t>(n);
+                continue;
+            }
+            if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR)) {
+                pollfd pfd{};
+                pfd.fd     = mSocket;
+                pfd.events = POLLOUT;
+                if (::poll(&pfd, 1, 1000) > 0) continue;
+            }
+            return false;
+        }
+    }
+    return true;
 }
