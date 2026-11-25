@@ -7,8 +7,20 @@ SatelliteId SatelliteId::invalid() {
     return SatelliteId();
 }
 
+static long satellite_count_for(SatelliteId::Gnss gnss) {
+    switch (gnss) {
+    case SatelliteId::Gnss::GPS: return GPS_ABS_COUNT;
+    case SatelliteId::Gnss::GLONASS: return GLO_ABS_COUNT;
+    case SatelliteId::Gnss::GALILEO: return GAL_ABS_COUNT;
+    case SatelliteId::Gnss::BEIDOU: return BDS_ABS_COUNT;
+    case SatelliteId::Gnss::QZSS: return QZS_ABS_COUNT;
+    case SatelliteId::Gnss::UNKNOWN: return LPP_SATELLITE_ID_LIMIT;
+    }
+    return 0;
+}
+
 SatelliteId SatelliteId::from_lpp(Gnss gnss, long id) {
-    if (id >= LPP_SATELLITE_ID_LIMIT) {
+    if (id < 0 || id >= LPP_SATELLITE_ID_LIMIT || id >= satellite_count_for(gnss)) {
         return invalid();
     } else {
         return SatelliteId(gnss, static_cast<int32_t>(id));
