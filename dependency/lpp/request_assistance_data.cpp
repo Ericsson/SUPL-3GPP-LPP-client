@@ -91,7 +91,7 @@ static void mcc_list(MCC* mcc, uint64_t mcc_value) {
     }
 
     char tmp[8];
-    sprintf(tmp, "%" PRIu64, mcc_value);
+    snprintf(tmp, sizeof(tmp), "%" PRIu64, mcc_value);
 
     for (size_t i = 0; i < strlen(tmp); i++) {
         auto d = ALLOC_ZERO(MCC_MNC_Digit_t);
@@ -106,7 +106,7 @@ static void mnc_list(MNC* mnc, uint64_t mnc_value) {
     }
 
     char tmp[8];
-    sprintf(tmp, "%02" PRIu64, mnc_value);
+    snprintf(tmp, sizeof(tmp), "%02" PRIu64, mnc_value);
 
     for (size_t i = 0; i < strlen(tmp); i++) {
         auto d = ALLOC_ZERO(MCC_MNC_Digit_t);
