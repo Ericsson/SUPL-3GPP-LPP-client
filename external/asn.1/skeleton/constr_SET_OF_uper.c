@@ -164,6 +164,7 @@ SET_OF_encode_uper(const asn_TYPE_descriptor_t *td,
      * according to their encodings. Build an array of the encoded elements.
      */
     encoded_els = SET_OF__encode_sorted(elm, list, SOES_CUPER);
+    if(!encoded_els && list->count > 0) ASN__ENCODE_FAILED;
 
     for(encoded_edx = 0; (ssize_t)encoded_edx < list->count;) {
         ssize_t may_encode;
