@@ -44,8 +44,9 @@ void BitString::initialize(size_t bits) {
 
 static size_t bit_count(BIT_STRING_s const& bit_string) {
     auto total = bit_string.size * 8;
-    if (bit_string.bits_unused >= total) return 0;
-    return total - bit_string.bits_unused;
+    auto unused = bit_string.bits_unused < 0 ? size_t{0} : static_cast<size_t>(bit_string.bits_unused);
+    if (unused >= total) return 0;
+    return total - unused;
 }
 
 BitString::Index BitString::bit_index(ssize_t index) const {
