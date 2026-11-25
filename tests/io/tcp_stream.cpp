@@ -244,7 +244,7 @@ TEST_CASE("TcpServerStream - periodic client connections") {
         ++connections_made;
         if (connections_made >= 100) connect_timer.cancel();
     };
-    connect_timer.schedule();
+    CHECK(connect_timer.schedule());
 
     scheduler::PeriodicTask disconnect_timer(std::chrono::milliseconds(7));
     disconnect_timer.callback = [&] {
@@ -257,7 +257,7 @@ TEST_CASE("TcpServerStream - periodic client connections") {
             scheduler.interrupt();
         }
     };
-    disconnect_timer.schedule();
+    CHECK(disconnect_timer.schedule());
 
     auto result = scheduler.execute_timeout(std::chrono::seconds(10));
     REQUIRE(result == scheduler::ExecuteResult::Interrupted);

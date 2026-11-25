@@ -58,7 +58,7 @@ TEST_CASE("Many socket pairs") {
             }
             if (all_done) sched.interrupt();
         };
-        task->schedule(sched);
+        CHECK(task->schedule(sched));
         tasks.push_back(std::move(task));
 
         ::write(pair[1], "x", 1);

@@ -114,7 +114,7 @@ TEST_CASE("TcpConnectTask read/write") {
         }
     };
 
-    client.schedule(sched);
+    CHECK(client.schedule(sched));
     sched.execute_timeout(std::chrono::milliseconds(500));
 
     CHECK(got_response);

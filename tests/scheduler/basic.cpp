@@ -140,7 +140,7 @@ TEST_CASE("FileDescriptorTask move") {
         read_called = true;
         sched.interrupt();
     };
-    task1.schedule(sched);
+    CHECK(task1.schedule(sched));
 
     CHECK(task1.is_scheduled());
     CHECK(task1.fd() == fds[0]);
@@ -175,7 +175,7 @@ TEST_CASE("OwnedFileDescriptorTask move") {
         read_called = true;
         sched.interrupt();
     };
-    task1->schedule(sched);
+    CHECK(task1->schedule(sched));
 
     CHECK(task1->is_scheduled());
     CHECK(task1->fd() == fds[0]);
