@@ -1,6 +1,8 @@
 #include "message_stats.hpp"
 
+#include <cstdarg>
 #include <cstdio>
+#include <string>
 
 #include <loglet/loglet.hpp>
 #include <scheduler/periodic.hpp>
@@ -18,6 +20,22 @@ LOGLET_MODULE2(p, message_stats);
 MessageStats& MessageStats::instance() {
     static MessageStats stats;
     return stats;
+}
+
+static void append_format(std::string& out, char const* format, ...) {
+    va_list args;
+    va_start(args, format);
+    va_list copy;
+    va_copy(copy, args);
+    auto length = vsnprintf(nullptr, 0, format, copy);
+    va_end(copy);
+    if (length > 0) {
+        auto offset = out.size();
+        out.resize(offset + static_cast<size_t>(length) + 1);
+        vsnprintf(&out[offset], static_cast<size_t>(length) + 1, format, args);
+        out.resize(offset + static_cast<size_t>(length));
+    }
+    va_end(args);
 }
 
 static size_t digit_count(uint64_t value) {
@@ -113,14 +131,13 @@ void MessageStats::print_report() const {
             if (width > total_width) total_width = width;
         }
 
-        char header[256];
-        int  offset = snprintf(header, sizeof(header), "%-*s %*s", static_cast<int>(name_width),
-                               name_column.c_str(), static_cast<int>(total_width), "\xCE\xA3");
+        std::string header;
+        append_format(header, "%-*s %*s", static_cast<int>(name_width), name_column.c_str(),
+                      static_cast<int>(total_width), "\xCE\xA3");
         for (size_t i = 0; i < tag_names.size(); i++) {
-            offset += snprintf(header + offset, sizeof(header) - static_cast<size_t>(offset),
-                               " %*s", static_cast<int>(tag_widths[i]), tag_names[i].c_str());
+            append_format(header, " %*s", static_cast<int>(tag_widths[i]), tag_names[i].c_str());
         }
-        INFOF("%s", header);
+        INFOF("%s", header.c_str());
 
         for (auto const& name_entry : names) {
             auto const& name    = name_entry.first;
@@ -135,29 +152,25 @@ void MessageStats::print_report() const {
                 }
             }
 
-            char line[256];
-            int  line_offset = snprintf(
-                line, sizeof(line), "%-*s %*llu", static_cast<int>(name_width), name.c_str(),
-                static_cast<int>(total_width), static_cast<unsigned long long>(counter.total));
+            std::string line;
+            append_format(line, "%-*s %*llu", static_cast<int>(name_width), name.c_str(),
+                          static_cast<int>(total_width),
+                          static_cast<unsigned long long>(counter.total));
             for (size_t i = 0; i < tag_bits.size(); i++) {
-                line_offset += snprintf(
-                    line + line_offset, sizeof(line) - static_cast<size_t>(line_offset), " %*llu",
-                    static_cast<int>(tag_widths[i]), static_cast<unsigned long long>(counts[i]));
+                append_format(line, " %*llu", static_cast<int>(tag_widths[i]),
+                              static_cast<unsigned long long>(counts[i]));
             }
-            INFOF("%s", line);
+            INFOF("%s", line.c_str());
         }
 
-        char total_line[256];
-        int  total_offset = snprintf(
-            total_line, sizeof(total_line), "%-*s %*llu", static_cast<int>(name_width), "total",
-            static_cast<int>(total_width), static_cast<unsigned long long>(grand_total));
+        std::string total_line;
+        append_format(total_line, "%-*s %*llu", static_cast<int>(name_width), "total",
+                      static_cast<int>(total_width), static_cast<unsigned long long>(grand_total));
         for (size_t i = 0; i < per_tag_totals.size(); i++) {
-            total_offset += snprintf(total_line + total_offset,
-                                     sizeof(total_line) - static_cast<size_t>(total_offset),
-                                     " %*llu", static_cast<int>(tag_widths[i]),
-                                     static_cast<unsigned long long>(per_tag_totals[i]));
+            append_format(total_line, " %*llu", static_cast<int>(tag_widths[i]),
+                          static_cast<unsigned long long>(per_tag_totals[i]));
         }
-        INFOF("%s", total_line);
+        INFOF("%s", total_line.c_str());
     }
 }
 
