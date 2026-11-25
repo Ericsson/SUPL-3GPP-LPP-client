@@ -251,10 +251,8 @@ void Printer::value(::SLPAddress const& x) {
     case SLPAddress_PR_NOTHING: field("type", "nothing"); break;
     case SLPAddress_PR_iPAddress: field("ip-address", x.choice.iPAddress); break;
     case SLPAddress_PR_fQDN: {
-        char buffer[256];
-        memcpy(buffer, x.choice.fQDN.buf, x.choice.fQDN.size);
-        buffer[x.choice.fQDN.size] = 0;
-        field("fqdn", buffer);
+        std::string name(reinterpret_cast<char const*>(x.choice.fQDN.buf), x.choice.fQDN.size);
+        field("fqdn", name.c_str());
     } break;
     default: field("type", "unsupported"); break;
     }
