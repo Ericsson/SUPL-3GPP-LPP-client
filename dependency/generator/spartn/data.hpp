@@ -93,6 +93,7 @@ struct CorrectionPointSet {
     void calculate_grid_points();
 
     NODISCARD inline bool has_grid_point(long grid_point) const {
+        if (grid_point < 0 || grid_point >= 64) return false;
         auto index = 64 - 1 - grid_point;
         return (bitmask & (1ULL << index)) != 0;
     }
