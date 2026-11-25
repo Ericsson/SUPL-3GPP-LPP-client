@@ -65,6 +65,10 @@ INTEGER_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
                     ASN__DECODE_STARVED;
                 ASN_DEBUG("Got value %"ASN_PRIuMAX" + low %"ASN_PRIdMAX"",
                     uvalue, ct->lower_bound);
+                if(ct->upper_bound >= ct->lower_bound
+                   && uvalue > (uintmax_t)ct->upper_bound
+                                   - (uintmax_t)ct->lower_bound)
+                    ASN__DECODE_FAILED;
                 uvalue += ct->lower_bound;
                 if(asn_umax2INTEGER(st, uvalue))
                     ASN__DECODE_FAILED;
