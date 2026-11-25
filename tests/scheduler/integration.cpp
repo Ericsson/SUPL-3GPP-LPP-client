@@ -28,7 +28,7 @@ TEST_CASE("Echo server integration") {
             }
         };
 
-        server_conn->schedule(sched);
+        CHECK(server_conn->schedule(sched));
     };
 
     server.schedule(sched);
@@ -53,7 +53,7 @@ TEST_CASE("Echo server integration") {
         }
     };
 
-    client.schedule(sched);
+    CHECK(client.schedule(sched));
     sched.execute_timeout(std::chrono::seconds(1));
 
     CHECK(done);
@@ -82,7 +82,7 @@ TEST_CASE("Multiple clients to one server") {
             }
         };
 
-        conn->schedule(sched);
+        CHECK(conn->schedule(sched));
         connections.push_back(std::move(conn));
     };
 
@@ -115,7 +115,7 @@ TEST_CASE("Multiple clients to one server") {
             }
         };
 
-        client->schedule(sched);
+        CHECK(client->schedule(sched));
         clients.push_back(std::move(client));
     }
 
@@ -143,7 +143,7 @@ TEST_CASE("Timeout during socket operation") {
         read_called = true;
     };
 
-    task.schedule(sched);
+    CHECK(task.schedule(sched));
 
     scheduler::TimeoutTask timeout(std::chrono::milliseconds(50), [&]() {
         timeout_fired = true;
@@ -180,7 +180,7 @@ TEST_CASE("Reconnection after disconnect") {
                 ::read(task.fd(), buf, 1);
                 sched.interrupt();
             };
-            conn->schedule(sched);
+            CHECK(conn->schedule(sched));
             connections.push_back(std::move(conn));
         }
     };
@@ -198,7 +198,7 @@ TEST_CASE("Reconnection after disconnect") {
         }
     };
 
-    client.schedule(sched);
+    CHECK(client.schedule(sched));
     sched.execute_timeout(std::chrono::seconds(5));
 
     CHECK(accept_count >= 2);

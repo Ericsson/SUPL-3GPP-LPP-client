@@ -79,7 +79,7 @@ TEST_CASE("StreamTask rate limiting") {
         if (timestamps.size() >= 3) sched.interrupt();
     };
 
-    stream.schedule(sched);
+    CHECK(stream.schedule(sched));
     sched.execute();
 
     REQUIRE(timestamps.size() == 3);

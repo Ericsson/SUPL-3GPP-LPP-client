@@ -16,7 +16,7 @@ TEST_CASE("BufferInput - basic read") {
         data_len = len;
     };
 
-    input.schedule(scheduler);
+    CHECK(input.schedule(scheduler));
     input.push(reinterpret_cast<uint8_t const*>("test"), 4);
 
     scheduler.execute_while([&]() {
