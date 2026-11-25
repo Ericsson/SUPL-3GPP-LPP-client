@@ -1,6 +1,7 @@
 #include "nav_reader.hpp"
 
 #include <cerrno>
+#include <climits>
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
@@ -56,6 +57,14 @@ static double parse_double(char const* str, int width) {
     return v;
 }
 
+// Integer fields are stored as floating point in RINEX, converting an out-of-range value is
+// undefined
+static int clamp_int(double value) {
+    if (value < -2147483648.0) return INT_MIN;
+    if (value > 2147483647.0) return INT_MAX;
+    return static_cast<int>(value);
+}
+
 static bool parse_gps_record(char lines[8][128], ephemeris::GpsEphemeris& eph) {
     int prn, year, month, day, hour, min, sec;
     if (sscanf(lines[0] + 1, "%d %d %d %d %d %d %d", &prn, &year, &month, &day, &hour, &min,
@@ -74,7 +83,7 @@ static bool parse_gps_record(char lines[8][128], ephemeris::GpsEphemeris& eph) {
 
     // Line 1: IODE, Crs, Delta_n, M0
     double iode_d = parse_double(lines[1] + 4, 19);
-    eph.iode      = static_cast<uint8_t>(static_cast<int>(iode_d)) & 0xFF;
+    eph.iode      = static_cast<uint8_t>(clamp_int(iode_d)) & 0xFF;
     eph.crs       = parse_double(lines[1] + 23, 19);
     eph.delta_n   = parse_double(lines[1] + 42, 19);
     eph.m0        = parse_double(lines[1] + 61, 19);
@@ -100,17 +109,17 @@ static bool parse_gps_record(char lines[8][128], ephemeris::GpsEphemeris& eph) {
 
     // Line 5: IDOT, codes_on_L2, GPS_week, L2_P_flag
     eph.idot           = parse_double(lines[5] + 4, 19);
-    eph.ca_or_p_on_l2  = static_cast<uint8_t>(parse_double(lines[5] + 23, 19));
+    eph.ca_or_p_on_l2  = static_cast<uint8_t>(clamp_int(parse_double(lines[5] + 23, 19)));
     double week_d      = parse_double(lines[5] + 42, 19);
-    eph.week_number    = static_cast<uint16_t>(static_cast<int>(week_d));
+    eph.week_number    = static_cast<uint16_t>(clamp_int(week_d));
     eph.l2_p_data_flag = static_cast<bool>(parse_double(lines[5] + 61, 19));
 
     // Line 6: SV_accuracy, SV_health, TGD, IODC
-    eph.ura_index = static_cast<uint8_t>(parse_double(lines[6] + 4, 19));
-    eph.sv_health = static_cast<uint8_t>(parse_double(lines[6] + 23, 19));
+    eph.ura_index = static_cast<uint8_t>(clamp_int(parse_double(lines[6] + 4, 19)));
+    eph.sv_health = static_cast<uint8_t>(clamp_int(parse_double(lines[6] + 23, 19)));
     eph.tgd       = parse_double(lines[6] + 42, 19);
     double iodc_d = parse_double(lines[6] + 61, 19);
-    eph.iodc      = static_cast<uint16_t>(static_cast<int>(iodc_d));
+    eph.iodc      = static_cast<uint16_t>(clamp_int(iodc_d));
 
     // Line 7: transmission_time, fit_interval
     // (transmission time ignored)
@@ -142,7 +151,7 @@ static bool parse_gal_record(char lines[8][128], ephemeris::GalEphemeris& eph) {
 
     // Line 1: IODnav, Crs, Delta_n, M0
     double iod_d = parse_double(lines[1] + 4, 19);
-    eph.iod_nav  = static_cast<uint16_t>(static_cast<int>(iod_d));
+    eph.iod_nav  = static_cast<uint16_t>(clamp_int(iod_d));
     // LPP IOD for Galileo: the SSR orbit correction references iod_nav directly
     eph.lpp_iod = eph.iod_nav;
     eph.crs     = parse_double(lines[1] + 23, 19);
@@ -172,7 +181,7 @@ static bool parse_gal_record(char lines[8][128], ephemeris::GalEphemeris& eph) {
     eph.idot = parse_double(lines[5] + 4, 19);
     // data_sources: bit0=I/NAV_E1B, bit1=F/NAV_E5a-I, bit2=I/NAV_E5b-I
     // SSR corrections reference I/NAV — reject F/NAV-only entries
-    int  data_sources = static_cast<int>(parse_double(lines[5] + 23, 19));
+    int  data_sources = clamp_int(parse_double(lines[5] + 23, 19));
     bool is_inav      = (data_sources & 0x01) || (data_sources & 0x04);  // bit0 or bit2
     if (!is_inav) return false;
     // Note: RINEX gives GPS week here, but week_number is already set correctly
@@ -203,7 +212,7 @@ static bool parse_bds_record(char lines[8][128], ephemeris::BdsEphemeris& eph) {
 
     // Line 1: AODE, Crs, Delta_n, M0
     double aode_d = parse_double(lines[1] + 4, 19);
-    eph.aode      = static_cast<uint8_t>(static_cast<int>(aode_d));
+    eph.aode      = static_cast<uint8_t>(clamp_int(aode_d));
     eph.crs       = parse_double(lines[1] + 23, 19);
     eph.delta_n   = parse_double(lines[1] + 42, 19);
     eph.m0        = parse_double(lines[1] + 61, 19);
@@ -230,19 +239,21 @@ static bool parse_bds_record(char lines[8][128], ephemeris::BdsEphemeris& eph) {
     // Line 5: IDOT, spare, BDT_week
     eph.idot        = parse_double(lines[5] + 4, 19);
     double week_d   = parse_double(lines[5] + 42, 19);
-    eph.week_number = static_cast<uint16_t>(static_cast<int>(week_d));
+    eph.week_number = static_cast<uint16_t>(clamp_int(week_d));
 
     // Line 6: SV_accuracy, SV_health, TGD1, TGD2
-    eph.sv_health = static_cast<uint8_t>(parse_double(lines[6] + 23, 19));
+    eph.sv_health = static_cast<uint8_t>(clamp_int(parse_double(lines[6] + 23, 19)));
 
     // Compute IOD from toe (same as rtcm2eph)
-    eph.lpp_iod = static_cast<uint16_t>(static_cast<uint32_t>(eph.toe) >> 9);
-    eph.iodc    = static_cast<uint8_t>((static_cast<uint32_t>(eph.toc) / 720) % 240);
-    eph.iode    = static_cast<uint8_t>((static_cast<uint32_t>(eph.toe) / 720) % 240);
+    eph.lpp_iod = static_cast<uint16_t>(static_cast<uint32_t>(clamp_int(eph.toe)) >> 9);
+    eph.iodc    = static_cast<uint8_t>((static_cast<uint32_t>(clamp_int(eph.toc)) / 720) % 240);
+    eph.iode    = static_cast<uint8_t>((static_cast<uint32_t>(clamp_int(eph.toe)) / 720) % 240);
     eph.aodc    = eph.aode;
 
-    eph.toe_time = ts::Bdt::from_week_tow(eph.week_number, static_cast<int64_t>(eph.toe), 0.0);
-    eph.toc_time = ts::Bdt::from_week_tow(eph.week_number, static_cast<int64_t>(eph.toc), 0.0);
+    eph.toe_time =
+        ts::Bdt::from_week_tow(eph.week_number, static_cast<int64_t>(clamp_int(eph.toe)), 0.0);
+    eph.toc_time =
+        ts::Bdt::from_week_tow(eph.week_number, static_cast<int64_t>(clamp_int(eph.toc)), 0.0);
 
     return true;
 }
@@ -266,17 +277,17 @@ static bool parse_glo_record(char lines[8][128], ephemeris::GloEphemeris& eph) {
     eph.position.x     = parse_double(lines[1] + 4, 19);
     eph.velocity.x     = parse_double(lines[1] + 23, 19);
     eph.acceleration.x = parse_double(lines[1] + 42, 19);
-    eph.health         = static_cast<uint8_t>(parse_double(lines[1] + 61, 19));
+    eph.health         = static_cast<uint8_t>(clamp_int(parse_double(lines[1] + 61, 19)));
 
     eph.position.y       = parse_double(lines[2] + 4, 19);
     eph.velocity.y       = parse_double(lines[2] + 23, 19);
     eph.acceleration.y   = parse_double(lines[2] + 42, 19);
-    eph.frequency_number = static_cast<int8_t>(parse_double(lines[2] + 61, 19));
+    eph.frequency_number = static_cast<int8_t>(clamp_int(parse_double(lines[2] + 61, 19)));
 
     eph.position.z     = parse_double(lines[3] + 4, 19);
     eph.velocity.z     = parse_double(lines[3] + 23, 19);
     eph.acceleration.z = parse_double(lines[3] + 42, 19);
-    eph.age            = static_cast<uint8_t>(parse_double(lines[3] + 61, 19));
+    eph.age            = static_cast<uint8_t>(clamp_int(parse_double(lines[3] + 61, 19)));
 
     // LPP IOD for GLONASS is tb, the 15 minute index of the Moscow time of day
     eph.lpp_iod = static_cast<uint16_t>(
