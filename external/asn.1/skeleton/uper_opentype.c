@@ -81,7 +81,7 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
 	do {
 		chunk_bytes = uper_get_length(pd, -1, 0, &repeat);
 		if(chunk_bytes < 0) {
-			FREEMEM(buf);
+			FREEMEM_SCRUB(buf, bufLen);
 			ASN__DECODE_STARVED;
 		}
 		if(bufLen + chunk_bytes > bufSize) {
@@ -89,13 +89,13 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
 			bufSize = chunk_bytes + (bufSize << 2);
 			ptr = REALLOC(buf, bufSize);
 			if(!ptr) {
-				FREEMEM(buf);
+				FREEMEM_SCRUB(buf, bufLen);
 				ASN__DECODE_FAILED;
 			}
 			buf = ptr;
 		}
 		if(per_get_many_bits(pd, (buf == NULL)? NULL : buf + bufLen, 0, chunk_bytes << 3)) {
-			FREEMEM(buf);
+			FREEMEM_SCRUB(buf, bufLen);
 			ASN__DECODE_STARVED;
 		}
 		bufLen += chunk_bytes;
@@ -120,10 +120,10 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
 		(spd.nboff == 0 && spd.nbits == 8 && spd.buffer == buf)) &&
                     per_get_few_bits(&spd, padding) == 0) {
 			/* Everything is cool */
-			FREEMEM(buf);
+			FREEMEM_SCRUB(buf, bufLen);
 			return rv;
 		}
-		FREEMEM(buf);
+		FREEMEM_SCRUB(buf, bufLen);
 		if(padding >= 8) {
 			ASN_DEBUG("Too large padding %d in open type", (int)padding);
 			ASN__DECODE_FAILED;
@@ -131,7 +131,7 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
 			ASN_DEBUG("No padding");
 		}
 	} else {
-		FREEMEM(buf);
+		FREEMEM_SCRUB(buf, bufLen);
 		/* rv.code could be RC_WMORE, nonsense in this context */
 		rv.code = RC_FAIL; /* No one would give us more */
 	}

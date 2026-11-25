@@ -39,6 +39,14 @@ int get_asn1c_environment_version(void);	/* Run-time version */
 #define	REALLOC(oldptr, size)	realloc(oldptr, size)
 #define	FREEMEM(ptr)		free(ptr)
 
+/* Overwrite memory in a way the compiler cannot remove, then free it */
+static inline void asn_secure_zero(void *ptr, size_t size) {
+	volatile unsigned char *p = (volatile unsigned char *)ptr;
+	while(size--) *p++ = 0;
+}
+#define	FREEMEM_SCRUB(ptr, size)\
+	do { if(ptr) asn_secure_zero((ptr), (size)); FREEMEM(ptr); } while(0)
+
 #define	asn_debug_indent	0
 #define ASN_DEBUG_INDENT_ADD(i) do{}while(0)
 
