@@ -1,7 +1,9 @@
 #include "nav_reader.hpp"
 
+#include <cerrno>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <vector>
@@ -20,16 +22,38 @@ LOGLET_MODULE(rinex_nav);
 namespace format {
 namespace rinex {
 
+static bool gParseFailed = false;
+
 // RINEX uses Fortran-style 'D' exponent notation: replace 'D'/'d' with 'E'
+// Blank fields are read as 0. Unparsable, out-of-range and non-finite fields set gParseFailed.
 static double parse_double(char const* str, int width) {
     char buf[32];
     int  n = width < 31 ? width : 31;
     memcpy(buf, str, static_cast<size_t>(n));
     buf[n] = '\0';
+
+    bool blank = true;
     for (int i = 0; i < n; i++) {
         if (buf[i] == 'D' || buf[i] == 'd') buf[i] = 'E';
+        if (buf[i] != ' ' && buf[i] != '\t' && buf[i] != '\r' && buf[i] != '\n') blank = false;
     }
-    return atof(buf);
+    if (blank) return 0.0;
+
+    char* end = nullptr;
+    errno     = 0;
+    auto v    = strtod(buf, &end);
+    if (end == buf || errno == ERANGE || !std::isfinite(v)) {
+        gParseFailed = true;
+        return 0.0;
+    }
+
+    while (*end == ' ' || *end == '\t' || *end == '\r' || *end == '\n')
+        end++;
+    if (*end != '\0') {
+        gParseFailed = true;
+        return 0.0;
+    }
+    return v;
 }
 
 static bool parse_gps_record(char lines[8][128], ephemeris::GpsEphemeris& eph) {
@@ -287,29 +311,30 @@ NavData parse_nav_file(std::string const& path) {
     auto dispatch = [&](char gnss, char const* type) {
         char record[8][128];
         memset(record, 0, sizeof(record));
+        gParseFailed = false;
         for (size_t k = 0; k < lines.size() && k < 8; k++) {
             auto len = lines[k].size() < 127 ? lines[k].size() : 127;
             memcpy(record[k], lines[k].c_str(), len);
         }
         if (gnss == 'G' && (!type || strcmp(type, "LNAV") == 0) && lines.size() >= 8) {
             ephemeris::GpsEphemeris eph{};
-            if (parse_gps_record(record, eph)) result.gps.push_back(eph);
+            if (parse_gps_record(record, eph) && !gParseFailed) result.gps.push_back(eph);
         } else if (gnss == 'E' &&
                    (!type || strcmp(type, "INAV") == 0 || strcmp(type, "FNAV") == 0) &&
                    lines.size() >= 8) {
             ephemeris::GalEphemeris eph{};
-            if (parse_gal_record(record, eph)) result.gal.push_back(eph);
+            if (parse_gal_record(record, eph) && !gParseFailed) result.gal.push_back(eph);
         } else if (gnss == 'C' && (!type || strcmp(type, "D1") == 0 || strcmp(type, "D2") == 0) &&
                    lines.size() >= 8) {
             ephemeris::BdsEphemeris eph{};
-            if (parse_bds_record(record, eph)) result.bds.push_back(eph);
+            if (parse_bds_record(record, eph) && !gParseFailed) result.bds.push_back(eph);
         } else if (gnss == 'R' && (!type || strcmp(type, "FDMA") == 0) && lines.size() >= 4) {
             ephemeris::GloEphemeris eph{};
-            if (parse_glo_record(record, eph)) result.glo.push_back(eph);
+            if (parse_glo_record(record, eph) && !gParseFailed) result.glo.push_back(eph);
         } else if (gnss == 'J' && (!type || strcmp(type, "LNAV") == 0) && lines.size() >= 8) {
             // QZSS LNAV uses the GPS record layout; J01 is PRN 193
             ephemeris::GpsEphemeris gps{};
-            if (parse_gps_record(record, gps)) {
+            if (parse_gps_record(record, gps) && !gParseFailed) {
                 gps.prn = static_cast<uint8_t>(gps.prn + 192);
                 result.qzs.push_back(ephemeris::QzsEphemeris::from_gps_layout(gps));
             }
