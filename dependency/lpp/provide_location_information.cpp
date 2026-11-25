@@ -33,49 +33,38 @@ LOGLET_MODULE2(lpp, pli);
 namespace lpp {
 namespace messages {
 
-static long encode_latitude(double lat) {
-    auto value = (lat / 90.0) * pow(2, 31);
-    if (value <= -2147483648) value = -2147483648;
-    if (value >= 2147483647) value = 2147483647;
+// Convert after clamping in floating point, NaN becomes the lower bound
+static long clamped_long(double value, double min, double max) {
+    if (std::isnan(value) || value < min) value = min;
+    if (value > max) value = max;
     return static_cast<long>(value);
+}
+
+static long encode_latitude(double lat) {
+    return clamped_long((lat / 90.0) * pow(2, 31), -2147483648.0, 2147483647.0);
 }
 
 static long encode_longitude(double lon) {
-    auto value = (lon / 180) * pow(2, 31);
-    if (value <= -2147483648) value = -2147483648;
-    if (value >= 2147483647) value = 2147483647;
-    return static_cast<long>(value);
+    return clamped_long((lon / 180) * pow(2, 31), -2147483648.0, 2147483647.0);
 }
 
 static long encode_ha_uncertainity(double r) {
-    auto c     = 0.3;
-    auto x     = 0.02;
-    auto k     = log((r / c) + 1) / log(1 + x);
-    auto value = static_cast<long>(k);
-    if (value <= 0) value = 0;
-    if (value >= 255) value = 255;
-    return value;
+    auto c = 0.3;
+    auto x = 0.02;
+    auto k = log((r / c) + 1) / log(1 + x);
+    return clamped_long(k, 0.0, 255.0);
 }
 
 static long encode_ha_altitude(double a) {
-    long res = static_cast<long>(a * 128.0);
-    if (res < -64000) return -64000;
-    if (res > 1280000) return 1280000;
-    return res;
+    return clamped_long(a * 128.0, -64000.0, 1280000.0);
 }
 
 static long encode_orientation(double orientation) {
-    auto value = static_cast<long>(orientation);
-    if (value < 0) value = 0;
-    if (value > 179) value = 179;
-    return value;
+    return clamped_long(orientation, 0.0, 179.0);
 }
 
 static long encode_confidence(double confidence) {
-    auto value = static_cast<long>(confidence * 100.0);
-    if (value < 0) value = 0;
-    if (value > 100) value = 100;
-    return value;
+    return clamped_long(confidence * 100.0, 0.0, 100.0);
 }
 
 static LocationCoordinates_t* location_coordinates_haepue(LocationShape const& shape) {
