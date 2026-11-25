@@ -130,11 +130,8 @@ CfgValue CfgValue::parse_from_key(CfgKey key, Decoder& decoder) NOEXCEPT {
     case 4: return parse_from_type(Type::U4, decoder);
     case 5: return parse_from_type(Type::U8, decoder);
     }
-    UNREACHABLE();
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    // TODO: this is unreachable, but GCC complains about it
+    decoder.fail();
     return CfgValue{};
-#endif
 }
 
 CfgValue CfgValue::parse_from_type(Type type, Decoder& decoder) NOEXCEPT {
@@ -144,16 +141,10 @@ CfgValue CfgValue::parse_from_type(Type type, Decoder& decoder) NOEXCEPT {
     case Type::U2: return CfgValue::from_u2(decoder.u2());
     case Type::U4: return CfgValue::from_u4(decoder.u4());
     case Type::U8: return CfgValue::from_u8(decoder.u8());
-    case Type::UNKNOWN: UNREACHABLE();
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-        break;
-#endif
+    case Type::UNKNOWN: break;
     }
-    UNREACHABLE();
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
-    // TODO: this is unreachable, but GCC complains about it
+    decoder.fail();
     return CfgValue{};
-#endif
 }
 
 }  // namespace ubx

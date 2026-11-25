@@ -16,7 +16,13 @@ uint8_t subtype_from_gnss_id(long gnss_id) {
     if (gnss_id == GNSS_ID__gnss_id_bds) return 3;
     if (gnss_id == GNSS_ID__gnss_id_qzss) return 4;
 
-    CORE_UNREACHABLE();
+    return 0xFF;
+}
+
+bool is_spartn_gnss_id(long gnss_id) {
+    return gnss_id == GNSS_ID__gnss_id_gps || gnss_id == GNSS_ID__gnss_id_glonass ||
+           gnss_id == GNSS_ID__gnss_id_galileo || gnss_id == GNSS_ID__gnss_id_bds ||
+           gnss_id == GNSS_ID__gnss_id_qzss;
 }
 
 }  // namespace spartn
