@@ -157,6 +157,15 @@ void NmeaLocation::consume(streamline::System& system, DataType&& message, uint6
     }
 
     if (!mConfig.nmea_order.empty()) {
+        if (mOrderReceived.size() >= mConfig.nmea_order.size()) {
+            VERBOSEF("order tracking: previous order was not reported, restarting");
+            mGga.reset();
+            mVtg.reset();
+            mGst.reset();
+            mEpe.reset();
+            mOrderReceived.clear();
+        }
+
         if (mConfig.nmea_order[mOrderReceived.size()] != message_type) {
             if (mConfig.nmea_order_strict) {
                 VERBOSEF("unexpected message type (%s, expected %s), resetting messages",
