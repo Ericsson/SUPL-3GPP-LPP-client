@@ -107,6 +107,7 @@ private:
     uint8_t* mReceiveBuffer;
     size_t   mReceiveBufferSize;
     size_t   mReceiveBufferOffset;
+    bool     mReceiveCorrupt;
 
     TcpClient* mTcpClient;
 };

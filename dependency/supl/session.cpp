@@ -32,6 +32,7 @@ Session::Session(Version version, Identity identity)
 
     mReceiveBufferSize   = UPER_DECODE_BUFFER_SIZE;
     mReceiveBufferOffset = 0;
+    mReceiveCorrupt      = false;
     mReceiveBuffer       = new uint8_t[mReceiveBufferSize];
 
     mTcpClient = nullptr;
@@ -297,8 +298,23 @@ ULP_PDU* Session::parse_receive_buffer() {
         return nullptr;
     }
 
+    // NOTE: The first two octets of a ULP PDU is its total length. Use it to frame the message, so
+    // that a malformed message can be discarded instead of blocking the receive buffer.
+    auto length = (static_cast<size_t>(mReceiveBuffer[0]) << 8) | mReceiveBuffer[1];
+    if (length < 4 || length > mReceiveBufferSize) {
+        WARNF("invalid ULP PDU length: %zu", length);
+        mReceiveBufferOffset = 0;
+        mReceiveCorrupt      = true;
+        return nullptr;
+    }
+
+    if (mReceiveBufferOffset < length) {
+        VERBOSEF("more data is needed to decode the message (%zu of %zu)", mReceiveBufferOffset,
+                 length);
+        return nullptr;
+    }
+
     ULP_PDU* ulp_pdu{};
-    auto     size   = mReceiveBufferOffset;
     auto     buffer = mReceiveBuffer;
 
     // NOTE: Increase default max stack size to handle large messages.
@@ -308,33 +324,29 @@ ULP_PDU* Session::parse_receive_buffer() {
 
     auto decode_start = std::chrono::steady_clock::now();
     auto result       = uper_decode_complete(&stack_ctx, &asn_DEF_ULP_PDU,
-                                             reinterpret_cast<void**>(&ulp_pdu), buffer, size);
+                                             reinterpret_cast<void**>(&ulp_pdu), buffer, length);
     auto decode_end   = std::chrono::steady_clock::now();
     auto decode_ms =
         std::chrono::duration_cast<std::chrono::milliseconds>(decode_end - decode_start).count();
 
     if (decode_ms > 100) {
-        WARNF("SUPL decode took %lld ms (buffer size: %zu bytes)", decode_ms, size);
+        WARNF("SUPL decode took %lld ms (message size: %zu bytes)", decode_ms, length);
     } else {
-        VERBOSEF("SUPL decode took %lld ms (buffer size: %zu bytes)", decode_ms, size);
+        VERBOSEF("SUPL decode took %lld ms (message size: %zu bytes)", decode_ms, length);
     }
 
     DEBUGF("uper_decode_complete(): %s %zd",
            (result.code == RC_FAIL ? "RC_FAIL" : (result.code == RC_WMORE ? "RC_WMORE" : "RC_OK")),
            result.consumed);
-    if (result.code == RC_FAIL) {
-        WARNF("failed to decode uper: %zd bytes consumed", result.consumed);
-        rb_consume(result.consumed);
-        return nullptr;
-    } else if (result.code == RC_WMORE) {
-        VERBOSEF("more data is needed to decode the fully message (%zd of %ld)", size,
-                 ulp_pdu->length);
+
+    rb_consume(length);
+    if (result.code != RC_OK) {
+        WARNF("failed to decode ULP PDU, discarding %zu bytes", length);
         ASN_STRUCT_FREE(asn_DEF_ULP_PDU, ulp_pdu);
         return nullptr;
-    } else {
-        rb_consume(result.consumed);
-        return ulp_pdu;
     }
+
+    return ulp_pdu;
 }
 
 bool Session::fill_receive_buffer() {
@@ -381,6 +393,7 @@ ULP_PDU* Session::wait_for_ulp_pdu() {
     for (;;) {
         auto ulp_pdu = parse_receive_buffer();
         if (ulp_pdu) return ulp_pdu;
+        if (mReceiveCorrupt) return nullptr;
 
         if (!fill_receive_buffer()) {
             return nullptr;
@@ -454,6 +467,7 @@ Session::Received Session::try_receive(RESPONSE* response, END* end, POS* pos) {
 
     auto ulp_pdu = parse_receive_buffer();
     if (!ulp_pdu) {
+        if (mReceiveCorrupt) return Received::SessionTerminated;
         return Received::NoData;
     }
 
