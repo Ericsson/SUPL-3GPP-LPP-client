@@ -92,6 +92,7 @@ void AGnssProcessor::request_agnss(streamline::System& system) {
     if (mConfig.interface) {
         mClient->set_interface(*mConfig.interface);
     }
+    mClient->set_tls(mConfig.tls);
 
     mClient->on_connected = [](lpp::Client&) {
         DEBUGF("A-GNSS connected");

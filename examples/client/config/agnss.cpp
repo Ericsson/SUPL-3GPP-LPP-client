@@ -41,6 +41,25 @@ static args::ValueFlag<std::string> gInterface{
     {"agnss-interface"},
     args::Options::Single,
 };
+static args::Flag gTls{
+    gGroup,
+    "tls",
+    "Enable TLS for the A-GNSS server connection",
+    {"agnss-tls"},
+};
+static args::Flag gTlsSkipVerify{
+    gGroup,
+    "tls-skip-verify",
+    "Disable server certificate verification (insecure, for testing only)",
+    {"agnss-tls-skip-verify"},
+};
+static args::ValueFlag<std::string> gTlsCaCert{
+    gGroup,
+    "ca-cert",
+    "Path to CA certificate (PEM) for server verification. If omitted, the system trust store is "
+    "used",
+    {"agnss-ca-cert"},
+};
 static args::Flag gGps{
     gGroup,
     "gps",
@@ -114,6 +133,13 @@ void parse(Config* config) {
         agnss.interface = std::unique_ptr<std::string>(new std::string(gInterface.Get()));
     }
 
+    agnss.tls.enabled     = gTls.Get();
+    agnss.tls.skip_verify = gTlsSkipVerify.Get();
+    if (gTlsCaCert) agnss.tls.ca_cert_path = gTlsCaCert.Get();
+    if ((agnss.tls.skip_verify || !agnss.tls.ca_cert_path.empty()) && !agnss.tls.enabled) {
+        throw args::RequiredError("TLS options require `--agnss-tls`");
+    }
+
     agnss.gps     = true;
     agnss.glonass = true;
     agnss.galileo = true;
@@ -158,6 +184,7 @@ void dump(AGnssConfig const& config) {
     if (config.interface) {
         DEBUGF("interface: \"%s\"", config.interface.get()->c_str());
     }
+    DEBUGF("tls: %s", config.tls.enabled ? "enabled" : "disabled");
     DEBUGF("gps: %s", config.gps ? "true" : "false");
     DEBUGF("glonass: %s", config.glonass ? "true" : "false");
     DEBUGF("galileo: %s", config.galileo ? "true" : "false");
