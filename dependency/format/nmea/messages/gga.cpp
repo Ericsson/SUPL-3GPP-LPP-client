@@ -1,6 +1,8 @@
 #include "gga.hpp"
 #include "helper.hpp"
 
+#include <cmath>
+
 #include <loglet/loglet.hpp>
 #include <time/utc.hpp>
 
@@ -67,6 +69,7 @@ static bool parse_latitude(std::string const& latitude, std::string const& nw_in
         auto degrees = std::stod(latitude.substr(0, 2));
         auto minutes = std::stod(latitude.substr(2));
         auto value   = degrees + minutes / 60.0;
+        if (!std::isfinite(value)) return false;
 
         if (nw_indicator == "S") {
             lat = -value;
@@ -94,6 +97,7 @@ static bool parse_longitude(std::string const& longitude, std::string const& ew_
         auto degrees = std::stod(longitude.substr(0, 3));
         auto minutes = std::stod(longitude.substr(3));
         auto value   = degrees + minutes / 60.0;
+        if (!std::isfinite(value)) return false;
 
         if (ew_indicator == "W") {
             lon = -value;
@@ -152,6 +156,7 @@ static bool parse_hdop(std::string const& hdop, double& value) {
     FUNCTION_SCOPEF("'%s'", hdop.c_str());
     try {
         value = std::stod(hdop);
+        if (!std::isfinite(value)) return false;
         VERBOSEF("hdop: %.4f", value);
         return true;
     } catch (...) {
@@ -164,6 +169,7 @@ static bool parse_altitude(std::string const& altitude, std::string const& units
     FUNCTION_SCOPEF("'%s' %s", altitude.c_str(), units.c_str());
     try {
         value = std::stod(altitude);
+        if (!std::isfinite(value)) return false;
         if (units == "M") {
             VERBOSEF("altitude: %.2f m", value);
             return true;
@@ -183,6 +189,7 @@ parse_age_of_differential_corrections(std::string const& age_of_differential_cor
     FUNCTION_SCOPEF("'%s'", age_of_differential_corrections.c_str());
     try {
         value = std::stod(age_of_differential_corrections);
+        if (!std::isfinite(value)) return false;
         VERBOSEF("age: %.2f", value);
         return true;
     } catch (...) {

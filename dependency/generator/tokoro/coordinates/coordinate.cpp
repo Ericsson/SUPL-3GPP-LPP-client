@@ -2,6 +2,7 @@
 #include "constant.hpp"
 
 #include <cmath>
+#include <limits>
 
 #include <loglet/loglet.hpp>
 
@@ -26,7 +27,7 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
     auto phi = std::atan2(z, p * (1.0 - e2));
 
     auto tolerance = 1e-12;
-    for (;;) {
+    for (int iteration = 0; iteration < 100; iteration++) {
         auto sin_phi = std::sin(phi);
         auto n       = a / std::sqrt(1.0 - e2 * sin_phi * sin_phi);
         auto phi_n   = std::atan2(z + n * e2 * sin_phi, p);
@@ -44,6 +45,10 @@ Float3 ecef_to_llh(Float3 ecef, ReferenceEllipsoid const& ellipsoid) {
 
         phi = phi_n;
     }
+
+    // not converged, which only happens for non-finite input
+    return Float3{std::numeric_limits<double>::quiet_NaN(), lon,
+                  std::numeric_limits<double>::quiet_NaN()};
 }
 
 Float3 llh_to_ecef(Float3 llh, ReferenceEllipsoid const& ellipsoid) {
