@@ -663,6 +663,10 @@ void Session::send(TransactionHandle const& handle, Message& message,
     // Set the transactionID and endTransaction fields
     auto transaction_id =
         reinterpret_cast<LPP_TransactionID*>(calloc(1, sizeof(LPP_TransactionID)));
+    if (!transaction_id) {
+        ERRORF("out of memory, dropping LPP message");
+        return;
+    }
     transaction_id->initiator         = handle.initiator() == Initiator::TargetDevice ?
                                             Initiator_targetDevice :
                                             Initiator_locationServer;
@@ -672,6 +676,10 @@ void Session::send(TransactionHandle const& handle, Message& message,
     if (!mDisableSequenceNumber) {
         message->sequenceNumber =
             reinterpret_cast<SequenceNumber_t*>(calloc(1, sizeof(SequenceNumber_t)));
+        if (!message->sequenceNumber) {
+            ERRORF("out of memory, dropping LPP message");
+            return;
+        }
         if (fixed_sequence_number) {
             *message->sequenceNumber = *fixed_sequence_number;
         } else {
