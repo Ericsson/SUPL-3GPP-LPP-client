@@ -54,8 +54,9 @@ static std::unordered_map<char const*, Module, HashModuleName, EqualModuleName> 
 Module& get_or_add_module(char const* reference) {
     auto it = gModules.find(reference);
     if (it == gModules.end()) {
-        auto constant_name = new char[strlen(reference) + 1];
-        strcpy(constant_name, reference);
+        auto length        = strlen(reference) + 1;
+        auto constant_name = new char[length];
+        memcpy(constant_name, reference, length);
 
         Module module{};
         module.name             = constant_name;
