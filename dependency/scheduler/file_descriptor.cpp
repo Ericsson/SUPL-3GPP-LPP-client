@@ -124,8 +124,8 @@ void FileDescriptorTask::set_fd(int fd) NOEXCEPT {
 
     mFd = fd;
 
-    if (was_scheduled && mFd >= 0) {
-        schedule();
+    if (was_scheduled && mFd >= 0 && !schedule()) {
+        ERRORF("failed to reschedule file descriptor task");
     }
 }
 

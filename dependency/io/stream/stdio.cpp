@@ -136,8 +136,10 @@ void StdioStream::write(uint8_t const* data, size_t length) NOEXCEPT {
 
     mWriteBuffer.enqueue(data, length);
     if (!mWriteRegistered && mScheduler) {
-        mWriteTask->schedule(*mScheduler);
-        mWriteRegistered = true;
+        mWriteRegistered = mWriteTask->schedule(*mScheduler);
+        if (!mWriteRegistered) {
+            WARNF("failed to schedule stdio write task");
+        }
     }
 }
 

@@ -482,7 +482,7 @@ int main(int argc, char* argv[]) {
         printf("Stream:   %s\n", reader.stream_id().c_str());
 
         format::tbin::Message msg;
-        uint64_t              count = 0, ubx = 0, rtcm = 0, lpp = 0, nav = 0, other = 0;
+        uint64_t              count = 0, ubx = 0, rtcm = 0, lpp = 0, nav = 0;
         int64_t               first_ts = 0, last_ts = 0;
         size_t                total_bytes = 0;
         while (reader.next(msg)) {

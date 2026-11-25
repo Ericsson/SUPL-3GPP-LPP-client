@@ -606,7 +606,7 @@ static void initialize_inputs(Program& program, ProgramInput& config) {
                 if (remaining == 0 && !program.shutdown_scheduled) {
                     program.shutdown_scheduled = true;
                     INFOF("all inputs completed, interrupting scheduler");
-                    program.scheduler.defer([&program](scheduler::Scheduler& s) {
+                    program.scheduler.defer([](scheduler::Scheduler& s) {
                         s.interrupt();
                     });
                 }
