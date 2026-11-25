@@ -553,16 +553,16 @@ void CorrectionData::add_correction(long gnss_id, GNSS_SSR_GriddedCorrection_r16
                 grid_point->ionospheric_residual[satellite_id]       = ionospheric;
                 grid_point->ionospheric_residual_epoch[satellite_id] = epoch_time;
 
-                static FILE* dump_file = [] {
+                static FILE* dump_file = []() -> FILE* {
                     auto path = std::getenv("TOKORO_GRID_DUMP");
-                    if (!path) return static_cast<FILE*>(nullptr);
+                    if (!path) return nullptr;
 
                     // do not follow symlinks and keep the dump private to the owner
                     auto fd =
                         ::open(path, O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW | O_CLOEXEC, 0600);
                     if (fd < 0) {
                         WARNF("failed to open TOKORO_GRID_DUMP: %s", path);
-                        return static_cast<FILE*>(nullptr);
+                        return nullptr;
                     }
 
                     auto file = ::fdopen(fd, "a");
