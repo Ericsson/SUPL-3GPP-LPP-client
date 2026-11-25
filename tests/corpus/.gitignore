@@ -27,6 +27,7 @@ at/*
 !rinex/
 rinex/*
 !rinex/*.nav
+!rinex/*.rnx
 
 !antex/
 antex/*
