@@ -48,7 +48,7 @@ NtripSource::~NtripSource() {
     scrub(mConfig.password);
 }
 
-bool NtripSource::schedule(scheduler::Scheduler& scheduler) {
+bool NtripSource::schedule(scheduler::Scheduler&) {
     mReconnectTask.set_duration(std::chrono::milliseconds(0));
     mReconnectTask.schedule();
     return true;
