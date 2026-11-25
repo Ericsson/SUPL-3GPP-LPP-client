@@ -223,6 +223,16 @@ void set_color_enable(bool enabled) {
     gColorEnabled = enabled;
 }
 
+static bool gHideIdentity = false;
+
+void set_hide_identity(bool hide) {
+    gHideIdentity = hide;
+}
+
+bool hide_identity() {
+    return gHideIdentity;
+}
+
 void set_always_flush(bool flush) {
     gAlwaysFlush = flush;
 }

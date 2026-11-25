@@ -91,6 +91,12 @@ static args::Flag gNoStderr{
     "Output warnings/errors to stdout instead of stderr",
     {"log-no-stderr"},
 };
+static args::Flag gHideIdentity{
+    gGroup,
+    "hide-identity",
+    "Hide subscriber identities (IMSI, MSISDN) in log and printed output",
+    {"log-hide-identity"},
+};
 static args::ValueFlag<std::string> gLogFile{
     gGroup, "file", "Write log output to file", {"log-file"}, args::Options::Single,
 };
@@ -107,6 +113,7 @@ void parse(Config* config) {
     logging.tree          = gTree;
     logging.report_errors = gNoReportErrors ? false : true;
     logging.use_stderr    = gNoStderr ? false : true;
+    logging.hide_identity = gHideIdentity;
 
     if (gLogFile) {
         logging.log_file = std::unique_ptr<std::string>(new std::string(gLogFile.Get()));

@@ -241,6 +241,7 @@ struct LoggingConfig {
     bool                                           tree;
     bool                                           report_errors;
     bool                                           use_stderr;
+    bool                                           hide_identity;
     std::unique_ptr<std::string>                   log_file;
     std::unordered_map<std::string, loglet::Level> module_levels;
 };

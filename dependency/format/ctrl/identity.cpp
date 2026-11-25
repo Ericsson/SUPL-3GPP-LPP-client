@@ -2,6 +2,8 @@
 
 #include <cstdio>
 
+#include <loglet/loglet.hpp>
+
 namespace format {
 namespace ctrl {
 
@@ -12,7 +14,11 @@ IdentityImsi::IdentityImsi(std::string message, uint64_t imsi) NOEXCEPT
 IdentityImsi::~IdentityImsi() = default;
 
 void IdentityImsi::print() const NOEXCEPT {
-    printf("[ IMSI]: %" PRIu64, mImsi);
+    if (loglet::hide_identity()) {
+        printf("[ IMSI]: <hidden>");
+    } else {
+        printf("[ IMSI]: %" PRIu64, mImsi);
+    }
 }
 
 std::unique_ptr<Message> IdentityImsi::clone() const NOEXCEPT {

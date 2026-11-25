@@ -195,10 +195,12 @@ void dump(AGnssConfig const& config) {
     DEBUGF("interval: %ld seconds", config.interval_seconds);
     DEBUGF("triggered_cooldown: %ld seconds", config.triggered_cooldown_seconds);
     if (config.msisdn) {
-        DEBUGF("msisdn: %" PRIu64, *config.msisdn);
+        DEBUGF("msisdn: %s",
+               loglet::hide_identity() ? "<hidden>" : std::to_string(*config.msisdn).c_str());
     }
     if (config.imsi) {
-        DEBUGF("imsi: %" PRIu64, *config.imsi);
+        DEBUGF("imsi: %s",
+               loglet::hide_identity() ? "<hidden>" : std::to_string(*config.imsi).c_str());
     }
     if (config.ipv4) {
         DEBUGF("ipv4: \"%s\"", config.ipv4->c_str());

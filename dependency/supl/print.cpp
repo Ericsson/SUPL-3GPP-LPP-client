@@ -204,8 +204,20 @@ void Printer::value(::SETId const& x) {
     // might not contain all variants
     switch (static_cast<long>(x.present)) {
     case SETId_PR_NOTHING: field("type", "nothing"); break;
-    case SETId_PR_msisdn: field("msisdn", x.choice.msisdn); break;
-    case SETId_PR_imsi: field("imsi", x.choice.imsi); break;
+    case SETId_PR_msisdn:
+        if (loglet::hide_identity()) {
+            field("msisdn", "<hidden>");
+        } else {
+            field("msisdn", x.choice.msisdn);
+        }
+        break;
+    case SETId_PR_imsi:
+        if (loglet::hide_identity()) {
+            field("imsi", "<hidden>");
+        } else {
+            field("imsi", x.choice.imsi);
+        }
+        break;
     case SETId_PR_iPAddress: field("ip-address", x.choice.iPAddress); break;
     case SETId_PR_mdn:
     case SETId_PR_min:
