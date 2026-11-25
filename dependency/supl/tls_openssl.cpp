@@ -74,10 +74,26 @@ public:
                 return HandshakeResult::Error;
             }
 
-            SSL_set_fd(mSsl, fd);
-            if (!sni.empty()) SSL_set_tlsext_host_name(mSsl, sni.c_str());
-            if (!mConfig.skip_verify && !sni.empty()) {
-                SSL_set1_host(mSsl, sni.c_str());
+            if (SSL_set_fd(mSsl, fd) != 1) {
+                ERRORF("SSL_set_fd failed");
+                return HandshakeResult::Error;
+            }
+
+            if (!sni.empty() && SSL_set_tlsext_host_name(mSsl, sni.c_str()) != 1) {
+                ERRORF("SSL_set_tlsext_host_name failed");
+                return HandshakeResult::Error;
+            }
+
+            if (!mConfig.skip_verify) {
+                if (sni.empty()) {
+                    ERRORF("TLS server verification requires a host name");
+                    return HandshakeResult::Error;
+                }
+
+                if (SSL_set1_host(mSsl, sni.c_str()) != 1) {
+                    ERRORF("SSL_set1_host failed");
+                    return HandshakeResult::Error;
+                }
             }
         }
 
