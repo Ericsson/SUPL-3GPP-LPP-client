@@ -1,0 +1,90 @@
+Subject: scrub octet string buffers and open type copies before freeing
+
+Decoded SUPL authentication keys (SETAuthKey, KeyIdentity4, SPCSETKey)
+were left in freed heap memory.
+
+---
+diff --git a/skeleton/OCTET_STRING.c b/skeleton/OCTET_STRING.c
+index fc983b4e..a5da0604 100644
+--- a/skeleton/OCTET_STRING.c
++++ b/skeleton/OCTET_STRING.c
+@@ -110,7 +110,8 @@ OCTET_STRING_free(const asn_TYPE_descriptor_t *td, void *sptr,
+ 	ASN_DEBUG("Freeing %s as OCTET STRING", td->name);
+ 
+ 	if(st->buf) {
+-		FREEMEM(st->buf);
++		/* May hold key material (for example SETAuthKey) */
++		FREEMEM_SCRUB(st->buf, st->size);
+ 		st->buf = 0;
+ 	}
+ 
+diff --git a/skeleton/asn_internal.h b/skeleton/asn_internal.h
+index d6ce6198..9b55852e 100644
+--- a/skeleton/asn_internal.h
++++ b/skeleton/asn_internal.h
+@@ -39,6 +39,14 @@ int get_asn1c_environment_version(void);	/* Run-time version */
+ #define	REALLOC(oldptr, size)	realloc(oldptr, size)
+ #define	FREEMEM(ptr)		free(ptr)
+ 
++/* Overwrite memory in a way the compiler cannot remove, then free it */
++static inline void asn_secure_zero(void *ptr, size_t size) {
++	volatile unsigned char *p = (volatile unsigned char *)ptr;
++	while(size--) *p++ = 0;
++}
++#define	FREEMEM_SCRUB(ptr, size)\
++	do { if(ptr) asn_secure_zero((ptr), (size)); FREEMEM(ptr); } while(0)
++
+ #define	asn_debug_indent	0
+ #define ASN_DEBUG_INDENT_ADD(i) do{}while(0)
+ 
+diff --git a/skeleton/uper_opentype.c b/skeleton/uper_opentype.c
+index 17ee0641..c75acfff 100644
+--- a/skeleton/uper_opentype.c
++++ b/skeleton/uper_opentype.c
+@@ -81,7 +81,7 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
+ 	do {
+ 		chunk_bytes = uper_get_length(pd, -1, 0, &repeat);
+ 		if(chunk_bytes < 0) {
+-			FREEMEM(buf);
++			FREEMEM_SCRUB(buf, bufLen);
+ 			ASN__DECODE_STARVED;
+ 		}
+ 		if(bufLen + chunk_bytes > bufSize) {
+@@ -89,13 +89,13 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
+ 			bufSize = chunk_bytes + (bufSize << 2);
+ 			ptr = REALLOC(buf, bufSize);
+ 			if(!ptr) {
+-				FREEMEM(buf);
++				FREEMEM_SCRUB(buf, bufLen);
+ 				ASN__DECODE_FAILED;
+ 			}
+ 			buf = ptr;
+ 		}
+ 		if(per_get_many_bits(pd, (buf == NULL)? NULL : buf + bufLen, 0, chunk_bytes << 3)) {
+-			FREEMEM(buf);
++			FREEMEM_SCRUB(buf, bufLen);
+ 			ASN__DECODE_STARVED;
+ 		}
+ 		bufLen += chunk_bytes;
+@@ -120,10 +120,10 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
+ 		(spd.nboff == 0 && spd.nbits == 8 && spd.buffer == buf)) &&
+                     per_get_few_bits(&spd, padding) == 0) {
+ 			/* Everything is cool */
+-			FREEMEM(buf);
++			FREEMEM_SCRUB(buf, bufLen);
+ 			return rv;
+ 		}
+-		FREEMEM(buf);
++		FREEMEM_SCRUB(buf, bufLen);
+ 		if(padding >= 8) {
+ 			ASN_DEBUG("Too large padding %d in open type", (int)padding);
+ 			ASN__DECODE_FAILED;
+@@ -131,7 +131,7 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
+ 			ASN_DEBUG("No padding");
+ 		}
+ 	} else {
+-		FREEMEM(buf);
++		FREEMEM_SCRUB(buf, bufLen);
+ 		/* rv.code could be RC_WMORE, nonsense in this context */
+ 		rv.code = RC_FAIL; /* No one would give us more */
+ 	}

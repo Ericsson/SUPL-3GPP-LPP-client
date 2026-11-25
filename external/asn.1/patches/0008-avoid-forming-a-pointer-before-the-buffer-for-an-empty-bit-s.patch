@@ -1,0 +1,26 @@
+Subject: avoid forming a pointer before the buffer for an empty BIT STRING in XER
+
+
+---
+diff --git a/skeleton/BIT_STRING_xer.c b/skeleton/BIT_STRING_xer.c
+index 67d5cb8d..95960b35 100644
+--- a/skeleton/BIT_STRING_xer.c
++++ b/skeleton/BIT_STRING_xer.c
+@@ -30,7 +30,7 @@ BIT_STRING_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
+     er.encoded = 0;
+ 
+     buf = st->buf;
+-    end = buf + st->size - 1;  /* Last byte is special */
++    end = st->size ? buf + st->size - 1 : buf;  /* Last byte is special */
+ 
+     /*
+      * Binary dump
+@@ -53,7 +53,7 @@ BIT_STRING_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
+     ASN__CALLBACK(scratch, p - scratch);
+     p = scratch;
+ 
+-    if(buf == end) {
++    if(st->size && buf == end) {
+         int v = *buf;
+         int ubits = st->bits_unused;
+         int i;
