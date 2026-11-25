@@ -17,6 +17,7 @@ EXTERNAL_WARNINGS_POP
 #include <scheduler/timeout.hpp>
 
 #include <arpa/inet.h>
+#include <fcntl.h>
 #include <unistd.h>
 
 #ifdef DATA_TRACING
@@ -1079,7 +1080,13 @@ int main(int argc, char** argv) {
     loglet::set_use_stderr(config.logging.use_stderr);
 
     if (config.logging.log_file) {
-        FILE* log_fp = fopen(config.logging.log_file->c_str(), "w");
+        FILE* log_fp = nullptr;
+        auto  log_fd = ::open(config.logging.log_file->c_str(),
+                              O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC, 0640);
+        if (log_fd >= 0) {
+            log_fp = fdopen(log_fd, "w");
+            if (!log_fp) ::close(log_fd);
+        }
         if (!log_fp) {
             ERRORF("failed to open log file: %s", config.logging.log_file->c_str());
             return 1;

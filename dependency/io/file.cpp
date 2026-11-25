@@ -181,8 +181,8 @@ void FileOutput::open() {
         flags |= O_CREAT;
     }
 
-    mFd = ::open(mPath.c_str(), flags, 0666);
-    VERBOSEF("::open(\"%s\", %d, 0666) = %d", mPath.c_str(), flags, mFd);
+    mFd = ::open(mPath.c_str(), flags, 0640);
+    VERBOSEF("::open(\"%s\", %d, 0640) = %d", mPath.c_str(), flags, mFd);
     if (mFd < 0) {
         ERRORF("failed to open file \"%s\": " ERRNO_FMT, mPath.c_str(), ERRNO_ARGS(errno));
     }
