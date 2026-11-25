@@ -2,6 +2,7 @@
 #include <lpp/location_information.hpp>
 #include <scheduler/scheduler.hpp>
 #include <scheduler/timeout.hpp>
+#include <supl/tls.hpp>
 #include "../config.hpp"
 
 #include <functional>
@@ -28,10 +29,13 @@ private:
     std::string build_gga() const;
     void        apply_bias(double& lat, double& lon) const;
     void        schedule_reconnect();
+    bool        send_all(void const* data, size_t length);
 
     NtripConfig      mConfig;
     DataCallback     mOnData;
     LocationProvider mLocationProvider;
+
+    std::unique_ptr<supl::TlsBackend> mTls;
 
     int  mSocket     = -1;
     bool mHeaderDone = false;
