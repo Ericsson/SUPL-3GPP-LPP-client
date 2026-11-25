@@ -1,5 +1,6 @@
 #include "scheduler/scheduler.hpp"
 
+#include <csignal>
 #include <cstring>
 #include <sched.h>
 #include <stdexcept>
@@ -41,6 +42,16 @@ Scheduler::Scheduler() NOEXCEPT : mEpollFd(-1),
                                   mMaxEventsPerWait(1),
                                   mInterrupted(false) {
     VSCOPE_FUNCTION();
+
+    // A write to a socket whose peer has gone away must fail with EPIPE, not kill the process
+    struct sigaction current_action{};
+    if (::sigaction(SIGPIPE, nullptr, &current_action) == 0 &&
+        current_action.sa_handler == SIG_DFL) {
+        struct sigaction ignore_action{};
+        ignore_action.sa_handler = SIG_IGN;
+        sigemptyset(&ignore_action.sa_mask);
+        ::sigaction(SIGPIPE, &ignore_action, nullptr);
+    }
 
     mEpollFd = ::epoll_create1(0);
     VERBOSEF("::epoll_create1(0) = %d", mEpollFd);
