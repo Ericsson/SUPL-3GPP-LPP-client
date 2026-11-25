@@ -2,6 +2,7 @@
 #include "epe.hpp"
 #include "gga.hpp"
 #include "gst.hpp"
+#include "helper.hpp"
 #include "message.hpp"
 #include "vtg.hpp"
 
@@ -33,18 +34,6 @@ static char const* checksum_result_name(ChecksumResult result) NOEXCEPT {
     case ChecksumResult::InvalidValue: return "checksum mismatch";
     default: return "unknown";
     }
-}
-
-/// Replace non-printable characters so a false '$' sync inside binary data cannot inject
-/// control or escape sequences into the log.
-static std::string sanitize(std::string const& input) NOEXCEPT {
-    std::string output;
-    output.reserve(input.size());
-    for (auto c : input) {
-        auto uc = static_cast<unsigned char>(c);
-        output += (uc >= 0x20 && uc < 0x7F) ? c : '.';
-    }
-    return output;
 }
 
 std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
@@ -123,7 +112,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
             // Either a false '$' sync or a corrupted sentence. Keep searching from the next
             // byte.
             DEBUGF("rejected sentence (%s): \"%s\"", checksum_result_name(result),
-                   sanitize(payload).c_str());
+                   sanitize_text(payload).c_str());
             record_frame_error();
             discard(1u);
             continue;
@@ -151,7 +140,8 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         auto data_length   = data_end - data_start;
         auto data_payload  = payload.substr(data_start, data_length);
         auto data_checksum = payload.substr(data_end + 1, 2);
-        DEBUGF("nmea: %s, data: %s", prefix.c_str(), data_payload.c_str());
+        DEBUGF("nmea: %s, data: %s", sanitize_text(prefix).c_str(),
+               sanitize_text(data_payload).c_str());
 
         // parse message
         if (prefix == "GPGGA" || prefix == "GLGGA" || prefix == "GAGGA" || prefix == "GNGGA") {

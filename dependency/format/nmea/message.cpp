@@ -1,5 +1,7 @@
 #include "message.hpp"
 
+#include "helper.hpp"
+
 #include <cstdio>
 
 namespace format {
@@ -21,7 +23,8 @@ UnsupportedMessage::UnsupportedMessage(std::string prefix, std::string payload,
     : Message(prefix, payload, checksum) {}
 
 void UnsupportedMessage::print() const NOEXCEPT {
-    printf("[%5s] UNSUPPORTED %s\n", prefix().c_str(), payload().c_str());
+    printf("[%5s] UNSUPPORTED %s\n", sanitize_text(prefix()).c_str(),
+           sanitize_text(payload()).c_str());
 }
 
 std::unique_ptr<Message> UnsupportedMessage::clone() const NOEXCEPT {
@@ -36,7 +39,7 @@ ErrorMessage::ErrorMessage(std::string prefix, std::string payload, std::string 
     : Message(prefix, payload, checksum) {}
 
 void ErrorMessage::print() const NOEXCEPT {
-    printf("[%5s] ERROR %s\n", prefix().c_str(), payload().c_str());
+    printf("[%5s] ERROR %s\n", sanitize_text(prefix()).c_str(), sanitize_text(payload()).c_str());
 }
 
 std::unique_ptr<Message> ErrorMessage::clone() const NOEXCEPT {

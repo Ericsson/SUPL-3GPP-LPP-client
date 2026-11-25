@@ -16,6 +16,16 @@ std::vector<std::string> split(std::string const& str, char delim) {
     return tokens;
 }
 
+std::string sanitize_text(std::string const& input) {
+    std::string output;
+    output.reserve(input.size());
+    for (auto c : input) {
+        auto uc = static_cast<unsigned char>(c);
+        output += (uc >= 0x20 && uc < 0x7F) ? c : '.';
+    }
+    return output;
+}
+
 bool parse_double(std::string const& token, double& value) {
     FUNCTION_SCOPEF("'%s'", token.c_str());
     try {
