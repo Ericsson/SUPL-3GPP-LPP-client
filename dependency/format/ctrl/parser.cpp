@@ -88,11 +88,16 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
         copy_to_buffer(reinterpret_cast<uint8_t*>(&payload[0]), length);
         skip(length + suffix);
 
-        VERBOSEF("parsed message: \"%s\"", payload.c_str());
-
         auto tokens = split(payload, ',');
         if (tokens.size() < 1) {
             continue;
+        }
+
+        // the subscriber identity must not end up in the log
+        if (tokens[0] == "/IDENTITY") {
+            VERBOSEF("parsed message: \"/IDENTITY,...\"");
+        } else {
+            VERBOSEF("parsed message: \"%s\"", sanitize_text(payload).c_str());
         }
 
         // The line was consumed. If it does not produce a message, keep draining instead of
@@ -109,7 +114,7 @@ std::unique_ptr<Message> Parser::try_parse() NOEXCEPT {
             continue;
         }
 
-        VERBOSEF("unknown command: \"%s\"", tokens[0].c_str());
+        VERBOSEF("unknown command: \"%s\"", sanitize_text(tokens[0]).c_str());
     }
 }
 
@@ -171,13 +176,13 @@ std::unique_ptr<Message> Parser::parse_identity(std::string const&              
         try {
             imsi = std::stoull(tokens[2]);
         } catch (std::exception const& e) {
-            WARNF("/IDENTITY,IMSI parsing failed: \"%s\" %s", tokens[2].c_str(), e.what());
+            WARNF("/IDENTITY,IMSI parsing failed: %s", e.what());
             return nullptr;
         }
 
         return std::unique_ptr<Message>(new IdentityImsi(message, imsi));
     } else {
-        WARNF("/IDENTITY unknown identity: %s", tokens[1].c_str());
+        WARNF("/IDENTITY unknown identity: %s", sanitize_text(tokens[1]).c_str());
         return nullptr;
     }
 }
