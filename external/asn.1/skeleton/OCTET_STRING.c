@@ -110,7 +110,8 @@ OCTET_STRING_free(const asn_TYPE_descriptor_t *td, void *sptr,
 	ASN_DEBUG("Freeing %s as OCTET STRING", td->name);
 
 	if(st->buf) {
-		FREEMEM(st->buf);
+		/* May hold key material (for example SETAuthKey) */
+		FREEMEM_SCRUB(st->buf, st->size);
 		st->buf = 0;
 	}
 
