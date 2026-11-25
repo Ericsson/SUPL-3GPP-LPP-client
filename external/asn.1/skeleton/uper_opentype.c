@@ -74,7 +74,7 @@ uper_open_type_get_simple(const asn_codec_ctx_t *ctx,
 	asn_per_data_t spd;
 	size_t padding;
 
-	ASN__STACK_OVERFLOW_CHECK(ctx);
+	if(ASN__STACK_OVERFLOW_CHECK(ctx)) ASN__DECODE_FAILED;
 
 	ASN_DEBUG("Getting open type %s...", td->name);
 
@@ -148,7 +148,7 @@ uper_open_type_get_complex(const asn_codec_ctx_t *ctx,
 	asn_dec_rval_t rv;
 	ssize_t padding;
 
-	ASN__STACK_OVERFLOW_CHECK(ctx);
+	if(ASN__STACK_OVERFLOW_CHECK(ctx)) ASN__DECODE_FAILED;
 
 	ASN_DEBUG("Getting open type %s from %s", td->name,
 		asn_bit_data_string(pd));
