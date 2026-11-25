@@ -46,8 +46,8 @@ bool FileStream::schedule(scheduler::Scheduler& scheduler) {
         if (mConfig.create) flags |= O_CREAT;
     }
 
-    mFd = ::open(mConfig.path.c_str(), flags, 0666);
-    VERBOSEF("::open(\"%s\", %d, 0666) = %d", mConfig.path.c_str(), flags, mFd);
+    mFd = ::open(mConfig.path.c_str(), flags, 0640);
+    VERBOSEF("::open(\"%s\", %d, 0640) = %d", mConfig.path.c_str(), flags, mFd);
     if (mFd < 0) {
         ERRORF("failed to open file \"%s\": " ERRNO_FMT, mConfig.path.c_str(), ERRNO_ARGS(errno));
         set_error(errno, "failed to open file");
