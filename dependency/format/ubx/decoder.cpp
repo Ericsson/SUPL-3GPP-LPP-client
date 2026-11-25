@@ -157,7 +157,8 @@ std::string Decoder::ch(uint32_t length) NOEXCEPT {
         return "";
     } else {
         // NOTE: this should be null terminated according to the spec
-        std::string value(reinterpret_cast<char*>(mPayload));
+        auto        text = reinterpret_cast<char const*>(mPayload);
+        std::string value(text, strnlen(text, length));
         mPayload += length;
         mPayloadLength -= length;
         return value;
