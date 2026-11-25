@@ -118,11 +118,11 @@
                                               reconnect=<bool> (default=true)
                                               path=<path>
                                             tcp-server:
-                                              listen=<addr> (default=0.0.0.0)
+                                              listen=<addr> (default=127.0.0.1)
                                               port=<port>
                                               path=<path>
                                             udp-server:
-                                              listen=<addr> (default=0.0.0.0)
+                                              listen=<addr> (default=127.0.0.1)
                                               port=<port>
                                               path=<path>
                                           Formats:

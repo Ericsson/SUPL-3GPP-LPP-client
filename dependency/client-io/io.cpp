@@ -247,7 +247,7 @@ io_registry::InputTypeHandler make_tcp_server_input_type() {
             [](Opts const& o, io::StreamRegistry& r) -> std::unique_ptr<io::Input> {
                 auto sid = stream_id("tcp-server", o);
                 if (!r.has(sid)) {
-                    auto listen = get(o, "listen", "0.0.0.0");
+                    auto listen = get(o, "listen", "127.0.0.1");
                     auto port   = get_port(o, "port");
                     auto path   = get(o, "path");
                     add_tcp_server(sid, listen, port, path, r, "input");
@@ -261,7 +261,7 @@ io_registry::InputTypeHandler make_udp_server_input_type() {
             [](Opts const& o, io::StreamRegistry& r) -> std::unique_ptr<io::Input> {
                 auto sid = stream_id("udp-server", o);
                 if (!r.has(sid)) {
-                    auto listen = get(o, "listen", "0.0.0.0");
+                    auto listen = get(o, "listen", "127.0.0.1");
                     auto port   = get_port(o, "port");
                     auto path   = get(o, "path");
                     add_udp_server(sid, listen, port, path, r, "input");
@@ -337,7 +337,7 @@ io_registry::OutputTypeHandler make_tcp_server_output_type() {
                 if (o.count("path")) {
                     inner = std::make_unique<io::TcpServerOutput>(o.at("path"));
                 } else {
-                    auto listen = get(o, "host", "0.0.0.0");
+                    auto listen = get(o, "host", "127.0.0.1");
                     auto port   = get_port(o, "port");
                     inner       = std::make_unique<io::TcpServerOutput>(listen, port);
                 }

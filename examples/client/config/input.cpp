@@ -44,11 +44,11 @@ static args::ValueFlagList<std::string> gArgs{
     "    reconnect=<bool> (default=true)\n"
     "    path=<path>\n"
     "  tcp-server:\n"
-    "    listen=<addr> (default=0.0.0.0)\n"
+    "    listen=<addr> (default=127.0.0.1)\n"
     "    port=<port>\n"
     "    path=<path>\n"
     "  udp-server:\n"
-    "    listen=<addr> (default=0.0.0.0)\n"
+    "    listen=<addr> (default=127.0.0.1)\n"
     "    port=<port>\n"
     "    path=<path>\n"
     "  stream:\n"
@@ -162,7 +162,7 @@ static std::string generate_stream_id(std::string const& type, Options const& op
             base_id = "tcp-server:" + options.at("path");
         } else {
             auto listen =
-                options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+                options.find("listen") != options.end() ? options.at("listen") : "127.0.0.1";
             base_id = "tcp-server:" + listen + ":" + options.at("port");
         }
     } else if (type == "udp-server") {
@@ -170,7 +170,7 @@ static std::string generate_stream_id(std::string const& type, Options const& op
             base_id = "udp-server:" + options.at("path");
         } else {
             auto listen =
-                options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+                options.find("listen") != options.end() ? options.at("listen") : "127.0.0.1";
             base_id = "udp-server:" + listen + ":" + options.at("port");
         }
     }
@@ -276,7 +276,7 @@ static void parse_tcp_server(Options const& options, InputsConfig& inputs) {
         if (options.find("port") == options.end()) {
             throw args::ValidationError("--input tcp-server: missing `port` option");
         }
-        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "127.0.0.1";
         cfg.port   = static_cast<uint16_t>(std::stoul(options.at("port")));
     }
     cfg.stream_id = generate_stream_id("tcp-server", options, unique);
@@ -296,7 +296,7 @@ static void parse_udp_server(Options const& options, InputsConfig& inputs) {
         if (options.find("port") == options.end()) {
             throw args::ValidationError("--input udp-server: missing `port` option");
         }
-        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "127.0.0.1";
         cfg.port   = static_cast<uint16_t>(std::stoul(options.at("port")));
     }
     cfg.stream_id = generate_stream_id("udp-server", options, unique);
