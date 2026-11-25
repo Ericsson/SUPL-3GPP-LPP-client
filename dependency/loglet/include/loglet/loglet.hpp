@@ -2,6 +2,8 @@
 #include <core/core.hpp>
 
 #include <cstdarg>
+#include <cstdio>
+#include <cstdlib>
 #include <string>
 #include <vector>
 
@@ -218,16 +220,22 @@
 #define VSCOPE_FUNCTIONF(...) FUNCTION_SCOPEF(__VA_ARGS__)
 #define VSCOPE_FUNCTION() FUNCTION_SCOPE()
 
+#define LOGLET_ABORT(what)                                                                         \
+    do {                                                                                           \
+        fprintf(stderr, "%s: %s:%d\n", what, __FILE__, __LINE__);                                  \
+        ::abort();                                                                                 \
+    } while (0)
+
 #define UNREACHABLE()                                                                              \
     do {                                                                                           \
         ERRORF("unreachable code reached: %s:%d", __FILE__, __LINE__);                             \
-        CORE_UNREACHABLE();                                                                        \
+        LOGLET_ABORT("unreachable code reached");                                                  \
     } while (0)
 
 #define XUNREACHABLE(module)                                                                       \
     do {                                                                                           \
         XERRORF(module, "unreachable code reached: %s:%d", __FILE__, __LINE__);                    \
-        CORE_UNREACHABLE();                                                                        \
+        LOGLET_ABORT("unreachable code reached");                                                  \
     } while (0)
 
 #define ASSERT(cond, reason)                                                                       \
@@ -238,7 +246,7 @@
             ERRORF("reason: %s", reason);                                                          \
             ERRORF("file: %s", __FILE__);                                                          \
             ERRORF("line: %d", __LINE__);                                                          \
-            CORE_UNREACHABLE();                                                                    \
+            LOGLET_ABORT("assertion failed");                                                      \
         }                                                                                          \
     } while (0)
 
