@@ -1076,6 +1076,7 @@ int main(int argc, char** argv) {
     loglet::set_level(config.logging.log_level);
     loglet::set_color_enable(config.logging.color);
     loglet::set_always_flush(config.logging.flush);
+    loglet::set_hide_identity(config.logging.hide_identity);
     loglet::set_report_errors(config.logging.report_errors);
     loglet::set_use_stderr(config.logging.use_stderr);
 

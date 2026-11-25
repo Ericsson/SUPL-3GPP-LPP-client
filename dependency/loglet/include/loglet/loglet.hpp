@@ -337,10 +337,13 @@ struct LogModule {
 void initialize();
 void uninitialize();
 
-void                    set_prefix(char const* prefix);
-void                    set_level(Level level);
-void                    set_color_enable(bool enabled);
-void                    set_always_flush(bool flush);
+void set_prefix(char const* prefix);
+void set_level(Level level);
+void set_color_enable(bool enabled);
+void set_always_flush(bool flush);
+// Hide subscriber identities (IMSI, MSISDN) from log and printed output
+void                    set_hide_identity(bool hide);
+bool                    hide_identity();
 void                    set_output_file(FILE* file);
 void                    set_report_errors(bool enabled);
 void                    set_use_stderr(bool enabled);

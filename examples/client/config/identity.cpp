@@ -70,13 +70,15 @@ void dump(IdentityConfig const& config) {
     DEBUGF("wait_for_identity: %s", config.wait_for_identity ? "true" : "false");
 
     if (config.msisdn) {
-        DEBUGF("msisdn: %llu", *config.msisdn);
+        DEBUGF("msisdn: %s",
+               loglet::hide_identity() ? "<hidden>" : std::to_string(*config.msisdn).c_str());
     } else {
         DEBUGF("msisdn: not set");
     }
 
     if (config.imsi) {
-        DEBUGF("imsi: %llu", *config.imsi);
+        DEBUGF("imsi: %s",
+               loglet::hide_identity() ? "<hidden>" : std::to_string(*config.imsi).c_str());
     } else {
         DEBUGF("imsi: not set");
     }
