@@ -50,6 +50,7 @@ public:
 
     NODISCARD size_t offset() const NOEXCEPT { return mOffset; }
     NODISCARD bool   has_data() const NOEXCEPT { return mOffset < mLength; }
+    NODISCARD size_t remaining() const NOEXCEPT { return mLength - mOffset; }
 
 private:
     bool read_byte(uint8_t& byte) NOEXCEPT;
