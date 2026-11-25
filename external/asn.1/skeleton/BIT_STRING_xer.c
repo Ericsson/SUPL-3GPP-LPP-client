@@ -30,7 +30,7 @@ BIT_STRING_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
     er.encoded = 0;
 
     buf = st->buf;
-    end = buf + st->size - 1;  /* Last byte is special */
+    end = st->size ? buf + st->size - 1 : buf;  /* Last byte is special */
 
     /*
      * Binary dump
@@ -53,7 +53,7 @@ BIT_STRING_encode_xer(const asn_TYPE_descriptor_t *td, const void *sptr,
     ASN__CALLBACK(scratch, p - scratch);
     p = scratch;
 
-    if(buf == end) {
+    if(st->size && buf == end) {
         int v = *buf;
         int ubits = st->bits_unused;
         int i;
