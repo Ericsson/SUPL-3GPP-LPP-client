@@ -634,6 +634,8 @@ bool TcpConnectTask::connect() NOEXCEPT {
             } else {
                 WARNF("connect failed: " ERRNO_FMT, ERRNO_ARGS(saved_errno));
             }
+            ::close(mFd);
+            mFd    = -1;
             mState = StateError;
             return false;
         }
