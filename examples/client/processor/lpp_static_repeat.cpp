@@ -43,6 +43,15 @@ LppStaticDataRepeat::LppStaticDataRepeat(streamline::System& system, uint64_t ta
         auto* a_gnss  = static_cast<A_GNSS_ProvideAssistanceData*>(
             calloc(1, sizeof(A_GNSS_ProvideAssistanceData)));
 
+        if (!lpp_msg || !body || !a_gnss) {
+            ERRORF("out of memory, dropping cached static LPP data");
+            free(lpp_msg);
+            free(body);
+            free(a_gnss);
+            ASN_STRUCT_FREE(asn_DEF_GNSS_CommonAssistData, common);
+            return;
+        }
+
         a_gnss->gnss_CommonAssistData = common;
         body->present                 = LPP_MessageBody_PR_c1;
         auto& c1                      = body->choice.c1;

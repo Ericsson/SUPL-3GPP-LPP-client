@@ -429,9 +429,15 @@ static ::PosPayLoad encode_pospayload(std::vector<supl::Payload> const& payloads
         helper::asn1_allocate<Ver2_PosPayLoad_extension::Ver2_PosPayLoad_extension__lPPPayload>();
     asn_sequence_empty(&lpppayload->list);
     for (auto& payload : payloads) {
-        auto os   = helper::asn1_allocate<OCTET_STRING>();
-        auto data = reinterpret_cast<uint8_t*>(malloc(payload.data.size()));
-        memcpy(data, payload.data.data(), payload.data.size());
+        auto os = helper::asn1_allocate<OCTET_STRING>();
+        auto data =
+            reinterpret_cast<uint8_t*>(malloc(payload.data.empty() ? 1 : payload.data.size()));
+        if (!data) {
+            ERRORF("out of memory, dropping SUPL POS payload");
+            free(os);
+            continue;
+        }
+        if (!payload.data.empty()) memcpy(data, payload.data.data(), payload.data.size());
         os->buf  = data;
         os->size = payload.data.size();
         asn_sequence_add(&lpppayload->list, os);
