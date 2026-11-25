@@ -19,6 +19,11 @@ LOGLET_MODULE(ntrip_source);
 static constexpr double DEG_TO_RAD = M_PI / 180.0;
 static constexpr double EARTH_R_M  = 6371000.0;
 
+static void scrub(std::string& value) {
+    if (!value.empty()) explicit_bzero(&value[0], value.size());
+    value.clear();
+}
+
 NtripSource::NtripSource(NtripConfig config, DataCallback on_data,
                          LocationProvider location_provider)
     : mConfig(std::move(config)), mOnData(std::move(on_data)),
@@ -40,6 +45,7 @@ NtripSource::NtripSource(NtripConfig config, DataCallback on_data,
 
 NtripSource::~NtripSource() {
     disconnect();
+    scrub(mConfig.password);
 }
 
 bool NtripSource::schedule(scheduler::Scheduler& scheduler) {
@@ -160,9 +166,12 @@ void NtripSource::connect() {
             enc += (i + 2 < creds.size()) ? b64[v & 63] : '=';
         }
         req += "Authorization: Basic " + enc + "\r\n";
+        scrub(creds);
+        scrub(enc);
     }
     req += "\r\n";
     auto sent = send_all(req.c_str(), req.size());
+    scrub(req);
 
     ::fcntl(mSocket, F_SETFL, flags | O_NONBLOCK);
 

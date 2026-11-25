@@ -1,5 +1,7 @@
 #include "../config.hpp"
 
+#include <cstdlib>
+
 #include <external_warnings.hpp>
 EXTERNAL_WARNINGS_PUSH
 #include <args.hxx>
@@ -16,7 +18,10 @@ static args::ValueFlag<std::string> gMountpoint{
     gGroup, "mountpoint", "NTRIP mountpoint", {"ntrip-mountpoint"}};
 static args::ValueFlag<std::string> gUser{gGroup, "user", "NTRIP username", {"ntrip-user"}};
 static args::ValueFlag<std::string> gPassword{
-    gGroup, "password", "NTRIP password", {"ntrip-password"}};
+    gGroup,
+    "password",
+    "NTRIP password (or NTRIP_PASSWORD environment variable)",
+    {"ntrip-password"}};
 static args::Flag gTls{gGroup, "tls", "Use TLS", {"ntrip-tls"}};
 
 static args::ValueFlag<std::string> gPosition{
@@ -62,7 +67,11 @@ void parse(Config* config) {
     c.port    = static_cast<uint16_t>(gPort.Get());
     if (gMountpoint) c.mountpoint = gMountpoint.Get();
     if (gUser) c.username = gUser.Get();
-    if (gPassword) c.password = gPassword.Get();
+    if (gPassword) {
+        c.password = gPassword.Get();
+    } else if (auto env_password = std::getenv("NTRIP_PASSWORD")) {
+        c.password = env_password;
+    }
     c.tls = static_cast<bool>(gTls);
 
     auto mode = gPosition.Get();
