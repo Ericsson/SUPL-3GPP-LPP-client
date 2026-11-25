@@ -671,7 +671,7 @@ static FrequencyType gQzssFreqType[24] = {
 };
 
 SignalId SignalId::from_lpp(Gnss gnss, long id) {
-    if (id >= 24) {
+    if (id < 0 || id >= 24) {
         return {};
     }
 
@@ -686,14 +686,12 @@ SignalId SignalId::from_lpp(Gnss gnss, long id) {
     } else if (gnss == Gnss::QZSS) {
         return SignalId(gnss, static_cast<int32_t>(id));
     } else {
-        CORE_UNREACHABLE();
-#if COMPILER_CANNOT_DEDUCE_UNREACHABLE
         return {};
-#endif
     }
 }
 
 std::string SignalId::to_string() const {
+    if (mLppId < 0 || mLppId >= 24) return "Invalid";
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
@@ -715,6 +713,7 @@ std::string SignalId::to_string() const {
 }
 
 std::string SignalId::to_rinex() const {
+    if (mLppId < 0 || mLppId >= 24) return "???";
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
@@ -736,6 +735,7 @@ std::string SignalId::to_rinex() const {
 }
 
 char const* SignalId::name() const {
+    if (mLppId < 0 || mLppId >= 24) return "Invalid";
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
@@ -757,6 +757,7 @@ char const* SignalId::name() const {
 }
 
 double SignalId::frequency() const {
+    if (mLppId < 0 || mLppId >= 24) return 0.0;
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
@@ -778,6 +779,7 @@ double SignalId::frequency() const {
 }
 
 FrequencyType SignalId::frequency_type() const {
+    if (mLppId < 0 || mLppId >= 24) return FrequencyType::UNKNOWN;
     auto id = lpp_id();
 
     if (mGnss == Gnss::GPS) {
