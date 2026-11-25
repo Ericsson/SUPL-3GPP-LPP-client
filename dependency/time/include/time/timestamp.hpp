@@ -1,5 +1,7 @@
 #pragma once
 #include <core/core.hpp>
+
+#include <cmath>
 #include <msgpack/msgpack.hpp>
 
 namespace ts {
@@ -71,6 +73,11 @@ public:
     NODISCARD Timestamp difference(Timestamp const& other) const { return *this - other; }
 
     void normalize() {
+        if (!std::isfinite(mFraction) || std::fabs(mFraction) >= 9.0e18) {
+            mFraction = 0.0;
+            return;
+        }
+
         while (mFraction < 0.0) {
             auto underflow = static_cast<int64_t>(-mFraction) + 1;
             mSeconds -= underflow;
