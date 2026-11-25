@@ -254,6 +254,12 @@ void Generator::find_correction_point_set(ProvideAssistanceData_r9_IEs const* me
             // location server point-of-view, this should never happen. The correction point set is
             // only every sent on the first non-periodic message or when the UE changes cell.
             return;
+        } else if (array.numberOfStepsLatitude_r16 > 7 || array.numberOfStepsLongitude_r16 > 7) {
+            WARNF(
+                "correction point set %hu has too many grid points for SPARTN (%ldx%ld), ignoring",
+                correction_point_set_id, array.numberOfStepsLatitude_r16 + 1,
+                array.numberOfStepsLongitude_r16 + 1);
+            return;
         } else {
             CorrectionPointSet correction_point_set{};
             correction_point_set.set_id  = correction_point_set_id;
