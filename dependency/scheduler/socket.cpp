@@ -25,6 +25,7 @@ ListenerTask::ListenerTask(
     std::function<void(ListenerTask&, int, struct sockaddr_storage*, socklen_t)> on_accept) NOEXCEPT
     : mEvent{ScheduledEvent::invalid()},
       mListenerFd{listener_fd},
+      mReserveFd{-1},
       mOnAccept{std::move(on_accept)} {
     VSCOPE_FUNCTION();
 
@@ -47,6 +48,11 @@ ListenerTask::ListenerTask(
         return;
     }
 
+    // Keep one descriptor in reserve, so that a connection can still be accepted and dropped when
+    // the process is out of descriptors. Otherwise the pending connection stays in the backlog and
+    // the listener keeps reporting it as readable.
+    mReserveFd = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+
     mEvent = current().register_fd(
         mListenerFd, EventInterest::Read | EventInterest::Error | EventInterest::Hangup,
         [this](EventInterest i) {
@@ -58,6 +64,10 @@ ListenerTask::ListenerTask(
 ListenerTask::~ListenerTask() NOEXCEPT {
     VSCOPE_FUNCTION();
     cancel();
+    if (mReserveFd >= 0) {
+        ::close(mReserveFd);
+        mReserveFd = -1;
+    }
 }
 
 void ListenerTask::on_event(EventInterest triggered) NOEXCEPT {
@@ -78,7 +88,14 @@ void ListenerTask::on_event(EventInterest triggered) NOEXCEPT {
             VERBOSEF("::fcntl(%d, F_SETFL, %d) = %d", client_fd, flags | O_NONBLOCK, result);
             mOnAccept(*this, client_fd, &addr, addr_len);
         } else {
-            WARNF("accept failed: " ERRNO_FMT, ERRNO_ARGS(errno));
+            auto error = errno;
+            WARNF("accept failed: " ERRNO_FMT, ERRNO_ARGS(error));
+            if ((error == EMFILE || error == ENFILE) && mReserveFd >= 0) {
+                ::close(mReserveFd);
+                auto dropped = ::accept(mListenerFd, nullptr, nullptr);
+                if (dropped >= 0) ::close(dropped);
+                mReserveFd = ::open("/dev/null", O_RDONLY | O_CLOEXEC);
+            }
         }
     }
 }

@@ -28,7 +28,7 @@ TcpServerStream::Client::Client(TcpServerStream& server, int fd) NOEXCEPT : mSer
     mTask.on_error = [this](scheduler::OwnedFileDescriptorTask&) {
         if (!mDestroying) on_error();
     };
-    (void)mTask.schedule();
+    mScheduled = mTask.schedule();
 }
 
 TcpServerStream::Client::~Client() NOEXCEPT {
@@ -145,7 +145,18 @@ bool TcpServerStream::schedule(scheduler::Scheduler& scheduler) {
     mListenerTask->on_accept = [this](scheduler::SocketListenerTask&, int fd, sockaddr_storage*,
                                       socklen_t) {
         DEBUGF("accepted new client connection, fd=%d", fd);
-        mClients.push_back(std::make_unique<Client>(*this, fd));
+        if (mClients.size() >= MAX_CLIENTS) {
+            WARNF("too many clients (%zu), dropping connection fd=%d", mClients.size(), fd);
+            ::close(fd);
+            return;
+        }
+
+        auto client = std::make_unique<Client>(*this, fd);
+        if (!client->scheduled()) {
+            WARNF("failed to schedule client fd=%d, dropping connection", fd);
+            return;
+        }
+        mClients.push_back(std::move(client));
         VERBOSEF("total clients: %zu", mClients.size());
     };
 

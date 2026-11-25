@@ -32,6 +32,7 @@ private:
 
     ScheduledEvent mEvent;
     int            mListenerFd;
+    int            mReserveFd;
 
     std::function<void(ListenerTask&, int, struct sockaddr_storage*, socklen_t)> mOnAccept;
 };
