@@ -68,7 +68,25 @@ void NtripSource::connect() {
         return;
     }
 
-    if (::connect(mSocket, res->ai_addr, res->ai_addrlen) < 0) {
+    auto timeout_s = mConfig.timeout_s > 0 ? mConfig.timeout_s : 30;
+    auto flags     = ::fcntl(mSocket, F_GETFL, 0);
+    ::fcntl(mSocket, F_SETFL, flags | O_NONBLOCK);
+    auto connected = ::connect(mSocket, res->ai_addr, res->ai_addrlen);
+    if (connected < 0 && errno == EINPROGRESS) {
+        pollfd pfd{};
+        pfd.fd     = mSocket;
+        pfd.events = POLLOUT;
+        if (::poll(&pfd, 1, timeout_s * 1000) == 1) {
+            int       error  = 0;
+            socklen_t length = sizeof(error);
+            if (::getsockopt(mSocket, SOL_SOCKET, SO_ERROR, &error, &length) == 0 && error == 0) {
+                connected = 0;
+            }
+        }
+    }
+    ::fcntl(mSocket, F_SETFL, flags);
+
+    if (connected < 0) {
         freeaddrinfo(res);
         ::close(mSocket);
         mSocket = -1;
@@ -81,7 +99,7 @@ void NtripSource::connect() {
 
     if (mConfig.tls) {
         timeval timeout{};
-        timeout.tv_sec = mConfig.timeout_s > 0 ? mConfig.timeout_s : 30;
+        timeout.tv_sec = timeout_s;
         ::setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
         ::setsockopt(mSocket, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
 
@@ -146,8 +164,7 @@ void NtripSource::connect() {
     req += "\r\n";
     auto sent = send_all(req.c_str(), req.size());
 
-    auto flags = ::fcntl(mSocket, F_GETFL, 0);
-    if (flags >= 0) ::fcntl(mSocket, F_SETFL, flags | O_NONBLOCK);
+    ::fcntl(mSocket, F_SETFL, flags | O_NONBLOCK);
 
     if (!sent) {
         WARNF("NTRIP: failed to send request");
@@ -158,6 +175,7 @@ void NtripSource::connect() {
 
     if (mConfig.position_mode != NtripConfig::PositionMode::None) send_nmea();
 
+    mLastReceive = std::chrono::steady_clock::now();
     mPollTask.schedule();
 
     if (mConfig.position_mode == NtripConfig::PositionMode::Internal &&
@@ -198,7 +216,7 @@ void NtripSource::poll() {
         switch (result.status) {
         case supl::TlsBackend::IoStatus::Ok: n = result.bytes; break;
         case supl::TlsBackend::IoStatus::WantRead:
-        case supl::TlsBackend::IoStatus::WantWrite: return;
+        case supl::TlsBackend::IoStatus::WantWrite: check_timeout(); return;
         case supl::TlsBackend::IoStatus::Closed: n = 0; break;
         case supl::TlsBackend::IoStatus::Error: n = -1; break;
         }
@@ -207,7 +225,10 @@ void NtripSource::poll() {
         n = ::recv(mSocket, buf, sizeof(buf), MSG_DONTWAIT);
     }
     if (n < 0) {
-        if (!mTls && (errno == EAGAIN || errno == EWOULDBLOCK)) return;
+        if (!mTls && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+            check_timeout();
+            return;
+        }
         WARNF("NTRIP: read error, reconnecting");
         disconnect();
         schedule_reconnect();
@@ -219,6 +240,8 @@ void NtripSource::poll() {
         schedule_reconnect();
         return;
     }
+
+    mLastReceive = std::chrono::steady_clock::now();
 
     size_t offset = 0;
     if (!mHeaderDone) {
@@ -233,6 +256,15 @@ void NtripSource::poll() {
     }
 
     if (offset < (size_t)n && mOnData) mOnData(buf + offset, (size_t)n - offset);
+}
+
+void NtripSource::check_timeout() {
+    if (mConfig.timeout_s <= 0) return;
+    auto idle = std::chrono::steady_clock::now() - mLastReceive;
+    if (idle < std::chrono::seconds(mConfig.timeout_s)) return;
+    WARNF("NTRIP: no data for %d seconds, reconnecting", mConfig.timeout_s);
+    disconnect();
+    schedule_reconnect();
 }
 
 void NtripSource::apply_bias(double& lat, double& lon) const {

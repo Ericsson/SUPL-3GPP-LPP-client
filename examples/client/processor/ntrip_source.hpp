@@ -5,6 +5,7 @@
 #include <supl/tls.hpp>
 #include "../config.hpp"
 
+#include <chrono>
 #include <functional>
 #include <memory>
 #include <random>
@@ -30,12 +31,15 @@ private:
     void        apply_bias(double& lat, double& lon) const;
     void        schedule_reconnect();
     bool        send_all(void const* data, size_t length);
+    void        check_timeout();
 
     NtripConfig      mConfig;
     DataCallback     mOnData;
     LocationProvider mLocationProvider;
 
     std::unique_ptr<supl::TlsBackend> mTls;
+
+    std::chrono::steady_clock::time_point mLastReceive = std::chrono::steady_clock::now();
 
     int  mSocket     = -1;
     bool mHeaderDone = false;
