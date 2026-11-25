@@ -12,8 +12,7 @@ IdentityImsi::IdentityImsi(std::string message, uint64_t imsi) NOEXCEPT
 IdentityImsi::~IdentityImsi() = default;
 
 void IdentityImsi::print() const NOEXCEPT {
-    // only show the last digits of the subscriber identity
-    printf("[ IMSI]: ***********%04" PRIu64, mImsi % 10000);
+    printf("[ IMSI]: %" PRIu64, mImsi);
 }
 
 std::unique_ptr<Message> IdentityImsi::clone() const NOEXCEPT {
