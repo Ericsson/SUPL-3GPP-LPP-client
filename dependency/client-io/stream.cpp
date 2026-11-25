@@ -92,7 +92,7 @@ static void parse_tcp_server(std::string const& id, Options const& options,
     if (options.find("path") != options.end()) {
         cfg.path = options.at("path");
     } else {
-        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "127.0.0.1";
         if (options.find("port") == options.end()) {
             throw args::ValidationError("--stream tcp-server: missing `port` option");
         }
@@ -130,7 +130,7 @@ static void parse_udp_server(std::string const& id, Options const& options,
     if (options.find("path") != options.end()) {
         cfg.path = options.at("path");
     } else {
-        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "0.0.0.0";
+        cfg.listen = options.find("listen") != options.end() ? options.at("listen") : "127.0.0.1";
         if (options.find("port") == options.end()) {
             throw args::ValidationError("--stream udp-server: missing `port` option");
         }

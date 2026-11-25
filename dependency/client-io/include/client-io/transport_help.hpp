@@ -19,7 +19,7 @@
 
 #define TRANSPORT_HELP_TCP_SERVER                                                                  \
     "  tcp-server:\n"                                                                              \
-    "    listen=<addr> (default=0.0.0.0)\n"                                                        \
+    "    listen=<addr> (default=127.0.0.1)\n"                                                      \
     "    port=<port>\n"                                                                            \
     "    path=<path>\n"
 
@@ -31,7 +31,7 @@
 
 #define TRANSPORT_HELP_UDP_SERVER                                                                  \
     "  udp-server:\n"                                                                              \
-    "    listen=<addr> (default=0.0.0.0)\n"                                                        \
+    "    listen=<addr> (default=127.0.0.1)\n"                                                      \
     "    port=<port>\n"                                                                            \
     "    path=<path>\n"
 
