@@ -129,8 +129,14 @@ std::unique_ptr<Message> Parser::parse_cid(std::string const&              messa
     bool     is_nr;
 
     try {
-        mcc   = static_cast<uint32_t>(std::stoul(tokens[2]));
-        mnc   = static_cast<uint32_t>(std::stoul(tokens[3]));
+        auto mcc_value = std::stoul(tokens[2]);
+        auto mnc_value = std::stoul(tokens[3]);
+        if (mcc_value > 999 || mnc_value > 999) {
+            WARNF("/CID mcc/mnc out of range (0..999)");
+            return nullptr;
+        }
+        mcc   = static_cast<uint32_t>(mcc_value);
+        mnc   = static_cast<uint32_t>(mnc_value);
         tac   = static_cast<uint32_t>(std::stoul(tokens[4]));
         cell  = std::stoull(tokens[5]);
         is_nr = tokens[1] == "N";

@@ -216,10 +216,10 @@ static SLPAddress encode_slp_address(Identity identity) {
 }
 
 static MCC* encode_mcc(uint64_t mcc_value) {
-    ASSERT(mcc_value <= 999, "mcc_value must be <= 999");
+    if (mcc_value > 999) mcc_value = 999;
 
     char tmp[8];
-    sprintf(tmp, "%03" PRIu64, mcc_value);
+    snprintf(tmp, sizeof(tmp), "%03" PRIu64, mcc_value);
 
     auto mcc = helper::asn1_allocate<MCC>();
     for (size_t i = 0; i < strlen(tmp); i++) {
@@ -232,10 +232,10 @@ static MCC* encode_mcc(uint64_t mcc_value) {
 }
 
 static MNC encode_mnc(uint64_t mnc_value) {
-    ASSERT(mnc_value <= 999, "mnc_value must be <= 999");
+    if (mnc_value > 999) mnc_value = 999;
 
     char tmp[8];
-    sprintf(tmp, "%02" PRIu64, mnc_value);
+    snprintf(tmp, sizeof(tmp), "%02" PRIu64, mnc_value);
 
     MNC mnc{};
     for (size_t i = 0; i < strlen(tmp); i++) {

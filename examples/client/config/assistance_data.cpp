@@ -367,6 +367,10 @@ void parse(Config* config) {
                                       "`--mcc`, `--mnc`, `--tac`, `--ci`");
         }
 
+        if (gMcc.Get() > 999 || gMnc.Get() > 999) {
+            throw args::ValidationError("--mcc and --mnc must be in the range 0..999");
+        }
+
         if (gIsNr && gIsGsm) {
             throw args::RequiredError("cell information cannot be specified for NR and GSM");
         }
