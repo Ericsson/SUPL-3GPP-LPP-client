@@ -100,6 +100,8 @@ BIT_STRING_decode_uper(const asn_codec_ctx_t *opt_codec_ctx,
         raw_len = uper_get_length(pd, csiz->effective_bits, csiz->lower_bound,
                                   &repeat);
         if(raw_len < 0) RETURN(RC_WMORE);
+        if(csiz->effective_bits >= 0 && raw_len > csiz->upper_bound)
+            RETURN(RC_FAIL);
         if(raw_len == 0 && st->buf) break;
 
         ASN_DEBUG("Got PER length eb %ld, len %ld, %s (%s)",
