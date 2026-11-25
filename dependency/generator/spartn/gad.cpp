@@ -3,6 +3,8 @@
 #include "generator.hpp"
 #include "message.hpp"
 
+#include <string>
+
 #include <loglet/loglet.hpp>
 
 LOGLET_MODULE2(spartn, gad);
@@ -47,28 +49,27 @@ void Generator::generate_gad(uint16_t iod, uint32_t epoch_time, uint16_t set_id)
     VERBOSEF("  delta-lng: %10.6f",
              decode::step_of_longitude_r16(correction_point_set.step_of_longitude_r16));
 
-    size_t buffer_count = 0;
-    size_t buffer_size  = sizeof(buffer);
+    std::string row;
 
     auto i           = 0;
     auto grid_points = correction_point_set.grid_points();
     for (auto gp : grid_points) {
+        char item[32];
         if (gp.id < 0) {
-            buffer_count += static_cast<size_t>(
-                snprintf(buffer + buffer_count, buffer_size - buffer_count, "-- "));
+            snprintf(item, sizeof(item), "-- ");
         } else {
-            buffer_count += static_cast<size_t>(
-                snprintf(buffer + buffer_count, buffer_size - buffer_count, "%02ld ", gp.id));
+            snprintf(item, sizeof(item), "%02ld ", gp.id);
         }
+        row += item;
 
         if (++i % (correction_point_set.number_of_steps_longitude_r16 + 1) == 0) {
-            VERBOSEF("%s", buffer);
-            buffer_count = 0;
+            VERBOSEF("%s", row.c_str());
+            row.clear();
         }
     }
 
-    if (buffer_count > 0) {
-        VERBOSEF("%s", buffer);
+    if (!row.empty()) {
+        VERBOSEF("%s", row.c_str());
     }
 
     auto siou = iod;
