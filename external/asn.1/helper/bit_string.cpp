@@ -36,13 +36,22 @@ void BitString::initialize(size_t bits) {
     assert(unused_bits <= 7);
     bits_unused = unused_bits;
     buf         = reinterpret_cast<uint8_t*>(calloc(size, sizeof(uint8_t)));
-    memset(buf, 0, size);
+    if (!buf) {
+        size        = 0;
+        bits_unused = 0;
+    }
+}
+
+static size_t bit_count(BIT_STRING_s const& bit_string) {
+    auto total = bit_string.size * 8;
+    if (bit_string.bits_unused >= total) return 0;
+    return total - bit_string.bits_unused;
 }
 
 BitString::Index BitString::bit_index(ssize_t index) const {
     auto bit = static_cast<size_t>(index);
     assert(index >= 0);
-    assert(bit < size * 8 - bits_unused);
+    assert(bit < bit_count(*this));
     bit += bits_unused;
 
     auto byte       = bit / 8;
@@ -55,31 +64,36 @@ BitString::Index BitString::bit_index(ssize_t index) const {
 }
 
 void BitString::set_bit(ssize_t index) {
+    if (index < 0 || static_cast<size_t>(index) >= bit_count(*this)) return;
     auto i = bit_index(index);
     buf[i.byte_index] |= 1 << i.local_bit;
 }
 
 void BitString::clear_bit(ssize_t index) {
+    if (index < 0 || static_cast<size_t>(index) >= bit_count(*this)) return;
     auto i = bit_index(index);
     buf[i.byte_index] &= ~(1 << i.local_bit);
 }
 
 bool BitString::get_bit(ssize_t index) const {
+    if (index < 0 || static_cast<size_t>(index) >= bit_count(*this)) return false;
     auto i = bit_index(index);
     return ((buf[i.byte_index] >> i.local_bit) & 1) != 0;
 }
 
 void BitString::set_integer(size_t begin, size_t length, size_t value) {
-    for (size_t i = 0; i < length; i++) {
+    for (size_t i = 0; i < length && i < 64; i++) {
         auto index = begin + i;
-        if (value & (1 << i)) set_bit(index);
+        if (value & (size_t{1} << i)) set_bit(static_cast<ssize_t>(index));
     }
 }
 
 int64_t BitString::as_int64() const {
     uint64_t value = 0;
-    for (size_t i = 0; i < size * 8 - bits_unused; i++) {
-        auto   bit       = get_bit(i);
+    auto count = bit_count(*this);
+    if (count > 64) count = 64;
+    for (size_t i = 0; i < count; i++) {
+        auto   bit       = get_bit(static_cast<ssize_t>(i));
         size_t bit_value = bit ? 1 : 0;
         value |= (bit_value << i);
     }
@@ -171,6 +185,7 @@ static void BIT_STRING_initialize(BIT_STRING_s* bit_string, size_t bits) {
     bit_string->size        = bytes;
     bit_string->bits_unused = 0;
     bit_string->buf         = reinterpret_cast<uint8_t*>(calloc(bit_string->size, sizeof(uint8_t)));
+    if (!bit_string->buf) bit_string->size = 0;
 }
 
 BIT_STRING_s* BitStringBuilder::to_bit_string(size_t bits) {
